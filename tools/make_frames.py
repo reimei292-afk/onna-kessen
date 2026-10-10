@@ -65,6 +65,8 @@ def main():
     for gid, fr in man.items():
         if ONLY and gid not in ONLY: continue
         meta.setdefault(gid, {})
+        if not fr.get('front') and fr.get('bow') and not os.path.exists(os.path.join(A, gid + '.png')):
+            fr = dict(fr, front=fr['bow'])   # 弓を引く写真しか無い娘（arch01〜）：その写真を正面（縮尺の基準）にも使う
         if os.path.exists(os.path.join(A, gid + '.png')): ref = front_ref(gid)
         elif fr.get('front') and os.path.exists(fr['front']):
             # 元の写真が無い娘（医療係など）：正面も manifest から作り、その頭頂〜足元を基準にする

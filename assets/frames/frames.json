@@ -492,5 +492,366 @@
    "dir": -1,
    "file": "assets/frames/medic_down.png"
   }
+ },
+ "sec3": {
+  "front": {
+   "hk": 1.0111,
+   "aspect": 0.2687,
+   "ax": 0.5045,
+   "dir": 0,
+   "file": "assets/frames/sec3_front.png",
+   "ref": 633
+  },
+  "side": {
+   "hk": 1.0063,
+   "aspect": 0.1947,
+   "ax": 0.4755,
+   "dir": 1,
+   "file": "assets/frames/sec3_side.png"
+  },
+  "back": {
+   "hk": 1.0126,
+   "aspect": 0.2683,
+   "ax": 0.4888,
+   "dir": 0,
+   "file": "assets/frames/sec3_back.png"
+  },
+  "walk": {
+   "hk": 0.9953,
+   "aspect": 0.4333,
+   "ax": 0.4585,
+   "dir": 0,
+   "file": "assets/frames/sec3_walk.png"
+  },
+  "down": {
+   "hk": 0.2322,
+   "aspect": 4.3061,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/sec3_down.png"
+  }
+ },
+ "sec4": {
+  "front": {
+   "hk": 1.0079,
+   "aspect": 0.3375,
+   "ax": 0.4643,
+   "dir": 0,
+   "file": "assets/frames/sec4_front.png",
+   "ref": 635
+  },
+  "side": {
+   "hk": 1.0063,
+   "aspect": 0.2426,
+   "ax": 0.3709,
+   "dir": 1,
+   "file": "assets/frames/sec4_side.png"
+  },
+  "back": {
+   "hk": 1.0079,
+   "aspect": 0.3125,
+   "ax": 0.5444,
+   "dir": 0,
+   "file": "assets/frames/sec4_back.png"
+  },
+  "walk": {
+   "hk": 0.9937,
+   "aspect": 0.3978,
+   "ax": 0.4435,
+   "dir": 0,
+   "file": "assets/frames/sec4_walk.png"
+  },
+  "down": {
+   "hk": 0.2472,
+   "aspect": 4.0446,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/sec4_down.png"
+  }
+ },
+ "sec5": {
+  "front": {
+   "hk": 1.0079,
+   "aspect": 0.2891,
+   "ax": 0.4851,
+   "dir": 0,
+   "file": "assets/frames/sec5_front.png",
+   "ref": 635
+  },
+  "down": {
+   "hk": 0.2976,
+   "aspect": 3.3598,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/sec5_down.png"
+  },
+  "side": {
+   "hk": 1.0079,
+   "aspect": 0.1828,
+   "ax": 0.4708,
+   "dir": 1,
+   "file": "assets/frames/sec5_side.png"
+  },
+  "back": {
+   "hk": 1.0094,
+   "aspect": 0.2777,
+   "ax": 0.4858,
+   "dir": 0,
+   "file": "assets/frames/sec5_back.png"
+  },
+  "walk": {
+   "hk": 0.9921,
+   "aspect": 0.3476,
+   "ax": 0.5078,
+   "dir": 0,
+   "file": "assets/frames/sec5_walk.png"
+  }
+ },
+ "sec6": {
+  "front": {
+   "hk": 1.0079,
+   "aspect": 0.2562,
+   "ax": 0.4969,
+   "dir": 0,
+   "file": "assets/frames/sec6_front.png",
+   "ref": 635
+  },
+  "down": {
+   "hk": 0.2787,
+   "aspect": 3.5876,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/sec6_down.png"
+  },
+  "side": {
+   "hk": 1.0094,
+   "aspect": 0.17,
+   "ax": 0.4813,
+   "dir": 1,
+   "file": "assets/frames/sec6_side.png"
+  },
+  "back": {
+   "hk": 1.011,
+   "aspect": 0.2586,
+   "ax": 0.4868,
+   "dir": 0,
+   "file": "assets/frames/sec6_back.png"
+  },
+  "walk": {
+   "hk": 0.9937,
+   "aspect": 0.3471,
+   "ax": 0.4447,
+   "dir": 0,
+   "file": "assets/frames/sec6_walk.png"
+  }
+ },
+ "sec7": {
+  "front": {
+   "hk": 1.0111,
+   "aspect": 0.3094,
+   "ax": 0.5074,
+   "dir": 0,
+   "file": "assets/frames/sec7_front.png",
+   "ref": 633
+  },
+  "down": {
+   "hk": 0.3081,
+   "aspect": 3.2462,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/sec7_down.png"
+  },
+  "side": {
+   "hk": 1.0158,
+   "aspect": 0.1913,
+   "ax": 0.4338,
+   "dir": 1,
+   "file": "assets/frames/sec7_side.png"
+  },
+  "back": {
+   "hk": 1.0111,
+   "aspect": 0.2719,
+   "ax": 0.4777,
+   "dir": 0,
+   "file": "assets/frames/sec7_back.png"
+  },
+  "walk": {
+   "hk": 0.9953,
+   "aspect": 0.4667,
+   "ax": 0.4604,
+   "dir": 0,
+   "file": "assets/frames/sec7_walk.png"
+  }
+ },
+ "arch01": {
+  "front": {
+   "hk": 1.1552,
+   "aspect": 0.4531,
+   "ax": 0.3841,
+   "dir": 0,
+   "file": "assets/frames/arch01_front.png",
+   "ref": 554
+  },
+  "bow": {
+   "hk": 1.1552,
+   "aspect": 0.4531,
+   "ax": 0.3841,
+   "dir": 1,
+   "file": "assets/frames/arch01_bow.png"
+  }
+ },
+ "arch02": {
+  "front": {
+   "hk": 1.1248,
+   "aspect": 0.4203,
+   "ax": 0.4706,
+   "dir": 0,
+   "file": "assets/frames/arch02_front.png",
+   "ref": 569
+  },
+  "bow": {
+   "hk": 1.1248,
+   "aspect": 0.4203,
+   "ax": 0.4706,
+   "dir": -1,
+   "file": "assets/frames/arch02_bow.png"
+  }
+ },
+ "arch03": {
+  "front": {
+   "hk": 1.0544,
+   "aspect": 0.5016,
+   "ax": 0.373,
+   "dir": 0,
+   "file": "assets/frames/arch03_front.png",
+   "ref": 607
+  },
+  "bow": {
+   "hk": 1.0544,
+   "aspect": 0.5016,
+   "ax": 0.373,
+   "dir": 1,
+   "file": "assets/frames/arch03_bow.png"
+  }
+ },
+ "arch04": {
+  "front": {
+   "hk": 1.1073,
+   "aspect": 0.4484,
+   "ax": 0.403,
+   "dir": 0,
+   "file": "assets/frames/arch04_front.png",
+   "ref": 578
+  },
+  "bow": {
+   "hk": 1.1073,
+   "aspect": 0.4484,
+   "ax": 0.403,
+   "dir": 1,
+   "file": "assets/frames/arch04_bow.png"
+  }
+ },
+ "arch05": {
+  "front": {
+   "hk": 1.1408,
+   "aspect": 0.4344,
+   "ax": 0.4283,
+   "dir": 0,
+   "file": "assets/frames/arch05_front.png",
+   "ref": 561
+  },
+  "bow": {
+   "hk": 1.1408,
+   "aspect": 0.4344,
+   "ax": 0.4283,
+   "dir": 1,
+   "file": "assets/frames/arch05_bow.png"
+  }
+ },
+ "arch06": {
+  "front": {
+   "hk": 1.0997,
+   "aspect": 0.4344,
+   "ax": 0.5104,
+   "dir": 0,
+   "file": "assets/frames/arch06_front.png",
+   "ref": 582
+  },
+  "bow": {
+   "hk": 1.0997,
+   "aspect": 0.4359,
+   "ax": 0.5109,
+   "dir": 1,
+   "file": "assets/frames/arch06_bow.png"
+  }
+ },
+ "surgeon": {
+  "front": {
+   "hk": 1.0127,
+   "aspect": 0.3406,
+   "ax": 0.449,
+   "dir": 0,
+   "file": "assets/frames/surgeon_front.png",
+   "ref": 632
+  },
+  "kneel": {
+   "hk": 0.7041,
+   "aspect": 0.9011,
+   "ax": 0.5705,
+   "dir": 1,
+   "file": "assets/frames/surgeon_kneel.png"
+  },
+  "down": {
+   "hk": 0.3497,
+   "aspect": 2.8597,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/surgeon_down.png"
+  },
+  "walk": {
+   "hk": 0.9953,
+   "aspect": 0.6057,
+   "ax": 0.6415,
+   "dir": 0,
+   "file": "assets/frames/surgeon_walk.png"
+  }
+ },
+ "ojou": {
+  "front": {
+   "hk": 1.0095,
+   "aspect": 0.3016,
+   "ax": 0.6285,
+   "dir": 0,
+   "file": "assets/frames/ojou_front.png",
+   "ref": 634
+  },
+  "side": {
+   "hk": 1.0079,
+   "aspect": 0.2081,
+   "ax": 0.4751,
+   "dir": 1,
+   "file": "assets/frames/ojou_side.png"
+  },
+  "back": {
+   "hk": 1.0126,
+   "aspect": 0.2804,
+   "ax": 0.3981,
+   "dir": 0,
+   "file": "assets/frames/ojou_back.png"
+  },
+  "walk": {
+   "hk": 0.9921,
+   "aspect": 0.4404,
+   "ax": 0.5087,
+   "dir": 0,
+   "file": "assets/frames/ojou_walk.png"
+  },
+  "down": {
+   "hk": 0.2587,
+   "aspect": 3.8659,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/ojou_down.png"
+  }
  }
 }

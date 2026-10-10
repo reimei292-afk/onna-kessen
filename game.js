@@ -97,6 +97,30 @@ const Sfx = {
   impactGround(p) { const o = this.at(p, 40); if (!o) return; this.tone('sine', 150, 55, 0.1, 0.35, 0, o); this.noiseBurst(0.14, 'lowpass', 900, 120, 0.3, 1, 0, o); this.noiseBurst(0.2, 'bandpass', 3200, 1600, 0.05, 1, 0.02, o); },
   impactBamboo(p) { const o = this.at(p, 45); if (!o) return; this.tone('triangle', 640, 600, 0.12, 0.26, 0, o); this.tone('triangle', 955, 900, 0.09, 0.16, 0, o); this.noiseBurst(0.05, 'bandpass', 1300, 1100, 0.25, 8, 0, o); },
   impactWood(p) { const o = this.at(p, 45); if (!o) return; this.tone('sine', 230, 150, 0.09, 0.45, 0, o); this.noiseBurst(0.05, 'bandpass', 800, 500, 0.3, 3, 0, o); },
+  // 矢が体に刺さる「ズブッ」：鈍い打撃（低い正弦の急降下）＋布越しの柔らかい「どすっ」（こもった雑音）。湿った音・生々しい音は使わない
+  arrowFlesh(p, near = false) {
+    const o = near ? this.master : this.at(p, 50, 1.15); if (!o) return;
+    const v = near ? 0.9 : 1;
+    this.noiseBurst(0.035, 'bandpass', 1400, 700, 0.22 * v, 1.8, 0, o);        // ズ：当たった瞬間の短い擦れ
+    this.tone('sine', 150, 52, 0.11, 0.62 * v, 0.004, o);                      // ブッ：鈍い打撃
+    this.tone('triangle', 92, 48, 0.09, 0.22 * v, 0.006, o);
+    this.noiseBurst(0.13, 'lowpass', 650, 110, 0.42 * v, 0.6, 0.01, o);       // 柔らかい「どすっ」
+  },
+  // 矢がそばをかすめる「ヒュンッ」：帯域雑音の中心周波数を高→低へ落とす（ドップラー風）。近いほど大きく、通った側へ振る
+  flyby(pan, k) {
+    const c = this.ctx; if (!c || (this.fbN || 0) >= 4) return;
+    this.fbN = (this.fbN || 0) + 1; setTimeout(() => { this.fbN--; }, 380);
+    const t = c.currentTime, g = c.createGain(); g.gain.value = 0.25 + 0.75 * k * k;
+    if (c.createStereoPanner) { const pn = c.createStereoPanner(); pn.pan.value = clamp(pan, -1, 1); g.connect(pn); pn.connect(this.master); } else g.connect(this.master);
+    const s = c.createBufferSource(); s.buffer = this.noise; s.playbackRate.value = 1;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3.2;
+    f.frequency.setValueAtTime(4200, t); f.frequency.exponentialRampToValueAtTime(3000, t + 0.07); f.frequency.exponentialRampToValueAtTime(650, t + 0.3);
+    const e = c.createGain(); e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(0.75, t + 0.06); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.32);
+    s.connect(f); f.connect(e); e.connect(g); s.start(t); s.stop(t + 0.36);
+    const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(1500, t); o.frequency.exponentialRampToValueAtTime(980, t + 0.06); o.frequency.exponentialRampToValueAtTime(520, t + 0.28);   // かすかな笛鳴り
+    const og = c.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.05, t + 0.05); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(og); og.connect(g); o.start(t); o.stop(t + 0.32);
+  },
   impactBody(p) { const o = this.at(p, 45); if (!o) return; this.tone('sine', 115, 55, 0.16, 0.5, 0, o); this.noiseBurst(0.1, 'lowpass', 500, 90, 0.35, 0.7, 0, o); },
   step(wood, vol = 1, p = null) {   // 足音：土（ざっ）／木の床（とん）
     const o = p ? this.at(p, 16, vol) : this.master; if (!o) return; const v = p ? 1 : vol;
@@ -206,11 +230,25 @@ const Voice = {
     u.lang = 'ja-JP'; if (this.voice) u.voice = this.voice;
     u.pitch = clamp(prof.pitch, 0.1, 2); u.rate = clamp(prof.rate, 0.5, 2); u.volume = 1;
     u.onend = u.onerror = () => { this.prio = 0; };
-    this.prio = prio;
+    this.prio = prio; Talk.ws = Talk.cur;
     speechSynthesis.speak(u);
   },
 };
 if (Voice.ok) { Voice.pick(); speechSynthesis.onvoiceschanged = () => Voice.pick(); }
+// ---- 誰が話しているか：話している娘が撃たれたら、その娘の声・字幕をすぐ止める ----
+const Talk = {
+  cur: null, srcs: [], ws: null, sub: null, subT: 0,
+  as(e, fn) { const o = this.cur; this.cur = e || null; try { return fn(); } finally { this.cur = o; } },
+  track(src) { if (!this.cur) return; const o = { src, owner: this.cur }; this.srcs.push(o); src.addEventListener('ended', () => { const i = this.srcs.indexOf(o); if (i >= 0) this.srcs.splice(i, 1); }); },
+  speaking(e) { return !!e && (this.srcs.some(o => o.owner === e) || (this.sub === e && performance.now() < this.subT) || (this.ws === e && Voice.ok && speechSynthesis.speaking)); },
+  hush(e) {
+    if (!e) return;
+    for (const o of this.srcs) if (o.owner === e) { try { o.src.stop(); } catch (_) {} }
+    this.srcs = this.srcs.filter(o => o.owner !== e);
+    if (this.ws === e && Voice.ok) { speechSynthesis.cancel(); this.ws = null; Voice.prio = 0; }
+    if (this.sub === e) { this.sub = null; const el = document.getElementById('subtitle'); if (el) el.style.opacity = 0; const s2 = document.getElementById('secsay'); if (s2) s2.textContent = ''; }
+  },
+};
 // ---- 収録済みボイス：edge-tts（ja-JP-NanamiNeural）で事前生成した mp3（assets/voices/、目録は voices.js）
 //   WebAudio で再生し、距離で音量を変える。ファイルが無い・file:// で開いた時は Web Speech にフォールバック。
 const VV_RATE = [0.965, 1.0, 1.035];   // 侍女ごとの声の高さ・速さの個体差（控えめ）
@@ -246,7 +284,7 @@ const VoicePack = {
     src.buffer = b; g.gain.value = 1.15 * k * k + 0.05;
     src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * 0.03);   // ±3% の揺らぎ
     src.connect(g); g.connect(this.out);
-    this.playing++; src.onended = () => { this.playing--; };
+    this.playing++; src.onended = () => { this.playing--; }; Talk.track(src);
     src.start();
     return true;
   },
@@ -560,6 +598,106 @@ function yagura(cx, cz, Y) {
   for (let i = 0; i < 4; i++) perches.push({ x: cx - 1.65 + i * 1.1, z: cz - S + 0.55, y: Y, taken: null, tower: true });
   nobori(cx + S - 0.3, cz + S - 0.3, '#1f5fb8', '#f4f1e8', '青組').position.y = Y;
 }
+// ---- 井闌（せいらん）：橙組の攻城櫓。味方の櫓より高い車付きの木の塔で、門の外からゆっくり壁へ近づく。
+//      上の床に弓兵 2〜4 人（前と左右は胸壁、狭間の隙間から上半身が出る）。上の弓兵を全員倒すと止まる。
+const seirans = [];
+const SEIRAN_Y = 8.4, SEIRAN_STOP = -11, SEIRAN_V = 0.16;
+const SEIRAN_LANES = [-17, 19];
+function seiran(x, z) {
+  const Y = SEIRAN_Y, S = 2.3, grp = new THREE.Group(), lb = [];
+  const add = (x0, x1, y0, y1, z0, z1, mat, solid) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
+    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); grp.add(m);
+    if (solid) lb.push({ l: { x0, x1, z0, z1, y0, y1 }, w: { x0, x1, z0, z1, y0, y1 } });
+    return m;
+  };
+  // 台車と車輪
+  add(-S - 0.2, S + 0.2, 0.55, 0.85, -S - 0.2, S + 0.2, WOOD_D, false);
+  const wheelGeo = new THREE.CylinderGeometry(0.62, 0.62, 0.28, 12); wheelGeo.rotateZ(Math.PI / 2);
+  const wheels = [];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const w = new THREE.Mesh(wheelGeo, WOOD_D); w.position.set(sx * (S + 0.32), 0.62, sz * (S - 0.6)); grp.add(w); wheels.push(w);
+    const hub = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 1.1), WOOD_L); w.add(hub);
+  }
+  // 少しすぼまる四本柱と筋交い
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const m = add(-0.17, 0.17, 0, Y + 0.1, -0.17, 0.17, WOOD_D, false);
+    m.position.set(sx * (S - 0.15), Y / 2 + 0.45, sz * (S - 0.15)); m.rotation.set(sz * -0.035, 0, sx * 0.035);
+  }
+  for (const y of [2.6, 4.9, 7.0]) for (const sz of [-1, 1]) add(-S, S, y - 0.08, y + 0.08, sz * (S - 0.25) - 0.06, sz * (S - 0.25) + 0.06, WOOD, false);
+  for (const y of [2.6, 4.9, 7.0]) for (const sx of [-1, 1]) add(sx * (S - 0.25) - 0.06, sx * (S - 0.25) + 0.06, y - 0.08, y + 0.08, -S, S, WOOD, false);
+  // 前面（壁の側、+Z）を板で覆う（矢よけ）。横板の継ぎ目を少し色違いに
+  for (let y = 0.9; y < Y - 0.2; y += 0.55) {
+    const m = add(-S + 0.05, S - 0.05, y, y + 0.5, S - 0.12, S, Math.random() < 0.5 ? WOOD : WOOD_L, false);
+    m.rotation.z = rand(-0.01, 0.01);
+  }
+  lb.push({ l: { x0: -S, x1: S, z0: -S, z1: S, y0: 0, y1: Y - 0.25 }, w: {} });   // 塔の胴：人と矢を止める
+  // 上の床と胸壁（前と左右。前は狭間＝凹凸）
+  add(-S - 0.15, S + 0.15, Y - 0.25, Y, -S - 0.15, S + 0.15, WOOD_L, false);
+  const PH = 0.95;
+  add(-S - 0.15, S + 0.15, Y, Y + PH, S, S + 0.15, WOOD, true);
+  for (let i = 0; i < 5; i++) { const x = -S + 0.25 + i * (2 * S - 0.5) / 4; add(x - 0.22, x + 0.22, Y + PH, Y + PH + 0.35, S, S + 0.15, WOOD_D, false); }
+  for (const sx of [-1, 1]) add(sx * (S + 0.15) - 0.08, sx * (S + 0.15) + 0.08, Y, Y + PH, -S - 0.15, S + 0.15, WOOD, true);
+  add(-S - 0.15, S + 0.15, Y + 0.8, Y + 0.9, -S - 0.15, -S - 0.05, WOOD, false);   // 後ろは手すりだけ
+  // 皮張りの日除け屋根（柱4本）
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(sx * (S - 0.05) - 0.07, sx * (S - 0.05) + 0.07, Y, Y + 2.6, sz * (S - 0.05) - 0.07, sz * (S - 0.05) + 0.07, WOOD_D, false);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(2 * S + 0.6, 0.12, 2 * S + 0.6), new THREE.MeshLambertMaterial({ color: 0x6d5236 }));
+  roof.position.set(0, Y + 2.65, 0); roof.rotation.x = -0.12; grp.add(roof);
+  // 後ろの梯子（飾り）
+  for (const s of [-1, 1]) add(s * 0.32 - 0.04, s * 0.32 + 0.04, 0.8, Y, -S - 0.2, -S - 0.12, WOOD_D, false);
+  for (let y = 1.1; y < Y; y += 0.4) add(-0.32, 0.32, y - 0.03, y + 0.03, -S - 0.2, -S - 0.13, WOOD_L, false);
+  // 幟
+  const nb = nobori(0, 0, '#d9741c', '#fff6e8', '井闌'); stageRoot.remove(nb); grp.add(nb); nb.position.set(-S + 0.1, Y + 0.5, -S + 0.1); nb.rotation.y = 0;
+  grp.position.set(x, 0, z); stageRoot.add(grp);
+  const T = { x, z, z0: z, grp, wheels, lb, perches: [], hp: 0 };
+  for (const L of lb) boxes.push(L.w);
+  // 射撃位置：前の胸壁の後ろに 4 か所（波が進むほど埋まる）
+  for (let i = 0; i < 4; i++) T.perches.push({ x: 0, z: 0, lx: -1.35 + i * 0.9, lz: S - 0.55, y: Y, taken: null, seiran: T });
+  seiranSync(T, 0);
+  seirans.push(T);
+  return T;
+}
+function seiranSync(T, dz) {
+  T.grp.position.set(T.x, 0, T.z);
+  for (const L of T.lb) { L.w.x0 = T.x + L.l.x0; L.w.x1 = T.x + L.l.x1; L.w.z0 = T.z + L.l.z0; L.w.z1 = T.z + L.l.z1; L.w.y0 = L.l.y0; L.w.y1 = L.l.y1; }
+  for (const q of T.perches) {
+    q.x = T.x + q.lx; q.z = T.z + q.lz;
+    const e = q.taken;
+    if (e && e.perch === q) { e.s.position.x = q.x; e.s.position.z = q.z; e.px = q.x; e.pz += dz; }
+  }
+  if (dz) for (const b of bodies) if (b.perch && b.perch.seiran === T) b.s.position.z += dz;   // 上で倒れた娘も一緒に動く
+}
+// 波の始まり：櫓の上に弓兵を出す（第1波は一基、第2波から二基。人数は波とともに 2→4）
+function seiranWave(n) {
+  if (builtStage !== 'fort' || !seirans.length) return 0;
+  let k = 0;
+  seirans.forEach((T, i) => {
+    T.active = i === 0 || n >= 2;
+    T.grp.visible = true;
+    if (!T.active) return;
+    const want = Math.min(4, 2 + Math.floor((n - 1) / 2));
+    const order = [1, 2, 0, 3];
+    for (let j = 0; j < want; j++) {
+      const q = T.perches[order[j]];
+      if (q.taken) continue;
+      const e = spawnEnemy(q.x, q.z, 'archer', false, 'orange', { y: q.y, perch: q });
+      if (e) { e.onSeiran = T; k++; }
+    }
+  });
+  return k;
+}
+function updateSeiran(dt) {
+  for (const T of seirans) {
+    const crew = T.perches.some(q => q.taken && q.taken.state !== 'down');
+    if (!crew || T.z >= SEIRAN_STOP) { T.moving = false; continue; }
+    const dz = Math.min(SEIRAN_V * dt, SEIRAN_STOP - T.z);
+    T.z += dz; T.moving = true;
+    for (const w of T.wheels) w.rotation.x += dz / 0.62;
+    seiranSync(T, dz);
+    if (Math.random() < dt * 0.6) { const d = Math.hypot(T.x - player.pos.x, T.z - player.pos.z); if (d < 40 && Sfx.step) Sfx.step(false, 0.25, new V3(T.x, 0, T.z)); }   // 車のきしみ（足音で代用）
+  }
+}
+function seiranReset() { for (const T of seirans) { for (const q of T.perches) q.taken = null; T.z = T.z0; seiranSync(T, 0); } }
 // 竹束（低い盾）
 const bundleGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.6, 6);
 const bundleMat = new THREE.MeshLambertMaterial({ color: 0x8aa04a });
@@ -615,9 +753,11 @@ function buildFort() {
     for (let i = 0; i < n; i++) {
       const x = -34 + (i + 0.5) * 68 / n + rand(-2.5, 2.5);
       if (Math.abs(x) < 2 && z > -20) continue;
+      if (SEIRAN_LANES.some(l => Math.abs(x - l) < 3.8) && z > -40) continue;   // 井闌の通り道は空けておく
       bamboobundle(x, z + rand(-2, 2), rand(-0.25, 0.25));
     }
   }
+  for (const x of SEIRAN_LANES) seiran(x, -36);
   for (let i = 0; i < 10; i++) nobori(rand(-45, 45), rand(-95, -80), '#d9741c', '#fff6e8', pick(['橙組', '必勝', '勝鬨', '一番']));
   // 周りの木々
   for (let i = 0; i < 110; i++) {
@@ -647,7 +787,7 @@ function loadStage(name) {
   if (builtStage === name) return;
   for (const c of [...stageRoot.children]) stageRoot.remove(c);
   colliders.length = covers.length = flags.length = boxes.length = floors.length = ladders.length = perches.length = 0;
-  fortGate = null; hq = null;
+  fortGate = null; hq = null; seirans.length = 0;
   road.visible = name === 'plains';
   if (name === 'fort') buildFort(); else buildPlains();
   builtStage = name;
@@ -757,10 +897,16 @@ function loadFrames(done) {
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
   const jobs = [];
   // 元の写真が無く、frames に正面がある娘（医療係など）
-  for (const gid in meta) if (!GIRLS[gid] && meta[gid].front) GIRLS[gid] = { id: gid, type: gid === 'medic' ? 'medic' : 'extra', spr: null, front: null };
+  for (const gid in meta) if (!GIRLS[gid] && meta[gid].front) {
+    const x = EXTRA_GIRLS[gid] || {};
+    GIRLS[gid] = Object.assign({ id: gid, type: gid === 'medic' || gid === 'surgeon' ? 'medic' : 'extra', spr: null, front: null }, x);
+  }
   for (const gid in meta) for (const k in meta[gid]) if (GIRLS[gid]) jobs.push([gid, k, meta[gid][k]]);
   const done2 = () => {
     for (const gid in GIRLS) { const g = GIRLS[gid]; if (!g.front) { delete GIRLS[gid]; continue; }
+      if (g.bowOnly) {   // 弓を引く写真しか無い娘：どの見え方もその写真（横は向きに合わせて反転）。倒れたあとは写真のまま横たわる
+        const b = g.bow || g.front; g.bow = b; g.front = b; g.side = g.side || b; g.walk = g.walk || b;
+      }
       if (!g.spr) g.spr = { id: gid, img: g.front.tex.image, top: Math.max(0, 1 - 1 / g.front.hk), tex: g.front.tex, aspect: g.front.aspect }; }
     if (!GIRLS[SEC2_ID]) SEC2_ID = Object.keys(GIRLS).find(k => GIRLS[k].type === 'mob' && k !== SEC_ID && k !== FLUTE_ID) || SEC_ID;
     if (!GIRLS[MEDIC_ID]) MEDIC_ID = GIRLS.mob05 ? 'mob05' : SEC_ID;
@@ -776,6 +922,15 @@ function loadFrames(done) {
     if (useFiles) loader.load(m.file + '?v=' + (m.hk || 1), ok, undefined, fb); else fb();
   }
 }
+// 追加の娘（frames/manifest.json）：役割と固定のプロフィール（名前・性格・身長・声の高さ vv 0 低〜2 高）
+const EXTRA_GIRLS = {
+  sec5: { type: 'mob', anyRole: true, prof: { name: '小日向 ひより', pers: '慎重', cm: 152, vv: 2, pitch: 1.3 } },   // 小柄
+  sec6: { type: 'mob', anyRole: true, prof: { name: '氷室 しのぶ', pers: '冷静', cm: 170, vv: 0, pitch: 0.85 } },    // 長身・細身
+  sec7: { type: 'mob', anyRole: true, prof: { name: '夏目 あかり', pers: '陽気', cm: 162, vv: 1, pitch: 1.35 } },    // 快活
+  arch01: { type: 'archer', bowOnly: true }, arch02: { type: 'archer', bowOnly: true }, arch03: { type: 'archer', bowOnly: true },
+  arch04: { type: 'archer', bowOnly: true }, arch05: { type: 'archer', bowOnly: true }, arch06: { type: 'archer', bowOnly: true },
+  sec3: { type: 'aide' }, sec4: { type: 'aide' },
+};
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {
   if (k === 'action') {
@@ -787,7 +942,7 @@ function girlFrame(g, k, kind) {
 function pickGirl(kind) {
   const all = Object.values(GIRLS).filter(g => g.id !== SEC_ID && g.id !== SEC2_ID && g.id !== FLUTE_ID && g.id !== MEDIC_ID && (g.type === 'mob' || g.type === 'archer'));
   // 弓兵：弓を引く写真（bow）のある娘、または横・後ろがそろった弓兵の写真。近接兵：侍女（mob）
-  let fit = all.filter(g => kind === 'archer' ? (g.bow || (g.type === 'archer' && g.side && g.back)) : g.type === 'mob');
+  let fit = all.filter(g => kind === 'archer' ? (g.bow || g.anyRole || (g.type === 'archer' && g.side && g.back)) : g.type === 'mob');
   if (!fit.length) fit = all.filter(g => kind === 'archer' ? g.type === 'archer' : g.stab);
   const pool = fit.length ? fit : (all.length ? all : Object.values(GIRLS));
   const inUse = new Set(enemies.map(e => e.girl && e.girl.id));
@@ -920,7 +1075,8 @@ const Mo = MOTION ? (() => {
     else w[2] = 1;
   }
   // ---- 影だけを落とす人形（InstancedMesh 2つ＝影の描画は2回だけ） ----
-  const CAP = 220;
+  const CAP = 300, FAR = 37;
+  const far = new Uint8Array(CAP);
   const SEG = [['lHip', 'lKnee', 0.058], ['lKnee', 'lAnkle', 0.042], ['lAnkle', 'lToe', 0.03], ['rHip', 'rKnee', 0.058], ['rKnee', 'rAnkle', 0.042], ['rAnkle', 'rToe', 0.03],
     ['hips', 'chest', 0.085], ['chest', 'neck', 0.075], ['neck', 'head', 0.03], ['lSh', 'lEl', 0.03], ['lEl', 'lWr', 0.025], ['rSh', 'rEl', 0.03], ['rEl', 'rWr', 0.025],
     ['lSh', 'rSh', 0.04]].map(([a, b, r]) => [I[a], I[b], r]);
@@ -947,12 +1103,18 @@ const Mo = MOTION ? (() => {
   function release(s) {
     if (s < 0 || !cyl) return;
     cyl.array.fill(0, s * NS * 16, (s + 1) * NS * 16); sph.array.fill(0, s * NP * 16, (s + 1) * NP * 16);
-    free.push(s); dirty = true;
+    free.push(s); far[s] = 0; dirty = true;
   }
   // 人形の関節（体の座標：x=左, y=上, z=前、身長=1）を世界へ置き、円柱と球の行列を書く
   const W = new Float32Array(N3);
   function write(slot, P, ox, oy, oz, yaw, h) {
     if (slot < 0 || !cyl) return;
+    // 影の届く範囲（±34m）の外の人形は書かない（大軍でも影の描画を軽く）
+    if (Math.abs(ox - player.pos.x) > FAR || Math.abs(oz - player.pos.z) > FAR) {
+      if (!far[slot]) { far[slot] = 1; cyl.array.fill(0, slot * NS * 16, (slot + 1) * NS * 16); sph.array.fill(0, slot * NP * 16, (slot + 1) * NP * 16); dirty = true; }
+      return;
+    }
+    far[slot] = 0;
     const c = Math.cos(yaw), s = Math.sin(yaw);
     for (let j = 0; j < N3; j += 3) { const x = P[j], z = P[j + 2]; W[j] = ox + (x * c + z * s) * h; W[j + 1] = oy + Math.max(0.02, P[j + 1]) * h; W[j + 2] = oz + (-x * s + z * c) * h; }
     let a = cyl.array, o = slot * NS * 16;
@@ -1064,7 +1226,12 @@ const Mo = MOTION ? (() => {
     // 倒れる写真：体の軸（腰→首）を人形と同じに傾け、板はできるだけカメラへ向ける（横から見れば画面の中で倒れ、
     // 手前・奥へ倒れるときは縮んで見える）。腰を支点にするので、膝が抜けると脚は地面の下に沈んで見えない
     fallSprite(e, D, bounce) {
-      const H = e.figH, r = e.s.rotation.y, ry = e.fallYaw - r, th = D.th < 0 ? D.th * 0.3 : D.th, s = Math.sin(th), c = Math.cos(th);   // 最初の反り返り（攻撃側へ）は控えめに
+      // 足を地面に置いたまま（写真は決して地面の下に入らない）：膝が抜ける間は写真を少し縦に縮め、上体が倒れるにつれて足元を支点に倒す
+      const H = e.figH, r = e.s.rotation.y, ry = e.fallYaw - r;
+      // 写真は膝を曲げられないので、膝が抜けて腰が落ちる分も「足元を支点に傾く」角度に足し、いったん傾いたら起き上がらない（単調）
+      const drop = clamp(1 - D.hy / Math.max(0.05, D.hr), 0, 1), thE = Math.max(D.th, drop * 0.95);
+      if (thE > 0.02) e.fallTh = Math.max(e.fallTh || 0, thE);
+      const th = e.fallTh ? Math.min(1.55, e.fallTh) : clamp(D.th * 0.3, -0.2, 0), s = Math.sin(th), c = Math.cos(th);   // 最初の反り返り（攻撃側へ）は控えめに
       const ux = Math.sin(ry) * s, uy = c, uz = Math.cos(ry) * s;
       const p = e.s.position, wx = camera.position.x - p.x, wy = camera.position.y - (p.y + 0.4), wz = camera.position.z - p.z;
       let cx = wx * Math.cos(r) - wz * Math.sin(r), cy = wy, cz = wx * Math.sin(r) + wz * Math.cos(r);
@@ -1075,9 +1242,18 @@ const Mo = MOTION ? (() => {
       const xx = uy * cz - uz * cy, xy = uz * cx - ux * cz, xz = ux * cy - uy * cx;
       _fm.set(xx, ux, cx, 0, xy, uy, cy, 0, xz, uz, cz, 0, 0, 0, 0, 1);
       e.tilt.quaternion.setFromRotationMatrix(_fm);
-      const hx = D.hx * H, hz = D.hz * H, lx = hx * Math.cos(ry) + hz * Math.sin(ry), lz = -hx * Math.sin(ry) + hz * Math.cos(ry);
-      const hr = D.hr * H;
-      e.tilt.position.set(lx - ux * hr, Math.max(-hr, D.hy * H - uy * hr) - bounce, lz - uz * hr);
+      // 膝が抜ける量（腰の沈み）→ 写真の縦の縮み（最大 16%）。横たわるにつれ元の長さへ
+      if (e.fallSY0 == null) e.fallSY0 = e.bb.scale.y;
+      const buckle = clamp((D.hr - D.hy) / Math.max(0.05, D.hr - 0.2), 0, 1);
+      const h = e.fallSY0 * (1 - 0.16 * buckle * (1 - s)); e.bb.scale.y = h;
+      // 足元の位置（倒れる向きへ少し滑る）
+      const fz = Math.max(0, D.hz - s * D.hr) * H, fx = D.hx * H;
+      const lx = fx * Math.cos(ry) + fz * Math.sin(ry), lz = -fx * Math.sin(ry) + fz * Math.cos(ry);
+      // 板の四隅のうち一番低い所が地面より上に来るよう持ち上げる
+      const w = Math.abs(e.bb.scale.x), bx = e.bb.position.x;
+      let minY = 0;
+      for (const qx of [bx - w / 2, bx + w / 2]) for (const qy of [0, h]) minY = Math.min(minY, xy * qx + uy * qy);
+      e.tilt.position.set(lx, -minY + 0.01 + bounce, lz);
     },
     // 倒れ終わりの写真を 0.3 秒かけて薄くし、横たわった写真（down）へつなぐ
     ghost(e) {
@@ -1202,7 +1378,16 @@ function makeProfile() {
 }
 function npcSay(e, kind, prio = 0, chance = 1) {
   if (Math.random() > chance) return;
+  if (e.silenced || (e.state === 'down' && kind !== 'defeat')) return;
+  return Talk.as(e, () => npcSay0(e, kind, prio));
+}
+function npcSay0(e, kind, prio) {
   const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  if (e.ojou || e.wasOjou) {
+    const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['ojou_' + kind];
+    if (L && L.length) { const j = (Math.random() * L.length) | 0; if (!VoicePack.play(L[j].files[0], d, prio)) Voice.say(L[j].text, { pitch: 0.95, rate: 0.88 }, prio); }
+    return;
+  }
   if (e.sec2 || e.wasSec2) {
     const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['sec2_' + kind];
     if (L && L.length) { const j = (Math.random() * L.length) | 0; if (!VoicePack.play(L[j].files[0], d, prio)) Voice.say(L[j].text, { pitch: 1.3, rate: 1.05 }, prio); }
@@ -1265,10 +1450,13 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const spr = g.spr;                                    // 照準パネルの顔写真
   const prof = makeProfile(), n = wave.n;
   prof.glasses = false;
+  if (g.prof && !opt.medic && !opt.aide && !enemies.some(o => o.girl === g && o.state !== 'down')) Object.assign(prof, g.prof);   // 固有の娘（同じ写真が同時に二人いれば二人目は無名）
   if (opt.secretary) Object.assign(prof, { name: sec.name, pers: '冷静', cm: 160, vv: 1 });
   if (opt.fluter) Object.assign(prof, { name: fluter.name, pers: '陽気', cm: 156, vv: 2 });
   if (opt.sec2) Object.assign(prof, { name: sec2.name, pers: '陽気', cm: 158, vv: 2 });
-  if (opt.medic) Object.assign(prof, { name: MEDIC_NAMES[team], pers: '冷静', cm: 160, vv: 1 });
+  if (opt.medic) Object.assign(prof, { name: opt.medName, pers: opt.role === 'nurse' ? '陽気' : '冷静', cm: opt.role === 'nurse' ? 157 : 163, vv: opt.role === 'nurse' ? 2 : 1 });
+  if (opt.aide) Object.assign(prof, { name: opt.aide.name, pers: opt.aide.pers, cm: opt.aide.cm, vv: opt.aide.vv });
+  if (opt.ojou) Object.assign(prof, { name: ojou.name, pers: '冷静', cm: 158, vv: 0 });
   const P = PERS[prof.pers];
   if (captain) prof.name = '組頭 ' + prof.name;
   const figH = prof.cm / 100;
@@ -1278,7 +1466,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const shadow = new THREE.Mesh(shadowGeo, shadowMat); shadow.scale.set(0.75, 1, 0.6); shadow.position.y = 0.02; s.add(shadow);
   const baseY = opt.y || 0;
   s.position.set(x, baseY, z); s.rotation.y = team === 'orange' ? 0 : Math.PI; scene.add(s);
-  const hpMax = opt.secretary ? 8 : opt.fluter || opt.medic ? 5 : opt.sec2 ? 6 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
+  const hpMax = opt.secretary ? 8 : opt.fluter || opt.medic ? 5 : opt.sec2 || opt.aide || opt.ojou ? 6 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
   const bg = new THREE.Sprite(barBgMat); bg.scale.set(0.8, 0.08, 1); bg.visible = false; bg.renderOrder = 4; scene.add(bg);
   const fg = new THREE.Sprite(new THREE.SpriteMaterial({ color: team === 'blue' ? 0x5ab0ff : (captain ? 0xffd040 : 0xffa040), depthWrite: false }));
   fg.scale.set(0.76, 0.05, 1); fg.visible = false; fg.renderOrder = 5; scene.add(fg);
@@ -1303,10 +1491,20 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
     const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
   }
   if (opt.medic) {   // 医療係：組の色の腕章と、ほんのり組の色
-    e.medic = true; e.special = true; e.speed = 3.6; s.rotation.y = e.face = team === 'blue' ? Math.PI : 0; e.home = [x, z]; e.state = 'idle';
+    e.medic = true; e.role = opt.role || 'nurse'; e.slot = opt.slot; e.special = true; e.speed = e.role === 'nurse' ? 3.8 : 3.5; s.rotation.y = e.face = team === 'blue' ? Math.PI : 0; e.home = [x, z]; e.state = 'idle';
     e.tintBase = team === 'blue' ? [0, 0.015, 0.05] : [0.045, 0.022, 0]; npcGlow(e, 0, 0, 0);
     mk.scale.set(0.3, 0.3, 1);
     const band = new THREE.Mesh(armbandGeo, armbandMat[team]); e.band = band; tilt.add(band);
+  }
+  if (opt.ojou) {   // お嬢さま秘書：青組の腕章とほんのり青
+    e.ojou = true; e.special = true; e.speed = 3.9; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
+    e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
+    const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
+  }
+  if (opt.aide) {   // 三人目・四人目の秘書（本陣で気配り）：青組の腕章とほんのり青
+    e.aide = opt.aide; e.special = true; e.speed = 3.6; s.rotation.y = e.face = Math.PI; e.home = opt.aide.home; e.state = 'idle';
+    e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
+    const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
   }
   if (opt.fluter) {
     e.fluter = true; e.special = true; e.speed = 2.5; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
@@ -1314,6 +1512,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
       const fl = makeFlute(); fl.position.set(-0.17 * figH * 0.6, figH * 0.885, 0.06); fl.rotation.z = 0.12; tilt.add(fl); e.fluteMesh = fl;
     }
   }
+  e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
   enemies.push(e);
   return e;
 }
@@ -1324,12 +1523,13 @@ function aimTotal(e, close) { const k = close ? 0.6 : 1; e.aimK = k; return (KY_
 // 射のあとの隠れる時間は、間合いで長くなった分だけ短くして射る間隔を以前とほぼ同じに
 const zanHide = (e, h, T) => Math.max(0.25, h - (T + KY_ZAN - e.P.aimT));
 const ARCHER_RATE = 0.7;   // 両軍とも弓兵が約7割
+const TROOP_K = (() => { const v = parseFloat(new URLSearchParams(location.search).get('troops')); return isFinite(v) && v > 0 ? v : 1.75; })();   // ?troops=1 で以前の人数
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
   const kind = Math.random() < ARCHER_RATE ? 'archer' : 'mob';
   if (builtStage === 'fort') {
     if (kind === 'archer') {
-      const free = perches.filter(q => !q.taken);
+      const free = perches.filter(q => !q.taken && !q.seiran);
       if (free.length) {
         const tw = free.filter(q => q.tower), q = tw.length && Math.random() < 0.5 ? pick(tw) : pick(free);
         return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q });
@@ -1403,12 +1603,17 @@ function updateBodies(dt) {
 }
 function startWave(n) {
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
+  if (ojou.dead || (!ojou.e && hq)) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }
   if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
-  for (const t of ['blue', 'orange']) if (medics[t].dead || !medics[t].e) { const was = medics[t].dead; spawnMedic(t); if (n > 1 && was && t === 'blue') popup('医療係が本陣に戻りました'); }
+  for (const t of ['blue', 'orange']) { let was = false; for (const m of medics[t]) if (m.dead || !m.e) { was = was || m.dead; spawnMedic(t, m); } if (n > 1 && was && t === 'blue') popup('救護班が持ち場に戻りました'); }
+  for (const A of aides) if (A.dead || (!A.e && hq)) { const was = A.dead; spawnAide(A); if (n > 1 && was) popup(A.name + 'が本陣に戻りました'); }
   if (fluter.dead || (!fluter.e && hq)) { spawnFluter(); if (n > 1 && fluter.dead) popup('笛役の娘が本陣に戻りました'); fluter.dead = false; }
-  wave.n = n; wave.toSpawn = 5 + n * 3; wave.spawnT = 1.5; wave.inter = 0;
+  // 兵数：以前（5+3n、同時 8+2n≦28）の約 1.75 倍。第1波 14 対 14 から
+  wave.n = n; wave.toSpawn = Math.round((5 + n * 3) * TROOP_K); wave.spawnT = 1.0; wave.inter = 0;
   wave.blueToSpawn = wave.toSpawn;              // 味方も同数
-  wave.maxAlive = Math.min(8 + n * 2, 28); wave.captain = n >= 2;
+  wave.maxAlive = Math.min(Math.round((8 + n * 2) * TROOP_K), 40); wave.captain = n >= 2;
+  const sk = seiranWave(n);                      // 櫃の戦い：井闌の上の弓兵（同じ人数だけ味方も増やす）
+  if (sk) { wave.blueToSpawn += sk; wave.blueOwed = (wave.blueOwed || 0) + sk; }
   wave.archerRate = ARCHER_RATE;
   showBanner(`第${waveName(n)}波`, n === 1 ? '模擬戦、開始！ 青組の味方と共に戦え' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
@@ -1428,7 +1633,7 @@ function waveUpdate(dt) {
       cx = clamp(player.pos.x + Math.cos(a) * r, -CFG.field + 5, CFG.field - 5);
       cz = clamp(player.pos.z + Math.sin(a) * r, -CFG.field + 5, CFG.field - 5);
     }
-    const grp = Math.min(wave.toSpawn, 1 + ((Math.random() * Math.min(4, 1 + wave.n)) | 0));
+    const grp = Math.min(wave.toSpawn, 2 + ((Math.random() * Math.min(5, 1 + wave.n)) | 0));
     for (let i = 0; i < grp; i++) {
       const cap = wave.captain && wave.toSpawn === 1;
       spawnEnemy(cx + rand(-3, 3), cz + rand(-3, 3), Math.random() < wave.archerRate ? 'archer' : 'mob', cap, 'orange');
@@ -1436,7 +1641,7 @@ function waveUpdate(dt) {
       if (cap) wave.captain = false;
     }
     wave.blueOwed = (wave.blueOwed || 0) + grp;   // 同じ人数の味方を出す
-    wave.spawnT = rand(0.8, 2.0);
+    wave.spawnT = rand(0.6, 1.4);
   }
   if (wave.blueOwed > 0 && wave.blueToSpawn > 0 && aliveOf('blue').length < wave.maxAlive) {
     const k = Math.min(wave.blueOwed, wave.blueToSpawn);
@@ -1457,6 +1662,10 @@ function waveUpdate(dt) {
 function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (e.state === 'down') return;
   const byPlayer = by === 'player';
+  // 話している最中の娘が撃たれた：会話を打ち切る（メニューを閉じ、声と字幕を止める。短い悲鳴だけ）
+  const partner = menuOpen && menuGirl() === e;
+  e.wasTalking = partner || Talk.speaking(e);
+  if (e.wasTalking) { if (partner) closeSecMenu(false); Talk.hush(e); }
   e.hp -= dmg; e.flash = 0.12; npcGlow(e, 0.9, 0.9, 0.9);
   let hitPos = null;
   if (hit && hit.pt) {
@@ -1470,11 +1679,11 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
   if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
   if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
-  else Sfx.impactBody(hitPos);
+  else if (!(hit && hit.arrow)) Sfx.impactBody(hitPos);   // 矢は updateArrows で「ズブッ」
   if (by !== 'player' && by.state !== 'down') { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
   if (e.perch && e.perch.tower && e.team === 'blue') { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }
-  if (e.hp <= 0) { killEnemy(e, byPlayer, from); return; }
-  npcSay(e, 'hit', 0, byPlayer ? 0.5 : 0.25);
+  if (e.hp <= 0) { if (window.__kstat) window.__kstat.push({ team: e.team, kind: e.kind, by: byPlayer ? 'player' : by && by.kind }); killEnemy(e, byPlayer, from); return; }
+  if (e.wasTalking) npcSay(e, 'hit', 1); else npcSay(e, 'hit', 0, byPlayer ? 0.5 : 0.25);
   if (e.P.retreat && !e.perch && !e.retreated && e.hp / e.hpMax <= 0.5) { e.retreated = true; e.state = 'retreat'; e.t = 0; e.retreatT = rand(3, 4.5); }
 }
 // 戦死判定：倒れるアニメを一度だけ再生し、その姿勢のまま地面に残る（以後は動かない・しゃべらない）
@@ -1483,11 +1692,14 @@ function killEnemy(e, byPlayer, from) {
   e.knock.set(0, 0, 0);
   if (from) e.face = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);   // 攻撃側を向いてから倒れる
   if (e.perch) { e.perch.taken = null; }
+  if (e.climb) { if (e.climb.q.taken === e) e.climb.q.taken = null; e.climb = null; e.baseY = 0; e.s.position.y = 0; }
   if (e.secretary) { sec.mode = 'dead'; sec.esc = null; sec.e = null; e.secretary = false; e.wasSecretary = true; if (menuOpen) closeSecMenu(false); popup('秘書課の侍女に戦死判定…次の波で本陣に戻ります'); }
   e.downAt = time;
   if (e.sec2) { sec2.dead = true; sec2.e = null; sec2.mode = 'dead'; e.sec2 = false; e.wasSec2 = true; e.kneel = false; if (menuOpen && menuWho === 'sec2') closeSecMenu(false); popup('秘書課の侍女（二人目）に戦死判定…次の波で本陣に戻ります'); }
   if (e.medBy) { const m = e.medBy; e.medBy = null; if (m.patient === e) endTreat(m); }
-  if (e.medic) { medics[e.team].dead = true; medics[e.team].e = null; endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; popup(e.team === 'blue' ? '医療係に戦死判定…（次の波で本陣に戻ります）' : '橙組の医療係に戦死判定'); }
+  if (e.medic) { const m = medics[e.team][e.slot]; if (m && m.e === e) { m.dead = true; m.e = null; } endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; const rn = e.role === 'surgeon' ? '外科医' : '看護師'; popup(e.team === 'blue' ? rn + 'に戦死判定…（次の波で持ち場に戻ります）' : '橙組の' + rn + 'に戦死判定'); }
+  if (e.ojou) { ojou.dead = true; ojou.e = null; ojou.mode = 'dead'; e.ojou = false; e.wasOjou = true; if (menuOpen && menuWho === 'ojou') closeSecMenu(false); popup('秘書課 西園寺 すみれに戦死判定…次の波で本陣に戻ります'); }
+  if (e.aide) { const A = e.aide; if (A.e === e) { A.e = null; A.dead = true; } e.wasAide = A; e.aide = null; if (e.band) e.band.visible = false; popup(A.name + 'に戦死判定…次の波で本陣に戻ります'); }
   if (e.fluter) { fluter.dead = true; fluter.e = null; popup('笛役の娘に戦死判定…笛が止んだ（次の波で戻ります）'); }
   // 倒れる向き：攻撃してきた側から離れる方向
   const fx = from ? e.s.position.x - from.x : Math.sin(e.s.rotation.y), fz = from ? e.s.position.z - from.z : Math.cos(e.s.rotation.y);
@@ -1498,7 +1710,9 @@ function killEnemy(e, byPlayer, from) {
     if (e.team === 'orange') player.kills++;
     else { player.allyKills++; popup('味方撃破…！'); }
   }
-  npcSay(e, 'defeat', 2);                // 最後の台詞（これ以降は一切しゃべらない）
+  if (e.wasTalking) { Talk.hush(e); e.silenced = true; }   // 話していた相手：そのまま黙る（最後の台詞も無し）
+  else npcSay(e, 'defeat', 2);           // 最後の台詞（これ以降は一切しゃべらない）
+  e.silenced = true;
   kiaLabel(e.s.position, e.baseY + e.figH);
   if (e.team === 'orange') {
     const r = Math.random();
@@ -1522,12 +1736,19 @@ const PLAYER_T = { isPlayer: true };
 function tgtPos(t) { return t.isPlayer ? player.pos : t.s.position; }
 const tgtY = t => t.isPlayer ? player.pos.y : t.baseY;
 // 近接兵は高所（櫃・武者走り）の相手には届かないので、地上の相手を優先する
+// 近接兵の守り：自分の組の弓兵に迫る近接兵を優先して迎え撃ち、守られた弓兵は後回し
+const SCREEN = { rate: 0.45, guardR: 10, interceptK: 0.45, archerK: 1.3, kiteR: 8, kiteAggR: 4, holdOut: 4.5 };
+if (/[?&]screen=0/.test(location.search)) Object.assign(SCREEN, { rate: 0, guardR: 0, interceptK: 1, archerK: 1, kiteR: 0, kiteAggR: 0 });   // 比較用：以前の動き
+function groundArchers(team) { return enemies.filter(o => o.team === team && o.kind === 'archer' && !o.perch && !o.special && o.state !== 'down'); }
 function chooseTarget(e) {
   const p = e.s.position, melee = e.kind === 'mob';
   let best = null, bd = 1e9;
+  const mine = melee && !e.special ? groundArchers(e.team) : null;
   const consider = (t, x, z, y) => {
     let d = Math.hypot(x - p.x, z - p.z);
     if (t.medic) d *= t.medPhase === 'treat' ? 0.55 : 0.85;   // 医療係は狙われやすい（手当て中は止まっている）
+    if (mine && t.kind === 'mob' && !t.special && !t.isPlayer && mine.some(a => Math.hypot(a.s.position.x - x, a.s.position.z - z) < SCREEN.guardR)) d *= SCREEN.interceptK;   // 味方の弓兵に迫る近接兵を迎え撃つ
+    else if (melee && t.kind === 'archer' && d > 5) d *= SCREEN.archerK;   // 弓兵より先に前に立つ近接兵と当たる
     if (melee && Math.abs(y - e.baseY) > 1.5) d += 80;
     if (d < bd) { bd = d; best = t; }
   };
@@ -1571,6 +1792,53 @@ function hitsBox(p) {
   return false;
 }
 
+function nearestFoeMelee(e, R) {
+  const p = e.s.position; let best = null, bd = R;
+  for (const o of enemies) {
+    if (o.team === e.team || o.kind !== 'mob' || o.special || o.state === 'down' || Math.abs(o.baseY - e.baseY) > 1.2) continue;
+    const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; }
+  }
+  return best;
+}
+// 守り役の近接兵：近くの味方弓兵と敵の間（弓兵から 4.5m 前、左右に散らばる）に立つ。敵が 10m 内に来れば普段どおり突く
+function screenHold(e, tx, tz, dt) {
+  const p = e.s.position;
+  if ((e.wardT = (e.wardT || 0) - dt) <= 0) {
+    e.wardT = 1.2; e.ward = null; let bd = 25;
+    for (const a of groundArchers(e.team)) { const d = Math.hypot(a.s.position.x - p.x, a.s.position.z - p.z); if (d < bd) { bd = d; e.ward = a; } }
+  }
+  const a = e.ward; if (!a || a.state === 'down') return false;
+  const ap = a.s.position; let dx = tx - ap.x, dz = tz - ap.z; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
+  if (dl < SCREEN.holdOut + 3) return false;   // 敵が弓兵のすぐそば：迎え撃つ
+  const side = ((e.ph * 7) % 2 - 1) * 2.2;
+  const gx = ap.x + dx * SCREEN.holdOut - dz * side, gz = ap.z + dz * SCREEN.holdOut + dx * side;
+  const rt = routeTo(p, gx, gz);
+  if (Math.hypot(gx - p.x, gz - p.z) > 0.8) steer(e, rt[0], rt[1], e.speed * 0.9, dt);
+  else e.faceWant = Math.atan2(tx - p.x, tz - p.z);
+  return true;
+}
+// 橙組の弓兵：近くの井闌に空きがあれば後ろの梯子から上る（高所を取る）
+function seiranBoard(e) {
+  const p = e.s.position;
+  for (const T of seirans) {
+    if (!T.active) continue;
+    const q = T.perches.find(q => !q.taken); if (!q) continue;
+    if (Math.hypot(T.x - p.x, T.z - p.z) > 26) continue;
+    q.taken = e; e.climb = { T, q, t: 0 }; return;
+  }
+}
+function seiranClimb(e, dt) {
+  const c = e.climb, T = c.T, q = c.q, p = e.s.position;
+  if (q.taken !== e) { e.climb = null; e.baseY = 0; return; }
+  const lx = T.x, lz = T.z - 2.9;
+  if (c.t === 0 && Math.hypot(lx - p.x, lz - p.z) > 0.6) { const rt = routeTo(p, lx, lz); steer(e, rt[0], rt[1], e.speed * 1.1, dt); e.state = 'advance'; c.walk = (c.walk || 0) + dt; if (c.walk > 25) { q.taken = null; e.climb = null; } return; }
+  c.t += dt; e.faceWant = 0; e.state = 'idle';
+  p.y = e.baseY = Math.min(q.y, c.t / 3.2 * q.y); p.x = lx; p.z = lz;   // 梯子を上る（約3秒）
+  if (c.t >= 3.2) {
+    e.climb = null; e.perch = q; e.onSeiran = T; e.baseY = q.y; p.set(q.x, q.y, q.z); e.px = q.x; e.pz = q.z;
+    e.state = 'hide'; e.hideT = rand(0.5, 1.5); e.crouch = 1; e.cover = null;
+  }
+}
 // ---- 遮蔽（竹林）を使う。基準は自分の標的の位置 ----
 function findCover(e, minD, maxD, tx, tz) {
   let best = null, bd = 1e9;
@@ -1637,12 +1905,13 @@ function removeSecretary() {
 function startEscort() {
   if (sec.mode === 'escort' || sec.mode === 'returning') { secReply('sec_already', 0); return; }
   if (sec.mode !== 'hq' || !sec.e) return;
-  sec.esc = sec.e; sec.e.returning = false; sec.mode = 'escort';
+  sec.esc = sec.e; sec.e.returning = false; sec.mode = 'escort'; sec.stayHQ = false; sec.auto = false;
   sec.e.state = 'advance'; sec.e.t = 0;
   secReply('sec_follow');
   closeSecMenu(false);
 }
 function sendBack() {
+  sec.stayHQ = true; sec.auto = false;   // 「本陣に戻って」：殿が本陣を出ても追わずに本陣で待つ
   if (sec.mode !== 'escort' || !sec.esc) { secReply('sec_already', 0); return; }
   sec.esc.returning = true; sec.mode = 'returning';
   secReply('sec_return', 0);
@@ -1686,10 +1955,10 @@ function sec2Brain(e, dt) {
     return;
   }
   e.kneel = false;
-  if (sec2.mode === 'carry') {   // 荷物持ち：プレイヤーの左斜め後ろ
+  if (sec2.mode === 'carry' || sec2.mode === 'follow') {   // 荷物持ち／慌てて後を追う：プレイヤーの左斜め後ろ
     const fx = player.pos.x + Math.sin(player.yaw) * 2.0 - Math.cos(player.yaw) * 1.4, fz = player.pos.z + Math.cos(player.yaw) * 2.0 + Math.sin(player.yaw) * 1.4;
     const d = Math.hypot(fx - p.x, fz - p.z);
-    if (d > 0.8) { steer(e, fx, fz, d > 6 ? e.speed * 1.4 : e.speed, dt); e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
+    if (d > 0.8) { const rt = routeTo(p, fx, fz); steer(e, rt[0], rt[1], d > 6 ? e.speed * 1.4 : e.speed, dt); e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
     else e.faceWant = Math.atan2(dpx, dpz);
     return;
   }
@@ -1709,10 +1978,11 @@ const SEC2_REQ = {
   },
   carry() {
     if (sec2.mode === 'carry') { secReply('sec2_carry_already', 0); return; }
-    sec2.mode = 'carry'; sec2.refT = 0; secReply('sec2_carry'); popup('荷物持ち：そばにいる間 矢の上限+10・少しずつ補充'); closeSecMenu(false);
+    sec2.stayHQ = false; sec2.mode = 'carry'; sec2.refT = 0; secReply('sec2_carry'); popup('荷物持ち：そばにいる間 矢の上限+10・少しずつ補充'); closeSecMenu(false);
   },
   home() {
-    if (sec2.mode !== 'carry') { secReply('sec2_already_hq', 0); return; }
+    sec2.stayHQ = true;
+    if (sec2.mode !== 'carry' && sec2.mode !== 'follow') { secReply('sec2_already_hq', 0); return; }
     sec2.mode = 'returning'; secReply('sec2_return', 0); closeSecMenu(false);
   },
 };
@@ -1720,11 +1990,74 @@ function updateSec2(dt) {
   if (player.speedT > 0) player.speedT -= dt;
   if (carrying() && player.arrows < arrowsMax()) { sec2.refT += dt; if (sec2.refT >= 2.5) { sec2.refT = 0; player.arrows++; } }
 }
+// ---- お嬢さま秘書（秘書課 西園寺 すみれ）：王様（殿）の遠縁の親戚。上品で物腰やわらか、少し改まった丁寧語。
+//      お茶・戦況報告・「一緒に来て」（優雅について歩く。戦わない）・「本陣に戻って」。本陣で王様の体力が減っていれば先回りしてお茶（+20、50秒に一度）。
+//      褒められると控えめに、上品にかわす。戦死判定を受けると次の波で本陣に戻る。
+const OJOU_ID = 'ojou';
+const ojou = { e: null, dead: false, mode: 'hq', name: '秘書課 西園寺 すみれ', stayHQ: false, careT: 20 };
+function spawnOjou() {
+  removeOjou();
+  if (!hq || !GIRLS[OJOU_ID]) return;
+  const e = spawnEnemy(hq.sx + 1.8, hq.sz - 2.4, 'mob', false, 'blue', { ojou: true, girl: OJOU_ID });
+  ojou.e = e; ojou.dead = false; ojou.mode = 'hq';
+}
+function removeOjou() {
+  const e = ojou.e; ojou.e = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+function ojouBrain(e, dt) {
+  const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.kneel = false;
+  const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z, dp = Math.hypot(dpx, dpz);
+  if (ojou.mode === 'follow') {   // 王様の右斜め後ろ
+    const fx = player.pos.x + Math.sin(player.yaw) * 2.6 + Math.cos(player.yaw) * 1.8, fz = player.pos.z + Math.cos(player.yaw) * 2.6 - Math.sin(player.yaw) * 1.8;
+    const d = Math.hypot(fx - p.x, fz - p.z);
+    if (d > 0.8) { const rt = routeTo(p, fx, fz); steer(e, rt[0], rt[1], d > 6 ? e.speed * 1.35 : e.speed * 0.9, dt); e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
+    else e.faceWant = Math.atan2(dpx, dpz);
+    return;
+  }
+  const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
+  if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? 1 : 0.6), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+  else e.faceWant = dp < 8 ? Math.atan2(dpx, dpz) : Math.PI;
+  if (ojou.mode === 'returning' && d < 1.2) { ojou.mode = 'hq'; ojouSay('ojou_back', 0); }
+}
+function ojouSay(cat, i = null) {
+  if (!ojou.e || ojou.e.state === 'down') return;
+  Talk.as(ojou.e, () => { const save = menuWho; menuWho = 'ojou'; try { secReply0(cat, i); } finally { menuWho = save; } });
+}
+function updateOjou(dt) {
+  ojou.careT = Math.max(0, ojou.careT - dt);
+  const e = ojou.e; if (!e || e.state === 'down' || menuOpen) return;
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  if (d < 3.4 && ojou.careT <= 0 && player.hp < CFG.maxHp * 0.6) {   // 先回りの気配り
+    ojou.careT = 50; player.hp = Math.min(CFG.maxHp, player.hp + 20); popup('お茶 体力+20（西園寺）'); Sfx.pickup(); ojouSay('ojou_care');
+  }
+}
+const OJOU_REQ = {
+  tea() { SEC_REQ.tea(); },
+  report() { SEC_REQ.report(); },
+  follow() {
+    if (ojou.mode === 'follow') { secReply('ojou_follow_already', 0); return; }
+    ojou.stayHQ = false; ojou.mode = 'follow'; ojou.auto = false; secReply('ojou_follow'); closeSecMenu(false);
+  },
+  home() {
+    ojou.stayHQ = true; ojou.auto = false;
+    if (ojou.mode !== 'follow') { secReply('ojou_already_hq', 0); return; }
+    ojou.mode = 'returning'; secReply('ojou_return', 0); closeSecMenu(false);
+  },
+  praise() { secReply('ojou_praise'); },
+};
 // ---- 医療係（両軍の本陣に一人ずつ。非戦闘員だが戦死判定は受ける）：倒れた味方へ駆け寄り、膝をついて手当て ----
 // 手当ては膝をつく姿・白い布・声だけ（傷などの表現は一切なし）。倒れて間もない娘ほど復帰しやすい
-const medics = { blue: { e: null, dead: false }, orange: { e: null, dead: false } };
+// ---- 救護班（両軍とも外科医2人＋看護師2人）。外科医は矢を抜いて手当てし起こす（少し助けやすい）。看護師は外科医の手伝い・包帯・声かけ、
+//      手の空いた外科医がいないときは自分で手当てする。一人の娘を二人で取り合わない（medBy＝主に手当てする人、assistBy＝手伝い）
+const MED_TEAM = role => [0, 1].map(i => ({ role, e: null, dead: false }));
+const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 白石 のぞみ'] },
+  orange: { surgeon: ['外科医 楠 かおる', '外科医 柊 理沙'], nurse: ['看護師 若葉 つばさ', '看護師 小野寺 結衣'] } };
+const medics = { blue: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')], orange: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')] };
+const MED_HOME = [[0, 0], [1.4, 0.9], [-1.0, 1.0], [2.4, -0.6]];   // 持ち場の中の立ち位置
 const medPost = { blue: null, orange: null };
-const MED_R = 60;          // 医療係が出向く範囲（持ち場から）
+const MED_R = 60;          // 救護班が出向く範囲（持ち場から）
+const SURGEON_ID = 'surgeon';
 const clothMat = new THREE.SpriteMaterial({ map: canvasTex(64, 48, (g, w, h) => {
   g.fillStyle = '#fbfaf6'; g.beginPath(); g.moveTo(6, 10); g.lineTo(56, 4); g.lineTo(60, 40); g.lineTo(8, 44); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(160,160,150,.6)'; g.lineWidth = 2; for (const y of [16, 26, 34]) { g.beginPath(); g.moveTo(10, y); g.lineTo(56, y - 4); g.stroke(); }
@@ -1735,39 +2068,60 @@ function buildMedPost(x, z, team) {
   const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), WOOD_L); box.position.set(x - 0.9, 0.15, z + 0.3); stageRoot.add(box);   // 薬箱
   if (team === 'orange') { nobori(x - 2, z - 1, '#d9741c', '#fff6e8', '救護'); maku(x + 0.5, z - 2.5, 6, 0); }
 }
-function spawnMedic(team) {
-  removeMedic(team);
-  const hp = medPost[team]; if (!hp || !GIRLS[MEDIC_ID]) return;
-  const e = spawnEnemy(hp[0], hp[1], 'mob', false, team, { medic: true, girl: MEDIC_ID });
-  medics[team].e = e; medics[team].dead = false;
+function spawnMedic(team, m) {
+  removeMedic(m);
+  const hp = medPost[team]; if (!hp) return;
+  const i = medics[team].indexOf(m), gid = m.role === 'surgeon' && GIRLS[SURGEON_ID] ? SURGEON_ID : MEDIC_ID;
+  if (!GIRLS[gid]) return;
+  const [dx, dz] = MED_HOME[i] || [0, 0], sg = team === 'blue' ? 1 : -1;
+  const e = spawnEnemy(hp[0] + dx * sg, hp[1] + dz * sg, 'mob', false, team, { medic: true, role: m.role, slot: i, girl: gid, medName: MED_NAMES[team][m.role][i % 2] });
+  m.e = e; m.dead = false;
 }
-function removeMedic(team) {
-  const e = medics[team].e; medics[team].e = null;
+function removeMedic(m) {
+  const e = m.e; m.e = null;
   if (e) { endTreat(e); const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
 }
-function medSay(e, key, quiet) {
+// 声：外科医は従来の医療係の声（med_）、看護師は nurse_（無ければ med_ → 合成音声）
+function medSay(e, key, quiet) { if (e.state === 'down') return; Talk.as(e, () => medSay0(e, key, quiet)); }
+function medSay0(e, key, quiet) {
   const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) + (quiet ? 6 : 0);
   if (d > 45) return;
-  const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['med_' + key];
-  if (!L || !L.length) return;
+  const X = VoicePack.man && VoicePack.man._extra;
+  const L = X && ((e.role === 'nurse' && X['nurse_' + key]) || X['med_' + key]);
+  const txt = NURSE_TEXT[key];
+  if (!L || !L.length) { if (txt && e.role === 'nurse') Voice.say(pick(txt), { pitch: 1.2, rate: 1.0 }, 1); return; }
   const j = (Math.random() * L.length) | 0;
-  if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(L[j].text, { pitch: 0.95, rate: 0.9 }, 1);
+  if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(L[j].text, { pitch: e.role === 'nurse' ? 1.2 : 0.95, rate: e.role === 'nurse' ? 1.0 : 0.9 }, 1);
 }
+const NURSE_TEXT = { go: ['今行きます！', '待っててね、すぐ行きます！'], assist: ['先生、お手伝いします。', '押さえていますね、先生。'], bandage: ['包帯を巻きますね。', 'きつくないですか？ 少し巻きますね。'],
+  comfort: ['大丈夫、そばにいますからね。', 'ゆっくり息をして…もう少しですよ。'], start: ['しっかりして、すぐ手当てしますね。'], ok: ['よく頑張りましたね。もう大丈夫です。'], lost: ['…御臨終です。'] };
 const bodyMid = b => [b.s.position.x + Math.sin(b.fallYaw || 0) * b.figH * 0.45, b.s.position.z + Math.cos(b.fallYaw || 0) * b.figH * 0.45];
-function findPatient(e) {
-  const hp = e.home, p = e.s.position; let best = null, bd = 1e9;
+const medAlive = (team, role) => medics[team].map(m => m.e).filter(e => e && e.state !== 'down' && e.role === role && !e.hold);
+function patientOK(e, b) {
+  if (b.team !== e.team || b.special || b.medDone || time - (b.downAt || 0) > 90) return false;
+  const [bx, bz] = bodyMid(b), hp = e.follow ? [player.pos.x, player.pos.z] : medPost[e.team] || e.home;
+  return Math.hypot(bx - hp[0], bz - hp[1]) <= (e.follow ? 22 : MED_R) && Math.abs(b.baseY - e.baseY) <= 0.5;
+}
+function findPatient(e) {   // 誰も手当てしていない娘のうち一番近い
+  const p = e.s.position; let best = null, bd = 1e9;
   for (const b of bodies) {
-    if (b.team !== e.team || b.special || b.medDone || b.medBy || time - (b.downAt || 0) > 90) continue;
-    const [bx, bz] = bodyMid(b);
-    if (Math.hypot(bx - hp[0], bz - hp[1]) > MED_R || Math.abs(b.baseY - e.baseY) > 0.5) continue;
-    const d = Math.hypot(bx - p.x, bz - p.z); if (d < bd) { bd = d; best = b; }
+    if (b.medBy || !patientOK(e, b)) continue;
+    const [bx, bz] = bodyMid(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+function findAssist(e) {   // 外科医が手当て中で、手伝いのいない娘
+  const p = e.s.position; let best = null, bd = 1e9;
+  for (const b of bodies) {
+    if (!b.medBy || b.medBy.role !== 'surgeon' || b.assistBy || b.medDone || b.team !== e.team) continue;
+    const [bx, bz] = bodyMid(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd && d < MED_R) { bd = d; best = b; }
   }
   return best;
 }
 function endTreat(e) {
   if (e.cloth) { scene.remove(e.cloth); e.cloth = null; }
-  if (e.patient && e.patient.medBy === e) e.patient.medBy = null;
-  e.patient = null; e.kneel = false; e.medPhase = null;
+  if (e.patient) { if (e.patient.medBy === e) e.patient.medBy = null; if (e.patient.assistBy === e) e.patient.assistBy = null; }
+  e.patient = null; e.kneel = false; e.medPhase = null; e.assisting = false;
 }
 function revivePatient(b) {
   const i = bodies.indexOf(b); if (i < 0) return;
@@ -1776,7 +2130,7 @@ function revivePatient(b) {
   for (const a of b.stuck) a.parent && a.parent.remove(a);
   b.stuck = [];
   b.hp = Math.max(1, Math.ceil(b.hpMax * 0.4));
-  b.state = 'rise'; b.t = 0; b.fallInit = false; b.thud = false; b.tgt = null; b.cover = null; b.perch = null; b.spotted = false; b.medBy = null; b.medDone = true; b.flash = 0;
+  b.state = 'rise'; b.t = 0; b.fallInit = false; b.thud = false; b.fallSY0 = null; b.fallT2 = null; b.fallTh = 0; if (b.mo) b.mo.D = null; b.tgt = null; b.cover = null; b.perch = null; b.spotted = false; b.medBy = null; b.assistBy = null; b.medDone = true; b.flash = 0;
   b.knock.set(0, 0, 0); b.shadow.visible = true; b.mk.visible = true;
   scene.add(b.bg); scene.add(b.fg); scene.add(b.mk);
   enemies.push(b);
@@ -1785,66 +2139,197 @@ function revivePatient(b) {
 function medicBrain(e, dt) {
   const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.cd -= dt;
   let pt = e.patient;
-  if (pt && (!bodies.includes(pt) || (pt.medDone && e.medPhase !== 'treat'))) { endTreat(e); pt = null; }
+  if (pt && (!bodies.includes(pt) || (pt.medDone && e.medPhase !== 'treat') || (e.assisting && !pt.medBy))) { endTreat(e); pt = null; }
   if (!pt) {
     e.kneel = false;
     if ((e.scanT = (e.scanT || 0) - dt) <= 0) {
       e.scanT = 0.6;
-      pt = findPatient(e);
-      if (pt) { e.patient = pt; pt.medBy = e; e.medPhase = 'go'; e.medT = 0; if (Math.random() < 0.5) medSay(e, 'go'); }
+      if (e.role === 'surgeon') {
+        pt = findPatient(e);
+        if (pt) { if (pt.medBy) endTreat(pt.medBy); e.patient = pt; pt.medBy = e; e.medPhase = 'go'; e.medT = 0; if (Math.random() < 0.5) medSay(e, 'go'); }
+      } else {
+        // 看護師：手の空いた外科医がいれば、その外科医に任せて手伝いに回る。いなければ自分で手当て
+        const freeSurgeon = medAlive(e.team, 'surgeon').some(s => !s.patient);
+        const un = freeSurgeon ? null : findPatient(e);
+        if (un) { e.patient = pt = un; un.medBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = false; if (Math.random() < 0.6) medSay(e, 'go'); }
+        else { const as = findAssist(e); if (as) { e.patient = pt = as; as.assistBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = true; if (Math.random() < 0.5) medSay(e, 'assist'); } }
+      }
     }
   }
-  if (!pt) {   // 持ち場へ戻る／待つ
-    const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
-    if (d > 0.5) { steer(e, hx, hz, e.speed * (d > 6 ? 0.9 : 0.5), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
-    else e.faceWant = e.team === 'blue' ? Math.PI : 0;
+  if (!pt) {   // 持ち場へ戻る／待つ（殿について来た者は殿の後ろ）
+    const [hx, hz] = e.follow ? followPt(e.fi) : e.home, d = Math.hypot(hx - p.x, hz - p.z);
+    if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? (e.follow ? 1.35 : 0.9) : 0.5), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+    else e.faceWant = e.follow ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : e.team === 'blue' ? Math.PI : 0;
     return;
   }
   const [bx, bz] = bodyMid(pt);
-  // 体の横（倒れた向きの右側）に膝をつく
-  const sx = bx + Math.cos(pt.fallYaw) * 0.62, sz = bz - Math.sin(pt.fallYaw) * 0.62;
+  // 体の横に膝をつく（手当てする人は右側、手伝いは左側）
+  const sd = e.assisting ? -1 : 1;
+  const sx = bx + Math.cos(pt.fallYaw) * 0.62 * sd, sz = bz - Math.sin(pt.fallYaw) * 0.62 * sd;
   if (e.medPhase === 'go') {
     const d = Math.hypot(sx - p.x, sz - p.z);
-    if (d > 0.3) { steer(e, sx, sz, e.speed, dt); e.faceWant = Math.atan2(sx - p.x, sz - p.z); }
+    if (d > 0.3) { const rt = routeTo(p, sx, sz); steer(e, rt[0], rt[1], e.speed, dt); e.faceWant = Math.atan2(sx - p.x, sz - p.z); }
     else {
       e.medPhase = 'treat'; e.medT = 0; e.medStep = 0;
-      e.medWill = Math.random() < (time - pt.downAt < 35 ? 0.45 : 0.1);   // 倒れて間もないほど助かりやすい
+      const fresh = time - pt.downAt < 35;
+      e.medWill = e.role === 'surgeon' ? (fresh ? 0.5 : 0.12) : (fresh ? 0.32 : 0.06);   // 倒れて間もないほど助かりやすい。外科医のほうが少し上
       e.cloth = new THREE.Sprite(clothMat); e.cloth.scale.set(0.26, 0.19, 1); scene.add(e.cloth);
     }
     return;
   }
   // 手当て
   e.medT += dt; e.kneel = true; e.faceWant = Math.atan2(bx - p.x, bz - p.z);
-  if (e.cloth) e.cloth.position.set(bx + Math.sin(time * 3) * 0.05, pt.baseY + 0.16 + Math.abs(Math.sin(time * 4.2)) * 0.05, bz);
+  if (e.cloth) e.cloth.position.set(bx + sd * 0.12 + Math.sin(time * 3 + sd) * 0.05, pt.baseY + 0.16 + Math.abs(Math.sin(time * 4.2 + sd)) * 0.05, bz);
   const T = e.medT;
-  if (e.medStep === 0) { e.medStep = 1; medSay(e, pt.stuck.length ? 'arrow' : 'start'); }
+  if (e.assisting) {   // 手伝い：押さえる・包帯・声かけ。主の手当てが終われば離れる
+    if (e.medStep === 0) { e.medStep = 1; }
+    if (e.medStep === 1 && T > 1.2) { e.medStep = 2; medSay(e, Math.random() < 0.5 ? 'bandage' : 'comfort', true); }
+    if (pt.medDone || !pt.medBy) { if (T > 0.5) endTreat(e); }
+    return;
+  }
+  if (e.medStep === 0) { e.medStep = 1; medSay(e, e.role === 'surgeon' ? (pt.stuck.length ? 'arrow' : 'start') : 'start'); }
   if (e.medStep === 1 && T > 1.6) {
     e.medStep = 2;
     if (pt.stuck.length) { for (const a of pt.stuck) a.parent && a.parent.remove(a); pt.stuck = []; Sfx.whoosh && Sfx.whoosh(new V3(bx, pt.baseY + 0.3, bz), 3); }
   }
-  if (e.medStep === 2 && T > 2.4) { e.medStep = 3; if (Math.random() < 0.6) medSay(e, 'care'); }
-  if (e.medStep === 3 && T > 4.2) {
+  if (e.medStep === 2 && T > 2.4) { e.medStep = 3; if (Math.random() < 0.6) medSay(e, e.role === 'surgeon' ? 'care' : (Math.random() < 0.5 ? 'bandage' : 'comfort')); }
+  const dur = (e.role === 'surgeon' ? 4.2 : 4.8) * (pt.assistBy && pt.assistBy.patient === pt ? 0.85 : 1);   // 手伝いがいると少し早い
+  if (e.medStep === 3 && T > dur) {
     e.medStep = 4; pt.medDone = true;
-    if (e.medWill) { medSay(e, 'ok'); revivePatient(pt); }
+    const will = Math.random() < e.medWill + (pt.assistBy && pt.assistBy.patient === pt ? 0.1 : 0);
+    if (will) { medSay(e, 'ok'); revivePatient(pt); }
     else medSay(e, 'lost', true);
   }
-  if (e.medStep === 4 && T > 5.2) endTreat(e);
+  if (e.medStep === 4 && T > dur + 1) endTreat(e);
+}
+// ---- 殿（プレイヤー）が戦の最中に本陣を出ると、秘書たちと救護班の一部（外科医1・看護師1）が慌てて後を追う ----
+//   少し離れて（3.5〜6m 後ろ）ついて歩き、救護班は殿の近くで倒れた娘を手当てする。殿が本陣に戻ると皆も持ち場へ戻る。
+//   「本陣に戻って」と言われた秘書は追わない。本陣には外科医1・看護師1が必ず残る。
+const FOLLOW = { out: false, outT: 0, inT: 0, says: [] };
+const FOLLOW_TEXT = {
+  sec: ['お待ちください、殿！', '殿、お一人では危のうございます！'], ojou: ['お待ちになって、王様！', '王様、お一人では危のうございますわ！'], sec2: ['あっ、待ってくださーい！', '危ないですよ、殿！'],
+  sec3: ['お待ちください、殿！ お怪我をされては…！'], sec4: ['危ないですよ！ 私もお供します！'],
+  surgeon: ['殿、お待ちを！ 救護班もお供します。'], nurse: ['危ないですよ、殿！ 待ってください！'],
+};
+function followPt(i) {   // 殿の後ろに扇形に並ぶ位置
+  const a = player.yaw + Math.PI + ((i % 5) - 2) * 0.42, r = 3.6 + (i % 3) * 1.1;
+  return [player.pos.x + Math.sin(a) * r, player.pos.z + Math.cos(a) * r];
+}
+function followers() {
+  const L = [];
+  if (sec.e && !sec.stayHQ) L.push({ kind: 'sec', e: sec.e });
+  if (sec2.e && !sec2.stayHQ) L.push({ kind: 'sec2', e: sec2.e });
+  if (ojou.e && !ojou.stayHQ) L.push({ kind: 'ojou', e: ojou.e });
+  for (const A of aides) if (A.e) L.push({ kind: A.id, e: A.e, A });
+  for (const i of [1, 3]) { const m = medics.blue[i]; if (m && m.e) L.push({ kind: m.role, e: m.e, m }); }
+  return L;
+}
+function followSay(e, kind) {
+  if (!e || e.state === 'down') return;
+  const X = VoicePack.man && VoicePack.man._extra, L = X && X[kind + '_flust'];
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  Talk.as(e, () => {
+    let text;
+    if (L && L.length) { const j = (Math.random() * L.length) | 0; text = L[j].text; if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(text, { pitch: 1.25, rate: 1.15 }, 1); }
+    else { text = pick(FOLLOW_TEXT[kind] || FOLLOW_TEXT.sec); Voice.say(text, { pitch: 1.25, rate: 1.15 }, 1); }
+    subtitle(text);
+  });
+}
+function updateFollow(dt) {
+  if (!hq || state !== 'play') return;
+  const battle = wave.n > 0 && wave.inter <= 0, inside = inHQ() || Math.hypot(player.pos.x - hq.sx, player.pos.z - hq.sz) < 7;
+  if (inside) FOLLOW.wasIn = true;   // 本陣に一度入ってから出たときだけ（開始位置は本陣の外）
+  if (!FOLLOW.out) {
+    FOLLOW.outT = !inside && battle && FOLLOW.wasIn ? FOLLOW.outT + dt : 0;
+    if (FOLLOW.outT > 1.2) {
+      FOLLOW.out = true; FOLLOW.inT = 0; FOLLOW.says = [];
+      let k = 0;
+      for (const f of followers()) {
+        f.e.flust = 2.5;   // しばらく小走り
+        if (f.kind === 'sec') { if (sec.mode === 'hq') { sec.esc = sec.e; sec.e.returning = false; sec.mode = 'escort'; sec.auto = true; sec.e.state = 'advance'; sec.e.t = 0; } else continue; }
+        else if (f.kind === 'sec2') { if (sec2.mode === 'hq') { sec2.mode = 'follow'; } else continue; }
+        else if (f.kind === 'ojou') { if (ojou.mode === 'hq') { ojou.mode = 'follow'; ojou.auto = true; } else continue; }
+        else if (f.A) { f.A.follow = true; f.A.fi = 1 + k; }
+        else if (f.m) { f.e.follow = true; f.e.fi = 2 + k; }
+        if (FOLLOW.says.length < 3) FOLLOW.says.push({ t: 0.2 + FOLLOW.says.length * 1.6, e: f.e, kind: f.kind });
+        k++;
+      }
+      if (k) popup('秘書たちと救護班が慌てて後を追ってくる');
+    }
+  } else {
+    FOLLOW.inT = inside ? FOLLOW.inT + dt : 0;
+    if (FOLLOW.inT > 0.8) {   // 殿が本陣に戻った：皆も持ち場へ
+      FOLLOW.out = false; FOLLOW.outT = 0; FOLLOW.says = [];
+      if (sec.auto && sec.mode === 'escort' && sec.esc) { sec.esc.returning = true; sec.mode = 'returning'; }
+      sec.auto = false;
+      if (sec2.mode === 'follow') sec2.mode = 'returning';
+      if (ojou.auto && ojou.mode === 'follow') ojou.mode = 'returning';
+      ojou.auto = false;
+      for (const A of aides) A.follow = false;
+      for (const m of medics.blue) if (m.e) m.e.follow = false;
+    }
+  }
+  for (const s of FOLLOW.says) if (s.t > 0 && (s.t -= dt) <= 0) followSay(s.e, s.kind);
+}
+// ---- 三人目・四人目の秘書（心優しく気配りのできる秘書課）：本陣で控え、近づくと向き直る。
+//      桜井 ゆかり：体力が減っていれば手当て（+15）。宮下 千尋：矢が少なければ矢を持ってくる（+8）。各 45 秒に一度。死ぬと次の波で戻る
+const aides = [
+  { id: 'sec3', name: '秘書課 桜井 ゆかり', pers: '冷静', cm: 158, vv: 1, dx: -1.3, dz: 2.2, e: null, dead: false, cd: { heal: 0, arrows: 0, greet: 0 } },
+  { id: 'sec4', name: '秘書課 宮下 千尋', pers: '慎重', cm: 161, vv: 1, dx: 2.9, dz: 2.2, e: null, dead: false, cd: { heal: 0, arrows: 0, greet: 0 } },
+];
+const AIDE_TEXT = { greet: ['お帰りなさいませ。ご無事で何よりです。', 'お疲れさまです。少し休んでいってくださいね。'],
+  heal: ['お怪我はありませんか？ 少し手当てしますね。', '無理をなさらないでください。…はい、これで大丈夫です。'],
+  arrows: ['矢が少なくなっていますね。こちらをどうぞ。', '矢をお持ちしました。お気をつけて。'] };
+function spawnAide(A) {
+  removeAide(A);
+  if (!hq || !GIRLS[A.id]) return;
+  A.home = [hq.sx + A.dx, hq.sz + A.dz];
+  const e = spawnEnemy(A.home[0], A.home[1], 'mob', false, 'blue', { aide: A, girl: A.id });
+  A.e = e; A.dead = false;
+}
+function removeAide(A) {
+  const e = A.e; A.e = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+function aideSay(A, key) { if (!A.e || A.e.state === 'down') return; Talk.as(A.e, () => aideSay0(A, key)); }
+function aideSay0(A, key) {
+  const X = VoicePack.man && VoicePack.man._extra, L = X && X[A.id + '_' + key];
+  const d = A.e ? Math.hypot(A.e.s.position.x - player.pos.x, A.e.s.position.z - player.pos.z) : 0;
+  let text;
+  if (L && L.length) { const j = (Math.random() * L.length) | 0; text = L[j].text; if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1); }
+  else { text = pick(AIDE_TEXT[key]); Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1); }
+  subtitle(A.name.replace('秘書課 ', '') + '「' + text + '」');
+}
+function updateAides(dt) {
+  updateFollow(dt);
+  for (const A of aides) {
+    if (A.e && hq) A.e.home = A.follow ? followPt(A.fi) : [hq.sx + A.dx, hq.sz + A.dz];
+    for (const k in A.cd) A.cd[k] = Math.max(0, A.cd[k] - dt);
+    const e = A.e; if (!e || e.state === 'down' || e.hold) continue;
+    const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+    if (d > 3.2 || Math.abs(player.pos.y - e.baseY) > 1.5) continue;
+    if (A.id === 'sec3' && player.hp < CFG.maxHp * 0.75 && A.cd.heal <= 0) { A.cd.heal = 45; player.hp = Math.min(CFG.maxHp, player.hp + 15); aideSay(A, 'heal'); popup('体力 +15'); }
+    else if (A.id === 'sec4' && player.arrows < arrowsMax() * 0.5 && A.cd.arrows <= 0) { A.cd.arrows = 45; player.arrows = Math.min(arrowsMax(), player.arrows + 8); aideSay(A, 'arrows'); popup('矢 +8'); }
+    else if (A.cd.greet <= 0 && aides.every(o => o.cd.greet <= 0 || o === A)) { A.cd.greet = 60; for (const o of aides) o.cd.greet = Math.max(o.cd.greet, 20); aideSay(A, 'greet'); }
+  }
 }
 // 収録音声を順につなげて再生（足りなければ Web Speech で全文）
 let subTimer = 0;
 function subtitle(text) {   // 秘書の返事（メニューを閉じても字幕で見える）
   const el = $('subtitle'); if (!el) return;
   el.textContent = text ? `「${text}」` : ''; el.style.opacity = text ? 1 : 0;
+  Talk.sub = Talk.cur; Talk.subT = performance.now() + 2500 + (text ? text.length : 0) * 120;
   clearTimeout(subTimer); subTimer = setTimeout(() => { el.style.opacity = 0; }, 2500 + text.length * 120);
 }
 function secSay(parts, text) {
+  if (!Talk.cur && menuOpen) { const m = menuGirl(); if (m) return Talk.as(m, () => secSay(parts, text)); }
   subtitle(text);
   if (VoicePack.ok) {
     const L = VoicePack.man && VoicePack.man._extra, fns = [];
     for (const [cat, i] of parts) { const e = L && L[cat] && L[cat][i]; if (!e) { fns.length = 0; break; } fns.push(e.files[0]); }
     if (fns.length && fns.every(f => VoicePack.buf[f])) {
       const c = Sfx.ctx; let t = c.currentTime + 0.02;
-      for (const f of fns) { const src = c.createBufferSource(), g = c.createGain(); src.buffer = VoicePack.buf[f]; g.gain.value = 1.1; src.connect(g); g.connect(VoicePack.out); src.start(t); t += VoicePack.buf[f].duration - 0.05; }
+      for (const f of fns) { const src = c.createBufferSource(), g = c.createGain(); src.buffer = VoicePack.buf[f]; g.gain.value = 1.1; src.connect(g); g.connect(VoicePack.out); src.start(t); Talk.track(src); t += VoicePack.buf[f].duration - 0.05; }
       return;
     }
     fns.forEach(f => VoicePack.load(f));
@@ -1852,12 +2337,19 @@ function secSay(parts, text) {
   Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1);
 }
 const secLine = (cat, i) => { const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra[cat]; return L ? L[i].text : ''; };
-function secCat(cat) {   // 二人目の秘書と話しているときは sec2_ の台詞（あれば）
+const menuGirl = () => menuWho === 'sec2' ? sec2.e : menuWho === 'ojou' ? ojou.e : sec.e;
+function secCat(cat) {   // 二人目の秘書と話しているときは sec2_ の台詞（あれば）。お嬢さま秘書は ojou_
   const X = VoicePack.man && VoicePack.man._extra;
+  if (menuWho === 'ojou' && cat.startsWith('sec_')) { const c3 = 'ojou_' + cat.slice(4); if (!X || X[c3]) return c3; }
   if (menuWho === 'sec2' && cat.startsWith('sec_')) { const c2 = 'sec2_' + cat.slice(4); if (!X || X[c2]) return c2; }
   return cat;
 }
 function secReply(cat, i = null) {
+  const c = secCat(cat), who = /^ojou_/.test(c) ? ojou.e : /^sec2_/.test(c) || (menuOpen && menuWho === 'sec2') ? sec2.e : sec.e || sec.esc;
+  if (who && who.state === 'down') return;   // 戦死判定を受けた娘はもう話さない
+  return Talk.as(who, () => secReply0(cat, i));
+}
+function secReply0(cat, i = null) {
   cat = secCat(cat);
   const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra[cat];
   const n = L ? L.length : 1; if (i === null) i = (Math.random() * n) | 0;
@@ -1872,10 +2364,11 @@ const SEC_REQ = {
   },
   report() {
     const a = Math.min(30, aliveOf('blue').length), e = Math.min(30, aliveOf('orange').length + Math.max(0, wave.toSpawn)), w = clamp(wave.n, 1, 20);
-    const text = `ご報告いたします。味方は${a}名、敵は${e}名。ただいま、第${w}波です。`;
+    const oj = menuWho === 'ojou';
+    const text = oj ? `王様、ご報告いたしますわ。味方は${a}名、敵は${e}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${a}名、敵は${e}名。ただいま、第${w}波です。`;
     $('secsay').textContent = `「${text}」`;
-    const s2 = menuWho === 'sec2' ? 'sec2_' : '';
-    secSay([[s2 ? 'sec2_report' : 'sec_report', 0], [s2 + 'num_ally', a], [s2 + 'num_enemy', e], [s2 + 'num_wave', w - 1]], text);
+    const s2 = menuWho === 'sec2' ? 'sec2_' : oj ? 'ojou_' : '';
+    secSay([[s2 ? s2 + 'report' : 'sec_report', 0], [s2 + 'num_ally', a], [s2 + 'num_enemy', e], [s2 + 'num_wave', w - 1]], text);
   },
   plan() {
     allyStance = allyStance === 'off' ? 'def' : 'off';
@@ -2042,13 +2535,14 @@ function showSub(id) {
   for (const k of ['secremarks', 'secmeals']) $(k).style.display = k === id ? 'grid' : 'none';
   $('secmain').style.display = id || menuWho !== 'sec' ? 'none' : 'grid';
   $('sec2main').style.display = id || menuWho !== 'sec2' ? 'none' : 'grid';
+  $('ojoumain').style.display = id || menuWho !== 'ojou' ? 'none' : 'grid';
   $('secClose').style.display = id ? 'none' : 'block';
 }
 function openSecMenu() {
   if (menuOpen || state !== 'play') return;
   menuOpen = true; player.drawing = false; player.charge = 0;
   menuWho = talkWho || 'sec';
-  $('secName').textContent = menuWho === 'sec2' ? sec2.name : sec.name;
+  $('secName').textContent = menuWho === 'sec2' ? sec2.name : menuWho === 'ojou' ? ojou.name : sec.name;
   $('secmenu').style.display = 'flex'; showSub(null);
   if (document.exitPointerLock && locked()) document.exitPointerLock();
   secReply('sec_greet');
@@ -2074,10 +2568,10 @@ function updateHQ(dt) {
   if (sec.mode === 'returning' && sec.esc && hq && sec.esc.state !== 'down' && Math.hypot(sec.esc.s.position.x - hq.sx, sec.esc.s.position.z - hq.sz) < 1.6) {
     sec.esc.returning = false; sec.esc = null; sec.mode = 'hq'; secReply('sec_back', 0);
   }
-  updateSec2(dt);
+  updateSec2(dt); updateOjou(dt);
   // 話しかけられる相手：そばにいる秘書（二人いれば近いほう）
   let best = null, bd = 3;
-  for (const [who, se] of [['sec', sec.e], ['sec2', sec2.e]]) {
+  for (const [who, se] of [['sec', sec.e], ['sec2', sec2.e], ['ojou', ojou.e]]) {
     if (!se || se.state === 'down' || se.polishT > 0 || Math.abs(player.pos.y - se.baseY) > 0.8) continue;
     const d = Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z);
     if (d < bd) { bd = d; best = who; }
@@ -2087,7 +2581,7 @@ function updateHQ(dt) {
   $('talk').style.opacity = sec.near && !menuOpen ? 1 : 0;
   document.documentElement.classList.toggle('cantalk', sec.near && !menuOpen);
   if (menuOpen) {
-    const se = menuWho === 'sec2' ? sec2.e : sec.e;
+    const se = menuGirl();
     if (!se || se.state === 'down' || Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z) > 3.4) closeSecMenu(false);
   }
 }
@@ -2234,7 +2728,7 @@ function updateEnemies(dt) {
       if (MOTION) {   // 膝が抜けて沈み、腰を支点に倒れる（Quaternius の倒れる動きの腰と上体の角度）
         const T = e.fallT2 || (e.fallT2 = rand(0.82, 1.0)), u = Math.min(1, e.t / T), D = Mo.death(e, u), H = e.figH;
         e.mo.D = D;
-        Mo.fallSprite(e, D, u >= 1 ? Math.sin(Math.min(1, (e.t - T) / 0.22) * Math.PI) * 0.02 : 0);
+        Mo.fallSprite(e, D, u >= 1 ? Math.sin(Math.min(1, (e.t - T) / 0.22) * Math.PI) * 0.015 : 0);   // 地面で小さく弾む（上へ）
         const ry = e.fallYaw - e.s.rotation.y;
         const k = Math.min(1, u * 1.4);
         e.shadow.scale.set(0.75 + k * 0.3, 1, 0.6 + k * 0.6 * H); e.shadow.position.set(Math.sin(ry) * D.hz * H * 0.8, 0.02, Math.cos(ry) * D.hz * H * 0.8);
@@ -2253,16 +2747,18 @@ function updateEnemies(dt) {
     }
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
     let lean = 0;
-    e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || !!e.hold;   // hold: テスト用に止める
+    e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || !!e.hold;   // hold: テスト用に止める
     if (e.sec2 && !e.hold) { e.passive = true; sec2Brain(e, dt); }
+    else if (e.ojou && !e.hold) { e.passive = true; ojouBrain(e, dt); }
     else if (e.medic && !e.hold) medicBrain(e, dt);
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
       e.cd -= dt; e.t += dt;
-      if (Math.hypot(hx - p.x, hz - p.z) > 0.4) steer(e, hx, hz, e.speed * 0.7, dt);
+      const hd = Math.hypot(hx - p.x, hz - p.z), fol = e.aide && e.aide.follow;
+      if (hd > 0.4) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (fol || hd > 8 ? (hd > 5 ? 1.45 : 0.9) : 0.7), dt); }
       e.tgt = null; if (!e.hold) e.state = 'idle';
       const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z;
-      e.faceWant = e.hold ? e.hold.face : e.secretary && Math.hypot(dpx, dpz) < 8 ? Math.atan2(dpx, dpz) : Math.PI;
+      e.faceWant = e.hold ? e.hold.face : (e.secretary || e.aide) && (fol || Math.hypot(dpx, dpz) < 8) && hd < 1 ? Math.atan2(dpx, dpz) : hd >= 1 ? Math.atan2(hx - p.x, hz - p.z) : Math.PI;
     } else {
     // 標的の更新
     e.tgtT -= dt;
@@ -2324,8 +2820,14 @@ function updateEnemies(dt) {
         steer(e, player.pos.x, player.pos.z, e.speed * 1.3, dt); e.state = 'advance'; e.cover = null;   // 離れすぎたら戻る
       } else if (e.kind === 'archer') {
         // ===== 弓兵 =====
-        if (dist < 6 && !['backoff', 'aim', 'zanshin'].includes(e.state) && P !== PERS.好戦的) { e.state = 'backoff'; e.t = 0; }
-        if (e.state === 'advance') {
+        // 近接兵に詰められたら下がって距離を取る（守り役の近接兵の後ろへ）。好戦的な娘は 4m まで粘る
+        if ((e.thrT = (e.thrT || 0) - dt) <= 0) { e.thrT = 0.3; e.threat = nearestFoeMelee(e, 12); }
+        const th = e.threat && e.threat.state !== 'down' && enemies.includes(e.threat) ? e.threat : null;
+        const thd = th ? Math.hypot(th.s.position.x - p.x, th.s.position.z - p.z) : 99;
+        if (!e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) || (dist < 6 && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
+        if (e.state === 'advance' && e.team === 'orange' && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; seiranBoard(e); }
+        if (e.climb) seiranClimb(e, dt);
+        else if (e.state === 'advance') {
           if (!e.cover || e.t > 8) {
             e.t = 0;
             const kf = e.team === 'blue' && allyStance === 'def' ? 1.4 : 1;   // 守勢：距離を取る
@@ -2374,8 +2876,17 @@ function updateEnemies(dt) {
         } else if (e.state === 'return') {
           if (steer(e, e.cp.x, e.cp.z, e.speed * 1.2, dt) < 0.5 || e.t > 3) { e.state = 'hide'; e.t = 0; e.hideT = rand(P.hideT[0], P.hideT[1]); }
         } else if (e.state === 'backoff') {
-          steer(e, p.x - nx * 10 + e.strafe * nz * 4, p.z - nz * 10 - e.strafe * nx * 4, e.speed * 1.1, dt);
-          if (e.t > 1.6) { e.state = dist < 8 ? 'aim' : 'advance'; e.t = 0; e.cover = null; }
+          const k = e.kite && e.kite.state !== 'down' ? e.kite.s.position : null;
+          let ax = k ? p.x - k.x : -nx, az = k ? p.z - k.z : -nz; const al = Math.hypot(ax, az) || 1; ax /= al; az /= al;
+          az += (e.team === 'orange' ? -0.45 : 0.45);   // 自分の陣の側（守り役の後ろ）へ寄せて下がる
+          steer(e, p.x + ax * 10 + e.strafe * az * 3, p.z + az * 10 - e.strafe * ax * 3, e.speed * 1.15, dt);
+          if (e.t > 1.6) {
+            const kd = k ? Math.hypot(k.x - p.x, k.z - p.z) : 99;
+            if (kd < 5) { e.tgt = e.kite; e.tgtT = 1.2; e.state = 'aim'; }   // 振り切れない：至近で射返す
+            else if (kd < SCREEN.kiteR && e.t < 3.2) { /* もう少し下がる */ }
+            else e.state = dist < 8 ? 'aim' : 'advance';
+            if (e.state !== 'backoff') { e.t = 0; e.cover = null; e.kite = null; }
+          }
         } else { e.state = 'advance'; e.t = 0; }
       } else {
         // ===== 近接兵（練習用の懐刀：突きのみ・正面の一人だけ） =====
@@ -2394,6 +2905,7 @@ function updateEnemies(dt) {
           } else
           if (e.state === 'approach' && routed) steer(e, rt[0], rt[1], e.speed, dt);
           else if (e.state === 'approach' && elev) { if (dist > 4) steer(e, tx, tz, e.speed, dt); }
+          else if (e.state === 'approach' && e.screen && dist > SCREEN.guardR && screenHold(e, tx, tz, dt)) { /* 弓兵の前に立って待つ */ }
           else if (e.state === 'approach') {
             if (dist > MELEE_RANGE - 0.35) {
               const side = Math.sin(time * 0.7 + e.ph) * (P.cautious ? 0.6 : 0.35) * e.strafe * Math.min(1, dist / 6);
@@ -2540,25 +3052,28 @@ function updateArrows(dt) {
       const top = e.figH * (1 - 0.38 * e.crouch);         // しゃがむと当たりも低くなる
       if (d < 0.3 && y > 0 && y < top && t < best) { best = t; hit = { e, y, top, pt: new V3(cx, y + e.baseY, cz) }; }
     }
-    // 近くをかすめる矢の音（自分の矢以外。1本につき1回）
-    if (a.team !== 'player' && !a.wh && a.life > 0.1) {
-      const hx = player.pos.x, hy = player.pos.y + 1.5, hz = player.pos.z, syy = p1.y - p0.y;
-      const t = clamp(((hx - p0.x) * sx + (hy - p0.y) * syy + (hz - p0.z) * sz) / (sl + syy * syy), 0, 1);
-      const d = Math.hypot(p0.x + sx * t - hx, p0.y + syy * t - hy, p0.z + sz * t - hz);
-      if (d < 3.2) { a.wh = true; Sfx.whoosh(p1, d); }
-    }
     // プレイヤーへの当たり判定（橙組の矢のみ）
     if (a.team === 'orange') {
       const t = clamp(((player.pos.x - p0.x) * sx + (player.pos.z - p0.z) * sz) / sl, 0, 1);
       const d = Math.hypot(p0.x + sx * t - player.pos.x, p0.z + sz * t - player.pos.z);
       const y = p0.y + (p1.y - p0.y) * t - player.pos.y;
       if (d < 0.45 && y > 0 && y < 1.85 && t < best) {
-        hurtPlayer(a.dmg); popup('被弾！');
+        hurtPlayer(a.dmg); popup('被弾！'); if (!inHQ()) Sfx.arrowFlesh(null, true);
         scene.remove(a.m); arrows.splice(i, 1); continue;
+      }
+    }
+    // 矢がそばをかすめた（敵味方どちらの矢も。自分の矢は除く）：カメラに一番近づいた瞬間に1回だけ
+    if (!hit && a.team !== 'player' && !a.wh && a.life > 0.05) {
+      const hx = camera.position.x, hy = camera.position.y, hz = camera.position.z, syy = p1.y - p0.y;
+      const tr = ((hx - p0.x) * sx + (hy - p0.y) * syy + (hz - p0.z) * sz) / (sl + syy * syy);
+      if (tr >= 0 && tr <= 1) {   // この1フレームの間に最接近点を通過
+        const cx = p0.x + sx * tr - hx, cy = p0.y + syy * tr - hy, cz = p0.z + sz * tr - hz, d = Math.hypot(cx, cy, cz);
+        if (d < 3) { a.wh = true; Sfx.flyby((cx * rx + cz * rz) / Math.max(0.3, d) * 0.9, 1 - d / 3); }
       }
     }
     if (hit) {
       const e = hit.e, info = { pt: hit.pt, dir: a.vel.clone(), arrow: true };
+      Sfx.arrowFlesh(hit.pt);   // ズブッ
       if (a.team === 'player') {
         const crit = hit.y > hit.top - e.figH * 0.14;
         let dmg = a.charge >= 0.95 ? 3 : (a.charge > 0.5 ? 2 : 1);
@@ -2746,7 +3261,7 @@ function updateTargetInfo(dt) {
     const t = targetShown, dead = t.state === 'down';
     const tm = t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
-    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? '医療係' : t.fluter ? '笛役' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
+    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.ojou || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
     el.style.opacity = Math.min(1, targetHold * 3);
@@ -3057,8 +3572,11 @@ function resetGame() {
   if (menuOpen) closeSecMenu(false);
   for (const k in towers) towers[k].paint = towers[k].press = 0;
   removeFluter(); fluter.dead = false;
+  removeOjou(); ojou.dead = false; ojou.mode = 'hq'; ojou.stayHQ = false; ojou.auto = false; ojou.careT = 20;
   removeSec2(); sec2.dead = false; sec2.mode = 'hq'; player.speedT = 0; menuWho = 'sec'; talkWho = null;
-  for (const t of ['blue', 'orange']) { removeMedic(t); medics[t].dead = false; }
+  for (const t of ['blue', 'orange']) for (const m of medics[t]) { removeMedic(m); m.dead = false; }
+  for (const A of aides) { removeAide(A); A.dead = false; A.follow = false; A.cd = { heal: 0, arrows: 0, greet: 0 }; }
+  FOLLOW.out = false; FOLLOW.wasIn = false; FOLLOW.outT = FOLLOW.inT = 0; FOLLOW.says = []; sec.stayHQ = sec2.stayHQ = false; sec.auto = false;
   sec.mode = 'hq'; sec.esc = null; sec.e = null; sec.cook = null; sec.mealWave = -1; removeDish(); if ($('cook')) $('cook').style.display = 'none';
   allyStance = 'off'; sec.teaT = sec.buffT = sec.fanT = 0; if ($('stance')) $('stance').textContent = '攻勢';
   for (const e of enemies) disposeNpc(e);
@@ -3073,6 +3591,7 @@ function resetGame() {
   Object.assign(player, { hp: CFG.maxHp, kills: 0, allyKills: 0, arrows: CFG.arrowsStart, weapon: 0, drawing: false, charge: 0, swingT: -1, swingCd: 0,
     regenT: 0, hurtT: 0, switchT: 0, vy: 0, yaw: 0, pitch: 0, shake: 0 });
   for (const q of perches) q.taken = null;
+  seiranReset();
   if (builtStage === 'fort') player.pos.set(-12, 6, 8.6);   // 左の櫃の上から
   else player.pos.set(0, 0, 0);
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
@@ -3081,7 +3600,8 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   loadStage(stageName);
   resetGame();
-  spawnSecretary(); spawnSec2(); spawnMedic('blue'); spawnMedic('orange');
+  spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
+  for (const A of aides) spawnAide(A);
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -3209,7 +3729,8 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    updatePlayer(dt); updateHQ(dt); waveUpdate(dt); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt);
+    updatePlayer(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt);
+    if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
   } else if (state === 'title') {
     time += dt;
     if (builtStage === 'fort') {
@@ -3258,6 +3779,7 @@ function secAct(fn) {
   const sub = ['secremarks', 'secmeals'].some(k => $(k).style.display === 'grid');
   if (menuOpen && !sub) closeSecMenu(false);
 }
+for (const b of document.querySelectorAll('#secmenu [data-req3]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => OJOU_REQ[b.dataset.req3]()); });
 for (const b of document.querySelectorAll('#secmenu [data-req2]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC2_REQ[b.dataset.req2]()); });
 for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC_REQ[b.dataset.req]()); });
 $('secRemark').addEventListener('click', ev => { ev.stopPropagation(); showSub('secremarks'); });
@@ -3277,5 +3799,5 @@ const loaded = () => {
 loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
-window.__game = { MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

@@ -100,6 +100,58 @@ MED = {
   'med_ok': ['もう大丈夫です。', 'もう大丈夫です。無理はしないでくださいね。'],
   'med_lost': ['…御臨終です。'],
 }
+# 看護師（救護班、両軍二人ずつ）：やさしく少し高め。外科医は医療係の声（med_）を使う
+NURSE_STYLE = (-4, 8)
+NURSE = {
+  'nurse_go': ['今行きます、待っててね！', 'すぐ行きます！'],
+  'nurse_assist': ['先生、お手伝いします。', '押さえていますね、先生。'],
+  'nurse_bandage': ['包帯を巻きますね。', 'きつくないですか？ 少し巻きますね。'],
+  'nurse_comfort': ['大丈夫、そばにいますからね。', 'ゆっくり息をして…もう少しですよ。'],
+  'nurse_start': ['しっかりして、すぐ手当てしますね。'],
+  'nurse_arrow': ['矢を抜きますね。少しだけ我慢してね。'],
+  'nurse_care': ['大丈夫、そばにいますからね。'],
+  'nurse_ok': ['よく頑張りましたね。もう大丈夫です。'],
+  'nurse_lost': ['…御臨終です。'],
+}
+# 秘書課の三人目・四人目（本陣で気配り）
+AIDE_STYLE = {'sec3': (-6, -4), 'sec4': (-2, 2)}
+AIDE = {
+  'sec3_greet': ['お帰りなさいませ。ご無事で何よりです。', 'お疲れさまです。少し休んでいってくださいね。'],
+  'sec3_heal': ['お怪我はありませんか？ 少し手当てしますね。', '無理をなさらないでください。…はい、これで大丈夫です。'],
+  'sec4_greet': ['お帰りなさいませ。お茶の用意もできていますよ。', 'ご無事でよかった…。お疲れさまです。'],
+  'sec4_arrows': ['矢が少なくなっていますね。こちらをどうぞ。', '矢をお持ちしました。お気をつけて。'],
+}
+# 殿が本陣を出たとき、慌てて追いかける一言
+FLUST = {
+  'sec_flust': ('SEC', ['お待ちください、殿！', '殿、お一人では危のうございます！']),
+  'sec2_flust': ('SEC2', ['あっ、待ってくださーい！', '危ないですよ、殿！']),
+  'sec3_flust': ('sec3', ['お待ちください、殿！ お怪我をされては…！']),
+  'sec4_flust': ('sec4', ['危ないですよ！ 私もお供します！']),
+  'surgeon_flust': ('MED', ['殿、お待ちを！ 救護班もお供します。']),
+  'nurse_flust': ('NURSE', ['危ないですよ、殿！ 待ってください！']),
+}
+# お嬢さま秘書（秘書課 西園寺 すみれ）：王様の遠縁。上品で少し改まった丁寧語。ゆっくり・やや低めで他の秘書と聞き分けられる声
+OJOU_STYLE = (-14, -2)
+OJOU = {
+  'ojou_greet': ['ごきげんよう、王様。何なりとお申し付けくださいませ。', '王様、お呼びでしょうか。'],
+  'ojou_bye': ['どうかご無事で、王様。', 'いってらっしゃいませ。お気をつけて。'],
+  'ojou_tea': ['王様、お茶をお持ちしましたわ。熱いのでお気をつけて。', '少しお休みになって。温かいお茶ですわ。'],
+  'ojou_tea_wait': ['お茶はさきほどお出ししましたわ。少しだけお待ちになって。'],
+  'ojou_report': ['王様、ご報告いたしますわ。'],
+  'ojou_num_ally': ['味方は%d名、' % n for n in range(0, 31)],
+  'ojou_num_enemy': ['敵は%d名。' % n for n in range(0, 31)],
+  'ojou_num_wave': ['ただいま、第%d波ですわ。' % n for n in range(1, 21)],
+  'ojou_follow': ['お供いたしますわ。親戚として、放っておけませんもの。', '承知いたしましたわ。おそばを離れませんわ。'],
+  'ojou_follow_already': ['もうおそばにおりますわ。'],
+  'ojou_return': ['では、本陣でお待ちしておりますわ。どうかご無事で。'],
+  'ojou_already_hq': ['ええ、本陣におりますわ。'],
+  'ojou_back': ['ただいま本陣に戻りましたわ。'],
+  'ojou_care': ['王様、少しお疲れのご様子ですわ。お茶をどうぞ。', '親戚として放っておけませんわ。さあ、ひと息ついてくださいませ。'],
+  'ojou_praise': ['まあ、お上手ですこと。でも、褒めても何も出ませんわよ。', '恐れ入りますわ。王様こそ、ご立派でしたわ。', 'ふふ、ありがとうございます。皆さまのおかげですわ。'],
+  'ojou_hit': ['きゃっ…！ だ、大丈夫ですわ。', 'っ…平気ですわ。'],
+  'ojou_defeat': ['…戦死判定ですわ。王様、どうかご無事で。', '申し訳ございません…本陣でお待ちしておりますわ。'],
+  'ojou_flust': ['お待ちになって、王様！', '王様、お一人では危のうございますわ！'],
+}
 async def one(sem, text, path, rate, pitch):
     if os.path.exists(path) and os.path.getsize(path) > 1000: return
     async with sem:
@@ -145,6 +197,28 @@ async def main():
         manifest['_extra'][cat] = []
         for i, text in enumerate(arr):
             fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), MED_STYLE[0], MED_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in NURSE.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), NURSE_STYLE[0], NURSE_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in AIDE.items():
+        st = AIDE_STYLE[cat.split('_')[0]]
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), st[0], st[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in OJOU.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), OJOU_STYLE[0], OJOU_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, (who, arr) in FLUST.items():
+        st = {'SEC': SEC_STYLE, 'SEC2': SEC2_STYLE, 'MED': MED_STYLE, 'NURSE': NURSE_STYLE}.get(who) or AIDE_STYLE[who]
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), st[0] + 8, st[1] + 6))
             manifest['_extra'][cat].append({'text': text, 'files': [fn]})
     await asyncio.gather(*jobs)
     json.dump(lines, open(os.path.join(D, 'lines.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)

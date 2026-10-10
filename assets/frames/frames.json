@@ -34,6 +34,13 @@
    "ax": 0.5676,
    "dir": 1,
    "file": "assets/frames/mob09_stab.png"
+  },
+  "down": {
+   "hk": 0.2326,
+   "aspect": 4.2993,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob09_down.png"
   }
  },
  "mob01": {
@@ -71,6 +78,13 @@
    "ax": 0.6327,
    "dir": -1,
    "file": "assets/frames/mob01_bow.png"
+  },
+  "down": {
+   "hk": 0.2508,
+   "aspect": 3.9874,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob01_down.png"
   }
  },
  "mob02": {
@@ -108,6 +122,13 @@
    "ax": 0.6387,
    "dir": -1,
    "file": "assets/frames/mob02_bow.png"
+  },
+  "down": {
+   "hk": 0.2429,
+   "aspect": 4.1169,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob02_down.png"
   }
  },
  "mob03": {
@@ -145,6 +166,13 @@
    "ax": 0.7067,
    "dir": -1,
    "file": "assets/frames/mob03_bow.png"
+  },
+  "down": {
+   "hk": 0.2681,
+   "aspect": 3.7294,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob03_down.png"
   }
  },
  "mob04": {
@@ -182,6 +210,13 @@
    "ax": 0.6802,
    "dir": -1,
    "file": "assets/frames/mob04_bow.png"
+  },
+  "down": {
+   "hk": 0.2551,
+   "aspect": 3.9198,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob04_down.png"
   }
  },
  "mob05": {
@@ -219,6 +254,13 @@
    "ax": 0.6718,
    "dir": -1,
    "file": "assets/frames/mob05_bow.png"
+  },
+  "down": {
+   "hk": 0.2377,
+   "aspect": 4.2067,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob05_down.png"
   }
  },
  "mob06": {
@@ -256,6 +298,13 @@
    "ax": 0.6866,
    "dir": -1,
    "file": "assets/frames/mob06_bow.png"
+  },
+  "down": {
+   "hk": 0.2492,
+   "aspect": 4.0127,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob06_down.png"
   }
  },
  "mob07": {
@@ -300,6 +349,13 @@
    "ax": 0.3823,
    "dir": 1,
    "file": "assets/frames/mob07_kneel.png"
+  },
+  "down": {
+   "hk": 0.2709,
+   "aspect": 3.6919,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob07_down.png"
   }
  },
  "mob08": {
@@ -337,6 +393,13 @@
    "ax": 0.6644,
    "dir": -1,
    "file": "assets/frames/mob08_bow.png"
+  },
+  "down": {
+   "hk": 0.2322,
+   "aspect": 4.3061,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob08_down.png"
   }
  },
  "mob10": {
@@ -374,6 +437,13 @@
    "ax": 0.5512,
    "dir": -1,
    "file": "assets/frames/mob10_bow.png"
+  },
+  "down": {
+   "hk": 0.2622,
+   "aspect": 3.8133,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/mob10_down.png"
   }
  },
  "archer07": {
@@ -414,6 +484,13 @@
    "ax": 0.3288,
    "dir": 1,
    "file": "assets/frames/medic_kneel.png"
+  },
+  "down": {
+   "hk": 0.2453,
+   "aspect": 4.0774,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/medic_down.png"
   }
  }
 }

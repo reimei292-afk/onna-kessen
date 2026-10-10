@@ -15,7 +15,7 @@ A = os.path.join(ROOT, 'assets'); OUT = os.path.join(A, 'frames')
 FORCE = '--force' in sys.argv
 ONLY = None
 if '--only' in sys.argv: ONLY = set(sys.argv[sys.argv.index('--only') + 1].split(','))
-KINDS = ['front', 'kneel', 'side', 'back', 'walk', 'bow', 'stab', 'action', 'flute']
+KINDS = ['front', 'kneel', 'down', 'front_diag', 'back_diag', 'top', 'low', 'side', 'back', 'walk', 'bow', 'stab', 'action', 'flute']
 KH = {'kneel': 0.7, 'side': 1.0, 'back': 1.0, 'walk': 0.985, 'bow': 1.0, 'stab': 0.93, 'flute': 1.0}
 MAXH = 900
 _session = None
@@ -80,7 +80,7 @@ def main():
         else: print('skip (正面写真なし)', gid); continue
         for k0, src in fr.items():
             # 'side_left'（左向きの横顔）／'side_right' は side として扱い、向きを記録（エンジンが反対向きは左右反転）
-            k = 'side' if k0 in ('side_left', 'side_right') else k0
+            k = k0.rsplit('_', 1)[0] if k0.endswith(('_left', '_right')) else k0   # side_left → side（向きを記録）
             if k == 'front' or k not in KINDS or not src or not isinstance(src, str): continue
             if k == 'side' and k0 == 'side' and fr.get('side_left') and fr.get('side_right') is None: pass
             if not os.path.exists(src): print('missing', gid, k, src); continue
@@ -90,20 +90,22 @@ def main():
             top = head_top(a); body = im.height - top
             kind = k if k != 'action' else ('bow' if gid.startswith('archer') else 'stab')
             sc = ref * KH.get(kind, 1.0) / max(1, body)
+            if k == 'down': sc = ref / max(1, im.width)   # 横たわった写真：頭から足までの長さ＝立ったときの身長
             w, h = max(1, round(im.width * sc)), max(1, round(im.height * sc))
             f = 1.0
             if h > MAXH: f = MAXH / h; w, h = max(1, round(w * f)), MAXH
             im = im.resize((w, h), Image.LANCZOS); a = im.split()[3]
             im.save(png, optimize=True)
             # 足元の中心（画像幅に対する比率）＝立ち位置。体の中心がずれた構え（弓を伸ばす等）でも足元をそろえる
-            ax = mean_x(a, int(h * 0.88), h) / w
+            ax = 0.5 if k in ('down', 'top') else mean_x(a, int(h * 0.88), h) / w
             # 向き：横＝右向き（+1）。構えは、頭から遠くへ伸びている側を向き（弓・懐刀を伸ばす側）とする
             d = fr.get(k + '_dir')
-            if d is None and k0 == 'side_left': d = -1
-            if d is None and k0 == 'side_right': d = 1
+            if d is None and k0.endswith('_left'): d = -1
+            if d is None and k0.endswith('_right'): d = 1
             if d is None:
-                if k in ('side', 'kneel'): d = 1
-                elif k in ('back', 'walk'): d = 0
+                if k in ('side', 'kneel', 'front_diag', 'back_diag'): d = 1
+                elif k == 'down': d = -1   # 頭が左
+                elif k in ('back', 'walk', 'top', 'low'): d = 0
                 else:
                     t2 = head_top(a); hx = mean_x(a, t2, t2 + int(h * 0.1)); bb = a.getbbox() or (0, 0, w, h)
                     d = 1 if (bb[2] - hx) > (hx - bb[0]) else -1

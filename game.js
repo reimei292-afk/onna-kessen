@@ -1057,6 +1057,56 @@ function spawnAlly() {
   const z = clamp(player.pos.z + Math.sin(a) * r, -CFG.field + 3, CFG.field - 3);
   return spawnEnemy(x, z, kind, false, 'blue');
 }
+// ---- 倒れた娘：横たわった写真（down）を地面に沿った低いビルボードで。上から見ると地面の写真へ切り替わる ----
+const lieShadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
+function startLying(e) {
+  const fr = e.girl.down;
+  // 体の向き（足→頭＝fallYaw）に e.s を回し、刺さった矢を胴のあたりに残す
+  e.s.rotation.y = e.fallYaw; e.tilt.rotation.y = 0; e.s.updateMatrixWorld(true);
+  for (const a of e.stuck) e.s.attach(a);
+  e.lying = { t: 0 };
+  e.tilt.rotation.set(0, 0, 0); e.tilt.position.set(0, -0.04, e.figH * 0.5);
+  setFrame(e, fr, false); e.bb.position.x = 0;
+  e.mat.transparent = true; e.mat.needsUpdate = true;
+  // 地面に置く写真（真上から見たとき用）
+  const dm = new THREE.MeshBasicMaterial({ map: fr.tex, transparent: true, opacity: 0, alphaTest: 0.05, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3 });
+  const L = e.figH, H = clamp(e.figH * fr.hk, 0.45, 0.55);
+  const dc = new THREE.Mesh(new THREE.PlaneGeometry(L, H), dm);
+  dc.rotation.order = 'YXZ'; dc.rotation.set(-Math.PI / 2, Math.PI / 2, 0);   // 写真の左（頭）を体の頭の側へ
+  dc.position.set(0, 0.025, e.figH * 0.5); e.s.add(dc); e.decal = dc; e.mats.push(dm);
+  e.shadow.material = lieShadowMat; e.shadow.visible = true; e.shadow.position.set(0, 0.015, e.figH * 0.5); e.shadow.scale.set(0.6, 1, e.figH * 1.1);
+}
+function stopLying(e) {   // 手当てで起き上がるとき
+  if (!e.lying) return;
+  e.lying = null;
+  if (e.decal) { e.s.remove(e.decal); e.decal = null; }
+  e.mat.transparent = false; e.mat.opacity = 1; e.mat.alphaTest = 0.42; e.mat.needsUpdate = true;
+  e.tilt.position.set(0, 0, 0); e.tilt.rotation.set(Math.PI / 2, 0, 0);
+  e.shadow.material = shadowMat; e.shadow.position.set(0, 0.02, 0);
+  setFrame(e, girlFrame(e.girl, 'side'), false);
+}
+function updateBodies(dt) {
+  for (const b of bodies) {
+    const ly = b.lying; if (!ly) continue;
+    ly.t += dt;
+    const p = b.s.position, fy = b.fallYaw;
+    const cx = p.x + Math.sin(fy) * b.figH * 0.5, cz = p.z + Math.cos(fy) * b.figH * 0.5;
+    const dx = camera.position.x - cx, dz = camera.position.z - cz, hd = Math.hypot(dx, dz);
+    const camYaw = Math.atan2(dx, dz);
+    // 頭の端が画面の右にあれば写真（頭が左）を左右反転。体の軸を横から見るほど長く、縦に見るほど短く
+    const sr = Math.sin(fy) * Math.cos(player.yaw) - Math.cos(fy) * Math.sin(player.yaw);
+    const fr = b.girl.down, grow = Math.min(1, ly.t / 0.25);
+    const h = clamp(b.figH * fr.hk, 0.45, 0.55) * grow, w = b.figH * Math.max(0.35, Math.abs(Math.sin(angDiff(fy, camYaw))));
+    b.bb.scale.set(w * (sr > 0 ? -1 : 1), h, 1); b.bb.position.x = 0;
+    b.tilt.rotation.y = camYaw - b.s.rotation.y;
+    // 上から見下ろすほど地面の写真へ
+    const el = Math.atan2(camera.position.y - b.baseY, Math.max(0.1, hd));
+    const f = clamp((el - 0.55) / 0.35, 0, 1);
+    b.mat.opacity = 1 - f; b.mat.alphaTest = Math.max(0.02, 0.42 * (1 - f));
+    b.bb.visible = f < 0.98;
+    if (b.decal) b.decal.material.opacity = f;
+  }
+}
 function startWave(n) {
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
   if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
@@ -1167,6 +1217,7 @@ function toBodies(e) {
   scene.remove(e.bg); scene.remove(e.fg); scene.remove(e.mk);
   npcGlow(e, 0, 0, 0);
   e.shadow.visible = false;
+  if (e.girl.down) startLying(e);
   bodies.push(e);
   while (bodies.length > CFG.maxBodies) disposeNpc(bodies.shift());
 }
@@ -1426,6 +1477,7 @@ function endTreat(e) {
 function revivePatient(b) {
   const i = bodies.indexOf(b); if (i < 0) return;
   bodies.splice(i, 1);
+  stopLying(b);
   for (const a of b.stuck) a.parent && a.parent.remove(a);
   b.stuck = [];
   b.hp = Math.max(1, Math.ceil(b.hpMax * 0.4));
@@ -1484,7 +1536,14 @@ function medicBrain(e, dt) {
   if (e.medStep === 4 && T > 5.2) endTreat(e);
 }
 // 収録音声を順につなげて再生（足りなければ Web Speech で全文）
+let subTimer = 0;
+function subtitle(text) {   // 秘書の返事（メニューを閉じても字幕で見える）
+  const el = $('subtitle'); if (!el) return;
+  el.textContent = text ? `「${text}」` : ''; el.style.opacity = text ? 1 : 0;
+  clearTimeout(subTimer); subTimer = setTimeout(() => { el.style.opacity = 0; }, 2500 + text.length * 120);
+}
 function secSay(parts, text) {
+  subtitle(text);
   if (VoicePack.ok) {
     const L = VoicePack.man && VoicePack.man._extra, fns = [];
     for (const [cat, i] of parts) { const e = L && L[cat] && L[cat][i]; if (!e) { fns.length = 0; break; } fns.push(e.files[0]); }
@@ -1772,6 +1831,18 @@ function animateNpc(e, dt, lean) {
   const camYaw = Math.atan2(camera.position.x - p.x, camera.position.z - p.z);
   const f = e.s.rotation.y, c = Math.cos(angDiff(f, camYaw)), m = 0.08;
   e.view = c > 0.5 + (e.view === 'front' ? -m : m) ? 'front' : c < -0.5 - (e.view === 'back' ? -m : m) ? 'back' : 'side';
+  // 斜めの写真（front_diag / back_diag）があれば8方向：正面±22.5°、斜め、横、斜め後ろ、後ろ
+  const gd = e.girl, hy = k => (e.view2 === k ? -0.04 : 0.04);
+  e.view2 = e.view;
+  if (gd.front_diag && c > 0.38 + hy('front_diag') && c < 0.92 - hy('front_diag') + (e.view2 === 'front' ? 0 : 0)) e.view2 = 'front_diag';
+  else if (gd.front_diag && c >= 0.92 - hy('front_diag') && c > 0.5) e.view2 = 'front';
+  if (gd.back_diag && c < -0.38 - hy('back_diag') && c > -0.92 + hy('back_diag')) e.view2 = 'back_diag';
+  else if (gd.back_diag && c <= -0.92 + hy('back_diag') && c < -0.5) e.view2 = 'back';
+  if (gd.front_diag && e.view2 === 'side' && c > 0.38) e.view2 = 'front_diag';
+  if (gd.back_diag && e.view2 === 'side' && c < -0.38) e.view2 = 'back_diag';
+  // 真上・真下から見るとき（top / low があれば）
+  const el = Math.atan2(camera.position.y - (e.baseY + e.figH * 0.6), Math.hypot(camera.position.x - p.x, camera.position.z - p.z));
+  if (gd.top && el > 0.9) e.view2 = 'top'; else if (gd.low && el < -0.6) e.view2 = 'low';
   // 画面の右を向いているか（横・構えの写真の左右反転に使う）
   const sgn = Math.sin(f) * Math.cos(player.yaw) - Math.cos(f) * Math.sin(player.yaw) > 0 ? 1 : -1;
   const g = e.girl;
@@ -1789,6 +1860,9 @@ function animateNpc(e, dt, lean) {
     fr = girlFrame(g, 'action', e.kind); mirror = fr.dir ? fr.dir !== sgn : false;
     if (kyu) { const u = (e.t - KY_SET * ka) / (KY_DRAW * ka); if (u < 1) bob = Math.sin(Math.PI * Math.min(1, u * 1.15)) * 0.03 * e.figH * (1 - 0.4 * u); }   // 打起し：少し上がって収まる
     else if (e.state !== 'windup' && e.state !== 'recover') bob = Math.sin(time * 1.6 + e.ph) * 0.003 * e.figH;
+  } else if (moving && (e.view2 === 'front_diag' || e.view2 === 'back_diag' || e.view2 === 'top' || e.view2 === 'low')) {
+    fr = girlFrame(g, e.view2); mirror = fr.dir ? fr.dir !== sgn : false;
+    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH; rock = Math.sin(e.stepT) * 0.03;
   } else if (moving) {
     const stride = Math.floor(e.stepT / Math.PI) & 1;
     bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH;
@@ -1796,7 +1870,7 @@ function animateNpc(e, dt, lean) {
     else if (e.view === 'back') { fr = girlFrame(g, 'back'); rock = Math.sin(e.stepT) * 0.025; }
     else { fr = girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; rock = Math.sin(e.stepT) * 0.03; }
   } else {
-    fr = girlFrame(g, e.view === 'front' ? 'front' : e.view);
+    fr = girlFrame(g, e.view2 || e.view);
     mirror = fr.dir ? fr.dir !== sgn : false;
     bob = Math.sin(time * 1.6 + e.ph) * 0.004 * e.figH;   // 待機中のわずかな呼吸
     rock = Math.sin(time * 0.8 + e.ph * 2) * 0.007;        // ゆるやかな揺れ
@@ -2816,7 +2890,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    updatePlayer(dt); updateHQ(dt); waveUpdate(dt); updateEnemies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt);
+    updatePlayer(dt); updateHQ(dt); waveUpdate(dt); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt);
   } else if (state === 'title') {
     time += dt;
     if (builtStage === 'fort') {
@@ -2857,13 +2931,20 @@ function selectStage(name) {
 }
 for (const b of document.querySelectorAll('#stagesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
 selectStage(stageName);
-for (const b of document.querySelectorAll('#secmenu [data-req2]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') SEC2_REQ[b.dataset.req2](); });
-for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') SEC_REQ[b.dataset.req](); });
+// 用件を選んだらメニューを閉じて、その様子を画面で見せる（返事は字幕）。小メニュー（ご飯・感想）を開くだけのときは開いたまま
+function secAct(fn) {
+  if (!menuOpen || state !== 'play') return;
+  fn();
+  const sub = ['secremarks', 'secmeals'].some(k => $(k).style.display === 'grid');
+  if (menuOpen && !sub) closeSecMenu(false);
+}
+for (const b of document.querySelectorAll('#secmenu [data-req2]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC2_REQ[b.dataset.req2]()); });
+for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC_REQ[b.dataset.req]()); });
 $('secRemark').addEventListener('click', ev => { ev.stopPropagation(); showSub('secremarks'); });
 for (const b of document.querySelectorAll('#secmenu [data-sub-back]')) b.addEventListener('click', ev => { ev.stopPropagation(); showSub(null); });
-for (const id of ['onigiriRem', 'secOnigiri']) $(id).addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); if (state === 'play') onigiriRemark(); });
-for (const b of document.querySelectorAll('#secmeals [data-meal]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') orderMeal(b.dataset.meal); });
-for (const b of document.querySelectorAll('#secremarks [data-rem]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') sayRemark(b.dataset.rem); });
+for (const id of ['onigiriRem', 'secOnigiri']) $(id).addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); if (state === 'play') { onigiriRemark(); if (menuOpen) closeSecMenu(false); } });
+for (const b of document.querySelectorAll('#secmeals [data-meal]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => { orderMeal(b.dataset.meal); showSub(null); }); });
+for (const b of document.querySelectorAll('#secremarks [data-rem]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => { sayRemark(b.dataset.rem); showSub(null); }); });
 $('secClose').addEventListener('click', ev => { ev.stopPropagation(); closeSecMenu(); });
 $('startBtn').disabled = true;
 let loadLeft = 1;

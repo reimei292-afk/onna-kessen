@@ -72,6 +72,7 @@
   #hitmark:before,#hitmark:after{content:"";position:absolute;background:#fff2a0}
   #hitmark:before{left:16px;top:0;width:2px;height:34px}
   #hitmark:after{top:16px;left:0;height:2px;width:34px}
+  #subtitle{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);max-width:80%;padding:6px 14px;border-radius:6px;background:rgba(0,0,0,.45);color:#ffe9b8;font-size:17px;text-align:center;opacity:0;transition:opacity .4s;pointer-events:none}
   #popup{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-size:26px;color:#ffe38a;
     text-shadow:0 2px 4px #000;opacity:0;font-weight:bold}
   #banner{position:absolute;left:0;right:0;top:30%;text-align:center;font-size:56px;letter-spacing:.3em;
@@ -140,7 +141,7 @@
   <div id="stats">撃破数 <b id="kills">0</b><br><span style="font-size:15px;color:#9fd0ff">味方撃破 <b id="allykills" style="font-size:18px;color:#9fd0ff">0</b></span></div>
   <div id="wavebox" class="serif"><div class="w" id="wavetxt">第一波</div><div class="r" id="remain">残敵 0</div></div>
   <canvas id="radar" width="150" height="150"></canvas>
-  <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div>
+  <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div><div id="subtitle" class="serif"></div>
   <div id="banner" class="serif"></div>
   <div id="talk">秘書課の侍女に頼む（E / 頼むボタン）</div><div id="hqtag"></div>
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>

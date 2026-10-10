@@ -42,22 +42,22 @@ const Sfx = {
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     this.noise = b;
   },
-  noiseBurst(dur, type, f0, f1, gain, q = 1, delay = 0) {
+  noiseBurst(dur, type, f0, f1, gain, q = 1, delay = 0, dst = null) {
     const c = this.ctx; if (!c) return; const t = c.currentTime + delay;
     const s = c.createBufferSource(); s.buffer = this.noise;
     const f = c.createBiquadFilter(); f.type = type; f.Q.value = q;
     f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur);
     const g = c.createGain(); g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    s.connect(f); f.connect(g); g.connect(this.master); s.start(t); s.stop(t + dur + 0.05);
+    s.connect(f); f.connect(g); g.connect(dst || this.master); s.start(t); s.stop(t + dur + 0.05);
   },
-  tone(type, f0, f1, dur, gain, delay = 0) {
+  tone(type, f0, f1, dur, gain, delay = 0, dst = null) {
     const c = this.ctx; if (!c) return; const t = c.currentTime + delay;
     const o = c.createOscillator(); o.type = type;
     o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
     const g = c.createGain(); g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(gain, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(this.master); o.start(t); o.stop(t + dur + 0.05);
+    o.connect(g); g.connect(dst || this.master); o.start(t); o.stop(t + dur + 0.05);
   },
   twangFar(d) { const k = clamp(1 - d / 60, 0.08, 1); this.tone('triangle', 200, 80, 0.3, 0.35 * k); this.noiseBurst(0.12, 'bandpass', 2200, 700, 0.18 * k, 2); },
   hitFar(d) { const k = clamp(1 - d / 50, 0.05, 1); this.tone('sine', 220, 70, 0.12, 0.35 * k); this.noiseBurst(0.06, 'lowpass', 3000, 300, 0.25 * k); },
@@ -67,7 +67,8 @@ const Sfx = {
   twang(p) { this.tone('triangle', 170 + p * 140, 65, 0.4, 0.55); this.tone('sawtooth', 340 + p * 220, 110, 0.12, 0.1); this.noiseBurst(0.18, 'bandpass', 2600, 700, 0.3, 2); },
   drawCreak() { this.noiseBurst(0.5, 'bandpass', 260, 520, 0.05, 6); },
   swing() { this.noiseBurst(0.22, 'bandpass', 500, 3800, 0.4, 1.4); },
-  hit() { this.tone('sine', 240, 60, 0.14, 0.6); this.noiseBurst(0.07, 'lowpass', 3500, 300, 0.45); },
+  // 自分の攻撃が当たった：布で包んだ矢先・刃引きの鈍い「ぼすっ」（湿った音・生々しい音は使わない）
+  hit() { this.tone('sine', 125, 55, 0.16, 0.55); this.noiseBurst(0.1, 'lowpass', 600, 90, 0.42, 0.7); this.tone('sine', 1500, 1500, 0.04, 0.035); },
   clash() { this.tone('square', 1800, 1200, 0.08, 0.08); this.tone('sine', 2600, 2400, 0.25, 0.08); this.hit(); },
   hurt() { this.tone('square', 120, 45, 0.22, 0.22); this.noiseBurst(0.18, 'lowpass', 900, 100, 0.55); },
   thud() { this.noiseBurst(0.25, 'lowpass', 400, 60, 0.5); },
@@ -75,6 +76,108 @@ const Sfx = {
   drum() { for (let i = 0; i < 3; i++) { this.tone('sine', 95, 38, 0.4, 0.9, i * 0.3); this.noiseBurst(0.1, 'lowpass', 300, 80, 0.4, 1, i * 0.3); } },
   fanfare() { [523, 659, 784, 1046].forEach((f, i) => this.tone('triangle', f, f, 0.25, 0.25, i * 0.12)); },
   empty() { this.tone('square', 300, 240, 0.05, 0.1); },
+  // ---- 位置つきの音：距離で小さく・遠いほどこもる・左右に振る ----
+  at(p, R = 50, vol = 1) {
+    const c = this.ctx; if (!c) return null;
+    const dx = p.x - player.pos.x, dy = (p.y || 0) - (player.pos.y + 1.5), dz = p.z - player.pos.z, d = Math.hypot(dx, dy, dz);
+    if (d > R) return null;
+    const k = clamp(1 - d / R, 0, 1), g = c.createGain(); g.gain.value = (k * k * 0.92 + 0.06) * vol;
+    let out = g;
+    if (c.createStereoPanner) {
+      const pn = c.createStereoPanner(); pn.pan.value = clamp((dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw)) / (d || 1), -1, 1) * 0.85;
+      g.connect(pn); pn.connect(this.master);
+    } else g.connect(this.master);
+    if (d > 14) { const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = clamp(9000 - d * 140, 900, 9000); f.connect(g); out = f; }
+    return out;
+  },
+  twangAt(p) { const o = this.at(p, 75, 0.9); if (!o) return; this.tone('triangle', 180 + Math.random() * 50, 72, 0.32, 0.4, 0, o); this.noiseBurst(0.12, 'bandpass', 2400, 700, 0.2, 2, 0, o); },
+  whoosh(p, d) {   // 近くを矢がかすめる「ひゅっ」
+    const o = this.at(p, 10, 1.4); if (!o) return; const g = clamp(0.55 - d * 0.1, 0.15, 0.55);
+    this.noiseBurst(0.3, 'bandpass', 2800, 520, g, 2.4, 0, o); this.noiseBurst(0.16, 'highpass', 5200, 2600, g * 0.35, 0.7, 0, o);
+  },
+  impactGround(p) { const o = this.at(p, 40); if (!o) return; this.tone('sine', 150, 55, 0.1, 0.35, 0, o); this.noiseBurst(0.14, 'lowpass', 900, 120, 0.3, 1, 0, o); this.noiseBurst(0.2, 'bandpass', 3200, 1600, 0.05, 1, 0.02, o); },
+  impactBamboo(p) { const o = this.at(p, 45); if (!o) return; this.tone('triangle', 640, 600, 0.12, 0.26, 0, o); this.tone('triangle', 955, 900, 0.09, 0.16, 0, o); this.noiseBurst(0.05, 'bandpass', 1300, 1100, 0.25, 8, 0, o); },
+  impactWood(p) { const o = this.at(p, 45); if (!o) return; this.tone('sine', 230, 150, 0.09, 0.45, 0, o); this.noiseBurst(0.05, 'bandpass', 800, 500, 0.3, 3, 0, o); },
+  impactBody(p) { const o = this.at(p, 45); if (!o) return; this.tone('sine', 115, 55, 0.16, 0.5, 0, o); this.noiseBurst(0.1, 'lowpass', 500, 90, 0.35, 0.7, 0, o); },
+  step(wood, vol = 1, p = null) {   // 足音：土（ざっ）／木の床（とん）
+    const o = p ? this.at(p, 16, vol) : this.master; if (!o) return; const v = p ? 1 : vol;
+    if (wood) { this.tone('sine', 150 + Math.random() * 30, 95, 0.06, 0.2 * v, 0, o); this.noiseBurst(0.04, 'bandpass', 600, 400, 0.08 * v, 2, 0, o); }
+    else { this.noiseBurst(0.08, 'lowpass', 1100 + Math.random() * 300, 180, 0.13 * v, 0.8, 0, o); this.noiseBurst(0.06, 'bandpass', 2800, 1800, 0.03 * v, 1, 0.01, o); }
+  },
+  // ---- 遠くの合戦の気配：ざわめき・遠くの弓弦の一斉射・「かかれー！」（太鼓は使わない） ----
+  amb: { bed: null, volT: 4, shoutT: 10, combat: 0 },
+  farOut() {
+    const c = this.ctx, f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 2200;
+    if (c.createStereoPanner) { const pn = c.createStereoPanner(); pn.pan.value = rand(-0.8, 0.8); f.connect(pn); pn.connect(this.master); } else f.connect(this.master);
+    return f;
+  },
+  ambience(dt, playing, combat) {
+    const c = this.ctx; if (!c) return; const A = this.amb;
+    if (!A.bed) {
+      const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;
+      const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 420; f.Q.value = 0.8;
+      const g = c.createGain(); g.gain.value = 0; s.connect(f); f.connect(g); g.connect(this.master); s.start(); A.bed = g;
+    }
+    A.combat += ((playing && combat ? 1 : 0) - A.combat) * Math.min(1, dt * 0.5);
+    A.bed.gain.setTargetAtTime(playing ? 0.01 + A.combat * 0.03 : 0, c.currentTime, 0.5);
+    if (!playing || !combat) return;
+    if ((A.volT -= dt) <= 0) {
+      A.volT = rand(5, 11); const n = 4 + (Math.random() * 5 | 0);
+      for (let i = 0; i < n; i++) { const dl = Math.random() * 1.3, k = rand(0.03, 0.07), o = this.farOut(); this.tone('triangle', 180 + Math.random() * 60, 70, 0.3, k, dl, o); this.noiseBurst(0.1, 'bandpass', 2000, 700, k * 0.5, 2, dl, o); }
+    }
+    if ((A.shoutT -= dt) <= 0) {
+      A.shoutT = rand(16, 30);
+      const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra.command;
+      if (L && L.length) VoicePack.play(L[(Math.random() * L.length) | 0].files[0], 52, 0, rand(0.94, 1.06));
+    }
+  },
+  // ---- 笛（本陣の笛役の娘から聞こえる）：行進風の旋律。戦闘中は速く強く、波の合間はゆったり ----
+  fl: { out: null, pan: null, lp: null, next: 0, idx: 0 },
+  // 陽音階（D E G A B）。[半音（D5 基準）, 拍]
+  FLUTE_MEL: [[7, 1], [7, .5], [9, .5], [7, 1], [5, 1], [2, 1], [0, 1], [2, 2], [5, 1], [7, 1], [9, 1], [12, 1], [9, 2], [7, 2],
+              [12, 1], [12, .5], [14, .5], [12, 1], [9, 1], [7, 1], [9, .5], [7, .5], [5, 1], [2, 1], [0, 1], [2, 1], [5, 1], [7, 1], [5, 2], [null, 2]],
+  fluteNote(f, t, dur, vel) {
+    const c = this.ctx, F = this.fl;
+    const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+    const o2 = c.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2; const g2 = c.createGain(); g2.gain.value = 0.12;
+    const vib = c.createOscillator(); vib.frequency.value = 5.3; const vg = c.createGain();
+    vg.gain.setValueAtTime(0, t); vg.gain.linearRampToValueAtTime(f * 0.007, t + Math.max(0.05, dur * 0.7)); vib.connect(vg); vg.connect(o.frequency);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel, t + 0.035);
+    g.gain.setValueAtTime(vel * 0.85, t + Math.max(0.05, dur - 0.06)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true;   // 息の音
+    const bf = c.createBiquadFilter(); bf.type = 'bandpass'; bf.frequency.value = f; bf.Q.value = 6;
+    const bg = c.createGain(); bg.gain.setValueAtTime(0.0001, t); bg.gain.exponentialRampToValueAtTime(vel * 0.6, t + 0.02);
+    bg.gain.exponentialRampToValueAtTime(vel * 0.1, t + 0.09); bg.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(F.out); s.connect(bf); bf.connect(bg); bg.connect(F.out);
+    for (const n of [o, o2, vib]) { n.start(t); n.stop(t + dur + 0.05); } s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.05);
+  },
+  flute(pos, combat) {
+    const c = this.ctx; if (!c) return; const F = this.fl;
+    if (!F.out) {
+      F.out = c.createGain(); F.out.gain.value = 0; F.lp = c.createBiquadFilter(); F.lp.type = 'lowpass'; F.lp.frequency.value = 8000;
+      F.out.connect(F.lp);
+      if (c.createStereoPanner) { F.pan = c.createStereoPanner(); F.lp.connect(F.pan); F.pan.connect(this.master); } else F.lp.connect(this.master);
+    }
+    const now = c.currentTime;
+    if (!pos) { F.out.gain.setTargetAtTime(0, now, 0.3); F.next = 0; F.idx = 0; return; }
+    const dx = pos.x - player.pos.x, dz = pos.z - player.pos.z, d = Math.hypot(dx, dz), k = clamp(1 - d / 90, 0, 1);
+    F.out.gain.setTargetAtTime((0.025 + k * k * 0.42) * (combat ? 1 : 0.7), now, 0.2);
+    F.lp.frequency.setTargetAtTime(clamp(9000 - d * 110, 1200, 9000), now, 0.2);
+    if (F.pan) F.pan.pan.setTargetAtTime(clamp((dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw)) / (d || 1), -1, 1) * 0.8, now, 0.1);
+    const beat = 60 / (combat ? 138 : 84);
+    if (F.next < now) F.next = now + 0.05;
+    while (F.next < now + 0.3) {
+      const [n, b] = this.FLUTE_MEL[F.idx]; F.idx = (F.idx + 1) % this.FLUTE_MEL.length;
+      const dur = b * beat;
+      if (n !== null) this.fluteNote(587.33 * Math.pow(2, n / 12), F.next, dur * (combat ? 0.88 : 0.95), combat ? 0.32 : 0.22);
+      F.next += dur;
+    }
+  },
+  // 波の開始の合図（太鼓の代わりに笛の短い呼び）
+  fluteCall() {
+    const c = this.ctx; if (!c || !this.fl.out) return; const t = c.currentTime + 0.05;
+    [[7, .15], [9, .15], [12, .5]].reduce((tt, [n, d]) => { this.fluteNote(587.33 * Math.pow(2, n / 12), tt, d, 0.4); return tt + d; }, t);
+  },
 };
 
 // ====================================================================
@@ -627,9 +730,9 @@ function updateParticles(dt) {
 //  3D の侍女：Quaternius「Animated Women Pack」（CC0）をスキンメッシュとして読み込み、
 //   AnimationMixer で 待機/歩き/走り/突き/射撃姿勢/しゃがみ/倒れる をクロスフェード。
 //   服装は白い上衣・黒い袴（ズボン）・黒い帯・黒い靴・銀の小さなティアラ。髪色・身長は一人ずつ違う。
-//   塗料（#FF9A1F）と刺さった矢は、当たった場所に最も近い骨に取り付ける（体と一緒に動く）。
+//   刺さった矢は、当たった場所に最も近い骨に取り付ける（体と一緒に動く）。塗料の跡は付けない。
 // ====================================================================
-const PAINT = ['#FF9A1F', '#FFD08A'];          // 塗料はすべて明るい橙。青い塗料・赤・血は使わない
+const PAINT = ['#d9d4c6', '#f2efe6'];          // 練習用の先端（たんぽ・刃引き）の色。塗料の跡は付けない。赤・血は使わない
 const TEAM_PAINT = { blue: PAINT, orange: PAINT };
 const HUM = { tpl: [] };
 const HAIR = [0x16110d, 0x241812, 0x33221a, 0x4a2f1e, 0x5b3b25, 0x1e1a1a, 0x6b4a2e];
@@ -642,7 +745,7 @@ const bowGripMat = new THREE.MeshStandardMaterial({ color: 0xc9b48a, roughness: 
 const stringMat = new THREE.MeshBasicMaterial({ color: 0xeeeadf });
 const daggerMat = new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 0.6, roughness: 0.35 });
 const hiltMat = new THREE.MeshStandardMaterial({ color: 0x18141a, roughness: 0.7 });
-const tipMat = new THREE.MeshLambertMaterial({ color: 0xff9a1f, emissive: 0xff9a1f, emissiveIntensity: 0.25 });
+const tipMat = new THREE.MeshLambertMaterial({ color: 0xd9d4c6 });   // たんぽ（布で包んだ練習用の矢先）
 function makeTiara(mat) {
   const g = new THREE.Group();
   const band = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.008, 6, 24, Math.PI * 1.1), mat);
@@ -667,7 +770,7 @@ function makeBow() {
 function makeDagger() {
   const g = new THREE.Group(); g.name = 'npcDagger';
   const blade = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.006, 0.2), daggerMat); blade.position.z = 0.15; g.add(blade);
-  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), tipMat); tip.position.z = 0.25; g.add(tip);   // 塗料玉
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), tipMat); tip.position.z = 0.25; g.add(tip);   // たんぽ
   const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.1, 6), hiltMat); hilt.rotation.x = Math.PI / 2; g.add(hilt);
   return g;   // 刃先＝+Z
 }
@@ -684,7 +787,7 @@ function attachWorld(bone, obj, pos, quat) {
 function prepHuman(g) {
   const root = g.scene;
   const clip = n => g.animations.find(a => a.name.endsWith('_' + n) || a.name.endsWith('|' + n));
-  const clips = { idle: clip('Idle'), walk: clip('Walk'), run: clip('Run'), stab: clip('Punch'), death: clip('Death'), sit: clip('Sitting') };
+  const clips = { idle: clip('Idle'), walk: clip('Walk'), run: clip('Run'), stab: clip('Punch'), death: clip('Death'), sit: clip('Sitting'), clap: clip('Clapping') };
   if (!clips.idle || !clips.walk || !clips.death) throw new Error('animations missing');
   clips.aim = clips.stab.clone(); clips.aim.name = 'aim';
   root.traverse(o => {
@@ -770,27 +873,12 @@ function nearestPart(e, pt) {
   }
   return best;
 }
-const splatGeo = new THREE.SphereGeometry(1, 8, 6);
-const splatMat = [new THREE.MeshLambertMaterial({ color: 0xff9a1f, emissive: 0xff7a00, emissiveIntensity: 0.25 }),
-                  new THREE.MeshLambertMaterial({ color: 0xffd08a, emissive: 0xff9a1f, emissiveIntensity: 0.2 })];
-// 塗料の跡：当たった場所（体の表面）に平たい橙の塗料を骨ごと貼り付ける。from: 攻撃側の位置
-function paintSplat(e, pt, from, size = 0.05) {
+// 当たった場所（体の表面）の位置を求める。塗料の跡は付けない（白い閃光と砂埃だけ）
+function hitSurface(e, pt, from) {
   const hit = nearestPart(e, pt); if (!hit) return null;
   const n = new V3(from.x - hit.c.x, 0, from.z - hit.c.z);
   if (n.lengthSq() < 1e-6) n.set(0, 0, 1); n.normalize();
   const surf = hit.c.clone().addScaledVector(n, hit.pb.r * 0.92); surf.y = clamp(pt.y, hit.c.y - 0.12, hit.c.y + 0.12);
-  const g = new THREE.Group();
-  const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), n);
-  for (let i = 0; i < 6; i++) {
-    const m = new THREE.Mesh(splatGeo, splatMat[i === 5 ? 1 : 0]);
-    const r = size * (i === 0 ? 0.75 : rand(0.25, 0.5)) * (i === 5 ? 0.5 : 1);
-    m.scale.set(r, r * rand(0.7, 1.1), r * 0.28);
-    if (i > 0) m.position.set(rand(-1, 1) * size * 0.9, rand(-1, 1) * size * 0.9, 0.002);
-    g.add(m);
-  }
-  g.position.copy(surf); g.quaternion.copy(q); g.updateMatrixWorld(true);
-  hit.pb.bone.attach(g);
-  e.splats.push(g); if (e.splats.length > 16) { const o = e.splats.shift(); o.parent && o.parent.remove(o); }
   return surf;
 }
 // 刺さった練習矢：矢の向きのまま、鏃が表面に少し埋まる位置で骨に取り付ける
@@ -852,7 +940,7 @@ const PERS = {
   冷静: { desc: '冷静', pitch: 0.95, rate: 0.95, speed: 1.0, atkCd: [1.0, 1.5], hideT: [1.5, 2.5], aimErr: 0.008, aimT: 1.2, keep: [18, 28], retreat: false,
     lines: { spot: ['目標、確認。', '捕捉しました。', '…見えています。'], attack: ['射ます。', '狙い通りです。', 'そこです。'], hit: ['…被弾。問題ありません。', 'なるほど、やりますね。', '想定内です。', 'っ…かすっただけです。', 'はっ…いい腕ですね。', 'うっ…！ 修正します。'], defeat: ['…戦死判定、了解です。', '完敗ですね。', '見事な腕前です。', '無念…ここまでですね。', 'くっ…計算違いでした。', 'あとは頼みます…'] } },
   陽気: { desc: '陽気', pitch: 1.4, rate: 1.15, speed: 1.1, atkCd: [0.9, 1.5], hideT: [1.0, 2.0], aimErr: 0.045, aimT: 0.8, keep: [14, 24], retreat: false,
-    lines: { spot: ['みーつけたっ！', 'いっくよー！', 'あ、いたいた！ 勝負〜！'], attack: ['それっ！', 'くらえ〜っ！', 'えーいっ！'], hit: ['わっ、やったなー！', 'あはは、当たっちゃった！', 'もー、ずるい〜！', 'きゃっ！ やったなー！', 'うっ…！ 今のは効いた！', 'いやっ！ 服がオレンジだらけ！'], defeat: ['やられた〜！', 'あちゃ〜、負けちゃった！', 'あー、楽しかった〜！', 'きゃあっ！ やられた〜！', '悔しい〜！ 次は勝つからね！', 'すみません、脱落です！'] } },
+    lines: { spot: ['みーつけたっ！', 'いっくよー！', 'あ、いたいた！ 勝負〜！'], attack: ['それっ！', 'くらえ〜っ！', 'えーいっ！'], hit: ['わっ、やったなー！', 'あはは、当たっちゃった！', 'もー、ずるい〜！', 'きゃっ！ やったなー！', 'うっ…！ 今のは効いた！', 'いやっ！ 当てられちゃった！'], defeat: ['やられた〜！', 'あちゃ〜、負けちゃった！', 'あー、楽しかった〜！', 'きゃあっ！ やられた〜！', '悔しい〜！ 次は勝つからね！', 'すみません、脱落です！'] } },
 };
 const PERS_KEYS = Object.keys(PERS);
 let usedNames = new Set();
@@ -1003,7 +1091,7 @@ function startWave(n) {
   wave.maxAlive = Math.min(8 + n * 2, 28); wave.captain = n >= 2;
   wave.archerRate = ARCHER_RATE;
   showBanner(`第${waveName(n)}波`, n === 1 ? '模擬戦、開始！ 青組の味方と共に戦え' : '新手の橙組が迫る！ 青組の援軍が到着');
-  Sfx.drum();
+  Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
@@ -1053,7 +1141,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   let hitPos = null;
   if (hit && hit.pt) {
     e.model.updateMatrixWorld(true);
-    hitPos = paintSplat(e, hit.pt, from, hit.thrust ? 0.04 : 0.055);
+    hitPos = hitSurface(e, hit.pt, from);
     if (hit.arrow && hit.dir) stickArrow(e, hit.pt, hit.dir);
   }
   if (!hitPos) { hitPos = e.s.position.clone(); hitPos.y += e.figH * 0.6; }
@@ -1063,7 +1151,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
   if (e.state === 'windup' || e.state === 'aim') { e.state = 'stagger'; e.t = 0; }
   if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
-  else Sfx.hitFar(Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z));
+  else Sfx.impactBody(hitPos);
   if (by !== 'player' && by.state !== 'down') { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
   if (e.perch && e.perch.tower && e.team === 'blue') { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }
   if (e.hp <= 0) { killEnemy(e, byPlayer, from); return; }
@@ -1185,7 +1273,7 @@ function steer(e, tx, tz, sp, dt) {
 //  本陣：休める安全地帯。秘書課の侍女（架空の人物・攻撃不可）に用事を頼める
 // ====================================================================
 let hq = null;          // { x0, x1, z0, z1, sx, sz }
-const sec = { s: null, model: null, mixer: null, name: '秘書課 白瀬 澄', near: false, teaT: 0, buffT: 0, fanT: 0, mode: 'hq', esc: null };
+const sec = { s: null, model: null, mixer: null, name: '秘書課 白瀬 澄', near: false, teaT: 0, buffT: 0, fanT: 0, mode: 'hq', esc: null, cook: null, dish: null, eatT: 0, mealWave: -1 };
 let menuOpen = false, allyStance = 'off', inHqPrev = false;
 const inHQ = (x = player.pos.x, z = player.pos.z) => !!hq && player.pos.y < 0.5 && x > hq.x0 && x < hq.x1 && z > hq.z0 && z < hq.z1;
 const hqMat = { cloth: new THREE.MeshLambertMaterial({ color: 0x2b2420 }), tea: new THREE.MeshLambertMaterial({ color: 0x6b8a3a }),
@@ -1207,6 +1295,7 @@ function buildHQ(x0, x1, z0, z1, sx, sz) {
 // 秘書課の侍女（3D。写真は使わない、架空の姿：黒髪のまとめ髪）
 function spawnSecretary() {
   removeSecretary();
+  if (!fluter.s) spawnFluter();
   if (!hq || !HUM.tpl.length) return;
   const T = HUM.tpl[HUM.tpl.length - 1];
   const model = THREE_EXT.SkeletonUtils.clone(T.root);
@@ -1239,7 +1328,7 @@ function addBun(model) {
   attachWorld(head, new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), bunMat), p, _q.identity());
 }
 // メガネ（細いフレーム。丸／四角、黒・銀・赤茶）。モデルが立ち姿の時に頭の骨へ取り付ける
-const glassMat = [0x141414, 0xc4c9d0, 0x6a2a1e].map(c => new THREE.MeshStandardMaterial({ color: c, metalness: c === 0xc4c9d0 ? 0.8 : 0.2, roughness: 0.4 }));
+const glassMat = [0x141414, 0xc4c9d0, 0x4a3324].map(c => new THREE.MeshStandardMaterial({ color: c, metalness: c === 0xc4c9d0 ? 0.8 : 0.2, roughness: 0.4 }));
 const lensMat = new THREE.MeshBasicMaterial({ color: 0xdff0ff, transparent: true, opacity: 0.18, depthWrite: false });
 function makeGlasses(round, mat) {
   const g = new THREE.Group(), T = 0.0028;
@@ -1289,6 +1378,55 @@ function sendBack() {
   closeSecMenu(false);
 }
 function removeSecretary() { if (sec.s) { scene.remove(sec.s); sec.s = null; } }
+// ---- 笛役の娘（味方・非戦闘員）：本陣のそばで横笛を吹く。攻撃の対象にならない（敵味方の一覧に入れない） ----
+const fluter = { s: null, model: null, mixer: null, act: null, name: '笛役 小鳥遊 ひびき' };
+const fluteMat = { body: new THREE.MeshStandardMaterial({ color: 0x3a2416, roughness: 0.6 }), band: new THREE.MeshStandardMaterial({ color: 0x0f0c0a, roughness: 0.5 }) };
+function makeFlute() {   // 横笛（篠笛）：細い竹の筒に黒い巻き
+  const g = new THREE.Group(), L = 0.42;
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0095, L, 8), fluteMat.body); tube.rotation.z = Math.PI / 2; g.add(tube);
+  for (const x of [-0.19, -0.12, 0.17, 0.2]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.0105, 0.012, 8), fluteMat.band); b.rotation.z = Math.PI / 2; b.position.x = x; g.add(b); }
+  for (let i = 0; i < 6; i++) { const h = new THREE.Mesh(new THREE.CircleGeometry(0.0035, 6), fluteMat.band); h.position.set(0.02 + i * 0.022, 0.0098, 0); h.rotation.x = -Math.PI / 2; g.add(h); }
+  return g;
+}
+const FLUTE_T0 = 0.33;   // 拍手アニメの「両手を口の前に上げた」瞬間を、笛を構えた姿勢として使う
+function spawnFluter() {
+  removeFluter();
+  if (!hq || !HUM.tpl.length || !HUM.tpl[0].clips.clap) return;
+  const T = HUM.tpl[0];
+  const model = THREE_EXT.SkeletonUtils.clone(T.root);
+  model.scale.setScalar(1.56 / T.height);
+  model.traverse(o => {
+    if (o.name === 'npcBow' || o.name === 'npcDagger') o.visible = false;
+    if (!o.isSkinnedMesh) return;
+    o.material = o.material.clone();
+    const r = o.material.userData.role;
+    if (r === 'Hair' || r === 'HairBase' || r === 'Eyebrows') o.material.color.setHex(0x2a1a10);
+  });
+  const s = new THREE.Group(); s.add(model);
+  const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.scale.set(0.7, 1, 0.55); sh.position.y = 0.02; s.add(sh);
+  s.position.set(hq.sx - 4, 0, hq.sz + 0.5); scene.add(s);
+  const mixer = new THREE.AnimationMixer(model), act = mixer.clipAction(T.clips.clap);
+  act.play(); act.paused = true; act.time = FLUTE_T0; mixer.update(0); model.updateMatrixWorld(true);
+  // 笛を右手に持たせ、左手の方向へ（顔の右へ伸びる横笛の構え）
+  const pl = model.getObjectByName('PalmL'), pr = model.getObjectByName('PalmR');
+  if (pl && pr) {
+    const a = pl.getWorldPosition(new V3()), b = pr.getWorldPosition(new V3());
+    const mid = a.clone().lerp(b, 0.5), dir = b.clone().sub(a).normalize();
+    const fl = makeFlute(); fl.name = 'flute';
+    attachWorld(pr, fl, mid.addScaledVector(dir, 0.06).add(new V3(0, 0.03, -0.03)), new THREE.Quaternion().setFromUnitVectors(new V3(1, 0, 0), dir));
+  }
+  s.rotation.y = Math.PI;   // 戦場（-Z）の方を向く
+  Object.assign(fluter, { s, model, mixer, act });
+}
+function removeFluter() { if (fluter.s) { scene.remove(fluter.s); fluter.s = null; } }
+function updateFluter(dt) {
+  if (!fluter.s) return;
+  // 吹いている小さな動き：手の位置をわずかに揺らし、拍に合わせて体を揺らす
+  fluter.act.time = FLUTE_T0 + (Math.sin(time * 2.1) + 1) * 0.02;
+  fluter.mixer.update(0);
+  fluter.model.rotation.y = Math.sin(time * 1.3) * 0.08;
+  fluter.model.position.y = Math.abs(Math.sin(time * (wave.inter > 0 ? 2.2 : 3.6))) * 0.012;
+}
 // 収録音声を順につなげて再生（足りなければ Web Speech で全文）
 function secSay(parts, text) {
   if (VoicePack.ok) {
@@ -1328,6 +1466,7 @@ const SEC_REQ = {
     popup(allyStance === 'def' ? '青組：守勢' : '青組：攻勢');
     $('stance').textContent = allyStance === 'def' ? '守勢' : '攻勢';
   },
+  meal() { askMeal(); },
   shoulder() { sec.buffT = 60; popup('60秒間 矢の回復が速くなる'); secReply('sec_shoulder'); },
   fan() { sec.fanT = 4; Sfx.noiseBurst(1.2, 'bandpass', 500, 300, 0.12, 0.6); secReply('sec_fan'); },
   follow() { startEscort(); },
@@ -1337,29 +1476,105 @@ const SEC_REQ = {
     player.arrows = CFG.arrowsMax; popup('矢を補充した'); Sfx.pickup(); secReply('sec_arrows', 0);
   },
 };
-// ---- 櫃の状況（「感想を言う」用）：櫃に付いた塗料の数と、最近どれだけ狙われたか ----
+// ---- ご飯（「お腹減った、ご飯今すぐ作って」）：1つの波につき1回。約5秒で作り、卓に出す。食べると数秒かけて体力回復 ----
+const MEALS = { onigiri: 'おむすび', miso: 'お味噌汁', chazuke: 'お茶漬け' };
+const MEAL_TIME = 5, MEAL_HP = 60, EAT_TIME = 4;
+const mealMat = { plate: new THREE.MeshLambertMaterial({ color: 0xf1ede2 }), rice: new THREE.MeshLambertMaterial({ color: 0xfbfaf4 }),
+  nori: new THREE.MeshLambertMaterial({ color: 0x1d2418 }), bowl: new THREE.MeshLambertMaterial({ color: 0x1a1512 }),
+  miso: new THREE.MeshLambertMaterial({ color: 0xb08a55 }), tea: new THREE.MeshLambertMaterial({ color: 0xc9b77a }),
+  green: new THREE.MeshLambertMaterial({ color: 0x5d8a3a }), tofu: new THREE.MeshLambertMaterial({ color: 0xf6f3e8 }) };
+function makeDish(kind) {
+  const g = new THREE.Group();
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.015, 18), mealMat.plate); g.add(plate);
+  if (kind === 'onigiri') {
+    for (const [x, ry] of [[-0.045, 0.2], [0.045, -0.15]]) {   // 三角のおむすび2つ＋海苔
+      const o = new THREE.Group();
+      const r = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.03, 3), mealMat.rice);
+      r.rotation.x = Math.PI / 2; r.rotation.y = Math.PI / 2; o.add(r);
+      const n = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.03, 0.032), mealMat.nori); n.position.y = -0.016; o.add(n);
+      o.position.set(x, 0.03, 0); o.rotation.y = ry; g.add(o);
+    }
+  } else {
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.035, 0.055, 16, 1, true), mealMat.bowl); bowl.position.y = 0.035; g.add(bowl);
+    const bot = new THREE.Mesh(new THREE.CircleGeometry(0.035, 12), mealMat.bowl); bot.rotation.x = -Math.PI / 2; bot.position.y = 0.009; g.add(bot);
+    const top = new THREE.Mesh(new THREE.CircleGeometry(0.056, 16), kind === 'miso' ? mealMat.miso : mealMat.tea); top.rotation.x = -Math.PI / 2; top.position.y = 0.052; g.add(top);
+    const bits = kind === 'miso' ? [[mealMat.tofu, 0.012, 5], [mealMat.green, 0.006, 6]] : [[mealMat.rice, 0.01, 7], [mealMat.green, 0.006, 5], [mealMat.nori, 0.008, 4]];
+    for (const [m, sz, n] of bits) for (let i = 0; i < n; i++) {
+      const b = new THREE.Mesh(new THREE.BoxGeometry(sz, sz * 0.5, sz), m); const a = rand(0, 6.28), rr = rand(0, 0.04);
+      b.position.set(Math.cos(a) * rr, 0.054, Math.sin(a) * rr); g.add(b);
+    }
+  }
+  return g;
+}
+function removeDish() { if (sec.dish) { scene.remove(sec.dish); sec.dish = null; } sec.eatT = 0; }
+// おむすびを食べている間だけ言える感想（1皿に1回）
+const canOnigiriRemark = () => !!(sec.dish && sec.dish.userData.kind === 'onigiri' && !sec.dish.userData.remarked);
+function onigiriRemark() {
+  if (!canOnigiriRemark()) return;
+  sec.dish.userData.remarked = true;
+  if (!menuOpen) $('secsay').textContent = '';
+  secReply('sec_c_onigiri');
+  const t = $('secsay').textContent; if (t && !menuOpen) popup(t.replace(/^「|」$/g, '').slice(0, 30));
+}
+function askMeal() {
+  if (sec.cook) { secReply('sec_meal_busy', 0); return; }
+  if (sec.dish) { secReply('sec_meal_ready', 0); return; }
+  if (sec.mode !== 'hq') { secReply('sec_meal_away', 0); return; }
+  if (sec.mealWave === wave.n) { secReply('sec_meal_wait', 0); return; }
+  secReply('sec_meal_ask');
+  $('secmeals').style.display = 'grid'; $('secremarks').style.display = 'none';
+}
+function orderMeal(kind) {
+  if (!MEALS[kind] || sec.cook || sec.dish || sec.mode !== 'hq' || sec.mealWave === wave.n) return;
+  sec.cook = { kind, t: 0 }; sec.mealWave = wave.n;
+  $('secmeals').style.display = 'none';
+  secReply('sec_meal_ok', 0);
+}
+function updateMeal(dt) {
+  const el = $('cook');
+  if (sec.cook) {
+    sec.cook.t += dt;
+    const f = Math.min(1, sec.cook.t / MEAL_TIME);
+    el.style.display = 'block';
+    el.firstChild.textContent = `${MEALS[sec.cook.kind]}を作っています…`;
+    $('cookbar').style.width = (f * 100).toFixed(0) + '%';
+    if (f >= 1) {
+      const k = sec.cook.kind; sec.cook = null;
+      if (hq) {
+        const d = makeDish(k); d.position.set(hq.sx + 1.8, 0.748, hq.sz - 0.12); scene.add(d); sec.dish = d; sec.dish.userData.kind = k;
+        secReply('sec_meal_done_' + k, 0); popup(`${MEALS[k]}ができた（本陣の卓）`);
+      }
+    }
+  } else if (sec.dish) {
+    el.style.display = 'block';
+    if (sec.eatT > 0) {
+      // 食べている：数秒かけて体力回復
+      const step = Math.min(dt, sec.eatT); sec.eatT -= step;
+      player.hp = Math.min(CFG.maxHp, player.hp + MEAL_HP / EAT_TIME * step);
+      const f = 1 - sec.eatT / EAT_TIME;
+      el.firstChild.textContent = `${MEALS[sec.dish.userData.kind]}をいただいています…`;
+      $('cookbar').style.width = (f * 100).toFixed(0) + '%';
+      sec.dish.scale.setScalar(Math.max(0.35, 1 - f * 0.65));
+      if (sec.eatT <= 0) { removeDish(); popup('ごちそうさまでした'); }
+    } else {
+      el.firstChild.textContent = `${MEALS[sec.dish.userData.kind]}が本陣の卓にあります（本陣に入ると食べる）`;
+      $('cookbar').style.width = '100%';
+      if (inHQ()) { sec.eatT = EAT_TIME; popup('いただきます'); Sfx.pickup(); }
+    }
+  } else el.style.display = 'none';
+  const can = canOnigiriRemark();
+  $('onigiriRem').style.display = can ? 'inline-block' : 'none';
+  $('secOnigiri').style.display = can && menuOpen ? 'block' : 'none';
+}
+// ---- 櫃の状況（「感想を言う」用）：櫃に当たった矢の数と、最近どれだけ狙われたか ----
 const towers = { west: { x: -12, z: 8, paint: 0, press: 0 }, east: { x: 12, z: 8, paint: 0, press: 0 } };
 function towerAt(p) {
   if (builtStage !== 'fort') return null;
   for (const k in towers) { const t = towers[k]; if (Math.abs(p.x - t.x) < 3.2 && Math.abs(p.z - t.z) < 3.2 && p.y > 4.5) return t; }
   return null;
 }
-const woodPaint = [];
-// 木の壁・櫃に当たった練習矢の塗料跡（地面には残さない）
-function paintWood(p, dir) {
-  const n = dir.clone().negate().normalize();
-  const g = new THREE.Group();
-  for (let i = 0; i < 5; i++) {
-    const m = new THREE.Mesh(splatGeo, splatMat[i === 4 ? 1 : 0]);
-    const r = i === 0 ? 0.06 : rand(0.015, 0.03);
-    m.scale.set(r, r, r * 0.25);
-    if (i) m.position.set(rand(-0.07, 0.07), rand(-0.07, 0.07), 0);
-    g.add(m);
-  }
-  g.position.copy(p).addScaledVector(n, 0.02); g.quaternion.setFromUnitVectors(new V3(0, 0, 1), n);
-  stageRoot.add(g); woodPaint.push(g);
-  if (woodPaint.length > 160) { const o = woodPaint.shift(); o.parent && o.parent.remove(o); }
-}
+// 木の壁・櫃に当たった練習矢：小さな埃が立つだけ（跡は残さない）
+function hitWood(p) { puff(p.clone(), 0xd8cfbf, 3, 0.25, 0.9, 0.35); }
 function noteTowerHit(p, team) {
   const t = towerAt(p); if (!t) return;
   t.paint++; if (team === 'orange') t.press += 1;
@@ -1397,7 +1612,7 @@ function sayRemark(key) {
   let parts = fn(), note = '';
   if (key === 'paint' || key === 'east' || key === 'archers') {
     // 補足の数字（画面表示のみ）
-    note = (key === 'paint' && builtStage === 'fort') ? `（塗料の跡：東の櫃 ${towers.east.paint}か所／西の櫃 ${towers.west.paint}か所）` :
+    note = (key === 'paint' && builtStage === 'fort') ? `（当たった矢：東の櫃 ${towers.east.paint}本／西の櫃 ${towers.west.paint}本）` :
       (key === 'east' && builtStage === 'fort') ? `（最近狙われた度合い：東 ${Math.round(towers.east.press)}／西 ${Math.round(towers.west.press)}）` :
       key === 'archers' ? `（敵の弓兵 ${aliveOf('orange').filter(x => x.kind === 'archer').length}名／近接兵 ${aliveOf('orange').filter(x => x.kind !== 'archer').length}名）` : '';
   }
@@ -1408,7 +1623,7 @@ function sayRemark(key) {
 function openSecMenu() {
   if (menuOpen || state !== 'play') return;
   menuOpen = true; player.drawing = false; player.charge = 0;
-  $('secmenu').style.display = 'flex'; $('secremarks').style.display = 'none';
+  $('secmenu').style.display = 'flex'; $('secremarks').style.display = 'none'; $('secmeals').style.display = 'none';
   if (document.exitPointerLock && locked()) document.exitPointerLock();
   secReply('sec_greet');
 }
@@ -1419,9 +1634,11 @@ function closeSecMenu(bye = true) {
   if (state === 'play') lock();
 }
 function updateHQ(dt) {
+  updateFluter(dt);
   if (sec.teaT > 0) sec.teaT -= dt;
   if (sec.buffT > 0) sec.buffT -= dt;
   if (sec.fanT > 0) sec.fanT -= dt;
+  updateMeal(dt);
   for (const k in towers) towers[k].press *= Math.exp(-dt / 40);
   const inside = inHQ();
   if (inside !== inHqPrev) { inHqPrev = inside; if (inside) popup('本陣：ここは安全'); }
@@ -1456,6 +1673,7 @@ function updateHQ(dt) {
 
 // ---- NPC の見た目：向き・アニメーション（歩き/走りは実際の移動速度から選ぶ） ----
 let frameNo = 0;
+let stepBudget = 3;   // 1フレームに鳴らす娘の足音の上限
 function animateNpc(e, dt, lean) {
   const p = e.s.position;
   const vx = p.x - e.px, vz = p.z - e.pz, v = Math.hypot(vx, vz) / Math.max(dt, 1e-4);
@@ -1475,6 +1693,10 @@ function animateNpc(e, dt, lean) {
   if (want === 'run') e.act.run.timeScale = clamp(sv / 3.9, 0.7, 1.4);
   if (want === 'aim') e.act.aim.time = 0.4;
   if (want === 'sit') e.act.sit.time = SIT_T;
+  if ((want === 'walk' || want === 'run') && stepBudget > 0) {
+    const ph = Math.floor((e.stepT = (e.stepT || 0) + dt * sv * 1.5) / Math.PI);
+    if (ph !== e.stepPh) { e.stepPh = ph; const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < 16) { stepBudget--; Sfx.step(e.baseY > 0.3, want === 'run' ? 0.9 : 0.6, p); } }
+  }
   e.crouch += ((want === 'sit' ? 1 : 0) - e.crouch) * Math.min(1, dt * 5);
   // 向き：移動中は進む方向、構え・射撃・待機は標的の方向
   let face = e.face;
@@ -1696,16 +1918,15 @@ function updateEnemies(dt) {
   }
 }
 
-// ---- プレイヤー被弾（橙色の塗料が画面に付く） ----
+// ---- プレイヤー被弾（画面の縁が一瞬白く光る。塗料は付かない） ----
 function hurtPlayer(dmg) {
   if (state !== 'play' || inHQ()) return;
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
-  addScreenPaint();
   Sfx.hurt();
   if (player.hp <= 0) { player.hp = 0; gameOver(); }
 }
 
-// ---- 矢（鏃は塗料玉）。team: 'player' | 'blue' | 'orange' ----
+// ---- 矢（矢先は布で包んだたんぽ）。team: 'player' | 'blue' | 'orange' ----
 function makeArrowTemplate(tipColor) {
   const g = new THREE.Group();
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.85, 5), new THREE.MeshLambertMaterial({ color: 0xc8a96a }));
@@ -1717,7 +1938,7 @@ function makeArrowTemplate(tipColor) {
   const fl2 = fl.clone(); fl2.rotation.y = 0; fl2.rotation.z = Math.PI / 2; g.add(fl2);
   return g;
 }
-const arrowTpl = { player: makeArrowTemplate(0xff9a1f), orange: makeArrowTemplate(0xff9a1f) };
+const arrowTpl = { player: makeArrowTemplate(0xd9d4c6), orange: makeArrowTemplate(0xd9d4c6) };
 arrowTpl.blue = arrowTpl.player;
 const Z = new V3(0, 0, 1);
 function addArrow(team, pos, vel, extra) {
@@ -1746,12 +1967,12 @@ function enemyShoot(e, t) {
   const vel = dir.multiplyScalar(v); vel.y += 0.5 * 9.8 * tf;
   from.addScaledVector(dir, 0.5);
   addArrow(e.team, from, vel, { dmg: (e.captain ? 12 : 8) + Math.min(6, wave.n), shooter: e });
-  Sfx.twangFar(Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z));
+  Sfx.twangAt(e.s.position.clone().setY(e.baseY + 1.3));
 }
 function hitsCover(p) {
   if (p.y > 9) return false;
-  for (const c of covers) if (p.y < (c.h || 7.5) && Math.hypot(p.x - c.x, p.z - c.z) < c.r * 0.85) return true;
-  return false;
+  for (const c of covers) if (p.y < (c.h || 7.5) && Math.hypot(p.x - c.x, p.z - c.z) < c.r * 0.85) return c;
+  return null;
 }
 function updateArrows(dt) {
   const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);   // カメラの右方向
@@ -1779,6 +2000,13 @@ function updateArrows(dt) {
       const top = e.figH * (1 - 0.38 * e.crouch);         // しゃがむと当たりも低くなる
       if (d < 0.3 && y > 0 && y < top && t < best) { best = t; hit = { e, y, top, pt: new V3(cx, y + e.baseY, cz) }; }
     }
+    // 近くをかすめる矢の音（自分の矢以外。1本につき1回）
+    if (a.team !== 'player' && !a.wh && a.life > 0.1) {
+      const hx = player.pos.x, hy = player.pos.y + 1.5, hz = player.pos.z, syy = p1.y - p0.y;
+      const t = clamp(((hx - p0.x) * sx + (hy - p0.y) * syy + (hz - p0.z) * sz) / (sl + syy * syy), 0, 1);
+      const d = Math.hypot(p0.x + sx * t - hx, p0.y + syy * t - hy, p0.z + sz * t - hz);
+      if (d < 3.2) { a.wh = true; Sfx.whoosh(p1, d); }
+    }
     // プレイヤーへの当たり判定（橙組の矢のみ）
     if (a.team === 'orange') {
       const t = clamp(((player.pos.x - p0.x) * sx + (player.pos.z - p0.z) * sz) / sl, 0, 1);
@@ -1802,20 +2030,24 @@ function updateArrows(dt) {
       scene.remove(a.m); arrows.splice(i, 1); continue;      // 3D の矢は消え、スプライトに刺さった矢が残る
     }
     const boxHit = (a.team === 'player' || a.life > 0.08) && boxes.length && hitsBox(p1);
-    if (boxHit) { paintWood(p1, a.vel); noteTowerHit(p1, a.team === 'orange' ? 'orange' : 'blue'); }
-    if (hitsCover(p1) || boxHit) {   // 竹林・竹束・木の壁が矢を防ぐ
-      a.stuck = true; a.life = 0; if (a.team === 'player') Sfx.thunk(); continue;
+    if (boxHit) { hitWood(p1); noteTowerHit(p1, a.team === 'orange' ? 'orange' : 'blue'); }
+    const cv = boxHit ? null : hitsCover(p1);
+    if (cv || boxHit) {   // 竹林・竹束・木の壁が矢を防ぐ
+      a.stuck = true; a.life = 0;
+      if (boxHit) Sfx.impactWood(p1); else Sfx.impactBamboo(p1);
+      continue;
     }
     const fl = floorUnder(p1.x, p1.z, p1.y);
     if (p1.y <= fl + 0.02) {
       p1.y = fl + 0.05; a.stuck = true; a.life = 0;
-      puff(p1.clone(), 0xc8b48a, 2, 0.4, 0.8, 0.5);
+      if (fl > 0.1) Sfx.impactWood(p1);
+      else { puff(p1.clone(), 0xc8b48a, 3, 0.4, 0.9, 0.5); Sfx.impactGround(p1); }   // 土埃
     }
     if (a.life > 6) { scene.remove(a.m); arrows.splice(i, 1); }
   }
 }
 
-// ---- 懐刀（練習用・刃先に塗料）：突きのみ。正面・短距離・単体 ----
+// ---- 懐刀（練習用・刃引き）：突きのみ。正面・短距離・単体 ----
 function swing() {
   if (player.swingCd > 0) return;
   player.swingT = 0; player.swingCd = 0.45; player.swingHit = false;
@@ -1981,29 +2213,10 @@ function updateTargetInfo(dt) {
   } else el.style.opacity = 0;
 }
 
-// ---- 被弾時の画面の塗料（橙組の塗料。血ではない） ----
+// ---- 演出用のキャンバス（扇の風など） ----
 const paintCv = $('paint'), paintG = paintCv.getContext('2d');
-let screenPaint = [];
-function addScreenPaint() {
-  const a = rand(0, 6.283), r = rand(0.28, 0.45);
-  const blobs = [];
-  for (let i = 0; i < 9; i++) blobs.push([rand(-1, 1), rand(-1, 1), rand(0.3, 0.7)]);
-  for (let i = 0; i < 10; i++) { const b = rand(0, 6.28), d = rand(1.2, 2); blobs.push([Math.cos(b) * d, Math.sin(b) * d, rand(0.06, 0.15)]); }
-  screenPaint.push({ x: 0.5 + Math.cos(a) * r, y: 0.5 + Math.sin(a) * r * 0.9, s: rand(0.05, 0.08), t: 0, blobs });
-  if (screenPaint.length > 10) screenPaint.shift();
-}
-function drawScreenPaint(dt) {
-  const W = innerWidth, H = innerHeight;
-  paintG.clearRect(0, 0, W, H);
-  screenPaint = screenPaint.filter(p => (p.t += dt) < 2.6);
-  for (const p of screenPaint) {
-    paintG.globalAlpha = p.t < 1.8 ? 0.85 : 0.85 * (1 - (p.t - 1.8) / 0.8);
-    const R = p.s * H, cx = p.x * W, cy = p.y * H;
-    paintG.fillStyle = PAINT[0];
-    for (const [bx, by, br] of p.blobs) { paintG.beginPath(); paintG.arc(cx + bx * R, cy + by * R, br * R, 0, 7); paintG.fill(); }
-    paintG.fillStyle = PAINT[1]; paintG.beginPath(); paintG.arc(cx - R * 0.25, cy - R * 0.25, R * 0.18, 0, 7); paintG.fill();
-  }
-  paintG.globalAlpha = 1;
+function drawScreenPaint(dt) {   // 画面に塗料は描かない（扇の風の表現用にキャンバスを消すだけ）
+  paintG.clearRect(0, 0, innerWidth, innerHeight);
 }
 
 // ====================================================================
@@ -2108,7 +2321,7 @@ function drawDagger(W, H, bx, by) {
   wg.fillStyle = gr;
   wg.beginPath(); wg.moveTo(-H * 0.018, -H * 0.035); wg.lineTo(H * 0.018, -H * 0.035); wg.lineTo(H * 0.012, -H * 0.27); wg.quadraticCurveTo(H * 0.005, -H * 0.31, -H * 0.012, -H * 0.33); wg.lineTo(-H * 0.018, -H * 0.27); wg.fill();
   wg.strokeStyle = 'rgba(255,255,255,.8)'; wg.lineWidth = 1; wg.beginPath(); wg.moveTo(H * 0.006, -H * 0.04); wg.lineTo(H * 0.002, -H * 0.3); wg.stroke();
-  // 刃先の塗料（橙）
+  // 刃先（刃引き・布で包んだ練習用）
   wg.fillStyle = PAINT[0]; wg.beginPath(); wg.ellipse(-H * 0.003, -H * 0.305, H * 0.016, H * 0.03, 0, 0, 7); wg.fill();
   // 手
   wg.fillStyle = '#6b4a2e'; wg.beginPath(); wg.ellipse(0, H * 0.07, H * 0.05, H * 0.06, 0, 0, 7); wg.fill();
@@ -2255,6 +2468,7 @@ addEventListener('keydown', e => {
   if (state !== 'play') return;
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
+  if (e.code === 'KeyT') onigiriRemark();
   if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); }
   if (e.code === 'Space') e.preventDefault();
 });
@@ -2302,13 +2516,13 @@ function setWeapon(w) {
 function resetGame() {
   if (menuOpen) closeSecMenu(false);
   for (const k in towers) towers[k].paint = towers[k].press = 0;
-  for (const o of woodPaint) o.parent && o.parent.remove(o); woodPaint.length = 0;
-  sec.mode = 'hq'; sec.esc = null;
+  removeFluter();
+  sec.mode = 'hq'; sec.esc = null; sec.cook = null; sec.mealWave = -1; removeDish(); if ($('cook')) $('cook').style.display = 'none';
   allyStance = 'off'; sec.teaT = sec.buffT = sec.fanT = 0; if ($('stance')) $('stance').textContent = '攻勢';
   for (const e of enemies) disposeNpc(e);
   for (const b of bodies) disposeNpc(b);
   for (const l of labels) scene.remove(l.s);
-  labels.length = 0; screenPaint = []; usedNames = new Set(); targetShown = null;
+  labels.length = 0; usedNames = new Set(); targetShown = null;
   if (Voice.ok) speechSynthesis.cancel();
   for (const a of arrows) scene.remove(a.m);
   for (const p of pickups) scene.remove(p.g);
@@ -2342,7 +2556,7 @@ function resumeGame() {
   state = 'play'; $('pause').style.display = 'none'; unlockAudio(); goFullscreen(); resetTouch(); lock();
 }
 function toTitle() {
-  state = 'title'; resetGame(); removeSecretary();
+  state = 'title'; resetGame(); removeSecretary(); removeFluter();
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }
 function gameOver() {
@@ -2375,11 +2589,18 @@ function updatePlayer(dt) {
   if (ml > 0 && !(player.climbing && midLadder)) {
     const hk = player.climbing && fin < 0 && player.pos.y > lad.y0 + 0.08 ? 0.2 : 1;
     player.pos.x += mx / ml * sp * mag * dt * hk; player.pos.z += mz / ml * sp * mag * dt * hk;
-    if (player.onGround) player.bob += dt * sp * 1.6;
+    if (player.onGround) {
+      player.bob += dt * sp * 1.6;
+      const ph = Math.floor(player.bob / Math.PI);
+      if (ph !== player.stepPh) { player.stepPh = ph; Sfx.step(player.pos.y > 0.3, sp > 6 ? 1 : 0.75); }
+    }
   }
   if (player.climbing) {
     player.vy = 0;
+    const y0 = player.pos.y;
     player.pos.y = clamp(player.pos.y + clamp(fin, -1, 1) * 3.2 * dt, 0, lad.y1 + 0.05);
+    player.climbAcc = (player.climbAcc || 0) + Math.abs(player.pos.y - y0);
+    if (player.climbAcc > 0.45) { player.climbAcc = 0; Sfx.step(true, 0.7); }   // はしごの段
     player.onGround = true;
     if (keys.Space) { player.climbing = false; player.vy = 3; player.onGround = false; player.pos.x += Math.sin(player.yaw) * 0.6; player.pos.z += Math.cos(player.yaw) * 0.6; }
   } else {
@@ -2445,6 +2666,7 @@ function frame(now) {
   if (state === 'play') {
     time += dt;
     if (TEST) testBot(dt);
+    stepBudget = 3;
     updatePlayer(dt); updateHQ(dt); waveUpdate(dt); updateEnemies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt);
   } else if (state === 'title') {
     time += dt;
@@ -2458,6 +2680,8 @@ function frame(now) {
   }
   updateParticles(state === 'pause' || state === 'over' ? 0 : dt);
   drawScreenPaint(state === 'play' ? dt : 0);
+  { const playing = state === 'play', combat = playing && !(wave.inter > 0);
+    Sfx.ambience(dt, playing, combat); Sfx.flute(playing && fluter.s ? fluter.s.position.clone().setY(1.5) : null, combat); }
   if (sec.fanT > 0 && state === 'play') {   // 扇の風（画面の端に流れる線）
     paintG.strokeStyle = `rgba(255,255,255,${Math.min(0.35, sec.fanT * 0.15)})`; paintG.lineWidth = 2;
     for (let i = 0; i < 7; i++) { const y = innerHeight * (0.2 + i * 0.1) + Math.sin(time * 3 + i) * 10, x = ((time * 400 + i * 180) % (innerWidth + 300)) - 150;
@@ -2485,7 +2709,9 @@ function selectStage(name) {
 for (const b of document.querySelectorAll('#stagesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
 selectStage(stageName);
 for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') SEC_REQ[b.dataset.req](); });
-$('secRemark').addEventListener('click', ev => { ev.stopPropagation(); const r = $('secremarks'); r.style.display = r.style.display === 'grid' ? 'none' : 'grid'; });
+$('secRemark').addEventListener('click', ev => { ev.stopPropagation(); $('secmeals').style.display = 'none'; const r = $('secremarks'); r.style.display = r.style.display === 'grid' ? 'none' : 'grid'; });
+for (const id of ['onigiriRem', 'secOnigiri']) $(id).addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); if (state === 'play') onigiriRemark(); });
+for (const b of document.querySelectorAll('#secmeals [data-meal]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') orderMeal(b.dataset.meal); });
 for (const b of document.querySelectorAll('#secremarks [data-rem]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') sayRemark(b.dataset.rem); });
 $('secClose').addEventListener('click', ev => { ev.stopPropagation(); closeSecMenu(); });
 $('startBtn').disabled = true;
@@ -2500,5 +2726,5 @@ loadSprites(loaded);
 loadHumans(loaded);
 requestAnimationFrame(frame);
 
-window.__game = { get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, HUM, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort };
+window.__game = { get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, HUM, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

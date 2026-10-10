@@ -26,7 +26,11 @@
   #target u{display:block;text-decoration:none;font-size:12px;letter-spacing:.15em}
   #target img{display:block;width:56px;height:56px;margin:0 auto 4px;border-radius:50%;border:2px solid rgba(232,217,168,.8);object-fit:cover;background:#ccc}
   #talk{position:absolute;left:50%;top:calc(50% + 110px);transform:translateX(-50%);padding:6px 16px;background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.6);border-radius:4px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
-  #hqtag{position:absolute;left:50%;top:64px;transform:translateX(-50%);color:#bff5c8;font-size:14px;letter-spacing:.15em;display:none;text-shadow:0 0 4px #000}
+  #cook{position:fixed;left:50%;top:122px;transform:translateX(-50%);z-index:45;display:none;color:#f4ecd6;font-size:13px;letter-spacing:.1em;text-align:center;text-shadow:0 0 4px #000;pointer-events:none}
+  #cook .bar{width:220px;height:6px;margin:4px auto 0;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+  #onigiriRem{display:none;margin-top:6px;pointer-events:auto;font:inherit;font-size:13px;padding:6px 10px;color:#1a1410;background:#e8d9a8;border:0;border-radius:4px;cursor:pointer}
+  #cookbar{height:100%;width:0;background:#e8d9a8}
+  #hqtag{position:absolute;left:50%;top:90px;transform:translateX(-50%);color:#bff5c8;font-size:14px;letter-spacing:.15em;display:none;text-shadow:0 0 4px #000}
   #secmenu{display:none;position:fixed;inset:0;z-index:40;align-items:center;justify-content:center;background:rgba(0,0,0,.25)}
   #secmenu .panel{background:rgba(20,16,12,.92);border:1px solid rgba(232,217,168,.6);border-radius:6px;padding:16px 20px;max-width:560px;width:calc(100% - 40px);color:#f4ecd6;text-align:center}
   #secmenu h3{margin:0 0 4px;font-size:20px;letter-spacing:.15em} #secmenu .sub{font-size:12px;opacity:.75;margin-bottom:10px}
@@ -73,7 +77,7 @@
     text-shadow:0 3px 10px #000,0 0 30px rgba(255,200,80,.5);opacity:0;transition:opacity .4s}
   #banner small{display:block;font-size:22px;letter-spacing:.2em;margin-top:8px}
   #hurt{position:absolute;inset:0;pointer-events:none;opacity:0;
-    background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(255,140,30,.55) 100%)}
+    background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(235,235,235,.6) 100%)}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at center,rgba(10,10,20,.35),rgba(0,0,0,.8));text-align:center}
   .screen h1{font-size:72px;margin:0;letter-spacing:.2em;text-shadow:0 4px 16px #000,0 0 40px rgba(255,190,80,.35)}
@@ -138,6 +142,7 @@
   <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div>
   <div id="banner" class="serif"></div>
   <div id="talk">秘書課の侍女に頼む（E / 頼むボタン）</div><div id="hqtag"></div>
+  <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
   <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
@@ -158,7 +163,7 @@
   <h1 class="serif">孤影の弓</h1>
   <h2 class="serif">― 模擬戦 ―</h2>
   <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
-  <p>武器はすべて塗料付きの練習用。当てれば「戦死判定」だ。</p>
+  <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
   <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
@@ -190,14 +195,21 @@
     <button data-req="arrows">矢を補充して<small>矢が満タンに</small></button>
     <button data-req="follow">一緒に来て<small>弓で援護しながら同行</small></button>
     <button data-req="back">本陣に戻って<small>同行をやめて本陣へ</small></button>
+    <button data-req="meal" style="grid-column:1/3">お腹減った、ご飯今すぐ作って<small>1つの波に1回・本陣で少しずつ体力回復</small></button>
     <button id="secRemark" style="grid-column:1/3">感想を言う<small>戦況についてひとこと</small></button>
   </div>
   <div class="grid" id="secremarks" style="display:none;margin-top:8px">
-    <button data-rem="paint">「あの櫃、塗料だらけだね」</button>
+    <button data-rem="paint">「あの櫃、だいぶ射られてるね」</button>
     <button data-rem="east">「東の櫃が押されてるね」</button>
     <button data-rem="allies">「味方がよく粘ってるね」</button>
     <button data-rem="archers">「敵の弓兵が多いね」</button>
   </div>
+  <div class="grid" id="secmeals" style="display:none;margin-top:8px;grid-template-columns:1fr 1fr 1fr">
+    <button data-meal="onigiri">おむすび</button>
+    <button data-meal="miso">味噌汁</button>
+    <button data-meal="chazuke">お茶漬け</button>
+  </div>
+  <button id="secOnigiri" style="display:none;width:100%;margin-top:8px">「手塩にかけたおむすびだね」</button>
   <div id="secsay"></div>
   <button id="secClose">戦場へ戻る（E）</button>
 </div></div>

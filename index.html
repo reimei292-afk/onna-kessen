@@ -40,6 +40,9 @@
   #secmenu #secClose{margin-top:10px;width:100%}
   #secmenu button.back{min-height:52px;font-size:18px;background:rgba(232,217,168,.3);color:#f4ecd6;border:1px solid rgba(232,217,168,.6)}
   #secsay{min-height:2.6em;margin:10px 0 0;font-size:14px;color:#ffe9b8;line-height:1.5}
+  #ladhint{position:absolute;left:50%;top:24%;transform:translateX(-50%);padding:7px 16px;border-radius:8px;background:rgba(20,30,20,.62);border:1px solid rgba(255,230,160,.7);color:#ffe9b8;font-size:18px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+  #ladhint.on{opacity:1}
+  #bLad{display:none;left:calc(50% + 70px);bottom:calc(24px + var(--sab));width:84px;height:84px;font-size:18px;background:rgba(120,80,20,.55)} html.touch.canlad #bLad{display:flex}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
   #stagesel{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #stagesel button{font:inherit;font-size:18px;letter-spacing:.2em;padding:8px 22px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
@@ -141,7 +144,7 @@
   <div id="stats">撃破数 <b id="kills">0</b><br><span style="font-size:15px;color:#9fd0ff">味方撃破 <b id="allykills" style="font-size:18px;color:#9fd0ff">0</b></span></div>
   <div id="wavebox" class="serif"><div class="w" id="wavetxt">第一波</div><div class="r" id="remain">残敵 0</div></div>
   <canvas id="radar" width="150" height="150"></canvas>
-  <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div><div id="subtitle" class="serif"></div>
+  <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div><div id="subtitle" class="serif"></div><div id="ladhint" class="serif"></div>
   <div id="banner" class="serif"></div>
   <div id="talk">秘書課の侍女に頼む（E / 頼むボタン）</div><div id="hqtag"></div>
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
@@ -158,6 +161,7 @@
   <div class="tbtn" id="bJump"><span>跳ぶ</span></div>
   <div class="tbtn" id="bPause">一時停止</div>
   <div class="tbtn" id="bTalk"><span>頼む</span></div>
+  <div class="tbtn" id="bLad"><span>梯子</span><small id="bLadL">上る</small></div>
 </div>
 <div id="rotate"><div class="ph"></div>横向きにしてください<br><small style="font-size:14px;opacity:.7;margin-top:10px;display:block">スマホを横に回すと遊べます</small></div>
 
@@ -249,7 +253,8 @@
 <script src="lib/three.min.js"></script>
 <script src="assets/sprites.js"></script>
 <script src="assets/frames/frames.js"></script>
-<script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script>');</script>
+<script src="assets/frames/cycles.js"></script>
+<script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
 <script src="assets/voices/voices.js"></script>
 <script src="lib/motion_data.js"></script>
 <script src="game.js"></script>

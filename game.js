@@ -182,11 +182,14 @@ const Sfx = {
       if (c.createStereoPanner) { F.pan = c.createStereoPanner(); F.lp.connect(F.pan); F.pan.connect(this.master); } else F.lp.connect(this.master);
     }
     const now = c.currentTime;
-    if (!pos) { F.out.gain.setTargetAtTime(0, now, 0.3); F.next = 0; F.idx = 0; return; }
-    const dx = pos.x - player.pos.x, dz = pos.z - player.pos.z, d = Math.hypot(dx, dz), k = clamp(1 - d / 90, 0, 1);
-    F.out.gain.setTargetAtTime((0.025 + k * k * 0.42) * (combat ? 1 : 0.7), now, 0.2);
-    F.lp.frequency.setTargetAtTime(clamp(9000 - d * 110, 1200, 9000), now, 0.2);
-    if (F.pan) F.pan.pan.setTargetAtTime(clamp((dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw)) / (d || 1), -1, 1) * 0.8, now, 0.1);
+    if (pos === false) { F.out.gain.setTargetAtTime(0, now, 0.3); F.next = 0; F.idx = 0; return; }   // タイトル・一時停止など
+    // 戦の最中は笛が途切れない：笛役の娘がいれば彼女の位置から（近いほど大きく）、倒れていれば遠くの味方の笛として小さく続く
+    // （距離で小さくなりすぎないよう下限 0.08。声の再生・会話の中断とは別の経路なので、声が止まっても笛は止まらない）
+    const dx = pos ? pos.x - player.pos.x : 0, dz = pos ? pos.z - player.pos.z : 60, d = pos ? Math.hypot(dx, dz) : 90, k = clamp(1 - d / 90, 0, 1);
+    F.out.gain.setTargetAtTime(((pos ? 0.08 : 0.13) + k * k * 0.36) * (combat ? 1 : 0.75), now, 0.2);   // 笛役が倒れたあとも聞き取れる大きさ
+    F.lp.frequency.setTargetAtTime(clamp(9000 - d * 90, 2200, 9000), now, 0.2);
+    if (F.pan) F.pan.pan.setTargetAtTime(pos ? clamp((dx * Math.cos(player.yaw) - dz * Math.sin(player.yaw)) / (d || 1), -1, 1) * 0.8 : 0, now, 0.1);
+    if (F.next > now + 2) F.next = now + 0.05;   // 止まっていた時計（一時停止・タブ切替）からの復帰
     const beat = 60 / (combat ? 138 : 84);
     if (F.next < now) F.next = now + 0.05;
     while (F.next < now + 0.3) {
@@ -203,6 +206,25 @@ const Sfx = {
   },
 };
 
+// ---- 音が消えないように：AudioContext が止まっていたら（タブ切替・スマホの割り込み・自動再生の制限）入力や画面の復帰のたびに再開。
+//      声の出口（VoicePack.out）と全体（master）の音量が 0 のまま残っていたら戻す
+const AudioGuard = {
+  t: 0, resumes: 0, fixes: 0,
+  kick() { const c = Sfx.ctx; if (c && c.state !== 'running' && c.state !== 'closed') { c.resume().then(() => { this.resumes++; }, () => {}); } },
+  tick(dt) {
+    if ((this.t -= dt) > 0) return; this.t = 1;
+    this.kick();
+    if (Sfx.master && Sfx.master.gain.value < 0.49) { Sfx.master.gain.cancelScheduledValues(0); Sfx.master.gain.value = 0.5; this.fixes++; }
+    if (VoicePack.out && VoicePack.out.gain.value < 0.99) { VoicePack.out.gain.cancelScheduledValues(0); VoicePack.out.gain.value = 1; this.fixes++; }
+    VoicePack.reap();
+  },
+  state() { const c = Sfx.ctx, F = Sfx.fl; return { ctx: c ? c.state : 'none', t: c ? +c.currentTime.toFixed(1) : 0, flute: F.out ? +F.out.gain.value.toFixed(3) : -1, voices: VoicePack.active.length,
+    stats: Object.assign({}, VoicePack.stats), bufs: Object.values(VoicePack.buf).filter(Boolean).length, queue: VoicePack.q.length, resumes: this.resumes, fixes: this.fixes,
+    speech: Voice.ok ? speechSynthesis.speaking : null }; },
+};
+for (const ev of ['pointerdown', 'keydown', 'touchstart', 'touchend', 'focus', 'pageshow']) addEventListener(ev, () => AudioGuard.kick(), { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) AudioGuard.kick(); });
+
 // ====================================================================
 //  ボイス (Web Speech API)
 // ====================================================================
@@ -217,7 +239,9 @@ const Voice = {
   },
   say(text, prof, prio = 0) {
     if (!this.ok || !text) return;
-    const now = performance.now(), busy = speechSynthesis.speaking || speechSynthesis.pending;
+    const now = performance.now();
+    if ((speechSynthesis.speaking || speechSynthesis.pending) && this.since && now - this.since > 9000) { speechSynthesis.cancel(); this.prio = 0; this.since = 0; }   // Chrome で発話が止まったまま「話し中」になる不具合の回避
+    const busy = speechSynthesis.speaking || speechSynthesis.pending;
     if (prio >= 2) {
       if (speechSynthesis.pending && this.prio >= 2) return;
       if (busy && this.prio < 2) speechSynthesis.cancel();
@@ -229,8 +253,8 @@ const Voice = {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP'; if (this.voice) u.voice = this.voice;
     u.pitch = clamp(prof.pitch, 0.1, 2); u.rate = clamp(prof.rate, 0.5, 2); u.volume = 1;
-    u.onend = u.onerror = () => { this.prio = 0; };
-    this.prio = prio; Talk.ws = Talk.cur;
+    u.onend = u.onerror = () => { this.prio = 0; this.since = 0; };
+    this.prio = prio; Talk.ws = Talk.cur; this.since = now;
     speechSynthesis.speak(u);
   },
 };
@@ -254,15 +278,45 @@ const Talk = {
 const VV_RATE = [0.965, 1.0, 1.035];   // 侍女ごとの声の高さ・速さの個体差（控えめ）
 const VoicePack = {
   man: window.VOICE_MANIFEST || null, buf: {}, loading: {}, playing: 0, lastLow: 0, ok: false, out: null,
+  // 声の同時再生は MAXV 本まで（チャンネルの取り合いは優先度：戦死判定・会話 > 近い声 > 遠い声。いっぱいなら一番低いものを止めて入れ替える）
+  active: [], MAXV: 5, stats: { req: 0, played: 0, skipped: 0, stolen: 0, failed: 0 }, q: [], inflight: 0,
+  score(prio, dist, conv) { return prio * 100 + (conv ? 150 : 0) - dist; },
+  reap() { const t = Sfx.ctx ? Sfx.ctx.currentTime : 0; this.active = this.active.filter(a => !a.done && t < a.end + 1); this.playing = this.active.length; },
+  add(src, prio, dist, conv, dur, t0) {
+    const a = { src, sc: this.score(prio, dist, conv), end: (t0 || Sfx.ctx.currentTime) + dur, done: false };
+    this.active.push(a); this.playing = this.active.length;
+    src.addEventListener('ended', () => { a.done = true; this.reap(); });
+    return a;
+  },
+  // 空きを作る：入れられるなら true
+  room(prio, dist, conv) {
+    this.reap();
+    if (this.active.length < this.MAXV) return true;
+    const sc = this.score(prio, dist, conv); let lo = null;
+    for (const a of this.active) if (!lo || a.sc < lo.sc) lo = a;
+    if (lo && sc > lo.sc + 20) { try { lo.src.stop(); } catch (_) {} lo.done = true; this.stats.stolen++; this.reap(); return true; }
+    return false;
+  },
   init() {
     this.ok = !!(this.man && Sfx.ctx && /^https?:/.test(location.protocol) && window.fetch);
     if (this.ok && !this.out) { this.out = Sfx.ctx.createGain(); this.out.gain.value = 1; this.out.connect(Sfx.ctx.destination); }
   },
-  load(fn) {
+  // 読み込みは同時 6 本まで（数百の mp3 を一度に取りに行くと、スマホでは失敗して無音になることがある）。失敗は一度だけやり直す
+  load(fn, urgent) {
     if (fn in this.buf || this.loading[fn]) return;
-    this.loading[fn] = fetch('assets/voices/' + fn).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
-      .then(ab => new Promise((res, rej) => Sfx.ctx.decodeAudioData(ab, res, rej)))
-      .then(b => { this.buf[fn] = b; }, () => { this.buf[fn] = null; });
+    this.loading[fn] = true;
+    if (urgent) this.q.unshift(fn); else this.q.push(fn);
+    this.pump();
+  },
+  pump() {
+    while (this.inflight < 6 && this.q.length) {
+      const fn = this.q.shift(); this.inflight++;
+      const get = () => fetch('assets/voices/' + fn).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(ab => new Promise((res, rej) => Sfx.ctx.decodeAudioData(ab, res, rej)));
+      get().catch(() => new Promise(r => setTimeout(r, 1500)).then(get))
+        .then(b => { this.buf[fn] = b; }, () => { this.buf[fn] = null; this.stats.failed++; })
+        .finally(() => { this.inflight--; this.pump(); });
+    }
   },
   preload() {
     if (!this.ok) return;
@@ -273,19 +327,22 @@ const VoicePack = {
     if (!this.ok || !fn) return false;
     const b = this.buf[fn];
     if (b === null) return false;
-    if (b === undefined) { this.load(fn); return prio < 2; }
-    const now = performance.now();
+    this.stats.req++;
+    if (b === undefined) { this.load(fn, true); return prio < 2; }
+    const now = performance.now(), conv = !!Talk.cur && (menuOpen || prio >= 1) && dist < 12;
     const k = clamp(1 - dist / 60, 0.12, 1);
-    if (prio < 2) {
-      if (this.playing >= 3 || now - this.lastLow < 450 || k < 0.15) return true;
-      this.lastLow = now;
-    } else if (this.playing >= 6) return true;
+    if (prio < 2 && !conv) {
+      if (now - this.lastLow < 450 || k < 0.15) { this.stats.skipped++; return true; }
+    }
+    if (!this.room(prio, dist, conv)) { this.stats.skipped++; return true; }
+    if (prio < 2 && !conv) this.lastLow = now;
+    AudioGuard.kick();
     const c = Sfx.ctx, src = c.createBufferSource(), g = c.createGain();
     src.buffer = b; g.gain.value = 1.15 * k * k + 0.05;
     src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * 0.03);   // ±3% の揺らぎ
     src.connect(g); g.connect(this.out);
-    this.playing++; src.onended = () => { this.playing--; }; Talk.track(src);
-    src.start();
+    this.add(src, prio, dist, conv, b.duration / src.playbackRate.value); Talk.track(src);
+    src.start(); this.stats.played++;
     return true;
   },
   say(pers, kind, i, vv, dist, prio) {
@@ -786,8 +843,21 @@ function floorUnder(x, z, y) {
   return g;
 }
 function ladderAt(x, z, y) {
-  for (const l of ladders) if (x > l.x0 && x < l.x1 && z > l.z0 - 0.3 && z < l.z1 + 0.3 && y > l.y0 - 0.1 && y < l.y1 + 0.3) return l;
+  for (const l of ladders) { const m = l.seiran ? 0.35 : 0;   // 動く井闌の梯子は少し広めに取る
+    if (x > l.x0 - m && x < l.x1 + m && z > l.z0 - 0.3 - m && z < l.z1 + 0.3 && y > l.y0 - 0.1 && y < l.y1 + 0.3) return l; }
   return null;
+}
+// 殿の近くの梯子（案内表示・自動で上り下り用）：下の足元か上の降り口から 1.8m 以内
+function ladderNear(P) {
+  let best = null, bd = 1.8;
+  for (const L of ladders) {
+    ladMeta(L); const x = (L.x0 + L.x1) / 2, zc = (L.z0 + L.z1) / 2;
+    const atBottom = P.y < L.y0 + 0.6, atTop = Math.abs(P.y - L.y1) < 0.5;
+    if (!atBottom && !atTop) continue;
+    const zz = atBottom ? zc - L.dir * 0.6 : zc + L.dir * 0.9, d = Math.hypot(P.x - x, P.z - zz);
+    if (d < bd) { bd = d; best = { L, up: atBottom }; }
+  }
+  return best;
 }
 const STAGES = {
   plains: { name: '平原の戦い', desc: '竹林の点在する平原で、青組と橙組が正面からぶつかる。' },
@@ -902,6 +972,12 @@ function buildGirls() {
 }
 // 追加フレーム（tools/make_frames.py が作る assets/frames/）。http ならファイル、file:// なら埋め込み
 let framesLoaded = 0;
+const CYCLE_ON = new URLSearchParams(location.search).get('cycle') !== '0';
+// 歩行サイクルの絵：一歩ごとに stepT が π 進む（モーションの歩調＝実際の移動距離から決まる）。サイクル（steps 歩）の中の位置で絵を選ぶ
+function cycleFrame(C, stepT) {
+  const u = stepT / (Math.PI * C.steps); const k = Math.floor((u - Math.floor(u)) * C.n);
+  return C.frs[C.seq[(k + C.contact) % C.n]];
+}
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -912,8 +988,17 @@ function loadFrames(done) {
     GIRLS[gid] = Object.assign({ id: gid, type: gid === 'medic' || gid === 'surgeon' ? 'medic' : 'extra', spr: null, front: null }, x);
   }
   for (const gid in meta) for (const k in meta[gid]) if (GIRLS[gid]) jobs.push([gid, k, meta[gid][k]]);
+  // 歩行サイクル（tools/make_walkcycle.py → assets/frames/cycles.js）：横から見た歩きの連続写真。?cycle=0 で使わない
+  const cyc = CYCLE_ON ? window.FRAME_CYCLES || {} : {}, cdata = window.CYCLE_DATA || {};
+  for (const gid in cyc) for (const key in cyc[gid]) if (GIRLS[gid]) {
+    const c = cyc[gid][key], C = { key, seq: c.seq, n: c.seq.length, steps: c.steps || 2, contact: c.contact || 0, frs: [] };
+    (GIRLS[gid].cycles = GIRLS[gid].cycles || {})[key] = C;
+    c.files.forEach((file, i) => jobs.push([gid, null, { file, hk: c.hk, aspect: c.aspect, ax: c.ax, dir: c.dir, cyc: C, i, emb: cdata[gid + '_' + key + '_' + String(i).padStart(2, '0')] }]));
+  }
   const done2 = () => {
     for (const gid in GIRLS) { const g = GIRLS[gid]; if (!g.front) { delete GIRLS[gid]; continue; }
+      if (g.cycles) for (const k in g.cycles) { const C = g.cycles[k]; if (C.seq.some(i => !C.frs[i])) delete g.cycles[k]; }   // 読めなかった絵があれば使わない
+      g.cycle = g.cycles && g.cycles.walk_side || null;
       if (g.bowOnly) {   // 弓を引く写真しか無い娘：どの見え方もその写真（横は向きに合わせて反転）。倒れたあとは写真のまま横たわる
         const b = g.bow || g.front; g.bow = b; g.front = b; g.side = g.side || b; g.walk = g.walk || b;
       }
@@ -926,8 +1011,10 @@ function loadFrames(done) {
   const fin = () => { if (--left === 0) done2(); };
   for (const [gid, k, m] of jobs) {
     const ok = t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-      GIRLS[gid][k] = { tex: t, aspect: m.aspect || t.image.width / t.image.height, hk: m.hk || 1, ax: m.ax == null ? 0.5 : m.ax, dir: m.dir || 0 }; framesLoaded++; fin(); };
-    const emb = data[gid + '_' + k];
+      const fr = { tex: t, aspect: m.aspect || t.image.width / t.image.height, hk: m.hk || 1, ax: m.ax == null ? 0.5 : m.ax, dir: m.dir || 0 };
+      if (m.cyc) { fr.cyc = m.cyc; m.cyc.frs[m.i] = fr; } else GIRLS[gid][k] = fr;
+      framesLoaded++; fin(); };
+    const emb = m.cyc ? m.emb : data[gid + '_' + k];
     const fb = () => emb ? loader.load(emb, ok, undefined, () => fin()) : fin();
     if (useFiles) loader.load(m.file + '?v=' + (m.hk || 1), ok, undefined, fb); else fb();
   }
@@ -1440,6 +1527,103 @@ const markerMat = { blue: new THREE.SpriteMaterial({ map: markerTex.blue, transp
                     orange: new THREE.SpriteMaterial({ map: markerTex.orange, transparent: true, depthWrite: false }) };
 let npcId = 0;
 // 医療係の目印（白い丸に組の色の「救」）と腕章
+// 負傷の印（頭上の小さな白い札「負傷」。血の表現は使わない）
+const woundMarkMat = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, map: canvasTex(96, 48, g => {
+  g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.roundRect ? g.roundRect(4, 6, 88, 36, 10) : g.rect(4, 6, 88, 36); g.fill();
+  g.lineWidth = 3; g.strokeStyle = '#7a6a50'; g.stroke(); g.fillStyle = '#5a4a30'; g.font = 'bold 24px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('負傷', 48, 25);
+}) });
+const WOUND_K = 0.5, WOUND_SPEED = 0.55;   // 体力が半分以下で負傷（動きが遅くなる）
+function setWounded(e, on) {
+  if (on === !!e.wounded) return;
+  e.wounded = on;
+  if (on) {
+    if (!e.wmk) { e.wmk = new THREE.Sprite(woundMarkMat); e.wmk.scale.set(0.36, 0.18, 1); e.wmk.renderOrder = 5; scene.add(e.wmk); e.extra.push(e.wmk); }
+    e.wmk.visible = true; e.woundFight = Math.random() < 0.3;   // 約3割は遅いまま戦い続ける。残りは救護班のほうへ下がる
+    e.cover = null; if (e.state === 'windup') { e.state = 'approach'; e.t = 0; }
+  } else { if (e.wmk) e.wmk.visible = false; e.kneel = false; e.woundWait = false; }
+}
+// 負傷した娘（救護を待つ）：救護班が向かっていれば止まって膝をつく。そうでなければ自陣の救護所へ下がる。すぐ近くの敵には応戦する
+function woundedBrain(e, dt) {
+  if (e.perch || e.lad || e.onFloor || e.special) return false;
+  const p = e.s.position;
+  if (e.woundFight && !(e.medBy && e.medBy.state !== 'down' && Math.hypot(e.medBy.s.position.x - p.x, e.medBy.s.position.z - p.z) < 4)) return false;   // 戦い続ける娘も救護班が来れば止まって手当てを受ける
+  for (const o of enemies) if (o.team !== e.team && o.state !== 'down' && !o.special && Math.abs(o.baseY - e.baseY) < 1.2 && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 2.4) { e.kneel = false; return false; }
+  e.tgt = null; e.state = 'idle'; e.t += dt; e.cd -= dt;
+  const m = e.medBy, mp = medPost[e.team];
+  if (m && m.state !== 'down' && Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z) < 7) { e.kneel = true; e.woundWait = true; e.faceWant = Math.atan2(m.s.position.x - p.x, m.s.position.z - p.z); e.passive = true; return true; }
+  const [hx, hz] = mp || e.home || [p.x, p.z], d = Math.hypot(hx - p.x, hz - p.z);
+  if (d > 4.5) { e.kneel = false; e.woundWait = false; steer(e, hx, hz, e.speed, dt); }
+  else { e.kneel = true; e.woundWait = true; e.passive = true; e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+  return true;
+}
+// ---- 秘書たちの武器：腰の帯に差した懐刀（鞘）。突くときは抜いた懐刀。弓で戦う秘書は弓を背負う（弓を引く写真の間は写真の弓） ----
+const propGeo = new THREE.PlaneGeometry(1, 1);
+const propMat = draw => new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, side: THREE.DoubleSide, alphaTest: 0.05, map: canvasTex(32, 192, draw) });
+const sayaMat = propMat((g, w, h) => {   // 柄（白い組紐の菱）・鍔・黒漆の鞘
+  g.fillStyle = '#3a2618'; g.fillRect(10, 2, 12, 52); g.fillStyle = '#efe9da';
+  for (let y = 6; y < 50; y += 10) { g.beginPath(); g.moveTo(16, y); g.lineTo(21, y + 5); g.lineTo(16, y + 10); g.lineTo(11, y + 5); g.closePath(); g.fill(); }
+  g.fillStyle = '#b08a3a'; g.fillRect(7, 54, 18, 6);
+  g.fillStyle = '#16120f'; g.fillRect(10, 60, 12, 128); g.fillStyle = '#6b4a2a'; g.fillRect(10, 182, 12, 6); g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(12, 62, 2, 118);
+});
+const bladeMat = propMat((g, w, h) => {   // 抜いた懐刀（刃は銀、先は細く）
+  g.fillStyle = '#3a2618'; g.fillRect(10, 128, 12, 62); g.fillStyle = '#efe9da';
+  for (let y = 132; y < 186; y += 10) { g.beginPath(); g.moveTo(16, y); g.lineTo(21, y + 5); g.lineTo(16, y + 10); g.lineTo(11, y + 5); g.closePath(); g.fill(); }
+  g.fillStyle = '#b08a3a'; g.fillRect(7, 120, 18, 8);
+  const gr = g.createLinearGradient(9, 0, 23, 0); gr.addColorStop(0, '#9aa3ad'); gr.addColorStop(0.5, '#f4f7fa'); gr.addColorStop(1, '#8a929b');
+  g.fillStyle = gr; g.beginPath(); g.moveTo(10, 120); g.lineTo(22, 120); g.lineTo(21, 20); g.lineTo(16, 4); g.lineTo(11, 20); g.closePath(); g.fill();
+});
+const slungBowMat = propMat((g, w, h) => {   // 背負った弓（弧と弦）
+  g.strokeStyle = '#5a3418'; g.lineWidth = 4; g.beginPath(); g.moveTo(8, 4); g.quadraticCurveTo(30, 96, 8, 188); g.stroke();
+  g.strokeStyle = 'rgba(240,235,220,.9)'; g.lineWidth = 1; g.beginPath(); g.moveTo(8, 4); g.lineTo(8, 188); g.stroke();
+  g.fillStyle = '#e8e0cc'; g.fillRect(19, 84, 6, 24);
+});
+function armSecretary(e) {
+  const mk = (mat, w, h) => { const m = new THREE.Mesh(propGeo, mat); m.scale.set(w, h, 1); m.renderOrder = 3; e.tilt.add(m); return m; };
+  e.armed = true;
+  e.saya = mk(sayaMat, 0.065, 0.4);   // 実物より少し大きめ（遠目にも見えるように）
+  e.blade = mk(bladeMat, 0.06, 0.36); e.blade.visible = false;
+  if (e.kind === 'archer') e.slung = mk(slungBowMat, 0.16, 1.05);
+}
+// 写真に武器が写っていない見え方のとき、懐刀・弓を板の上に添える（板と同じ向き・左右反転）
+function updateProps(e, fr, mirror, sgn) {
+  const g = e.girl, h = e.figH, sg = mirror ? -1 : 1;
+  const weaponPhoto = fr === g.stab || fr === g.bow || (fr === g.action && fr !== g.front);
+  const down = e.state === 'down' || fr === g.kneel;
+  const front = fr === g.front || fr === g.walk || fr === g.front_diag, back = fr === g.back || fr === g.back_diag;
+  const striking = (e.state === 'windup' || e.state === 'recover') && e.kind !== 'archer';
+  // 鞘：正面は左の腰（画面の右）、後ろ姿は画面の左、横は腰の後ろへ斜めに
+  e.saya.visible = !down && !weaponPhoto;
+  if (front) { e.saya.position.set(0.085 * h, 0.5 * h, 0.03); e.saya.rotation.z = 0.35; }
+  else if (back) { e.saya.position.set(-0.085 * h, 0.5 * h, 0.03); e.saya.rotation.z = -0.35; }
+  else { e.saya.position.set(-0.035 * h * sgn, 0.5 * h, 0.03); e.saya.rotation.z = 1.05 * sgn; }
+  // 抜いた懐刀：突きの写真が無い娘が突くとき、胸の前で相手へ向ける
+  e.blade.visible = striking && !weaponPhoto && !down;
+  if (e.blade.visible) {
+    const u = e.state === 'windup' ? 0 : 1;
+    if (front) { e.blade.position.set(0.04 * h, (0.6 + 0.04 * u) * h, 0.06); e.blade.rotation.z = 0.2; }
+    else { e.blade.position.set((0.12 + 0.1 * u) * h * sgn, 0.6 * h, 0.06); e.blade.rotation.z = -1.35 * sgn; }
+    e.saya.scale.y = 0.24;   // 抜いている間は鞘だけ（短く見せる）
+  } else e.saya.scale.y = 0.4;
+  if (e.slung) {
+    e.slung.visible = !down && fr !== g.bow && !(e.kind === 'archer' && (e.state === 'aim' || e.state === 'zanshin'));
+    if (back) { e.slung.position.set(0.02 * h, 0.62 * h, 0.04); e.slung.rotation.z = 0.5; }
+    else if (front) { e.slung.position.set(-0.13 * h, 0.62 * h, -0.03); e.slung.rotation.z = 0.5; }
+    else { e.slung.position.set(-0.07 * h * sgn, 0.62 * h, -0.03); e.slung.rotation.z = 0.45 * sgn; }
+  }
+}
+// ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----
+function secThreat(e) {
+  const p = e.s.position, fol = (e.sec2 && sec2.mode !== 'hq') || (e.ojou && ojou.mode === 'follow') || (e.aide && e.aide.follow) || (e.secretary && sec.mode !== 'hq');
+  const R = fol ? 9 : 6.5;
+  if (e.defending && e.defending.state !== 'down' && enemies.includes(e.defending) && Math.hypot(e.defending.s.position.x - p.x, e.defending.s.position.z - p.z) < R + 3) return e.defending;
+  let best = null, bd = R;
+  for (const o of enemies) {
+    if (o.team !== 'orange' || o.state === 'down' || o.special || Math.abs(o.baseY - e.baseY) > 1.2) continue;
+    const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z), dk = fol ? Math.hypot(q.x - player.pos.x, q.z - player.pos.z) + 1 : 99;
+    const dd = Math.min(d, dk); if (dd < bd) { bd = dd; best = o; }
+  }
+  return best;
+}
 const medicMarkMat = {};
 for (const [team, col] of [['blue', '#2a8cff'], ['orange', '#ff8a12']]) {
   medicMarkMat[team] = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, map: canvasTex(64, 64, g => {
@@ -1522,6 +1706,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
       const fl = makeFlute(); fl.position.set(-0.17 * figH * 0.6, figH * 0.885, 0.06); fl.rotation.z = 0.12; tilt.add(fl); e.fluteMesh = fl;
     }
   }
+  if (opt.secretary || opt.sec2 || opt.ojou || opt.aide) armSecretary(e);
   e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
   e.climber = kind === 'archer' && team === 'orange' && Math.random() < 0.25;
   e.raider = kind === 'mob' && team === 'orange' && !e.special && Math.random() < 0.35;   // 梯子攻め役（約1/3）：砦の中に入ると櫓・足場の弓兵を狙って梯子を上る   // 砦の中で梯子を上る弓兵（約1/4）
@@ -1701,6 +1886,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (e.perch && e.perch.tower && e.team === 'blue') { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }
   if (e.hp <= 0) { if (window.__kstat) window.__kstat.push({ team: e.team, kind: e.kind, by: byPlayer ? 'player' : by && by.kind }); killEnemy(e, byPlayer, from); return; }
   if (e.wasTalking) npcSay(e, 'hit', 1); else npcSay(e, 'hit', 0, byPlayer ? 0.5 : 0.25);
+  if (!e.medic && e.hp <= e.hpMax * WOUND_K) setWounded(e, true);
   if (e.P.retreat && !e.perch && !e.retreated && e.hp / e.hpMax <= 0.5) { e.retreated = true; e.state = 'retreat'; e.t = 0; e.retreatT = rand(3, 4.5); }
 }
 // 戦死判定：倒れるアニメを一度だけ再生し、その姿勢のまま地面に残る（以後は動かない・しゃべらない）
@@ -1723,11 +1909,11 @@ function killEnemy(e, byPlayer, from) {
   if (e.medic) { const m = medics[e.team][e.slot]; if (m && m.e === e) { m.dead = true; m.e = null; } endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; const rn = e.role === 'surgeon' ? '外科医' : '看護師'; popup(e.team === 'blue' ? rn + 'に戦死判定…（次の波で持ち場に戻ります）' : '橙組の' + rn + 'に戦死判定'); }
   if (e.ojou) { ojou.dead = true; ojou.e = null; ojou.mode = 'dead'; e.ojou = false; e.wasOjou = true; if (menuOpen && menuWho === 'ojou') closeSecMenu(false); popup('秘書課 西園寺 すみれに戦死判定…次の波で本陣に戻ります'); }
   if (e.aide) { const A = e.aide; if (A.e === e) { A.e = null; A.dead = true; } e.wasAide = A; e.aide = null; if (e.band) e.band.visible = false; popup(A.name + 'に戦死判定…次の波で本陣に戻ります'); }
-  if (e.fluter) { fluter.dead = true; fluter.e = null; popup('笛役の娘に戦死判定…笛が止んだ（次の波で戻ります）'); }
+  if (e.fluter) { fluter.dead = true; fluter.e = null; popup('笛役の娘に戦死判定…遠くの笛だけが続く（次の波で戻ります）'); }
   // 倒れる向き：攻撃してきた側から離れる方向
   const fx = from ? e.s.position.x - from.x : Math.sin(e.s.rotation.y), fz = from ? e.s.position.z - from.z : Math.cos(e.s.rotation.y);
   e.fallYaw = Math.atan2(fx, fz) + rand(-0.35, 0.35);
-  e.bg.visible = e.fg.visible = e.mk.visible = false;
+  e.bg.visible = e.fg.visible = e.mk.visible = false; if (e.wmk) e.wmk.visible = false; e.wounded = false; e.kneel = false;
   e.fallT = rand(0.5, 0.62);
   if (byPlayer) {
     if (e.team === 'orange') player.kills++;
@@ -1986,6 +2172,7 @@ function coverPoint(c, tx, tz) {   // 竹林の、標的から見て裏側
 }
 function steer(e, tx, tz, sp, dt) {
   if (e.perch) return 0;
+  if (e.wounded) sp *= WOUND_SPEED;
   const p = e.s.position;
   const rt = routeTo(p, tx, tz), routed = rt[0] !== tx || rt[1] !== tz;
   const dx = rt[0] - p.x, dz = rt[1] - p.z, d = Math.hypot(dx, dz);
@@ -2217,32 +2404,42 @@ function medSay0(e, key, quiet) {
   const X = VoicePack.man && VoicePack.man._extra;
   const L = X && ((e.role === 'nurse' && X['nurse_' + key]) || X['med_' + key]);
   const txt = NURSE_TEXT[key];
-  if (!L || !L.length) { if (txt && e.role === 'nurse') Voice.say(pick(txt), { pitch: 1.2, rate: 1.0 }, 1); return; }
+  const near = d - (quiet ? 6 : 0) < 16 && !menuOpen;   // 近くの救護班の言葉は字幕でも見せる（御臨終です・矢を抜きます など）
+  if (!L || !L.length) { if (txt) { const t = pick(txt); if (near) subtitle(t); if (e.role === 'nurse') Voice.say(t, { pitch: 1.2, rate: 1.0 }, 1); } return; }
   const j = (Math.random() * L.length) | 0;
+  if (near) subtitle(L[j].text);
   if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(L[j].text, { pitch: e.role === 'nurse' ? 1.2 : 0.95, rate: e.role === 'nurse' ? 1.0 : 0.9 }, 1);
 }
 const NURSE_TEXT = { go: ['今行きます！', '待っててね、すぐ行きます！'], assist: ['先生、お手伝いします。', '押さえていますね、先生。'], bandage: ['包帯を巻きますね。', 'きつくないですか？ 少し巻きますね。'],
   comfort: ['大丈夫、そばにいますからね。', 'ゆっくり息をして…もう少しですよ。'], start: ['しっかりして、すぐ手当てしますね。'], ok: ['よく頑張りましたね。もう大丈夫です。'], lost: ['…御臨終です。'] };
 const bodyMid = b => [b.s.position.x + Math.sin(b.fallYaw || 0) * b.figH * 0.45, b.s.position.z + Math.cos(b.fallYaw || 0) * b.figH * 0.45];
 const medAlive = (team, role) => medics[team].map(m => m.e).filter(e => e && e.state !== 'down' && e.role === role && !e.hold);
+// v4：倒れた娘（戦死判定）はもう助からない。救護班は負傷した生きている娘を優先して手当てし（矢を抜く・包帯。血の表現なし）、体力を戻して戦列へ返す。
+//     倒れた娘には、手の空いたときに短く確かめに行き「…御臨終です」と告げて離れる（起こさない）
+const isLiving = b => b.state !== 'down' && enemies.includes(b);
+const ptPos = b => isLiving(b) ? [b.s.position.x, b.s.position.z] : bodyMid(b);
 function patientOK(e, b) {
-  if (b.team !== e.team || b.special || b.medDone || time - (b.downAt || 0) > 90) return false;
-  const [bx, bz] = bodyMid(b), hp = e.follow ? [player.pos.x, player.pos.z] : medPost[e.team] || e.home;
+  if (b.team !== e.team || b.special || b.medDone) return false;
+  if (isLiving(b) ? !b.wounded || b.perch || b.lad || b.onFloor : time - (b.downAt || 0) > 90) return false;
+  const [bx, bz] = ptPos(b), hp = e.follow ? [player.pos.x, player.pos.z] : medPost[e.team] || e.home;
   return Math.hypot(bx - hp[0], bz - hp[1]) <= (e.follow ? 22 : MED_R) && Math.abs(b.baseY - e.baseY) <= 0.5;
 }
-function findPatient(e) {   // 誰も手当てしていない娘のうち一番近い
+function findPatient(e, livingOnly) {   // 負傷者（生きている）を先に、いなければ倒れた娘（確かめるだけ）。誰も向かっていない一番近い娘
   const p = e.s.position; let best = null, bd = 1e9;
-  for (const b of bodies) {
-    if (b.medBy || !patientOK(e, b)) continue;
-    const [bx, bz] = bodyMid(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd) { bd = d; best = b; }
+  for (const L of [enemies, livingOnly ? [] : bodies]) {
+    for (const b of L) {
+      if (b.medBy || !patientOK(e, b)) continue;
+      const [bx, bz] = ptPos(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd) { bd = d; best = b; }
+    }
+    if (best) return best;
   }
   return best;
 }
-function findAssist(e) {   // 外科医が手当て中で、手伝いのいない娘
+function findAssist(e) {   // 外科医が手当て中の負傷者で、手伝いのいない娘
   const p = e.s.position; let best = null, bd = 1e9;
-  for (const b of bodies) {
-    if (!b.medBy || b.medBy.role !== 'surgeon' || b.assistBy || b.medDone || b.team !== e.team) continue;
-    const [bx, bz] = bodyMid(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd && d < MED_R) { bd = d; best = b; }
+  for (const b of enemies) {
+    if (!b.medBy || b.medBy.role !== 'surgeon' || b.assistBy || !b.wounded || b.team !== e.team || b.state === 'down') continue;
+    const [bx, bz] = ptPos(b), d = Math.hypot(bx - p.x, bz - p.z); if (d < bd && d < MED_R) { bd = d; best = b; }
   }
   return best;
 }
@@ -2251,36 +2448,42 @@ function endTreat(e) {
   if (e.patient) { if (e.patient.medBy === e) e.patient.medBy = null; if (e.patient.assistBy === e) e.patient.assistBy = null; }
   e.patient = null; e.kneel = false; e.medPhase = null; e.assisting = false;
 }
-function revivePatient(b) {
-  const i = bodies.indexOf(b); if (i < 0) return;
-  bodies.splice(i, 1);
-  stopLying(b);
+function healPatient(b) {   // 手当て完了：体力を戻して戦列へ
+  b.hp = Math.max(b.hp, Math.ceil(b.hpMax * 0.85));
   for (const a of b.stuck) a.parent && a.parent.remove(a);
-  b.stuck = [];
-  b.hp = Math.max(1, Math.ceil(b.hpMax * 0.4));
-  b.state = 'rise'; b.t = 0; b.fallInit = false; b.thud = false; b.fallSY0 = null; b.fallT2 = null; b.fallTh = 0; if (b.mo) b.mo.D = null; b.tgt = null; b.cover = null; b.perch = null; b.spotted = false; b.medBy = null; b.assistBy = null; b.medDone = true; b.flash = 0;
-  b.knock.set(0, 0, 0); b.shadow.visible = true; b.mk.visible = true;
-  scene.add(b.bg); scene.add(b.fg); scene.add(b.mk);
-  enemies.push(b);
-  if (b.team === 'blue') popup('味方が手当てを受けて復帰！'); else popup('橙組の娘が手当てを受けて復帰…');
+  b.stuck = []; b.medBy = null; b.assistBy = null; b.retreated = false;
+  setWounded(b, false);
+  if (b.state === 'idle') { b.state = b.kind === 'archer' ? 'advance' : 'approach'; b.t = 0; }
+  if (b.team === 'blue') popup('負傷した味方が手当てを受けて戦列に戻った');
 }
+function revivePatient() { /* v4：倒れた娘は起こさない（戦死判定＝助からない） */ }
 function medicBrain(e, dt) {
   const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.cd -= dt;
   let pt = e.patient;
-  if (pt && (!bodies.includes(pt) || (pt.medDone && e.medPhase !== 'treat') || (e.assisting && !pt.medBy))) { endTreat(e); pt = null; }
+  if (pt) {
+    const live = isLiving(pt);
+    const bad = live ? (!pt.wounded || pt.team !== e.team) : (!bodies.includes(pt) || (pt.medDone && e.medPhase !== 'treat'));
+    if (bad || (e.assisting && (!pt.medBy || !live))) { endTreat(e); pt = null; }
+  }
+  // 倒れた娘を確かめに向かっている途中で負傷者が出たら、そちらを先に
+  if (pt && !isLiving(pt) && e.medPhase === 'go' && (e.scanT2 = (e.scanT2 || 0) - dt) <= 0) {
+    e.scanT2 = 0.8; const w = findPatient(e, true); if (w) { endTreat(e); pt = null; }
+  }
   if (!pt) {
     e.kneel = false;
     if ((e.scanT = (e.scanT || 0) - dt) <= 0) {
       e.scanT = 0.6;
       if (e.role === 'surgeon') {
         pt = findPatient(e);
-        if (pt) { if (pt.medBy) endTreat(pt.medBy); e.patient = pt; pt.medBy = e; e.medPhase = 'go'; e.medT = 0; if (Math.random() < 0.5) medSay(e, 'go'); }
+        if (pt) { e.patient = pt; pt.medBy = e; e.medPhase = 'go'; e.medT = 0; if (isLiving(pt) && Math.random() < 0.5) medSay(e, 'go'); }
       } else {
-        // 看護師：手の空いた外科医がいれば、その外科医に任せて手伝いに回る。いなければ自分で手当て
+        // 看護師：手の空いた外科医がいれば、負傷者は外科医に任せて手伝いに回る。いなければ自分で手当て。倒れた娘の確認は看護師も行く
         const freeSurgeon = medAlive(e.team, 'surgeon').some(s => !s.patient);
-        const un = freeSurgeon ? null : findPatient(e);
+        let as = freeSurgeon ? null : findAssist(e);
+        const un = freeSurgeon ? null : findPatient(e, true);
         if (un) { e.patient = pt = un; un.medBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = false; if (Math.random() < 0.6) medSay(e, 'go'); }
-        else { const as = findAssist(e); if (as) { e.patient = pt = as; as.assistBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = true; if (Math.random() < 0.5) medSay(e, 'assist'); } }
+        else if (as || (as = findAssist(e))) { e.patient = pt = as; as.assistBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = true; if (Math.random() < 0.5) medSay(e, 'assist'); }
+        else if (!freeSurgeon) { const b = findPatient(e); if (b) { e.patient = pt = b; b.medBy = e; e.medPhase = 'go'; e.medT = 0; e.assisting = false; } }
       }
     }
   }
@@ -2290,45 +2493,49 @@ function medicBrain(e, dt) {
     else e.faceWant = e.follow ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : e.team === 'blue' ? Math.PI : 0;
     return;
   }
-  const [bx, bz] = bodyMid(pt);
+  const live = isLiving(pt), [bx, bz] = ptPos(pt);
   // 体の横に膝をつく（手当てする人は右側、手伝いは左側）
-  const sd = e.assisting ? -1 : 1;
-  const sx = bx + Math.cos(pt.fallYaw) * 0.62 * sd, sz = bz - Math.sin(pt.fallYaw) * 0.62 * sd;
-  if (e.medPhase === 'go') {
+  const sd = e.assisting ? -1 : 1, ry = live ? pt.s.rotation.y + Math.PI / 2 : pt.fallYaw;
+  const off = live ? 0.75 : 0.62;
+  const sx = bx + Math.cos(ry) * off * sd, sz = bz - Math.sin(ry) * off * sd;
+  const dp = Math.hypot(bx - p.x, bz - p.z);   // 生きている相手は押し合いで横の位置に届かないことがあるので、すぐそばまで来れば手当てに入る
+  if (e.medPhase === 'go' || (live && e.medPhase === 'treat' && dp > 2.0)) {   // 相手が動いたら追い直す
+    if (e.medPhase !== 'go') { e.medPhase = 'go'; if (e.cloth) { scene.remove(e.cloth); e.cloth = null; } }
+    e.kneel = false;
     const d = Math.hypot(sx - p.x, sz - p.z);
-    if (d > 0.3) { const rt = routeTo(p, sx, sz); steer(e, rt[0], rt[1], e.speed, dt); e.faceWant = Math.atan2(sx - p.x, sz - p.z); }
-    else {
+    if (d > 0.35 && !(live && dp < 1.2)) { const rt = routeTo(p, sx, sz); steer(e, rt[0], rt[1], e.speed * (d < 4 ? 0.7 : 1), dt); e.faceWant = Math.atan2(sx - p.x, sz - p.z); }
+    else if (!live || pt.woundWait || (pt.vs || 0) < 0.3) {
       e.medPhase = 'treat'; e.medT = 0; e.medStep = 0;
-      const fresh = time - pt.downAt < 35;
-      e.medWill = e.role === 'surgeon' ? (fresh ? 0.5 : 0.12) : (fresh ? 0.32 : 0.06);   // 倒れて間もないほど助かりやすい。外科医のほうが少し上
-      e.cloth = new THREE.Sprite(clothMat); e.cloth.scale.set(0.26, 0.19, 1); scene.add(e.cloth);
+      if (live) { e.cloth = new THREE.Sprite(clothMat); e.cloth.scale.set(0.26, 0.19, 1); scene.add(e.cloth); }
     }
     return;
   }
-  // 手当て
+  // 確認／手当て
   e.medT += dt; e.kneel = true; e.faceWant = Math.atan2(bx - p.x, bz - p.z);
-  if (e.cloth) e.cloth.position.set(bx + sd * 0.12 + Math.sin(time * 3 + sd) * 0.05, pt.baseY + 0.16 + Math.abs(Math.sin(time * 4.2 + sd)) * 0.05, bz);
   const T = e.medT;
+  if (!live) {   // 倒れた娘：脈を確かめるだけ（短く）。起こさない
+    if (e.medStep === 0) { e.medStep = 1; }
+    if (e.medStep === 1 && T > 1.3) { e.medStep = 2; pt.medDone = true; medSay(e, 'lost', true); }
+    if (e.medStep === 2 && T > 2.4) endTreat(e);
+    return;
+  }
+  const ch = live ? pt.baseY + pt.figH * 0.5 : pt.baseY + 0.16;
+  if (e.cloth) e.cloth.position.set(bx + Math.cos(ry) * 0.2 * sd + Math.sin(time * 3 + sd) * 0.05, ch + Math.abs(Math.sin(time * 4.2 + sd)) * 0.05, bz - Math.sin(ry) * 0.2 * sd);
   if (e.assisting) {   // 手伝い：押さえる・包帯・声かけ。主の手当てが終われば離れる
     if (e.medStep === 0) { e.medStep = 1; }
     if (e.medStep === 1 && T > 1.2) { e.medStep = 2; medSay(e, Math.random() < 0.5 ? 'bandage' : 'comfort', true); }
-    if (pt.medDone || !pt.medBy) { if (T > 0.5) endTreat(e); }
+    if (!pt.medBy || !pt.wounded) { if (T > 0.5) endTreat(e); }
     return;
   }
-  if (e.medStep === 0) { e.medStep = 1; medSay(e, e.role === 'surgeon' ? (pt.stuck.length ? 'arrow' : 'start') : 'start'); }
+  if (e.medStep === 0) { e.medStep = 1; medSay(e, pt.stuck.length ? 'arrow' : 'start'); }
   if (e.medStep === 1 && T > 1.6) {
     e.medStep = 2;
-    if (pt.stuck.length) { for (const a of pt.stuck) a.parent && a.parent.remove(a); pt.stuck = []; Sfx.whoosh && Sfx.whoosh(new V3(bx, pt.baseY + 0.3, bz), 3); }
+    if (pt.stuck.length) { for (const a of pt.stuck) a.parent && a.parent.remove(a); pt.stuck = []; Sfx.whoosh && Sfx.whoosh(new V3(bx, ch, bz), 3); }
   }
-  if (e.medStep === 2 && T > 2.4) { e.medStep = 3; if (Math.random() < 0.6) medSay(e, e.role === 'surgeon' ? 'care' : (Math.random() < 0.5 ? 'bandage' : 'comfort')); }
-  const dur = (e.role === 'surgeon' ? 4.2 : 4.8) * (pt.assistBy && pt.assistBy.patient === pt ? 0.85 : 1);   // 手伝いがいると少し早い
-  if (e.medStep === 3 && T > dur) {
-    e.medStep = 4; pt.medDone = true;
-    const will = Math.random() < e.medWill + (pt.assistBy && pt.assistBy.patient === pt ? 0.1 : 0);
-    if (will) { medSay(e, 'ok'); revivePatient(pt); }
-    else medSay(e, 'lost', true);
-  }
-  if (e.medStep === 4 && T > dur + 1) endTreat(e);
+  if (e.medStep === 2 && T > 2.4) { e.medStep = 3; medSay(e, e.role === 'surgeon' ? (Math.random() < 0.5 ? 'care' : 'start') : (Math.random() < 0.6 ? 'bandage' : 'comfort')); }
+  const dur = (e.role === 'surgeon' ? 4.2 : 4.8) * (pt.assistBy && pt.assistBy.patient === pt ? 0.8 : 1);   // 手伝いがいると少し早い
+  if (e.medStep === 3 && T > dur) { e.medStep = 4; medSay(e, 'ok'); healPatient(pt); }
+  if (e.medStep === 4 && T > dur + 0.8) endTreat(e);
 }
 // ---- 殿（プレイヤー）が戦の最中に本陣を出ると、秘書たちと救護班の一部（外科医1・看護師1）が慌てて後を追う ----
 //   少し離れて（3.5〜6m 後ろ）ついて歩き、救護班は殿の近くで倒れた娘を手当てする。殿が本陣に戻ると皆も持ち場へ戻る。
@@ -2457,7 +2664,8 @@ function secSay(parts, text) {
     for (const [cat, i] of parts) { const e = L && L[cat] && L[cat][i]; if (!e) { fns.length = 0; break; } fns.push(e.files[0]); }
     if (fns.length && fns.every(f => VoicePack.buf[f])) {
       const c = Sfx.ctx; let t = c.currentTime + 0.02;
-      for (const f of fns) { const src = c.createBufferSource(), g = c.createGain(); src.buffer = VoicePack.buf[f]; g.gain.value = 1.1; src.connect(g); g.connect(VoicePack.out); src.start(t); Talk.track(src); t += VoicePack.buf[f].duration - 0.05; }
+      VoicePack.room(3, 0, true); AudioGuard.kick();
+      for (const f of fns) { const src = c.createBufferSource(), g = c.createGain(); src.buffer = VoicePack.buf[f]; g.gain.value = 1.1; src.connect(g); g.connect(VoicePack.out); src.start(t); Talk.track(src); VoicePack.add(src, 3, 0, true, VoicePack.buf[f].duration, t); t += VoicePack.buf[f].duration - 0.05; }
       return;
     }
     fns.forEach(f => VoicePack.load(f));
@@ -2763,7 +2971,7 @@ function animateNpc(e, dt, lean) {
   // 画面の右を向いているか（横・構えの写真の左右反転に使う）
   const sgn = Math.sin(f) * Math.cos(player.yaw) - Math.cos(f) * Math.sin(player.yaw) > 0 ? 1 : -1;
   const g = e.girl;
-  let fr, mirror = false, bob = 0, rock = 0;
+  let fr, mirror = false, bob = 0, rock = 0, cyc = false;
   if (e.kneel) {   // 医療係の手当て：膝をつく写真（無ければしゃがむ）。手元が小さく動く
     fr = g.kneel || g.front; mirror = fr.dir ? fr.dir !== sgn : false;
     if (fr === g.kneel && e.view === 'back') mirror = !mirror;
@@ -2785,6 +2993,7 @@ function animateNpc(e, dt, lean) {
     bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH;
     if (e.view === 'front') { fr = girlFrame(g, 'walk'); mirror = fr === g.front ? false : !!stride; }
     else if (e.view === 'back') { fr = girlFrame(g, 'back'); rock = Math.sin(e.stepT) * 0.025; }
+    else if (g.cycle) { fr = cycleFrame(g.cycle, e.stepT); mirror = fr.dir ? fr.dir !== sgn : false; bob = 0; rock = 0; cyc = true; }   // 横から：歩きの連続写真（上下動は写真に含まれる）
     else { fr = girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; rock = Math.sin(e.stepT) * 0.03; }
   } else {
     fr = girlFrame(g, e.view2 || e.view);
@@ -2801,6 +3010,7 @@ function animateNpc(e, dt, lean) {
     }
   }
   setFrame(e, fr, mirror);
+  if (e.armed) updateProps(e, fr, mirror, sgn);
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
     const h = e.figH, sg = mirror ? -1 : 1, front = fr === g.front || fr === g.back || fr === g.walk;
@@ -2811,13 +3021,16 @@ function animateNpc(e, dt, lean) {
   let sway = 0, surge = 0, twist = 0;
   if (MOTION) {
     const o = Mo.drive(e, dt, sv, moving && !e.kneel, acting, camYaw - f), w = o.w;
-    bob += (o.bob - bob) * w; rock += (o.roll - rock) * w;
-    sway = o.sway * w; surge = o.surge * w; twist = o.twist * w;
+    const kc = cyc ? CYCLE_DAMP : null;   // 歩行サイクルの写真は上下動・前傾をすでに含むので、板の動きは控えめに
+    bob += (o.bob * (kc ? kc.bob : 1) - bob) * w; rock += (o.roll * (kc ? kc.roll : 1) - rock) * w;
+    sway = o.sway * w * (kc ? kc.sway : 1); surge = o.surge * w * (kc ? kc.surge : 1); twist = o.twist * w * (kc ? kc.twist : 1);
   }
   // ビルボード（Y 軸のみ）：板をカメラへ向ける
   e.tilt.rotation.set(0, camYaw - f + twist, lean * 0.5 + rock);
   e.tilt.position.set(sway, bob - e.crouch * 0.42 * e.figH, surge);          // 物陰ではしゃがむ（体が沈む）
 }
+// 歩行サイクルを使っているときのモーションの効き（1＝そのまま）。横から見るので左右の揺れ（画面の奥行き）とひねりも小さく
+const CYCLE_DAMP = { bob: 0.2, roll: 0.25, sway: 0.5, surge: 0.6, twist: 0.3 };
 // ---- NPC の行動 ----
 const tmp = new V3();
 const MELEE_RANGE = 1.8;   // 懐刀の突き：短く狭い
@@ -2876,8 +3089,10 @@ function updateEnemies(dt) {
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
     let lean = 0;
     e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || !!e.hold;   // hold: テスト用に止める
-    if (e.sec2 && !e.hold) { e.passive = true; sec2Brain(e, dt); }
-    else if (e.ojou && !e.hold) { e.passive = true; ojouBrain(e, dt); }
+    e.defending = e.armed && !e.hold && !(e.polishT > 0) && !(e.secretary && sec.mode !== 'hq') ? secThreat(e) : null;   // 護衛中の秘書は通常の戦い方
+    if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
+    if (e.sec2 && !e.hold && !e.defending) { e.passive = true; sec2Brain(e, dt); }
+    else if (e.ojou && !e.hold && !e.defending) { e.passive = true; ojouBrain(e, dt); }
     else if (e.medic && !e.hold) medicBrain(e, dt);
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
@@ -2887,10 +3102,13 @@ function updateEnemies(dt) {
       e.tgt = null; if (!e.hold) e.state = 'idle';
       const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z;
       e.faceWant = e.hold ? e.hold.face : (e.secretary || e.aide) && (fol || Math.hypot(dpx, dpz) < 8) && hd < 1 ? Math.atan2(dpx, dpz) : hd >= 1 ? Math.atan2(hx - p.x, hz - p.z) : Math.PI;
+    } else if (e.wounded && woundedBrain(e, dt)) {
+      /* 負傷：救護を待つ・下がる */
     } else {
     // 標的の更新
     e.tgtT -= dt;
-    if (e.returning) { e.tgt = null; e.tgtT = 1; }
+    if (e.defending) { e.tgt = e.defending; e.tgtT = 0.5; }
+    else if (e.returning) { e.tgt = null; e.tgtT = 1; }
     else if (!e.tgt || e.tgtT <= 0 || (!e.tgt.isPlayer && e.tgt.state === 'down')) {
       const nt = chooseTarget(e);
       if (nt !== e.tgt && e.kind === 'archer' && !['aim', 'zanshin', 'retreat', 'stagger'].includes(e.state)) { e.cover = null; if (e.state !== 'advance') { e.state = 'advance'; e.t = 0; } }
@@ -3093,6 +3311,7 @@ function updateEnemies(dt) {
     animateNpc(e, dt, lean);
     const top = e.baseY + e.figH * (1 - 0.38 * e.crouch);
     e.mk.position.set(p.x, top + (e.hp < e.hpMax ? 0.5 : 0.32), p.z);
+    if (e.wmk && e.wounded) e.wmk.position.set(p.x, top + 0.74, p.z);
     if (e.hp < e.hpMax) {
       const f = Math.max(0, e.hp / e.hpMax);
       e.bg.visible = e.fg.visible = true;
@@ -3609,6 +3828,7 @@ function setupTouch() {
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
   tapBtn('bTalk', () => { if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
+  tapBtn('bLad', () => ladderGo());
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
   document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen')) e.preventDefault(); }, opt);
@@ -3657,7 +3877,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
   if (e.code === 'KeyT') onigiriRemark();
-  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); }
+  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); else ladderGo(); }
   if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -3766,7 +3986,23 @@ $('titleBtn').onclick = toTitle;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = toTitle;
 
+// 梯子の案内：近くに梯子があれば「W で上る／E で自動」などを出す（スマホは「梯子」ボタン）
+function ladderGo() {
+  if (player.autoClimb) { player.autoClimb = null; return; }
+  const n = ladderNear(player.pos); if (!n) return;
+  player.autoClimb = { L: n.L, up: n.up, t: 0 };
+}
+let ladHintTxt = '';
+function updateLadderHint() {
+  const n = state === 'play' && !menuOpen ? ladderNear(player.pos) : null, el = $('ladhint');
+  let t = '';
+  if (player.autoClimb) t = player.autoClimb.up ? '上っています…' : '下りています…';
+  else if (n) { const what = n.L.seiran ? '井闌の梯子' : '梯子'; t = MOBILE ? `${what}：スティックを${n.up ? '前' : '後ろ'}に倒す／「梯子」ボタン` : `${what}：${n.up ? 'W（前進）で上る' : 'S（後退）で下りる'}　E で自動`; }
+  if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb);
+    const bl = $('bLadL'); if (bl) bl.textContent = player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る'; }
+}
 function updatePlayer(dt) {
+  updateLadderHint();
   // 移動
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
   let mx = 0, mz = 0;
@@ -3777,11 +4013,28 @@ function updatePlayer(dt) {
   let sp = ((keys.ShiftLeft || keys.ShiftRight || touch.run) && !player.drawing ? CFG.run : CFG.walk) * (player.speedT > 0 ? 1.2 : 1);   // 靴を磨いてもらうと少し速い
   if (player.drawing) sp *= 0.5;
   // 梯子：前進で上る・後退で下りる（途中は横移動しない）
-  const fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;
-  const lad = ladderAt(player.pos.x, player.pos.z, player.pos.y);
+  let fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;
+  // 自動で上り下り（E キー／スマホの「梯子」ボタン）：梯子の中心へ寄せ、端まで運ぶ。逆の入力・跳ぶで止める
+  const AC = player.autoClimb;
+  if (AC) {
+    const L = AC.L, cx = (L.x0 + L.x1) / 2, zc = (L.z0 + L.z1) / 2, F = L.F;
+    AC.t += dt;
+    if ((AC.up ? fin < -0.3 : fin > 0.3) || keys.Space || AC.t > 12 || !ladders.includes(L)) player.autoClimb = null;
+    else {
+      const onL = player.pos.y > L.y0 + 0.05 && player.pos.y < L.y1 - 0.05;
+      const tx = AC.up ? (player.pos.y >= L.y1 - 0.1 ? cx : cx) : cx;
+      let tz = player.pos.y < L.y1 - 0.1 || !AC.up ? zc - L.dir * 0.05 : zc + L.dir * 1.2;   // 上に着いたら床へ一歩
+      if (!AC.up && player.pos.y > L.y1 - 0.3 && Math.hypot(player.pos.x - cx, player.pos.z - zc) > 0.5) tz = zc;   // 上から：まず降り口へ
+      const k = Math.min(1, dt * 8); player.pos.x += (tx - player.pos.x) * k; player.pos.z += (tz - player.pos.z) * k * (onL ? 1 : 0.6);
+      if (Math.hypot(player.pos.x - cx, player.pos.z - zc) < 0.6 || onL) fin = AC.up ? 1 : -1;
+      if (AC.up && player.pos.y >= L.y1 - 0.02 && F && player.pos.z * L.dir >= (zc + L.dir * 1.0) * L.dir) player.autoClimb = null;
+      if (!AC.up && player.pos.y <= L.y0 + 0.02) { player.autoClimb = null; player.pos.z = zc - L.dir * 0.7; }
+    }
+  }
+  const lad = player.autoClimb ? player.autoClimb.L : ladderAt(player.pos.x, player.pos.z, player.pos.y);
   const midLadder = lad && player.pos.y > lad.y0 + 0.08 && player.pos.y < lad.y1 - 0.45;
   player.climbing = !!lad && (Math.abs(fin) > 0.2 || midLadder);
-  if (ml > 0 && !(player.climbing && midLadder)) {
+  if (ml > 0 && !(player.climbing && midLadder) && !player.autoClimb) {
     const hk = player.climbing && fin < 0 && player.pos.y > lad.y0 + 0.08 ? 0.2 : 1;
     player.pos.x += mx / ml * sp * mag * dt * hk; player.pos.z += mz / ml * sp * mag * dt * hk;
     if (player.onGround) {
@@ -3877,7 +4130,7 @@ function frame(now) {
   updateParticles(state === 'pause' || state === 'over' ? 0 : dt);
   drawScreenPaint(state === 'play' ? dt : 0);
   { const playing = state === 'play', combat = playing && !(wave.inter > 0);
-    Sfx.ambience(dt, playing, combat); Sfx.flute(playing && fluter.e && fluter.e.state !== 'down' ? fluter.e.s.position.clone().setY(1.5) : null, combat); }
+    Sfx.ambience(dt, playing, combat); Sfx.flute(!playing ? false : fluter.e && fluter.e.state !== 'down' ? fluter.e.s.position.clone().setY(1.5) : null, combat); AudioGuard.tick(dt); }
   if (sec.fanT > 0 && state === 'play') {   // 扇の風（画面の端に流れる線）
     paintG.strokeStyle = `rgba(255,255,255,${Math.min(0.35, sec.fanT * 0.15)})`; paintG.lineWidth = 2;
     for (let i = 0; i < 7; i++) { const y = innerHeight * (0.2 + i * 0.1) + Math.sin(time * 3 + i) * 10, x = ((time * 400 + i * 180) % (innerWidth + 300)) - 150;
@@ -3932,5 +4185,5 @@ const loaded = () => {
 loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
-window.__game = { ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

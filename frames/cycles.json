@@ -1,0 +1,5 @@
+{
+ "medic": {
+  "walk_side": {"src": "/workspace/nurse_walk/v5/frame_%02d.png", "n": 14, "steps": 2, "fps": 12.5, "dir": 1, "baseline": 700, "contact": 0, "stepLen": 0.26}
+ }
+}

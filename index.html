@@ -38,6 +38,7 @@
   #secmenu button{font:inherit;font-size:16px;padding:10px 6px;color:#1a1410;background:#e8d9a8;border:0;border-radius:4px;cursor:pointer}
   #secmenu button small{display:block;font-size:11px;opacity:.75}
   #secmenu #secClose{margin-top:10px;width:100%}
+  #secmenu .caOnly{display:none} html.plane #secmenu .caOnly{display:block}
   #secmenu button.back{min-height:52px;font-size:18px;background:rgba(232,217,168,.3);color:#f4ecd6;border:1px solid rgba(232,217,168,.6)}
   #secsay{min-height:2.6em;margin:10px 0 0;font-size:14px;color:#ffe9b8;line-height:1.5}
   #ladhint{position:absolute;left:50%;top:24%;transform:translateX(-50%);padding:7px 16px;border-radius:8px;background:rgba(20,30,20,.62);border:1px solid rgba(255,230,160,.7);color:#ffe9b8;font-size:18px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
@@ -178,7 +179,7 @@
   <h2 class="serif">― 模擬戦 ―</h2>
   <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
   <div class="help help-desk">
@@ -211,6 +212,7 @@
     <button data-req="back">本陣に戻って<small>同行をやめて本陣へ</small></button>
     <button data-req="meal" style="grid-column:1/3">お腹減った、ご飯今すぐ作って<small>1つの波に1回・本陣で少しずつ体力回復</small></button>
     <button id="secRemark" style="grid-column:1/3">感想を言う<small>戦況についてひとこと</small></button>
+    <button data-req="ca" class="caOnly" style="grid-column:1/3">「CAさんみたいなことしてよ」<small>機内だけの無茶振り</small></button>
   </div>
   <div class="grid" id="sec2main" style="display:none">
     <button data-req2="tea">お茶を淹れて<small>体力回復</small></button>
@@ -218,6 +220,7 @@
     <button data-req2="shoes">靴を磨いて<small>60秒間 移動が速い</small></button>
     <button data-req2="carry">荷物を持って<small>矢筒を持って同行：矢の上限+10・少しずつ補充</small></button>
     <button data-req2="home" style="grid-column:1/3">本陣に戻って<small>荷物持ちをやめて本陣へ</small></button>
+    <button data-req2="ca" class="caOnly" style="grid-column:1/3">「CAさんみたいなことしてよ」<small>機内だけの無茶振り</small></button>
   </div>
   <div class="grid" id="ojoumain" style="display:none">
     <button data-req3="tea">お茶を淹れて<small>体力回復</small></button>
@@ -225,12 +228,18 @@
     <button data-req3="follow">一緒に来て<small>そばについて同行（戦わない）</small></button>
     <button data-req3="home">本陣に戻って<small>同行をやめて本陣へ</small></button>
     <button data-req3="praise" style="grid-column:1/3">「いつも助かるよ」<small>ねぎらう</small></button>
+    <button data-req3="ca" class="caOnly" style="grid-column:1/3">「CAさんみたいなことしてよ」<small>機内だけの無茶振り</small></button>
   </div>
   <div class="grid" id="secremarks" style="display:none;margin-top:8px">
     <button data-rem="paint">「あの櫃、だいぶ射られてるね」</button>
     <button data-rem="east">「東の櫃が押されてるね」</button>
     <button data-rem="allies">「味方がよく粘ってるね」</button>
     <button data-rem="archers">「敵の弓兵が多いね」</button>
+    <button class="back" data-sub-back style="grid-column:1/-1">戻る<small>用件の一覧へ</small></button>
+  </div>
+  <div class="grid" id="secdrinks" style="display:none;margin-top:8px">
+    <button data-drink="tea">お茶<small>体力 少し回復</small></button>
+    <button data-drink="water">お水<small>体力 少し回復</small></button>
     <button class="back" data-sub-back style="grid-column:1/-1">戻る<small>用件の一覧へ</small></button>
   </div>
   <div class="grid" id="secmeals" style="display:none;margin-top:8px;grid-template-columns:1fr 1fr 1fr">

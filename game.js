@@ -2499,26 +2499,39 @@ function updateMG(P, dt) {
 }
 function mgShot(P) {
   const muz = _md.set(P.x, P.sy0 + 0.12, P.slitZ - 0.05), d = muz.distanceTo(P.aim), M = beachMats();
-  const sp = 0.25 + d * 0.022;
+  const sp = 0.14 + d * 0.012;
   const I = _mi.copy(P.aim).add(new V3(rand(-1, 1) * sp, rand(-0.6, 0.8) * sp * 0.6, rand(-1, 1) * sp));
   P.flash.position.set(P.x + Math.sin(P.gun.rotation.y + Math.PI) * 0.05, P.sy0 + 0.13, P.slitZ - 0.15); P.flash.visible = true; P.flash.material.rotation = Math.random() * 6;
-  Sfx.mg && Sfx.mg(muz);
-  // 当たり：狙いの近く（0.38m）にいる青組・殿
-  let hit = null, best = 0.3;
-  for (const o of enemies) { if (o.team !== 'blue' || !isUp(o)) continue; const p = o.s.position, cy = o.baseY + o.figH * (o.seated ? 0.42 : 0.6), dd = Math.hypot(p.x - I.x, p.z - I.z, (cy - I.y) * 0.5); if (dd < best) { best = dd; hit = o; } }
-  if (!inHQ() && state === 'play') { const dd = Math.hypot(player.pos.x - I.x, player.pos.z - I.z, (player.pos.y + 1.1 - I.y) * 0.5); if (dd < best) { best = dd; hit = { isPlayer: true }; } }
+  Sfx.mg && Sfx.mg(muz); if (TEST) window.__mgs = (window.__mgs || 0) + 1;
+  // 当たり（v8.1）：銃口→着弾点の弾道（少し先まで）に沿って、最初にかかった青組・殿（体＝縦の筒）。舟の中の娘は、弾道がその位置で舷より低ければ舟の板が受ける
+  const ray = new V3().copy(I).sub(muz), rl = ray.length(); ray.divideScalar(rl);
+  const L2 = rl + 3;
+  let hit = null, bestT = L2, blockB = null;
+  const test = (px, pz, y0, y1, r, who) => {   // 弾道と縦の筒（px,pz、高さ y0〜y1、半径 r）
+    const t = clamp(((px - muz.x) * ray.x + (pz - muz.z) * ray.z) / Math.max(1e-4, ray.x * ray.x + ray.z * ray.z), 0, L2);
+    if (t <= 0.5 || t >= bestT) return;
+    const qx = muz.x + ray.x * t, qz = muz.z + ray.z * t, qy = muz.y + ray.y * t;
+    if (Math.hypot(qx - px, qz - pz) > r || qy < y0 - 0.05 || qy > y1 + 0.05) return;
+    const B = who.isPlayer ? boatAt(px, pz) : (who.boat && (who.seated || inBoat(who.boat, px, pz)) ? who.boat : null);
+    if (B) B.fireT = time + 3.5;   // 撃たれている舟：漕ぎ手は身を低くする
+    if (B && qy < B.g.position.y + BOAT_GW) { bestT = t; hit = null; blockB = [B, qx, qy, qz]; return; }   // 舷の陰
+    if (B && B.yakata && !who.isPlayer) { const lz = boatLocal(B, px, pz)[1]; if (lz > -2.8 && lz < 0.3 && Math.random() < 0.7) { bestT = t; hit = null; blockB = [B, qx, qy, qz]; return; } }   // 屋形の板
+    bestT = t; hit = who; blockB = null;
+  };
+  for (const o of enemies) { if (o.team !== 'blue' || !isUp(o)) continue; const p = o.s.position; if (Math.hypot(p.x - muz.x, p.z - muz.z) > rl + 4) continue;
+    const top = o.baseY + o.figH - (o.crouch || 0) * 0.42 * o.figH; test(p.x, p.z, o.baseY + 0.12, top, 0.26, o); }
+  if (!inHQ() && state === 'play') test(player.pos.x, player.pos.z, player.pos.y + 0.1, player.pos.y + (player.seated ? 1.2 : 1.65), 0.3, { isPlayer: true });
   let end = I.clone(), kind = 'ground';
   const B = boatAt(I.x, I.z, 0.15);
-  if (hit && !hit.isPlayer && hit.seated && hit.boat && Math.random() < 0.6) { kind = 'boat'; hit = null; }   // 舷と幟の陰：舟の板が受ける
-  if (hit && hit.isPlayer) {
-    const b2 = boatAt(player.pos.x, player.pos.z); if (b2 && player.pos.y < b2.floor.y + 0.2 && Math.random() < 0.5) { hit = null; kind = 'boat'; }
-  }
+  if (blockB) { kind = 'boat'; end.set(blockB[1], blockB[2], blockB[3]); }
+  else if (hit && !hit.isPlayer && hit.seated && hit.boat && Math.random() < 0.12) { kind = 'boat'; hit = null; }   // 幟・櫂の陰
+  if (TEST) { if (hit) window.__mgh = (window.__mgh || 0) + 1; if (kind === 'boat' && blockB) window.__mgb = (window.__mgb || 0) + 1; }
   if (hit) {
-    if (hit.isPlayer) { hurtPlayer(7); end.set(player.pos.x, player.pos.y + 1.1, player.pos.z); kind = 'body'; }
+    if (hit.isPlayer) { if (TEST) window.__mgp = (window.__mgp || 0) + 1; hurtPlayer(7); end.set(player.pos.x, player.pos.y + 1.1, player.pos.z); kind = 'body'; }
     else { const p = hit.s.position; end.set(p.x, hit.baseY + hit.figH * (hit.seated ? 0.45 : rand(0.5, 0.68)), p.z); kind = 'body';
       if (TEST) window.__mgd = (window.__mgd || 0) + 1;
       damageEnemy(hit, 1, muz, false, { pt: end.clone(), thrust: true }, { team: 'orange', state: 'idle', mg: true, s: { position: muz } }); }
-  } else if (kind === 'boat' || (B && I.y < B.floor.y + BOAT_GW + 0.1)) { kind = 'boat'; const bb = B || boatAt(I.x, I.z, 0.5) || BEACH.boats.find(q => Math.hypot(q.x - I.x, q.z - I.z) < 6); if (bb) boatHole(bb, end); }
+  } else if (kind === 'boat' || (B && I.y < B.g.position.y + BOAT_GW)) { kind = 'boat'; const bb = (blockB && blockB[0]) || B || boatAt(I.x, I.z, 0.5) || BEACH.boats.find(q => Math.hypot(q.x - I.x, q.z - I.z) < 6); if (bb) boatHole(bb, end); }
   else if (I.z < BH.SHORE - 0.5 || I.y < BH.WATER + 0.05) kind = groundH(I.x, I.z) < BH.WATER ? 'water' : 'ground';
   if (kind !== 'body' && kind !== 'boat') { const gh = Math.max(groundH(end.x, end.z), BH.WATER); end.y = gh + 0.02; }
   // 見た目：曳光、水しぶき・砂煙・木っ端
@@ -4694,6 +4707,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   else if (!(hit && hit.arrow)) Sfx.impactBody(hitPos);   // 矢は updateArrows で「ズブッ」
   if (by && by !== 'player' && by.state !== 'down' && enemies.includes(by)) { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
   if (e.perch && e.perch.tower && e.team === 'blue') { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }
+  if (TEST && e.hp <= 0 && by && by.mg) { window.__mgk = (window.__mgk || 0) + 1; e.mgKilled = true; (window.__mgkl = window.__mgkl || []).push([e.boat ? e.boat.name : '-', e.seated ? 'boat' : (e.s.position.z < 0 ? 'shallows' : 'beach'), Math.round(e.s.position.z)]); }
   if (e.hp <= 0) { if (!byPlayer && by && by.prof) e.killer = by;
     if (window.__kstat) window.__kstat.push({ team: e.team, kind: e.kind, by: byPlayer ? 'player' : by && by.kind }); killEnemy(e, byPlayer, from); return; }
   if (e.wasTalking) npcSay(e, 'hit', 1); else npcSay(e, 'hit', 0, byPlayer ? 0.5 : 0.25);
@@ -5832,7 +5846,7 @@ function animateNpc(e, dt, lean) {
     }
   }
   const kneelFr = e.kneel && e.girl.kneel;
-  e.crouch += ((e.seated ? SEAT_SINK / (0.42 * e.figH) : (covered && sv < 0.5) || (e.kneel && !kneelFr) ? 1 : 0) - e.crouch) * Math.min(1, dt * 5);   // 席：腰が座面の高さまで沈む
+  e.crouch += ((e.seated ? (SEAT_SINK + (e.seated.boat && e.seated.boat.fireT > time ? 0.3 : 0)) / (0.42 * e.figH) : (covered && sv < 0.5) || (e.kneel && !kneelFr) ? 1 : 0) - e.crouch) * Math.min(1, dt * 5);   // 席：腰が座面の高さまで沈む
   // 向き：移動中は進む方向、構え・射撃・待機は標的の方向（なめらかに回る）
   let face = e.face;
   if (e.passive) face = e.faceWant;

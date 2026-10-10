@@ -4,7 +4,6 @@
 const $ = id => document.getElementById(id);
 const TEST = /[?&]test=1/.test(location.search);
 const PASSIVE = /[?&]passive=1/.test(location.search);  // テスト用：自動プレイが何もしない
-const GLASSES_ALL = /[?&]glasses=1/.test(location.search);  // テスト用：全員メガネ
 // スマホ・タブレット（指で操作する端末）。?mobile=1 で強制。画質や敵の数は PC と同じ
 const MOBILE = /[?&]mobile=1/.test(location.search) || (!!window.matchMedia && matchMedia('(pointer: coarse)').matches) ||
   (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
@@ -461,6 +460,7 @@ function buildPlains() {
   // 本陣（陣幕で囲み、前に入口を空ける）
   maku(-4, 22, 4, 0); maku(4, 22, 4, 0); maku(-6, 28, 12, Math.PI / 2); maku(6, 28, 12, Math.PI / 2); maku(0, 34, 12, 0);
   buildHQ(-6, 6, 22, 34, 0, 31);
+  buildMedPost(3.6, 29.5, 'blue'); buildMedPost(0, -74, 'orange');
   for (let i = -2; i <= 2; i++) nobori(i * 3, 18, '#1f5fb8', '#f4f1e8', i % 2 ? '青組' : '必勝');
   // 敵陣（前方）
   for (let i = 0; i < 16; i++) nobori(rand(-50, 50), rand(-130, -85), '#d9741c', '#fff6e8', pick(['橙組', '必勝', '勝鬨', '一番']));
@@ -608,6 +608,7 @@ function buildFort() {
   // 陣内の飾り
   maku(-4, 26, 4, 0); maku(4, 26, 4, 0); maku(-6, 32, 12, Math.PI / 2); maku(6, 32, 12, Math.PI / 2); maku(0, 38, 12, 0);
   buildHQ(-6, 6, 26, 38, 0, 35);
+  buildMedPost(3.6, 33.5, 'blue'); buildMedPost(0, -86, 'orange');
   for (let i = -2; i <= 2; i++) nobori(i * 3, 22, '#1f5fb8', '#f4f1e8', i % 2 ? '青組' : '必勝');
   // 門の外：竹束の列（橙組の盾）
   for (const [z, n] of [[-14, 7], [-26, 8], [-38, 9], [-52, 10], [-66, 10]]) {
@@ -672,7 +673,7 @@ function loadSprites(done) {
     const file = `assets/${kind}${String(i + 1).padStart(2, '0')}.png`;
     const ok = t => {
       t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-      SPR[kind][i] = { tex: t, img: t.image, aspect: t.image.width / t.image.height, top: tops[i] || 0 };
+      SPR[kind][i] = { id: kind + String(i + 1).padStart(2, '0'), tex: t, img: t.image, aspect: t.image.width / t.image.height, top: tops[i] || 0 };
       texLoaded++; fin();
     };
     const fb = () => loader.load(data, ok, undefined, () => { console.warn('sprite load failed', kind, i + 1); fin(); });
@@ -727,122 +728,102 @@ function updateParticles(dt) {
 }
 
 // ====================================================================
-//  3D の侍女：Quaternius「Animated Women Pack」（CC0）をスキンメッシュとして読み込み、
-//   AnimationMixer で 待機/歩き/走り/突き/射撃姿勢/しゃがみ/倒れる をクロスフェード。
-//   服装は白い上衣・黒い袴（ズボン）・黒い帯・黒い靴・銀の小さなティアラ。髪色・身長は一人ずつ違う。
-//   刺さった矢は、当たった場所に最も近い骨に取り付ける（体と一緒に動く）。塗料の跡は付けない。
+//  写真の侍女（20人の元写真）をビルボードで描く。
+//   見る角度で 正面／横（右向きの写真を左右反転して左向きにも）／後ろ を切り替え、歩くと歩きフレーム（反転と交互で歩幅を表現）、
+//   攻撃中は構えフレーム（弓兵＝弓を引く、近接兵＝突き）。足りないフレームは正面写真で代用。
+//   縁を少し暗くして厚みを出し、接地影を付ける。倒れると横向きの写真が倒れる方向へ地面に伏せ、そのまま動かない。
 // ====================================================================
 const PAINT = ['#d9d4c6', '#f2efe6'];          // 練習用の先端（たんぽ・刃引き）の色。塗料の跡は付けない。赤・血は使わない
 const TEAM_PAINT = { blue: PAINT, orange: PAINT };
-const HUM = { tpl: [] };
-const HAIR = [0x16110d, 0x241812, 0x33221a, 0x4a2f1e, 0x5b3b25, 0x1e1a1a, 0x6b4a2e];
-const RECOLOR = { Shirt: 0xf3f1ea, Jacket: 0xf3f1ea, LightJacket: 0xe9e6dc, Pants: 0x151515, Shoes: 0x0e0e0e, Socks: 0x111111 };
-const tiaraMat = { silver: new THREE.MeshStandardMaterial({ color: 0xdfe4ea, metalness: 0.9, roughness: 0.25 }),
-                   gold: new THREE.MeshStandardMaterial({ color: 0xf0c75a, metalness: 0.9, roughness: 0.3 }) };
-const beltMat = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.6 });
-const bowMat = new THREE.MeshStandardMaterial({ color: 0x24160f, roughness: 0.5 });
-const bowGripMat = new THREE.MeshStandardMaterial({ color: 0xc9b48a, roughness: 0.8 });
-const stringMat = new THREE.MeshBasicMaterial({ color: 0xeeeadf });
-const daggerMat = new THREE.MeshStandardMaterial({ color: 0xc8ced6, metalness: 0.6, roughness: 0.35 });
-const hiltMat = new THREE.MeshStandardMaterial({ color: 0x18141a, roughness: 0.7 });
 const tipMat = new THREE.MeshLambertMaterial({ color: 0xd9d4c6 });   // たんぽ（布で包んだ練習用の矢先）
-function makeTiara(mat) {
-  const g = new THREE.Group();
-  const band = new THREE.Mesh(new THREE.TorusGeometry(0.088, 0.008, 6, 24, Math.PI * 1.1), mat);
-  band.rotation.x = Math.PI / 2; band.rotation.z = Math.PI * -0.05 + Math.PI; g.add(band);   // 前側の半円
-  for (const [a, h] of [[0, 0.045], [-0.45, 0.028], [0.45, 0.028]]) {
-    const c = new THREE.Mesh(new THREE.ConeGeometry(0.008, h, 5), mat);
-    c.position.set(Math.sin(a) * 0.088, h / 2, Math.cos(a) * 0.088); g.add(c);
-  }
-  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.009), tipMat); gem.position.set(0, 0.014, 0.09); g.add(gem);
-  return g;
-}
-function makeBow() {
-  const g = new THREE.Group(); g.name = 'npcBow';
-  const R = 0.62, arc = 1.6;
-  const limb = new THREE.Mesh(new THREE.TorusGeometry(R, 0.012, 5, 20, arc), bowMat);
-  limb.rotation.z = -arc / 2; limb.position.x = -R + 0.08; g.add(limb);            // 弓（XY 平面、+X 側に膨らむ）
-  const half = Math.sin(arc / 2) * R, sx = Math.cos(arc / 2) * R - R + 0.08;
-  const str = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, half * 2, 3), stringMat); str.position.x = sx; g.add(str);
-  const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.1, 6), bowGripMat); grip.position.x = 0.08; g.add(grip);
-  return g;   // 原点＝握り付近。長軸＝Y、膨らみ＝+X
-}
-function makeDagger() {
-  const g = new THREE.Group(); g.name = 'npcDagger';
-  const blade = new THREE.Mesh(new THREE.BoxGeometry(0.022, 0.006, 0.2), daggerMat); blade.position.z = 0.15; g.add(blade);
-  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), tipMat); tip.position.z = 0.25; g.add(tip);   // たんぽ
-  const hilt = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.1, 6), hiltMat); hilt.rotation.x = Math.PI / 2; g.add(hilt);
-  return g;   // 刃先＝+Z
-}
-function makeBelt() {
-  const m = new THREE.Mesh(new THREE.TorusGeometry(1, 0.22, 6, 24), beltMat);
-  m.rotation.x = Math.PI / 2; return m;
-}
 const _v = new V3(), _v2 = new V3(), _q = new THREE.Quaternion();
-// 部品を world の位置・向きで置いてから骨に取り付ける（Object3D.attach が骨の拡大縮小を吸収）
-function attachWorld(bone, obj, pos, quat) {
-  obj.position.copy(pos); if (quat) obj.quaternion.copy(quat); obj.updateMatrixWorld(true);
-  bone.attach(obj);
+const qsId = k => { const m = location.search.match(new RegExp('[?&]' + k + '=(\\w+)')); return m ? m[1] : null; };
+let SEC2_ID = qsId('sec2') || 'mob07';   // 二人目の秘書（荷物持ち・靴磨き）
+let SEC_ID = qsId('sec') || 'mob06', FLUTE_ID = qsId('flute') || 'mob03', MEDIC_ID = qsId('medic') || 'medic';   // 医療係：専用写真（frames の medic）、無ければ ?medic= の娘   // 秘書・笛役に使う写真（?sec=mob05 などで変更可）
+const GIRLS = {};      // id -> { id, type: 'mob'|'archer', spr, front, side, back, walk, bow, stab, action, flute }
+function buildGirls() {
+  for (const kind of ['mob', 'archer']) for (const sp of SPR[kind]) {
+    if (!sp) continue;
+    GIRLS[sp.id] = { id: sp.id, type: kind, spr: sp, front: { tex: sp.tex, aspect: sp.aspect, hk: 1 / Math.max(0.5, 1 - (sp.top || 0)), ax: 0.5, dir: 0 } };
+  }
+  if (!GIRLS[SEC_ID]) SEC_ID = Object.keys(GIRLS)[0];
+  if (!GIRLS[FLUTE_ID]) FLUTE_ID = Object.keys(GIRLS).find(k => k !== SEC_ID) || SEC_ID;
 }
-function prepHuman(g) {
-  const root = g.scene;
-  const clip = n => g.animations.find(a => a.name.endsWith('_' + n) || a.name.endsWith('|' + n));
-  const clips = { idle: clip('Idle'), walk: clip('Walk'), run: clip('Run'), stab: clip('Punch'), death: clip('Death'), sit: clip('Sitting'), clap: clip('Clapping') };
-  if (!clips.idle || !clips.walk || !clips.death) throw new Error('animations missing');
-  clips.aim = clips.stab.clone(); clips.aim.name = 'aim';
-  root.traverse(o => {
-    if (!o.isMesh) return;
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
-    for (const m of mats) {
-      const base = m.name.replace(/[._]\d+$/, '');
-      if (RECOLOR[base] !== undefined) m.color.setHex(RECOLOR[base]);
-      m.metalness = 0; m.roughness = base === 'Shoes' ? 0.45 : 0.85;
-      m.userData.role = base;
-    }
-  });
-  const bone = n => root.getObjectByName(n);
-  const B = { head: bone('Head'), headEnd: bone('Head_end'), hips: bone('Hips'), torso: bone('Torso'), palmL: bone('PalmL'), palmR: bone('PalmR') };
-  // 立ち姿（待機の最初）で身長を測る
-  const mx = new THREE.AnimationMixer(root);
-  let a = mx.clipAction(clips.idle); a.play(); mx.update(0); root.updateMatrixWorld(true);
-  const H = B.headEnd.getWorldPosition(_v).y;
-  const S0 = 1.62 / H; root.scale.setScalar(S0); root.updateMatrixWorld(true);
-  // 頭のティアラ・腰の帯（標準 162cm の体で、メートル単位で置く）
-  const hd = B.headEnd.getWorldPosition(new V3()), hb = B.head.getWorldPosition(new V3());
-  const tPos = hd.clone().lerp(hb, 0.18); tPos.z += 0.02;
-  const tiara = makeTiara(tiaraMat.silver); tiara.name = 'tiara';
-  attachWorld(B.head, tiara, tPos, _q.identity());
-  const hp = B.hips.getWorldPosition(new V3()), tp = B.torso.getWorldPosition(new V3());
-  const belt = makeBelt(); belt.name = 'belt'; belt.scale.set(0.135, 0.095, 0.15);
-  attachWorld(B.hips, belt, hp.clone().lerp(tp, 0.55), _q.setFromEuler(new THREE.Euler(0, 0, 0)));
-  belt.scale.multiplyScalar(1);   // attach 後のローカル拡大率はそのまま
-  // 突きの姿勢（腕を前に伸ばす）：前に出る手に弓・懐刀を持たせる
-  a.stop(); a = mx.clipAction(clips.stab); a.play(); mx.update(0.4); root.updateMatrixWorld(true);
-  const pl = B.palmL.getWorldPosition(new V3()), pr = B.palmR.getWorldPosition(new V3());
-  const hand = pl.z > pr.z ? B.palmL : B.palmR, hpos = pl.z > pr.z ? pl : pr;
-  const bow = makeBow();
-  attachWorld(hand, bow, hpos, _q.setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0)));   // 弓の膨らみが前（+Z）
-  const dag = makeDagger();
-  attachWorld(hand, dag, hpos, _q.identity());
-  a.stop(); mx.uncacheRoot(root);
-  root.scale.setScalar(1); root.updateMatrixWorld(true);
-  HUM.tpl.push({ root, clips, height: H });
-}
-function loadHumans(done) {
-  const names = ['woman2', 'woman3'];
-  if (!window.THREE_EXT) { done(); return; }
-  const loader = new THREE_EXT.GLTFLoader();
-  const useFiles = /^https?:/.test(location.protocol);
-  let left = names.length;
-  const fin = () => { if (--left === 0) done(); };
-  for (const n of names) {
-    const emb = window.MODEL_DATA && window.MODEL_DATA[n];
-    const ok = g => { try { prepHuman(g); } catch (err) { console.warn('model prep failed', n, err); } fin(); };
-    const fb = () => emb ? loader.load(emb, ok, undefined, () => { console.warn('model load failed', n); fin(); }) : fin();
-    if (useFiles) loader.load(`assets/models/${n}.glb`, ok, undefined, fb); else fb();
+// 追加フレーム（tools/make_frames.py が作る assets/frames/）。http ならファイル、file:// なら埋め込み
+let framesLoaded = 0;
+function loadFrames(done) {
+  const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
+  const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
+  const jobs = [];
+  // 元の写真が無く、frames に正面がある娘（医療係など）
+  for (const gid in meta) if (!GIRLS[gid] && meta[gid].front) GIRLS[gid] = { id: gid, type: gid === 'medic' ? 'medic' : 'extra', spr: null, front: null };
+  for (const gid in meta) for (const k in meta[gid]) if (GIRLS[gid]) jobs.push([gid, k, meta[gid][k]]);
+  const done2 = () => {
+    for (const gid in GIRLS) { const g = GIRLS[gid]; if (!g.front) { delete GIRLS[gid]; continue; }
+      if (!g.spr) g.spr = { id: gid, img: g.front.tex.image, top: Math.max(0, 1 - 1 / g.front.hk), tex: g.front.tex, aspect: g.front.aspect }; }
+    if (!GIRLS[SEC2_ID]) SEC2_ID = Object.keys(GIRLS).find(k => GIRLS[k].type === 'mob' && k !== SEC_ID && k !== FLUTE_ID) || SEC_ID;
+    if (!GIRLS[MEDIC_ID]) MEDIC_ID = GIRLS.mob05 ? 'mob05' : SEC_ID;
+    done();
+  };
+  let left = jobs.length; if (!left) { done2(); return; }
+  const fin = () => { if (--left === 0) done2(); };
+  for (const [gid, k, m] of jobs) {
+    const ok = t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+      GIRLS[gid][k] = { tex: t, aspect: m.aspect || t.image.width / t.image.height, hk: m.hk || 1, ax: m.ax == null ? 0.5 : m.ax, dir: m.dir || 0 }; framesLoaded++; fin(); };
+    const emb = data[gid + '_' + k];
+    const fb = () => emb ? loader.load(emb, ok, undefined, () => fin()) : fin();
+    if (useFiles) loader.load(m.file + '?v=' + (m.hk || 1), ok, undefined, fb); else fb();
   }
 }
-// 照準情報パネル用の顔写真（元の侍女の写真の上部を切り抜く）
+// 見え方ごとのフレーム（無ければ正面）
+function girlFrame(g, k, kind) {
+  if (k === 'action') {
+    const f = kind === 'archer' ? (g.bow || (g.type === 'archer' ? g.action : null)) : (g.stab || (g.type === 'mob' ? g.action : null));
+    return f || g.front;
+  }
+  return g[k] || g.front;
+}
+function pickGirl(kind) {
+  const all = Object.values(GIRLS).filter(g => g.id !== SEC_ID && g.id !== SEC2_ID && g.id !== FLUTE_ID && g.id !== MEDIC_ID && (g.type === 'mob' || g.type === 'archer'));
+  // 弓兵：弓を引く写真（bow）のある娘、または横・後ろがそろった弓兵の写真。近接兵：侍女（mob）
+  let fit = all.filter(g => kind === 'archer' ? (g.bow || (g.type === 'archer' && g.side && g.back)) : g.type === 'mob');
+  if (!fit.length) fit = all.filter(g => kind === 'archer' ? g.type === 'archer' : g.stab);
+  const pool = fit.length ? fit : (all.length ? all : Object.values(GIRLS));
+  const inUse = new Set(enemies.map(e => e.girl && e.girl.id));
+  const fresh = pool.filter(g => !inUse.has(g.id));
+  return (fresh.length ? pick(fresh) : pick(pool)) || null;
+}
+// 写真用の材質：縁（透明に近い所）を暗く、左右の端を少し暗くして厚みを出す。uAdd で被弾の白い閃光・構えの色
+const spriteGeo = new THREE.PlaneGeometry(1, 1); spriteGeo.translate(0, 0.5, 0);
+function spriteMat(tex) {
+  const m = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.42, side: THREE.DoubleSide });
+  const uAdd = { value: new THREE.Color(0, 0, 0) }, uTexel = { value: new THREE.Vector2(1 / 256, 1 / 640) };
+  m.userData.uAdd = uAdd; m.userData.uTexel = uTexel;
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uAdd = uAdd; sh.uniforms.uTexel = uTexel;
+    sh.fragmentShader = 'uniform vec3 uAdd;\nuniform vec2 uTexel;\n' + sh.fragmentShader
+      .replace('#include <map_fragment>', `#include <map_fragment>
+#ifdef USE_MAP
+  {
+    float e = 0.0;
+    for (int i = 0; i < 8; i++) { float a = float(i) * 0.785398; e += 1.0 - texture2D(map, vMapUv + vec2(cos(a), sin(a)) * uTexel * 5.0).a; }
+    e = clamp(e / 8.0 * 1.7, 0.0, 1.0);
+    float cx = abs(vMapUv.x - 0.5) * 2.0;
+    diffuseColor.rgb *= (1.0 - 0.36 * e) * (1.0 - 0.1 * cx * cx);
+  }
+#endif`)
+      .replace('#include <opaque_fragment>', '#include <opaque_fragment>\n  gl_FragColor.rgb += uAdd;');
+  };
+  m.customProgramCacheKey = () => 'girlRim1';
+  return m;
+}
+function setFrame(e, fr, mirror) {
+  if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); }
+  const h = e.figH * fr.hk, w = h * fr.aspect, sg = mirror ? -1 : 1;
+  e.bb.scale.set(w * sg, h, 1);
+  e.bb.position.x = (0.5 - fr.ax) * w * sg;   // 足元の中心を立ち位置に
+}
+// 照準情報パネル用の顔写真（元の写真の上部を切り抜く）
 const portraitCache = new Map();
 function portraitOf(spr) {
   if (!spr || !spr.img) return '';
@@ -857,46 +838,28 @@ function portraitOf(spr) {
   } catch (err) { url = ''; }
   portraitCache.set(spr, url); return url;
 }
-// 体の各部位（当たり位置に最も近い骨を探す）
-const PART_BONES = [['Head', 0.09], ['Neck', 0.05], ['Torso', 0.13], ['Abdomen', 0.12], ['Hips', 0.13], ['UpperArmL', 0.05], ['LowerArmL', 0.04],
-  ['UpperArmR', 0.05], ['LowerArmR', 0.04], ['UpperLegL', 0.07], ['LowerLegL', 0.055], ['UpperLegR', 0.07], ['LowerLegR', 0.055]];
-function nearestPart(e, pt) {
-  let best = null, bd = 1e9;
-  for (const pb of e.parts) {
-    const a = pb.bone.getWorldPosition(_v), b = pb.end ? pb.end.getWorldPosition(_v2) : a;
-    // 骨の線分上の最近点
-    const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z, l2 = abx * abx + aby * aby + abz * abz || 1e-6;
-    const t = clamp(((pt.x - a.x) * abx + (pt.y - a.y) * aby + (pt.z - a.z) * abz) / l2, 0, 1);
-    const cx = a.x + abx * t, cy = a.y + aby * t, cz = a.z + abz * t;
-    const d = Math.hypot(pt.x - cx, pt.y - cy, pt.z - cz) - pb.r;
-    if (d < bd) { bd = d; best = { pb, c: new V3(cx, cy, cz) }; }
-  }
-  return best;
-}
-// 当たった場所（体の表面）の位置を求める。塗料の跡は付けない（白い閃光と砂埃だけ）
+// 当たった場所（体の表面）。塗料の跡は付けない（白い閃光と砂埃だけ）
 function hitSurface(e, pt, from) {
-  const hit = nearestPart(e, pt); if (!hit) return null;
-  const n = new V3(from.x - hit.c.x, 0, from.z - hit.c.z);
+  const p = e.s.position, n = new V3(from.x - p.x, 0, from.z - p.z);
   if (n.lengthSq() < 1e-6) n.set(0, 0, 1); n.normalize();
-  const surf = hit.c.clone().addScaledVector(n, hit.pb.r * 0.92); surf.y = clamp(pt.y, hit.c.y - 0.12, hit.c.y + 0.12);
-  return surf;
+  return new V3(p.x + n.x * 0.14, clamp(pt.y, e.baseY + 0.1, e.baseY + e.figH), p.z + n.z * 0.14);
 }
-// 刺さった練習矢：矢の向きのまま、鏃が表面に少し埋まる位置で骨に取り付ける
+// 刺さった練習矢：体に取り付ける（倒れると一緒に伏せる）
 function stickArrow(e, pt, dir) {
-  const hit = nearestPart(e, pt); if (!hit) return;
-  const d = dir.clone().normalize();
+  const d = dir.clone().normalize(), p = e.s.position;
+  const hz = new V3(-d.x, 0, -d.z); if (hz.lengthSq() < 1e-6) hz.set(0, 0, 1); hz.normalize();
   const m = arrowTpl.player.clone();
-  const surf = hit.c.clone().addScaledVector(new V3(-d.x, 0, -d.z).normalize(), hit.pb.r * 0.8); surf.y = clamp(pt.y, hit.c.y - 0.15, hit.c.y + 0.15);
+  const surf = new V3(p.x + hz.x * 0.1, clamp(pt.y, e.baseY + 0.2, e.baseY + e.figH * 0.92), p.z + hz.z * 0.1);
   m.quaternion.setFromUnitVectors(Z, d);
   m.position.copy(surf).addScaledVector(d, -0.36); m.updateMatrixWorld(true);
-  hit.pb.bone.attach(m);
+  e.s.attach(m);
   e.stuck.push(m); if (e.stuck.length > 10) { const o = e.stuck.shift(); o.parent && o.parent.remove(o); }
 }
 function disposeNpc(e) {
   scene.remove(e.s);
   for (const m of e.mats) m.dispose();
-  if (e.mixer) e.mixer.uncacheRoot(e.model);
   scene.remove(e.bg); scene.remove(e.fg); e.fg.material.dispose(); scene.remove(e.mk);
+  if (e.extra) for (const o of e.extra) o.parent && o.parent.remove(o);
 }
 // 接地影
 const shadowTex = canvasTex(64, 64, (g, w) => {
@@ -907,20 +870,17 @@ const shadowTex = canvasTex(64, 64, (g, w) => {
 const shadowGeo = new THREE.PlaneGeometry(1, 1); shadowGeo.rotateX(-Math.PI / 2);
 const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
 const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
-// 発光で表す：被弾の閃光（白）と、攻撃の溜め（暖色）
-function npcGlow(e, r, g, b) { for (const m of e.mats) if (m.emissive) m.emissive.setRGB(r, g, b); }
-function npcTint(e, k) { if (e.flash > 0) return; npcGlow(e, 0.35 * k, 0.16 * k, 0); }
-// アニメーションの切替（クロスフェード）
-function setAnim(e, name, fade = 0.22) {
-  if (e.anim === name) return e.act[name];
-  const next = e.act[name], prev = e.act[e.anim];
-  if (!next) return null;
-  next.enabled = true; next.setEffectiveWeight(1);
-  if (name === 'stab' || name === 'death') { next.reset(); }
-  next.play();
-  if (prev) prev.crossFadeTo(next, fade, false);
-  e.anim = name;
-  return next;
+// 被弾の閃光（白）と、攻撃の溜め（暖色）
+function npcGlow(e, r, g, b) { const t = e.tintBase || ZERO3; for (const m of e.mats) if (m.userData.uAdd) m.userData.uAdd.value.setRGB(r * 0.75 + t[0], g * 0.75 + t[1], b * 0.75 + t[2]); }
+const ZERO3 = [0, 0, 0];
+function npcTint(e, k) { if (e.flash > 0) return; npcGlow(e, 0.3 * k, 0.14 * k, 0); }
+// 笛役の娘が正面写真しか無いときに持たせる横笛
+const fluteMat = { body: new THREE.MeshBasicMaterial({ color: 0x3a2416 }), band: new THREE.MeshBasicMaterial({ color: 0x0f0c0a }) };
+function makeFlute() {
+  const g = new THREE.Group(), L = 0.42;
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0095, L, 8), fluteMat.body); tube.rotation.z = Math.PI / 2; g.add(tube);
+  for (const x of [-0.19, -0.12, 0.17, 0.2]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.0105, 0.012, 8), fluteMat.band); b.rotation.z = Math.PI / 2; b.position.x = x; g.add(b); }
+  return g;
 }
 
 // ====================================================================
@@ -958,7 +918,12 @@ function makeProfile() {
 function npcSay(e, kind, prio = 0, chance = 1) {
   if (Math.random() > chance) return;
   const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
-  if (e.secretary) {
+  if (e.sec2 || e.wasSec2) {
+    const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['sec2_' + kind];
+    if (L && L.length) { const j = (Math.random() * L.length) | 0; if (!VoicePack.play(L[j].files[0], d, prio)) Voice.say(L[j].text, { pitch: 1.3, rate: 1.05 }, prio); }
+    return;
+  }
+  if (e.secretary || e.wasSecretary) {
     const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['sec_' + kind];
     if (L && L.length) {
       const j = (Math.random() * L.length) | 0;
@@ -974,7 +939,7 @@ function npcSay(e, kind, prio = 0, chance = 1) {
 // ====================================================================
 //  ゲーム状態
 // ====================================================================
-const player = { pos: new V3(), vy: 0, yaw: 0, pitch: 0, hp: 100, kills: 0, allyKills: 0, arrows: 30, weapon: 0,
+const player = { pos: new V3(), speedT: 0, vy: 0, yaw: 0, pitch: 0, hp: 100, kills: 0, allyKills: 0, arrows: 30, weapon: 0,
   drawing: false, charge: 0, swingT: -1, swingCd: 0, regenT: 0, hurtT: 0, switchT: 0, bob: 0, onGround: true, shake: 0 };
 const keys = {};
 let enemies = [], bodies = [], arrows = [], pickups = [];
@@ -994,76 +959,78 @@ for (const [team, col] of [['blue', '#2a8cff'], ['orange', '#ff8a12']]) {
 const markerMat = { blue: new THREE.SpriteMaterial({ map: markerTex.blue, transparent: true, depthWrite: false }),
                     orange: new THREE.SpriteMaterial({ map: markerTex.orange, transparent: true, depthWrite: false }) };
 let npcId = 0;
+// 医療係の目印（白い丸に組の色の「救」）と腕章
+const medicMarkMat = {};
+for (const [team, col] of [['blue', '#2a8cff'], ['orange', '#ff8a12']]) {
+  medicMarkMat[team] = new THREE.SpriteMaterial({ transparent: true, depthWrite: false, map: canvasTex(64, 64, g => {
+    g.beginPath(); g.arc(32, 32, 27, 0, 7); g.fillStyle = '#fff'; g.fill(); g.lineWidth = 5; g.strokeStyle = col; g.stroke();
+    g.fillStyle = col; g.font = 'bold 34px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('救', 32, 34);
+  }) });
+}
+const armbandGeo = new THREE.PlaneGeometry(1, 1);
+const armbandMat = { blue: new THREE.MeshBasicMaterial({ color: 0x2a7ae0, side: THREE.DoubleSide }), orange: new THREE.MeshBasicMaterial({ color: 0xf08a20, side: THREE.DoubleSide }) };
+const MEDIC_NAMES = { blue: '医療係 朝比奈 しずく', orange: '医療係 楠 かおる' };
 const isFoe = e => e.team === 'orange';
-const aliveOf = team => enemies.filter(e => e.team === team && e.state !== 'down');
+// 秘書・笛役（special）は人数に数えない
+const aliveOf = team => enemies.filter(e => e.team === team && e.state !== 'down' && !e.special);
 // team: 'orange'（敵・橙組） / 'blue'（味方・青組）
 function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
-  if (!HUM.tpl.length) return null;
-  const pool = SPR[kind] && SPR[kind].length ? SPR[kind] : SPR.mob;
-  const spr = pool.length ? pick(pool) : null;          // 照準パネルの顔写真用
+  const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind);
+  if (!g) return null;
+  const spr = g.spr;                                    // 照準パネルの顔写真
   const prof = makeProfile(), n = wave.n;
-  prof.glasses = !opt.secretary && (GLASSES_ALL || Math.random() < 0.2);              // 約5人に1人がメガネ
-  if (prof.glasses && Math.random() < 0.5) prof.pers = '冷静';         // メガネの子は冷静な性格が多め
+  prof.glasses = false;
   if (opt.secretary) Object.assign(prof, { name: sec.name, pers: '冷静', cm: 160, vv: 1 });
+  if (opt.fluter) Object.assign(prof, { name: fluter.name, pers: '陽気', cm: 156, vv: 2 });
+  if (opt.sec2) Object.assign(prof, { name: sec2.name, pers: '陽気', cm: 158, vv: 2 });
+  if (opt.medic) Object.assign(prof, { name: MEDIC_NAMES[team], pers: '冷静', cm: 160, vv: 1 });
   const P = PERS[prof.pers];
   if (captain) prof.name = '組頭 ' + prof.name;
-  const T = opt.secretary ? HUM.tpl[HUM.tpl.length - 1] : pick(HUM.tpl);
-  const model = THREE_EXT.SkeletonUtils.clone(T.root);
   const figH = prof.cm / 100;
-  model.scale.setScalar(figH / T.height);
-  // 材質は一人ずつ複製（髪色・発光を個別に）
-  const mats = [], hair = new THREE.Color(opt.secretary ? 0x0f0c0b : pick(HAIR)), skinK = opt.secretary ? 1 : rand(0.92, 1.12);
-  model.traverse(o => {
-    if (o.name === 'npcBow') o.visible = kind === 'archer';
-    if (o.name === 'npcDagger') o.visible = kind !== 'archer';
-    if (o.name === 'tiara' && captain) o.traverse(c => { if (c.isMesh && c.material === tiaraMat.silver) c.material = tiaraMat.gold; });
-    if (!o.isMesh || !o.isSkinnedMesh) return;
-    const m = o.material.clone(); mats.push(m); o.material = m;
-    const role = m.userData.role;
-    if (role === 'Hair' || role === 'HairBase' || role === 'Eyebrows') m.color.copy(hair).multiplyScalar(role === 'HairBase' ? 0.8 : 1);
-    if (role === 'Skin') m.color.multiplyScalar(skinK);
-  });
-  const s = new THREE.Group(); s.add(model);
+  const mat = spriteMat(g.front.tex), mats = [mat];
+  const s = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.order = 'YXZ';
+  const bb = new THREE.Mesh(spriteGeo, mat); tilt.add(bb); s.add(tilt);
   const shadow = new THREE.Mesh(shadowGeo, shadowMat); shadow.scale.set(0.75, 1, 0.6); shadow.position.y = 0.02; s.add(shadow);
   const baseY = opt.y || 0;
   s.position.set(x, baseY, z); s.rotation.y = team === 'orange' ? 0 : Math.PI; scene.add(s);
-  const mixer = new THREE.AnimationMixer(model), act = {};
-  for (const k in T.clips) if (T.clips[k]) act[k] = mixer.clipAction(T.clips[k]);
-  act.death.setLoop(THREE.LoopOnce, 1); act.death.clampWhenFinished = true;
-  act.stab.setLoop(THREE.LoopOnce, 1); act.stab.clampWhenFinished = true;
-  act.aim.timeScale = 0; act.sit.timeScale = 0;
-  const parts = [];
-  for (const [nm, r] of PART_BONES) {
-    const bone = model.getObjectByName(nm); if (!bone) continue;
-    const end = bone.children.find(c => c.isBone) || null;
-    parts.push({ bone, end, r });
-  }
-  const hpMax = opt.secretary ? 8 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
+  const hpMax = opt.secretary ? 8 : opt.fluter || opt.medic ? 5 : opt.sec2 ? 6 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
   const bg = new THREE.Sprite(barBgMat); bg.scale.set(0.8, 0.08, 1); bg.visible = false; bg.renderOrder = 4; scene.add(bg);
   const fg = new THREE.Sprite(new THREE.SpriteMaterial({ color: team === 'blue' ? 0x5ab0ff : (captain ? 0xffd040 : 0xffa040), depthWrite: false }));
   fg.scale.set(0.76, 0.05, 1); fg.visible = false; fg.renderOrder = 5; scene.add(fg);
-  const mk = new THREE.Sprite(markerMat[team]); mk.scale.set(0.22, 0.22, 1); mk.renderOrder = 5; scene.add(mk);
+  const mk = new THREE.Sprite(opt.medic ? medicMarkMat[team] : markerMat[team]); mk.scale.set(0.22, 0.22, 1); mk.renderOrder = 5; scene.add(mk);
   const e = {
-    id: ++npcId, team, kind, prof, P, spr, s, model, mixer, act, anim: null, mats, parts, shadow, figH, hp: hpMax, hpMax, captain,
-    hips: model.getObjectByName('Hips'), baseY, perch: opt.perch || null, crouch: 0, px: x, pz: z, face: s.rotation.y, animAcc: 0,
+    id: ++npcId, team, kind, prof, P, spr, girl: g, s, tilt, bb, mat, mats, fr: null, view: 'front', shadow, figH, hp: hpMax, hpMax, captain,
+    baseY, perch: opt.perch || null, crouch: 0, px: x, pz: z, face: s.rotation.y, stepT: Math.random() * 6,
     speed: Math.min(4.6, rand(2.0, 2.6) + n * 0.12) * P.speed * (captain ? 0.85 : 1) * (kind === 'archer' ? 0.9 : 1),
     dmg: (captain ? 14 : 8) + Math.min(8, n),
     state: kind === 'archer' ? 'advance' : 'approach', t: 0, cd: rand(0.5, 1.5),
     knock: new V3(), flash: 0, ph: Math.random() * 6, strafe: Math.random() < 0.5 ? -1 : 1,
-    bg, fg, mk, stuck: [], splats: [], spotted: false, hid: false, cover: null, cp: null, hideT: 0, retreated: false, evalT: 0,
+    bg, fg, mk, stuck: [], extra: [], spotted: false, hid: false, cover: null, cp: null, hideT: 0, retreated: false, evalT: 0,
     tgt: null, tgtT: 0,
   };
-  if (e.perch) { e.perch.taken = e; e.state = 'hide'; e.hideT = rand(0.5, 2); }
-  if (opt.secretary) { e.secretary = true; e.speed = 4.2; s.rotation.y = Math.PI; }
-  setAnim(e, e.perch ? 'sit' : 'idle', 0);
-  if (e.perch) e.act.sit.time = SIT_T;
-  mixer.update(rand(0, 1));
-  if (opt.secretary) addBun(model);
-  if (prof.glasses) addGlasses(model, Math.random() < 0.5, pick(glassMat), prof.cm / 160);
+  setFrame(e, g.front, false);
+  if (e.perch) { e.perch.taken = e; e.state = 'hide'; e.hideT = rand(0.5, 2); e.crouch = 1; }
+  if (opt.secretary) { e.secretary = true; e.special = true; e.speed = 4.2; s.rotation.y = e.face = Math.PI; e.home = [x, z]; }
+  if (opt.sec2) {   // 二人目の秘書：青組の腕章とほんのり青
+    e.sec2 = true; e.special = true; e.speed = 4.0; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
+    e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
+    const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
+  }
+  if (opt.medic) {   // 医療係：組の色の腕章と、ほんのり組の色
+    e.medic = true; e.special = true; e.speed = 3.6; s.rotation.y = e.face = team === 'blue' ? Math.PI : 0; e.home = [x, z]; e.state = 'idle';
+    e.tintBase = team === 'blue' ? [0, 0.015, 0.05] : [0.045, 0.022, 0]; npcGlow(e, 0, 0, 0);
+    mk.scale.set(0.3, 0.3, 1);
+    const band = new THREE.Mesh(armbandGeo, armbandMat[team]); e.band = band; tilt.add(band);
+  }
+  if (opt.fluter) {
+    e.fluter = true; e.special = true; e.speed = 2.5; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
+    if (!g.flute) {   // 笛を構えた写真が無いときは、正面写真の口元に横笛を添える
+      const fl = makeFlute(); fl.position.set(-0.17 * figH * 0.6, figH * 0.885, 0.06); fl.rotation.z = 0.12; tilt.add(fl); e.fluteMesh = fl;
+    }
+  }
   enemies.push(e);
   return e;
 }
-const SIT_T = 2.6;   // しゃがみ（座り）アニメの止める位置
 const ARCHER_RATE = 0.7;   // 両軍とも弓兵が約7割
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
@@ -1086,6 +1053,9 @@ function spawnAlly() {
 }
 function startWave(n) {
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
+  if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
+  for (const t of ['blue', 'orange']) if (medics[t].dead || !medics[t].e) { const was = medics[t].dead; spawnMedic(t); if (n > 1 && was && t === 'blue') popup('医療係が本陣に戻りました'); }
+  if (fluter.dead || (!fluter.e && hq)) { spawnFluter(); if (n > 1 && fluter.dead) popup('笛役の娘が本陣に戻りました'); fluter.dead = false; }
   wave.n = n; wave.toSpawn = 5 + n * 3; wave.spawnT = 1.5; wave.inter = 0;
   wave.blueToSpawn = wave.toSpawn;              // 味方も同数
   wave.maxAlive = Math.min(8 + n * 2, 28); wave.captain = n >= 2;
@@ -1127,7 +1097,7 @@ function waveUpdate(dt) {
     wave.inter = 5;
     showBanner(`第${waveName(wave.n)}波 制圧！`, '矢と体力が少し回復した');
     Sfx.fanfare();
-    player.arrows = Math.min(CFG.arrowsMax, player.arrows + 10);
+    player.arrows = Math.min(arrowsMax(), player.arrows + 10);
     player.hp = Math.min(CFG.maxHp, player.hp + 20);
   }
 }
@@ -1140,7 +1110,6 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   e.hp -= dmg; e.flash = 0.12; npcGlow(e, 0.9, 0.9, 0.9);
   let hitPos = null;
   if (hit && hit.pt) {
-    e.model.updateMatrixWorld(true);
     hitPos = hitSurface(e, hit.pt, from);
     if (hit.arrow && hit.dir) stickArrow(e, hit.pt, hit.dir);
   }
@@ -1164,10 +1133,17 @@ function killEnemy(e, byPlayer, from) {
   e.knock.set(0, 0, 0);
   if (from) e.face = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);   // 攻撃側を向いてから倒れる
   if (e.perch) { e.perch.taken = null; }
-  if (e.secretary) { sec.mode = 'dead'; sec.esc = null; e.secretary = false; e.wasSecretary = true; popup('秘書課の侍女に戦死判定…次の波で本陣に戻ります'); }
+  if (e.secretary) { sec.mode = 'dead'; sec.esc = null; sec.e = null; e.secretary = false; e.wasSecretary = true; if (menuOpen) closeSecMenu(false); popup('秘書課の侍女に戦死判定…次の波で本陣に戻ります'); }
+  e.downAt = time;
+  if (e.sec2) { sec2.dead = true; sec2.e = null; sec2.mode = 'dead'; e.sec2 = false; e.wasSec2 = true; e.kneel = false; if (menuOpen && menuWho === 'sec2') closeSecMenu(false); popup('秘書課の侍女（二人目）に戦死判定…次の波で本陣に戻ります'); }
+  if (e.medBy) { const m = e.medBy; e.medBy = null; if (m.patient === e) endTreat(m); }
+  if (e.medic) { medics[e.team].dead = true; medics[e.team].e = null; endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; popup(e.team === 'blue' ? '医療係に戦死判定…（次の波で本陣に戻ります）' : '橙組の医療係に戦死判定'); }
+  if (e.fluter) { fluter.dead = true; fluter.e = null; popup('笛役の娘に戦死判定…笛が止んだ（次の波で戻ります）'); }
+  // 倒れる向き：攻撃してきた側から離れる方向
+  const fx = from ? e.s.position.x - from.x : Math.sin(e.s.rotation.y), fz = from ? e.s.position.z - from.z : Math.cos(e.s.rotation.y);
+  e.fallYaw = Math.atan2(fx, fz) + rand(-0.35, 0.35);
   e.bg.visible = e.fg.visible = e.mk.visible = false;
-  e.act.death.timeScale = rand(0.95, 1.15);
-  setAnim(e, 'death', 0.12);
+  e.fallT = rand(0.5, 0.62);
   if (byPlayer) {
     if (e.team === 'orange') player.kills++;
     else { player.allyKills++; popup('味方撃破…！'); }
@@ -1185,7 +1161,6 @@ function toBodies(e) {
   scene.remove(e.bg); scene.remove(e.fg); scene.remove(e.mk);
   npcGlow(e, 0, 0, 0);
   e.shadow.visible = false;
-  e.mixer.stopAllAction ? null : null;   // 最後の姿勢のまま固定（以後 mixer は更新しない）
   bodies.push(e);
   while (bodies.length > CFG.maxBodies) disposeNpc(bodies.shift());
 }
@@ -1200,6 +1175,7 @@ function chooseTarget(e) {
   let best = null, bd = 1e9;
   const consider = (t, x, z, y) => {
     let d = Math.hypot(x - p.x, z - p.z);
+    if (t.medic) d *= t.medPhase === 'treat' ? 0.55 : 0.85;   // 医療係は狙われやすい（手当て中は止まっている）
     if (melee && Math.abs(y - e.baseY) > 1.5) d += 80;
     if (d < bd) { bd = d; best = t; }
   };
@@ -1270,10 +1246,10 @@ function steer(e, tx, tz, sp, dt) {
 }
 
 // ====================================================================
-//  本陣：休める安全地帯。秘書課の侍女（架空の人物・攻撃不可）に用事を頼める
+//  本陣：休める安全地帯。秘書課の侍女に用事を頼める（秘書・笛役も戦死判定を受ける。次の波で本陣に戻る）
 // ====================================================================
 let hq = null;          // { x0, x1, z0, z1, sx, sz }
-const sec = { s: null, model: null, mixer: null, name: '秘書課 白瀬 澄', near: false, teaT: 0, buffT: 0, fanT: 0, mode: 'hq', esc: null, cook: null, dish: null, eatT: 0, mealWave: -1 };
+const sec = { e: null, name: '秘書課 白瀬 澄', near: false, teaT: 0, buffT: 0, fanT: 0, mode: 'hq', esc: null, cook: null, dish: null, eatT: 0, mealWave: -1 };
 let menuOpen = false, allyStance = 'off', inHqPrev = false;
 const inHQ = (x = player.pos.x, z = player.pos.z) => !!hq && player.pos.y < 0.5 && x > hq.x0 && x < hq.x1 && z > hq.z0 && z < hq.z1;
 const hqMat = { cloth: new THREE.MeshLambertMaterial({ color: 0x2b2420 }), tea: new THREE.MeshLambertMaterial({ color: 0x6b8a3a }),
@@ -1292,82 +1268,25 @@ function buildHQ(x0, x1, z0, z1, sx, sz) {
     for (const s of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.6, 0.04), hqMat.stool); l.position.set(sx + dx + s * 0.2, 0.22, sz - 1.2); l.rotation.z = s * 0.5; stageRoot.add(l); }
   }
 }
-// 秘書課の侍女（3D。写真は使わない、架空の姿：黒髪のまとめ髪）
+// 秘書課の侍女：写真の侍女（既定 mob06）。本陣では立って用事を聞き、「一緒に来て」で弓兵として同行
 function spawnSecretary() {
   removeSecretary();
-  if (!fluter.s) spawnFluter();
-  if (!hq || !HUM.tpl.length) return;
-  const T = HUM.tpl[HUM.tpl.length - 1];
-  const model = THREE_EXT.SkeletonUtils.clone(T.root);
-  model.scale.setScalar(1.6 / T.height);
-  model.traverse(o => {
-    if (o.name === 'npcBow' || o.name === 'npcDagger') o.visible = false;
-    if (!o.isSkinnedMesh) return;
-    o.material = o.material.clone();
-    const r = o.material.userData.role;
-    if (r === 'Hair' || r === 'HairBase' || r === 'Eyebrows') o.material.color.setHex(0x0f0c0b);
-  });
-  const s = new THREE.Group(); s.add(model);
-  const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.scale.set(0.75, 1, 0.6); sh.position.y = 0.02; s.add(sh);
-  s.position.set(hq.sx, 0, hq.sz); scene.add(s);
-  const mixer = new THREE.AnimationMixer(model);
-  mixer.clipAction(T.clips.idle).play(); mixer.update(0); model.updateMatrixWorld(true);
-  addBun(model);
-  s.rotation.y = Math.PI;   // 入口（-Z）を向く
-  Object.assign(sec, { s, model, mixer });
+  if (!fluter.e && !fluter.dead) spawnFluter();
+  if (!hq || !GIRLS[SEC_ID]) return;
+  const e = spawnEnemy(hq.sx, hq.sz, 'archer', false, 'blue', { secretary: true, girl: SEC_ID });
+  if (!e) return;
+  sec.e = e; sec.esc = null; sec.mode = 'hq';
 }
-// まとめ髪（お団子）。モデルが +Z を向いた状態で呼ぶ
-const bunMat = new THREE.MeshStandardMaterial({ color: 0x0f0c0b, roughness: 0.8 });
-function addBun(model) {
-  const head = model.getObjectByName('Head'), he = model.getObjectByName('Head_end');
-  if (!head || !he) return;
-  model.updateMatrixWorld(true);
-  const hp = head.getWorldPosition(new V3()), ep = he.getWorldPosition(new V3());
-  const yaw = model.parent ? model.parent.rotation.y : 0;
-  const p = hp.lerp(ep, 0.7); p.x -= Math.sin(yaw) * 0.085; p.z -= Math.cos(yaw) * 0.085;
-  attachWorld(head, new THREE.Mesh(new THREE.SphereGeometry(0.05, 10, 8), bunMat), p, _q.identity());
+function removeSecretary() {
+  const e = sec.e; sec.e = null; sec.esc = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
 }
-// メガネ（細いフレーム。丸／四角、黒・銀・赤茶）。モデルが立ち姿の時に頭の骨へ取り付ける
-const glassMat = [0x141414, 0xc4c9d0, 0x4a3324].map(c => new THREE.MeshStandardMaterial({ color: c, metalness: c === 0xc4c9d0 ? 0.8 : 0.2, roughness: 0.4 }));
-const lensMat = new THREE.MeshBasicMaterial({ color: 0xdff0ff, transparent: true, opacity: 0.18, depthWrite: false });
-function makeGlasses(round, mat) {
-  const g = new THREE.Group(), T = 0.0028;
-  for (const sx of [-1, 1]) {
-    const cx = sx * 0.0175;
-    if (round) {
-      const r = new THREE.Mesh(new THREE.TorusGeometry(0.0135, T, 5, 16), mat); r.position.x = cx; g.add(r);
-      const l = new THREE.Mesh(new THREE.CircleGeometry(0.0135, 12), lensMat); l.position.x = cx; g.add(l);
-    } else {
-      const w = 0.03, h = 0.019;
-      for (const [x, y, bw, bh] of [[0, h / 2, w, T], [0, -h / 2, w, T], [-w / 2, 0, T, h], [w / 2, 0, T, h]]) {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, T), mat); b.position.set(cx + x, y, 0); g.add(b);
-      }
-      const l = new THREE.Mesh(new THREE.PlaneGeometry(w, h), lensMat); l.position.x = cx; g.add(l);
-    }
-    const tm = new THREE.Mesh(new THREE.BoxGeometry(T, T, 0.085), mat); tm.position.set(sx * 0.034, 0.003, -0.042); g.add(tm);   // つる
-  }
-  const br = new THREE.Mesh(new THREE.BoxGeometry(0.008, T, T), mat); br.position.y = 0.004; g.add(br);   // ブリッジ
-  return g;
-}
-function addGlasses(model, round, mat, sc = 1) {
-  const head = model.getObjectByName('Head'), he = model.getObjectByName('Head_end');
-  if (!head || !he) return;
-  model.updateMatrixWorld(true);
-  const hp = head.getWorldPosition(new V3()), ep = he.getWorldPosition(new V3());
-  const yaw = model.parent ? model.parent.rotation.y : 0;
-  const p = hp.lerp(ep, GL_Y); p.x += Math.sin(yaw) * GL_F * sc; p.z += Math.cos(yaw) * GL_F * sc;
-  const g = makeGlasses(round, mat); g.name = 'glasses'; g.scale.setScalar(clamp(sc, 0.9, 1.15));
-  attachWorld(head, g, p, _q.setFromEuler(new THREE.Euler(0, yaw, 0)));
-}
-const GL_Y = 0.42, GL_F = 0.13;   // 目の高さ（頭の骨→頭頂の比率）と顔の前への距離
-// 護衛（一緒に来て）：青組の弓兵として同行。プレイヤーの矢・突きは当たらない
+// 護衛（一緒に来て）：青組の弓兵として同行
 function startEscort() {
   if (sec.mode === 'escort' || sec.mode === 'returning') { secReply('sec_already', 0); return; }
-  if (sec.mode !== 'hq' || !sec.s) return;
-  const p = sec.s.position.clone(); removeSecretary();
-  const e = spawnEnemy(p.x, p.z, 'archer', false, 'blue', { secretary: true });
-  if (!e) { spawnSecretary(); return; }
-  sec.esc = e; sec.mode = 'escort';
+  if (sec.mode !== 'hq' || !sec.e) return;
+  sec.esc = sec.e; sec.e.returning = false; sec.mode = 'escort';
+  sec.e.state = 'advance'; sec.e.t = 0;
   secReply('sec_follow');
   closeSecMenu(false);
 }
@@ -1377,55 +1296,186 @@ function sendBack() {
   secReply('sec_return', 0);
   closeSecMenu(false);
 }
-function removeSecretary() { if (sec.s) { scene.remove(sec.s); sec.s = null; } }
-// ---- 笛役の娘（味方・非戦闘員）：本陣のそばで横笛を吹く。攻撃の対象にならない（敵味方の一覧に入れない） ----
-const fluter = { s: null, model: null, mixer: null, act: null, name: '笛役 小鳥遊 ひびき' };
-const fluteMat = { body: new THREE.MeshStandardMaterial({ color: 0x3a2416, roughness: 0.6 }), band: new THREE.MeshStandardMaterial({ color: 0x0f0c0a, roughness: 0.5 }) };
-function makeFlute() {   // 横笛（篠笛）：細い竹の筒に黒い巻き
-  const g = new THREE.Group(), L = 0.42;
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.0095, 0.0095, L, 8), fluteMat.body); tube.rotation.z = Math.PI / 2; g.add(tube);
-  for (const x of [-0.19, -0.12, 0.17, 0.2]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.0105, 0.0105, 0.012, 8), fluteMat.band); b.rotation.z = Math.PI / 2; b.position.x = x; g.add(b); }
-  for (let i = 0; i < 6; i++) { const h = new THREE.Mesh(new THREE.CircleGeometry(0.0035, 6), fluteMat.band); h.position.set(0.02 + i * 0.022, 0.0098, 0); h.rotation.x = -Math.PI / 2; g.add(h); }
-  return g;
-}
-const FLUTE_T0 = 0.33;   // 拍手アニメの「両手を口の前に上げた」瞬間を、笛を構えた姿勢として使う
+// ---- 笛役の娘（味方・非戦闘員、写真の侍女。既定 mob03）：本陣のそばで横笛を吹く。戦死判定を受けると笛が止む ----
+const fluter = { e: null, dead: false, name: '笛役 小鳥遊 ひびき' };
 function spawnFluter() {
   removeFluter();
-  if (!hq || !HUM.tpl.length || !HUM.tpl[0].clips.clap) return;
-  const T = HUM.tpl[0];
-  const model = THREE_EXT.SkeletonUtils.clone(T.root);
-  model.scale.setScalar(1.56 / T.height);
-  model.traverse(o => {
-    if (o.name === 'npcBow' || o.name === 'npcDagger') o.visible = false;
-    if (!o.isSkinnedMesh) return;
-    o.material = o.material.clone();
-    const r = o.material.userData.role;
-    if (r === 'Hair' || r === 'HairBase' || r === 'Eyebrows') o.material.color.setHex(0x2a1a10);
-  });
-  const s = new THREE.Group(); s.add(model);
-  const sh = new THREE.Mesh(shadowGeo, shadowMat); sh.scale.set(0.7, 1, 0.55); sh.position.y = 0.02; s.add(sh);
-  s.position.set(hq.sx - 4, 0, hq.sz + 0.5); scene.add(s);
-  const mixer = new THREE.AnimationMixer(model), act = mixer.clipAction(T.clips.clap);
-  act.play(); act.paused = true; act.time = FLUTE_T0; mixer.update(0); model.updateMatrixWorld(true);
-  // 笛を右手に持たせ、左手の方向へ（顔の右へ伸びる横笛の構え）
-  const pl = model.getObjectByName('PalmL'), pr = model.getObjectByName('PalmR');
-  if (pl && pr) {
-    const a = pl.getWorldPosition(new V3()), b = pr.getWorldPosition(new V3());
-    const mid = a.clone().lerp(b, 0.5), dir = b.clone().sub(a).normalize();
-    const fl = makeFlute(); fl.name = 'flute';
-    attachWorld(pr, fl, mid.addScaledVector(dir, 0.06).add(new V3(0, 0.03, -0.03)), new THREE.Quaternion().setFromUnitVectors(new V3(1, 0, 0), dir));
-  }
-  s.rotation.y = Math.PI;   // 戦場（-Z）の方を向く
-  Object.assign(fluter, { s, model, mixer, act });
+  if (!hq || !GIRLS[FLUTE_ID]) return;
+  const e = spawnEnemy(hq.sx - 4, hq.sz + 0.5, 'mob', false, 'blue', { fluter: true, girl: FLUTE_ID });
+  fluter.e = e; fluter.dead = false;
 }
-function removeFluter() { if (fluter.s) { scene.remove(fluter.s); fluter.s = null; } }
-function updateFluter(dt) {
-  if (!fluter.s) return;
-  // 吹いている小さな動き：手の位置をわずかに揺らし、拍に合わせて体を揺らす
-  fluter.act.time = FLUTE_T0 + (Math.sin(time * 2.1) + 1) * 0.02;
-  fluter.mixer.update(0);
-  fluter.model.rotation.y = Math.sin(time * 1.3) * 0.08;
-  fluter.model.position.y = Math.abs(Math.sin(time * (wave.inter > 0 ? 2.2 : 3.6))) * 0.012;
+function removeFluter() {
+  const e = fluter.e; fluter.e = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+function updateFluter(dt) {}
+// ---- 二人目の秘書（秘書課 早瀬 ことね、陽気）：靴を磨いて（しばらく足が速い）／荷物を持って（矢筒を持ってついて来る：矢の上限+10、そばにいると少しずつ補充） ----
+const sec2 = { e: null, dead: false, mode: 'hq', name: '秘書課 早瀬 ことね', refT: 0, shoesCd: 0 };
+let menuWho = 'sec', talkWho = null;
+function spawnSec2() {
+  removeSec2();
+  if (!hq || !GIRLS[SEC2_ID]) return;
+  const e = spawnEnemy(hq.sx - 2.2, hq.sz - 2.4, 'mob', false, 'blue', { sec2: true, girl: SEC2_ID });
+  sec2.e = e; sec2.dead = false; sec2.mode = 'hq';
+}
+function removeSec2() {
+  const e = sec2.e; sec2.e = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+const sec2Near = (r = 8) => !!(sec2.e && sec2.e.state !== 'down' && Math.hypot(sec2.e.s.position.x - player.pos.x, sec2.e.s.position.z - player.pos.z) < r && Math.abs(player.pos.y - sec2.e.baseY) < 3);
+const carrying = () => sec2.mode === 'carry' && sec2Near(8);
+function arrowsMax() { return CFG.arrowsMax + (carrying() ? 10 : 0); }
+function sec2Brain(e, dt) {
+  const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle';
+  const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z, dp = Math.hypot(dpx, dpz);
+  if (e.polishT > 0) {   // 靴磨き：膝をついて手元を動かす
+    e.polishT -= dt; e.kneel = true; e.faceWant = Math.atan2(dpx, dpz);
+    if (e.polishT <= 0) { e.kneel = false; player.speedT = 60; popup('60秒間 足が軽い（移動が速い）'); secReply('sec2_shoes_done', 0); }
+    return;
+  }
+  e.kneel = false;
+  if (sec2.mode === 'carry') {   // 荷物持ち：プレイヤーの左斜め後ろ
+    const fx = player.pos.x + Math.sin(player.yaw) * 2.0 - Math.cos(player.yaw) * 1.4, fz = player.pos.z + Math.cos(player.yaw) * 2.0 + Math.sin(player.yaw) * 1.4;
+    const d = Math.hypot(fx - p.x, fz - p.z);
+    if (d > 0.8) { steer(e, fx, fz, d > 6 ? e.speed * 1.4 : e.speed, dt); e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
+    else e.faceWant = Math.atan2(dpx, dpz);
+    return;
+  }
+  const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
+  if (d > 0.5) { steer(e, hx, hz, e.speed * (d > 6 ? 1 : 0.6), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+  else e.faceWant = dp < 8 ? Math.atan2(dpx, dpz) : Math.PI;
+  if (sec2.mode === 'returning' && d < 1.2) { sec2.mode = 'hq'; secReply('sec2_back', 0); }
+}
+const SEC2_REQ = {
+  tea() { SEC_REQ.tea(); },
+  report() { SEC_REQ.report(); },
+  shoes() {
+    if (player.speedT > 0) { secReply('sec2_shoes_wait', 0); return; }
+    const e = sec2.e; if (!e) return;
+    e.polishT = 3.2; secReply('sec2_shoes'); closeSecMenu(false);
+    Sfx.noiseBurst(0.8, 'bandpass', 1800, 900, 0.06, 0.8);
+  },
+  carry() {
+    if (sec2.mode === 'carry') { secReply('sec2_carry_already', 0); return; }
+    sec2.mode = 'carry'; sec2.refT = 0; secReply('sec2_carry'); popup('荷物持ち：そばにいる間 矢の上限+10・少しずつ補充'); closeSecMenu(false);
+  },
+  home() {
+    if (sec2.mode !== 'carry') { secReply('sec2_already_hq', 0); return; }
+    sec2.mode = 'returning'; secReply('sec2_return', 0); closeSecMenu(false);
+  },
+};
+function updateSec2(dt) {
+  if (player.speedT > 0) player.speedT -= dt;
+  if (carrying() && player.arrows < arrowsMax()) { sec2.refT += dt; if (sec2.refT >= 2.5) { sec2.refT = 0; player.arrows++; } }
+}
+// ---- 医療係（両軍の本陣に一人ずつ。非戦闘員だが戦死判定は受ける）：倒れた味方へ駆け寄り、膝をついて手当て ----
+// 手当ては膝をつく姿・白い布・声だけ（傷などの表現は一切なし）。倒れて間もない娘ほど復帰しやすい
+const medics = { blue: { e: null, dead: false }, orange: { e: null, dead: false } };
+const medPost = { blue: null, orange: null };
+const MED_R = 60;          // 医療係が出向く範囲（持ち場から）
+const clothMat = new THREE.SpriteMaterial({ map: canvasTex(64, 48, (g, w, h) => {
+  g.fillStyle = '#fbfaf6'; g.beginPath(); g.moveTo(6, 10); g.lineTo(56, 4); g.lineTo(60, 40); g.lineTo(8, 44); g.closePath(); g.fill();
+  g.strokeStyle = 'rgba(160,160,150,.6)'; g.lineWidth = 2; for (const y of [16, 26, 34]) { g.beginPath(); g.moveTo(10, y); g.lineTo(56, y - 4); g.stroke(); }
+}), transparent: true, depthWrite: false });
+function buildMedPost(x, z, team) {
+  medPost[team] = [x, z];
+  const mat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 1.9), new THREE.MeshLambertMaterial({ color: 0xece8dc })); mat.position.set(x + 1.2, 0.03, z); stageRoot.add(mat);   // 担架の敷布
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), WOOD_L); box.position.set(x - 0.9, 0.15, z + 0.3); stageRoot.add(box);   // 薬箱
+  if (team === 'orange') { nobori(x - 2, z - 1, '#d9741c', '#fff6e8', '救護'); maku(x + 0.5, z - 2.5, 6, 0); }
+}
+function spawnMedic(team) {
+  removeMedic(team);
+  const hp = medPost[team]; if (!hp || !GIRLS[MEDIC_ID]) return;
+  const e = spawnEnemy(hp[0], hp[1], 'mob', false, team, { medic: true, girl: MEDIC_ID });
+  medics[team].e = e; medics[team].dead = false;
+}
+function removeMedic(team) {
+  const e = medics[team].e; medics[team].e = null;
+  if (e) { endTreat(e); const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+function medSay(e, key, quiet) {
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) + (quiet ? 6 : 0);
+  if (d > 45) return;
+  const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['med_' + key];
+  if (!L || !L.length) return;
+  const j = (Math.random() * L.length) | 0;
+  if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(L[j].text, { pitch: 0.95, rate: 0.9 }, 1);
+}
+const bodyMid = b => [b.s.position.x + Math.sin(b.fallYaw || 0) * b.figH * 0.45, b.s.position.z + Math.cos(b.fallYaw || 0) * b.figH * 0.45];
+function findPatient(e) {
+  const hp = e.home, p = e.s.position; let best = null, bd = 1e9;
+  for (const b of bodies) {
+    if (b.team !== e.team || b.special || b.medDone || b.medBy || time - (b.downAt || 0) > 90) continue;
+    const [bx, bz] = bodyMid(b);
+    if (Math.hypot(bx - hp[0], bz - hp[1]) > MED_R || Math.abs(b.baseY - e.baseY) > 0.5) continue;
+    const d = Math.hypot(bx - p.x, bz - p.z); if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+function endTreat(e) {
+  if (e.cloth) { scene.remove(e.cloth); e.cloth = null; }
+  if (e.patient && e.patient.medBy === e) e.patient.medBy = null;
+  e.patient = null; e.kneel = false; e.medPhase = null;
+}
+function revivePatient(b) {
+  const i = bodies.indexOf(b); if (i < 0) return;
+  bodies.splice(i, 1);
+  for (const a of b.stuck) a.parent && a.parent.remove(a);
+  b.stuck = [];
+  b.hp = Math.max(1, Math.ceil(b.hpMax * 0.4));
+  b.state = 'rise'; b.t = 0; b.fallInit = false; b.thud = false; b.tgt = null; b.cover = null; b.perch = null; b.spotted = false; b.medBy = null; b.medDone = true; b.flash = 0;
+  b.knock.set(0, 0, 0); b.shadow.visible = true; b.mk.visible = true;
+  scene.add(b.bg); scene.add(b.fg); scene.add(b.mk);
+  enemies.push(b);
+  if (b.team === 'blue') popup('味方が手当てを受けて復帰！'); else popup('橙組の娘が手当てを受けて復帰…');
+}
+function medicBrain(e, dt) {
+  const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.cd -= dt;
+  let pt = e.patient;
+  if (pt && (!bodies.includes(pt) || (pt.medDone && e.medPhase !== 'treat'))) { endTreat(e); pt = null; }
+  if (!pt) {
+    e.kneel = false;
+    if ((e.scanT = (e.scanT || 0) - dt) <= 0) {
+      e.scanT = 0.6;
+      pt = findPatient(e);
+      if (pt) { e.patient = pt; pt.medBy = e; e.medPhase = 'go'; e.medT = 0; if (Math.random() < 0.5) medSay(e, 'go'); }
+    }
+  }
+  if (!pt) {   // 持ち場へ戻る／待つ
+    const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
+    if (d > 0.5) { steer(e, hx, hz, e.speed * (d > 6 ? 0.9 : 0.5), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+    else e.faceWant = e.team === 'blue' ? Math.PI : 0;
+    return;
+  }
+  const [bx, bz] = bodyMid(pt);
+  // 体の横（倒れた向きの右側）に膝をつく
+  const sx = bx + Math.cos(pt.fallYaw) * 0.62, sz = bz - Math.sin(pt.fallYaw) * 0.62;
+  if (e.medPhase === 'go') {
+    const d = Math.hypot(sx - p.x, sz - p.z);
+    if (d > 0.3) { steer(e, sx, sz, e.speed, dt); e.faceWant = Math.atan2(sx - p.x, sz - p.z); }
+    else {
+      e.medPhase = 'treat'; e.medT = 0; e.medStep = 0;
+      e.medWill = Math.random() < (time - pt.downAt < 35 ? 0.45 : 0.1);   // 倒れて間もないほど助かりやすい
+      e.cloth = new THREE.Sprite(clothMat); e.cloth.scale.set(0.26, 0.19, 1); scene.add(e.cloth);
+    }
+    return;
+  }
+  // 手当て
+  e.medT += dt; e.kneel = true; e.faceWant = Math.atan2(bx - p.x, bz - p.z);
+  if (e.cloth) e.cloth.position.set(bx + Math.sin(time * 3) * 0.05, pt.baseY + 0.16 + Math.abs(Math.sin(time * 4.2)) * 0.05, bz);
+  const T = e.medT;
+  if (e.medStep === 0) { e.medStep = 1; medSay(e, pt.stuck.length ? 'arrow' : 'start'); }
+  if (e.medStep === 1 && T > 1.6) {
+    e.medStep = 2;
+    if (pt.stuck.length) { for (const a of pt.stuck) a.parent && a.parent.remove(a); pt.stuck = []; Sfx.whoosh && Sfx.whoosh(new V3(bx, pt.baseY + 0.3, bz), 3); }
+  }
+  if (e.medStep === 2 && T > 2.4) { e.medStep = 3; if (Math.random() < 0.6) medSay(e, 'care'); }
+  if (e.medStep === 3 && T > 4.2) {
+    e.medStep = 4; pt.medDone = true;
+    if (e.medWill) { medSay(e, 'ok'); revivePatient(pt); }
+    else medSay(e, 'lost', true);
+  }
+  if (e.medStep === 4 && T > 5.2) endTreat(e);
 }
 // 収録音声を順につなげて再生（足りなければ Web Speech で全文）
 function secSay(parts, text) {
@@ -1442,7 +1492,13 @@ function secSay(parts, text) {
   Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1);
 }
 const secLine = (cat, i) => { const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra[cat]; return L ? L[i].text : ''; };
+function secCat(cat) {   // 二人目の秘書と話しているときは sec2_ の台詞（あれば）
+  const X = VoicePack.man && VoicePack.man._extra;
+  if (menuWho === 'sec2' && cat.startsWith('sec_')) { const c2 = 'sec2_' + cat.slice(4); if (!X || X[c2]) return c2; }
+  return cat;
+}
 function secReply(cat, i = null) {
+  cat = secCat(cat);
   const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra[cat];
   const n = L ? L.length : 1; if (i === null) i = (Math.random() * n) | 0;
   const text = secLine(cat, i);
@@ -1458,7 +1514,8 @@ const SEC_REQ = {
     const a = Math.min(30, aliveOf('blue').length), e = Math.min(30, aliveOf('orange').length + Math.max(0, wave.toSpawn)), w = clamp(wave.n, 1, 20);
     const text = `ご報告いたします。味方は${a}名、敵は${e}名。ただいま、第${w}波です。`;
     $('secsay').textContent = `「${text}」`;
-    secSay([['sec_report', 0], ['num_ally', a], ['num_enemy', e], ['num_wave', w - 1]], text);
+    const s2 = menuWho === 'sec2' ? 'sec2_' : '';
+    secSay([[s2 ? 'sec2_report' : 'sec_report', 0], [s2 + 'num_ally', a], [s2 + 'num_enemy', e], [s2 + 'num_wave', w - 1]], text);
   },
   plan() {
     allyStance = allyStance === 'off' ? 'def' : 'off';
@@ -1472,8 +1529,8 @@ const SEC_REQ = {
   follow() { startEscort(); },
   back() { sendBack(); },
   arrows() {
-    if (player.arrows >= CFG.arrowsMax) { secReply('sec_arrows_full', 0); return; }
-    player.arrows = CFG.arrowsMax; popup('矢を補充した'); Sfx.pickup(); secReply('sec_arrows', 0);
+    if (player.arrows >= arrowsMax()) { secReply('sec_arrows_full', 0); return; }
+    player.arrows = arrowsMax(); popup('矢を補充した'); Sfx.pickup(); secReply('sec_arrows', 0);
   },
 };
 // ---- ご飯（「お腹減った、ご飯今すぐ作って」）：1つの波につき1回。約5秒で作り、卓に出す。食べると数秒かけて体力回復 ----
@@ -1522,12 +1579,12 @@ function askMeal() {
   if (sec.mode !== 'hq') { secReply('sec_meal_away', 0); return; }
   if (sec.mealWave === wave.n) { secReply('sec_meal_wait', 0); return; }
   secReply('sec_meal_ask');
-  $('secmeals').style.display = 'grid'; $('secremarks').style.display = 'none';
+  showSub('secmeals');
 }
 function orderMeal(kind) {
   if (!MEALS[kind] || sec.cook || sec.dish || sec.mode !== 'hq' || sec.mealWave === wave.n) return;
   sec.cook = { kind, t: 0 }; sec.mealWave = wave.n;
-  $('secmeals').style.display = 'none';
+  showSub(null);
   secReply('sec_meal_ok', 0);
 }
 function updateMeal(dt) {
@@ -1620,10 +1677,19 @@ function sayRemark(key) {
   $('secsay').textContent = `「${text}」${note}`;
   secSay(parts, text);
 }
+// 小メニュー（感想・ご飯）を開くと用件の一覧を隠す。「戻る」で一覧へ（一覧の「戻る」は閉じて戦場へ）
+function showSub(id) {
+  for (const k of ['secremarks', 'secmeals']) $(k).style.display = k === id ? 'grid' : 'none';
+  $('secmain').style.display = id || menuWho !== 'sec' ? 'none' : 'grid';
+  $('sec2main').style.display = id || menuWho !== 'sec2' ? 'none' : 'grid';
+  $('secClose').style.display = id ? 'none' : 'block';
+}
 function openSecMenu() {
   if (menuOpen || state !== 'play') return;
   menuOpen = true; player.drawing = false; player.charge = 0;
-  $('secmenu').style.display = 'flex'; $('secremarks').style.display = 'none'; $('secmeals').style.display = 'none';
+  menuWho = talkWho || 'sec';
+  $('secName').textContent = menuWho === 'sec2' ? sec2.name : sec.name;
+  $('secmenu').style.display = 'flex'; showSub(null);
   if (document.exitPointerLock && locked()) document.exitPointerLock();
   secReply('sec_greet');
 }
@@ -1643,32 +1709,27 @@ function updateHQ(dt) {
   const inside = inHQ();
   if (inside !== inHqPrev) { inHqPrev = inside; if (inside) popup('本陣：ここは安全'); }
   $('hqtag').style.display = inside ? 'block' : 'none';
-  $('hqtag').textContent = inside ? '本陣（安全）' + (sec.buffT > 0 ? `　肩もみ ${Math.ceil(sec.buffT)}秒` : '') : '';
+  $('hqtag').textContent = inside ? '本陣（安全）' + (sec.buffT > 0 ? `　肩もみ ${Math.ceil(sec.buffT)}秒` : '') + (player.speedT > 0 ? `　靴 ${Math.ceil(player.speedT)}秒` : '') : '';
   // 護衛から本陣に戻り着いた
   if (sec.mode === 'returning' && sec.esc && hq && sec.esc.state !== 'down' && Math.hypot(sec.esc.s.position.x - hq.sx, sec.esc.s.position.z - hq.sz) < 1.6) {
-    const e = sec.esc; enemies.splice(enemies.indexOf(e), 1); disposeNpc(e);
-    sec.esc = null; sec.mode = 'hq'; spawnSecretary(); secReply('sec_back', 0);
+    sec.esc.returning = false; sec.esc = null; sec.mode = 'hq'; secReply('sec_back', 0);
   }
-  if (sec.esc && sec.esc.state !== 'down') {
-    const ep = sec.esc.s.position, d = Math.hypot(player.pos.x - ep.x, player.pos.z - ep.z);
-    sec.near = d < 3 && Math.abs(player.pos.y - ep.y) < 0.8;
-    $('talk').style.opacity = sec.near && !menuOpen ? 1 : 0;
-    document.documentElement.classList.toggle('cantalk', sec.near && !menuOpen);
-    if (!sec.near && menuOpen) closeSecMenu(false);
-    return;
+  updateSec2(dt);
+  // 話しかけられる相手：そばにいる秘書（二人いれば近いほう）
+  let best = null, bd = 3;
+  for (const [who, se] of [['sec', sec.e], ['sec2', sec2.e]]) {
+    if (!se || se.state === 'down' || se.polishT > 0 || Math.abs(player.pos.y - se.baseY) > 0.8) continue;
+    const d = Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z);
+    if (d < bd) { bd = d; best = who; }
   }
-  if (!sec.s) { sec.near = false; $('talk').style.opacity = 0; document.documentElement.classList.remove('cantalk'); return; }
-  const dx = player.pos.x - sec.s.position.x, dz = player.pos.z - sec.s.position.z, d = Math.hypot(dx, dz);
-  sec.near = d < 3 && player.pos.y < 0.5;
-  // 近くに来たらこちらを向く
-  const want = d < 8 ? Math.atan2(dx, dz) : Math.PI;
-  sec.s.rotation.y += angDiff(sec.s.rotation.y, want) * Math.min(1, dt * 4);
-  sec.mixer.update(dt);
-  // プレイヤーと重ならない
-  if (d < 0.7 && d > 1e-4) { player.pos.x = sec.s.position.x + dx / d * 0.7; player.pos.z = sec.s.position.z + dz / d * 0.7; }
+  if (!menuOpen) talkWho = best;
+  sec.near = !!best;
   $('talk').style.opacity = sec.near && !menuOpen ? 1 : 0;
   document.documentElement.classList.toggle('cantalk', sec.near && !menuOpen);
-  if (!sec.near && menuOpen) closeSecMenu(false);
+  if (menuOpen) {
+    const se = menuWho === 'sec2' ? sec2.e : sec.e;
+    if (!se || se.state === 'down' || Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z) > 3.4) closeSecMenu(false);
+  }
 }
 
 // ---- NPC の見た目：向き・アニメーション（歩き/走りは実際の移動速度から選ぶ） ----
@@ -1681,34 +1742,64 @@ function animateNpc(e, dt, lean) {
   e.vs = (e.vs || 0) + (v - (e.vs || 0)) * Math.min(1, dt * 8);   // 速度（平滑化）
   const sv = e.vs;
   const covered = e.state === 'hide' && (e.perch || (e.cover && e.cover.type === 'bundle'));
-  let want;
-  if (e.state === 'windup' || e.state === 'recover') want = 'stab';
-  else if (e.state === 'aim') want = 'aim';
-  else if (covered && sv < 0.5) want = 'sit';
-  else if (sv > 3.1) want = 'run';
-  else if (sv > 0.35) want = 'walk';
-  else want = 'idle';
-  const a = setAnim(e, want, want === 'stab' ? 0.08 : 0.22);
-  if (want === 'walk') e.act.walk.timeScale = clamp(sv / 1.35, 0.6, 1.7);
-  if (want === 'run') e.act.run.timeScale = clamp(sv / 3.9, 0.7, 1.4);
-  if (want === 'aim') e.act.aim.time = 0.4;
-  if (want === 'sit') e.act.sit.time = SIT_T;
-  if ((want === 'walk' || want === 'run') && stepBudget > 0) {
-    const ph = Math.floor((e.stepT = (e.stepT || 0) + dt * sv * 1.5) / Math.PI);
-    if (ph !== e.stepPh) { e.stepPh = ph; const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < 16) { stepBudget--; Sfx.step(e.baseY > 0.3, want === 'run' ? 0.9 : 0.6, p); } }
+  const acting = e.state === 'windup' || e.state === 'recover' || e.state === 'aim';
+  const moving = !acting && sv > 0.35;
+  // 足音
+  if (moving) {
+    const ph = Math.floor((e.stepT += dt * sv * 1.5) / Math.PI);
+    if (ph !== e.stepPh) {
+      e.stepPh = ph;
+      if (stepBudget > 0) { const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < 16) { stepBudget--; Sfx.step(e.baseY > 0.3, sv > 3.1 ? 0.9 : 0.6, p); } }
+    }
   }
-  e.crouch += ((want === 'sit' ? 1 : 0) - e.crouch) * Math.min(1, dt * 5);
-  // 向き：移動中は進む方向、構え・射撃・待機は標的の方向
+  const kneelFr = e.kneel && e.girl.kneel;
+  e.crouch += (((covered && sv < 0.5) || (e.kneel && !kneelFr) ? 1 : 0) - e.crouch) * Math.min(1, dt * 5);
+  // 向き：移動中は進む方向、構え・射撃・待機は標的の方向（なめらかに回る）
   let face = e.face;
-  if (e.tgt && (want !== 'walk' && want !== 'run' || e.state === 'backoff')) { const tp = tgtPos(e.tgt); face = Math.atan2(tp.x - p.x, tp.z - p.z); }
+  if (e.passive) face = e.faceWant;
+  else if (e.tgt && (!moving || e.state === 'backoff')) { const tp = tgtPos(e.tgt); face = Math.atan2(tp.x - p.x, tp.z - p.z); }
   else if (sv > 0.35) face = Math.atan2(vx, vz);
   e.face = face;
-  e.s.rotation.y += angDiff(e.s.rotation.y, face) * Math.min(1, dt * 8);
-  e.model.rotation.z = lean * 0.5;
-  // 遠くの侍女はアニメ更新を間引く
-  e.animAcc += dt;
-  const far = Math.hypot(p.x - camera.position.x, p.z - camera.position.z) > 55;
-  if (!far || (frameNo + e.id) % 3 === 0) { e.mixer.update(e.animAcc); e.animAcc = 0; }
+  e.s.rotation.y += angDiff(e.s.rotation.y, face) * Math.min(1, dt * 6);
+  // ---- 見え方の選択：カメラと娘の向きの角度で 正面／横／後ろ（境目は少し粘る） ----
+  const camYaw = Math.atan2(camera.position.x - p.x, camera.position.z - p.z);
+  const f = e.s.rotation.y, c = Math.cos(angDiff(f, camYaw)), m = 0.08;
+  e.view = c > 0.5 + (e.view === 'front' ? -m : m) ? 'front' : c < -0.5 - (e.view === 'back' ? -m : m) ? 'back' : 'side';
+  // 画面の右を向いているか（横・構えの写真の左右反転に使う）
+  const sgn = Math.sin(f) * Math.cos(player.yaw) - Math.cos(f) * Math.sin(player.yaw) > 0 ? 1 : -1;
+  const g = e.girl;
+  let fr, mirror = false, bob = 0, rock = 0;
+  if (e.kneel) {   // 医療係の手当て：膝をつく写真（無ければしゃがむ）。手元が小さく動く
+    fr = g.kneel || g.front; mirror = fr.dir ? fr.dir !== sgn : false;
+    if (fr === g.kneel && e.view === 'back') mirror = !mirror;
+    rock = Math.sin(time * 4.2) * 0.02;
+  } else if (e.fluter) {
+    fr = g.flute || g.front; mirror = fr.dir ? fr.dir !== sgn : false;
+    bob = Math.abs(Math.sin(time * (wave.inter > 0 ? 2.2 : 3.6))) * 0.012;
+    if (e.view !== 'front' && !g.flute) { fr = e.view === 'back' ? girlFrame(g, 'back') : girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; }
+    if (e.fluteMesh) e.fluteMesh.visible = fr === g.front;
+  } else if (acting) {
+    fr = girlFrame(g, 'action', e.kind); mirror = fr.dir ? fr.dir !== sgn : false;
+  } else if (moving) {
+    const stride = Math.floor(e.stepT / Math.PI) & 1;
+    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH;
+    if (e.view === 'front') { fr = girlFrame(g, 'walk'); mirror = fr === g.front ? false : !!stride; }
+    else if (e.view === 'back') { fr = girlFrame(g, 'back'); rock = Math.sin(e.stepT) * 0.025; }
+    else { fr = girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; rock = Math.sin(e.stepT) * 0.03; }
+  } else {
+    fr = girlFrame(g, e.view === 'front' ? 'front' : e.view);
+    mirror = fr.dir ? fr.dir !== sgn : false;
+    bob = Math.sin(time * 1.6 + e.ph) * 0.004 * e.figH;   // 待機中のわずかな呼吸
+  }
+  setFrame(e, fr, mirror);
+  if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
+    const h = e.figH, sg = mirror ? -1 : 1, front = fr === g.front || fr === g.back || fr === g.walk;
+    e.band.scale.set(front ? 0.075 : 0.085, 0.05, 1);
+    e.band.position.set(front ? (fr === g.back ? 0.115 : -0.115) * h : (fr === g.kneel ? 0.135 : 0.01) * h * sg, (fr === g.kneel ? 0.44 : 0.73) * h, 0.03);
+  }
+  // ビルボード（Y 軸のみ）：板をカメラへ向ける
+  e.tilt.rotation.set(0, camYaw - f, lean * 0.5 + rock);
+  e.tilt.position.y = bob - e.crouch * 0.42 * e.figH;          // 物陰ではしゃがむ（体が沈む）
 }
 // ---- NPC の行動 ----
 const tmp = new V3();
@@ -1718,18 +1809,49 @@ function updateEnemies(dt) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
+    if (e.state === 'rise') {   // 手当てを受けて起き上がる
+      e.t += dt; p.y = e.baseY;
+      const k = Math.min(1, e.t / 0.9), q = 1 - (1 - k) * (1 - k);
+      e.tilt.rotation.x = (1 - q) * Math.PI / 2; e.tilt.position.y = 0;
+      e.shadow.scale.set(0.75 + (1 - q) * 0.4, 1, 0.6 + (1 - q) * 0.9 * e.figH);
+      if (k >= 1) { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; e.cd = 1; e.tilt.rotation.x = 0; e.shadow.scale.set(0.75, 1, 0.6); }
+      continue;
+    }
     if (e.state === 'down') {
-      // 戦死判定：倒れるアニメ（一度きり）。終わったらその姿勢で完全に静止して残る
+      // 戦死判定：横向きの写真が倒れる方向へ伏せる（一度きり）。伏せたらそのまま静止して残る
       e.t += dt;
-      e.s.rotation.y += angDiff(e.s.rotation.y, e.face) * Math.min(1, dt * 12);
       p.y = e.baseY;
-      e.mixer.update(dt);
-      const D = e.act.death.getClip().duration / Math.max(0.1, e.act.death.timeScale);
-      if (!e.thud && e.t > D * 0.45) { e.thud = true; Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z)); puff(p.clone().setY(e.baseY + 0.2), 0xc8b48a, 4, 0.8, 1.5, 0.8); }
-      if (e.t >= D + 0.05) toBodies(e);
+      if (!e.fallInit) {
+        e.fallInit = true;
+        const fr = girlFrame(e.girl, 'side');
+        setFrame(e, fr, Math.random() < 0.5);
+        e.tilt.rotation.set(0, e.fallYaw - e.s.rotation.y, 0);
+        e.tilt.position.y = 0; e.tilt.updateMatrixWorld(true);
+        for (const a of e.stuck) e.tilt.attach(a);
+        if (e.fluteMesh) e.fluteMesh.visible = false;
+      }
+      const T = e.fallT || 0.55, k = Math.min(1, e.t / T);
+      let ang = k * k * Math.PI / 2;
+      if (e.t > T) ang = Math.PI / 2 - Math.sin(Math.min(1, (e.t - T) / 0.22) * Math.PI) * 0.07;   // 地面で小さく弾む
+      e.tilt.rotation.x = ang; e.tilt.position.y = k * 0.03;
+      e.shadow.scale.set(0.75 + k * 0.4, 1, 0.6 + k * 0.9 * e.figH);
+      if (!e.thud && e.t >= T) { e.thud = true; Sfx.impactBody(p.clone().setY(e.baseY + 0.2)); Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z)); puff(p.clone().setY(e.baseY + 0.2).addScaledVector(new V3(Math.sin(e.fallYaw), 0, Math.cos(e.fallYaw)), e.figH * 0.5), 0xc8b48a, 5, 0.8, 1.5, 0.8); }
+      if (e.t >= T + 0.3) toBodies(e);
       continue;
     }
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
+    let lean = 0;
+    e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || !!e.hold;   // hold: テスト用に止める
+    if (e.sec2 && !e.hold) { e.passive = true; sec2Brain(e, dt); }
+    else if (e.medic && !e.hold) medicBrain(e, dt);
+    else if (e.passive) {
+      const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
+      e.cd -= dt; e.t += dt;
+      if (Math.hypot(hx - p.x, hz - p.z) > 0.4) steer(e, hx, hz, e.speed * 0.7, dt);
+      e.tgt = null; if (!e.hold) e.state = 'idle';
+      const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z;
+      e.faceWant = e.hold ? e.hold.face : e.secretary && Math.hypot(dpx, dpz) < 8 ? Math.atan2(dpx, dpz) : Math.PI;
+    } else {
     // 標的の更新
     e.tgtT -= dt;
     if (e.returning) { e.tgt = null; e.tgtT = 1; }
@@ -1739,7 +1861,6 @@ function updateEnemies(dt) {
       e.tgt = nt; e.tgtT = 0.6;
     }
     e.cd -= dt; e.t += dt; e.moving = false;
-    let lean = 0;
     const tint = k => npcTint(e, k);
 
     if (!e.tgt) {
@@ -1860,7 +1981,6 @@ function updateEnemies(dt) {
             } else if (e.cd <= 0) {
               e.state = 'windup'; e.t = 0;
               const T = P === PERS.好戦的 ? 0.4 : 0.5;
-              e.act.stab.timeScale = 0.4 / T; setAnim(e, 'stab', 0.1);
               if (e.tgt.isPlayer || Math.random() < 0.4) npcSay(e, 'attack', 0, 0.3);
             }
           }
@@ -1892,6 +2012,7 @@ function updateEnemies(dt) {
           if (e.t > 0.35) e.state = 'approach';
         } else e.state = 'approach';
       }
+    }
     }
     // 群れの分離
     if (!e.perch) for (const o of enemies) {
@@ -1991,7 +2112,6 @@ function updateArrows(dt) {
     for (const e of enemies) {
       if (e.state === 'down') continue;
       if (a.team !== 'player' && e.team === a.team) continue;
-      if (a.team === 'player' && e.secretary) continue;          // 秘書には当たらない
       const ep = e.s.position;
       const t = clamp(((ep.x - p0.x) * sx + (ep.z - p0.z) * sz) / sl, 0, 1);
       const cx = p0.x + sx * t, cz = p0.z + sz * t;
@@ -2057,7 +2177,7 @@ function swingResolve() {
   const fwd = new V3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
   let best = null, bd = 1e9;
   for (const e of enemies) {                      // 同士討ちあり：両軍が対象（秘書は除く）
-    if (e.state === 'down' || e.secretary) continue;
+    if (e.state === 'down') continue;
     const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz);
     if (d > 1.9 || Math.abs(e.baseY - player.pos.y) > 1.2) continue;
     const along = dx * fwd.x + dz * fwd.z, lateral = Math.abs(dx * fwd.z - dz * fwd.x);
@@ -2110,7 +2230,7 @@ function updatePickups(dt) {
     const d = Math.hypot(p.g.position.x - player.pos.x, p.g.position.z - player.pos.z);
     let take = false;
     if (d < 1.6) {
-      if (p.type === 'arrow' && player.arrows < CFG.arrowsMax) { player.arrows = Math.min(CFG.arrowsMax, player.arrows + 6); popup('矢 +6'); take = true; }
+      if (p.type === 'arrow' && player.arrows < arrowsMax()) { player.arrows = Math.min(arrowsMax(), player.arrows + 6); popup('矢 +6'); take = true; }
       if (p.type === 'food' && player.hp < CFG.maxHp) { player.hp = Math.min(CFG.maxHp, player.hp + 25); popup('兵糧 体力+25'); take = true; }
     }
     if (take) Sfx.pickup();
@@ -2133,7 +2253,7 @@ function updateHud(dt) {
   $('hpfill').style.width = (player.hp / CFG.maxHp * 100) + '%';
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
-  setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(CFG.arrowsMax));
+  setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
   setText('wavetxt', `第${waveName(Math.max(1, wave.n))}波`);
   setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}`);
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
@@ -2189,7 +2309,7 @@ function pickTarget() {
   // 倒れている侍女（腰の位置の高さの面との交点で判定）
   if (rayDir.y < -0.02) {
     for (const b of bodies) {
-      const hp = b.hips.getWorldPosition(_v);
+      const hp = _v.set(b.s.position.x + Math.sin(b.fallYaw || 0) * b.figH * 0.45, b.baseY + 0.05, b.s.position.z + Math.cos(b.fallYaw || 0) * b.figH * 0.45);
       const t = (hp.y - o.y) / rayDir.y;
       if (t <= 0 || t > 60) continue;
       if (Math.hypot(o.x + rayDir.x * t - hp.x, o.z + rayDir.z * t - hp.z) < 0.7) return b;
@@ -2206,7 +2326,7 @@ function updateTargetInfo(dt) {
     const t = targetShown, dead = t.state === 'down';
     const tm = t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
-    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.prof.name}</b><span>${t.P.desc}・${t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm${t.prof.glasses ? '・メガネ' : ''}</span>` +
+    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? '医療係' : t.fluter ? '笛役' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
     el.style.opacity = Math.min(1, targetHold * 3);
@@ -2516,8 +2636,10 @@ function setWeapon(w) {
 function resetGame() {
   if (menuOpen) closeSecMenu(false);
   for (const k in towers) towers[k].paint = towers[k].press = 0;
-  removeFluter();
-  sec.mode = 'hq'; sec.esc = null; sec.cook = null; sec.mealWave = -1; removeDish(); if ($('cook')) $('cook').style.display = 'none';
+  removeFluter(); fluter.dead = false;
+  removeSec2(); sec2.dead = false; sec2.mode = 'hq'; player.speedT = 0; menuWho = 'sec'; talkWho = null;
+  for (const t of ['blue', 'orange']) { removeMedic(t); medics[t].dead = false; }
+  sec.mode = 'hq'; sec.esc = null; sec.e = null; sec.cook = null; sec.mealWave = -1; removeDish(); if ($('cook')) $('cook').style.display = 'none';
   allyStance = 'off'; sec.teaT = sec.buffT = sec.fanT = 0; if ($('stance')) $('stance').textContent = '攻勢';
   for (const e of enemies) disposeNpc(e);
   for (const b of bodies) disposeNpc(b);
@@ -2539,7 +2661,7 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   loadStage(stageName);
   resetGame();
-  spawnSecretary();
+  spawnSecretary(); spawnSec2(); spawnMedic('blue'); spawnMedic('orange');
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -2579,7 +2701,7 @@ function updatePlayer(dt) {
   if (keys.KeyA) { mx += fz; mz -= fx; } if (keys.KeyD) { mx -= fz; mz += fx; }
   if (touch.jx || touch.jy) { const jf = -touch.jy, jr = touch.jx; mx += fx * jf - fz * jr; mz += fz * jf + fx * jr; }   // 仮想スティック
   const ml = Math.hypot(mx, mz), mag = Math.min(1, ml);
-  let sp = (keys.ShiftLeft || keys.ShiftRight || touch.run) && !player.drawing ? CFG.run : CFG.walk;
+  let sp = ((keys.ShiftLeft || keys.ShiftRight || touch.run) && !player.drawing ? CFG.run : CFG.walk) * (player.speedT > 0 ? 1.2 : 1);   // 靴を磨いてもらうと少し速い
   if (player.drawing) sp *= 0.5;
   // 梯子：前進で上る・後退で下りる（途中は横移動しない）
   const fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;
@@ -2627,7 +2749,7 @@ function updatePlayer(dt) {
     if (player.swingT > 0.3) player.swingT = -1;
   }
   // 矢の自然回復
-  if (player.arrows < CFG.arrowsMax) { player.regenT += dt; if (player.regenT >= CFG.arrowRegen * (sec.buffT > 0 ? 0.5 : 1)) { player.regenT = 0; player.arrows++; } }
+  if (player.arrows < arrowsMax()) { player.regenT += dt; if (player.regenT >= CFG.arrowRegen * (sec.buffT > 0 ? 0.5 : 1)) { player.regenT = 0; player.arrows++; } }
   // カメラ
   player.shake = Math.max(0, player.shake - dt);
   const sh = player.shake * 0.25;
@@ -2681,7 +2803,7 @@ function frame(now) {
   updateParticles(state === 'pause' || state === 'over' ? 0 : dt);
   drawScreenPaint(state === 'play' ? dt : 0);
   { const playing = state === 'play', combat = playing && !(wave.inter > 0);
-    Sfx.ambience(dt, playing, combat); Sfx.flute(playing && fluter.s ? fluter.s.position.clone().setY(1.5) : null, combat); }
+    Sfx.ambience(dt, playing, combat); Sfx.flute(playing && fluter.e && fluter.e.state !== 'down' ? fluter.e.s.position.clone().setY(1.5) : null, combat); }
   if (sec.fanT > 0 && state === 'play') {   // 扇の風（画面の端に流れる線）
     paintG.strokeStyle = `rgba(255,255,255,${Math.min(0.35, sec.fanT * 0.15)})`; paintG.lineWidth = 2;
     for (let i = 0; i < 7; i++) { const y = innerHeight * (0.2 + i * 0.1) + Math.sin(time * 3 + i) * 10, x = ((time * 400 + i * 180) % (innerWidth + 300)) - 150;
@@ -2708,23 +2830,24 @@ function selectStage(name) {
 }
 for (const b of document.querySelectorAll('#stagesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
 selectStage(stageName);
+for (const b of document.querySelectorAll('#secmenu [data-req2]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') SEC2_REQ[b.dataset.req2](); });
 for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') SEC_REQ[b.dataset.req](); });
-$('secRemark').addEventListener('click', ev => { ev.stopPropagation(); $('secmeals').style.display = 'none'; const r = $('secremarks'); r.style.display = r.style.display === 'grid' ? 'none' : 'grid'; });
+$('secRemark').addEventListener('click', ev => { ev.stopPropagation(); showSub('secremarks'); });
+for (const b of document.querySelectorAll('#secmenu [data-sub-back]')) b.addEventListener('click', ev => { ev.stopPropagation(); showSub(null); });
 for (const id of ['onigiriRem', 'secOnigiri']) $(id).addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); if (state === 'play') onigiriRemark(); });
 for (const b of document.querySelectorAll('#secmeals [data-meal]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') orderMeal(b.dataset.meal); });
 for (const b of document.querySelectorAll('#secremarks [data-rem]')) b.addEventListener('click', ev => { ev.stopPropagation(); if (menuOpen && state === 'play') sayRemark(b.dataset.rem); });
 $('secClose').addEventListener('click', ev => { ev.stopPropagation(); closeSecMenu(); });
 $('startBtn').disabled = true;
-let loadLeft = 2;
+let loadLeft = 1;
 const loaded = () => {
   if (--loadLeft) return;
-  $('loading').textContent = HUM.tpl.length ? '' : '侍女の3Dモデルの読み込みに失敗しました';
+  $('loading').textContent = Object.keys(GIRLS).length ? '' : '侍女の写真の読み込みに失敗しました';
   $('startBtn').disabled = false;
   if (TEST) startGame();
 };
-loadSprites(loaded);
-loadHumans(loaded);
+loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
-window.__game = { get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, HUM, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

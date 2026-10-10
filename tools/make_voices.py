@@ -68,6 +68,38 @@ SEC = {
   'num_enemy': ['敵は%d名。' % n for n in range(0, 31)],
   'num_wave': ['ただいま、第%d波です。' % n for n in range(1, 21)],
 }
+# 二人目の秘書（秘書課 早瀬 ことね、陽気）：明るく丁寧
+SEC2_STYLE = (4, 14)
+SEC2 = {
+  'sec2_greet': ['はーい、ご用ですか？', 'お呼びですか？ なんでも言ってくださいね。'],
+  'sec2_bye': ['いってらっしゃい！ お気をつけて。', 'ご武運を！'],
+  'sec2_tea': ['はい、お茶です。ほっとしますよ。', 'お茶どうぞ。熱いので気をつけてくださいね。'],
+  'sec2_tea_wait': ['さっきお淹れしたばかりですよ。少し待ってくださいね。'],
+  'sec2_report': ['はい、ご報告です！'],
+  'sec2_shoes': ['ぴかぴかにしておきますね。', 'お靴、磨きますね。少しだけ、そのままで。'],
+  'sec2_shoes_done': ['はい、ぴかぴかです！ 足取りも軽くなりますよ。'],
+  'sec2_shoes_wait': ['まだぴかぴかですよ。もう少ししたら、また磨きますね。'],
+  'sec2_carry': ['お荷物、お持ちしますね。矢筒はお任せください。', 'はい、ついて行きます！ 矢はいつでもお渡ししますね。'],
+  'sec2_carry_already': ['もうお持ちしていますよ。'],
+  'sec2_already_hq': ['はい、本陣におりますよ。'],
+  'sec2_return': ['では、本陣に戻りますね。ご無事で！'],
+  'sec2_back': ['本陣に戻りました！'],
+  'sec2_hit': ['きゃっ！', 'ひっ…！ だ、大丈夫です。', 'くっ…平気です！'],
+  'sec2_defeat': ['うっ…戦死判定です。ごめんなさい。', '…ここまでみたいです。本陣で待ってますね。'],
+  'sec2_num_ally': ['味方は%d名、' % n for n in range(0, 31)],
+  'sec2_num_enemy': ['敵は%d名。' % n for n in range(0, 31)],
+  'sec2_num_wave': ['ただいま、第%d波です。' % n for n in range(1, 21)],
+}
+# 医療係（両軍の本陣に一人ずつ）：落ち着いた声。傷などの言葉は使わない
+MED_STYLE = (-12, -14)
+MED = {
+  'med_go': ['救護に向かいます。', '今行きます！'],
+  'med_start': ['しっかりして、すぐ手当てします。', '大丈夫、すぐ手当てしますね。'],
+  'med_arrow': ['矢が刺さっています、引き抜きますよ。', '矢を抜きますね。少しだけ、我慢して。'],
+  'med_care': ['ゆっくり息をして。…そう、その調子。', '落ち着いて。私がついています。'],
+  'med_ok': ['もう大丈夫です。', 'もう大丈夫です。無理はしないでくださいね。'],
+  'med_lost': ['…御臨終です。'],
+}
 async def one(sem, text, path, rate, pitch):
     if os.path.exists(path) and os.path.getsize(path) > 1000: return
     async with sem:
@@ -103,6 +135,16 @@ async def main():
         manifest['_extra'][cat] = []
         for i, text in enumerate(arr):
             fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), SEC_STYLE[0], SEC_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in SEC2.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), SEC2_STYLE[0], SEC2_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in MED.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), MED_STYLE[0], MED_STYLE[1]))
             manifest['_extra'][cat].append({'text': text, 'files': [fn]})
     await asyncio.gather(*jobs)
     json.dump(lines, open(os.path.join(D, 'lines.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)

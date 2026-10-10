@@ -37,7 +37,8 @@
   #secmenu .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   #secmenu button{font:inherit;font-size:16px;padding:10px 6px;color:#1a1410;background:#e8d9a8;border:0;border-radius:4px;cursor:pointer}
   #secmenu button small{display:block;font-size:11px;opacity:.75}
-  #secmenu #secClose{margin-top:10px;background:rgba(232,217,168,.25);color:#f4ecd6;width:100%}
+  #secmenu #secClose{margin-top:10px;width:100%}
+  #secmenu button.back{min-height:52px;font-size:18px;background:rgba(232,217,168,.3);color:#f4ecd6;border:1px solid rgba(232,217,168,.6)}
   #secsay{min-height:2.6em;margin:10px 0 0;font-size:14px;color:#ffe9b8;line-height:1.5}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
   #stagesel{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
@@ -185,8 +186,8 @@
 </div>
 
 <div id="secmenu" class="screen-menu"><div class="panel serif">
-  <h3>秘書課 白瀬 澄</h3><div class="sub">ご用件をどうぞ（本陣の中は安全。戦は続いています）　味方の方針：<b id="stance">攻勢</b></div>
-  <div class="grid">
+  <h3 id="secName">秘書課 白瀬 澄</h3><div class="sub">ご用件をどうぞ（本陣の中は安全。戦は続いています）　味方の方針：<b id="stance">攻勢</b></div>
+  <div class="grid" id="secmain">
     <button data-req="tea">お茶を淹れて<small>体力回復</small></button>
     <button data-req="report">戦況を報告して<small>味方・敵の数</small></button>
     <button data-req="plan">作戦を相談<small>攻勢／守勢の切替</small></button>
@@ -198,20 +199,29 @@
     <button data-req="meal" style="grid-column:1/3">お腹減った、ご飯今すぐ作って<small>1つの波に1回・本陣で少しずつ体力回復</small></button>
     <button id="secRemark" style="grid-column:1/3">感想を言う<small>戦況についてひとこと</small></button>
   </div>
+  <div class="grid" id="sec2main" style="display:none">
+    <button data-req2="tea">お茶を淹れて<small>体力回復</small></button>
+    <button data-req2="report">戦況を報告して<small>味方・敵の数</small></button>
+    <button data-req2="shoes">靴を磨いて<small>60秒間 移動が速い</small></button>
+    <button data-req2="carry">荷物を持って<small>矢筒を持って同行：矢の上限+10・少しずつ補充</small></button>
+    <button data-req2="home" style="grid-column:1/3">本陣に戻って<small>荷物持ちをやめて本陣へ</small></button>
+  </div>
   <div class="grid" id="secremarks" style="display:none;margin-top:8px">
     <button data-rem="paint">「あの櫃、だいぶ射られてるね」</button>
     <button data-rem="east">「東の櫃が押されてるね」</button>
     <button data-rem="allies">「味方がよく粘ってるね」</button>
     <button data-rem="archers">「敵の弓兵が多いね」</button>
+    <button class="back" data-sub-back style="grid-column:1/-1">戻る<small>用件の一覧へ</small></button>
   </div>
   <div class="grid" id="secmeals" style="display:none;margin-top:8px;grid-template-columns:1fr 1fr 1fr">
     <button data-meal="onigiri">おむすび</button>
     <button data-meal="miso">味噌汁</button>
     <button data-meal="chazuke">お茶漬け</button>
+    <button class="back" data-sub-back style="grid-column:1/-1">戻る<small>用件の一覧へ</small></button>
   </div>
   <button id="secOnigiri" style="display:none;width:100%;margin-top:8px">「手塩にかけたおむすびだね」</button>
   <div id="secsay"></div>
-  <button id="secClose">戦場へ戻る（E）</button>
+  <button id="secClose" class="back">戻る<small>閉じて戦場へ（E）</small></button>
 </div></div>
 
 <div id="pause" class="screen">
@@ -229,9 +239,9 @@
 </div>
 
 <script src="lib/three.min.js"></script>
-<script src="lib/three-ext.min.js"></script>
 <script src="assets/sprites.js"></script>
-<script>if (location.protocol === 'file:') document.write('<script src="assets/models.js"><\/script>');</script>
+<script src="assets/frames/frames.js"></script>
+<script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script>');</script>
 <script src="assets/voices/voices.js"></script>
 <script src="game.js"></script>
 </body>

@@ -1094,7 +1094,7 @@ function buildPlane() {
   glowC.add(-1.86, -1.8, 2.2, 2.24, PL.zL + 0.1, PL.zNose - 0.1); glowC.add(1.8, 1.86, 2.2, 2.24, PL.zL + 0.1, PL.zNose - 0.1);   // 天井の間接照明
   // 当たり：側壁・天井・前後の壁
   boxes.push({ x0: -3, x1: -2.02, z0: PL.zTail - 1, z1: PL.zNose + 1, y0: 0, y1: 4 }, { x0: 2.02, x1: 3, z0: PL.zTail - 1, z1: PL.zNose + 1, y0: 0, y1: 4 },
-    { x0: -3, x1: 3, z0: PL.zTail - 1, z1: PL.zNose + 1, y0: 2.34, y1: 5 });
+    { x0: -3, x1: 3, z0: PL.zTail - 1, z1: PL.zNose + 1, y0: 2.34, y1: 5, ceil: true });   // 天井：矢だけを止める（横への押し出しには使わない）
   wood.add(-2.2, 2.2, 0, 2.4, PL.zNose, PL.zNose + 0.15, true);
   boxBatch(M.white).add(-2.2, 2.2, 0, 2.4, PL.zTail - 0.15, PL.zTail, true);
   // 隔壁（扉口つき）
@@ -2701,6 +2701,12 @@ function chooseTarget(e) {
 }
 // 砦の壁を越える移動は門を通る（櫃の戦いのみ）
 function inFort(x, z) { return z > 0.3 && Math.abs(x) < 42; }
+// 機内：胴体の内側に必ず収める（壁・前後の隔壁・天井）。r＝体の半径
+const PL_IN = { x: 2.02, zLo: () => PL.zTail + 0.62, zHi: () => PL.zNose - 0.02, yMax: 0.55 };
+function planeClamp(pos, r) {
+  pos.x = clamp(pos.x, -PL_IN.x + r, PL_IN.x - r);
+  pos.z = clamp(pos.z, PL_IN.zLo() + r, PL_IN.zHi() - r);
+}
 function routeTo(p, tx, tz) {
   if (PLANE.on) return planeRoute(p, tx, tz);
   const g = fortGate; if (!g) return [tx, tz];
@@ -2712,7 +2718,7 @@ function routeTo(p, tx, tz) {
 // 当たり箱（壁・柱）から押し出す
 function pushOutBoxes(pos, r, y0, y1) {
   for (const b of boxes) {
-    if (b.y1 <= y0 || b.y0 >= y1) continue;
+    if (b.ceil || b.y1 <= y0 || b.y0 >= y1) continue;
     if (pos.x < b.x0 - r || pos.x > b.x1 + r || pos.z < b.z0 - r || pos.z > b.z1 + r) continue;
     const cx = clamp(pos.x, b.x0, b.x1), cz = clamp(pos.z, b.z0, b.z1);
     const dx = pos.x - cx, dz = pos.z - cz, d2 = dx * dx + dz * dz;
@@ -4050,6 +4056,7 @@ function updateEnemies(dt) {
     if (!e.perch && !e.seated && pd < 0.9 && pd > 1e-4 && Math.abs(player.pos.y - e.baseY) < 1) { p.x -= pdx / pd * (0.9 - pd); p.z -= pdz / pd * (0.9 - pd); }
     p.x = clamp(p.x, -CFG.field, CFG.field); p.z = clamp(p.z, -CFG.field, CFG.field);
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
+    if (PLANE.on && !e.seated) planeClamp(p, 0.28);
     if (e.onFloor && !e.lad && !e.perch) { const F = e.onFloor; p.x = clamp(p.x, F.x0 + 0.25, F.x1 - 0.25); p.z = clamp(p.z, F.z0 + 0.25, F.z1 - 0.25); }   // 床から落ちない
     p.y = e.baseY;
     if (PLANE.on && !e.seated) { const h = bodies.length ? pileAt(p.x, p.z) * 0.8 : 0; e.overY = (e.overY || 0) + (h - (e.overY || 0)) * Math.min(1, dt * 8); p.y += e.overY; }   // 倒れた娘の上に足を載せる
@@ -4815,15 +4822,18 @@ function updatePlayer(dt) {
     const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.35;
     if (d < r && d > 1e-4) { player.pos.x = c.x + dx / d * r; player.pos.z = c.z + dz / d * r; }
   }
-  if (boxes.length) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, player.pos.y + 1.75);
+  if (PLANE.on) { player.autoClimb = null; player.climbing = false; }   // 機内に梯子は無い（他のステージの上り下りを持ち込まない）
+  if (boxes.length) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, Math.min(player.pos.y + 1.75, PLANE.on ? 2.3 : 99));
+  if (PLANE.on) planeClamp(player.pos, 0.35);
   let gh = floorUnder(player.pos.x, player.pos.z, player.pos.y);
   if (PLANE.on) {   // 倒れた娘の上に乗る（なめらかに）・天井に頭をぶつけない
     const ph = bodies.length ? pileAt(player.pos.x, player.pos.z) * 0.8 : 0;
     if (ph > gh && player.pos.y < ph) { player.pos.y += (ph - player.pos.y) * Math.min(1, dt * 10); player.vy = Math.max(0, player.vy); player.onGround = true; }
     gh = Math.max(gh, Math.min(ph, player.pos.y));
-    if (player.pos.y > 0.62) { player.pos.y = 0.62; player.vy = Math.min(0, player.vy); }
+    if (player.pos.y > PL_IN.yMax) { player.pos.y = PL_IN.yMax; player.vy = Math.min(0, player.vy); }   // 頭が天井（2.34m）に届かない高さまで
   }
   if (player.pos.y <= gh && !player.climbing) { player.pos.y = gh; player.vy = 0; player.onGround = true; }
+  if (PLANE.on) { if (player.pos.y < 0) player.pos.y = 0; planeClamp(player.pos, 0.35); }
   else if (!player.climbing && player.pos.y > gh + 0.05 && player.vy <= 0) player.onGround = false;
   // 武器
   if (player.switchT > 0) player.switchT -= dt;

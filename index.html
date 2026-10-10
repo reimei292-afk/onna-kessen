@@ -114,6 +114,7 @@
   #bAtk{right:calc(26px + var(--sar));bottom:calc(30px + var(--sab));width:118px;height:118px;font-size:24px;font-weight:bold}
   #bWpn{right:calc(158px + var(--sar));bottom:calc(22px + var(--sab));width:76px;height:76px}
   #bRun{right:calc(150px + var(--sar));bottom:calc(112px + var(--sab));width:66px;height:66px}
+  #bThrow{right:calc(14px + var(--sar));bottom:calc(160px + var(--sab));width:56px;height:56px;font-size:13px;display:none;background:rgba(90,60,30,.45)} html.dagger #bThrow{display:flex}
   #bJump{right:calc(70px + var(--sar));bottom:calc(160px + var(--sab));width:60px;height:60px;font-size:14px}
   #bPause{right:calc(130px + var(--sar));top:12px;width:58px;height:44px;border-radius:10px;font-size:13px}
   #joy{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;border:2px solid rgba(255,255,255,.35);
@@ -167,6 +168,7 @@
   <div class="tbtn" id="bAtk"><span>攻撃</span><small id="bAtkL">長押しで引く</small></div>
   <div class="tbtn" id="bWpn"><span>武器切替</span><small id="bWpnL">弓矢</small></div>
   <div class="tbtn" id="bRun"><span>走る</span></div>
+  <div class="tbtn" id="bThrow"><span>投げる</span></div>
   <div class="tbtn" id="bJump"><span>跳ぶ</span></div>
   <div class="tbtn" id="bPause">一時停止</div>
   <div class="tbtn" id="bTalk"><span>頼む</span></div>
@@ -179,7 +181,7 @@
   <h2 class="serif">― 模擬戦 ―</h2>
   <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
   <div class="help help-desk">

@@ -24,7 +24,10 @@ EXTRA = {'command': ['かかれーっ！', '青組、迎え撃て！'],
   'ram_go': ['破門隊、押せーっ！', 'せーのっ！'],
   # v7：近衛分隊の組頭
   'guard_protect': ['殿をお守りしろ！', '殿をお守りして！'],
-  'guard_forward': ['近衛、前へ！']}
+  'guard_forward': ['近衛、前へ！'],
+  'land_go': ['上陸！ 続けーっ！', '浜に上がれ！ かかれーっ！'],
+  'smoke_out': ['煙が…外へ！', '毒煙です、離れて！'], 'smoke_throw': ['毒煙玉、いきます！', '煙玉、投げます！'], 'ladder_go': ['梯子だ、上れーっ！', '櫓の弓を落とせ！'],
+  'sally_go': ['今だ、打って出よ！', '押し返せーっ！'], 'knife_throw': ['えいっ！', 'これでも！']}
 # 本陣の秘書課の侍女（落ち着いた丁寧な話し方）
 SEC_STYLE = (-6, -8)
 SEC = {
@@ -201,12 +204,18 @@ DEN = {
   'den_go': ['伝令、行ってきます！'],
   'den_msg': ['本陣より伝令！ 持ち場を守れとのことです！', '本陣より伝令！ そのまま押せとのことです！'],
 }
-async def one(sem, text, path, rate, pitch):
+# v8：殿（男性の声）と軽自動車の運転手
+KING_VOICE = 'ja-JP-KeitaNeural'
+KING = {'king_hachi': ['蜂の巣にされたみたいだな'], 'king_mg': ['…これが機関銃か。恐ろしいな'], 'king_deaddrive': ['死者とのドライブかぁ']}
+DRV = {'drv_where': ['どちらへ参りましょう？'], 'drv_go': ['かしこまりました！', 'はい、向かいます！'], 'drv_brake': ['あっ、危ない…！', '止まりまーす！'],
+  'drv_arrive': ['着きました！'], 'drv_take': ['私が代わります！'], 'drv_block': ['この先は通れません…']}
+DRV_STYLE = (2, 4)
+async def one(sem, text, path, rate, pitch, voice=None):
     if os.path.exists(path) and os.path.getsize(path) > 1000: return
     async with sem:
         for attempt in range(4):
             try:
-                c = edge_tts.Communicate(text, VOICE, rate=f'{rate:+d}%', pitch=f'{pitch:+d}Hz')
+                c = edge_tts.Communicate(text, voice or VOICE, rate=f'{rate:+d}%', pitch=f'{pitch:+d}Hz')
                 await c.save(path); return
             except Exception as e:
                 await asyncio.sleep(1.5 * (attempt + 1))
@@ -279,6 +288,16 @@ async def main():
         manifest['_extra'][cat] = []
         for i, text in enumerate(arr):
             fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), DEN_STYLE[0], DEN_STYLE[1]))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in KING.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), -6, -2, KING_VOICE))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for cat, arr in DRV.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), DRV_STYLE[0], DRV_STYLE[1]))
             manifest['_extra'][cat].append({'text': text, 'files': [fn]})
     await asyncio.gather(*jobs)
     json.dump(lines, open(os.path.join(D, 'lines.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)

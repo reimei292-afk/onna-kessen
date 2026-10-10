@@ -96,6 +96,8 @@ const Sfx = {
   },
   impactGround(p) { const o = this.at(p, 40); if (!o) return; this.tone('sine', 150, 55, 0.1, 0.35, 0, o); this.noiseBurst(0.14, 'lowpass', 900, 120, 0.3, 1, 0, o); this.noiseBurst(0.2, 'bandpass', 3200, 1600, 0.05, 1, 0.02, o); },
   impactBamboo(p) { const o = this.at(p, 45); if (!o) return; this.tone('triangle', 640, 600, 0.12, 0.26, 0, o); this.tone('triangle', 955, 900, 0.09, 0.16, 0, o); this.noiseBurst(0.05, 'bandpass', 1300, 1100, 0.25, 8, 0, o); },
+  // v8：機関銃の一発「ダ」：乾いた破裂（帯域雑音）＋低い胴鳴り。遠いほどこもる（at() の低域通過）
+  mg(p) { const o = this.at(p, 170, 1.25); if (!o) return; this.noiseBurst(0.06, 'bandpass', 1700, 900, 0.75, 1.1, 0, o); this.tone('square', 120, 55, 0.07, 0.32, 0, o); this.noiseBurst(0.12, 'lowpass', 500, 260, 0.25, 0.8, 0.01, o); },
   impactWood(p) { const o = this.at(p, 45); if (!o) return; this.tone('sine', 230, 150, 0.09, 0.45, 0, o); this.noiseBurst(0.05, 'bandpass', 800, 500, 0.3, 3, 0, o); },
   // 矢が体に刺さる「ズブッ」：鈍い打撃（低い正弦の急降下）＋布越しの柔らかい「どすっ」（こもった雑音）。湿った音・生々しい音は使わない
   arrowFlesh(p, near = false) {
@@ -576,6 +578,7 @@ function buildPlains() {
   buildHQ(-6, 6, 22, 34, 0, 31);
   buildMedPost(3.6, 29.5, 'blue'); buildMedPost(0, -74, 'orange');
   for (let i = -2; i <= 2; i++) nobori(i * 3, 18, '#1f5fb8', '#f4f1e8', i % 2 ? '青組' : '必勝');
+  buildCar(4.6, 3.2, Math.PI);   // v8：軽自動車（運転手つき）。開始地点の右手
   // 敵陣（前方）
   for (let i = 0; i < 16; i++) nobori(rand(-50, 50), rand(-130, -85), '#d9741c', '#fff6e8', pick(['橙組', '必勝', '勝鬨', '一番']));
   for (let i = 0; i < 8; i++) nobori(rand(-120, 120), rand(-60, 60), pick(['#2d5a3a', '#6b4a1f', '#4a2d6b']), '#f4f1e8', pick(['八幡', '一番', '先陣']));
@@ -1221,7 +1224,7 @@ function seatPassenger(team, seat, kind) {
 function seatedBrain(e, dt) {
   const p = e.s.position;
   p.x = e.seated.x; p.z = e.seated.z; e.knock.set(0, 0, 0);
-  e.tgt = null; e.state = 'idle'; e.t += dt; e.faceWant = 0; e.passive = true;
+  e.tgt = null; e.state = 'idle'; e.t += dt; e.faceWant = e.seated.car ? CAR.yaw : e.seated.boat ? e.seated.boat.yaw : 0; e.passive = true;
   if (e.standAt != null && time >= e.standAt) standUp(e);
 }
 function standUp(e) {
@@ -1275,9 +1278,9 @@ function updatePlaneFx(dt) {
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
   const pl = name === 'plane';
-  CASTLE.on = name === 'castle';
+  CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  ground.visible = !pl; sky.visible = !pl; for (const m of mountains) m.visible = !pl;
+  ground.visible = !pl && name !== 'beach'; sky.visible = !pl; for (const m of mountains) m.visible = !pl;
   scene.fog.near = pl ? 200 : LOOK0.fogN; scene.fog.far = pl ? 600 : LOOK0.fogF;
   scene.background.setHex(pl ? 0x1a1a1e : LOOK0.bg);
   hemiL.color.setHex(pl ? 0xfff2df : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : LOOK0.hemi[2];
@@ -1391,11 +1394,12 @@ function buildCastle() {
   floors.push({ x0: -4.6, x1: 4.6, z0: -0.9, z1: 1.7, y: FY });
   B.plaster.add(-4.8, 4.8, FY, FY + 1.0, -0.95, -0.8, true); boxes[boxes.length - 1].rail = true;   // 前の胸壁（弓兵が上半身を出す）
   B.plaster.add(-4.8, -4.6, FY, FY + 2.2, -0.95, 1.75, true); B.plaster.add(4.6, 4.8, FY, FY + 2.2, -0.95, 1.75, true);
-  B.dark.add(-4.6, 3.4, FY + 0.85, FY + 0.95, 1.65, 1.75, true); boxes[boxes.length - 1].y0 = FY; boxes[boxes.length - 1].rail = true;   // 後ろの手すり（梯子口を空ける）
+  B.dark.add(-3.4, 3.4, FY + 0.85, FY + 0.95, 1.65, 1.75, true); boxes[boxes.length - 1].y0 = FY; boxes[boxes.length - 1].rail = true;   // 後ろの手すり（左右の梯子口を空ける）
   for (const x of [-4.7, 4.7]) for (const z of [-0.85, 1.65]) B.dark.add(x - 0.1, x + 0.1, FY, FY + 2.3, z - 0.1, z + 0.1);
   hipRoof(-6.0, 6.0, -2.0, 2.8, FY + 2.3, 1.7, M.tile);
   B.tile.add(-6.0, 6.0, FY + 2.2, FY + 2.32, -2.0, 2.8);
-  ladder(3.9, 1.75, 2.65, FY);
+  ladder(3.9, 1.75, 2.65, FY); ladder(-3.9, 1.75, 2.65, FY);   // v8：左右に梯子（門が破れると橙組の梯子攻め役が上ってくる）
+  CASTLE.ghFloor = floors[floors.length - 1];
   for (let i = 0; i < 4; i++) perches.push({ x: -3.3 + i * 2.2, z: -0.35, y: FY, taken: null, gh: true });
   // 扉（二枚、内側へ開く）。閉じている間は箱で止める
   const gate = { leaves: [], k: 0, box: { x0: -2.6, x1: 2.6, z0: -0.22, z1: 0.22, y0: 0, y1: GH, noLean: true } };
@@ -1431,6 +1435,7 @@ function buildCastle() {
   }
   tree(-28, 34, 1.2); tree(28, 33, 1.1); tree(-29, 4, 1.0); tree(29, 5, 1.0);
   { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.8, 14), M.stone); w.position.set(-18, 0.4, 33); stageRoot.add(w); colliders.push({ x: -18, z: 33, r: 0.9 }); covers.push({ x: -18, z: 33, r: 0.8, type: 'bundle', h: 0.8 }); }   // 井戸
+  yagura(-23, 34, 4.2); yagura(19, 34, 4.2);   // v8：二の丸の櫓（味方の弓兵が射下ろす。梯子は奥側）
   nobori(-1.6, CS.CAP[1], '#1f5fb8', '#f4f1e8', '二の丸'); nobori(1.6, CS.CAP[1], '#1f5fb8', '#f4f1e8', '青組');
   // ---- 城内（奥御殿）：外壁・柱・畳・襖・欄間・天井・屋根 ----
   const X0 = -CS.BX, X1 = CS.BX, Z0 = CS.BZ0, Z1 = CS.BZ1, CH = 2.8, WT = 0.08;
@@ -1702,7 +1707,21 @@ function castleGateBreak() {
   const L = enemies.find(o => o.team === 'blue' && isUp(o) && !o.special); if (L) yariSay(L, 'gate_broken');
   for (const m of CASTLE.ram.crew) if (isUp(m)) { m.ramCrew = false; m.state = 'approach'; }
   CASTLE.ram.crew = [];
-  for (const o of enemies) if (o.team === 'blue' && isUp(o) && !o.special && !o.perch && o.s.position.z < 8) o.fallback = { x: rand(-8, 8), z: rand(16, 26), until: time + 6 };
+  for (const o of enemies) if (o.team === 'blue' && isUp(o) && !o.special && !o.perch && !o.guard && o.s.position.z < 8) o.fallback = { x: rand(-9, 9), z: rand(24, 32), until: time + 7 };
+  // 二の丸の備え：奥御殿から予備の守り手が出てくる（波の援軍の残りが少なければ足す）
+  wave.blueToSpawn = Math.max(wave.blueToSpawn, 6);
+  for (let i = 0; i < 4; i++) { const e = spawnEnemy(rand(-8, 8), rand(30, 37), i === 3 ? 'archer' : 'mob', false, 'blue'); if (e && e.sq && e.sq.k !== 'bailey') { /* 分隊は assignSquad が決める */ } }
+  // v8：二の丸の櫓へ弓兵を上げる（狭間の弓兵が梯子で上る＋予備の弓兵 2 人は櫓の上から）
+  const tw = perches.filter(q => q.tower && !q.taken);
+  for (let i = 0; i < 2 && tw.length; i++) { const q = tw.splice(Math.floor(Math.random() * tw.length), 1)[0]; spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); }
+  for (const o of enemies) {
+    if (!tw.length) break;
+    if (o.team !== 'blue' || !isUp(o) || o.kind !== 'archer' || o.special || !(o.perch && o.perch.slit)) continue;
+    let qi = 0, bd = 1e9; tw.forEach((q, i) => { const d = Math.hypot(q.x - o.s.position.x, q.z - o.s.position.z); if (d < bd) { bd = d; qi = i; } });
+    const q = tw.splice(qi, 1)[0], F = floorAt(q.x, q.z, q.y), L = F && ladderTo(F, o.s.position.x, o.s.position.z);
+    if (!L) continue;
+    o.perch.taken = null; o.perch = null; o.crouch = 0; q.taken = o; o.climbPerch = q; startClimb(o, L, true);
+  }
   CASTLE.log.push('gate');
 }
 function castleBaileyLost() {
@@ -1730,6 +1749,18 @@ function castleDoorNearHint() { const d = CASTLE.on && player.pos.y < 0.5 ? cast
 // ---- 毎フレーム：門・槌・襖・落とし穴・伏兵・二の丸の制圧 ----
 function updateCastle(dt) {
   if (!CASTLE.on) return;
+  if ((CASTLE.sallyT = (CASTLE.sallyT || 0) - dt) <= 0) {   // v8：二の丸で敵が減れば、味方の近接・槍が打って出る
+    CASTLE.sallyT = 1;
+    const was = CASTLE.sally;
+    if (CASTLE.phase !== CASTLE.lastPh) { CASTLE.lastPh = CASTLE.phase; CASTLE.phT = 0; } CASTLE.phT = (CASTLE.phT || 0) + 1;
+    if (CASTLE.phase !== 1 || CASTLE.phT < 12) CASTLE.sally = false;
+    else {
+      const oc = enemies.filter(o => o.team === 'orange' && isUp(o) && castleRegion(o.s.position.x, o.s.position.z) <= 1 && o.s.position.z > -15).length;
+      const bc = enemies.filter(o => o.team === 'blue' && isUp(o) && o.kind === 'mob' && !o.special && !o.guard && castleRegion(o.s.position.x, o.s.position.z) === 1).length;
+      CASTLE.sally = was ? oc <= Math.max(8, bc * 0.9) : (oc <= 5 && bc >= 3) || (bc >= 4 && bc >= oc * 1.6);
+    }
+    if (CASTLE.sally && !was) { const L = enemies.find(o => o.team === 'blue' && isUp(o) && o.kind === 'mob' && !o.special && castleRegion(o.s.position.x, o.s.position.z) === 1); if (L) yariSay(L, 'sally_go'); popup('味方が打って出た！'); (CASTLE.log || (CASTLE.log = [])).push('sally'); }
+  }
   const g = CASTLE.gate;
   // 門の扉：揺れ、破れたら内側へ開く
   if (g.opening > 0 && g.k < 1) { g.k = Math.min(1, g.k + dt / 1.1); }
@@ -1786,9 +1817,9 @@ function updateCastle(dt) {
     for (const o of enemies) { if (!isUp(o) || o.special || o.state === 'pit') continue; const p = o.s.position, r = castleRegion(p.x, p.z), d = Math.hypot(p.x - cx, p.z - cz);
       const fighter = o.team === 'blue' && !o.perch && !o.guard && !o.hiddenAmb && (r === 1 || r === 2);
       if (o.team === 'orange' && ((r === 1 && d < 9) || r === 2)) oc++; if (fighter && d < 9) bc++; if (fighter) bAll++; }
-    if (oc >= 3 && oc > bc * 1.5) CASTLE.cap += 0.5 / 12;
-    else if (bAll === 0 && oc >= 2) CASTLE.cap += 0.5 / 6;
-    else if (bc >= oc) CASTLE.cap = Math.max(0, CASTLE.cap - 0.5 / 25);
+    if (oc >= 3 && oc > bc * 2) CASTLE.cap += 0.5 / 28;          // v7 調整：押さえるのに約28秒
+    else if (bAll === 0 && oc >= 3) CASTLE.cap += 0.5 / 14;
+    else if (bc >= oc) CASTLE.cap = Math.max(0, CASTLE.cap - 0.5 / 15);
     if (enemies.some(o => o.team === 'orange' && isUp(o) && inCastleBldg(o.s.position.x, o.s.position.z))) CASTLE.cap = 1;   // 奥御殿に踏み込まれた
     if (CASTLE.cap >= 1) castleBaileyLost();
   }
@@ -1822,6 +1853,16 @@ function castleBrain(e, dt) {
     e.tgt = null; e.state = e.kind === 'archer' ? 'advance' : 'approach'; steer(e, F.x, F.z, e.speed * 1.15, dt); npcTint(e, 0);
     return true;
   }
+  // v8：門が破れた後、梯子攻め役は櫓門・二の丸の櫓の上の弓兵を目指して梯子を上る
+  if (CASTLE.phase >= 1 && e.team === 'orange' && e.raider && e.kind === 'mob' && !e.lad && !e.onFloor && castleRegion(p.x, p.z) === 1 && (e.raidT = (e.raidT || 0) - dt) <= 0) {
+    e.raidT = 1.5;
+    const near = e.tgt && !e.tgt.isPlayer && isUp(e.tgt) && !tgtFloor(e.tgt) && Math.hypot(tgtPos(e.tgt).x - p.x, tgtPos(e.tgt).z - p.z) < 5;
+    if (!near) {
+      let best = null, bd = 30;
+      for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || !o.perch || o.perch.slit) continue; const F = floorAt(o.s.position.x, o.s.position.z, o.baseY); if (!F) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = [o, F]; } }
+      if (best && tryClimb(e, best[1])) { e.tgt = best[0]; e.tgtT = 3; if (Math.random() < 0.4) yariSay(e, 'ladder_go'); return false; }
+    }
+  }
   // 門が閉じている間：外の橙組の近接兵は、近くに相手がいなければ門を打つ
   if (CASTLE.phase === 0 && e.team === 'orange' && e.kind === 'mob' && !e.special && castleRegion(p.x, p.z) === 0) {
     if ((e.gateT = (e.gateT || 0) - dt) <= 0) { e.gateT = 0.6; const t = chooseTarget(e); e.gateFoe = t && Math.hypot(tgtPos(t).x - p.x, tgtPos(t).z - p.z) < 9 ? t : null; }
@@ -1849,7 +1890,7 @@ function castleCanTarget(e, t, x, z) {
     return rt !== 0;
   }
   if (e.team === 'blue' && !e.perch && e.kind === 'mob' && !e.ambushed) {
-    if (CASTLE.phase === 1) return rt !== 0 || z > -6;
+    if (CASTLE.phase === 1) return CASTLE.sally ? rt <= 1 && z > -12 : rt !== 0 && (z > 14 || Math.hypot(x - ep.x, z - ep.z) < 4);   // 二の丸の守り：門口まで追わず、奥で迎え撃つ（v8：敵が減れば打って出る）
     return rt >= 2 || z > 36;
   }
   return true;
@@ -1863,9 +1904,9 @@ function castleLOS(e, t) {
   return true;
 }
 // 線分と箱（矢の当たり）：入った点を返す。狭間の窓は通す
+const slitHalfW = (b, team) => b.slitIn ? (team === b.slitIn ? b.slitW[0] : b.slitW[1]) : (team === 'orange' ? 0.16 : 0.42);
 function castleSegHit(p0, p1, team) {
   let best = null, bt = 2;
-  const w = team === 'orange' ? 0.16 : 0.42;
   for (const b of boxes) {
     if (b.y1 <= b.y0) continue;
     let t0 = 0, t1 = 1, ok = true;
@@ -1876,7 +1917,7 @@ function castleSegHit(p0, p1, team) {
       t0 = Math.max(t0, ta); t1 = Math.min(t1, tb); if (t0 > t1) { ok = false; break; }
     }
     if (!ok || t0 >= bt) continue;
-    if (b.slits) { const y = p0.y + (p1.y - p0.y) * t0, x = p0.x + (p1.x - p0.x) * t0; if (y > b.sy0 && y < b.sy1 && b.slits.some(sx => Math.abs(x - sx) < w)) continue; }
+    if (b.slits) { const y = p0.y + (p1.y - p0.y) * t0, x = p0.x + (p1.x - p0.x) * t0; const w = slitHalfW(b, team); if (y > b.sy0 && y < b.sy1 && b.slits.some(sx => Math.abs(x - sx) < w)) continue; }
     bt = t0; best = b;
   }
   return best ? bt : -1;
@@ -1888,6 +1929,7 @@ function castleAllySpawn(kind) {
     const free = perches.filter(q => !q.taken && (q.slit || q.gh));
     if (free.length) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); }
   }
+  if (kind === 'archer' && ph === 1) { const tw = perches.filter(q => !q.taken && q.tower); if (tw.length && Math.random() < 0.75) { const q = pick(tw); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); } }
   if (ph <= 1 && kind === 'archer' && ph === 1) { const free = perches.filter(q => !q.taken && q.gh); if (free.length && Math.random() < 0.5) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); } }
   if (ph === 0) return spawnEnemy(rand(-10, 10), kind === 'archer' ? rand(12, 20) : rand(3, 12), kind, false, 'blue');
   if (ph === 1) return spawnEnemy(rand(-12, 12), rand(26, 37), kind, false, 'blue');
@@ -1915,7 +1957,7 @@ function castleIdleSpot(e) {
   const ph = CASTLE.phase, a = e.ph;
   if (e.ambush) { const A = CASTLE.amb.find(q => e.home && castleRegion(e.home[0], e.home[1]) === q.room); if (e.home) return e.home; }
   if (ph === 0) return e.yari ? [Math.cos(a) * 2.2, 2.2 + Math.abs(Math.sin(a)) * 1.5] : e.sq && e.sq.k === 'gate' ? [Math.cos(a) * 4, 3 + Math.abs(Math.sin(a)) * 3] : [Math.cos(a) * 9, 14 + Math.sin(a) * 4];
-  if (ph === 1) return [Math.cos(a) * 6, 30 + Math.sin(a) * 3];
+  if (ph === 1) return [Math.cos(a) * 9, 31 + Math.sin(a) * 3];
   const s = [[-5.4, 57.5], [0, 57.5], [5.4, 57.5], [0, 52.1]][e.id % 4];
   return [s[0] + Math.cos(a) * 1.2, s[1] + Math.sin(a) * 1.0];
 }
@@ -1975,10 +2017,10 @@ function yariSay(e, cat) {
   YSAY[cat] = time + 3.5;
   const p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z);
   const it = L && L.length ? pick(L) : null, text = it ? it.text : (EXTRA_TEXT[cat] || [''])[0];
-  Talk.as(e, () => { if (!(it && VoicePack.play(it.files[0], d, 1, VV_RATE[e.prof.vv] || 1)) && text) Voice.say(text, e.prof, 1); });
+  Talk.as(e, () => { if (!(it && VoicePack.play(it.files[0], d, 1, VV_RATE[e.prof.vv] || 1)) && text) Voice.say(text, e.prof, 1); if (d < 32 && /^(smoke|sally|ladder|land)/.test(cat) && text) subtitle(text); });
   return true;
 }
-const EXTRA_TEXT = { yari_charge: ['突撃！'], yari_ready: ['槍衆、構え！'], amb_go: ['今です、かかれっ！'], gate_broken: ['門が破られた！ 二の丸へ！'], bailey_lost: ['二の丸は持たない！ 城内へ退いて！'],
+const EXTRA_TEXT = { smoke_out: ['煙が…外へ！'], smoke_throw: ['毒煙玉、いきます！'], ladder_go: ['梯子だ、上れーっ！'], sally_go: ['今だ、打って出よ！'], knife_throw: ['えいっ！'], land_go: ['上陸！ 続けーっ！'], yari_charge: ['突撃！'], yari_ready: ['槍衆、構え！'], amb_go: ['今です、かかれっ！'], gate_broken: ['門が破られた！ 二の丸へ！'], bailey_lost: ['二の丸は持たない！ 城内へ退いて！'],
   pit_fall: ['きゃっ、落とし穴！？'], ram_go: ['破門隊、押せーっ！'], guard_protect: ['殿をお守りしろ！'], guard_forward: ['近衛、前へ！'] };
 // 突撃できるか：一直線上（間に味方・壁がない）、同じ高さ
 function yariLaneClear(e, tx, tz) {
@@ -1995,7 +2037,7 @@ function yariLaneClear(e, tx, tz) {
 // 近接の「接近」中に呼ぶ：true なら（突撃を始めた／下がった）
 function yariApproach(e, dt, dist, nx, nz, tx, tz) {
   if ((e.chgCd || 0) > 0) e.chgCd -= dt;
-  const elev = Math.abs(tgtY(e.tgt) - e.baseY) > 0.6;
+  const elev = elevD(e) > 0.6;
   if (!elev && (e.chgCd || 0) <= 0 && dist > YARI.chargeMin && dist < YARI.chargeR && e.cd <= 0.3 && yariLaneClear(e, tx, tz)) {
     e.state = 'charge'; e.t = 0; e.chg = { ux: nx, uz: nz, d0: dist, sx: e.s.position.x, sz: e.s.position.z, tgt: e.tgt };
     npcTint(e, 0.6); if (Math.random() < 0.6) yariSay(e, 'yari_charge');
@@ -2075,6 +2117,7 @@ function guardSlot(e, thr) {
     const lane = [[0, 2.2], [0, 3.2], [0, -1.8], [0, 4.2], [0, -2.8], [0, 5.2]][i % 6];
     return [lane[0], c.z + lane[1] * dirZ];
   }
+  if (CAR.riding && carOn() && !thr) return carRingPt(i, 2.0);
   const home = !!inHQ() && hq, base = thr ? Math.atan2(thr.s.position.x - c.x, thr.s.position.z - c.z) : player.yaw + Math.PI;
   const offs = thr ? [0, -0.55, 0.55, -1.1, 1.1, Math.PI] : null;
   const a = thr ? base + offs[i % 6] : base + (i / n) * Math.PI * 2 + Math.PI / n;
@@ -2112,11 +2155,1030 @@ function updateGuards() {
     GUARD.lead = (s && isUp(s.leader) && s.leader.guard ? s.leader : null) || GUARD.list.find(o => o.kind !== 'archer') || GUARD.list[0] || null;
   }
 }
+// ====================================================================
+//  ステージ「浜の戦い」（v8）：殿の側（青組）が小早（こばや）で浜へ漕ぎ寄せ、高台のトーチカ（機関銃の陣地）を攻める
+//   海（z<0）→ 浅瀬 → 白い砂浜（0〜24）→ 乱杭（12〜22）→ 斜面と逆茂木（24〜48）→ 高台（y=5）に 4 つのトーチカ
+//   機関銃は「ダダダダダダダ、ダ…」と間を置いて掃射。射程は浜と沖の一帯まで（それより沖は安全）
+//   当たっても白い閃光と土ぼこりだけ（血は無し）。舟の上で倒れた娘は舟の中で崩れたまま（海には落ちない）
+// ====================================================================
+const BH = { TOP: 5, Z1: 24, Z2: 48, SHORE: 0, WATER: -0.15, XW: 50, MG_R: 76, BOAT_GOAL: -4.3 };
+const BEACH = { on: false, boats: [], pbs: [], tracers: [], waveT: 0, king: null, gboat: null, won: false, looks: new Set(), log: [] };
+function groundH(x, z) {
+  if (!BEACH.on) return 0;
+  let h;
+  if (z < 0) h = Math.max(-1.3, z * 0.06);
+  else if (z < BH.Z1) h = z * 0.01;
+  else if (z < BH.Z2) { const t = (z - BH.Z1) / (BH.Z2 - BH.Z1); h = 0.24 + (BH.TOP - 0.24) * t * t * (3 - 2 * t); }
+  else h = BH.TOP;
+  const ax = Math.abs(x); if (ax > BH.XW) h += Math.min(14, (ax - BH.XW) * 0.5) * (z > -6 ? 1 : Math.max(0, 1 + (z + 6) / 20));   // 左右の岬
+  return h;
+}
+let BHM = null;
+function beachMats() {
+  if (BHM) return BHM;
+  const L = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o));
+  const plank = canvasTex(128, 128, (g, w, h) => { for (let y = 0; y < h; y += 16) { const l = rand(-14, 14); g.fillStyle = `rgb(${150 + l | 0},${104 + l | 0},${62 + l | 0})`; g.fillRect(0, y, w, 16); g.fillStyle = 'rgba(50,30,15,.45)'; g.fillRect(0, y, w, 1.5); for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(90,55,25,.25)'; g.fillRect(Math.random() * w, y + rand(3, 13), rand(10, 40), 1); } } }, 1);
+  plank.wrapS = plank.wrapT = THREE.RepeatWrapping;
+  const conc = canvasTex(256, 256, (g, w, h) => {   // 打ちっぱなしのコンクリート：しみと型枠の跡
+    g.fillStyle = '#9a958a'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 1600; i++) { const l = rand(-25, 20); g.fillStyle = `rgba(${130 + l | 0},${126 + l | 0},${116 + l | 0},.35)`; g.fillRect(Math.random() * w, Math.random() * h, rand(1, 4), rand(1, 4)); }
+    for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(${rand(140, 170) | 0},${rand(90, 110) | 0},60,.18)`; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, rand(8, 30), rand(6, 22), 0, 0, 7); g.fill(); }
+    for (let y = 0; y < h; y += 42) { g.fillStyle = 'rgba(60,58,52,.25)'; g.fillRect(0, y, w, 2); }
+    for (let i = 0; i < 5; i++) { g.strokeStyle = 'rgba(40,40,36,.35)'; g.beginPath(); let x = Math.random() * w, y = Math.random() * h; g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += rand(-12, 12); y += rand(4, 14); g.lineTo(x, y); } g.stroke(); }
+  }, 1);
+  conc.wrapS = conc.wrapT = THREE.RepeatWrapping;
+  const banner = canvasTex(64, 192, (g, w, h) => {   // 小早の赤い幟：白い横線と白丸に文字
+    g.fillStyle = '#c8202a'; g.fillRect(0, 0, w, h); g.fillStyle = '#f6f1ea'; g.fillRect(0, 10, w, 7); g.fillRect(0, 22, w, 4);
+    g.beginPath(); g.arc(w / 2, 64, 22, 0, 7); g.fill(); g.fillStyle = '#c8202a'; g.font = 'bold 30px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('上', w / 2, 65);
+    g.fillStyle = '#f6f1ea'; g.font = 'bold 22px serif'; g.fillText('小', w / 2, 116); g.fillText('早', w / 2, 146);
+  });
+  const sea = canvasTex(64, 256, (g, w, h) => {   // 沖（上）の紺から、浅瀬（下）のエメラルドへ
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#1d5c8f'); gr.addColorStop(0.55, '#2a83a8'); gr.addColorStop(0.82, '#3fb4c0'); gr.addColorStop(0.94, '#7fd6cf'); gr.addColorStop(1, '#b9ebe0');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  });
+  const foam = canvasTex(256, 32, (g, w, h) => { g.clearRect(0, 0, w, h); for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(255,255,255,${rand(0.25, 0.8)})`; g.beginPath(); g.ellipse(Math.random() * w, rand(8, 24), rand(3, 12), rand(1, 3), 0, 0, 7); g.fill(); } });
+  foam.wrapS = THREE.RepeatWrapping;
+  const hole = canvasTex(32, 32, (g, w, h) => { g.clearRect(0, 0, w, h); const gr = g.createRadialGradient(16, 16, 1, 16, 16, 15); gr.addColorStop(0, 'rgba(10,6,3,1)'); gr.addColorStop(0.35, 'rgba(25,15,8,.95)'); gr.addColorStop(0.55, 'rgba(200,170,120,.8)'); gr.addColorStop(1, 'rgba(200,170,120,0)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+  BHM = { L, wood: L(0xffffff, { map: plank }), woodD: L(0x5a3a20), conc: L(0xffffff, { map: conc }), concD: new THREE.MeshBasicMaterial({ color: 0x0c0b0a }), banner: L(0xffffff, { map: banner, side: THREE.DoubleSide }),
+    sea: new THREE.MeshLambertMaterial({ map: sea, transparent: true, opacity: 0.86, depthWrite: false }), foam: new THREE.MeshBasicMaterial({ map: foam, transparent: true, depthWrite: false, opacity: 0.8 }),
+    drum: L(0x7a2a18), skin: L(0xeee2c8), metal: L(0x2c2e30), branch: L(0x5b4630), stake: L(0x6a5238), rock: L(0x77756e), headland: L(0x3f6b34), roof: L(0x3b3530), cloth: L(0xf1ebde, { side: THREE.DoubleSide }),
+    hole: new THREE.MeshBasicMaterial({ map: hole, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 }),
+    tracer: new THREE.MeshBasicMaterial({ color: 0xfff1b0, transparent: true, opacity: 0.95, depthWrite: false, blending: THREE.AdditiveBlending }),
+    flash: new THREE.SpriteMaterial({ color: 0xffd27a, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), plantA: L(0x5f8f3c), plantB: L(0x4c7a32) };
+  return BHM;
+}
+// ---- 小早（こばや）：長さ 10m、幅 2.2m。舳先は +z。yakata＝殿の舟の屋形 ----
+const BOAT_L = 10, BOAT_W = 2.2, BOAT_DECK = 0.12, BOAT_GW = 0.62;
+const BOAT_SEATS = (() => { const s = []; for (const z of [2.6, 1.5, 0.4, -0.7, -1.8, -2.9]) for (const x of [-0.48, 0.48]) s.push([x, z]); return s; })();
+function boatOutline(inset) {
+  const sh = new THREE.Shape(), hw = BOAT_W / 2 - inset, zb = BOAT_L / 2 - inset * 1.6, zs = -BOAT_L / 2 + inset, zk = BOAT_L / 2 - 1.8;
+  sh.moveTo(-hw * 0.82, zs); sh.lineTo(hw * 0.82, zs); sh.quadraticCurveTo(hw, zs + 0.6, hw, zs + 2); sh.lineTo(hw, zk); sh.quadraticCurveTo(hw * 0.95, zb - 0.5, 0, zb);
+  sh.quadraticCurveTo(-hw * 0.95, zb - 0.5, -hw, zk); sh.lineTo(-hw, zs + 2); sh.quadraticCurveTo(-hw, zs + 0.6, -hw * 0.82, zs);
+  return sh;
+}
+let BOAT_GEO = null;
+function boatGeo() {
+  if (BOAT_GEO) return BOAT_GEO;
+  const outer = boatOutline(0), inner = boatOutline(0.09); outer.holes.push(new THREE.Path(inner.getPoints(24)));
+  const wall = new THREE.ExtrudeGeometry(outer, { depth: BOAT_GW, bevelEnabled: false, curveSegments: 10 }); wall.rotateX(-Math.PI / 2); wall.translate(0, -0.05, 0);   // 形は x-y 面に描いたので、y→z に回す
+  // 回転で z が反転するので、z を反転して舳先を +z に
+  const pa = wall.attributes.position.array; for (let i = 2; i < pa.length; i += 3) pa[i] = -pa[i]; wall.computeVertexNormals();
+  const ua = wall.attributes.uv.array; for (let i = 0; i < ua.length; i++) ua[i] *= 0.35;
+  const bot = new THREE.ShapeGeometry(boatOutline(0.08), 10); bot.rotateX(-Math.PI / 2); const pb = bot.attributes.position.array; for (let i = 2; i < pb.length; i += 3) pb[i] = -pb[i];
+  bot.translate(0, BOAT_DECK, 0); const ub = bot.attributes.uv.array; for (let i = 0; i < ub.length; i++) ub[i] *= 0.4;
+  const keel = new THREE.ShapeGeometry(boatOutline(0.0), 10); keel.rotateX(Math.PI / 2); const pk = keel.attributes.position.array; for (let i = 2; i < pk.length; i += 3) pk[i] = -pk[i]; keel.translate(0, -0.05, 0);
+  BOAT_GEO = { wall, bot, keel };
+  return BOAT_GEO;
+}
+function makeBoat(i, x, z, opt = {}) {
+  const M = beachMats(), G = boatGeo(), g = new THREE.Group();
+  g.add(new THREE.Mesh(G.wall, M.wood), new THREE.Mesh(G.bot, M.wood), new THREE.Mesh(G.keel, M.woodD));
+  for (const [, sz] of BOAT_SEATS.filter((s, k) => k % 2 === 0)) { const t = new THREE.Mesh(new THREE.BoxGeometry(BOAT_W - 0.2, 0.05, 0.22), M.woodD); t.position.set(0, 0.36, sz - 0.25); g.add(t); }   // 腰掛け板
+  const gun = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.05, BOAT_L - 2.4), M.woodD); for (const s of [-1, 1]) { const m = gun.clone(); m.position.set(s * (BOAT_W / 2 - 0.02), BOAT_GW - 0.05, -0.4); g.add(m); }   // 舷の縁
+  // 櫓・櫂（左右 3 本ずつ）
+  const oars = [];
+  for (const s of [-1, 1]) for (const oz of [1.9, 0, -1.9]) {
+    const piv = new THREE.Group(); piv.position.set(s * (BOAT_W / 2), BOAT_GW - 0.02, oz);
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.05, 0.06), M.woodD); sh.position.x = s * 0.9; piv.add(sh);
+    const bl = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.03, 0.22), M.woodD); bl.position.x = s * 2.05; piv.add(bl);
+    g.add(piv); oars.push({ piv, s, ph: oz * 0.1 });
+  }
+  // 艫の赤い幟（2 本）と太鼓
+  const flags = [];
+  for (const fx of [-0.55, 0.55]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 3.4, 5), M.woodD); pole.position.set(fx, 1.7, -4.1); g.add(pole);
+    const geo = new THREE.PlaneGeometry(0.62, 1.8, 1, 4); geo.translate(0.33, 0, 0);
+    const b = new THREE.Mesh(geo, M.banner); b.position.set(fx, 2.45, -4.1); b.rotation.y = Math.PI / 2; g.add(b); flags.push(b);
+  }
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.5, 14), M.drum); drum.rotation.x = Math.PI / 2 - 0.5; drum.position.set(0, 0.62, -3.55); g.add(drum);
+  const skin = new THREE.Mesh(new THREE.CircleGeometry(0.34, 14), M.skin); skin.position.set(0, 0.74, -3.33); skin.rotation.x = -0.5 - Math.PI / 2 + Math.PI / 2; g.add(skin); skin.lookAt(skin.position.clone().add(new V3(0, 0.88, 0.48)));
+  let cabin = null;
+  if (opt.yakata) {   // 屋形：細い柱と切妻の屋根、腰の板と白い幕
+    cabin = new THREE.Group();
+    for (const px of [-0.95, 0.95]) for (const pz of [-2.6, -0.2]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.9, 0.08), M.woodD); p.position.set(px, 0.95 + BOAT_DECK, pz); cabin.add(p); }
+    for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.05, 2.9), M.roof); r.position.set(s * 0.55, 2.2, -1.4); r.rotation.z = -s * 0.38; cabin.add(r); }
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 3.0), M.woodD); ridge.position.set(0, 2.43, -1.4); cabin.add(ridge);
+    for (const s of [-1, 1]) { const c = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.42), M.cloth); c.position.set(s * 0.97, 1.72, -1.4); c.rotation.y = Math.PI / 2; cabin.add(c); }
+    const tat = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.04, 2.3), new THREE.MeshLambertMaterial({ color: 0xcdbf86 })); tat.position.set(0, BOAT_DECK + 0.04, -1.4); cabin.add(tat);
+    g.add(cabin);
+  }
+  // 弾の穴（舟の板に残る）：最大 80
+  const holes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.11, 0.11), M.hole, 80); holes.count = 0; holes.frustumCulled = false; g.add(holes);
+  g.position.set(x, BH.WATER + 0.04, z); stageRoot.add(g);
+  const B = { i, g, x, z, yaw: 0, sp: opt.sp || 1.35, row: 0, oars, flags, cabin, holes, nHole: 0, crew: [], seats: new Array(BOAT_SEATS.length).fill(null), beached: false, drift: false, yakata: !!opt.yakata, guard: !!opt.guard,
+    floor: { x0: 0, x1: 0, z0: 0, z1: 0, y: BH.WATER + 0.04 + BOAT_DECK, boat: true }, name: opt.name || '', delay: opt.delay || 0, goal: opt.goal || BH.BOAT_GOAL, said: false, wob: Math.random() * 6 };
+  floors.push(B.floor); boatFloor(B);
+  BEACH.boats.push(B);
+  return B;
+}
+function boatFloor(B) { const f = B.floor; f.x0 = B.x - BOAT_W / 2 + 0.12; f.x1 = B.x + BOAT_W / 2 - 0.12; f.z0 = B.z - BOAT_L / 2 + 0.3; f.z1 = B.z + BOAT_L / 2 - 1.0; }
+function boatLocal(B, x, z) { const dx = x - B.x, dz = z - B.z, c = Math.cos(B.yaw), s = Math.sin(B.yaw); return [dx * c - dz * s, dx * s + dz * c]; }
+function boatWorld(B, lx, lz) { const c = Math.cos(B.yaw), s = Math.sin(B.yaw); return [B.x + lx * c + lz * s, B.z - lx * s + lz * c]; }
+const inBoat = (B, x, z, m = 0) => { const [lx, lz] = boatLocal(B, x, z); return Math.abs(lx) < BOAT_W / 2 - 0.1 + m && lz > -BOAT_L / 2 + 0.2 - m && lz < BOAT_L / 2 - 0.6 + m; };
+function boatAt(x, z, m = 0) { for (const B of BEACH.boats) if (inBoat(B, x, z, m)) return B; return null; }
+// 舟に乗せる（座らせる）
+function boardBoat(e, B, slot) {
+  if (slot == null || B.seats[slot]) { slot = B.seats.findIndex(s => !s); if (slot < 0) slot = (Math.random() * BOAT_SEATS.length) | 0; }
+  B.seats[slot] = e; e.boat = B; e.boatSlot = slot;
+  const [lx, lz] = BOAT_SEATS[slot], [wx, wz] = boatWorld(B, lx, lz);
+  e.seated = { x: wx, z: wz, boat: B }; e.baseY = B.floor.y; e.s.position.set(wx, e.baseY, wz); e.state = 'idle'; e.passive = true;
+  e.s.rotation.y = e.face = B.yaw; e.standAt = null;
+  if (!B.crew.includes(e)) B.crew.push(e);
+}
+// ---- トーチカ（4 つ、高台）：前面に横長の銃眼、背面に入口。中に機関銃 ----
+const PB_W = 5.0, PB_D = 4.4, PB_H = 2.5;
+function makePillbox(i, x, z) {
+  const M = beachMats(), y = BH.TOP, B = boxBatch(M.conc), t = 0.4, x0 = x - PB_W / 2, x1 = x + PB_W / 2, z0 = z - PB_D / 2, z1 = z + PB_D / 2;
+  const sy0 = y + 1.0, sy1 = y + 1.42, slitHalf = 1.0;
+  // 前（海側）の壁：銃眼の上下と左右
+  B.add(x0, x1, y - 0.3, sy0, z0, z0 + t, true, 0.35); B.add(x0, x1, sy1, y + PB_H, z0, z0 + t, true, 0.35);
+  B.add(x0, x - slitHalf, sy0, sy1, z0, z0 + t, true, 0.35); B.add(x + slitHalf, x1, sy0, sy1, z0, z0 + t, true, 0.35);
+  // 左右と後ろ（入口 1.2m）
+  B.add(x0, x0 + t, y - 0.3, y + PB_H, z0, z1, true, 0.35); B.add(x1 - t, x1, y - 0.3, y + PB_H, z0, z1, true, 0.35);
+  B.add(x0, x - 0.6, y - 0.3, y + PB_H, z1 - t, z1, true, 0.35); B.add(x + 0.6, x1, y - 0.3, y + PB_H, z1 - t, z1, true, 0.35); B.add(x - 0.6, x + 0.6, y + 2.0, y + PB_H, z1 - t, z1, true, 0.35);
+  B.add(x0 - 0.05, x1 + 0.05, y + PB_H, y + PB_H + 0.35, z0 - 0.05, z1 + 0.05, true, 0.35);   // 屋根（厚い）
+  B.add(x0 + t, x1 - t, y - 0.02, y + 0.03, z0 + t, z1 - t, false, 0.5);   // 床
+  const m = B.done();
+  const dark = new THREE.Mesh(new THREE.BoxGeometry(slitHalf * 2 - 0.02, sy1 - sy0, 0.02), M.concD); dark.position.set(x, (sy0 + sy1) / 2, z0 + t - 0.01); stageRoot.add(dark);   // 銃眼の奥の暗がり
+  const din = new THREE.Mesh(new THREE.BoxGeometry(1.18, 2.0, 0.02), M.concD); din.position.set(x, y + 1.0, z0 + t + 0.02); din.visible = false; stageRoot.add(din);
+  // 機関銃：三脚・銃身・弾薬箱（銃眼の内側）
+  const gun = new THREE.Group(), gy = sy0 + 0.1;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.18, 0.75), M.metal); gun.add(body);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.9, 8), M.metal); bar.rotation.x = Math.PI / 2; bar.position.z = -0.75; gun.add(bar);
+  const jac = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.45, 10), M.metal); jac.rotation.x = Math.PI / 2; jac.position.z = -0.5; gun.add(jac);
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.3), new THREE.MeshLambertMaterial({ color: 0x4b5a3a })); box.position.set(0.22, -0.08, 0.1); gun.add(box);
+  const mount = new THREE.Group(); mount.position.set(x, gy, z0 + t + 0.75); mount.add(gun); stageRoot.add(mount);
+  for (const a of [0, 2.1, 4.2]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.1, 5), M.metal); l.position.set(x + Math.sin(a) * 0.32, gy - 0.5, z0 + t + 0.75 + Math.cos(a) * 0.32); l.rotation.set(Math.cos(a) * 0.35, 0, -Math.sin(a) * 0.35); stageRoot.add(l); }
+  const flash = new THREE.Sprite(M.flash); flash.scale.set(0.7, 0.7, 1); flash.visible = false; stageRoot.add(flash);
+  const fbox = boxes[boxes.length - 11];   // 前の壁（下）… 銃眼の当たりは下の 4 枚を使う
+  // 銃眼：内からは広く、外からは細く矢を通す
+  for (const b of boxes.slice(-10, -6)) { b.slits = [x]; b.sy0 = sy0; b.sy1 = sy1; b.slitIn = 'orange'; b.slitW = [slitHalf, slitHalf * 0.55]; }
+  const fl = nobori(x + PB_W / 2 + 0.8, z + PB_D / 2 + 0.5, '#d9741c', '#fff6e8', ['壱', '弐', '参', '肆'][i]); fl.position.y = y;
+  const P = { i, x, z, y, x0, x1, z0, z1, mount, gun, flash, slitZ: z0 + t, sy0, sy1, aim: new V3(x, 0, -10), aimV: new V3(), burst: 0, nextT: 2 + i * 0.7, shotT: 0, tgt: null, gunners: [], members: [], taken: false, silenced: false, flag: fl, said: false, wasSil: false,
+    door: [x, z1 + 0.9], inner: [x, z + 0.3], slots: [[x - 0.55, z0 + t + 0.55], [x + 0.55, z0 + t + 0.55]] };
+  BEACH.pbs.push(P);
+  return P;
+}
+const inPB = (P, x, z) => x > P.x0 + 0.3 && x < P.x1 - 0.3 && z > P.z0 + 0.3 && z < P.z1 - 0.3;
+function pbAt(x, z) { for (const P of BEACH.pbs) if (inPB(P, x, z)) return P; return null; }
+// ---- 逆茂木（斜面の 2 列、すき間から抜ける）と乱杭（浜の杭の原） ----
+const ABATIS = [{ z: 31, gaps: [-21, 3, 24] }, { z: 40.5, gaps: [-11, 14, 33] }];
+const GAP_HW = 1.6;
+function buildAbatis(M) {
+  const geo = new THREE.CylinderGeometry(0.035, 0.06, 1.9, 4), list = [], m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
+  for (const R of ABATIS) {
+    const segs = []; let a = -BH.XW;
+    for (const gx of [...R.gaps, BH.XW + GAP_HW]) { segs.push([a, gx - GAP_HW]); a = gx + GAP_HW; }
+    for (const [u0, u1] of segs) {
+      if (u1 - u0 < 0.5) continue;
+      const h = groundH(0, R.z);
+      boxes.push({ x0: u0, x1: u1, z0: R.z - 0.55, z1: R.z + 0.55, y0: h - 0.4, y1: h + 1.0, abatis: true });
+      covers.push(...Array.from({ length: Math.floor((u1 - u0) / 3) }, (_, k) => ({ x: u0 + 1.5 + k * 3, z: R.z - 1.1, r: 0.5, type: 'bundle', h: h + 1.0, y: h })));
+      for (let x = u0 + 0.2; x < u1 - 0.1; x += 0.32) for (let k = 0; k < 3; k++) {   // 枝先を海へ向けて斜めに組む
+        const yy = h + 0.35 + rand(-0.05, 0.2), zz = R.z + rand(-0.3, 0.2);
+        e.set(-1.0 + rand(-0.35, 0.3), rand(-0.6, 0.6), rand(-0.6, 0.6)); q.setFromEuler(e);
+        m4.compose(new V3(x + rand(-0.12, 0.12), yy, zz), q, new V3(1, rand(0.7, 1.25), 1)); list.push(m4.clone());
+      }
+      // 横木
+      for (const yo of [0.25, 0.65]) { const lg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, u1 - u0, 5), M.branch); lg.rotation.z = Math.PI / 2; lg.position.set((u0 + u1) / 2, h + yo, R.z + 0.15); stageRoot.add(lg); }
+    }
+  }
+  const im = new THREE.InstancedMesh(geo, M.branch, list.length); list.forEach((m, i) => im.setMatrixAt(i, m)); stageRoot.add(im);
+  // 乱杭：浜の 12〜22m に不規則な杭。通れるが、杭の間をすり抜けるので遅い
+  const sg = new THREE.CylinderGeometry(0.07, 0.11, 1, 6), st = [];
+  for (let i = 0; i < 230; i++) {
+    const x = rand(-BH.XW + 2, BH.XW - 2), z = rand(12, 22); if (Math.abs(x) < 1.6 && z < 14) continue;
+    const hh = rand(0.5, 1.3); m4.compose(new V3(x, groundH(x, z) + hh / 2 - 0.05, z), q.setFromEuler(e.set(rand(-0.25, 0.25), 0, rand(-0.25, 0.25))), new V3(1, hh, 1)); st.push(m4.clone());
+    colliders.push({ x, z, r: 0.13, stake: true });
+  }
+  const sm = new THREE.InstancedMesh(sg, M.stake, st.length); st.forEach((m, i) => sm.setMatrixAt(i, m)); stageRoot.add(sm);
+}
+function buildBeachTerrain(M) {
+  const W = 260, D = 230, g = new THREE.PlaneGeometry(W, D, 104, 92); g.rotateX(-Math.PI / 2); g.translate(0, 0, D / 2 - 45);
+  const pa = g.attributes.position.array, col = new Float32Array(pa.length), c = new THREE.Color(), sand = new THREE.Color(0xf1e8d2), wet = new THREE.Color(0xd9cfb4), grass = new THREE.Color(0x76984f), dgr = new THREE.Color(0x5d7f3d), cliff = new THREE.Color(0x4f6e3a);
+  for (let i = 0; i < pa.length; i += 3) {
+    const x = pa[i], z = pa[i + 2], h = groundH(x, z) + (z > 2 ? Math.sin(x * 0.7 + z * 0.3) * 0.02 : 0);
+    pa[i + 1] = h;
+    const n = Math.sin(x * 1.7) * Math.cos(z * 1.3) * 0.5 + 0.5;
+    if (Math.abs(x) > BH.XW + 4 && z > -8) c.copy(cliff).lerp(dgr, n * 0.5);
+    else if (z < 1) c.copy(wet).lerp(sand, clamp((z + 1) / 2, 0, 1));
+    else if (z < 20) c.copy(sand).lerp(grass, z > 16 ? (z - 16) / 4 * 0.25 * n : 0);
+    else if (z < 28) c.copy(sand).lerp(grass, clamp((z - 20) / 8, 0, 1) * (0.6 + 0.4 * n));
+    else c.copy(grass).lerp(dgr, n * 0.6);
+    col[i] = c.r; col[i + 1] = c.g; col[i + 2] = c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.computeVertexNormals();
+  const gm = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); stageRoot.add(gm);
+  // 海：沖の紺から浅瀬のエメラルドへ（半透明で、浅瀬の砂が透ける）
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 420), M.sea); sea.rotation.x = -Math.PI / 2; sea.position.set(0, BH.WATER, -210 + 1.5); sea.renderOrder = 1; stageRoot.add(sea);
+  M.sea.map.repeat.set(1, 1);
+  const sea2 = new THREE.Mesh(new THREE.PlaneGeometry(260, 60), new THREE.MeshLambertMaterial({ color: 0x2a83a8, transparent: true, opacity: 0.86, depthWrite: false })); sea2.rotation.x = -Math.PI / 2; sea2.position.set(-160, BH.WATER, 20); stageRoot.add(sea2);
+  const sea3 = sea2.clone(); sea3.position.x = 160; stageRoot.add(sea3);
+  // 波打ち際の白い泡（ゆっくり寄せては返す）
+  const foam = new THREE.Mesh(new THREE.PlaneGeometry(2 * BH.XW + 10, 1.6), M.foam); foam.rotation.x = -Math.PI / 2; foam.position.set(0, BH.WATER + 0.02, -0.6); foam.renderOrder = 2; stageRoot.add(foam); M.foam.map.repeat.set(6, 1);
+  BEACH.foam = foam;
+  // 浜の草（はまひるがお）
+  const pl = new THREE.InstancedMesh(new THREE.SphereGeometry(0.16, 5, 4), M.plantA, 260), m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+  for (let i = 0; i < 260; i++) { const x = rand(-BH.XW, BH.XW), z = rand(4, 26); m4.compose(new V3(x, groundH(x, z) + 0.02, z), q, new V3(rand(0.8, 2.2), 0.35, rand(0.8, 2.2))); pl.setMatrixAt(i, m4); }
+  stageRoot.add(pl);
+  // 遠くの岬と岩（参考写真の緑の岬）
+  for (const [x, z, sx, sy, sz] of [[-150, -60, 70, 26, 40], [-120, -125, 50, 18, 30], [150, -30, 60, 22, 40], [-60, 150, 120, 30, 50], [80, 150, 120, 24, 50]]) {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(1, 16, 10), M.headland); h.scale.set(sx, sy, sz); h.position.set(x, -sy * 0.25, z); stageRoot.add(h); }
+  for (const [x, z, s] of [[-96, -66, 6], [-88, -70, 3], [-78, -96, 4], [70, -48, 3.5]]) { const r = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), M.rock); r.position.set(x, s * 0.4 + BH.WATER, z); r.scale.y = 1.5; stageRoot.add(r); }
+  for (let i = 0; i < 26; i++) { const x = rand(-48, 48), z = rand(56, 90); if (BEACH.pbs.some(P => Math.hypot(P.x - x, P.z - z) < 8)) continue; tree(x, z, rand(0.9, 1.4)); const T = stageRoot.children[stageRoot.children.length - 1]; T.position.y = groundH(x, z); }
+}
+function buildBeach() {
+  const M = beachMats();
+  BEACH.boats = []; BEACH.pbs = []; BEACH.tracers = []; BEACH.won = false; BEACH.looks = new Set(); BEACH.log = []; BEACH.dirty = false; BEACH.king = null; BEACH.gboat = null;
+  BEACH.on = true;
+  for (const [i, x] of [[0, -27], [1, -9], [2, 9], [3, 27]]) makePillbox(i, x, 53 + (i % 2) * 1.5);
+  buildAbatis(M);
+  buildBeachTerrain(M);
+  // 本陣＝殿の舟の屋形（動くので毎フレーム更新）
+  hq = { x0: 0, x1: 0, z0: 0, z1: 0, sx: 0, sz: 0 };
+  buildMedPost(7, 5, 'blue'); medPost.blue = [7, 5];
+  buildMedPost(0, 74, 'orange'); medPost.orange = [0, 74];
+  // 曳光弾（使い回し）
+  const tg = new THREE.BoxGeometry(0.035, 0.035, 1); tg.translate(0, 0, -0.5);
+  for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(tg, M.tracer); m.visible = false; m.frustumCulled = false; stageRoot.add(m); BEACH.tracers.push({ m, t: 1, d: 0, a: new V3(), b: new V3() }); }
+}
+// 波ごとの舟と守り手
+function beachLaunch(n) {
+  const M = beachMats(), first = n === 1;
+  const fighters = Math.round((5 + n * 3) * TROOP_K), perBoat = 7, nb = first ? 4 : Math.max(2, Math.min(3, Math.round(fighters / perBoat)));
+  const xs = first ? [-24, -10, 12, 25].slice(0, nb) : [-18, 0, 18].slice(0, nb);
+  const z0 = (TEST && window.__bz) || (first ? -54 : -78);
+  let made = 0; const bi0 = BEACH.boats.filter(b => !b.yakata && !b.guard).length;
+  xs.forEach((x, k) => {
+    const B = makeBoat(BEACH.boats.length, x + rand(-2, 2), z0 + rand(-4, 4), { sp: rand(1.25, 1.45), name: `第${bi0 + k + 1}小早隊`, goal: BH.BOAT_GOAL + rand(-0.4, 0.4) });
+    B.sqKey = 'b' + Math.min(6, bi0 + k + 1);
+    const nCrew = clamp(perBoat + (k % 2), 6, 8);
+    for (let j = 0; j < nCrew; j++) { const kind = j === 0 || j === 5 ? 'archer' : 'mob'; const e = spawnEnemy(B.x, B.z, kind, false, 'blue', { y: B.floor.y, set: { boat: B, boatSq: B.sqKey } }); if (e) { boardBoat(e, B, j < 6 ? j * 2 + (k % 2) : null); made++; } }
+  });
+  // 守り手：トーチカごとに銃手 2 人＋守備
+  const foes = Math.round(made * (first ? ENEMY_RATIO : 0.55)), live = BEACH.pbs.filter(P => !P.taken);
+  if (!live.length) return made;
+  let k = 0;
+  for (let i = 0; i < foes; i++) {
+    const P = live[i % live.length];
+    const needG = P.gunners.filter(isUp).length < 2;
+    let x, z, set = { pb: P.i };
+    if (needG && first) { const sl = P.slots[P.gunners.length % 2]; x = sl[0]; z = sl[1]; set.gunner = true; }
+    else if (first) { const a = rand(0, Math.PI * 2), inside = Math.random() < 0.3; x = inside ? P.x + rand(-1.3, 1.3) : P.x + Math.cos(a) * rand(4, 9); z = inside ? P.z + rand(-0.6, 1.2) : P.z + 3 + Math.abs(Math.sin(a)) * rand(1, 6); }
+    else { x = P.x + rand(-6, 6); z = rand(70, 80); }
+    const e = spawnEnemy(x, z, set.gunner ? 'mob' : Math.random() < 0.35 ? 'archer' : 'mob', false, 'orange', { y: groundH(x, z), set, yari: set.gunner ? -1 : 0 });
+    if (!e) continue;
+    e.home = [x, z]; P.members.push(e); if (set.gunner) { P.gunners.push(e); e.hold = { face: Math.PI }; e.s.rotation.y = e.face = Math.PI; }
+    k++;
+  }
+  return made;
+}
+// 殿の舟（屋形つき）と近衛の舟
+function beachKingBoats() {
+  const K = makeBoat(BEACH.boats.length, 3.5, -82, { yakata: true, sp: 1.25, name: '殿の舟', goal: BH.BOAT_GOAL - 0.6 });
+  const G = makeBoat(BEACH.boats.length, -3.2, -80, { guard: true, sp: 1.25, name: '近衛の舟', goal: BH.BOAT_GOAL - 0.3 });
+  BEACH.king = K; BEACH.gboat = G;
+  K.seats.fill(null);
+  return K;
+}
+const KING_SEAT = [0, -1.4];   // 屋形の中
+function beachStaffSeat(e) {   // 秘書課・救護・笛役などを殿の舟に乗せる
+  const K = BEACH.king; if (!K) return;
+  const order = [3, 2, 9, 8, 11, 10, 1, 0, 5, 4, 7, 6];
+  const free = order.find(s => !K.seats[s]);
+  boardBoat(e, K, free != null ? free : null);
+}
+// ---- 機関銃 ----
+const MG = { rpm: 9.5, burst: [6, 8], gapT: [1.5, 2.8] };
+function mgTargets(P) {
+  const muz = P.mount.position, L = [];
+  for (const o of enemies) {
+    if (o.team !== 'blue' || !isUp(o)) continue;
+    const p = o.s.position, d = Math.hypot(p.x - muz.x, p.z - muz.z);
+    if (d > BH.MG_R || d < 8.5 || p.z > P.z0 - 1.5) continue;   // 銃眼の向き（海側）だけ。真下（8m 以内）は銃口が下がらない死角
+    const off = Math.abs(Math.atan2(p.x - muz.x, muz.z - p.z)); if (off > 1.0) continue;
+    if ((o.state === 'hide' || o.state === 'tocover') && o.cover && o.cover.type === 'bundle' && Math.random() < 0.75) continue;   // 逆茂木の陰に伏せている
+    L.push([d + (o.seated ? -14 : p.z < 12 ? -8 : 0) + Math.random() * 12, o]);
+  }
+  if (state === 'play' && !inHQ()) { const p = player.pos, d = Math.hypot(p.x - muz.x, p.z - muz.z); if (d < BH.MG_R && p.z < P.z0 - 1.5 && Math.abs(Math.atan2(p.x - muz.x, muz.z - p.z)) < 1.1) L.push([d + 4 + Math.random() * 10, { isPlayer: true }]); }
+  L.sort((a, b) => a[0] - b[0]);
+  return L.slice(0, 4).map(a => a[1]);
+}
+function mgTargetPt(t, out) {
+  if (t.isPlayer) return out.set(player.pos.x, player.pos.y + 1.2, player.pos.z);
+  const p = t.s.position; return out.set(p.x, t.baseY + t.figH * (t.seated ? 0.42 : 0.62), p.z);
+}
+const _mv = new V3(), _mi = new V3(), _md = new V3();
+function updateMG(P, dt) {
+  const alive = P.gunners.filter(o => isUp(o) && Math.hypot(o.s.position.x - P.x, o.s.position.z - (P.slitZ + 0.55)) < 1.3);
+  const blueIn = enemies.some(o => o.team === 'blue' && isUp(o) && inPB(P, o.s.position.x, o.s.position.z)) || inPB(P, player.pos.x, player.pos.z);
+  P.silenced = !alive.length || blueIn || P.taken;
+  if (P.silenced) { P.flash.visible = false; P.burst = 0; if (!P.wasSil && P.gunners.length) { P.wasSil = true; BEACH.log.push('silenced:' + P.i); } return; }
+  if (P.wasSil) P.wasSil = false;
+  P.nextT -= dt;
+  if (P.burst <= 0) {
+    if (P.nextT > 0) { P.flash.visible = false; return; }
+    const T = mgTargets(P); if (!T.length) { P.nextT = 0.6; P.flash.visible = false; return; }
+    P.tgt = T[0]; P.burst = Math.round(rand(MG.burst[0], MG.burst[1])); P.shotT = 0; P.lastOne = Math.random() < 0.5;   // ダダダダダダダ、（ときに）ダ…
+    mgTargetPt(P.tgt, _mv); P.sweep0 = P.aim.clone(); P.sweep1 = _mv.clone().add(new V3(rand(-1.5, 1.5), 0, rand(-1.5, 1.5))); P.sweepT = 0;
+  }
+  // 掃射：前の狙いから新しい標的へ、少し流しながら
+  P.sweepT += dt;
+  if (P.tgt && (P.tgt.isPlayer || isUp(P.tgt))) mgTargetPt(P.tgt, P.sweep1);
+  const k = Math.min(1, P.sweepT / 0.45); P.aim.copy(P.sweep0).lerp(P.sweep1, k * k * (3 - 2 * k));
+  const muz = P.mount.position, yaw = Math.atan2(P.aim.x - muz.x, P.aim.z - muz.z), pit = Math.atan2(P.aim.y - muz.y, Math.hypot(P.aim.x - muz.x, P.aim.z - muz.z));
+  P.gun.rotation.set(-pit * 0 + pit, yaw + Math.PI, 0, 'YXZ'); P.gun.rotation.x = pit;
+  P.shotT -= dt;
+  if (P.shotT <= 0) {
+    P.shotT += 1 / MG.rpm; P.burst--;
+    if (P.burst === 0 && P.lastOne) { P.burst = 1; P.lastOne = false; P.shotT = 0.42; }   // 一拍おいて、もう一発
+    else if (P.burst === 0) P.nextT = rand(MG.gapT[0], MG.gapT[1]);
+    mgShot(P);
+    if ((P.rounds = (P.rounds || 0) + 1) >= 30 && P.burst <= 0) { P.rounds = 0; P.nextT = rand(4.5, 6); P.reload = true; }   // 弾帯の交換：しばらく撃てない（攻め手の好機）
+  } else P.flash.visible = P.shotT > 1 / MG.rpm - 0.035;
+}
+function mgShot(P) {
+  const muz = _md.set(P.x, P.sy0 + 0.12, P.slitZ - 0.05), d = muz.distanceTo(P.aim), M = beachMats();
+  const sp = 0.25 + d * 0.022;
+  const I = _mi.copy(P.aim).add(new V3(rand(-1, 1) * sp, rand(-0.6, 0.8) * sp * 0.6, rand(-1, 1) * sp));
+  P.flash.position.set(P.x + Math.sin(P.gun.rotation.y + Math.PI) * 0.05, P.sy0 + 0.13, P.slitZ - 0.15); P.flash.visible = true; P.flash.material.rotation = Math.random() * 6;
+  Sfx.mg && Sfx.mg(muz);
+  // 当たり：狙いの近く（0.38m）にいる青組・殿
+  let hit = null, best = 0.3;
+  for (const o of enemies) { if (o.team !== 'blue' || !isUp(o)) continue; const p = o.s.position, cy = o.baseY + o.figH * (o.seated ? 0.42 : 0.6), dd = Math.hypot(p.x - I.x, p.z - I.z, (cy - I.y) * 0.5); if (dd < best) { best = dd; hit = o; } }
+  if (!inHQ() && state === 'play') { const dd = Math.hypot(player.pos.x - I.x, player.pos.z - I.z, (player.pos.y + 1.1 - I.y) * 0.5); if (dd < best) { best = dd; hit = { isPlayer: true }; } }
+  let end = I.clone(), kind = 'ground';
+  const B = boatAt(I.x, I.z, 0.15);
+  if (hit && !hit.isPlayer && hit.seated && hit.boat && Math.random() < 0.6) { kind = 'boat'; hit = null; }   // 舷と幟の陰：舟の板が受ける
+  if (hit && hit.isPlayer) {
+    const b2 = boatAt(player.pos.x, player.pos.z); if (b2 && player.pos.y < b2.floor.y + 0.2 && Math.random() < 0.5) { hit = null; kind = 'boat'; }
+  }
+  if (hit) {
+    if (hit.isPlayer) { hurtPlayer(7); end.set(player.pos.x, player.pos.y + 1.1, player.pos.z); kind = 'body'; }
+    else { const p = hit.s.position; end.set(p.x, hit.baseY + hit.figH * (hit.seated ? 0.45 : rand(0.5, 0.68)), p.z); kind = 'body';
+      if (TEST) window.__mgd = (window.__mgd || 0) + 1;
+      damageEnemy(hit, 1, muz, false, { pt: end.clone(), thrust: true }, { team: 'orange', state: 'idle', mg: true, s: { position: muz } }); }
+  } else if (kind === 'boat' || (B && I.y < B.floor.y + BOAT_GW + 0.1)) { kind = 'boat'; const bb = B || boatAt(I.x, I.z, 0.5) || BEACH.boats.find(q => Math.hypot(q.x - I.x, q.z - I.z) < 6); if (bb) boatHole(bb, end); }
+  else if (I.z < BH.SHORE - 0.5 || I.y < BH.WATER + 0.05) kind = groundH(I.x, I.z) < BH.WATER ? 'water' : 'ground';
+  if (kind !== 'body' && kind !== 'boat') { const gh = Math.max(groundH(end.x, end.z), BH.WATER); end.y = gh + 0.02; }
+  // 見た目：曳光、水しぶき・砂煙・木っ端
+  const tr = BEACH.tracers.find(t => t.t >= 1) || BEACH.tracers[0];
+  tr.a.copy(muz); tr.b.copy(end); tr.t = 0; tr.d = muz.distanceTo(end); tr.m.visible = true;
+  if (kind === 'water') { puff(end.clone().setY(BH.WATER + 0.05), 0xe8f6ff, 5, 0.32, 2.6, 0.5); if (Math.random() < 0.5) puff(end.clone().setY(BH.WATER + 0.3), 0xffffff, 3, 0.18, 1.8, 0.4); }
+  else if (kind === 'ground') { puff(end.clone().setY(end.y + 0.05), end.z < BH.Z1 ? 0xeee2c4 : 0xa79a74, 4, 0.3, 1.5, 0.55); }
+  else if (kind === 'boat') { puff(end.clone(), 0xb98a52, 4, 0.12, 2.2, 0.45); if (Math.hypot(end.x - player.pos.x, end.z - player.pos.z) < 30) Sfx.impactWood(end); }
+}
+function boatHole(B, pt) {
+  const [lx, lz] = boatLocal(B, pt.x, pt.z), side = lx >= 0 ? 1 : -1, m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+  const ly = clamp(pt.y - B.g.position.y, 0.15, BOAT_GW - 0.08);
+  const zz = clamp(lz, -BOAT_L / 2 + 0.6, BOAT_L / 2 - 2.2);
+  q.setFromAxisAngle(new V3(0, 1, 0), side * Math.PI / 2);
+  const i = B.nHole % 80; m4.compose(new V3(side * (BOAT_W / 2 + 0.006), ly, zz), q, new V3(rand(0.7, 1.2), rand(0.7, 1.2), 1));
+  B.holes.setMatrixAt(i, m4); B.nHole++; B.holes.count = Math.min(80, B.nHole); B.holes.instanceMatrix.needsUpdate = true;
+  // 内側にも
+  if (B.nHole % 2 === 0) { q.setFromAxisAngle(new V3(0, 1, 0), -side * Math.PI / 2); m4.compose(new V3(side * (BOAT_W / 2 - 0.1), ly, zz), q, new V3(0.8, 0.8, 1)); const j = B.nHole % 80; B.holes.setMatrixAt(j, m4); B.nHole++; B.holes.count = Math.min(80, B.nHole); }
+}
+// ---- 毎フレーム ----
+function updateBeach(dt) {
+  if (!BEACH.on) return;
+  const M = beachMats();
+  M.sea.map.offset.y = Math.sin(time * 0.3) * 0.004;
+  if (BEACH.foam) { const k = Math.sin(time * 0.55); BEACH.foam.position.z = -0.7 + k * 0.55; M.foam.opacity = 0.55 + 0.3 * Math.max(0, k); M.foam.map.offset.x = time * 0.01; }
+  // 舟：漕ぐ・進む・浜に乗り上げる・全員倒れれば流れて止まる
+  for (const B of BEACH.boats) {
+    const ox = B.x, oz = B.z, oyaw = B.yaw;
+    B.crew = B.crew.filter(o => enemies.includes(o) && o.boat === B || bodies.includes(o));
+    const rowers = B.crew.filter(o => isUp(o) && o.seated);
+    if (B.delay > 0) { B.delay -= dt; }
+    else if (!B.beached) {
+      const goal = B.goal, can = rowers.length > 0 || B.yakata && (state === 'play');
+      if (!can && !B.drift) { B.drift = true; B.driftYaw = rand(-0.5, 0.5); BEACH.log.push('drift:' + B.i); }
+      const v = B.drift ? Math.max(0, (B.v || B.sp) - dt * 0.35) : B.sp * Math.min(1, (goal - B.z) / 3 + 0.25) * (rowers.length >= 3 || B.yakata ? 1 : 0.6);
+      B.v = v; B.z += v * dt;
+      if (B.drift) { B.yaw += (B.driftYaw - B.yaw) * dt * 0.15; B.x += Math.sin(B.yaw) * v * dt * 0.3; }
+      if (B.z >= goal) { B.z = goal; B.beached = true; B.v = 0; beachLand(B); }
+      B.row += dt * (B.drift ? 0 : 2.6);
+    }
+    B.wob += dt;
+    const bob = B.beached ? 0 : Math.sin(B.wob * 1.3 + B.i) * 0.035, roll = B.beached ? 0.02 : Math.sin(B.wob * 0.9 + B.i * 2) * 0.025;
+    B.g.position.set(B.x, BH.WATER + 0.04 + bob + (B.beached ? 0.05 : 0), B.z); B.g.rotation.set(0, B.yaw, roll);
+    for (const O of B.oars) { const a = B.drift || B.beached ? 0.35 : Math.sin(B.row * 2 + O.ph); O.piv.rotation.set(0, O.s * a * 0.45, O.s * (B.drift || B.beached ? 0.5 : -0.12 + Math.cos(B.row * 2 + O.ph) * 0.12)); }
+    for (const f of B.flags) f.rotation.x = Math.sin(time * 2.1 + B.i) * 0.08;
+    boatFloor(B); B.floor.y = B.g.position.y + BOAT_DECK;
+    const dx = B.x - ox, dz = B.z - oz, dy = B.yaw - oyaw;
+    // 乗っている娘（座っている／舟の中で倒れた）も一緒に動く
+    for (const o of B.crew) {
+      const p = o.s.position;
+      if (o.seated && o.seated.boat === B) { const [lx, lz] = BOAT_SEATS[o.boatSlot]; const [wx, wz] = boatWorld(B, lx, lz); o.seated.x = wx; o.seated.z = wz; o.baseY = B.floor.y; o.s.rotation.y = B.yaw; if (o.state === 'idle') o.face = B.yaw; }
+      else if (o.state === 'down' || bodies.includes(o)) { if (dy) { const [lx, lz] = boatLocal({ x: ox, z: oz, yaw: oyaw }, p.x, p.z); const [wx, wz] = boatWorld(B, lx, lz); p.x = wx; p.z = wz; o.s.rotation.y += dy; } else { p.x += dx; p.z += dz; } o.baseY = B.floor.y; p.y = B.floor.y + (o.landY !== undefined ? 0 : 0); }
+    }
+    // 殿：舟の上なら一緒に動く
+    if (inBoat(B, player.pos.x, player.pos.z, 0.25) && player.pos.y < B.floor.y + 0.8) { player.pos.x += dx; player.pos.z += dz; }
+  }
+  // 本陣＝殿の舟の屋形
+  const K = BEACH.king;
+  if (K && hq) { hq.x0 = K.x - 0.95; hq.x1 = K.x + 0.95; hq.z0 = K.z - 2.7; hq.z1 = K.z - 0.1; hq.sx = K.x + 0.5; hq.sz = K.z + 0.4; }
+  // 機関銃
+  for (const P of BEACH.pbs) { updateMG(P, dt); beachPbState(P, dt); }
+  // 曳光弾（速さ ≈ 400m/s 見かけ）
+  for (const T of BEACH.tracers) {
+    if (T.t >= 1) continue;
+    T.t += dt * Math.min(9, 300 / Math.max(5, T.d)); const k = Math.min(1, T.t);
+    const L = Math.min(2.6, T.d * 0.3), p = _mv.copy(T.a).lerp(T.b, k);
+    T.m.position.copy(p); T.m.lookAt(T.b); T.m.rotateY(Math.PI); T.m.scale.set(1, 1, L); T.m.visible = k < 1;
+  }
+  beachKingLooks(dt);
+}
+// 舟が浜に着いた：乗っていた娘は順に立って上陸
+function beachLand(B) {
+  BEACH.log.push('land:' + B.i);
+  let k = 0;
+  for (const o of B.crew) if (isUp(o) && o.seated) { o.standAt = time + 0.3 + (k++) * 0.25; }
+  if (B.yakata) {   // 殿の舟：秘書課・救護は浜の本陣へ
+    for (const o of B.crew) if (isUp(o)) o.home = [B.x + rand(-2.5, 2.5) + (o.medic ? 5 : 0), rand(2, 5)];
+    hq.sx = B.x; hq.sz = B.z;
+  }
+  const L = B.crew.find(o => isUp(o)); if (L && !B.yakata) yariSay(L, B.guard ? 'guard_forward' : 'land_go');
+}
+// トーチカの制圧
+function beachPbState(P, dt) {
+  if (P.taken) return;
+  P.members = P.members.filter(o => enemies.includes(o));
+  const orangeIn = P.members.some(o => isUp(o) && (inPB(P, o.s.position.x, o.s.position.z) || Math.hypot(o.s.position.x - P.x, o.s.position.z - P.z) < 4));
+  const gun = P.gunners.some(isUp);
+  const blueNear = enemies.some(o => o.team === 'blue' && isUp(o) && Math.hypot(o.s.position.x - P.x, o.s.position.z - P.z) < 4.2) || Math.hypot(player.pos.x - P.x, player.pos.z - P.z) < 4.2;
+  if (!orangeIn && !gun && blueNear) {
+    P.taken = true; P.silenced = true; BEACH.log.push('taken:' + P.i);
+    stageRoot.remove(P.flag); P.flag = nobori(P.x + PB_W / 2 + 0.8, P.z + PB_D / 2 + 0.5, '#1f5fb8', '#f4f1e8', '制圧'); P.flag.position.y = P.y;
+    const left = BEACH.pbs.filter(q => !q.taken).length;
+    showBanner(`第${P.i + 1}トーチカ 制圧！`, left ? `残り ${left}` : 'すべてのトーチカを制圧した');
+    Sfx.chime && Sfx.chime(true);
+    if (!left) beachWin();
+  }
+}
+function beachWin() {
+  if (BEACH.won) return; BEACH.won = true;
+  setTimeout(() => { if (state !== 'play') return; gameOver(true); }, 3500);
+}
+// 殿が見ているものへのひと言（字幕＋声）
+function beachKingLooks(dt) {
+  if (state !== 'play' || (BEACH.lookT = (BEACH.lookT || 0) - dt) > 0) return;
+  BEACH.lookT = 0.25;
+  const fx = -Math.sin(player.yaw) * Math.cos(player.pitch || 0), fz = -Math.cos(player.yaw) * Math.cos(player.pitch || 0), fy = Math.sin(player.pitch || 0), eye = camera.position;
+  const looking = (x, y, z, r) => { const dx = x - eye.x, dy = y - eye.y, dz = z - eye.z, d = Math.hypot(dx, dy, dz); if (d > r || d < 0.5) return false; return (dx * fx + dy * fy + dz * fz) / d > 0.93; };
+  for (const B of BEACH.boats) {
+    const key = 'boat'; if (BEACH.looks.has(key) || B.nHole < 10) continue;
+    const allDown = B.crew.length > 0 && !B.crew.some(isUp);
+    if (allDown && looking(B.x, B.g.position.y + 0.4, B.z, 14)) { BEACH.looks.add(key); kingSay('king_hachi'); return; }
+  }
+  for (const P of BEACH.pbs) {
+    const key = 'mg'; if (BEACH.looks.has(key) || !P.silenced || !P.gunners.length || P.gunners.some(isUp)) continue;
+    const m = P.mount.position; if (Math.hypot(player.pos.x - m.x, player.pos.z - m.z) < 4.5 && looking(m.x, m.y, m.z, 5)) { BEACH.looks.add(key); kingSay('king_mg'); return; }
+  }
+}
+// 青組の上陸後の待機位置・橙組の持ち場
+function beachIdleSpot(e) {
+  if (e.team === 'orange' && e.home) return e.home;
+  const live = BEACH.pbs.filter(P => !P.taken); if (!live.length) return [player.pos.x, player.pos.z];
+  let best = live[0], bd = 1e9; for (const P of live) { const d = Math.hypot(P.x - e.s.position.x, P.z - e.s.position.z) + (e.id % 4 === P.i ? -15 : 0); if (d < bd) { bd = d; best = P; } }
+  return [best.x + Math.cos(e.ph) * 3, best.z - 6 + Math.sin(e.ph) * 2];
+}
+// 橙組の持ち場の娘は、トーチカから離れすぎない（20m）
+function beachCanTarget(e, t, x, z) {
+  if (e.team === 'orange' && e.pb != null) { const P = BEACH.pbs[e.pb]; if (P && Math.hypot(x - P.x, z - P.z) > (e.kind === 'archer' ? 48 : 22)) return false; }
+  if (e.team === 'blue' && t.gunner && e.kind !== 'archer') return true;
+  return true;
+}
+// 経路：逆茂木の列はすき間へ、トーチカは裏の入口から、海へは入らない
+function beachRoute(p, tx, tz) {
+  for (const R of ABATIS) {
+    const a = p.z - R.z, b = tz - R.z;
+    if (Math.sign(a) === Math.sign(b) || Math.abs(a) < 0.05) continue;
+    if (Math.abs(a) > 9 && Math.abs(b) > 0.5) { /* まだ遠い：すき間の方へ寄せながら */ }
+    if (R.gaps.some(g => Math.abs(p.x - g) < GAP_HW - 0.45)) { const g = R.gaps.find(g => Math.abs(p.x - g) < GAP_HW - 0.45); return [g + clamp(p.x - g, -0.6, 0.6), R.z + Math.sign(b) * 1.4]; }
+    let g = R.gaps[0], bd = 1e9; for (const gx of R.gaps) { const d = Math.abs(gx - p.x) + Math.abs(gx - tx) * 0.5; if (d < bd) { bd = d; g = gx; } }
+    return [g, R.z - Math.sign(b) * 1.2];
+  }
+  const Pt = pbAt(tx, tz), Pp = pbAt(p.x, p.z);
+  if (Pt && Pt !== Pp) { const [dx, dz] = Pt.door; if (p.z < Pt.z1 + 0.3 && Math.abs(p.x - Pt.x) < PB_W / 2 + 0.6) return [p.x < Pt.x ? Pt.x0 - 0.9 : Pt.x1 + 0.9, dz]; if (Math.hypot(p.x - dx, p.z - dz) > 0.6) return [dx, dz]; return [Pt.x, Pt.z1 - 0.8]; }
+  if (Pp && Pp !== Pt) { const [dx, dz] = Pp.door; if (Math.abs(p.x - Pp.x) > 0.4 && p.z < Pp.z1 - 0.7) return [Pp.x, Pp.z1 - 0.8]; return [dx, dz + 0.4]; }
+  // トーチカの前（海側）にいて裏へ回る
+  for (const P of BEACH.pbs) {
+    if (Math.abs(p.x - P.x) < PB_W / 2 + 0.5 && p.z < P.z0 && tz > P.z1 && Math.abs(tx - P.x) < PB_W / 2 + 0.5) return [p.x < P.x ? P.x0 - 0.9 : P.x1 + 0.9, P.z];
+  }
+  return [tx, Math.max(tz, -0.4)];
+}
+// 浜：娘の足元（砂浜・斜面の高さ、舟の上、海に入らない）
+function beachFeet(e, p) {
+  if (e.seated || e.perch) return;
+  if (e.boat) {
+    if (inBoat(e.boat, p.x, p.z) && !(e.boat.beached && boatLocal(e.boat, p.x, p.z)[1] > BOAT_L / 2 - 1.4)) {
+      const B = e.boat, [lx, lz] = boatLocal(B, p.x, p.z), cl = clamp(lx, -BOAT_W / 2 + 0.35, BOAT_W / 2 - 0.35);
+      const [wx, wz] = boatWorld(B, cl, B.beached ? lz : clamp(lz, -BOAT_L / 2 + 0.6, BOAT_L / 2 - 1.2)); p.x = wx; p.z = wz; e.baseY = B.floor.y; return;
+    }
+    if (!e.boat.beached) { const B = e.boat, [lx, lz] = boatLocal(B, p.x, p.z); const [wx, wz] = boatWorld(B, clamp(lx, -0.7, 0.7), clamp(lz, -BOAT_L / 2 + 0.6, BOAT_L / 2 - 1.2)); p.x = wx; p.z = wz; e.baseY = B.floor.y; return; }
+    if (e.state !== 'down') { const B = e.boat; B.crew = B.crew.filter(o => o !== e); e.boat = null; }
+  }
+  if (p.z < -0.4) p.z = -0.4;
+  p.x = clamp(p.x, -BH.XW + 0.5, BH.XW - 0.5);
+  e.baseY = groundH(p.x, p.z);
+}
+// 舟の上で倒れた：座ったまま／舟底に崩れる（海には落ちない）
+function boatFall(e) {
+  const B = e.boat;
+  if (!e.seated) {   // 立っていた娘：近くの空いた腰掛けへ崩れ込む
+    const [lx, lz] = boatLocal(B, e.s.position.x, e.s.position.z); let bi = -1, bd = 1e9;
+    BOAT_SEATS.forEach(([sx, sz], i) => { const d = Math.hypot(sx - lx, sz - lz) + (B.seats[i] && B.seats[i] !== e ? 2 : 0); if (d < bd) { bd = d; bi = i; } });
+    const [wx, wz] = boatWorld(B, BOAT_SEATS[bi][0], BOAT_SEATS[bi][1]); e.slideTo = null; e.s.position.x = wx; e.s.position.z = wz; e.boatSlot = bi;
+  }
+  e.slump = { side: e.boatSlot % 2 ? 1 : -1, fwd: rand(0.25, 0.5) }; e.seated = null; e.baseY = B.floor.y; e.crouch = Math.max(e.crouch || 0, 0.9);
+  if (!B.crew.includes(e)) B.crew.push(e);
+}
+// 波：舟と守り手。浜では普通の波の湧き出しは使わない
+function beachWave(n) {
+  const made = beachLaunch(n);
+  wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0; BEACH.waveT = 0;
+  if (n === 1) showBanner('模擬戦、開始！ 小早、漕ぎ出せ', '高台のトーチカをすべて制圧せよ — 機関銃の届く沖からは身を低く');
+  else showBanner(`第${waveName(n)}波`, `小早 ${Math.max(2, Math.min(3, Math.round(made / 7)))} 艘が増援に`);
+}
+function beachWaveTick(dt) {
+  if (BEACH.won) return;
+  BEACH.waveT += dt;
+  const blueF = enemies.filter(o => o.team === 'blue' && isUp(o) && !o.special && !o.guard).length;
+  if (BEACH.waveT > 55 && blueF < 10) startWave(wave.n + 1);
+}
+function kingSay(cat) {
+  const X = VoicePack.man && VoicePack.man._extra, L = X && X[cat], text = (L && L[0].text) || KING_TEXT[cat] || '';
+  subtitle(text); const el = $('subtitle'); if (el) el.textContent = `殿「${text}」`;
+  if (!(L && VoicePack.play(L[0].files[0], 0, 2, 1))) { if (Voice.ok) { const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.pitch = 0.7; u.rate = 0.95; speechSynthesis.speak(u); } }
+  BEACH.log.push('king:' + cat);
+}
+const KING_TEXT = { king_hachi: '蜂の巣にされたみたいだな', king_mg: '…これが機関銃か。恐ろしいな', king_deaddrive: '死者とのドライブかぁ' };
+
+// ====================================================================
+//  v8：軽自動車（平原）。お抱えの運転手（写真の侍女）が運転し、殿は助手席に乗る（E／スマホ「乗る」）
+//  ・乗っている間：クリック（スマホは攻撃ボタン）で照準の先の地面へ、W で前方へ、S で止まる、E で降りる
+//  ・娘をひかない：前に人（倒れた娘も）がいれば減速して止まる。車で倒すことはない
+//  ・運転手が倒れると、車は惰性で止まり、運転手はハンドルに突っ伏したまま。殿「死者とのドライブかぁ」
+//    そのまま降りるか、しばらくすると近くの侍女が運転を代わる（倒れた運転手は後部座席へ）
+//  右ハンドル（日本の軽）：前を +z として、運転席は右（-x）、助手席は左（+x）
+// ====================================================================
+const CAR = { g: null, x: 0, z: 0, yaw: 0, v: 0, steer: 0, tgt: null, fwdHold: false, driver: null, riding: false, dead: false, deadT: 0, said: false, wheels: [], marker: null, takeT: 0, rear: [], blockT: 0, sayT: 0, lastMsg: '' };
+const CAR_L = 3.4, CAR_W = 1.48, CAR_FLOOR = 0.3, CAR_EYE = 1.36, CAR_VMAX = 6.2;
+const CAR_SEAT = { drv: [-0.34, -0.15], pas: [0.34, -0.15], rear: [-0.3, -0.95] };
+function carMats() {
+  const L = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o));
+  return { body: L(0xf1efe8), bodyD: L(0xd9d6cc), trim: L(0x2a2b2e), glass: new THREE.MeshLambertMaterial({ color: 0xa8c8d8, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide }),
+    tire: L(0x1b1b1c), hub: L(0xb8bcc0), seat: L(0x3a3c40), dash: L(0x26272a), head: new THREE.MeshBasicMaterial({ color: 0xfff6d8 }), tail: new THREE.MeshBasicMaterial({ color: 0xc8302a }),
+    inner: L(0x8d8f94, { side: THREE.DoubleSide }), mark: new THREE.MeshBasicMaterial({ color: 0xffe38a, transparent: true, opacity: 0.85, depthWrite: false }) };
+}
+function buildCar(x, z, yaw) {
+  const M = carMats(), g = new THREE.Group(), hl = CAR_L / 2, hw = CAR_W / 2;
+  const box = (w, h, d, px, py, pz, m, rx = 0) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(px, py, pz); b.rotation.x = rx; g.add(b); return b; };
+  // 下回り・ボンネット・床・バンパー
+  box(CAR_W, 0.45, CAR_L - 0.1, 0, 0.5, 0, M.body);
+  box(CAR_W - 0.04, 0.05, 1.0, 0, 0.98, hl - 0.55, M.body, -0.12);   // ボンネット
+  box(CAR_W + 0.02, 0.22, 0.12, 0, 0.42, hl - 0.02, M.trim); box(CAR_W + 0.02, 0.22, 0.12, 0, 0.42, -hl + 0.02, M.trim);
+  // 側面（ドアの下半分：窓は開いている）
+  for (const s of [-1, 1]) { const d = box(0.05, 0.5, CAR_L - 1.25, s * (hw - 0.02), 0.95, -0.42, M.body); d.material = M.body; box(0.04, 0.42, CAR_L - 1.3, s * (hw - 0.07), 0.95, -0.42, M.inner); }
+  // 屋根・柱・窓ガラス（前は傾いたガラス、後ろは縦）
+  box(CAR_W - 0.06, 0.05, 1.9, 0, 1.58, -0.6, M.body); box(CAR_W - 0.12, 0.02, 1.84, 0, 1.55, -0.6, M.inner);
+  const wsZ = 0.62, wsH = 0.6;
+  for (const s of [-1, 1]) {
+    const a = box(0.06, 0.74, 0.06, s * (hw - 0.05), 1.3, wsZ - 0.12, M.trim, 0.55);   // A 柱
+    box(0.06, 0.6, 0.07, s * (hw - 0.05), 1.3, -0.08, M.bodyD);   // B 柱
+    box(0.06, 0.6, 0.08, s * (hw - 0.05), 1.27, -1.5, M.body);    // C 柱
+  }
+  const ws = box(CAR_W - 0.12, 0.72, 0.01, 0, 1.3, wsZ - 0.12, M.glass, 0.55);
+  box(CAR_W - 0.12, 0.55, 0.02, 0, 1.25, -1.55, M.glass);
+  box(CAR_W, 0.6, 0.06, 0, 0.95, -hl + 0.06, M.body);   // 後ろ
+  // 灯火
+  for (const s of [-1, 1]) { box(0.28, 0.1, 0.02, s * 0.5, 0.78, hl + 0.01, M.head); box(0.12, 0.16, 0.02, s * 0.62, 0.86, -hl - 0.01, M.tail); }
+  // 車内：ダッシュボード・ハンドル（右）・座席・床
+  box(CAR_W - 0.14, 0.24, 0.42, 0, 0.92, wsZ - 0.38, M.dash);
+  box(CAR_W - 0.14, 0.04, 2.4, 0, CAR_FLOOR, -0.45, M.seat);
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.022, 6, 16), M.trim); wheel.position.set(CAR_SEAT.drv[0], 1.02, wsZ - 0.64); wheel.rotation.set(-0.45, 0, 0); g.add(wheel);
+  const col = box(0.05, 0.05, 0.36, CAR_SEAT.drv[0], 0.95, wsZ - 0.5, M.trim, 0.45);
+  for (const [sx, sz] of [CAR_SEAT.drv, CAR_SEAT.pas]) { box(0.48, 0.12, 0.5, sx, 0.52, sz - 0.05, M.seat); box(0.48, 0.62, 0.1, sx, 0.88, sz - 0.33, M.seat, -0.12); box(0.26, 0.16, 0.08, sx, 1.27, sz - 0.38, M.seat); }
+  box(CAR_W - 0.2, 0.12, 0.5, 0, 0.5, -1.05, M.seat); box(CAR_W - 0.2, 0.55, 0.1, 0, 0.82, -1.33, M.seat, -0.1);
+  // 車輪
+  const wheels = [];
+  for (const [wx, wz] of [[-hw + 0.08, 1.1], [hw - 0.08, 1.1], [-hw + 0.08, -1.1], [hw - 0.08, -1.1]]) {
+    const w = new THREE.Group(); w.position.set(wx, 0.28, wz);
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.17, 14), M.tire); t.rotation.z = Math.PI / 2; w.add(t);
+    const h = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.18, 10), M.hub); h.rotation.z = Math.PI / 2; w.add(h);
+    g.add(w); wheels.push(w);
+  }
+  g.position.set(x, 0, z); g.rotation.y = yaw; stageRoot.add(g);
+  const mk = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.55, 20), M.mark); mk.rotation.x = -Math.PI / 2; mk.visible = false; stageRoot.add(mk);
+  Object.assign(CAR, { g, x, z, yaw, v: 0, steer: 0, tgt: null, driver: null, riding: false, dead: false, deadT: 0, said: false, wheels, marker: mk, takeT: 0, rear: [], home: [x, z, yaw], wheelM: wheel });
+  carSpawnDriver();
+}
+const carOn = () => !!CAR.g && builtStage === 'plains';
+function carW(lx, lz) { const c = Math.cos(CAR.yaw), s = Math.sin(CAR.yaw); return [CAR.x + lx * c + lz * s, CAR.z - lx * s + lz * c]; }
+function carL(x, z) { const dx = x - CAR.x, dz = z - CAR.z, c = Math.cos(CAR.yaw), s = Math.sin(CAR.yaw); return [dx * c - dz * s, dx * s + dz * c]; }
+function carSpawnDriver(from) {
+  const [wx, wz] = carW(CAR_SEAT.drv[0], CAR_SEAT.drv[1]);
+  let e = from;
+  if (!e) { e = spawnEnemy(wx, wz, 'mob', false, 'blue', { yari: -1, set: { driver: true, special: true } }); if (!e) return; }
+  e.driver = true; e.special = true; e.passive = true; e.hold = null; e.state = 'idle'; e.tgt = null;
+  if (e.sq) { const s = e.sq; s.members = s.members.filter(m => m !== e); e.sq = null; }
+  if (e.spear) { e.s.remove(e.spear); e.spear = null; e.yari = false; }
+  e.prof.name = e.prof.name.replace(/^(運転手|組頭)\s*/, ''); e.prof.name = '運転手 ' + e.prof.name; e.tagKey = '';
+  e.seated = { x: wx, z: wz, car: true }; e.baseY = CAR_FLOOR; e.s.position.set(wx, e.baseY, wz); e.s.rotation.y = e.face = CAR.yaw; e.standAt = null;
+  CAR.driver = e; CAR.dead = false; CAR.said = false; CAR.deadT = 0; CAR.takeT = 0;
+}
+// 殿の乗り降り
+function carNear() { if (!carOn() || CAR.riding) return false; const [lx, lz] = carL(player.pos.x, player.pos.z); return Math.abs(lz) < CAR_L / 2 + 0.6 && Math.abs(lx) < CAR_W / 2 + 1.4 && player.pos.y < 0.6; }
+function carUse() {
+  if (!carOn()) return false;
+  if (CAR.riding) { if (Math.abs(CAR.v) > 0.6) { CAR.tgt = null; CAR.fwdHold = false; popup('止まってから降ります'); CAR.exitReq = true; return true; } carExit(); return true; }
+  if (!carNear()) return false;
+  CAR.riding = true; CAR.tgt = null; player.drawing = false; player.seated = false; player.autoClimb = null;
+  popup('助手席に乗った — クリック（攻撃ボタン）で行き先、W で前へ、S で止まる、E で降りる');
+  if (CAR.driver && isUp(CAR.driver) && !CAR.dead) drvSay('drv_where');
+  return true;
+}
+function carExit() {
+  CAR.riding = false; CAR.exitReq = false;
+  const [wx, wz] = carW(CAR_W / 2 + 0.75, -0.15); player.pos.set(wx, 0, wz); player.vy = 0;
+  if (CAR.marker) CAR.marker.visible = false;
+}
+function carSeatPlayer() {
+  const [wx, wz] = carW(CAR_SEAT.pas[0], CAR_SEAT.pas[1]);
+  player.pos.set(wx, CAR_EYE - CFG.eyeH, wz); player.vy = 0; player.onGround = true; player.drawing = false; player.charge = 0;
+}
+// 行き先：照準の先の地面（遠すぎれば 40m 先）
+function carCommand() {
+  if (!CAR.riding) return false;
+  if (CAR.dead) { if (!CAR.dmsgT || CAR.dmsgT < time) { popup('運転手が倒れている — E で降りる'); CAR.dmsgT = time + 2; } return true; }
+  const dy = Math.sin(player.pitch);
+  let d = dy < -0.02 ? CAR_EYE / Math.tan(-player.pitch) : 40; d = clamp(d, 5, 60);
+  const tx = player.pos.x - Math.sin(player.yaw) * d, tz = player.pos.z - Math.cos(player.yaw) * d;
+  CAR.tgt = [clamp(tx, -CFG.field + 5, CFG.field - 5), clamp(tz, -CFG.field + 5, CFG.field - 5)]; CAR.fwdHold = false; CAR.blockT = 0;
+  if (CAR.marker) { CAR.marker.position.set(CAR.tgt[0], 0.04, CAR.tgt[1]); CAR.marker.visible = true; }
+  drvSay('drv_go');
+  return true;
+}
+function drvSay(cat) {
+  const e = CAR.driver; if (!e || !isUp(e) || CAR.dead || (CAR.sayT > time && cat !== 'drv_take')) return;
+  CAR.sayT = time + 2.5;
+  const X = VoicePack.man && VoicePack.man._extra, L = X && X[cat], it = L && L.length ? pick(L) : null, text = it ? it.text : (DRV_TEXT[cat] || [''])[0];
+  Talk.as(e, () => { if (!(it && VoicePack.play(it.files[0], 1, 2, VV_RATE[e.prof.vv] || 1)) && text) Voice.say(text, e.prof, 1); subtitle(text); const el = $('subtitle'); if (el) el.textContent = `${e.prof.name.replace('運転手 ', '')}「${text}」`; });
+  CAR.lastMsg = cat;
+}
+const DRV_TEXT = { drv_where: ['どちらへ参りましょう？'], drv_go: ['かしこまりました！'], drv_brake: ['あっ、危ない…！'], drv_arrive: ['着きました！'], drv_take: ['私が代わります！'], drv_block: ['この先は通れません…'] };
+// 車の前に人（立っている／倒れている）がいるか
+function carAhead(look, dt) {
+  let hit = false;
+  const chk = (p, o) => {
+    const [lx, lz] = carL(p.x, p.z);
+    if (!(lz > CAR_L / 2 - 0.2 && lz < CAR_L / 2 + look && Math.abs(lx) < CAR_W / 2 + 0.45)) return;
+    hit = true;
+    // 味方の娘は脇へよけてくれる（車は止まって待つ）
+    if (o && o.team === 'blue' && isUp(o) && !o.seated && dt) { const sd = lx >= 0 ? 1 : -1, [ax, az] = carW(sd * (CAR_W / 2 + 0.9), lz), k = Math.min(1, dt * 2.2); p.x += (ax - p.x) * k; p.z += (az - p.z) * k; }
+  };
+  for (const o of enemies) if (o !== CAR.driver && o.state !== 'pit' && !CAR.rear.includes(o)) chk(o.s.position, o);
+  for (const b of bodies) if (b !== CAR.driver && !CAR.rear.includes(b)) chk(b.s.position, null);
+  if (!CAR.riding) chk(player.pos, null);
+  return hit;
+}
+function carBlocked(nx, nz, yaw) {
+  const c = Math.cos(yaw), s = Math.sin(yaw), pts = [[0, CAR_L / 2], [CAR_W / 2, CAR_L / 2], [-CAR_W / 2, CAR_L / 2], [CAR_W / 2, 0], [-CAR_W / 2, 0], [0, -CAR_L / 2]];
+  for (const [lx, lz] of pts) {
+    const x = nx + lx * c + lz * s, z = nz - lx * s + lz * c;
+    for (const k of colliders) if (Math.hypot(x - k.x, z - k.z) < k.r + 0.1) return true;
+    for (const b of boxes) if (!b.ceil && b.y0 < 1.2 && b.y1 > 0.2 && x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return true;
+  }
+  return Math.abs(nx) > CFG.field - 3 || Math.abs(nz) > CFG.field - 3;
+}
+function updateCar(dt) {
+  if (!carOn()) return;
+  const e = CAR.driver, alive = e && isUp(e) && !CAR.dead;
+  if (e && !alive && !CAR.dead) { CAR.dead = true; CAR.deadT = 0; CAR.tgt = null; CAR.fwdHold = false; if (CAR.marker) CAR.marker.visible = false; }
+  // 目標速度とハンドル
+  let want = 0, steerWant = 0;
+  if (alive) {
+    if (CAR.riding && (keys.KeyW || touch.jy < -0.5)) { const d = 16; CAR.tgt = [CAR.x - Math.sin(player.yaw) * d, CAR.z - Math.cos(player.yaw) * d]; CAR.fwdHold = true; if (CAR.marker) CAR.marker.visible = false; }
+    else if (CAR.fwdHold) { CAR.fwdHold = false; CAR.tgt = null; }
+    if (CAR.riding && (keys.KeyS || touch.jy > 0.5)) { CAR.tgt = null; CAR.fwdHold = false; if (CAR.marker) CAR.marker.visible = false; }
+    if (CAR.tgt) {
+      const [lx, lz] = carL(CAR.tgt[0], CAR.tgt[1]), d = Math.hypot(lx, lz), ang = Math.atan2(lx, lz);
+      steerWant = clamp(ang * 1.4, -0.6, 0.6);
+      want = d < 1.5 ? 0 : Math.min(CAR_VMAX, d * 0.7) * (Math.abs(ang) > 1.6 ? 0.45 : 1);
+      if (d < 1.5 && !CAR.fwdHold) { CAR.tgt = null; if (CAR.marker) CAR.marker.visible = false; drvSay('drv_arrive'); }
+    }
+    if (CAR.exitReq) want = 0;
+  }
+  const look = 1.0 + Math.max(0, CAR.v) * 0.75;
+  const ahead = want > 0 && carAhead(look, dt);
+  if (ahead) { want = 0; if (CAR.v > 1.2 && CAR.lastMsg !== 'drv_brake') drvSay('drv_brake'); }
+  else if (CAR.lastMsg === 'drv_brake' && CAR.v < 0.1) CAR.lastMsg = '';
+  const acc = want > CAR.v ? 2.6 : (ahead ? 9 : CAR.dead ? 2.2 : 4.5);
+  CAR.v += clamp(want - CAR.v, -acc * dt, acc * dt);
+  CAR.steer += clamp(steerWant - CAR.steer, -dt * 1.8, dt * 1.8);
+  if (CAR.v > 0.01) {
+    const yaw2 = CAR.yaw + CAR.v / 2.2 * Math.tan(CAR.steer) * dt, nx = CAR.x + Math.sin(yaw2) * CAR.v * dt, nz = CAR.z + Math.cos(yaw2) * CAR.v * dt;
+    if (carBlocked(nx, nz, yaw2)) { CAR.v = 0; CAR.blockT += dt; if (CAR.tgt && CAR.blockT > 0.4) { CAR.tgt = null; if (CAR.marker) CAR.marker.visible = false; drvSay('drv_block'); } }
+    else { CAR.x = nx; CAR.z = nz; CAR.yaw = yaw2; CAR.blockT = 0; }
+  }
+  if (CAR.exitReq && CAR.v < 0.3) carExit();
+  // 見た目
+  CAR.g.position.set(CAR.x, Math.abs(CAR.v) > 0.3 ? Math.sin(time * 18) * 0.006 : 0, CAR.z); CAR.g.rotation.y = CAR.yaw;
+  for (let i = 0; i < 4; i++) { const w = CAR.wheels[i]; w.children[0].rotation.x = w.children[1].rotation.x = (w.spin = (w.spin || 0) + CAR.v * dt / 0.28); if (i < 2) w.rotation.y = CAR.steer; }
+  if (CAR.wheelM) CAR.wheelM.rotation.z = -CAR.steer * 2.2;
+  // 運転手（生きていれば座席、倒れていればハンドルに突っ伏したまま一緒に動く）・後部座席の娘
+  const put = (o, seat) => { const [wx, wz] = carW(seat[0], seat[1]); if (o.seated) { o.seated.x = wx; o.seated.z = wz; } o.s.position.x = wx; o.s.position.z = wz; o.s.position.y = o.baseY = CAR_FLOOR; o.s.rotation.y = CAR.yaw; if (o.state === 'idle' || o.seated) o.face = CAR.yaw; };
+  if (e && (enemies.includes(e) || bodies.includes(e))) put(e, CAR_SEAT.drv);
+  for (const r of CAR.rear) if (bodies.includes(r) || enemies.includes(r)) put(r, CAR_SEAT.rear);
+  // 運転手が倒れた：止まるのを待って、殿のひと言。しばらくすると近くの侍女が代わる
+  if (CAR.dead) {
+    CAR.deadT += dt;
+    if (CAR.riding && !CAR.said && CAR.v < 0.4 && CAR.deadT > 1.2) { CAR.said = true; kingSay('king_deaddrive'); }
+    if (CAR.v < 0.1 && CAR.deadT > 5) carTakeover(dt);
+  }
+}
+// 近くの青組の娘（秘書課・近衛・救護以外）が運転を代わる
+function carTakeover(dt) {
+  if (CAR.taker && !isUp(CAR.taker)) CAR.taker = null;
+  if (!CAR.taker) {
+    let best = null, bd = 30;
+    bd = 70;
+    for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || o.special || o.seated || o.perch || o.lad || o.kind !== 'mob' || o.wounded || o.yari) continue; const d = Math.hypot(o.s.position.x - CAR.x, o.s.position.z - CAR.z) + (o.guard ? 6 : 0); if (d < bd) { bd = d; best = o; } }
+    if (!best) return;
+    CAR.taker = best; best.carCall = true;
+  }
+}
+// 運転を代わる娘：運転席の扉まで歩いて、乗り込む（updateEnemies から呼ぶ）
+function carCallBrain(t, dt) {
+  if (CAR.taker !== t || !carOn()) { t.carCall = false; return false; }
+  const [dx, dz] = carW(-CAR_W / 2 - 0.6, -0.15), p = t.s.position;
+  t.tgt = null; t.passive = true;
+  t.carWalkT = (t.carWalkT || 0) + dt;
+  const [llx, llz] = carL(p.x, p.z);
+  if (llx > -0.95 && t.carWalkT < 10) {   // 車の反対側：自分の側を前か後ろの端まで回ってから運転席側へ
+    const sg = llz > 0 ? 1 : -1, [wx2, wz2] = Math.abs(llz) < 2.3 ? carW(Math.max(1.3, llx), sg * 2.7) : carW(-1.45, sg * 2.7); steer(t, wx2, wz2, t.speed * 1.2, dt); t.state = 'idle'; t.faceWant = Math.atan2(wx2 - p.x, wz2 - p.z); return true; }
+  if (Math.hypot(p.x - dx, p.z - dz) > 0.6 && t.carWalkT < 12) { steer(t, dx, dz, t.speed * 1.2, dt); t.state = 'idle'; t.faceWant = Math.atan2(dx - p.x, dz - p.z); return true; }
+  // 倒れた運転手を後部座席へ移し、運転席に座る
+  if (t.guard) { GUARD.list = GUARD.list.filter(o => o !== t); t.guard = 0; }
+  const old = CAR.driver; if (old) { CAR.rear.push(old); old.slump = old.slump || { side: 1, fwd: 0.3 }; if (old.tilt) { old.tilt.rotation.x = 0.35; old.tilt.rotation.z = 0.3; } }
+  CAR.taker = null; t.carCall = false;
+  carSpawnDriver(t);
+  popup(`${t.prof.name.replace('運転手 ', '')}が運転を代わります`); drvSay('drv_take');
+  return true;
+}
+// 娘を車から押し出す（車は人をひかない。重なったら人のほうをよける）
+function carPush(p, r) {
+  if (!carOn()) return;
+  const [lx, lz] = carL(p.x, p.z), hx = CAR_W / 2 + r, hz = CAR_L / 2 + r;
+  if (Math.abs(lx) >= hx || Math.abs(lz) >= hz) return;
+  const ox = hx - Math.abs(lx), oz = hz - Math.abs(lz);
+  const [nx, nz] = ox < oz ? [Math.sign(lx || 1) * hx, lz] : [lx, Math.sign(lz || 1) * hz];
+  const [wx, wz] = carW(nx, nz); p.x = wx; p.z = wz;
+}
+function carCamera(dt) {
+  player.shake = Math.max(0, player.shake - dt); const sh = player.shake * 0.25;
+  const [wx, wz] = carW(CAR_SEAT.pas[0], CAR_SEAT.pas[1] + 0.05);
+  camera.position.set(wx, CAR_EYE + (Math.abs(CAR.v) > 0.3 ? Math.sin(time * 17) * 0.004 : 0), wz);
+  camera.rotation.set(player.pitch + rand(-sh, sh) * 0.3, player.yaw + rand(-sh, sh) * 0.3, 0);
+  if (Math.abs(camera.fov - 75) > 0.05) { camera.fov += (75 - camera.fov) * Math.min(1, dt * 10); camera.updateProjectionMatrix(); }
+}
+function carHint() {
+  if (!carOn() || state !== 'play') return '';
+  if (CAR.riding) return CAR.dead ? (MOBILE ? '「降りる」ボタンで降りる' : 'E で降りる') : (MOBILE ? '攻撃ボタン：行き先　スティック前：前へ　「降りる」' : 'クリック：行き先　W：前へ　S：止まる　E：降りる');
+  return carNear() ? (MOBILE ? '軽自動車：「乗る」ボタンで助手席へ' : '軽自動車：E で助手席に乗る') : '';
+}
+
+// ---- 浜：やり直し・本陣の娘を殿の舟へ・殿の足元 ----
+function beachReset() {
+  if (BEACH.dirty) { builtStage = null; loadStage('beach'); }
+  BEACH.dirty = true; BEACH.king = null; BEACH.gboat = null; BEACH.won = false; BEACH.waveT = 0;
+  beachKingBoats();
+  const K = BEACH.king, [wx, wz] = boatWorld(K, KING_SEAT[0], KING_SEAT[1]);
+  player.pos.set(wx, K.floor.y, wz); player.yaw = Math.PI; player.pitch = -0.04;
+  hq.x0 = K.x - 0.95; hq.x1 = K.x + 0.95; hq.z0 = K.z - 2.7; hq.z1 = K.z - 0.1; hq.sx = K.x + 0.5; hq.sz = K.z + 0.4;
+}
+function beachSeatStaff() {
+  const K = BEACH.king, G = BEACH.gboat;
+  const staff = [sec.e, sec2.e, ojou.e, fluter.e, ...medics.blue.map(m => m.e), ...aides.map(A => A.e), ...runners.map(R => R.e)];
+  if (K && !K.beached) for (const e of staff) if (e && isUp(e) && !e.boat) { beachStaffSeat(e); if (!e.seated) { const [wx, wz] = boatWorld(K, rand(-0.5, 0.5), rand(1, 3.5)); e.s.position.set(wx, K.floor.y, wz); e.boat = K; K.crew.push(e); } }
+  if (G && !G.beached) for (const e of GUARD.list || []) if (e && isUp(e) && !e.boat) { const free = G.seats.findIndex(x => !x); if (free >= 0) boardBoat(e, G, free); }
+}
+function beachPlayerClamp() {
+  const P = player.pos;
+  for (const B of BEACH.boats) {
+    if (!inBoat(B, P.x, P.z, 0.6) || P.y > B.floor.y + 1.2) continue;
+    if (B.beached && boatLocal(B, P.x, P.z)[1] > BOAT_L / 2 - 1.6) return;   // 浜に着いた舟：舳先から降りられる
+    const [lx, lz] = boatLocal(B, P.x, P.z), [wx, wz] = boatWorld(B, clamp(lx, -BOAT_W / 2 + 0.3, BOAT_W / 2 - 0.3), clamp(lz, -BOAT_L / 2 + 0.6, BOAT_L / 2 - (B.beached ? 0.3 : 1.2)));
+    P.x = wx; P.z = wz; return;
+  }
+  if (P.z < -1.2) P.z = -1.2;   // 海へは入らない
+  P.x = clamp(P.x, -BH.XW + 0.5, BH.XW - 0.5); P.z = Math.min(P.z, 90);
+}
+function carReset() {
+  const [x, z, yaw] = CAR.home;
+  Object.assign(CAR, { x, z, yaw, v: 0, steer: 0, tgt: null, fwdHold: false, riding: false, dead: false, deadT: 0, said: false, takeT: 0, rear: [], taker: null, exitReq: false, driver: null });
+  if (CAR.marker) CAR.marker.visible = false;
+  CAR.g.position.set(x, 0, z); CAR.g.rotation.y = yaw;
+  carSpawnDriver();
+}
+// ====================================================================
+//  v8：毒煙玉（城の戦い）。橙組の煙玉役（数人）が、守りに籠もる味方（城内・櫓の上）へ投げ込む
+//  ・灰緑の煙が約10秒とどまる。中にいると体力が少しずつ減る（外傷なし）。娘は煙から逃げる
+//  ・城内では、近くの襖が開いているほど早く晴れる
+// ====================================================================
+const SMOKE = { clouds: [], balls: [], tex: null, mat: null };
+function smokeTex() {
+  if (SMOKE.tex) return SMOKE.tex;
+  SMOKE.tex = canvasTex(64, 64, g => { const r = g.createRadialGradient(32, 32, 2, 32, 32, 31); r.addColorStop(0, 'rgba(170,186,150,0.95)'); r.addColorStop(0.55, 'rgba(150,166,132,0.55)'); r.addColorStop(1, 'rgba(140,150,125,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); });
+  return SMOKE.tex;
+}
+function smokeReset() { for (const c of SMOKE.clouds) for (const s of c.spr) scene.remove(s); for (const b of SMOKE.balls) scene.remove(b.m); SMOKE.clouds = []; SMOKE.balls = []; }
+function smokeThrow(e, x, z, y) {
+  const p = e.s.position, from = new V3(p.x, e.baseY + 1.4, p.z), to = new V3(x, y, z);
+  const m = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), new THREE.MeshLambertMaterial({ color: 0x4d5a3c })); m.position.copy(from); scene.add(m);
+  const T = clamp(from.distanceTo(to) / 11, 0.5, 1.3);
+  SMOKE.balls.push({ m, from, to, T, t: 0, h: 1.2 + from.distanceTo(to) * 0.12 });
+  Sfx.whoosh ? Sfx.whoosh(from) : Sfx.twangAt(from);
+}
+function smokeCloud(x, y, z) {
+  const spr = [], tex = smokeTex(), indoor = CASTLE.on && inCastleBldg(x, z);
+  for (let i = 0; i < 9; i++) {
+    const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0, color: 0xc8d4b4 }));
+    s.userData = { ox: rand(-1.6, 1.6), oz: rand(-1.6, 1.6), oy: rand(0.3, 1.6), sc: rand(2.2, 3.4), ph: rand(0, 6) }; s.position.set(x, y + 1, z); scene.add(s); spr.push(s);
+  }
+  SMOKE.clouds.push({ x, y, z, r: indoor ? 2.6 : 3.0, t: 0, life: indoor ? 11 : 9, spr, indoor, tick: 0, said: new Set() });
+  puff(new V3(x, y + 0.3, z), 0xb4c0a0, 8, 0.6, 1.6, 0.8);
+  Sfx.impactGround && Sfx.impactGround(new V3(x, y, z));
+}
+const inSmoke = (x, z, y) => SMOKE.clouds.find(c => c.t < c.life - 0.8 && Math.hypot(x - c.x, z - c.z) < c.r && Math.abs(y - c.y) < 2.2);
+function updateSmoke(dt) {
+  for (let i = SMOKE.balls.length - 1; i >= 0; i--) {
+    const b = SMOKE.balls[i]; b.t += dt; const k = Math.min(1, b.t / b.T);
+    b.m.position.lerpVectors(b.from, b.to, k); b.m.position.y += Math.sin(k * Math.PI) * b.h;
+    if (k >= 1) { scene.remove(b.m); SMOKE.balls.splice(i, 1); smokeCloud(b.to.x, b.to.y, b.to.z); }
+  }
+  for (let i = SMOKE.clouds.length - 1; i >= 0; i--) {
+    const c = SMOKE.clouds[i];
+    let rate = 1;
+    if (c.indoor) { const open = CASTLE.doors.filter(d => d.open && Math.hypot(d.x - c.x, d.z - c.z) < 6).length; rate = 1 + open * 0.8; }   // 襖を開けると早く晴れる
+    c.t += dt * rate;
+    const fade = c.t < 1 ? c.t : c.t > c.life - 2 ? Math.max(0, (c.life - c.t) / 2) : 1, grow = Math.min(1, 0.4 + c.t * 0.6);
+    for (const s of c.spr) { const u = s.userData; s.position.set(c.x + u.ox * grow + Math.sin(time * 0.4 + u.ph) * 0.3, c.y + u.oy + Math.sin(time * 0.3 + u.ph) * 0.15, c.z + u.oz * grow); s.scale.setScalar(u.sc * grow); s.material.opacity = 0.62 * fade; }
+    if (c.t >= c.life) { for (const s of c.spr) { scene.remove(s); s.material.dispose(); } SMOKE.clouds.splice(i, 1); continue; }
+    // 体力が少しずつ減る（娘は 2.6 秒ごとに 1、殿は毎秒 2）
+    c.tick += dt;
+    if (c.tick >= 1) {
+      c.tick = 0;
+      if (state === 'play' && Math.hypot(player.pos.x - c.x, player.pos.z - c.z) < c.r && Math.abs(player.pos.y - c.y) < 2.2 && c.t < c.life - 0.8) { hurtPlayer(2); if (!c.said.has('P')) { c.said.add('P'); popup('毒煙！ 煙の外へ'); } }
+      for (const o of enemies) {
+        if (!isUp(o) || o.seated) continue; const p = o.s.position;
+        if (Math.hypot(p.x - c.x, p.z - c.z) > c.r || Math.abs(o.baseY - c.y) > 2.2) continue;
+        o.smokeD = (o.smokeD || 0) + 1;
+        if (o.smokeD >= 3) { o.smokeD = 0; damageEnemy(o, 1, new V3(c.x, c.y, c.z), false, null, { team: 'smoke', state: 'idle', s: { position: new V3(c.x, c.y, c.z) } }); }
+        if (!c.said.has(o.team) && o.team === 'blue') { c.said.add(o.team); yariSay(o, 'smoke_out'); }
+      }
+    }
+  }
+}
+// 娘：煙の中にいれば外へ逃げる（true＝逃げている）
+function smokeFlee(e, dt) {
+  if (!SMOKE.clouds.length || e.seated || e.lad || e.climb || e.hiddenAmb) return false;
+  const p = e.s.position, c = inSmoke(p.x, p.z, e.baseY); if (!c) { e.smokeFlee = false; return false; }
+  if (e.perch) { e.perch.taken = null; e.perch = null; e.onFloor = floorAt(p.x, p.z, e.baseY); e.crouch = 0; }
+  const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz) || 0.01;
+  steer(e, c.x + dx / d * (c.r + 1.5), c.z + dz / d * (c.r + 1.5), e.speed * 1.25, dt);
+  e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.cover = null; e.smokeFlee = true; npcTint(e, 0);
+  return true;
+}
+// 橙組の煙玉役：味方の籠もる所（城内・櫓の上・狭間）を見つけて投げる
+function smokerBrain(e, dt) {
+  if (!e.smoker || e.team !== 'orange' || e.lad) return false;
+  const p = e.s.position;
+  if (e.throwing) {
+    e.throwing.t += dt; e.tgt = null; e.state = 'windup'; e.faceWant = e.face = Math.atan2(e.throwing.x - p.x, e.throwing.z - p.z);
+    if (e.throwing.t >= 0.55) { const T = e.throwing; e.throwing = null; e.state = 'recover'; e.t = 0; npcTint(e, 0); smokeThrow(e, T.x, T.z, T.y); }
+    else npcTint(e, e.throwing.t / 0.55 * 0.6);
+    return true;
+  }
+  if ((e.smokeCd = (e.smokeCd || 0) - dt) > 0) return false;
+  e.smokeCd = 1;
+  let best = null, bs = -1;
+  for (const o of enemies) {
+    if (o.team !== 'blue' || !isUp(o) || o.seated) continue;
+    const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d < 5 || d > 17) continue;
+    if (inSmoke(q.x, q.z, o.baseY)) continue;
+    const held = (CASTLE.on && inCastleBldg(q.x, q.z) ? 3 : 0) + (o.perch ? 2 : 0) + (o.baseY > 1 ? 1 : 0);
+    if (!held) continue;
+    let n = 0; for (const k of enemies) if (k.team === 'blue' && isUp(k) && Math.hypot(k.s.position.x - q.x, k.s.position.z - q.z) < 3) n++;
+    const sc = held * 2 + n - d * 0.1; if (sc > bs) { bs = sc; best = o; }
+  }
+  if (!best) return false;
+  const q = best.s.position;
+  e.throwing = { x: q.x + rand(-0.6, 0.6), z: q.z + rand(-0.6, 0.6), y: best.baseY, t: 0 }; e.smokeCd = rand(14, 20);
+  yariSay(e, 'smoke_throw');
+  return true;
+}
+
+// ====================================================================
+//  v8：懐刀を投げる（全ステージ）。弓兵（娘）と殿が、6〜8m の近い相手へ懐刀（刃引きの練習用）を投げる
+//  ・投げた懐刀は地面に落ちる。娘は相手がいなくなると拾いに行く（遠い・なくなったら 30 秒で予備）
+//  ・殿は懐刀を持っている時に右クリック／F／スマホ「投げる」。投げた後は拾うか、弓に持ち替える
+// ====================================================================
+const KNIFE = { fly: [], ground: [], geo: null };
+function knifeMesh() {
+  if (!KNIFE.geo) KNIFE.geo = { blade: new THREE.BoxGeometry(0.024, 0.012, 0.2).translate(0, 0, 0.1), hilt: new THREE.BoxGeometry(0.032, 0.03, 0.12).translate(0, 0, -0.06),
+    mb: new THREE.MeshLambertMaterial({ color: 0xc9ccd2 }), mh: new THREE.MeshLambertMaterial({ color: 0x2b211b }) };
+  const g = new THREE.Group(), G = KNIFE.geo; g.add(new THREE.Mesh(G.blade, G.mb), new THREE.Mesh(G.hilt, G.mh)); return g;
+}
+function knifeReset() { for (const k of KNIFE.fly) scene.remove(k.m); for (const k of KNIFE.ground) scene.remove(k.m); KNIFE.fly = []; KNIFE.ground = []; player.knife = true; player.knifeT = 0; }
+function throwKnife(owner, team, from, to, speed = 17) {
+  const m = knifeMesh(); m.position.copy(from); scene.add(m);
+  const d = from.distanceTo(to), tf = d / speed, v = to.clone().sub(from).normalize().multiplyScalar(speed); v.y += 0.5 * 9.8 * tf;
+  KNIFE.fly.push({ m, v, owner, team, t: 0 });
+  { const o = Sfx.at(from, 30); if (o) Sfx.noiseBurst(0.12, 'bandpass', 2400, 1200, 0.25, 2, 0, o); }   // ひゅっ
+}
+function knifeDrop(k, p) {
+  const fl = floorUnder(p.x, p.z, p.y + 0.3);
+  k.m.position.set(p.x, fl + 0.02, p.z); k.m.rotation.set(0, rand(0, 6), 0);
+  KNIFE.ground.push({ m: k.m, x: p.x, z: p.z, y: fl, owner: k.owner, t: 0 });
+  if (k.owner && k.owner !== 'player') k.owner.knifeAt = KNIFE.ground[KNIFE.ground.length - 1];
+}
+function updateKnives(dt) {
+  for (let i = KNIFE.fly.length - 1; i >= 0; i--) {
+    const k = KNIFE.fly[i], p0 = k.m.position.clone(); k.t += dt;
+    k.v.y -= 9.8 * dt; k.m.position.addScaledVector(k.v, dt);
+    const p1 = k.m.position; k.m.rotation.x += dt * 22;   // くるくる回る
+    // 当たり（線分 vs 縦の円柱）
+    const sx = p1.x - p0.x, sz = p1.z - p0.z, sl = sx * sx + sz * sz || 1e-6;
+    let hit = null, bt = 2;
+    for (const e of enemies) {
+      if (e.state === 'down' || e === k.owner || (k.team !== 'player' && e.team === k.team) || e.special && k.team === 'player') continue;
+      const ep = e.s.position, t = clamp(((ep.x - p0.x) * sx + (ep.z - p0.z) * sz) / sl, 0, 1), cx = p0.x + sx * t, cz = p0.z + sz * t, y = p0.y + (p1.y - p0.y) * t - e.baseY;
+      if (Math.hypot(cx - ep.x, cz - ep.z) < 0.34 && y > 0 && y < e.figH && t < bt) { bt = t; hit = e; }
+    }
+    if (!hit && k.team === 'orange' && state === 'play') { const t = clamp(((player.pos.x - p0.x) * sx + (player.pos.z - p0.z) * sz) / sl, 0, 1), y = p0.y + (p1.y - p0.y) * t - player.pos.y; if (Math.hypot(p0.x + sx * t - player.pos.x, p0.z + sz * t - player.pos.z) < 0.4 && y > 0.2 && y < 1.8) hit = 'P'; }
+    if (hit) {
+      if (hit === 'P') { hurtPlayer(9); Sfx.impactBody && Sfx.impactBody(player.pos.clone().setY(player.pos.y + 1.2)); }
+      else { const pt = new V3(p0.x + sx * bt, p0.y + (p1.y - p0.y) * bt, p0.z + sz * bt); damageEnemy(hit, k.owner === 'player' ? 2 : 1, p0, false, { pt, thrust: true }, k.owner === 'player' ? 'player' : (k.owner && enemies.includes(k.owner) ? k.owner : { team: k.team, state: 'down' })); }
+      knifeDrop(k, p1); KNIFE.fly.splice(i, 1); continue;
+    }
+    if ((boxes.length && hitsBox(p1, k.team)) || hitsCover(p1)) { Sfx.impactWood(p1); k.v.multiplyScalar(-0.15); }
+    if (p1.y <= floorUnder(p1.x, p1.z, p1.y) + 0.02 || k.t > 3) { Sfx.impactGround && Sfx.impactGround(p1); knifeDrop(k, p1); KNIFE.fly.splice(i, 1); }
+  }
+  // 地面の懐刀：殿は自分の懐刀の上を通れば拾う。古いものは消える
+  for (let i = KNIFE.ground.length - 1; i >= 0; i--) {
+    const g = KNIFE.ground[i]; g.t += dt;
+    if (g.owner === 'player' && !player.knife && Math.hypot(player.pos.x - g.x, player.pos.z - g.z) < 1.3 && Math.abs(player.pos.y - g.y) < 1.2) { player.knife = true; popup('懐刀を拾った'); Sfx.pickup ? Sfx.pickup() : 0; scene.remove(g.m); KNIFE.ground.splice(i, 1); continue; }
+    if (g.t > 45) { scene.remove(g.m); KNIFE.ground.splice(i, 1); }
+  }
+  if (!player.knife && (player.knifeT += dt) > 40) { player.knife = true; popup('予備の懐刀を手にした'); }
+}
+// 殿：懐刀を投げる
+function playerThrowKnife() {
+  if (state !== 'play' || player.weapon !== 1 || CAR.riding) return false;
+  if (!player.knife) { popup('懐刀は投げた — 拾うか、弓に持ち替える'); return true; }
+  const dir = new V3(-Math.sin(player.yaw) * Math.cos(player.pitch), Math.sin(player.pitch), -Math.cos(player.yaw) * Math.cos(player.pitch));
+  const from = camera.position.clone().addScaledVector(dir, 0.4); from.y -= 0.12;
+  let d = 8; for (const e of enemies) { if (e.state === 'down') continue; const v = e.s.position.clone().setY(e.baseY + e.figH * 0.6).sub(from), along = v.dot(dir); if (along > 1 && along < 14 && v.clone().addScaledVector(dir, -along).length() < 0.7 && along < d) d = along; }
+  throwKnife('player', 'player', from, from.clone().addScaledVector(dir, d), 19);
+  player.knife = false; player.knifeT = 0; player.swingT = -1;
+  return true;
+}
+// 娘（弓兵）：近い相手へ投げる。投げた後は拾いに行く
+function npcKnifeStart(e, dist, dt) {
+  if (e.kind !== 'archer' || e.knife === false || e.special && !e.secretary || e.state === 'aim' && e.t > 0.4 || e.seated) return false;
+  if (dist < 2.8 || dist > 7.5 || (e.knifeCd || 0) > time || elevD(e) > 2.2) return false;
+  if (Math.random() > dt * 0.9) return false;
+  e.state = 'kthrow'; e.t = 0; e.knifeTgt = e.tgt; return true;
+}
+function npcKnifeStep(e, dt, nx, nz) {
+  e.faceWant = Math.atan2(nx, nz); npcTint(e, Math.min(1, e.t / 0.4) * 0.6);
+  if (e.t < 0.4) return;
+  const t = e.knifeTgt; npcTint(e, 0); e.state = e.perch ? 'hide' : 'advance'; e.hideT = 0.8; e.t = 0; e.cover = null;
+  if (!t || (!t.isPlayer && !isUp(t))) return;
+  const p = e.s.position, tp = tgtPos(t), to = new V3(tp.x, (t.isPlayer ? player.pos.y + 1.1 : t.baseY + t.figH * 0.6), tp.z);
+  const err = 0.35 + Math.hypot(tp.x - p.x, tp.z - p.z) * 0.04; to.x += gauss() * err * 0.5; to.z += gauss() * err * 0.5; to.y += gauss() * err * 0.3;
+  throwKnife(e, e.team, new V3(p.x, e.baseY + e.figH * 0.78, p.z), to);
+  e.knife = false; e.knifeLostT = time; e.knifeCd = time + 6; if (Math.random() < 0.5) yariSay(e, 'knife_throw');
+}
+// 拾いに行く（相手が近くにいない時）：true＝拾いに歩いている
+function npcKnifeFetch(e, dt) {
+  if (e.knife !== false) return false;
+  if (time - (e.knifeLostT || 0) > 30) { e.knife = true; e.knifeAt = null; return false; }
+  const g = e.knifeAt; if (!g || !KNIFE.ground.includes(g) || e.perch || e.seated) return false;
+  const p = e.s.position, d = Math.hypot(g.x - p.x, g.z - p.z);
+  if (d > 14 || Math.abs(g.y - e.baseY) > 0.8) return false;
+  if (e.tgt && !e.tgt.isPlayer && isUp(e.tgt) && Math.hypot(tgtPos(e.tgt).x - p.x, tgtPos(e.tgt).z - p.z) < 6) return false;
+  if (d < 0.6) { e.knife = true; e.knifeAt = null; scene.remove(g.m); KNIFE.ground.splice(KNIFE.ground.indexOf(g), 1); return false; }
+  steer(e, g.x, g.z, e.speed * 1.1, dt); e.state = 'advance'; e.cover = null; return true;
+}
+
 let builtStage = null, stageName = 'plains';
 try { stageName = localStorage.getItem('onna_stage') || 'plains'; } catch (e) {}
 // 足元の床の高さ（櫃・武者走り）。y より 0.4 以上高い床には乗らない
 function floorUnder(x, z, y) {
-  let g = 0;
+  let g = BEACH.on ? Math.max(groundH(x, z), BH.WATER) : 0;
   for (const f of floors) if (x > f.x0 - 0.2 && x < f.x1 + 0.2 && z > f.z0 - 0.2 && z < f.z1 + 0.2 && f.y <= y + 0.4 && f.y > g) g = f.y;
   return g;
 }
@@ -2141,16 +3203,17 @@ const STAGES = {
   plains: { name: '平原の戦い', desc: '竹林の点在する平原で、青組と橙組が正面からぶつかる。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
   castle: { name: '城の戦い', desc: '青組は城を守る。大手門の狭間と櫓から射て、破門隊の丸太を食い止めよ。門が破れれば二の丸、二の丸が落ちれば奥御殿へ。畳の間には隠し落とし穴、襖の陰には伏兵。襖は E（スマホは「襖」ボタン）で開け閉め。' },
+  beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
 };
 function loadStage(name) {
   if (builtStage === name) return;
   for (const c of [...stageRoot.children]) stageRoot.remove(c);
   colliders.length = covers.length = flags.length = boxes.length = floors.length = ladders.length = perches.length = 0;
-  fortGate = null; hq = null; seirans.length = 0;
+  fortGate = null; hq = null; seirans.length = 0; CAR.g = null; CAR.driver = null; CAR.riding = false;
   road.visible = name === 'plains';
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -2824,7 +3887,7 @@ function npcSay0(e, kind, prio) {
 // ====================================================================
 //  ゲーム状態
 // ====================================================================
-const player = { pos: new V3(), speedT: 0, vy: 0, yaw: 0, pitch: 0, hp: 100, kills: 0, allyKills: 0, arrows: 30, weapon: 0,
+const player = { pos: new V3(), speedT: 0, vy: 0, yaw: 0, pitch: 0, hp: 100, kills: 0, allyKills: 0, arrows: 30, weapon: 0, knife: true, knifeT: 0,
   drawing: false, charge: 0, swingT: -1, swingCd: 0, regenT: 0, hurtT: 0, switchT: 0, bob: 0, onGround: true, shake: 0 };
 const keys = {};
 let enemies = [], bodies = [], arrows = [], pickups = [];
@@ -3033,6 +4096,8 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
   e.climber = kind === 'archer' && team === 'orange' && Math.random() < 0.25;
   e.raider = kind === 'mob' && team === 'orange' && !e.special && Math.random() < 0.35;   // 梯子攻め役（約1/3）：砦の中に入ると櫓・足場の弓兵を狙って梯子を上る   // 砦の中で梯子を上る弓兵（約1/4）
+  e.smoker = CASTLE.on && kind === 'mob' && team === 'orange' && !e.special && !e.raider && Math.random() < 0.16 && enemies.filter(o => o.smoker && isUp(o)).length < 3;   // v8：毒煙玉の投げ手（数人）
+  if (e.smoker) e.smokeCd = rand(4, 9);
   if (opt.set) Object.assign(e, opt.set);
   if (kind === 'mob' && !e.special && !e.ramCrew && !e.hiddenAmb && (opt.yari === 1 || (opt.yari !== -1 && Math.random() < YARI.rate))) { e.yari = true; makeYari(e); }   // 槍兵（近接の約2割）
   enemies.push(e);
@@ -3081,6 +4146,8 @@ const SQUAD_DEFS = {
           orange: [['seiran', '井闌隊'], ['ladder', 'はしご隊'], ['yari', '槍分隊'], ['m1', '第1近接部隊'], ['m2', '第2近接部隊'], ['roam', '遊撃弓隊']] },
   castle: { blue: [['guard', '近衛分隊'], ['yari', '槍衆'], ['gate', '大手門守備隊'], ['bailey', '二の丸分隊'], ['ambush', '奥御殿伏兵隊']],
             orange: [['ram', '破門隊'], ['yari', '槍隊'], ['a1', '第1攻撃隊'], ['a2', '第2攻撃隊'], ['bow', '弓隊']] },
+  beach: { blue: [['guard', '近衛分隊'], ['b1', '第1小早隊'], ['b2', '第2小早隊'], ['b3', '第3小早隊'], ['b4', '第4小早隊'], ['b5', '第5小早隊'], ['b6', '第6小早隊']],
+           orange: [['p1', '第1トーチカ隊'], ['p2', '第2トーチカ隊'], ['p3', '第3トーチカ隊'], ['p4', '第4トーチカ隊']] },   // 浜：攻め手は舟ごと、守り手はトーチカごと
   plane: { blue: [['guard', '近衛分隊'], ['front', '前方客室分隊'], ['rear', '後方客室分隊']], orange: [['front', '前方奴襲隊'], ['rear', '後方奴襲隊']] },   // 機内：客室の前と後ろ
   plains: { blue: [['guard', '近衛分隊'], ['front', '前衛分隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']],   // 平原には櫃がないので弓分隊
             orange: [['m1', '第1近接部隊'], ['m2', '第2近接部隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']] },
@@ -3106,6 +4173,7 @@ function assignSquad(e) {
   if (!SQUAD_ON || e.special || !squads[e.team].length) return;
   const t = e.team, fort = builtStage === 'fort'; let s = null;
   if (e.guard) s = sqBy(t, 'guard');
+  else if (BEACH.on) s = t === 'blue' ? (e.boatSq ? sqBy(t, e.boatSq) : pickBalanced(t, ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'])) : (e.pb != null ? sqBy(t, 'p' + (e.pb + 1)) : pickBalanced(t, ['p1', 'p2', 'p3', 'p4']));
   else if (e.yari && !e.ramCrew && !e.ambush && !e.seated && !PLANE.on && sqBy(t, 'yari')) s = sqBy(t, 'yari');
   else if (CASTLE.on) s = t === 'blue' ? sqBy(t, e.ambush ? 'ambush' : (e.perch || CASTLE.phase === 0) ? 'gate' : 'bailey') : sqBy(t, e.ramCrew ? 'ram' : e.kind === 'archer' ? 'bow' : 'x') || pickBalanced(t, ['a1', 'a2']);
   else if (PLANE.on) s = e.seated || PLANE.intro ? sqBy(t, e.s.position.z > -4 ? 'front' : 'rear') : pickBalanced(t, ['front', 'rear']);   // 席の位置で前・後ろ、援軍は少ない方へ
@@ -3130,7 +4198,7 @@ function squadRegroup(e, dt) {
   const s = e.sq;
   if (!SQUAD_ON || !s) return false;
   const L = s.leader;
-  if (!isUp(L) || L === e || L.perch || L.lad || L.onFloor || L.climb || e.perch || e.lad || e.onFloor || e.climb || e.wounded || e.defending || e.returning || !e.tgt
+  if (!isUp(L) || L === e || L.wounded || L.seated || !L.tgt || L.perch || L.lad || L.onFloor || L.climb || e.perch || e.lad || e.onFloor || e.climb || e.wounded || e.defending || e.returning || !e.tgt
     || !['approach', 'advance'].includes(e.state) || Math.abs(L.baseY - e.baseY) > 0.5) { e.regroup = false; return false; }
   const p = e.s.position, lp = L.s.position, tp = tgtPos(e.tgt);
   if (Math.hypot(tp.x - p.x, tp.z - p.z) < (e.kind === 'archer' ? 20 : 13)) { e.regroup = false; return false; }   // 交戦中は各自の判断
@@ -3523,6 +4591,7 @@ function leanDoll(e) {
   Mo.putWorld(e, J);
 }
 function startWave(n) {
+  if (BEACH.on && !BEACH.king) beachKingBoats();
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
   if (ojou.dead || (!ojou.e && hq)) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }
   if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
@@ -3542,12 +4611,14 @@ function startWave(n) {
   if (sk) { wave.blueToSpawn += sk; wave.blueOwed = (wave.blueOwed || 0) + sk; }
   wave.archerRate = ARCHER_RATE;
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
+  if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
   showBanner(`第${waveName(n)}波`, n === 1 ? (CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
+  if (BEACH.on) { beachWaveTick(dt); return; }
   if (PLANE.intro) { PLANE.introT -= dt; if (PLANE.introT <= 0) planeAmbush(); return; }
   if (wave.inter > 0) { wave.inter -= dt; if (wave.inter <= 0) startWave(wave.n + 1); return; }
   wave.spawnT -= dt;
@@ -3601,7 +4672,8 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   const byPlayer = by === 'player';
   if (PLANE.intro) planeAmbush();   // 静かな機内で攻撃すれば、その場で奇襲が始まる
   if (e.hiddenAmb) castleSpring(e.hiddenAmb, by && by !== 'player' ? by : null);   // 伏兵が見つかった
-  if (e.seated && e.standAt == null) e.standAt = time + rand(0.1, 0.4);
+  if (TEST) { const D = window.__dmgT || (window.__dmgT = {}); D[e.team] = (D[e.team] || 0) + dmg; }
+  if (e.seated && e.standAt == null && !(e.seated.boat && !e.seated.boat.beached) && !e.seated.car) e.standAt = time + rand(0.1, 0.4);   // 舟の上・車の中では座ったまま
   // 話している最中の娘が撃たれた：会話を打ち切る（メニューを閉じ、声と字幕を止める。短い悲鳴だけ）
   const partner = menuOpen && menuGirl() === e;
   e.wasTalking = partner || Talk.speaking(e);
@@ -3620,7 +4692,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
   if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
   else if (!(hit && hit.arrow)) Sfx.impactBody(hitPos);   // 矢は updateArrows で「ズブッ」
-  if (by !== 'player' && by.state !== 'down') { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
+  if (by && by !== 'player' && by.state !== 'down' && enemies.includes(by)) { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
   if (e.perch && e.perch.tower && e.team === 'blue') { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }
   if (e.hp <= 0) { if (!byPlayer && by && by.prof) e.killer = by;
     if (window.__kstat) window.__kstat.push({ team: e.team, kind: e.kind, by: byPlayer ? 'player' : by && by.kind }); killEnemy(e, byPlayer, from); return; }
@@ -3633,7 +4705,7 @@ function killEnemy(e, byPlayer, from) {
   e.state = 'down'; e.t = 0;
   if (e.spear) yariDrop(e);   // 槍は手を離れて床に落ちる
   e.knock.set(0, 0, 0);
-  const leaned = !e.lad && !e.climb && tryLean(e);   // v7：柵・胸壁のそばなら寄りかかる（向きは倒れた瞬間のまま）
+  const leaned = !e.lad && !e.climb && !e.seated && !(BEACH.on && e.boat) && !e.driver && tryLean(e);   // v7：柵・胸壁のそばなら寄りかかる（向きは倒れた瞬間のまま）
   if (from) e.face = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);   // 攻撃側を向いてから倒れる
   if (e.perch) { e.perch.taken = null; }
   if (e.climb) { if (e.climb.q.taken === e) e.climb.q.taken = null; e.climb = null; e.baseY = 0; e.s.position.y = 0; }
@@ -3658,6 +4730,8 @@ function killEnemy(e, byPlayer, from) {
   const fx = from ? e.s.position.x - from.x : Math.sin(e.s.rotation.y), fz = from ? e.s.position.z - from.z : Math.cos(e.s.rotation.y);
   e.fallYaw = Math.atan2(fx, fz) + rand(-0.35, 0.35);
   if (PLANE.on) planeFall(e);
+  if (e.driver && e.seated) { e.slump = { side: -0.6, fwd: 0.42 }; e.seated = null; e.face = CAR.yaw; }   // 運転手：ハンドルに突っ伏す
+  else if (BEACH.on && e.boat && (e.seated || inBoat(e.boat, e.s.position.x, e.s.position.z, 0.2))) boatFall(e);   // 舟の中で崩れる（海には落ちない）
   e.bg.visible = e.fg.visible = e.mk.visible = false; if (e.wmk) e.wmk.visible = false; e.wounded = false; e.kneel = false;
   e.fallT = rand(0.5, 0.62);
   if (byPlayer) {
@@ -3692,6 +4766,12 @@ function toBodies(e) {
 const PLAYER_T = { isPlayer: true };
 function tgtPos(t) { return t.isPlayer ? player.pos : t.s.position; }
 const tgtY = t => t.isPlayer ? player.pos.y : t.baseY;
+function elevD(e) {   // 高さの差（浜は斜面の地面からの高さで比べる）
+  const t = e.tgt, y = tgtY(t);
+  if (!BEACH.on) return Math.abs(y - e.baseY);
+  const tp = t.isPlayer ? player.pos : t.s.position, ep = e.s.position;
+  return Math.abs((y - Math.max(BH.WATER, groundH(tp.x, tp.z))) - (e.baseY - Math.max(BH.WATER, groundH(ep.x, ep.z))));
+}
 // 近接兵は高所（櫃・武者走り）の相手には届かないので、地上の相手を優先する
 // 近接兵の守り：自分の組の弓兵に迫る近接兵を優先して迎え撃ち、守られた弓兵は後回し
 const SCREEN = { rate: 0.45, guardR: 10, interceptK: 0.45, archerK: 1.3, kiteR: 8, kiteAggR: 4, holdOut: 4.5 };
@@ -3704,12 +4784,13 @@ function chooseTarget(e) {
   const cands = CASTLE.on && !melee ? [] : null;
   const consider = (t, x, z, y) => {
     if (CASTLE.on && !castleCanTarget(e, t, x, z)) return;
+    if (BEACH.on && !beachCanTarget(e, t, x, z)) return;
     if (e.guard && !guardCanTarget(e, x, z)) return;   // 近衛：殿の近くの敵だけ
     let d = Math.hypot(x - p.x, z - p.z);
     if (t.medic) d *= t.medPhase === 'treat' ? 0.55 : 0.85;   // 医療係は狙われやすい（手当て中は止まっている）
     if (mine && t.kind === 'mob' && !t.special && !t.isPlayer && mine.some(a => Math.hypot(a.s.position.x - x, a.s.position.z - z) < SCREEN.guardR)) d *= SCREEN.interceptK;   // 味方の弓兵に迫る近接兵を迎え撃つ
     else if (melee && t.kind === 'archer' && d > 5 && !e.raider) d *= SCREEN.archerK;   // 弓兵より先に前に立つ近接兵と当たる
-    if (melee && Math.abs(y - e.baseY) > 1.5) d += fortGate && !e.special && (e.onFloor || tgtFloor(t)) ? (e.raider && inFort(p.x, p.z) ? 2 : 14) : 80;   // 梯子で届く高所は少し遠い扱い（梯子攻め役は砦に入ると櫓を狙う）
+    if (melee && !BEACH.on && Math.abs(y - e.baseY) > 1.5) d += (fortGate || (CASTLE.on && CASTLE.phase >= 1)) && !e.special && (e.onFloor || tgtFloor(t)) ? (e.raider && (fortGate ? inFort(p.x, p.z) : castleRegion(p.x, p.z) >= 1) ? 2 : 14) : 80;   // 梯子で届く高所は少し遠い扱い（梯子攻め役は砦に入ると櫓を狙う）
     if (melee && t.lad && t.team !== e.team && t.baseY < 1.6) d *= 0.6;   // 梯子に取り付いた敵を下で迎え撃つ
     if (cands) { cands.push([d, t]); return; }
     if (d < bd) { bd = d; best = t; }
@@ -3737,6 +4818,7 @@ function planeClamp(pos, r) {
 function routeTo(p, tx, tz) {
   if (PLANE.on) return planeRoute(p, tx, tz);
   if (CASTLE.on) return castleRoute(p, tx, tz);
+  if (BEACH.on) return beachRoute(p, tx, tz);
   const g = fortGate; if (!g) return [tx, tz];
   const pin = inFort(p.x, p.z);
   if (pin === inFort(tx, tz)) return [tx, tz];
@@ -3760,7 +4842,7 @@ function pushOutBoxes(pos, r, y0, y1) {
 }
 function hitsBox(p, team) {
   for (const b of boxes) if (p.x > b.x0 && p.x < b.x1 && p.z > b.z0 && p.z < b.z1 && p.y > b.y0 && p.y < b.y1) {
-    if (b.slits && p.y > b.sy0 && p.y < b.sy1) { const w = team === 'orange' ? 0.16 : 0.42; if (b.slits.some(sx => Math.abs(p.x - sx) < w)) continue; }   // 狭間：内からは通しやすく、外からは細い
+    if (b.slits && p.y > b.sy0 && p.y < b.sy1) { const w = slitHalfW(b, team); if (b.slits.some(sx => Math.abs(p.x - sx) < w)) continue; }   // 狭間：内からは通しやすく、外からは細い
     return true;
   }
   return false;
@@ -3858,7 +4940,7 @@ function npcLadder(e, dt) {
   if (!L.F) { endClimb(e, 10); return; }
   if (c.ph === 'go') {
     const [gx, gz] = c.up ? P.base : P.top, d = Math.hypot(gx - p.x, gz - p.z);
-    if (c.up && e.tgt && Math.abs(tgtY(e.tgt) - e.baseY) < 1.2 && Math.hypot((e.tgt.isPlayer ? player.pos : e.tgt.s.position).x - p.x, (e.tgt.isPlayer ? player.pos : e.tgt.s.position).z - p.z) < 7) { endClimb(e, 4); return; }   // 下で敵に迫られたら上るのをやめて戦う
+    if (c.up && e.tgt && elevD(e) < 1.2 && Math.hypot((e.tgt.isPlayer ? player.pos : e.tgt.s.position).x - p.x, (e.tgt.isPlayer ? player.pos : e.tgt.s.position).z - p.z) < 7) { endClimb(e, 4); return; }   // 下で敵に迫られたら上るのをやめて戦う
     if (d > 0.45) {
       if (c.up) {
         let wx = gx, wz = gz; const T = L.seiran;
@@ -3900,7 +4982,7 @@ function npcLadder(e, dt) {
 // 床の上で戦う NPC：同じ高さに相手がいなくなったら最寄りの梯子で下りる
 function maybeDescend(e) {
   if (!e.onFloor || e.lad || e.perch || (e.noClimbT || 0) > 0) return;
-  if (e.tgt && Math.abs(tgtY(e.tgt) - e.baseY) < 1.2) return;
+  if (e.tgt && elevD(e) < 1.2) return;
   const L = ladderTo(e.onFloor, e.s.position.x, e.s.position.z);
   if (L) startClimb(e, L, false); else e.onFloor = null;
 }
@@ -3940,6 +5022,7 @@ function steer(e, tx, tz, sp, dt) {
   if (e.perch) return 0;
   if (e.wounded) sp *= WOUND_SPEED;
   const p = e.s.position;
+  if (BEACH.on) { if (p.z > 11 && p.z < 23) sp *= 0.72; else if (p.z > BH.Z1 && p.z < BH.Z2 && tz > p.z) sp *= 0.85; }   // 乱杭の中・斜面の上り
   if (PLANE.on && bodies.length) { const h = pileAt(p.x, p.z); if (h > 0) sp *= h > 0.5 ? 0.3 : 0.5; }   // 倒れた娘をまたぐ・乗り越える
   const rt = routeTo(p, tx, tz), routed = rt[0] !== tx || rt[1] !== tz;
   if (CASTLE.on) castleDoorTouch(e, rt[0], rt[1]);   // 閉じた襖：通るなら開ける
@@ -4316,7 +5399,13 @@ const FOLLOW_TEXT = {
   sec3: ['お待ちください、殿！ お怪我をされては…！'], sec4: ['危ないですよ！ 私もお供します！'],
   surgeon: ['殿、お待ちを！ 救護班もお供します。'], nurse: ['危ないですよ、殿！ 待ってください！'],
 };
+const CAR_RING = [[1.0, 0.2], [-1.0, 0.4], [1.0, -1.3], [-1.0, -1.3], [0, -1.6], [0.9, -2.6], [-0.9, -2.6], [0, -3.4]];
+function carRingPt(i, out = 1.4) {   // 殿が車に乗っている間：車の横と後ろ（前には立たない）
+  const [rx, rz] = CAR_RING[i % CAR_RING.length], lx = rx ? Math.sign(rx) * (CAR_W / 2 + out + (i >= 8 ? 1 : 0)) : 0, lz = rz < -1.5 ? -CAR_L / 2 + rz + 0.3 : rz;
+  return carW(lx, lz);
+}
 function followPt(i) {   // 殿の後ろに扇形に並ぶ位置
+  if (CAR.riding && carOn()) return carRingPt(i + 2, 1.0);
   const a = player.yaw + Math.PI + ((i % 5) - 2) * 0.42, r = 1.6 + (i % 3) * 0.55;   // v7：秘書課・救護は内側（近衛分隊は 2.8〜3.6m の外側）
   return [player.pos.x + Math.sin(a) * r, player.pos.z + Math.cos(a) * r];
 }
@@ -4403,7 +5492,7 @@ function aideSay0(A, key) {
   let text;
   if (L && L.length) { const j = (Math.random() * L.length) | 0; text = L[j].text; if (!VoicePack.play(L[j].files[0], d, 1)) Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1); }
   else { text = pick(AIDE_TEXT[key]); Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1); }
-  subtitle(A.name.replace('秘書課 ', '') + '「' + text + '」');
+  subtitle(text); { const el = $('subtitle'); if (el) el.textContent = A.name.replace('秘書課 ', '') + '「' + text + '」'; }
 }
 function updateAides(dt) {
   updateFollow(dt);
@@ -4903,10 +5992,15 @@ function updateEnemies(dt) {
     }
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
     let lean = 0;
-    e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || e.runner || !!e.hold || !!e.seated || !!e.hiddenAmb;   // hold: テスト用に止める／seated: 機内の席に座っている
+    e.bowSeat = BEACH.on && e.seated && e.seated.boat && e.kind === 'archer' && !e.special && e.seated.boat.z > -42 && !e.seated.boat.beached;   // 浜：舟の弓兵は漕ぎながら射る
+    e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || e.runner || !!e.hold || (!!e.seated && !e.bowSeat) || !!e.hiddenAmb;   // hold: テスト用に止める／seated: 機内の席に座っている
     e.defending = e.armed && !e.hold && !(e.polishT > 0) && !(e.secretary && sec.mode !== 'hq') ? secThreat(e) : null;   // 護衛中の秘書は通常の戦い方
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
-    if (e.seated) seatedBrain(e, dt);
+    if (e.seated && !e.bowSeat) seatedBrain(e, dt);
+    else if (e.carCall && carCallBrain(e, dt)) { /* 運転を代わりに行く */ }
+    else if (SMOKE.clouds.length && smokeFlee(e, dt)) { /* 毒煙から逃げる */ }
+    else if (e.smoker && !e.hold && smokerBrain(e, dt)) { /* 毒煙玉を投げる */ }
+    else if (e.knife === false && e.kind === 'archer' && !e.hold && npcKnifeFetch(e, dt)) { /* 投げた懐刀を拾いに行く */ }
     else if (e.sec2 && !e.hold && !e.defending) { e.passive = true; sec2Brain(e, dt); }
     else if (e.ojou && !e.hold && !e.defending) { e.passive = true; ojouBrain(e, dt); }
     else if (e.medic && !e.hold) medicBrain(e, dt);
@@ -4945,10 +6039,11 @@ function updateEnemies(dt) {
       if (e.perch) { if (e.state !== 'hide') { e.state = 'hide'; e.hideT = 1; npcTint(e, 0); } }
       else if (e.returning && hq) steer(e, hq.sx, hq.sz, e.speed, dt);
       else if (e.secretary) {   // 護衛：プレイヤーの斜め後ろについて歩く
-        const fx = player.pos.x + Math.sin(player.yaw) * 2.2 + Math.cos(player.yaw) * 1.4, fz = player.pos.z + Math.cos(player.yaw) * 2.2 - Math.sin(player.yaw) * 1.4;
+        let fx = player.pos.x + Math.sin(player.yaw) * 2.2 + Math.cos(player.yaw) * 1.4, fz = player.pos.z + Math.cos(player.yaw) * 2.2 - Math.sin(player.yaw) * 1.4;
+        if (CAR.riding && carOn()) [fx, fz] = carRingPt(1, 1.0);
         if (Math.hypot(fx - p.x, fz - p.z) > 0.8) steer(e, fx, fz, Math.hypot(fx - p.x, fz - p.z) > 6 ? e.speed * 1.4 : e.speed, dt);
       } else {
-        const cs = CASTLE.on && e.team === 'blue' ? castleIdleSpot(e) : null;
+        const cs = CASTLE.on && e.team === 'blue' ? castleIdleSpot(e) : BEACH.on ? beachIdleSpot(e) : null;
         const fx = cs ? cs[0] : fortGate ? Math.cos(e.ph) * 7 : player.pos.x + Math.cos(e.ph) * 5;
         const fz = cs ? cs[1] : fortGate ? 9 + Math.sin(e.ph) * 3 : player.pos.z + 4 + Math.sin(e.ph) * 3;
         if (Math.hypot(fx - p.x, fz - p.z) > 1.5) steer(e, fx, fz, e.speed, dt);
@@ -4960,7 +6055,8 @@ function updateEnemies(dt) {
       const nx = dx / dist, nz = dz / dist;
       if (!e.spotted && dist < 32) { e.spotted = true; npcSay(e, 'spot', 0, e.team === 'orange' ? 0.45 : 0.25); }
 
-      if (e.state === 'retreat') {            // 臆病：被弾すると一旦下がる
+      if (e.state === 'kthrow' || npcKnifeStart(e, dist, dt)) npcKnifeStep(e, dt, nx, nz);   // v8：近い相手へ懐刀を投げる
+      else if (e.state === 'retreat') {            // 臆病：被弾すると一旦下がる
         steer(e, p.x - nx * 10, p.z - nz * 10, e.speed * 1.2, dt);
         e.retreatT -= dt;
         if (e.retreatT <= 0) { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.cover = null; }
@@ -4997,6 +6093,7 @@ function updateEnemies(dt) {
         if (!e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) * (PLANE.on ? 0.45 : 1) || (dist < (PLANE.on ? 2.5 : 6) && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
         if (e.state === 'advance' && e.team === 'orange' && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; if (!tryArcherClimb(e)) seiranBoard(e); }
         if (e.climb) seiranClimb(e, dt);
+        else if (e.state === 'advance' && BEACH.on && dist < (e.team === 'orange' ? 52 : e.bowSeat ? 46 : 40) && e.t > (e.bowSeat ? 0.6 : 1.4) && ammoOK(e)) { e.state = 'aim'; e.t = 0; e.cover = null; }   // 浜：斜面越しに、その場で射る
         else if (e.state === 'advance') {
           if (!e.cover || e.t > 8) {
             e.t = 0;
@@ -5067,14 +6164,14 @@ function updateEnemies(dt) {
             if (c) { e.cover = c; e.state = 'tocover'; e.t = 0; }
             else e.hid = true;
           }
-          const elev = Math.abs(tgtY(e.tgt) - e.baseY) > 1.5;      // 櫃の上などには届かない
+          const elev = elevD(e) > 1.5;      // 櫃の上などには届かない
           const rt = routeTo(p, tx, tz), routed = rt[0] !== tx || rt[1] !== tz;
           if (e.team === 'blue' && allyStance === 'def' && dist > 16 && e.state === 'approach') {   // 守勢：持ち場で待つ
             const gx = fortGate ? clamp(e.px, -8, 8) : player.pos.x + Math.cos(e.ph) * 6, gz = fortGate ? 6 + (e.ph % 3) : player.pos.z - 4 + Math.sin(e.ph) * 3;
             if (Math.hypot(gx - p.x, gz - p.z) > 1.5) steer(e, gx, gz, e.speed, dt);
             e.state = 'approach';
           } else
-          if (e.state === 'approach' && elev && fortGate && tgtY(e.tgt) > e.baseY && tryClimb(e, tgtFloor(e.tgt))) { /* 梯子へ */ }
+          if (e.state === 'approach' && elev && (fortGate || (CASTLE.on && CASTLE.phase >= 1)) && tgtY(e.tgt) > e.baseY && tryClimb(e, tgtFloor(e.tgt))) { /* 梯子へ */ }
           else if (e.state === 'approach' && routed) steer(e, rt[0], rt[1], e.speed, dt);
           else if (e.state === 'approach' && elev) { if (dist > 4) steer(e, tx, tz, e.speed, dt); }
           else if (e.state === 'approach' && e.screen && dist > SCREEN.guardR && screenHold(e, tx, tz, dt)) { /* 弓兵の前に立って待つ */ }
@@ -5109,7 +6206,7 @@ function updateEnemies(dt) {
             const d2 = Math.hypot(tx - p.x, tz - p.z);
             const miss = e.yari && d2 < YARI.inside && Math.random() < 0.55;   // 槍：懐に入られると突きが外れやすい
             if (e.yari) e.cd += 0.5;
-            if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : MELEE_RANGE) && Math.abs(tgtY(e.tgt) - e.baseY) < 1.2) {
+            if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : MELEE_RANGE) && elevD(e) < 1.2) {
               if (e.tgt.isPlayer) hurtPlayer(e.dmg);
               else {
                 const tp2 = e.tgt.s.position;
@@ -5135,6 +6232,9 @@ function updateEnemies(dt) {
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
     if (PLANE.on && !e.seated) planeClamp(p, 0.28);
     if (e.onFloor && !e.lad && !e.perch) { const F = e.onFloor; p.x = clamp(p.x, F.x0 + 0.25, F.x1 - 0.25); p.z = clamp(p.z, F.z0 + 0.25, F.z1 - 0.25); }   // 床から落ちない
+    if (e.bowSeat) { p.x = e.seated.x; p.z = e.seated.z; e.baseY = e.seated.boat.floor.y; }
+    if (BEACH.on) beachFeet(e, p);
+    if (!e.seated && CAR.g) carPush(p, 0.3);
     p.y = e.baseY;
     if (PLANE.on && !e.seated) { const h = bodies.length ? pileAt(p.x, p.z) * 0.8 : 0; e.overY = (e.overY || 0) + (h - (e.overY || 0)) * Math.min(1, dt * 8); p.y += e.overY; }   // 倒れた娘の上に足を載せる
     animateNpc(e, dt, lean);
@@ -5269,10 +6369,11 @@ function updateArrows(dt) {
       scene.remove(a.m); arrows.splice(i, 1); continue;      // 3D の矢は消え、スプライトに刺さった矢が残る
     }
     let boxHit;
-    if (CASTLE.on) {   // 城：薄い襖・壁も線分で判定（すり抜けない）。狭間の窓は通す
+    if (CASTLE.on || BEACH.on) {   // 城・浜：薄い襖・壁も線分で判定（すり抜けない）。狭間の窓は通す
       boxHit = false;
       if (a.team === 'player' || a.life > 0.06 || a.shooter && !a.shooter.perch) { const t = castleSegHit(p0, p1, a.team); if (t >= 0) { p1.lerpVectors(p0, p1, Math.max(0, t - 0.02)); boxHit = true; } }
     } else boxHit = (a.team === 'player' || a.life > 0.08) && boxes.length && hitsBox(p1);
+    if (TEST && (boxHit || hitsCover(p1))) { const A = window.__arr || (window.__arr = {}); const k = a.team + (boxHit ? ':box' : ':cov') + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
     if (boxHit) { hitWood(p1); noteTowerHit(p1, a.team === 'orange' ? 'orange' : 'blue'); }
     const cv = boxHit ? null : hitsCover(p1);
     if (cv || boxHit) {   // 竹林・竹束・木の壁が矢を防ぐ
@@ -5282,8 +6383,9 @@ function updateArrows(dt) {
     }
     const fl = floorUnder(p1.x, p1.z, p1.y);
     if (p1.y <= fl + 0.02) {
-      p1.y = fl + 0.05; a.stuck = true; a.life = 0;
-      if (fl > 0.1) Sfx.impactWood(p1);
+      p1.y = fl + 0.05; a.stuck = true; a.life = 0; if (TEST) { const A = window.__arr || (window.__arr = {}); const k = a.team + ':gnd' + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
+      if (BEACH.on && p1.z < 0 && fl <= BH.WATER + 0.01) { puff(p1.clone(), 0xdfeef5, 4, 0.5, 1.2, 0.5); Sfx.impactGround(p1); }
+      else if (BEACH.on ? (floors.some(f => f.y === fl)) : fl > 0.1) Sfx.impactWood(p1);
       else { puff(p1.clone(), 0xc8b48a, 3, 0.4, 0.9, 0.5); Sfx.impactGround(p1); }   // 土埃
     }
     if (a.life > 6) { scene.remove(a.m); arrows.splice(i, 1); }
@@ -5378,7 +6480,7 @@ function updateHud(dt) {
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
   setText('wavetxt', `第${waveName(Math.max(1, wave.n))}波`);
-  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}${castleHud()}`);
+  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}${castleHud()}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);
@@ -5488,7 +6590,8 @@ function drawWeapon() {
     wg.strokeStyle = player.charge >= 0.95 ? '#ffe38a' : 'rgba(255,255,255,.7)'; wg.lineWidth = 3;
     wg.beginPath(); wg.arc(W / 2, H / 2, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * player.charge); wg.stroke();
   }
-  if (player.weapon === 0) drawBow(W, H, bobX, bobY); else drawDagger(W, H, bobX, bobY);
+  { const v = CAR.riding ? 'hidden' : 'visible'; if (wc.style.visibility !== v) wc.style.visibility = v; }   // 助手席では武器の絵を出さない
+  if (CAR.riding) { /* 助手席：武器は膝の上（描かない） */ } else if (player.weapon === 0) drawBow(W, H, bobX, bobY); else if (player.knife !== false) drawDagger(W, H, bobX, bobY);
 }
 function drawBow(W, H, bx, by) {
   const c = player.drawing ? player.charge : 0;
@@ -5661,11 +6764,12 @@ function setupTouch() {
     b.addEventListener('touchend', ev => { ev.preventDefault(); ev.stopPropagation(); }, opt);
   };
   tapBtn('bWpn', () => setWeapon(player.weapon ^ 1));
+  tapBtn('bThrow', () => { if (player.weapon !== 1) setWeapon(1); else playerThrowKnife(); });
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
   tapBtn('bTalk', () => { if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
-  tapBtn('bLad', () => { if (!castleUse()) ladderGo(); });
+  tapBtn('bLad', () => { if (carUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
   document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen')) e.preventDefault(); }, opt);
@@ -5714,7 +6818,8 @@ addEventListener('keydown', e => {
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
   if (e.code === 'KeyT') onigiriRemark();
-  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (castleDoorClose() && castleUse()) { /* すぐ前の襖を優先 */ } else if (sec.near) openSecMenu(); else if (!castleUse()) ladderGo(); }
+  if (e.code === 'KeyF' && state === 'play' && !menuOpen) { if (player.weapon === 1) playerThrowKnife(); else popup('懐刀に持ち替えて（2）から F／右クリックで投げる'); }
+  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (carUse()) { /* 軽自動車の乗り降り */ } else if (castleDoorClose() && castleUse()) { /* すぐ前の襖を優先 */ } else if (sec.near) openSecMenu(); else if (!castleUse()) ladderGo(); }
   if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -5732,16 +6837,18 @@ document.addEventListener('mousedown', e => {
   if (!locked() && !TEST) { lock(); return; }
   if (e.button === 0) primaryDown();
   if (e.button === 2 && player.drawing) { player.drawing = false; player.charge = 0; }
+  if (e.button === 2 && player.weapon === 1) playerThrowKnife();   // v8：懐刀を投げる
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('wheel', e => { if (!MOBILE && state === 'play') setWeapon(player.weapon ^ 1); }, { passive: true });
 function primaryDown() {
+  if (CAR.riding && carOn()) { carCommand(); return; }
   if (player.switchT > 0.15) return;
   if (player.weapon === 0) {
     if (player.arrows <= 0) { Sfx.empty(); popup('矢がない！'); return; }
     player.drawing = true; player.charge = 0; Sfx.drawCreak();
-  } else swing();
+  } else if (!player.knife) popup('懐刀は投げた — 拾うか、弓に持ち替える（右クリック／F で投げる）'); else swing();
 }
 function primaryUp() {
   if (player.weapon === 0 && player.drawing) {
@@ -5787,9 +6894,12 @@ function resetGame() {
   if (builtStage === 'fort') player.pos.set(-12, 6, 8.6);   // 左の櫃の上から
   else if (builtStage === 'plane') player.pos.set(-0.95, 0, 17.8);   // ラウンジの殿の席
   else if (builtStage === 'castle') { player.pos.set(-1, 0, 65.6); castleReset(); }   // 奥御殿の本陣から
+  else if (builtStage === 'beach') beachReset();   // 殿の舟の屋形の中
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : LOOK0.hemi[2];
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
+  if (CAR.g && builtStage === 'plains') carReset();
+  smokeReset(); knifeReset();
 }
 function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
@@ -5819,8 +6929,9 @@ function toTitle() {
   state = 'title'; resetGame(); removeSecretary(); removeFluter();
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }
-function gameOver() {
-  state = 'over'; player.drawing = false;
+function gameOver(win) {
+  state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (BEACH.on ? 'すべてのトーチカを制圧した' : '勝利') : 'あなたに戦死判定が下った'; }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   $('over').style.display = 'flex';
@@ -5845,12 +6956,15 @@ function updateLadderHint() {
   else if (n) { const what = n.L.seiran ? '井闌の梯子' : '梯子'; t = MOBILE ? `${what}：スティックを${n.up ? '前' : '後ろ'}に倒す／「梯子」ボタン` : `${what}：${n.up ? 'W（前進）で上る' : 'S（後退）で下りる'}　E で自動`; }
   const dr = !n && !player.autoClimb && state === 'play' && !menuOpen ? castleDoorNearHint() : null;   // 城：襖
   if (dr) t = MOBILE ? `襖：「襖」ボタンで${dr.open ? '閉める' : '開ける'}` : `襖：E で${dr.open ? '閉める' : '開ける'}`;
-  if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr);
-    const bl = $('bLadL'); if (bl) bl.textContent = dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る';
-    const bt = document.querySelector('#bLad span'); if (bt) bt.textContent = dr ? '襖' : '梯子'; }
+  const ch = !menuOpen && carOn() ? carHint() : '', car = !!ch;   // v8：軽自動車
+  if (car) t = ch;
+  if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr || car);
+    const bl = $('bLadL'); if (bl) bl.textContent = car ? (CAR.riding ? '降りる' : '乗る') : dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る';
+    const bt = document.querySelector('#bLad span'); if (bt) bt.textContent = car ? '車' : dr ? '襖' : '梯子'; }
 }
 function updatePlayer(dt) {
   updateLadderHint();
+  if (CAR.riding && carOn()) { carSeatPlayer(); carCamera(dt); return; }   // 軽自動車の助手席
   // 移動
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
   let mx = 0, mz = 0;
@@ -5913,6 +7027,7 @@ function updatePlayer(dt) {
   if (PLANE.on) { player.autoClimb = null; player.climbing = false; }   // 機内に梯子は無い（他のステージの上り下りを持ち込まない）
   if (boxes.length) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, Math.min(player.pos.y + 1.75, PLANE.on ? 2.3 : 99));
   if (PLANE.on) planeClamp(player.pos, 0.35);
+  if (BEACH.on) beachPlayerClamp();
   let gh = floorUnder(player.pos.x, player.pos.z, player.pos.y);
   if (PLANE.on) {   // 倒れた娘の上に乗る（なめらかに）・天井に頭をぶつけない
     const ph = bodies.length ? pileAt(player.pos.x, player.pos.z) * 0.8 : 0;
@@ -5973,12 +7088,16 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
+    if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) updateCastle(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
   } else if (state === 'title') {
     time += dt;
-    if (builtStage === 'plane') {   // 機内：ラウンジから客室の奥を眺める
+    if (builtStage === 'beach') {   // 浜：沖から高台のトーチカを望む
+      if (BEACH.on) updateBeach(dt);
+      camera.position.set(Math.sin(time * 0.08) * 14, 4.5, -38); camera.lookAt(Math.sin(time * 0.05) * 6, 3.5, 40);
+    } else if (builtStage === 'plane') {   // 機内：ラウンジから客室の奥を眺める
       camera.position.set(Math.sin(time * 0.1) * 0.5, 1.5, 14.8 - Math.sin(time * 0.07) * 1.5);
       camera.rotation.set(-0.03, Math.sin(time * 0.08) * 0.35, 0);
     } else if (builtStage === 'castle') {   // 城：二の丸から大手門と櫓を眺める
@@ -6003,6 +7122,7 @@ function frame(now) {
   }
   for (const f of flags) f.mesh.rotation.y = Math.sin(time * 1.7 + f.ph) * 0.35;
   if (document.body.classList.contains('playing') !== (state === 'play')) document.body.classList.toggle('playing', state === 'play');
+  if (document.documentElement.classList.contains('dagger') !== (player.weapon === 1 && !!player.knife)) document.documentElement.classList.toggle('dagger', player.weapon === 1 && !!player.knife);
   if (MOBILE) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
   sky.position.copy(camera.position);
   if (PLANE.on) updatePlaneFx(state === 'play' ? dt : state === 'title' ? dt : 0);
@@ -6053,5 +7173,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { SMOKE, KNIFE, castleGateBreak, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

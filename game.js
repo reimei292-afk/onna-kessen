@@ -651,6 +651,7 @@ function loadStage(name) {
   road.visible = name === 'plains';
   if (name === 'fort') buildFort(); else buildPlains();
   builtStage = name;
+  stageReceiveShadows();
 }
 
 // ====================================================================
@@ -856,6 +857,7 @@ function stickArrow(e, pt, dir) {
   e.stuck.push(m); if (e.stuck.length > 10) { const o = e.stuck.shift(); o.parent && o.parent.remove(o); }
 }
 function disposeNpc(e) {
+  if (MOTION) Mo.free(e);
   scene.remove(e.s);
   for (const m of e.mats) m.dispose();
   scene.remove(e.bg); scene.remove(e.fg); e.fg.material.dispose(); scene.remove(e.mk);
@@ -873,6 +875,289 @@ const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d 
 // 被弾の閃光（白）と、攻撃の溜め（暖色）
 function npcGlow(e, r, g, b) { const t = e.tintBase || ZERO3; for (const m of e.mats) if (m.userData.uAdd) m.userData.uAdd.value.setRGB(r * 0.75 + t[0], g * 0.75 + t[1], b * 0.75 + t[2]); }
 const ZERO3 = [0, 0, 0];
+// ====================================================================
+//  モーション（?motion=0 で無効）
+//   実在の人の歩き・小走り・走り（CMU モーションキャプチャ）と、膝から崩れて倒れる動き（Quaternius CC0）を
+//   lib/motion_data.js に関節位置の表として焼き込み、写真の侍女の「動き」と「影・厚み」にだけ使う。
+//   ・写真の板：歩幅・足の運びに合わせた上下動・左右の揺れ・前傾・胴のひねり（性格・身長で個人差）
+//   ・見えない人形（円柱と球）：影だけを落とす（画面には描かない＝別人の体や顔は一切表示しない）
+//   ・倒れるとき：膝が抜けて沈み、腰を支点に前へ倒れる。倒れた体は人形の影と凸凹の接地影で厚みを出す
+// ====================================================================
+const MOTION = !/[?&]motion=0/.test(location.search) && !!window.MOTION_DATA;
+const MOTION_DBG = MOTION && /[?&]motiondbg=1/.test(location.search);   // 開発用：人形を半透明で表示
+const MSHADOW = MOTION && !/[?&]mshadow=0/.test(location.search);
+// 性格ごとの動きの癖（bob＝上下, sway＝左右, lean＝前傾, twist＝ひねり, cad＝歩調）
+const MSTYLE = { 好戦的: { bob: 1.0, sway: 0.85, lean: 1.35, twist: 1.1, cad: 1.05 }, 慎重: { bob: 0.8, sway: 0.9, lean: 1.0, twist: 0.8, cad: 0.97 },
+  臆病: { bob: 0.75, sway: 1.15, lean: 1.2, twist: 0.7, cad: 1.08 }, 冷静: { bob: 0.8, sway: 0.75, lean: 0.9, twist: 0.85, cad: 0.95 },
+  陽気: { bob: 1.35, sway: 1.2, lean: 0.95, twist: 1.25, cad: 1.02 } };
+const Mo = MOTION ? (() => {
+  const D = window.MOTION_DATA, JN = D.joints.length, N3 = JN * 3, I = {};
+  D.joints.forEach((k, i) => { I[k] = i * 3; });
+  const C = {};
+  for (const k in D.clips) {
+    const c = Object.assign({}, D.clips[k]); c.f = new Float32Array(c.f);
+    let hy = 0, lf = 0, ll = 0;
+    for (let i = 0; i < c.n; i++) { const o = i * N3; hy += c.f[o + I.hips + 1];
+      const uy = c.f[o + I.neck + 1] - c.f[o + I.hips + 1]; lf += Math.atan2(c.f[o + I.neck + 2] - c.f[o + I.hips + 2], uy); ll += Math.atan2(c.f[o + I.neck] - c.f[o + I.hips], uy); }
+    c.hipY = hy / c.n; c.leanF = lf / c.n; c.leanL = ll / c.n;   // 腰の平均の高さ、上体の平均の傾き（人による癖なので差し引く）
+    C[k] = c;
+  }
+  const GAITS = [C.walk, C.jog, C.run];
+  // 速さによる前傾（度）：小走り・走りは計測値（待機姿勢との差 約6°/12°）を写真向けに控えめに、歩きはほぼ直立
+  const LEAN_T = [1.5, 4.7, 8.5].map(d => d * Math.PI / 180);
+  const tmpA = new Float32Array(N3), tmpB = new Float32Array(N3);
+  function sample(c, u, out, w, acc) {
+    const n = c.n, x = c.loop ? (((u % 1) + 1) % 1) * n : clamp(u, 0, 1) * (n - 1);
+    const i0 = Math.floor(x), f = x - i0, i1 = c.loop ? (i0 + 1) % n : Math.min(n - 1, i0 + 1), a = i0 * N3, b = i1 * N3, F = c.f;
+    for (let j = 0; j < N3; j++) { const v = F[a + j] + (F[b + j] - F[a + j]) * f; out[j] = acc ? out[j] + v * w : v * w; }
+  }
+  // 速さ（身長/秒）→ 歩き・小走り・走りの重み
+  function gaitW(sh, w) {
+    w[0] = w[1] = w[2] = 0;
+    if (sh <= GAITS[0].speed) w[0] = 1;
+    else if (sh <= GAITS[1].speed) { const t = (sh - GAITS[0].speed) / (GAITS[1].speed - GAITS[0].speed); w[0] = 1 - t; w[1] = t; }
+    else if (sh <= GAITS[2].speed) { const t = (sh - GAITS[1].speed) / (GAITS[2].speed - GAITS[1].speed); w[1] = 1 - t; w[2] = t; }
+    else w[2] = 1;
+  }
+  // ---- 影だけを落とす人形（InstancedMesh 2つ＝影の描画は2回だけ） ----
+  const CAP = 220;
+  const SEG = [['lHip', 'lKnee', 0.058], ['lKnee', 'lAnkle', 0.042], ['lAnkle', 'lToe', 0.03], ['rHip', 'rKnee', 0.058], ['rKnee', 'rAnkle', 0.042], ['rAnkle', 'rToe', 0.03],
+    ['hips', 'chest', 0.085], ['chest', 'neck', 0.075], ['neck', 'head', 0.03], ['lSh', 'lEl', 0.03], ['lEl', 'lWr', 0.025], ['rSh', 'rEl', 0.03], ['rEl', 'rWr', 0.025],
+    ['lSh', 'rSh', 0.04]].map(([a, b, r]) => [I[a], I[b], r]);
+  const SPH = [['head', 0.068, 0.012], ['hips', 0.09, 0], ['lHip', 0.065, 0], ['rHip', 0.065, 0], ['chest', 0.088, 0], ['lKnee', 0.045, 0], ['rKnee', 0.045, 0],
+    ['lAnkle', 0.034, 0], ['rAnkle', 0.034, 0], ['lSh', 0.04, 0], ['rSh', 0.04, 0], ['lEl', 0.028, 0], ['rEl', 0.028, 0], ['lWr', 0.026, 0], ['rWr', 0.026, 0]]
+    .map(([a, r, up]) => [I[a], r, up]);
+  const NS = SEG.length, NP = SPH.length;
+  let cyl = null, sph = null;
+  const free = []; for (let i = CAP - 1; i >= 0; i--) free.push(i);
+  let maxUsed = 0, dirty = false;
+  if (MSHADOW || MOTION_DBG) {
+    const mat = MOTION_DBG ? new THREE.MeshLambertMaterial({ color: 0x8899aa, transparent: true, opacity: 0.45 })
+      : new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    cyl = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 8, 1), mat, CAP * NS);
+    sph = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 7), mat, CAP * NP);
+    for (const m of [cyl, sph]) {
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.array = m.instanceMatrix.array; m.array.fill(0);
+      m.frustumCulled = false; m.castShadow = true; m.count = 0;
+      // 色も深度も書かない材質：画面には何も描かれず、太陽の影の描画にだけ使われる
+      scene.add(m);
+    }
+  }
+  function alloc() { if (!cyl || !free.length) return -1; const s = free.pop(); maxUsed = Math.max(maxUsed, s + 1); return s; }
+  function release(s) {
+    if (s < 0 || !cyl) return;
+    cyl.array.fill(0, s * NS * 16, (s + 1) * NS * 16); sph.array.fill(0, s * NP * 16, (s + 1) * NP * 16);
+    free.push(s); dirty = true;
+  }
+  // 人形の関節（体の座標：x=左, y=上, z=前、身長=1）を世界へ置き、円柱と球の行列を書く
+  const W = new Float32Array(N3);
+  function write(slot, P, ox, oy, oz, yaw, h) {
+    if (slot < 0 || !cyl) return;
+    const c = Math.cos(yaw), s = Math.sin(yaw);
+    for (let j = 0; j < N3; j += 3) { const x = P[j], z = P[j + 2]; W[j] = ox + (x * c + z * s) * h; W[j + 1] = oy + Math.max(0.02, P[j + 1]) * h; W[j + 2] = oz + (-x * s + z * c) * h; }
+    let a = cyl.array, o = slot * NS * 16;
+    for (const [ia, ib, r0] of SEG) {
+      const ax = W[ia], ay = W[ia + 1], az = W[ia + 2];
+      let dx = W[ib] - ax, dy = W[ib + 1] - ay, dz = W[ib + 2] - az; const L = Math.hypot(dx, dy, dz) || 1e-4; dx /= L; dy /= L; dz /= L;
+      // 軸に垂直な2本
+      let px, py, pz;
+      if (Math.abs(dz) < 0.9) { px = dy; py = -dx; pz = 0; } else { px = 0; py = dz; pz = -dy; }   // dir × z（z に近いときは dir × x）
+      const pl = Math.hypot(px, py, pz) || 1; px /= pl; py /= pl; pz /= pl;
+      const qx = py * dz - pz * dy, qy = pz * dx - px * dz, qz = px * dy - py * dx, r = r0 * h;
+      a[o] = px * r; a[o + 1] = py * r; a[o + 2] = pz * r; a[o + 3] = 0;
+      a[o + 4] = dx * L; a[o + 5] = dy * L; a[o + 6] = dz * L; a[o + 7] = 0;
+      a[o + 8] = qx * r; a[o + 9] = qy * r; a[o + 10] = qz * r; a[o + 11] = 0;
+      a[o + 12] = ax + dx * L / 2; a[o + 13] = ay + dy * L / 2; a[o + 14] = az + dz * L / 2; a[o + 15] = 1; o += 16;
+    }
+    a = sph.array; o = slot * NP * 16;
+    for (const [ij, r0, up] of SPH) {
+      const r = r0 * h;
+      a.fill(0, o, o + 16); a[o] = a[o + 5] = a[o + 10] = r; a[o + 12] = W[ij]; a[o + 13] = W[ij + 1] + up * h; a[o + 14] = W[ij + 2]; a[o + 15] = 1; o += 16;
+    }
+    dirty = true;
+  }
+  // 2関節の IK（股関節・足首を固定し、膝を前へ出す）
+  function legIK(P, h, k, a) {
+    const hx = P[h], hy = P[h + 1], hz = P[h + 2], ax = P[a], ay = P[a + 1], az = P[a + 2];
+    const d = Math.hypot(ax - hx, ay - hy, az - hz), L = 0.245, m = Math.min(d / 2, L * 0.999), e = Math.sqrt(L * L - m * m);
+    let ux = (ax - hx) / (d || 1), uy = (ay - hy) / (d || 1), uz = (az - hz) / (d || 1);
+    let fx = -ux * uz, fy = -uy * uz, fz = 1 - uz * uz; const fl = Math.hypot(fx, fy, fz) || 1;   // 前方向から軸成分を除く
+    P[k] = (hx + ax) / 2 + fx / fl * e; P[k + 1] = (hy + ay) / 2 + fy / fl * e; P[k + 2] = (hz + az) / 2 + fz / fl * e;
+  }
+  const UPPER = ['hips', 'lHip', 'rHip', 'chest', 'neck', 'head', 'lSh', 'lEl', 'lWr', 'rSh', 'rEl', 'rWr'].map(k => I[k]);
+  const ARMS_L = [I.lEl, I.lWr], ARMS_R = [I.rEl, I.rWr];
+  function setRel(P, j, base, x, y, z, w) { P[j] += (P[base] + x - P[j]) * w; P[j + 1] += (P[base + 1] + y - P[j + 1]) * w; P[j + 2] += (P[base + 2] + z - P[j + 2]) * w; }
+  const out = { bob: 0, sway: 0, surge: 0, roll: 0, twist: 0, w: 0 };
+  const _fm = new THREE.Matrix4(), ghosts = [];
+  return {
+    C, I, N3,
+    init(e) {
+      e.mo = { ph: Math.random(), gw: 0, aw: 0, cw: 0, wts: [1, 0, 0], st: MSTYLE[e.prof.pers] || MSTYLE.冷静, pose: new Float32Array(N3), slot: alloc(), lie: 0 };
+      e.stepT = e.mo.ph * Math.PI * 2;
+    },
+    free(e) { if (e.mo) { release(e.mo.slot); e.mo.slot = -1; } if (e.aoMesh) { e.aoMesh.parent && e.aoMesh.parent.remove(e.aoMesh); e.aoMesh.geometry.dispose(); e.aoMesh = null; } },
+    // 足の運び：実際の移動速度から歩調を決め、位相（0＝左足が前で接地）を進める。戻り値は従来の stepT（π ごとに一歩）
+    step(e, dt, sv) {
+      const mo = e.mo, sh = sv / e.figH; gaitW(sh, mo.wts);
+      let stride = 0; for (let i = 0; i < 3; i++) stride += GAITS[i].stride * mo.wts[i];
+      if (sh < GAITS[0].speed) stride *= Math.max(0.55, Math.sqrt(sh / GAITS[0].speed));   // ゆっくりのときは歩幅も縮む
+      mo.ph += dt * sh / stride * mo.st.cad;
+      return mo.ph * Math.PI * 2;
+    },
+    // 立っている・歩いている娘：姿勢を作り、板の動き（out）を返す。rel = カメラ方向 − 体の向き
+    drive(e, dt, sv, moving, acting, rel) {
+      const mo = e.mo, P = mo.pose, st = mo.st;
+      mo.gw += ((moving ? 1 : 0) - mo.gw) * Math.min(1, dt * 7);
+      mo.aw += ((acting ? 1 : 0) - mo.aw) * Math.min(1, dt * 8);
+      const crouch = Math.max(e.crouch || 0, e.kneel ? 1 : 0);
+      // 歩容（3つを同じ位相で混ぜる）と待機
+      tmpA.fill(0);
+      for (let i = 0; i < 3; i++) if (mo.wts[i] > 0.001) sample(GAITS[i], mo.ph, tmpA, mo.wts[i], true);
+      sample(C.idle, time / C.idle.dur + e.ph, tmpB, 1, false);
+      const g = mo.gw;
+      let hipMean = 0; for (let i = 0; i < 3; i++) hipMean += GAITS[i].hipY * mo.wts[i];
+      for (let j = 0; j < N3; j++) P[j] = tmpB[j] + (tmpA[j] - tmpB[j]) * g;
+      // ---- 板の動き（腰の上下・左右・前後、上体の傾き、肩と腰のひねり） ----
+      const amp = e.figH;
+      out.w = g;
+      out.bob = (tmpA[I.hips + 1] - hipMean) * amp * st.bob * 0.9;
+      out.sway = tmpA[I.hips] * amp * st.sway * 0.8;
+      out.surge = tmpA[I.hips + 2] * amp * 0.5;
+      const uy = tmpA[I.neck + 1] - tmpA[I.hips + 1];
+      let aF = Math.atan2(tmpA[I.neck + 2] - tmpA[I.hips + 2], uy), aL = Math.atan2(tmpA[I.neck] - tmpA[I.hips], uy);
+      for (let i = 0; i < 3; i++) { const w = mo.wts[i]; aF += w * (LEAN_T[i] - GAITS[i].leanF); aL -= w * GAITS[i].leanL; }
+      aF *= st.lean;
+      const ca = Math.cos(rel), sa = Math.sin(rel);
+      out.roll = -Math.asin(clamp(Math.sin(aL) * ca - Math.sin(aF) * sa, -0.5, 0.5)) * 0.85;   // 画面の上での体の傾き（横から見ると前傾、正面からは左右の揺れ）
+      const shY = Math.atan2(tmpA[I.lSh + 2] - tmpA[I.rSh + 2], tmpA[I.lSh] - tmpA[I.rSh]), hpY = Math.atan2(tmpA[I.lHip + 2] - tmpA[I.rHip + 2], tmpA[I.lHip] - tmpA[I.rHip]);
+      out.twist = angDiff(hpY, shY) * 0.35 * st.twist;
+      // ---- 影の人形：しゃがみ（IK）・構え ----
+      mo.cw += (crouch - mo.cw) * Math.min(1, dt * 6);
+      const cw = mo.cw;
+      if (cw > 0.01) {
+        const dy = cw * 0.27, hy = P[I.hips + 1];
+        for (const j of UPPER) { P[j + 1] -= dy; P[j + 2] += cw * 0.22 * Math.max(0, P[j + 1] + dy - hy); }
+        legIK(P, I.lHip, I.lKnee, I.lAnkle); legIK(P, I.rHip, I.rKnee, I.rAnkle);
+      }
+      const aw = mo.aw;
+      if (aw > 0.01) {
+        if (e.kind === 'archer') {   // 弓：左腕を的へ、右手は引き分けて肩口へ
+          setRel(P, I.lEl, I.lSh, 0.02, 0.01, 0.15, aw); setRel(P, I.lWr, I.lSh, 0.03, 0.03, 0.31, aw);
+          setRel(P, I.rEl, I.rSh, -0.07, 0.03, -0.05, aw); setRel(P, I.rWr, I.rSh, 0.05, 0.07, 0.04, aw);
+        } else {                      // 懐刀：右手を前へ突く
+          setRel(P, I.rEl, I.rSh, 0.0, -0.06, 0.15, aw); setRel(P, I.rWr, I.rSh, 0.04, -0.05, 0.3, aw);
+        }
+      }
+      if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.s.rotation.y, e.figH); }
+      return out;
+    },
+    // 倒れる（u: 0→1）。人形は倒れる向き fallYaw の座標で死の動きをたどる。板には腰の位置と上体の角度を返す
+    death(e, u) {
+      const mo = e.mo, P = mo.pose;
+      if (!isFinite(e.fallYaw)) e.fallYaw = e.s.rotation.y;
+      sample(C.death, u, P, 1, false);
+      if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.fallYaw, e.figH); }
+      const hx = P[I.hips], hy = P[I.hips + 1], hz = P[I.hips + 2];
+      const th = Math.atan2(P[I.neck + 2] - hz, P[I.neck + 1] - hy);
+      return { hx, hy, hz, th, hr: C.death.f[I.hips + 1] };
+    },
+    // 倒れる写真：体の軸（腰→首）を人形と同じに傾け、板はできるだけカメラへ向ける（横から見れば画面の中で倒れ、
+    // 手前・奥へ倒れるときは縮んで見える）。腰を支点にするので、膝が抜けると脚は地面の下に沈んで見えない
+    fallSprite(e, D, bounce) {
+      const H = e.figH, r = e.s.rotation.y, ry = e.fallYaw - r, th = D.th < 0 ? D.th * 0.3 : D.th, s = Math.sin(th), c = Math.cos(th);   // 最初の反り返り（攻撃側へ）は控えめに
+      const ux = Math.sin(ry) * s, uy = c, uz = Math.cos(ry) * s;
+      const p = e.s.position, wx = camera.position.x - p.x, wy = camera.position.y - (p.y + 0.4), wz = camera.position.z - p.z;
+      let cx = wx * Math.cos(r) - wz * Math.sin(r), cy = wy, cz = wx * Math.sin(r) + wz * Math.cos(r);
+      const d = cx * ux + cy * uy + cz * uz; cx -= d * ux; cy -= d * uy; cz -= d * uz;
+      let cl = Math.hypot(cx, cy, cz);
+      if (cl < 1e-3) { cx = 0; cy = 1; cz = 0; cl = 1; }
+      cx /= cl; cy /= cl; cz /= cl;
+      const xx = uy * cz - uz * cy, xy = uz * cx - ux * cz, xz = ux * cy - uy * cx;
+      _fm.set(xx, ux, cx, 0, xy, uy, cy, 0, xz, uz, cz, 0, 0, 0, 0, 1);
+      e.tilt.quaternion.setFromRotationMatrix(_fm);
+      const hx = D.hx * H, hz = D.hz * H, lx = hx * Math.cos(ry) + hz * Math.sin(ry), lz = -hx * Math.sin(ry) + hz * Math.cos(ry);
+      const hr = D.hr * H;
+      e.tilt.position.set(lx - ux * hr, Math.max(-hr, D.hy * H - uy * hr) - bounce, lz - uz * hr);
+    },
+    // 倒れ終わりの写真を 0.3 秒かけて薄くし、横たわった写真（down）へつなぐ
+    ghost(e) {
+      if (!e.fr) return;
+      e.bb.updateMatrixWorld(true);
+      const m = new THREE.Mesh(spriteGeo, new THREE.MeshBasicMaterial({ map: e.fr.tex, transparent: true, depthWrite: false, alphaTest: 0.05, side: THREE.DoubleSide }));
+      m.matrixAutoUpdate = false; m.matrix.copy(e.bb.matrixWorld); scene.add(m); ghosts.push({ m, t: 0 });
+    },
+    fade(dt) {
+      for (let i = ghosts.length - 1; i >= 0; i--) { const g = ghosts[i]; g.t += dt; g.m.material.opacity = Math.max(0, 1 - g.t / 0.3);
+        if (g.t >= 0.3) { scene.remove(g.m); g.m.material.dispose(); ghosts.splice(i, 1); } }
+    },
+    // 倒れた体の接地影（関節ごとの柔らかい影を1枚の形にまとめる）。e.s の座標（体の向き＝fallYaw）で作る
+    contactAO(e) {
+      if (!isFinite(e.fallYaw)) e.fallYaw = e.s.rotation.y;
+      const P = e.mo.pose, h = e.figH, ry = e.fallYaw - e.s.rotation.y, cr = Math.cos(ry), sr = Math.sin(ry), pts = [['hips', 0.17, 0.8], ['chest', 0.16, 0.85], ['head', 0.1, 0.7], ['lKnee', 0.075, 0.55], ['rKnee', 0.075, 0.55],
+        ['lAnkle', 0.06, 0.45], ['rAnkle', 0.06, 0.45], ['lEl', 0.06, 0.4], ['rEl', 0.06, 0.4], ['lSh', 0.08, 0.5], ['rSh', 0.08, 0.5]];
+      const pos = [], uv = [], col = [], idx = [];
+      pts.forEach(([k, r, a], n) => {
+        const j = I[k], x0 = P[j] * h, z0 = P[j + 2] * h, x = x0 * cr + z0 * sr, z = -x0 * sr + z0 * cr, R = r * h * 1.6;
+        pos.push(x - R, 0, z - R, x + R, 0, z - R, x + R, 0, z + R, x - R, 0, z + R);
+        uv.push(0, 0, 1, 0, 1, 1, 0, 1);
+        for (let q = 0; q < 4; q++) col.push(1, 1, 1, a);
+        const b = n * 4; idx.push(b, b + 2, b + 1, b, b + 3, b + 2);
+      });
+      const gq = new THREE.BufferGeometry();
+      gq.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); gq.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      gq.setAttribute('color', new THREE.Float32BufferAttribute(col, 4)); gq.setIndex(idx);
+      const m = new THREE.Mesh(gq, aoMat); m.position.y = 0.018; m.renderOrder = 1;
+      e.s.add(m); e.aoMesh = m;
+    },
+    flush() {
+      if (!cyl || !dirty) return;
+      cyl.count = maxUsed * NS; sph.count = maxUsed * NP;
+      cyl.instanceMatrix.needsUpdate = sph.instanceMatrix.needsUpdate = true; dirty = false;
+    },
+    get used() { return CAP - free.length; },
+  };
+})() : null;
+const aoMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, vertexColors: true, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2 });
+// 太陽の影（人形だけが落とす）：プレイヤーの周り ±34m を追いかける
+if (MSHADOW) {
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  sun.castShadow = true;
+  const S = sun.shadow, R = 34;
+  S.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
+  Object.assign(S.camera, { left: -R, right: R, top: R, bottom: -R, near: 20, far: 320 }); S.camera.updateProjectionMatrix();
+  S.bias = -0.0004; S.normalBias = 0.02; S.radius = 3;
+  scene.add(sun.target);
+  ground.receiveShadow = true; road.receiveShadow = true;
+  shadowMat.opacity = 0.6;   // 足元の丸い影は接地の陰りとして薄めに残す
+}
+const SUN_DIR = sun.position.clone().normalize();
+const MSHADOW_FORCE = /[?&]mshadow=1/.test(location.search);   // 自動の軽量化をしない（テスト撮影用）
+const shadowGuard = { t: 0, n: 0, sum: 0, level: 0, frame: 0 };
+if (MSHADOW && MOBILE) renderer.shadowMap.autoUpdate = false;   // スマホ：影は1フレームおきに更新
+function updateSunShadow(realDt) {
+  if (!MSHADOW || !sun.castShadow) return;
+  if (MOBILE) renderer.shadowMap.needsUpdate = (++shadowGuard.frame & 1) === 0;
+  // 重い端末では自動で軽く：まず影の解像度を下げ、それでも遅ければ太陽の影を止める（動き・接地影は残る）
+  if (state === 'play' && !MSHADOW_FORCE && realDt > 0) {
+    const G = shadowGuard; G.t += realDt; G.sum += realDt; G.n++;
+    if (G.t > 5) {
+      const avg = G.sum / G.n; G.t = G.sum = G.n = 0;
+      if (avg > 0.03) {
+        if (G.level === 0) { G.level = 1; sun.shadow.mapSize.set(1024, 1024); if (sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; } }
+        else { G.level = 2; sun.castShadow = false; shadowMat.opacity = 1; console.info('motion: sun shadows off (slow device)'); return; }
+      }
+    }
+  }
+  const c = player.pos, step = 68 / sun.shadow.mapSize.x;
+  const x = Math.round(c.x / step) * step, z = Math.round(c.z / step) * step;
+  sun.target.position.set(x, 0, z); sun.position.set(x + SUN_DIR.x * 160, SUN_DIR.y * 160, z + SUN_DIR.z * 160);
+  sun.target.updateMatrixWorld();
+}
+function stageReceiveShadows() {
+  if (!MSHADOW) return;
+  stageRoot.traverse(o => { if (o.isMesh && o.material && (o.material.isMeshLambertMaterial || o.material.isMeshStandardMaterial)) o.receiveShadow = true; });
+}
 function npcTint(e, k) { if (e.flash > 0) return; npcGlow(e, 0.3 * k, 0.14 * k, 0); }
 // 笛役の娘が正面写真しか無いときに持たせる横笛
 const fluteMat = { body: new THREE.MeshBasicMaterial({ color: 0x3a2416 }), band: new THREE.MeshBasicMaterial({ color: 0x0f0c0a }) };
@@ -1009,6 +1294,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
     tgt: null, tgtT: 0,
   };
   setFrame(e, g.front, false);
+  if (MOTION) Mo.init(e);
   if (e.perch) { e.perch.taken = e; e.state = 'hide'; e.hideT = rand(0.5, 2); e.crouch = 1; }
   if (opt.secretary) { e.secretary = true; e.special = true; e.speed = 4.2; s.rotation.y = e.face = Math.PI; e.home = [x, z]; }
   if (opt.sec2) {   // 二人目の秘書：青組の腕章とほんのり青
@@ -1061,6 +1347,7 @@ function spawnAlly() {
 const lieShadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.9, polygonOffset: true, polygonOffsetFactor: -2 });
 function startLying(e) {
   const fr = e.girl.down;
+  if (MOTION && e.mo) Mo.ghost(e);
   // 体の向き（足→頭＝fallYaw）に e.s を回し、刺さった矢を胴のあたりに残す
   e.s.rotation.y = e.fallYaw; e.tilt.rotation.y = 0; e.s.updateMatrixWorld(true);
   for (const a of e.stuck) e.s.attach(a);
@@ -1075,19 +1362,26 @@ function startLying(e) {
   dc.rotation.order = 'YXZ'; dc.rotation.set(-Math.PI / 2, Math.PI / 2, 0);   // 写真の左（頭）を体の頭の側へ
   dc.position.set(0, 0.025, e.figH * 0.5); e.s.add(dc); e.decal = dc; e.mats.push(dm);
   e.shadow.material = lieShadowMat; e.shadow.visible = true; e.shadow.position.set(0, 0.015, e.figH * 0.5); e.shadow.scale.set(0.6, 1, e.figH * 1.1);
+  if (MOTION && e.mo) {   // 厚み：人形の形の凸凹した接地影＋太陽の影。写真は沈めず、地面の写真も少し浮かせる
+    e.shadow.visible = false; Mo.contactAO(e);
+    e.tilt.position.y = 0.0; dc.position.y = 0.05;
+  }
 }
 function stopLying(e) {   // 手当てで起き上がるとき
   if (!e.lying) return;
   e.lying = null;
   if (e.decal) { e.s.remove(e.decal); e.decal = null; }
+  if (e.aoMesh) { e.s.remove(e.aoMesh); e.aoMesh.geometry.dispose(); e.aoMesh = null; }
   e.mat.transparent = false; e.mat.opacity = 1; e.mat.alphaTest = 0.42; e.mat.needsUpdate = true;
   e.tilt.position.set(0, 0, 0); e.tilt.rotation.set(Math.PI / 2, 0, 0);
-  e.shadow.material = shadowMat; e.shadow.position.set(0, 0.02, 0);
+  e.shadow.material = shadowMat; e.shadow.position.set(0, 0.02, 0); e.shadow.visible = true;
   setFrame(e, girlFrame(e.girl, 'side'), false);
 }
 function updateBodies(dt) {
+  if (MOTION) Mo.fade(dt);
   for (const b of bodies) {
-    const ly = b.lying; if (!ly) continue;
+    const ly = b.lying;
+    if (!ly) { if (MOTION && b.mo && b.mo.D && b.state === 'down') Mo.fallSprite(b, b.mo.D, 0); continue; }   // down の写真が無い娘：倒れた写真をカメラへ向け続ける
     ly.t += dt;
     const p = b.s.position, fy = b.fallYaw;
     const cx = p.x + Math.sin(fy) * b.figH * 0.5, cz = p.z + Math.cos(fy) * b.figH * 0.5;
@@ -1218,6 +1512,7 @@ function toBodies(e) {
   npcGlow(e, 0, 0, 0);
   e.shadow.visible = false;
   if (e.girl.down) startLying(e);
+  else if (MOTION && e.mo) Mo.contactAO(e);
   bodies.push(e);
   while (bodies.length > CFG.maxBodies) disposeNpc(bodies.shift());
 }
@@ -1812,7 +2107,7 @@ function animateNpc(e, dt, lean) {
   const moving = !acting && sv > 0.35;
   // 足音
   if (moving) {
-    const ph = Math.floor((e.stepT += dt * sv * 1.5) / Math.PI);
+    const ph = Math.floor((MOTION ? (e.stepT = Mo.step(e, dt, sv)) : (e.stepT += dt * sv * 1.5)) / Math.PI);   // モーション：実際の歩調（左右の接地）で一歩
     if (ph !== e.stepPh) {
       e.stepPh = ph;
       if (stepBudget > 0) { const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < 16) { stepBudget--; Sfx.step(e.baseY > 0.3, sv > 3.1 ? 0.9 : 0.6, p); } }
@@ -1890,9 +2185,16 @@ function animateNpc(e, dt, lean) {
     e.band.scale.set(front ? 0.075 : 0.085, 0.05, 1);
     e.band.position.set(front ? (fr === g.back ? 0.115 : -0.115) * h : (fr === g.kneel ? 0.135 : 0.01) * h * sg, (fr === g.kneel ? 0.44 : 0.73) * h, 0.03);
   }
+  // モーション：実際の歩き・走りの腰と上体の動き（上下・左右・前後・傾き・ひねり）を板に移す。止まると元の呼吸へ戻る
+  let sway = 0, surge = 0, twist = 0;
+  if (MOTION) {
+    const o = Mo.drive(e, dt, sv, moving && !e.kneel, acting, camYaw - f), w = o.w;
+    bob += (o.bob - bob) * w; rock += (o.roll - rock) * w;
+    sway = o.sway * w; surge = o.surge * w; twist = o.twist * w;
+  }
   // ビルボード（Y 軸のみ）：板をカメラへ向ける
-  e.tilt.rotation.set(0, camYaw - f, lean * 0.5 + rock);
-  e.tilt.position.y = bob - e.crouch * 0.42 * e.figH;          // 物陰ではしゃがむ（体が沈む）
+  e.tilt.rotation.set(0, camYaw - f + twist, lean * 0.5 + rock);
+  e.tilt.position.set(sway, bob - e.crouch * 0.42 * e.figH, surge);          // 物陰ではしゃがむ（体が沈む）
 }
 // ---- NPC の行動 ----
 const tmp = new V3();
@@ -1906,6 +2208,7 @@ function updateEnemies(dt) {
       e.t += dt; p.y = e.baseY;
       const k = Math.min(1, e.t / 0.9), q = 1 - (1 - k) * (1 - k);
       e.tilt.rotation.x = (1 - q) * Math.PI / 2; e.tilt.position.y = 0;
+      if (MOTION && e.mo) Mo.death(e, 1 - q);   // 影の人形も倒れた姿勢から起き上がる
       e.shadow.scale.set(0.75 + (1 - q) * 0.4, 1, 0.6 + (1 - q) * 0.9 * e.figH);
       if (k >= 1) { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; e.cd = 1; e.tilt.rotation.x = 0; e.shadow.scale.set(0.75, 1, 0.6); }
       continue;
@@ -1914,6 +2217,11 @@ function updateEnemies(dt) {
       // 戦死判定：横向きの写真が倒れる方向へ伏せる（一度きり）。伏せたらそのまま静止して残る
       e.t += dt;
       p.y = e.baseY;
+      if (!e.fallInit && MOTION) {   // モーション：今の写真のまま（切り替えのちらつきなし）倒れる
+        e.fallInit = true; e.tilt.updateMatrixWorld(true);
+        for (const a of e.stuck) e.tilt.attach(a);
+        if (e.fluteMesh) e.fluteMesh.visible = false;
+      }
       if (!e.fallInit) {
         e.fallInit = true;
         const fr = girlFrame(e.girl, 'side');
@@ -1922,6 +2230,17 @@ function updateEnemies(dt) {
         e.tilt.position.y = 0; e.tilt.updateMatrixWorld(true);
         for (const a of e.stuck) e.tilt.attach(a);
         if (e.fluteMesh) e.fluteMesh.visible = false;
+      }
+      if (MOTION) {   // 膝が抜けて沈み、腰を支点に倒れる（Quaternius の倒れる動きの腰と上体の角度）
+        const T = e.fallT2 || (e.fallT2 = rand(0.82, 1.0)), u = Math.min(1, e.t / T), D = Mo.death(e, u), H = e.figH;
+        e.mo.D = D;
+        Mo.fallSprite(e, D, u >= 1 ? Math.sin(Math.min(1, (e.t - T) / 0.22) * Math.PI) * 0.02 : 0);
+        const ry = e.fallYaw - e.s.rotation.y;
+        const k = Math.min(1, u * 1.4);
+        e.shadow.scale.set(0.75 + k * 0.3, 1, 0.6 + k * 0.6 * H); e.shadow.position.set(Math.sin(ry) * D.hz * H * 0.8, 0.02, Math.cos(ry) * D.hz * H * 0.8);
+        if (!e.thud && u >= 0.84) { e.thud = true; Sfx.impactBody(p.clone().setY(e.baseY + 0.2)); Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z)); puff(p.clone().setY(e.baseY + 0.2).addScaledVector(new V3(Math.sin(e.fallYaw), 0, Math.cos(e.fallYaw)), e.figH * 0.5), 0xc8b48a, 5, 0.8, 1.5, 0.8); }
+        if (e.t >= T + 0.25) toBodies(e);
+        continue;
       }
       const T = e.fallT || 0.55, k = Math.min(1, e.t / T);
       let ang = k * k * Math.PI / 2;
@@ -2885,7 +3204,7 @@ function testBot(dt) {
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  const dt = Math.min(0.05, (now - last) / 1000) * (window.__slowmo || 1); last = now;   // __slowmo：テスト撮影用のスロー
   if (state === 'play') {
     time += dt;
     if (TEST) testBot(dt);
@@ -2914,6 +3233,7 @@ function frame(now) {
   if (document.body.classList.contains('playing') !== (state === 'play')) document.body.classList.toggle('playing', state === 'play');
   if (MOBILE) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
   sky.position.copy(camera.position);
+  if (MOTION) { updateSunShadow((now - (frame.prev || now)) / 1000); frame.prev = now; Mo.flush(); }
   renderer.render(scene, camera);
   drawWeapon();
 }
@@ -2957,5 +3277,5 @@ const loaded = () => {
 loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
-window.__game = { sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

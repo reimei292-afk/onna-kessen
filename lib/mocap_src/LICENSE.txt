@@ -1,0 +1,14 @@
+CMU Graphics Lab Motion Capture Database — http://mocap.cs.cmu.edu
+BVH conversion: https://github.com/una-dinosauria/cmu-mocap
+Files here: 07_01 (walk), 16_35 (jog), 09_01 (run) are used (one gait cycle each is baked).
+
+CMU terms (mocap.cs.cmu.edu FAQ / front page):
+  "The motion capture data may be copied, modified, or redistributed without permission."
+  "This data is free for use in research projects. You may include this data in commercially-sold
+   products, but you may not resell this data directly, even in converted form."
+Acknowledgement: The data used in this project was obtained from mocap.cs.cmu.edu.
+The database was created with funding from NSF EIA-0196217.
+
+Quaternius "Animated Women Pack" (CC0 1.0, public domain): only the Female_Idle and Female_Death
+joint motion is baked into lib/motion_data.js by tools/bake_motion.py. No mesh, texture or face of
+that model is included in or shown by the game.

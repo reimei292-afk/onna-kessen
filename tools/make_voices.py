@@ -3,7 +3,7 @@
 性格ごとに話速・声の高さを控えめに変え、同じ台詞を言い方の揺れ違いで3通り生成する（ja-JP の女性ニューラル音声は Nanami のみ）。
 使い方: pip install edge-tts && python3 tools/make_voices.py [lines.json]
 lines.json の形: {"性格": {"spot": [...], "attack": [...], "hit": [...], "defeat": [...]}, ...}
-被弾・脱落の台詞は短い一声（うっ・くっ・きゃっ 等）＋ひと言のみ。長い悲鳴・うめき・咳き込み・痛がる台詞・性的に聞こえる声は作らない。
+被弾・脱落の台詞は短い一声（うっ・きゃっ・いたっ・ひっ 等）＋ひと言のみ。咳き込み・ごぼっ・がはっ 等の音は作らない。長い悲鳴・うめき・咳き込み・痛がる台詞・性的に聞こえる声は作らない。
 """
 import asyncio, json, os, sys
 import edge_tts
@@ -152,6 +152,22 @@ OJOU = {
   'ojou_defeat': ['…戦死判定ですわ。王様、どうかご無事で。', '申し訳ございません…本陣でお待ちしておりますわ。'],
   'ojou_flust': ['お待ちになって、王様！', '王様、お一人では危のうございますわ！'],
 }
+# 倒れた味方の名前を呼ぶ（「〇〇ちゃん！」）。名前（漢字）→読み。声の高さ3段階（VARIANTS）で個体差
+CALL_STYLE = (8, 4)
+CALL_NAMES = {'千代': 'ちよ', '小春': 'こはる', '楓': 'かえで', '椿': 'つばき', 'あやめ': 'あやめ', '葵': 'あおい', '鈴': 'すず', '雪乃': 'ゆきの', '静': 'しず', '琴': 'こと',
+  '茜': 'あかね', 'なでしこ': 'なでしこ', '桔梗': 'ききょう', '綾': 'あや', '初音': 'はつね', '紅葉': 'もみじ', '澪': 'みお', '凛': 'りん', '若菜': 'わかな', '早苗': 'さなえ',
+  '志乃': 'しの', '八重': 'やえ', '花': 'はな', '蓮': 'れん', '菫': 'すみれ', '朱里': 'あかり', '霞': 'かすみ', '千鶴': 'ちづる', 'ひなた': 'ひなた', '詩織': 'しおり',
+  '咲良': 'さくら', '真白': 'ましろ', '夕霧': 'ゆうぎり', '桃': 'もも', '小雪': 'こゆき', '藍': 'あい', 'ひより': 'ひより', 'しのぶ': 'しのぶ', 'あかり': 'あかり',
+  'ゆな': 'ゆな', '玲奈': 'れな', '理紗': 'りさ', '夏海': 'なつみ', '小夜': 'さよ'}
+CALL_ROM = {k: 'n%02d' % i for i, k in enumerate(CALL_NAMES)}
+# 伝令（本陣と分隊の間を走る娘）
+DEN_STYLE = (6, 6)
+DEN = {
+  'den_take': ['矢、持っていきます！', '補給、行ってきます！'],
+  'den_arrows': ['矢、持ってきました！ 使って！', '矢の補給です！'],
+  'den_go': ['伝令、行ってきます！'],
+  'den_msg': ['本陣より伝令！ 持ち場を守れとのことです！', '本陣より伝令！ そのまま押せとのことです！'],
+}
 async def one(sem, text, path, rate, pitch):
     if os.path.exists(path) and os.path.getsize(path) > 1000: return
     async with sem:
@@ -219,6 +235,17 @@ async def main():
         manifest['_extra'][cat] = []
         for i, text in enumerate(arr):
             fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), st[0] + 8, st[1] + 6))
+            manifest['_extra'][cat].append({'text': text, 'files': [fn]})
+    for given, yomi in CALL_NAMES.items():
+        cat = 'call_' + given; files = []
+        for vi, dv in enumerate(VARIANTS):
+            fn = f'x_call_{CALL_ROM[given]}_{vi}.mp3'; files.append(fn)
+            jobs.append(one(sem, yomi + 'ちゃん！', os.path.join(D, fn), CALL_STYLE[0] + dv[0], CALL_STYLE[1] + dv[1] * 2))
+        manifest['_extra'][cat] = [{'text': given + 'ちゃん！', 'files': files}]
+    for cat, arr in DEN.items():
+        manifest['_extra'][cat] = []
+        for i, text in enumerate(arr):
+            fn = f'x_{cat}_{i}.mp3'; jobs.append(one(sem, text, os.path.join(D, fn), DEN_STYLE[0], DEN_STYLE[1]))
             manifest['_extra'][cat].append({'text': text, 'files': [fn]})
     await asyncio.gather(*jobs)
     json.dump(lines, open(os.path.join(D, 'lines.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)

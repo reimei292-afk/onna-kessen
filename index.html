@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:,">
+<title>孤影の弓 ― 模擬戦 ―</title>
+<style>
+  :root{--sal:env(safe-area-inset-left);--sar:env(safe-area-inset-right);--sab:env(safe-area-inset-bottom)}
+  html,body{position:fixed;inset:0;overscroll-behavior:none;touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+  .screen{touch-action:pan-y;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  button{touch-action:manipulation}
+  html,body{margin:0;height:100%;overflow:hidden;background:#000;
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo","Noto Sans JP",sans-serif;color:#fff;user-select:none}
+  canvas{display:block;position:absolute;left:0;top:0}
+  #wcanvas,#paint{pointer-events:none}
+  #target{position:absolute;left:50%;top:calc(50% + 34px);transform:translateX(-50%);text-align:center;opacity:0;
+    background:rgba(0,0,0,.45);padding:5px 14px 7px;border-radius:3px;border:1px solid rgba(255,160,60,.6);min-width:150px;text-shadow:0 1px 2px #000}
+  #target b{display:block;font-size:17px;letter-spacing:.08em}
+  #target span{display:block;font-size:13px;opacity:.9}
+  #target i{display:block;height:4px;margin-top:4px;background:#ffb040}
+  #target u{display:block;text-decoration:none;font-size:12px;letter-spacing:.15em}
+  #target em{display:block;font-style:normal;color:#ffe38a;font-size:14px;margin-top:2px;letter-spacing:.2em}
+  .serif{font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","MS PMincho",serif}
+  #hud{position:absolute;inset:0;pointer-events:none;display:none}
+  #hpbox{position:absolute;left:24px;top:20px;width:300px}
+  #hpbox .lbl{font-size:15px;letter-spacing:.2em;text-shadow:0 1px 3px #000}
+  #hpbar{height:16px;border:2px solid #e8d9a8;background:rgba(0,0,0,.55);margin-top:4px;border-radius:2px}
+  #hpfill{height:100%;width:100%;background:linear-gradient(#f3d36b,#c8962a);transition:width .15s}
+  #stats{position:absolute;left:24px;top:70px;font-size:18px;text-shadow:0 1px 3px #000;line-height:1.6}
+  #stats b{font-size:24px;color:#ffe38a}
+  #wavebox{position:absolute;top:16px;left:50%;transform:translateX(-50%);text-align:center;text-shadow:0 2px 4px #000}
+  #wavebox .w{font-size:28px;letter-spacing:.15em}
+  #wavebox .r{font-size:15px;opacity:.9}
+  #weapons{position:absolute;left:24px;bottom:22px;font-size:17px;text-shadow:0 1px 3px #000}
+  #weapons div{padding:4px 12px;margin-top:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);border-radius:3px;opacity:.55}
+  #weapons div.on{opacity:1;border-color:#ffe38a;background:rgba(80,50,0,.5)}
+  #arrows{position:absolute;right:28px;bottom:24px;font-size:20px;text-shadow:0 1px 3px #000;text-align:right}
+  #arrows b{font-size:36px;color:#ffe38a}
+  #radar{position:absolute;right:20px;top:20px;width:150px;height:150px;border-radius:50%;
+    background:rgba(0,20,0,.35);border:2px solid rgba(232,217,168,.7);left:auto}
+  #cross{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%)}
+  #cross:before,#cross:after{content:"";position:absolute;background:rgba(255,255,255,.85);box-shadow:0 0 2px #000}
+  #cross:before{left:10px;top:0;width:2px;height:22px}
+  #cross:after{top:10px;left:0;height:2px;width:22px}
+  #hitmark{position:absolute;left:50%;top:50%;width:34px;height:34px;transform:translate(-50%,-50%) rotate(45deg);opacity:0}
+  #hitmark:before,#hitmark:after{content:"";position:absolute;background:#fff2a0}
+  #hitmark:before{left:16px;top:0;width:2px;height:34px}
+  #hitmark:after{top:16px;left:0;height:2px;width:34px}
+  #popup{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-size:26px;color:#ffe38a;
+    text-shadow:0 2px 4px #000;opacity:0;font-weight:bold}
+  #banner{position:absolute;left:0;right:0;top:30%;text-align:center;font-size:56px;letter-spacing:.3em;
+    text-shadow:0 3px 10px #000,0 0 30px rgba(255,200,80,.5);opacity:0;transition:opacity .4s}
+  #banner small{display:block;font-size:22px;letter-spacing:.2em;margin-top:8px}
+  #hurt{position:absolute;inset:0;pointer-events:none;opacity:0;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(255,140,30,.55) 100%)}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:radial-gradient(ellipse at center,rgba(10,10,20,.35),rgba(0,0,0,.8));text-align:center}
+  .screen h1{font-size:72px;margin:0;letter-spacing:.2em;text-shadow:0 4px 16px #000,0 0 40px rgba(255,190,80,.35)}
+  .screen h2{font-size:24px;margin:8px 0 28px;font-weight:normal;letter-spacing:.4em;color:#e8d9a8}
+  .screen p{margin:4px;font-size:16px;line-height:1.7;text-shadow:0 1px 3px #000}
+  .btn{margin:22px 10px 0;padding:12px 56px;font-size:24px;letter-spacing:.4em;color:#fff;cursor:pointer;
+    background:linear-gradient(#8a2a1e,#5a160f);border:2px solid #e8d9a8;border-radius:4px;font-family:inherit}
+  .btn:hover{filter:brightness(1.25)}
+  .help{margin-top:26px;padding:12px 24px;background:rgba(0,0,0,.45);border:1px solid rgba(232,217,168,.4);border-radius:4px}
+  #pause,#over{display:none}
+  /* ---- タッチ操作 ---- */
+  #touchui{display:none;position:absolute;inset:0;z-index:5}
+  html.touch body.playing #touchui{display:block}
+  #touchlayer{position:absolute;inset:0;touch-action:none}
+  .tbtn{position:absolute;border-radius:50%;background:rgba(0,0,0,.28);border:2px solid rgba(255,255,255,.55);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;line-height:1.2;touch-action:none;
+    -webkit-user-select:none;user-select:none;text-shadow:0 1px 2px #000;box-sizing:border-box}
+  .tbtn small{font-size:10px;opacity:.85}
+  .tbtn.on{background:rgba(255,200,80,.38);border-color:#ffe38a}
+  #bAtk{right:calc(26px + var(--sar));bottom:calc(30px + var(--sab));width:118px;height:118px;font-size:24px;font-weight:bold}
+  #bWpn{right:calc(158px + var(--sar));bottom:calc(22px + var(--sab));width:76px;height:76px}
+  #bRun{right:calc(150px + var(--sar));bottom:calc(112px + var(--sab));width:66px;height:66px}
+  #bJump{right:calc(70px + var(--sar));bottom:calc(160px + var(--sab));width:60px;height:60px;font-size:14px}
+  #bPause{right:calc(130px + var(--sar));top:12px;width:58px;height:44px;border-radius:10px;font-size:13px}
+  #joy{position:absolute;width:130px;height:130px;margin:-65px 0 0 -65px;border-radius:50%;border:2px solid rgba(255,255,255,.35);
+    background:rgba(0,0,0,.18);pointer-events:none;opacity:.55}
+  #joy.on{opacity:1}
+  #knob{position:absolute;left:37px;top:37px;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.45);border:2px solid rgba(255,255,255,.8);box-sizing:border-box}
+  .help-touch{display:none}
+  html.touch .help-desk{display:none}
+  html.touch .help-touch{display:block}
+  html.touch #weapons{display:none}
+  html.touch #arrows{right:auto;left:50%;transform:translateX(-50%);bottom:calc(6px + var(--sab));font-size:15px}
+  html.touch #arrows b{font-size:24px}
+  html.touch #radar{width:100px;height:100px;right:calc(14px + var(--sar));top:10px}
+  html.touch #hpbox{left:calc(16px + var(--sal));top:12px;width:190px}
+  html.touch #stats{left:calc(16px + var(--sal));top:52px;font-size:14px;line-height:1.4}
+  html.touch #stats b{font-size:18px}
+  #rotate{display:none;position:fixed;inset:0;z-index:100;background:#0d0d14;color:#fff;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:22px;letter-spacing:.1em}
+  #rotate .ph{width:54px;height:92px;border:4px solid #e8d9a8;border-radius:10px;margin-bottom:22px;animation:rot 2s ease-in-out infinite}
+  @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+  @media (orientation: portrait){ html.touch #rotate{display:flex} }
+  @media (max-height: 520px){
+    .screen h1{font-size:40px} .screen h2{font-size:16px;margin:4px 0 10px} .screen p{font-size:13px;margin:2px;line-height:1.5}
+    .btn{margin-top:10px;padding:8px 40px;font-size:20px} .help{margin-top:10px;padding:6px 14px}
+    #wavebox .w{font-size:20px} #wavebox .r{font-size:12px} #banner{font-size:34px} #banner small{font-size:15px}
+  }
+  #loading{position:absolute;bottom:20px;width:100%;text-align:center;font-size:14px;opacity:.7}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<canvas id="paint"></canvas>
+<canvas id="wcanvas"></canvas>
+
+<div id="hud">
+  <div id="hurt"></div>
+  <div id="hpbox"><div class="lbl">体力 <span id="hptxt">100</span></div><div id="hpbar"><div id="hpfill"></div></div></div>
+  <div id="stats">撃破数 <b id="kills">0</b><br><span style="font-size:15px;color:#9fd0ff">味方撃破 <b id="allykills" style="font-size:18px;color:#9fd0ff">0</b></span></div>
+  <div id="wavebox" class="serif"><div class="w" id="wavetxt">第一波</div><div class="r" id="remain">残敵 0</div></div>
+  <canvas id="radar" width="150" height="150"></canvas>
+  <div id="cross"></div><div id="target"></div><div id="hitmark"></div><div id="popup" class="serif"></div>
+  <div id="banner" class="serif"></div>
+  <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
+  <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
+</div>
+
+<div id="touchui">
+  <div id="touchlayer"></div>
+  <div id="joy"><div id="knob"></div></div>
+  <div class="tbtn" id="bAtk"><span>攻撃</span><small id="bAtkL">長押しで引く</small></div>
+  <div class="tbtn" id="bWpn"><span>武器切替</span><small id="bWpnL">弓矢</small></div>
+  <div class="tbtn" id="bRun"><span>走る</span></div>
+  <div class="tbtn" id="bJump"><span>跳ぶ</span></div>
+  <div class="tbtn" id="bPause">一時停止</div>
+</div>
+<div id="rotate"><div class="ph"></div>横向きにしてください<br><small style="font-size:14px;opacity:.7;margin-top:10px;display:block">スマホを横に回すと遊べます</small></div>
+
+<div id="title" class="screen">
+  <h1 class="serif">孤影の弓</h1>
+  <h2 class="serif">― 模擬戦 ―</h2>
+  <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
+  <p>武器はすべて塗料付きの練習用。当てれば「戦死判定」だ。</p>
+  <button class="btn serif" id="startBtn">開始</button>
+  <div class="help help-desk">
+    <p>移動：W A S D　／　走る：Shift　／　跳ぶ：Space　／　視点：マウス</p>
+    <p>武器切替：1・2 キー または ホイール</p>
+    <p>弓矢（練習矢）：左クリック長押しで引き絞り、離して射る（右クリックで引き戻し）</p>
+    <p>懐刀（練習用）：左クリックで突き（正面・至近距離の一人のみ）</p>
+    <p>頭上の▼が青＝味方、橙＝敵。味方にも当たるので注意（味方撃破として記録）。</p>
+    <p>竹林は矢を防ぐ遮蔽物。照準を侍女に合わせると名前と性格が分かる。</p>
+    <p>一時停止：Esc</p>
+  </div>
+  <div class="help help-touch">
+    <p>左側をドラッグ：移動（スティック）　／　右側をドラッグ：視点</p>
+    <p>攻撃：弓は長押しで引き、離して射る ／ 懐刀はタップで突く（押したままドラッグで視点も動く）</p>
+    <p>武器切替・走る（切替式）・跳ぶ・一時停止はボタンで。頭上の▼：青＝味方、橙＝敵</p>
+  </div>
+  <div id="loading">読み込み中…</div>
+</div>
+
+<div id="pause" class="screen">
+  <h1 class="serif" style="font-size:52px">一時停止</h1>
+  <button class="btn serif" id="resumeBtn">再開</button>
+  <button class="btn serif" id="quitBtn" style="font-size:18px;padding:8px 30px">タイトルへ</button>
+</div>
+
+<div id="over" class="screen">
+  <h1 class="serif">敗北</h1>
+  <h2 class="serif">あなたに戦死判定が下った</h2>
+  <p id="result"></p>
+  <div><button class="btn serif" id="retryBtn">再挑戦</button>
+  <button class="btn serif" id="titleBtn" style="font-size:18px;padding:8px 30px">タイトルへ</button></div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="assets/sprites.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

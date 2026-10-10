@@ -293,6 +293,13 @@
    "ax": 0.6521,
    "dir": -1,
    "file": "assets/frames/mob07_bow.png"
+  },
+  "kneel": {
+   "hk": 0.7039,
+   "aspect": 0.9597,
+   "ax": 0.3823,
+   "dir": 1,
+   "file": "assets/frames/mob07_kneel.png"
   }
  },
  "mob08": {

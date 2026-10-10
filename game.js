@@ -1031,6 +1031,12 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   enemies.push(e);
   return e;
 }
+// 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
+const KAI = { 冷静: 1.0, 慎重: 0.95, 臆病: 0.75, 陽気: 0.65, 好戦的: 0.6 };
+const KY_SET = 0.3, KY_DRAW = 0.5, KY_ZAN = 0.3;
+function aimTotal(e, close) { const k = close ? 0.6 : 1; e.aimK = k; return (KY_SET + KY_DRAW + (KAI[e.prof.pers] || 0.8) + (e.ph % 1) * 0.12) * k; }
+// 射のあとの隠れる時間は、間合いで長くなった分だけ短くして射る間隔を以前とほぼ同じに
+const zanHide = (e, h, T) => Math.max(0.25, h - (T + KY_ZAN - e.P.aimT));
 const ARCHER_RATE = 0.7;   // 両軍とも弓兵が約7割
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
@@ -1118,7 +1124,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   puff(e.s.position.clone().setY(e.baseY + 0.3), 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 砂埃
   const k = new V3(e.s.position.x - from.x, 0, e.s.position.z - from.z).normalize();
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
-  if (e.state === 'windup' || e.state === 'aim') { e.state = 'stagger'; e.t = 0; }
+  if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
   if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
   else Sfx.impactBody(hitPos);
   if (by !== 'player' && by.state !== 'down') { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
@@ -1742,7 +1748,8 @@ function animateNpc(e, dt, lean) {
   e.vs = (e.vs || 0) + (v - (e.vs || 0)) * Math.min(1, dt * 8);   // 速度（平滑化）
   const sv = e.vs;
   const covered = e.state === 'hide' && (e.perch || (e.cover && e.cover.type === 'bundle'));
-  const acting = e.state === 'windup' || e.state === 'recover' || e.state === 'aim';
+  const kyu = e.kind === 'archer' && e.state === 'aim', ka = e.aimK || 1;
+  const acting = e.state === 'windup' || e.state === 'recover' || e.state === 'zanshin' || (e.state === 'aim' && (!kyu || e.t >= KY_SET * ka));   // 胴造りの間はまだ構えない
   const moving = !acting && sv > 0.35;
   // 足音
   if (moving) {
@@ -1780,6 +1787,8 @@ function animateNpc(e, dt, lean) {
     if (e.fluteMesh) e.fluteMesh.visible = fr === g.front;
   } else if (acting) {
     fr = girlFrame(g, 'action', e.kind); mirror = fr.dir ? fr.dir !== sgn : false;
+    if (kyu) { const u = (e.t - KY_SET * ka) / (KY_DRAW * ka); if (u < 1) bob = Math.sin(Math.PI * Math.min(1, u * 1.15)) * 0.03 * e.figH * (1 - 0.4 * u); }   // 打起し：少し上がって収まる
+    else if (e.state !== 'windup' && e.state !== 'recover') bob = Math.sin(time * 1.6 + e.ph) * 0.003 * e.figH;
   } else if (moving) {
     const stride = Math.floor(e.stepT / Math.PI) & 1;
     bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH;
@@ -1790,8 +1799,18 @@ function animateNpc(e, dt, lean) {
     fr = girlFrame(g, e.view === 'front' ? 'front' : e.view);
     mirror = fr.dir ? fr.dir !== sgn : false;
     bob = Math.sin(time * 1.6 + e.ph) * 0.004 * e.figH;   // 待機中のわずかな呼吸
+    rock = Math.sin(time * 0.8 + e.ph * 2) * 0.007;        // ゆるやかな揺れ
+    if ((e.secretary || e.sec2) && e.view === 'front') {   // 秘書：ときどき首をかしげる／横を見る
+      if (!e.glNext) e.glNext = time + rand(4, 9);
+      if (time > e.glNext) { e.glEnd = time + rand(0.9, 1.6); e.glNext = e.glEnd + rand(5, 10); e.glKind = Math.random() < 0.55 ? 'look' : 'tilt'; e.glDir = Math.random() < 0.5 ? 1 : -1; }
+      if (time < (e.glEnd || 0)) {
+        if (e.glKind === 'look' && g.side) { fr = g.side; mirror = fr.dir ? fr.dir !== e.glDir : false; }
+        else rock += Math.sin(Math.min(1, (e.glEnd - time) * 2, (time - e.glEnd + 1.6) * 2) * Math.PI / 2) * 0.05 * e.glDir;
+      }
+    }
   }
   setFrame(e, fr, mirror);
+  if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
     const h = e.figH, sg = mirror ? -1 : 1, front = fr === g.front || fr === g.back || fr === g.walk;
     e.band.scale.set(front ? 0.075 : 0.085, 0.05, 1);
@@ -1857,7 +1876,7 @@ function updateEnemies(dt) {
     if (e.returning) { e.tgt = null; e.tgtT = 1; }
     else if (!e.tgt || e.tgtT <= 0 || (!e.tgt.isPlayer && e.tgt.state === 'down')) {
       const nt = chooseTarget(e);
-      if (nt !== e.tgt && e.kind === 'archer' && !['aim', 'retreat', 'stagger'].includes(e.state)) { e.cover = null; if (e.state !== 'advance') { e.state = 'advance'; e.t = 0; } }
+      if (nt !== e.tgt && e.kind === 'archer' && !['aim', 'zanshin', 'retreat', 'stagger'].includes(e.state)) { e.cover = null; if (e.state !== 'advance') { e.state = 'advance'; e.t = 0; } }
       e.tgt = nt; e.tgtT = 0.6;
     }
     e.cd -= dt; e.t += dt; e.moving = false;
@@ -1875,7 +1894,7 @@ function updateEnemies(dt) {
         const fz = fortGate ? 9 + Math.sin(e.ph) * 3 : player.pos.z + 4 + Math.sin(e.ph) * 3;
         if (Math.hypot(fx - p.x, fz - p.z) > 1.5) steer(e, fx, fz, e.speed, dt);
       }
-      if (!e.perch && ['windup', 'aim', 'peek', 'return', 'hide', 'tocover'].includes(e.state)) { e.state = e.kind === 'archer' ? 'advance' : 'approach'; npcTint(e, 0); }
+      if (!e.perch && ['windup', 'aim', 'zanshin', 'peek', 'return', 'hide', 'tocover'].includes(e.state)) { e.state = e.kind === 'archer' ? 'advance' : 'approach'; npcTint(e, 0); }
     } else {
       const tp = tgtPos(e.tgt), tx = tp.x, tz = tp.z;
       const dx = tx - p.x, dz = tz - p.z, dist = Math.hypot(dx, dz) || 0.001;
@@ -1891,14 +1910,17 @@ function updateEnemies(dt) {
         if (e.t > 0.4) { e.state = e.kind === 'archer' ? 'hide' : 'approach'; e.hideT = 0.6; e.cd = Math.max(e.cd, 0.4); }
       } else if (e.perch) {
         // ===== 櫃・武者走りの弓兵：胸壁の陰にしゃがみ、立ち上がって射る =====
-        if (e.state === 'aim') {
-          const T = P.aimT;
+        if (e.state === 'zanshin') {
+          if (e.t >= KY_ZAN) e.zanNext();
+        } else if (e.state === 'aim') {
+          const T = aimTotal(e, false);
           tint(e.t / T);
           if (e.t >= T) {
             enemyShoot(e, e.tgt);
             if (e.tgt.isPlayer || Math.random() < 0.4) npcSay(e, 'attack', 0, 0.3);
             npcTint(e, 0);
-            e.state = 'hide'; e.t = 0; e.hideT = rand(P.hideT[0], P.hideT[1]) * 0.6;
+            e.state = 'zanshin'; e.t = 0;
+            e.zanNext = () => { e.state = 'hide'; e.t = 0; e.hideT = zanHide(e, rand(P.hideT[0], P.hideT[1]) * 0.6, T); };
           }
         } else {
           if (e.state !== 'hide') { e.state = 'hide'; e.hideT = rand(0.4, 1.2); }
@@ -1909,7 +1931,7 @@ function updateEnemies(dt) {
         steer(e, player.pos.x, player.pos.z, e.speed * 1.3, dt); e.state = 'advance'; e.cover = null;   // 離れすぎたら戻る
       } else if (e.kind === 'archer') {
         // ===== 弓兵 =====
-        if (dist < 6 && !['backoff', 'aim'].includes(e.state) && P !== PERS.好戦的) { e.state = 'backoff'; e.t = 0; }
+        if (dist < 6 && !['backoff', 'aim', 'zanshin'].includes(e.state) && P !== PERS.好戦的) { e.state = 'backoff'; e.t = 0; }
         if (e.state === 'advance') {
           if (!e.cover || e.t > 8) {
             e.t = 0;
@@ -1940,17 +1962,22 @@ function updateEnemies(dt) {
         } else if (e.state === 'peek') {
           if (steer(e, e.peek.x, e.peek.z, e.speed * 1.3, dt) < 0.4 || e.t > 3) { e.state = 'aim'; e.t = 0; }
         } else if (e.state === 'aim') {
-          const T = P.aimT * (dist < 6 ? 0.5 : 1);
-          tint(e.t / T); lean = -0.04 * e.strafe;
+          const T = aimTotal(e, dist < 6);
+          tint(e.t / T);
           if (e.t >= T) {
             enemyShoot(e, e.tgt);
             if (e.tgt.isPlayer || Math.random() < 0.5) npcSay(e, 'attack', 0, 0.35);
             npcTint(e, 0);
-            e.t = 0;
-            if (P === PERS.好戦的 && Math.random() < 0.6) { e.state = 'advance'; e.cover = null; }       // さらに前へ
-            else if (e.cover && !e.cover.open) { e.state = 'return'; }
-            else { e.state = 'hide'; e.hideT = rand(P.hideT[0], P.hideT[1]) * 0.5; }
+            e.t = 0; e.state = 'zanshin';   // 残心：射たあと少しそのまま
+            e.zanNext = () => {
+              e.t = 0;
+              if (P === PERS.好戦的 && Math.random() < 0.6) { e.state = 'advance'; e.cover = null; }       // さらに前へ
+              else if (e.cover && !e.cover.open) { e.state = 'return'; }
+              else { e.state = 'hide'; e.hideT = zanHide(e, rand(P.hideT[0], P.hideT[1]) * 0.5, T); }
+            };
           }
+        } else if (e.state === 'zanshin') {
+          if (e.t >= KY_ZAN) e.zanNext();
         } else if (e.state === 'return') {
           if (steer(e, e.cp.x, e.cp.z, e.speed * 1.2, dt) < 0.5 || e.t > 3) { e.state = 'hide'; e.t = 0; e.hideT = rand(P.hideT[0], P.hideT[1]); }
         } else if (e.state === 'backoff') {

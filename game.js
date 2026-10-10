@@ -650,6 +650,9 @@ function seiran(x, z) {
   const nb = nobori(0, 0, '#d9741c', '#fff6e8', '井闌'); stageRoot.remove(nb); grp.add(nb); nb.position.set(-S + 0.1, Y + 0.5, -S + 0.1); nb.rotation.y = 0;
   grp.position.set(x, 0, z); stageRoot.add(grp);
   const T = { x, z, z0: z, grp, wheels, lb, perches: [], hp: 0 };
+  // 上の床と後ろの梯子：殿も味方の近接兵も上れる（櫃と同じ操作）
+  T.floor = { x0: 0, x1: 0, z0: 0, z1: 0, y: Y, seiran: T }; floors.push(T.floor);
+  T.lad = { x0: 0, x1: 0, z0: 0, z1: 0, y0: 0, y1: Y, F: T.floor, dir: 1, seiran: T }; ladders.push(T.lad);
   for (const L of lb) boxes.push(L.w);
   // 射撃位置：前の胸壁の後ろに 4 か所（波が進むほど埋まる）
   for (let i = 0; i < 4; i++) T.perches.push({ x: 0, z: 0, lx: -1.35 + i * 0.9, lz: S - 0.55, y: Y, taken: null, seiran: T });
@@ -659,13 +662,20 @@ function seiran(x, z) {
 }
 function seiranSync(T, dz) {
   T.grp.position.set(T.x, 0, T.z);
+  const S = 2.3;
+  Object.assign(T.floor, { x0: T.x - S - 0.1, x1: T.x + S + 0.1, z0: T.z - S - 0.1, z1: T.z + S + 0.1 });
+  Object.assign(T.lad, { x0: T.x - 0.6, x1: T.x + 0.6, z0: T.z - S - 0.9, z1: T.z - S });
+  if (dz) {   // 上や梯子にいる者も一緒に動く
+    if (player.pos.y > 0.4 && Math.abs(player.pos.x - T.x) < S + 0.6 && player.pos.z > T.z - S - 1.3 - dz && player.pos.z < T.z + S + 0.4) player.pos.z += dz;
+    for (const o of [...enemies, ...bodies]) if (o.onFloor === T.floor || (o.lad && o.lad.L === T.lad && o.lad.ph !== 'go')) { o.s.position.z += dz; o.pz += dz; }
+  }
   for (const L of T.lb) { L.w.x0 = T.x + L.l.x0; L.w.x1 = T.x + L.l.x1; L.w.z0 = T.z + L.l.z0; L.w.z1 = T.z + L.l.z1; L.w.y0 = L.l.y0; L.w.y1 = L.l.y1; }
   for (const q of T.perches) {
     q.x = T.x + q.lx; q.z = T.z + q.lz;
     const e = q.taken;
     if (e && e.perch === q) { e.s.position.x = q.x; e.s.position.z = q.z; e.px = q.x; e.pz += dz; }
   }
-  if (dz) for (const b of bodies) if (b.perch && b.perch.seiran === T) b.s.position.z += dz;   // 上で倒れた娘も一緒に動く
+  if (dz) for (const b of bodies) if (b.perch && b.perch.seiran === T && b.onFloor !== T.floor) b.s.position.z += dz;   // 上で倒れた娘も一緒に動く
 }
 // 波の始まり：櫓の上に弓兵を出す（第1波は一基、第2波から二基。人数は波とともに 2→4）
 function seiranWave(n) {
@@ -1513,6 +1523,8 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
     }
   }
   e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
+  e.climber = kind === 'archer' && team === 'orange' && Math.random() < 0.25;
+  e.raider = kind === 'mob' && team === 'orange' && !e.special && Math.random() < 0.35;   // 梯子攻め役（約1/3）：砦の中に入ると櫓・足場の弓兵を狙って梯子を上る   // 砦の中で梯子を上る弓兵（約1/4）
   enemies.push(e);
   return e;
 }
@@ -1523,6 +1535,7 @@ function aimTotal(e, close) { const k = close ? 0.6 : 1; e.aimK = k; return (KY_
 // 射のあとの隠れる時間は、間合いで長くなった分だけ短くして射る間隔を以前とほぼ同じに
 const zanHide = (e, h, T) => Math.max(0.25, h - (T + KY_ZAN - e.P.aimT));
 const ARCHER_RATE = 0.7;   // 両軍とも弓兵が約7割
+const ENEMY_RATIO = (() => { const q = new URLSearchParams(location.search), v = parseFloat(q.get('eratio')); return isFinite(v) && v > 0 ? v : q.has('troops') && parseFloat(q.get('troops')) === 1 ? 1 : 1.3; })();   // 敵は味方の約 1.3 倍（?troops=1 なら以前と同じ 1:1、?eratio= で指定）
 const TROOP_K = (() => { const v = parseFloat(new URLSearchParams(location.search).get('troops')); return isFinite(v) && v > 0 ? v : 1.75; })();   // ?troops=1 で以前の人数
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
@@ -1609,9 +1622,12 @@ function startWave(n) {
   for (const A of aides) if (A.dead || (!A.e && hq)) { const was = A.dead; spawnAide(A); if (n > 1 && was) popup(A.name + 'が本陣に戻りました'); }
   if (fluter.dead || (!fluter.e && hq)) { spawnFluter(); if (n > 1 && fluter.dead) popup('笛役の娘が本陣に戻りました'); fluter.dead = false; }
   // 兵数：以前（5+3n、同時 8+2n≦28）の約 1.75 倍。第1波 14 対 14 から
-  wave.n = n; wave.toSpawn = Math.round((5 + n * 3) * TROOP_K); wave.spawnT = 1.0; wave.inter = 0;
-  wave.blueToSpawn = wave.toSpawn;              // 味方も同数
-  wave.maxAlive = Math.min(Math.round((8 + n * 2) * TROOP_K), 40); wave.captain = n >= 2;
+  // v3：味方の人数はそのまま、敵はその約 1.3 倍（第1波 14 対 18）
+  wave.n = n; wave.blueToSpawn = Math.round((5 + n * 3) * TROOP_K); wave.spawnT = 1.0; wave.inter = 0;
+  wave.toSpawn = Math.round(wave.blueToSpawn * ENEMY_RATIO);
+  wave.blueMax = Math.min(Math.round((8 + n * 2) * TROOP_K), 40);
+  wave.maxAlive = Math.min(Math.round(wave.blueMax * ENEMY_RATIO), 52); wave.captain = n >= 2;
+  wave.total = { blue: wave.blueToSpawn, orange: wave.toSpawn };
   const sk = seiranWave(n);                      // 櫃の戦い：井闌の上の弓兵（同じ人数だけ味方も増やす）
   if (sk) { wave.blueToSpawn += sk; wave.blueOwed = (wave.blueOwed || 0) + sk; }
   wave.archerRate = ARCHER_RATE;
@@ -1640,11 +1656,12 @@ function waveUpdate(dt) {
       wave.toSpawn--;
       if (cap) wave.captain = false;
     }
-    wave.blueOwed = (wave.blueOwed || 0) + grp;   // 同じ人数の味方を出す
+    wave.blueOwed = (wave.blueOwed || 0) + grp / ENEMY_RATIO;   // 敵の人数に見合う味方を出す
+    if (wave.toSpawn <= 0) wave.blueOwed = Math.max(wave.blueOwed, wave.blueToSpawn);   // 端数を残さない
     wave.spawnT = rand(0.6, 1.4);
   }
-  if (wave.blueOwed > 0 && wave.blueToSpawn > 0 && aliveOf('blue').length < wave.maxAlive) {
-    const k = Math.min(wave.blueOwed, wave.blueToSpawn);
+  if (wave.blueOwed >= 1 && wave.blueToSpawn > 0 && aliveOf('blue').length < (wave.blueMax || wave.maxAlive)) {
+    const k = Math.min(Math.floor(wave.blueOwed), wave.blueToSpawn);
     for (let i = 0; i < k; i++) spawnAlly();
     wave.blueOwed -= k; wave.blueToSpawn -= k;
   }
@@ -1693,6 +1710,12 @@ function killEnemy(e, byPlayer, from) {
   if (from) e.face = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);   // 攻撃側を向いてから倒れる
   if (e.perch) { e.perch.taken = null; }
   if (e.climb) { if (e.climb.q.taken === e) e.climb.q.taken = null; e.climb = null; e.baseY = 0; e.s.position.y = 0; }
+  if (e.climbPerch) { if (e.climbPerch.taken === e) e.climbPerch.taken = null; e.climbPerch = null; }
+  if (e.lad) {   // 梯子の途中で倒れた：梯子の下へ落ちる
+    const c = e.lad; if (c.L.occ === e) c.L.occ = null;
+    if (c.ph === 'climb' || (c.ph === 'step' && !c.up) || (c.ph === 'exit' && !c.up)) { const P = ladPts(c.L); e.s.position.x = P.base[0]; e.s.position.z = P.base[1]; e.baseY = 0; e.s.position.y = 0; e.onFloor = null; }
+    e.lad = null;
+  }
   if (e.secretary) { sec.mode = 'dead'; sec.esc = null; sec.e = null; e.secretary = false; e.wasSecretary = true; if (menuOpen) closeSecMenu(false); popup('秘書課の侍女に戦死判定…次の波で本陣に戻ります'); }
   e.downAt = time;
   if (e.sec2) { sec2.dead = true; sec2.e = null; sec2.mode = 'dead'; e.sec2 = false; e.wasSec2 = true; e.kneel = false; if (menuOpen && menuWho === 'sec2') closeSecMenu(false); popup('秘書課の侍女（二人目）に戦死判定…次の波で本陣に戻ります'); }
@@ -1748,8 +1771,9 @@ function chooseTarget(e) {
     let d = Math.hypot(x - p.x, z - p.z);
     if (t.medic) d *= t.medPhase === 'treat' ? 0.55 : 0.85;   // 医療係は狙われやすい（手当て中は止まっている）
     if (mine && t.kind === 'mob' && !t.special && !t.isPlayer && mine.some(a => Math.hypot(a.s.position.x - x, a.s.position.z - z) < SCREEN.guardR)) d *= SCREEN.interceptK;   // 味方の弓兵に迫る近接兵を迎え撃つ
-    else if (melee && t.kind === 'archer' && d > 5) d *= SCREEN.archerK;   // 弓兵より先に前に立つ近接兵と当たる
-    if (melee && Math.abs(y - e.baseY) > 1.5) d += 80;
+    else if (melee && t.kind === 'archer' && d > 5 && !e.raider) d *= SCREEN.archerK;   // 弓兵より先に前に立つ近接兵と当たる
+    if (melee && Math.abs(y - e.baseY) > 1.5) d += fortGate && !e.special && (e.onFloor || tgtFloor(t)) ? (e.raider && inFort(p.x, p.z) ? 2 : 14) : 80;   // 梯子で届く高所は少し遠い扱い（梯子攻め役は砦に入ると櫓を狙う）
+    if (melee && t.lad && t.team !== e.team && t.baseY < 1.6) d *= 0.6;   // 梯子に取り付いた敵を下で迎え撃つ
     if (d < bd) { bd = d; best = t; }
   };
   if (e.secretary) {   // 護衛：プレイヤーから 40m 以内の敵だけ
@@ -1838,6 +1862,110 @@ function seiranClimb(e, dt) {
     e.climb = null; e.perch = q; e.onSeiran = T; e.baseY = q.y; p.set(q.x, q.y, q.z); e.px = q.x; e.pz = q.z;
     e.state = 'hide'; e.hideT = rand(0.5, 1.5); e.crouch = 1; e.cover = null;
   }
+}
+// ---- 梯子を使う NPC（櫃の戦い）：近接兵は高所の敵を追って梯子を上り、そこで戦い、敵がいなくなれば下りる。
+//      一本の梯子は一人ずつ（順番待ち）。上り下りは約 1.6m/秒（櫃 6m で約4秒）、梯子の途中では攻撃できない（無防備）。
+//      同じ床へ同時に攻め上がるのは各組 2 人まで（井闌へは 3 人）、同じ床への上り始めは 3 秒以上あける。
+const CLIMB_V = 1.6, CLIMB_CAP = 2, CLIMB_GAP = 3;
+const ladX = L => (L.x0 + L.x1) / 2, ladZ = L => (L.z0 + L.z1) / 2;
+function ladMeta(L) {
+  if (L.F !== undefined) return L;
+  const xc = ladX(L), zc = ladZ(L); let best = null, bd = 3;
+  for (const f of floors) {
+    if (Math.abs(f.y - L.y1) > 0.15) continue;
+    const d = Math.hypot(clamp(xc, f.x0, f.x1) - xc, clamp(zc, f.z0, f.z1) - zc); if (d < bd) { bd = d; best = f; }
+  }
+  L.F = best; L.dir = best ? (Math.sign((best.z0 + best.z1) / 2 - zc) || 1) : 1;
+  return L;
+}
+function ladPts(L) {
+  ladMeta(L); const x = ladX(L), zc = ladZ(L), d = L.dir, F = L.F;
+  return { base: [x, zc - d * 0.8], rung: [x, zc], top: [clamp(x, F.x0 + 0.4, F.x1 - 0.4), clamp(zc + d * 1.3, F.z0 + 0.35, F.z1 - 0.35)] };
+}
+function floorAt(x, z, y) {
+  for (const f of floors) if (Math.abs(f.y - y) < 0.35 && x > f.x0 - 0.3 && x < f.x1 + 0.3 && z > f.z0 - 0.3 && z < f.z1 + 0.3) return f;
+  return null;
+}
+function tgtFloor(t) { return t.isPlayer ? (player.pos.y > 0.5 ? floorAt(player.pos.x, player.pos.z, player.pos.y) : null) : t.onFloor || (t.baseY > 0.5 ? floorAt(t.s.position.x, t.s.position.z, t.baseY) : null); }
+function ladderTo(F, x, z) {
+  let best = null, bd = 1e9;
+  for (const L of ladders) { ladMeta(L); if (L.F !== F) continue; const d = Math.hypot(ladX(L) - x, ladZ(L) - z); if (d < bd) { bd = d; best = L; } }
+  return best;
+}
+const onOrTo = (o, F) => o.onFloor === F || (o.lad && o.lad.L.F === F && o.lad.up);
+function tryClimb(e, F) {   // 高所の標的を追って上る
+  if (!F || (e.noClimbT || 0) > 0 || e.special) return false;
+  const L = ladderTo(F, e.s.position.x, e.s.position.z); if (!L) return false;
+  const cap = F.seiran ? 3 : CLIMB_CAP;
+  if (enemies.filter(o => o.team === e.team && o.state !== 'down' && onOrTo(o, F)).length >= cap) return false;
+  const k = e.team + '_climbT'; if (time - (F[k] || -99) < CLIMB_GAP) return false;
+  F[k] = time; startClimb(e, L, true); return true;
+}
+function startClimb(e, L, up) { e.lad = { L, up, ph: 'go', t: 0, wait: 0 }; e.cover = null; e.state = 'approach'; }
+function endClimb(e, cool) { const c = e.lad; if (!c) return; if (c.L.occ === e) c.L.occ = null; if (e.climbPerch) { if (e.climbPerch.taken === e) e.climbPerch.taken = null; e.climbPerch = null; } e.lad = null; e.noClimbT = cool; e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; }
+function npcLadder(e, dt) {
+  const c = e.lad, L = c.L, P = ladPts(L), p = e.s.position; c.t += dt;
+  if (!L.F) { endClimb(e, 10); return; }
+  if (c.ph === 'go') {
+    const [gx, gz] = c.up ? P.base : P.top, d = Math.hypot(gx - p.x, gz - p.z);
+    if (c.up && e.tgt && Math.abs(tgtY(e.tgt) - e.baseY) < 1.2 && Math.hypot((e.tgt.isPlayer ? player.pos : e.tgt.s.position).x - p.x, (e.tgt.isPlayer ? player.pos : e.tgt.s.position).z - p.z) < 7) { endClimb(e, 4); return; }   // 下で敵に迫られたら上るのをやめて戦う
+    if (d > 0.45) {
+      if (c.up) {
+        let wx = gx, wz = gz; const T = L.seiran;
+        if (T && p.z > T.z - 2.3 - 0.6) {   // 井闌の前や横から：車体を回り込んで後ろの梯子へ
+          const side = Math.sign(p.x - T.x) || 1;
+          if (Math.abs(p.x - T.x) < 2.3 + 1.0) { wx = T.x + side * (2.3 + 1.5); wz = p.z; } else { wx = T.x + side * (2.3 + 1.5); wz = T.z - 2.3 - 1.4; }
+        }
+        const rt = routeTo(p, wx, wz); steer(e, rt[0], rt[1], e.speed, dt);
+      } else steer(e, gx, gz, e.speed * 0.8, dt);
+      e.state = 'approach'; if (c.t > 30) endClimb(e, 12); return;
+    }
+    if (L.occ && L.occ !== e && L.occ.lad && L.occ.lad.L === L && L.occ.state !== 'down' && enemies.includes(L.occ)) {   // 順番待ち
+      c.wait += dt; e.state = 'idle'; e.faceWant = Math.atan2(P.rung[0] - p.x, P.rung[1] - p.z);
+      if (c.wait > 9) endClimb(e, 10); return;
+    }
+    L.occ = e; c.ph = 'step'; c.st = 0; c.from = [p.x, p.z]; c.to = c.up ? P.rung : P.rung;
+  }
+  if (c.ph === 'step' || c.ph === 'exit') {   // 梯子の前⇔梯子／梯子の上⇔床 を 0.45 秒で
+    c.st += dt; const k = Math.min(1, c.st / 0.45);
+    p.x = c.from[0] + (c.to[0] - c.from[0]) * k; p.z = c.from[1] + (c.to[1] - c.from[1]) * k;
+    e.state = 'climb'; e.faceWant = c.ph === 'exit' === c.up ? Math.atan2(c.to[0] - c.from[0], c.to[1] - c.from[1]) || e.face : Math.atan2(P.rung[0] - P.base[0], P.rung[1] - P.base[1]);
+    if (k < 1) return;
+    if (c.ph === 'step') { c.ph = 'climb'; return; }
+    // exit 完了
+    if (c.up) { e.onFloor = L.F; if (e.kind === 'archer' && e.climbPerch) { const q = e.climbPerch; e.climbPerch = null; e.perch = q; p.set(q.x, e.baseY, q.z); e.crouch = 1; endClimb(e, 4); e.state = 'hide'; e.hideT = rand(0.4, 1); return; } }
+    else e.onFloor = null;
+    endClimb(e, c.up ? 3 : 6); return;
+  }
+  if (c.ph === 'climb') {
+    p.x = P.rung[0]; p.z = P.rung[1]; e.px = p.x; e.pz = p.z;
+    e.state = 'climb'; e.faceWant = L.dir > 0 ? 0 : Math.PI;   // 梯子（床の側）を向く＝背中が見える
+    const y0 = e.baseY;
+    e.baseY = clamp(e.baseY + (c.up ? 1 : -1) * CLIMB_V * dt, 0, L.y1);
+    if (Math.floor(y0 / 0.4) !== Math.floor(e.baseY / 0.4) && Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 14) Sfx.step(true, 0.35, p);   // 梯子の段
+    if (c.up && e.baseY >= L.y1 - 1e-3) { e.baseY = L.y1; c.ph = 'exit'; c.st = 0; c.from = [p.x, p.z]; c.to = e.climbPerch ? [e.climbPerch.x, e.climbPerch.z] : P.top; }
+    if (!c.up && e.baseY <= 1e-3) { e.baseY = 0; c.ph = 'exit'; c.st = 0; c.from = [p.x, p.z]; c.to = P.base; }
+  }
+}
+// 床の上で戦う NPC：同じ高さに相手がいなくなったら最寄りの梯子で下りる
+function maybeDescend(e) {
+  if (!e.onFloor || e.lad || e.perch || (e.noClimbT || 0) > 0) return;
+  if (e.tgt && Math.abs(tgtY(e.tgt) - e.baseY) < 1.2) return;
+  const L = ladderTo(e.onFloor, e.s.position.x, e.s.position.z);
+  if (L) startClimb(e, L, false); else e.onFloor = null;
+}
+// 橙組の弓兵（一部）：砦の中で味方の櫃・武者走りの梯子の近くまで来たら、空いた射撃位置へ上る
+function tryArcherClimb(e) {
+  if (e.team !== 'orange' || !e.climber || e.onFloor || (e.noClimbT || 0) > 0 || !fortGate) return false;
+  const p = e.s.position; if (!inFort(p.x, p.z)) return false;
+  for (const L of ladders) {
+    ladMeta(L); if (!L.F || L.F.seiran || Math.hypot(ladX(L) - p.x, ladZ(L) - p.z) > 16) continue;
+    const q = perches.find(q => !q.taken && !q.seiran && Math.abs(q.y - L.F.y) < 0.2 && q.x > L.F.x0 && q.x < L.F.x1 && q.z > L.F.z0 && q.z < L.F.z1 && Math.hypot(q.x - ladX(L), q.z - ladZ(L)) < 9);
+    if (!q) continue;
+    if (enemies.filter(o => o.team === 'orange' && o.state !== 'down' && onOrTo(o, L.F)).length >= CLIMB_CAP) continue;
+    q.taken = e; e.climbPerch = q; startClimb(e, L, true); return true;
+  }
+  e.noClimbT = 4; return false;
 }
 // ---- 遮蔽（竹林）を使う。基準は自分の標的の位置 ----
 function findCover(e, minD, maxD, tx, tz) {
@@ -2771,7 +2899,10 @@ function updateEnemies(dt) {
     e.cd -= dt; e.t += dt; e.moving = false;
     const tint = k => npcTint(e, k);
 
-    if (!e.tgt) {
+    if (e.noClimbT > 0) e.noClimbT -= dt;
+    if (!e.lad && e.onFloor) maybeDescend(e);
+    if (e.lad) npcLadder(e, dt);
+    else if (!e.tgt) {
       // 敵がいない：青組はプレイヤーの近くに集まる
       if (e.perch) { if (e.state !== 'hide') { e.state = 'hide'; e.hideT = 1; npcTint(e, 0); } }
       else if (e.returning && hq) steer(e, hq.sx, hq.sz, e.speed, dt);
@@ -2825,7 +2956,7 @@ function updateEnemies(dt) {
         const th = e.threat && e.threat.state !== 'down' && enemies.includes(e.threat) ? e.threat : null;
         const thd = th ? Math.hypot(th.s.position.x - p.x, th.s.position.z - p.z) : 99;
         if (!e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) || (dist < 6 && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
-        if (e.state === 'advance' && e.team === 'orange' && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; seiranBoard(e); }
+        if (e.state === 'advance' && e.team === 'orange' && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; if (!tryArcherClimb(e)) seiranBoard(e); }
         if (e.climb) seiranClimb(e, dt);
         else if (e.state === 'advance') {
           if (!e.cover || e.t > 8) {
@@ -2903,7 +3034,8 @@ function updateEnemies(dt) {
             if (Math.hypot(gx - p.x, gz - p.z) > 1.5) steer(e, gx, gz, e.speed, dt);
             e.state = 'approach';
           } else
-          if (e.state === 'approach' && routed) steer(e, rt[0], rt[1], e.speed, dt);
+          if (e.state === 'approach' && elev && fortGate && tgtY(e.tgt) > e.baseY && tryClimb(e, tgtFloor(e.tgt))) { /* 梯子へ */ }
+          else if (e.state === 'approach' && routed) steer(e, rt[0], rt[1], e.speed, dt);
           else if (e.state === 'approach' && elev) { if (dist > 4) steer(e, tx, tz, e.speed, dt); }
           else if (e.state === 'approach' && e.screen && dist > SCREEN.guardR && screenHold(e, tx, tz, dt)) { /* 弓兵の前に立って待つ */ }
           else if (e.state === 'approach') {
@@ -2947,7 +3079,7 @@ function updateEnemies(dt) {
     }
     }
     // 群れの分離
-    if (!e.perch) for (const o of enemies) {
+    if (!e.perch && !(e.lad && e.lad.ph !== 'go')) for (const o of enemies) {
       if (o === e || o.state === 'down' || Math.abs(o.baseY - e.baseY) > 1) continue;
       const ox = p.x - o.s.position.x, oz = p.z - o.s.position.z, d2 = ox * ox + oz * oz;
       if (d2 < 0.81 && d2 > 1e-6) { const d = Math.sqrt(d2); p.x += ox / d * (0.9 - d) * 0.5 * Math.min(1, dt * 10); p.z += oz / d * (0.9 - d) * 0.5 * Math.min(1, dt * 10); }
@@ -2955,7 +3087,8 @@ function updateEnemies(dt) {
     const pdx = player.pos.x - p.x, pdz = player.pos.z - p.z, pd = Math.hypot(pdx, pdz);
     if (!e.perch && pd < 0.9 && pd > 1e-4 && Math.abs(player.pos.y - e.baseY) < 1) { p.x -= pdx / pd * (0.9 - pd); p.z -= pdz / pd * (0.9 - pd); }
     p.x = clamp(p.x, -CFG.field, CFG.field); p.z = clamp(p.z, -CFG.field, CFG.field);
-    if (!e.perch && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
+    if (!e.perch && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
+    if (e.onFloor && !e.lad && !e.perch) { const F = e.onFloor; p.x = clamp(p.x, F.x0 + 0.25, F.x1 - 0.25); p.z = clamp(p.z, F.z0 + 0.25, F.z1 - 0.25); }   // 床から落ちない
     p.y = e.baseY;
     animateNpc(e, dt, lean);
     const top = e.baseY + e.figH * (1 - 0.38 * e.crouch);
@@ -3799,5 +3932,5 @@ const loaded = () => {
 loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
-window.__game = { ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

@@ -3590,7 +3590,7 @@ function mtnRegion(x, z, y) {
 function buildMountain() {
   if (MTN.stones) for (const s of MTN.stones) if (s.m) scene.remove(s.m);
   MTN.on = true; MTN.phase = 0; MTN.gates = []; MTN.pits = []; MTN.traps = []; MTN.needles = []; MTN.doors = []; MTN.stones = [];
-  MTN.garrison = false; MTN.slowT = 0; MTN.volley = false; MTN.won = false; MTN.spawnI = 0; MTN.bar = null; MTN.entered = false; MTN.cleared = false;
+  MTN.garrison = false; MTN.slowT = 0; MTN.volley = false; MTN.won = false; MTN.spawnI = 0; MTN.bar = null; MTN.entered = false; MTN.cleared = false; MTN.balT = 3; MTN.rams = []; MTN.sidePosts = { west: [], east: [] };
   const earth = new THREE.MeshLambertMaterial({ color: 0x6e7358 });
   const earthD = new THREE.MeshLambertMaterial({ color: 0x5a5344 });
   const stone = new THREE.MeshLambertMaterial({ color: 0x8d8980 });
@@ -3630,10 +3630,10 @@ function buildMountain() {
   buildHQ(-4, 4, 74, 88, 0, 80);
   buildMedPost(3.2, 84, 'blue');
   nobori(5.2, 76, '#1f5fb8', '#f4f1e8', '麓');
-  // 急斜面。道の外は登れない。山の中身は矢を止めない（峰から大手道へ射下ろす）
-  wall(-26, -1.7, 0, 8.2, 32.2, 70, earthD).noShot = true;
-  wall(1.65, 10.4, 0, 7.6, 32.2, 70, earth).noShot = true;
-  wall(13.7, 28, 0, 8.2, 32.2, 70, earthD).noShot = true;
+  // 急斜面。道と足場の外は登れない。山の中身は矢を止めない
+  wall(-26, -4.7, 0, 8.2, 32.2, 70, earthD).noShot = true;
+  wall(4.05, 8.15, 0, 7.6, 32.2, 70, earth).noShot = true;
+  wall(15.9, 28, 0, 8.2, 32.2, 70, earthD).noShot = true;
   wall(-20, -7.6, 0, 11.2, -8, 8, earthD);
   wall(7.6, 22, 0, 11.2, -8, 8, earthD);
   wall(-18, -7.8, 0, 14.5, -34, -8, earthD);
@@ -3642,6 +3642,16 @@ function buildMountain() {
   // 大手道・搦手道（幅およそ 2.9m、三人並びが限度）
   stair(-1.45, 1.45, 66, 32.4, 0, 6.4, false);
   stair(10.55, 13.45, 66, 32.4, 0, 6.4, false);
+  // 階段の横の足場。登っている横から矢とつぶてが来る。道とは床がつながる
+  const zy = z => 6.4 * (66 - z) / 33.6;
+  MTN.sidePosts = { west: [], east: [] };
+  for (const z of [52, 42, 36]) {
+    const y = zy(z);
+    deck(-4.35, -1.3, z - 1.2, z + 1.2, y, stone);
+    deck(1.3, 3.7, z - 1.2, z + 1.2, y, stone);
+    deck(8.5, 10.7, z - 1.2, z + 1.2, y, stone);
+    deck(13.3, 15.5, z - 1.2, z + 1.2, y, stone);
+  }
   // 西峰と東峰、その間の稜線（守りはここを自由に行き来する）
   deck(-16, -1.55, 8, 31.2, 6.4, earth);
   deck(-1.45, 1.45, 8, 33, 6.4, earth);
@@ -3662,7 +3672,7 @@ function buildMountain() {
       m.position.set((a + b) / 2, y + 1.2, (z0 + z1) / 2); stageRoot.add(m); leaves.push(m);
       const box = { x0: a + 0.02, x1: b - 0.02, y0: y, y1: y + 2.5, z0, z1 }; boxes.push(box); bs.push(box);
     });
-    MTN.gates.push({ id, hp: 10, open: false, meshes: leaves, boxes: bs, y, x0, x1, z0, z1 });
+    MTN.gates.push({ id, hp: 18, open: false, meshes: leaves, boxes: bs, y, x0, x1, z0, z1 });
   };
   gate('west', -1.35, 1.35, 31.15, 31.95, 6.4);
   gate('east', 10.65, 13.35, 31.15, 31.95, 6.4);
@@ -3752,12 +3762,38 @@ function buildMountain() {
     [[-4, 2], [4, 2], [-4, -1], [4, -1], [0, 4]],
     [[-3, -16], [3, -18], [0, -24], [-4, -22]],
   ];
-  MTN.hold = [
-    [-8, 16, 6.4, false, 'peak'], [-12, 13, 6.4, true, 'peak'], [2.4, 15, 6.4, false, 'peak'],
-    [6, 14.6, 6.4, false, 'peak'], [11, 15, 6.4, true, 'peak'], [16, 14, 6.4, false, 'peak'],
+  MTN.rams = [];
+  const ramLog = (side, x, z) => {
+    const g = new THREE.Group();
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.2, 2.5, 8), woodD);
+    log.rotation.x = Math.PI / 2; g.add(log);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.22, 8), new THREE.MeshLambertMaterial({ color: 0x2a2a2e }));
+    cap.rotation.x = Math.PI / 2; cap.position.z = 1.15; g.add(cap);
+    g.rotation.y = Math.PI;
+    const y = zy(z);
+    g.position.set(x, y + 0.95, z); stageRoot.add(g);
+    MTN.rams.push({ id: side, g, x, z, y, swing: 0, t: 0, crew: [] });
+  };
+  ramLog('west', 0, 63);
+  ramLog('east', 12, 63);
+  const hold = [];
+  for (const z of [52, 42, 36]) {
+    const y = zy(z);
+    hold.push([0, z, y, false, 'approach', 'west']);
+    hold.push([-2.9, z, y, z === 42, 'approach', 'west']);
+    hold.push([2.5, z, y, z === 52, 'approach', 'west']);
+    hold.push([12, z, y, false, 'approach', 'east']);
+    hold.push([9.5, z, y, z === 52, 'approach', 'east']);
+    hold.push([14.4, z, y, z === 42, 'approach', 'east']);
+  }
+  hold.push(
+    [-8, 18, 6.4, false, 'approach', 'west'], [-4, 14.5, 6.4, true, 'approach', 'west'], [2, 16, 6.4, false, 'approach', 'west'],
+    [16, 18, 6.4, false, 'approach', 'east'], [11, 14.5, 6.4, true, 'approach', 'east'], [6, 16, 6.4, false, 'approach', 'east'],
     [-3.5, 2.2, 9.6, false, 'nino'], [3.6, 1.4, 9.6, false, 'nino'], [-2.2, -0.6, 9.6, true, 'nino'], [2.8, -1.2, 9.6, false, 'nino'],
-    [-2.5, -17, 12.8, false, 'hon'], [3, -20, 12.8, true, 'hon'], [0, -25, 12.8, false, 'hon'],
-  ];
+    [-2.5, -17, 12.8, false, 'hon'], [3, -20, 12.8, true, 'hon'], [0, -25, 12.8, false, 'hon']
+  );
+  MTN.hold = hold;
+  for (const h of hold) if (h[5]) MTN.sidePosts[h[5]].push([h[0], h[1], h[2]]);
 }
 function mtnOpenGate(g) {
   if (!g || g.open) return;
@@ -3774,7 +3810,7 @@ function mtnGateShot(p, team) {
     if (p.x > g.x0 - 0.3 && p.x < g.x1 + 0.3 && p.z > g.z0 - 0.45 && p.z < g.z1 + 0.45 && p.y > g.y && p.y < g.y + 2.6) {
       g.hp -= 1;
       if (g.hp <= 0) mtnOpenGate(g);
-      else if (g.hp === 6 || g.hp === 3) popup((g.id === 'west' ? '大手門' : '搦手門') + 'が緩む');
+      else if (gate.hp === 12 || gate.hp === 6) popup((g.id === 'west' ? '大手門' : '搦手門') + 'が緩む');
       return;
     }
   }
@@ -3810,30 +3846,153 @@ function mtnArrow(from, to, dmg) {
   addArrow('orange', from, vel, { dmg: dmg || 7 });
 }
 function mtnRoute(p, tx, tz) {
-  const py = floorUnder(p.x, p.z, (p.y || 0) + 0.3);
+  const e = MTN.who;
+  const py = e && e.baseY != null ? e.baseY : floorUnder(p.x, p.z, (p.y || 0) + 0.3);
   const ty = floorUnder(tx, tz, 30);
-  // 守りは峰の上から射る。麓までは降りない。西峰と東峰は同じ高さなので稜線を通って行き来する
-  if (py > 5.2 && ty < py - 1.6) {
-    if (py > 11.2) return [clamp(tx, -6.2, 6.2), clamp(p.z, -26.5, -12)];
-    if (py > 8.2) return [clamp(tx, -6, 6), clamp(p.z, -2.8, 5.4)];
-    const cross = (p.x < 2.2 && tx > 7.5) || (p.x > 7.5 && tx < 2.2);
-    return [clamp(tx, -14.5, 18.5), cross ? 14.6 : clamp(tz, 9.5, 28)];
-  }
-  if (Math.abs(py - ty) < 1.05 && Math.hypot(tx - p.x, tz - p.z) < 16) return [tx, tz];
-  const wps = [[0, 50, 1.5], [0, 40, 4], [0, 33, 6.2], [12, 50, 1.5], [12, 40, 4], [12, 33, 6.2], [4, 14.5, 6.4], [0, 5, 8], [0, 1, 9.6], [0, -7, 11], [0, -14, 12.8]];
+  if (e && e.team === 'orange' && e.mtnPost && !e.mtnGo) return [e.mtnPost[0], e.mtnPost[1]];
+  const side = e && (e.mtnGo ? e.mtnGo[3] : e.mtnSide);
+  const west = [[0, 60, 1.1], [0, 50, 3.0], [0, 42, 4.6], [0, 36, 5.7], [0, 33, 6.2], [-2, 22, 6.4], [4, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
+  const east = [[12, 60, 1.1], [12, 50, 3.0], [12, 42, 4.6], [12, 36, 5.7], [12, 33, 6.2], [14, 22, 6.4], [8, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
+  const wps = side === 'east' ? east : side === 'west' ? west : west.concat(east);
+  if (Math.abs(py - ty) < 1.15 && Math.hypot(tx - p.x, tz - p.z) < 12) return [tx, tz];
   let best = null, bd = 1e9;
   for (const w of wps) {
-    if (w[2] < Math.min(py, ty) - 0.5 || w[2] > Math.max(py, ty) + 0.6) continue;
-    const d = Math.hypot(w[0] - p.x, w[1] - p.z) + Math.abs(w[2] - py) * 2;
+    if (w[2] < Math.min(py, ty) - 0.7 || w[2] > Math.max(py, ty) + 1.15) continue;
+    const d = Math.hypot(w[0] - p.x, w[1] - p.z) + Math.abs(w[2] - py) * 3;
     if (d < bd) { bd = d; best = w; }
   }
-  if (best && Math.hypot(best[0] - p.x, best[1] - p.z) > 1.5) return [best[0], best[1]];
+  if (best && Math.hypot(best[0] - p.x, best[1] - p.z) > 1.3) return [best[0], best[1]];
   return [tx, tz];
+}
+function mtnPlace(x, z, y, kind, team, opt) {
+  const ne = spawnEnemy(x, z, kind, false, team, Object.assign({ y: y, yari: team === 'orange' ? -1 : undefined }, opt || {}));
+  if (!ne) return null;
+  ne.baseY = y; ne.s.position.y = y; ne.footOk = [x, z];
+  return ne;
+}
+function mtnBoot() {
+  for (const h of MTN.hold) {
+    const ne = mtnPlace(h[0], h[1], h[2], h[3] ? 'mob' : 'archer', 'orange', { set: { stone: !!h[3], mtnZone: h[4], mtnSide: h[5] || null, mtnPost: [h[0], h[1], h[2], h[5] || null], mtnHold: true } });
+    if (ne) ne.face = Math.PI;
+  }
+  for (const side of ['west', 'east']) {
+    const x0 = side === 'west' ? 0 : 12;
+    const R = MTN.rams.find(r => r.id === side);
+    for (let i = 0; i < 8; i++) {
+      const kind = i < 5 ? 'archer' : 'mob';
+      mtnPlace(x0 + rand(-1.05, 1.05), rand(70, 78), 0, kind, 'blue', { set: { mtnSide: side } });
+    }
+    for (let i = 0; i < 4; i++) {
+      const ne = mtnPlace(x0 + (i % 2 ? 0.7 : -0.7), 66 + (i < 2 ? 0.2 : -0.6), 0, 'mob', 'blue', { yari: -1, set: { ramCrew: true, mtnSide: side } });
+      if (ne && R) R.crew.push(ne);
+    }
+  }
+}
+function mtnRamBrain(e, dt) {
+  if (!e.ramCrew) return false;
+  const R = MTN.rams && MTN.rams.find(r => r.id === e.mtnSide);
+  const gate = MTN.gates.find(g => g.id === e.mtnSide);
+  if (!R || !gate || gate.open) { e.ramCrew = false; return false; }
+  if (!R.crew.includes(e)) R.crew.push(e);
+  const i = Math.max(0, R.crew.indexOf(e));
+  const sx = R.x + (i % 2 ? 0.65 : -0.65), sz = R.z + (i < 2 ? 0.85 : -0.85);
+  const p = e.s.position;
+  if (Math.hypot(sx - p.x, sz - p.z) > 0.4) steer(e, sx, sz, e.speed * 1.2, dt);
+  e.baseY = floorUnder(p.x, p.z, (R.y || 0) + 0.4);
+  e.tgt = null; e.faceWant = Math.PI; e.state = 'approach';
+  return true;
+}
+function mtnDefenderBrain(e, dt) {
+  if (e.team !== 'orange' || e.special || (!e.mtnPost && !e.mtnGo)) return false;
+  const p = e.s.position;
+  if (e.mtnGo) {
+    const g = e.mtnGo;
+    MTN.who = e;
+    if (Math.hypot(g[0] - p.x, g[1] - p.z) < 1.15 && Math.abs(e.baseY - g[2]) < 0.8) {
+      e.mtnPost = g; e.mtnGo = null; e.mtnSide = g[3]; e.mtnZone = 'approach';
+    } else {
+      const rt = mtnRoute(p, g[0], g[1]);
+      steer(e, rt[0], rt[1], e.speed * 1.15, dt);
+      e.faceWant = Math.atan2(g[0] - p.x, g[1] - p.z);
+      return true;
+    }
+  }
+  const post = e.mtnPost;
+  if (Math.hypot(post[0] - p.x, post[1] - p.z) > 1.15) { steer(e, post[0], post[1], e.speed, dt); return true; }
+  e.tgtT -= dt; e.cd -= dt; e.t += dt;
+  if (!e.tgt || e.tgtT <= 0 || (!e.tgt.isPlayer && e.tgt.state === 'down')) { e.tgt = chooseTarget(e); e.tgtT = 0.7; }
+  if (!e.tgt) { e.faceWant = Math.PI; e.state = 'idle'; return true; }
+  const tp = tgtPos(e.tgt);
+  e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z);
+  const dist = Math.hypot(tp.x - p.x, tp.z - p.z);
+  const ty = e.tgt.isPlayer ? player.pos.y : e.tgt.baseY;
+  if (e.stone && dist > 3.5 && dist < 20 && e.cd <= 0 && Math.abs(ty - e.baseY) < 8) { mtnThrowStone(e); e.cd = rand(1.2, 2); e.state = 'approach'; return true; }
+  if (e.kind === 'archer' && dist < 52 && Math.abs(ty - e.baseY) < 10 && ammoOK(e)) {
+    if (e.state !== 'aim' && e.state !== 'zanshin') { e.state = 'aim'; e.t = 0; }
+    if (e.state === 'aim' && e.t >= aimTotal(e, dist < 8)) { enemyShoot(e, e.tgt); e.state = 'zanshin'; e.t = 0; }
+    else if (e.state === 'zanshin' && e.t > 0.35) { e.state = 'aim'; e.t = 0; }
+    return true;
+  }
+  if (dist < 2.1 && Math.abs(ty - e.baseY) < 1.3 && e.cd <= 0) {
+    e.cd = 0.8;
+    if (e.tgt.isPlayer) hurtPlayer(e.dmg || 8);
+    else damageEnemy(e.tgt, 1, p, false, { pt: new V3(tp.x, ty + 0.8, tp.z), thrust: true }, e);
+  }
+  e.state = 'approach';
+  return true;
+}
+function mtnHotSide() {
+  let w = 0, ea = 0;
+  if (player.pos.z < 72) { if (Math.abs(player.pos.x - 0) <= Math.abs(player.pos.x - 12)) w += 2; else ea += 2; }
+  for (const e of enemies) if (e.team === 'blue' && e.state !== 'down' && e.mtnSide) { if (e.mtnSide === 'east') ea++; else w++; }
+  return w >= ea ? 'west' : 'east';
+}
+function mtnBalance() {
+  const pressure = { west: 0, east: 0 }, defs = { west: [], east: [] };
+  if (player.pos.z < 72 && player.pos.y < 10) pressure[Math.abs(player.pos.x) < Math.abs(player.pos.x - 12) ? 'west' : 'east'] += 2;
+  for (const e of enemies) {
+    if (e.state === 'down' || e.special) continue;
+    if (e.team === 'blue' && e.mtnSide) pressure[e.mtnSide] += 1;
+    if (e.team === 'orange' && (e.mtnSide === 'west' || e.mtnSide === 'east') && e.mtnZone !== 'nino' && e.mtnZone !== 'hon' && !e.mtnGo) defs[e.mtnSide].push(e);
+  }
+  const score = s => (pressure[s] + 0.6) / (defs[s].length + 0.6);
+  let hot = null;
+  if (score('west') > score('east') + 0.45) hot = 'west';
+  else if (score('east') > score('west') + 0.45) hot = 'east';
+  if (!hot) return;
+  const cold = hot === 'west' ? 'east' : 'west';
+  if (defs[cold].length < 4) return;
+  const mover = defs[cold][defs[cold].length - 1];
+  const spots = MTN.sidePosts[hot] || [];
+  if (!spots.length) return;
+  let spot = spots[0], bd = 1e9;
+  for (const s of spots) {
+    const taken = enemies.some(o => o !== mover && o.state !== 'down' && Math.hypot((o.mtnPost ? o.mtnPost[0] : o.s.position.x) - s[0], (o.mtnPost ? o.mtnPost[1] : o.s.position.z) - s[1]) < 0.7);
+    if (taken) continue;
+    const d = Math.hypot(s[0] - mover.s.position.x, s[1] - mover.s.position.z);
+    if (d < bd) { bd = d; spot = s; }
+  }
+  mover.mtnGo = [spot[0], spot[1], spot[2], hot];
+  popup(hot === 'west' ? '西峰が押されている。東の兵を回す' : '東峰が押されている。西の兵を回す');
 }
 function updateMountain(dt) {
   if (!MTN.on || state !== 'play') return;
   const px = player.pos.x, pz = player.pos.z, py = player.pos.y;
   if (MTN.slowT > 0) MTN.slowT -= dt;
+  if ((MTN.balT -= dt) <= 0) { MTN.balT = 5; mtnBalance(); }
+  for (const R of MTN.rams || []) {
+    const gate = MTN.gates.find(g => g.id === R.id);
+    if (!gate || gate.open) { if (R.g) R.g.visible = false; continue; }
+    const alive = R.crew.filter(isUp);
+    if (alive.length >= 2 && R.z > 33.4) { R.z -= dt * 0.85; R.y = 6.4 * (66 - R.z) / 33.6; }
+    R.t += dt; R.swing = Math.max(0, R.swing - dt * 1.6);
+    if (alive.length >= 2 && R.z <= 33.6 && R.t > 2.3) {
+      R.t = 0; R.swing = 0.7; gate.hp -= 3;
+      popup((gate.id === 'west' ? '大手門' : '搦手門') + 'に破城槌（残り ' + Math.max(0, gate.hp) + '）');
+      if (gate.hp <= 0) mtnOpenGate(gate);
+    }
+    if (R.g) R.g.position.set(R.x, R.y + 0.95, R.z - R.swing);
+  }
   for (const s of MTN.stones) {
     s.life += dt; s.vy -= 9.8 * dt; s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
   }
@@ -3926,7 +4085,7 @@ const STAGES = {
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
-  mtn: { name: '山城の戦い', desc: '高天神にならう山城を登る。道は三人並びが限度で、道の外の急斜面は登れない。大手門と搦手門。守りは西峰と東峰を行き来する。門の次は二の丸（門は開いているが落とし穴、入ると四方から矢）。本丸はトラバサミ、開けると矢の出る扉、針山の床、滑る石段。' },
+  mtn: { name: '山城の戦い', desc: '味方が二つに分かれる。半分は西峰の大手門、半分は東峰の搦手門。各大門には破城隊の丸太がつき、あなたも門を射て、近くで叩ける。守りは階段の上と、階段の横の足場から矢とつぶてを落とす。押されている峰へ、もう一方の峰から兵が回る。門の次は二の丸、その次が本丸。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -4080,43 +4239,37 @@ function cycleFrame(C, stepT) {
   return C.frs[C.seq[(k + C.contact) % C.n]];
 }
 // 足りない斜め・上・下は、今の服と髪の写真から作る（新しい顔や衣装は足さない）
-function synthFrame(base, kind, sideImg) {
+function synthFrame(base, kind) {
   const img = base && base.tex && base.tex.image;
   if (!img || img.width < 4 || img.height < 4) return null;
   const maxH = 420, sc = Math.min(1, maxH / img.height);
   const w = Math.max(8, Math.round(img.width * sc)), h = Math.max(8, Math.round(img.height * sc));
   const c = document.createElement('canvas'), ctx = c.getContext('2d');
   try {
+    // 一枚の写真だけを使う。横の写真を横に重ねると、弓や体にもう一人が重なって見える
     if (kind === 'front_diag' || kind === 'back_diag') {
-      c.width = Math.round(w * 1.2); c.height = h;
-      ctx.save(); ctx.translate(c.width * 0.1, 0); ctx.transform(0.9, 0, -0.07, 1, 0, 0);
-      ctx.drawImage(img, 0, 0, w, h); ctx.restore();
-      if (sideImg && sideImg.width > 4) {
-        ctx.save(); ctx.globalAlpha = 0.5;
-        const sw = Math.round(c.width * 0.2);
-        ctx.drawImage(sideImg, 0, 0, sideImg.width, sideImg.height, c.width - sw, 0, sw, h);
-        ctx.restore();
-      }
+      c.width = Math.round(w * 0.92); c.height = h;
+      ctx.save();
+      ctx.transform(0.84, 0, kind === 'back_diag' ? 0.05 : -0.05, 1, c.width * 0.1, 0);
+      ctx.drawImage(img, 0, 0, w, h);
+      ctx.restore();
     } else if (kind === 'top') {
-      c.width = Math.round(w * 1.08); c.height = h;
-      ctx.drawImage(img, 0, 0, img.width, img.height * 0.42, c.width * 0.06, 0, c.width * 0.88, h * 0.58);
-      ctx.drawImage(img, 0, img.height * 0.3, img.width, img.height * 0.7, c.width * 0.14, h * 0.46, c.width * 0.72, h * 0.54);
+      c.width = Math.round(w * 0.86); c.height = h;
+      ctx.drawImage(img, 0, 0, img.width, img.height, c.width * 0.14, h * 0.04, c.width * 0.72, h * 0.92);
     } else {
       c.width = w; c.height = h;
-      ctx.drawImage(img, 0, img.height * 0.4, img.width, img.height * 0.6, w * 0.04, h * 0.36, w * 0.92, h * 0.64);
-      ctx.drawImage(img, 0, 0, img.width, img.height * 0.48, w * 0.08, 0, w * 0.84, h * 0.46);
+      ctx.drawImage(img, 0, 0, img.width, img.height, w * 0.08, h * 0.1, w * 0.84, h * 0.86);
     }
   } catch (err) { return null; }
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
-  const dir = (kind === 'front_diag' || kind === 'back_diag') ? (base.dir || 1) : 0;
+  const dir = (kind === 'front_diag' || kind === 'back_diag') ? (base.dir || 0) : 0;
   return { tex, aspect: c.width / c.height, hk: base.hk || 1, ax: base.ax == null ? 0.5 : base.ax, dir };
 }
 function ensureViews(g) {
-  const sideImg = g.side && g.side.tex && g.side.tex.image;
-  if (!g.front_diag) g.front_diag = synthFrame(g.front, 'front_diag', sideImg);
-  if (!g.back_diag) g.back_diag = synthFrame(g.back || g.front, 'back_diag', sideImg);
-  if (!g.top) g.top = synthFrame(g.front, 'top', null);
-  if (!g.low) g.low = synthFrame(g.front, 'low', null);
+  if (!g.front_diag) g.front_diag = synthFrame(g.front, 'front_diag');
+  if (!g.back_diag) g.back_diag = synthFrame(g.back || g.front, 'back_diag');
+  if (!g.top) g.top = synthFrame(g.front, 'top');
+  if (!g.low) g.low = synthFrame(g.front, 'low');
 }
 // 横歩きの連続写真が無い娘は、横（無ければ正面）の下半身をずらして歩幅を作る
 function synthWalk(g) {
@@ -4993,10 +5146,13 @@ const TROOP_K = (() => { const v = parseFloat(new URLSearchParams(location.searc
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
   if (MTN.on) {
-    const kind = Math.random() < 0.42 ? 'archer' : 'mob';
-    const x = clamp(player.pos.x + rand(-2.2, 2.2), -6, 6);
-    const z = clamp(player.pos.z + rand(4, 11), 70, 94);
-    return spawnEnemy(x, z, kind, false, 'blue', { y: floorUnder(x, z, 2) });
+    const west = enemies.filter(e => e.team === 'blue' && e.mtnSide === 'west' && e.state !== 'down').length;
+    const east = enemies.filter(e => e.team === 'blue' && e.mtnSide === 'east' && e.state !== 'down').length;
+    const side = west <= east ? 'west' : 'east';
+    const x = side === 'west' ? rand(-1.05, 1.05) : rand(10.95, 13.05);
+    const z = rand(70, 78);
+    const kind = Math.random() < 0.55 ? 'archer' : 'mob';
+    return spawnEnemy(x, z, kind, false, 'blue', { y: 0, set: { mtnSide: side } });
   }
   if (SNOW.on) {
     const kind = Math.random() < 0.34 ? 'archer' : 'mob';
@@ -5038,8 +5194,8 @@ const SQUAD_DEFS = {
   beach: { blue: [['guard', '近衛分隊'], ['b1', '第1小早隊'], ['b2', '第2小早隊'], ['b3', '第3小早隊'], ['b4', '第4小早隊'], ['b5', '第5小早隊'], ['b6', '第6小早隊']],
            orange: [['p1', '第1トーチカ隊'], ['p2', '第2トーチカ隊'], ['p3', '第3トーチカ隊'], ['p4', '第4トーチカ隊']] },
   snow: { blue: [['guard', '近衛分隊'], ['front', '雪峡谷先遣隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['roam', '遊撃弓隊']], orange: [['m1', '雪壁守備隊'], ['m2', 'クレバス伏兵隊'], ['yari', '氷槍隊'], ['roam', '氷弓隊']] },   // 浜：攻め手は舟ごと、守り手はトーチカごと
-  mtn: { blue: [['guard', '近衛分隊'], ['front', '大手先遣隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['roam', '遊撃弓隊']],
-         orange: [['gate', '門前弓隊'], ['ridge', '稜線守備隊'], ['nino', '二の丸伏兵隊'], ['hon', '本丸守備隊']] },
+  mtn: { blue: [['guard', '近衛分隊'], ['west', '西峰攻撃隊'], ['east', '東峰攻撃隊'], ['ramw', '西破城隊'], ['rame', '東破城隊']],
+         orange: [['west', '西峰守備隊'], ['east', '東峰守備隊'], ['nino', '二の丸伏兵隊'], ['hon', '本丸守備隊']] },
   plane: { blue: [['guard', '近衛分隊'], ['front', '前方客室分隊'], ['rear', '後方客室分隊']], orange: [['front', '前方奴襲隊'], ['rear', '後方奴襲隊']] },   // 機内：客室の前と後ろ
   plains: { blue: [['guard', '近衛分隊'], ['front', '前衛分隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']],   // 平原には櫃がないので弓分隊
             orange: [['m1', '第1近接部隊'], ['m2', '第2近接部隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']] },
@@ -5077,8 +5233,8 @@ function assignSquad(e) {
   else if (CASTLE.on) s = t === CD() ? sqBy(t, e.ambush ? 'ambush' : (e.perch || CASTLE.phase === 0) ? 'gate' : 'bailey') : sqBy(t, e.ramCrew ? 'ram' : e.kind === 'archer' ? 'bow' : 'x') || pickBalanced(t, ['a1', 'a2']);
   else if (PLANE.on) s = e.seated || PLANE.intro ? sqBy(t, e.s.position.z > -4 ? 'front' : 'rear') : pickBalanced(t, ['front', 'rear']);   // 席の位置で前・後ろ、援軍は少ない方へ
   else if (MTN.on) s = t === 'orange'
-    ? sqBy(t, e.mtnZone === 'hon' ? 'hon' : e.mtnZone === 'nino' ? 'nino' : e.kind === 'archer' ? 'gate' : 'ridge')
-    : (e.kind === 'archer' ? sqBy(t, 'roam') : sqBy(t, e.screen ? 'front' : 'melee'));
+    ? sqBy(t, e.mtnZone === 'hon' ? 'hon' : e.mtnZone === 'nino' ? 'nino' : e.mtnSide === 'east' ? 'east' : 'west')
+    : (e.ramCrew ? sqBy(t, e.mtnSide === 'east' ? 'rame' : 'ramw') : sqBy(t, e.mtnSide === 'east' ? 'east' : 'west'));
   else if (SNOW.on) s = e.kind === 'archer' ? sqBy(t, 'roam') : (t === 'blue' ? sqBy(t, e.screen ? 'front' : 'melee') : pickBalanced(t, ['m1', 'm2']));
   else if (t === DEF() && (t === 'blue' || fort)) {
     if (fort) s = e.kind === 'archer' ? (e.perch ? sqBy(t, e.perch.tower ? (e.perch.x < 0 ? 'tw1' : 'tw2') : 'gate') : sqBy(t, 'roam')) : sqBy(t, e.screen ? 'gate' : 'melee');
@@ -5527,25 +5683,19 @@ function startWave(n) {
     wave.total = { blue: wave.blueToSpawn, orange: wave.toSpawn };
     SNOW.spawnI = 0;
   }
-  if (MTN.on) {   // 山城：道が狭いので人数を抑え、守りは弓とつぶて
-    wave.toSpawn = Math.max(6, Math.round(wave.toSpawn * 0.36));
-    wave.blueToSpawn = Math.max(5, Math.round(wave.blueToSpawn * 0.55));
-    wave.maxAlive = Math.min(11, 6 + n);
-    wave.blueMax = Math.min(wave.blueMax, 14);
-    wave.archerRate = 0.72;
-    wave.total = { blue: wave.blueToSpawn, orange: wave.toSpawn };
-    if (n === 1 && !MTN.garrison) {
-      MTN.garrison = true;
-      for (const h of MTN.hold) {
-        const ne = spawnEnemy(h[0] + rand(-0.25, 0.25), h[1] + rand(-0.25, 0.25), h[3] ? 'mob' : 'archer', false, 'orange', { y: h[2], yari: -1, set: { stone: !!h[3], mtnZone: h[4], mtnHold: true } });
-        if (ne) { ne.baseY = h[2]; ne.s.position.y = h[2]; }
-      }
-    }
+  if (MTN.on) {
+    wave.toSpawn = n === 1 ? 8 : 10;
+    wave.blueToSpawn = n === 1 ? 8 : 10;
+    wave.maxAlive = 40;
+    wave.blueMax = 32;
+    wave.archerRate = 0.62;
+    wave.total = { blue: wave.blueToSpawn + 24, orange: wave.toSpawn + MTN.hold.length };
+    if (n === 1 && !MTN.garrison) { MTN.garrison = true; mtnBoot(); }
   }
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '山城を登れ。道は三人並びが限度。大手門と搦手門。道の外は登れない' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? '峰から矢とつぶて。門を落としても次は二の丸' : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '味方が二つに分かれて大手と搦手を攻める。破城隊の丸太が門を突く。あなたも門を射て、近くなら叩ける' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? '押されている峰へ、もう一方から兵が回る' : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -5566,9 +5716,10 @@ function waveUpdate(dt) {
       cx = clamp(slot[0] + rand(-0.9, 0.9), -7.2, 7.2);
       cz = clamp(slot[1] + rand(-1.4, 1.4), -102, 102);
     } else if (MTN.on) {
-      const posts = MTN.posts[Math.min(MTN.posts.length - 1, MTN.phase)];
-      const slot = posts[(MTN.spawnI++) % posts.length];
-      cx = slot[0]; cz = slot[1];
+      const side = mtnHotSide();
+      const spots = (MTN.sidePosts && MTN.sidePosts[side]) || [];
+      const slot = spots.length ? spots[(MTN.spawnI++) % spots.length] : [side === 'west' ? 0 : 12, 42, 4.6];
+      cx = slot[0]; cz = slot[1]; MTN.spawnY = slot[2]; MTN.spawnSide = side;
     } else {
       const front = Math.random() < 0.7;
       const a = front ? -Math.PI / 2 + rand(-1.2, 1.2) : rand(0, Math.PI * 2);
@@ -5584,9 +5735,10 @@ function waveUpdate(dt) {
       const crew = CASTLE.on && CASTLE.phase === 0 && !cap && (wave.ramWant || 0) > CASTLE.ram.crew.filter(isUp).length;   // 破門隊：丸太の担ぎ手を 4 人まで
       const ne = spawnEnemy(sp[0], sp[1], crew ? 'mob' : Math.random() < wave.archerRate ? 'archer' : 'mob', cap, 'orange', crew ? { set: { ramCrew: true } } : (MTN.on ? { yari: -1 } : {}));
       if (MTN.on && ne) {
-        const y = floorUnder(ne.s.position.x, ne.s.position.z, 40);
-        ne.baseY = y; ne.s.position.y = y;
-        ne.mtnZone = mtnRegion(ne.s.position.x, ne.s.position.z, y);
+        const y = MTN.spawnY || 4.6, side = MTN.spawnSide || 'west';
+        ne.s.position.set(cx + rand(-0.2, 0.2), y, cz + rand(-0.2, 0.2));
+        ne.baseY = y; ne.footOk = [ne.s.position.x, ne.s.position.z];
+        ne.mtnSide = side; ne.mtnZone = 'approach'; ne.mtnPost = [cx, cz, y, side]; ne.mtnHold = true;
         if (ne.kind === 'mob') ne.stone = true;
       }
       if (crew && ne) { CASTLE.ram.crew.push(ne); if (!CASTLE.ram.crew.some((m, j) => j < CASTLE.ram.crew.length - 1 && isUp(m)) && CASTLE.ram.y < 0.5 && CASTLE.ram.z < -20) { CASTLE.ram.x = sp[0]; CASTLE.ram.z = sp[1] + 2; } }
@@ -6995,6 +7147,7 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
+    if (MTN.on) MTN.who = e;
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {
       e.t += dt; e.kneel = true; e.tgt = null; e.passive = true; p.y = e.baseY;
@@ -7092,6 +7245,8 @@ function updateEnemies(dt) {
     else if (e.runner && !e.hold) runnerBrain(e, dt);
     else if (e.guard && !e.hold && e.state !== 'charge' && e.state !== 'windup' && e.state !== 'recover' && guardBrain(e, dt)) { /* 近衛：殿のまわりの輪 */ }
     else if (CASTLE.on && !e.hold && !e.special && castleBrain(e, dt)) { /* 城：伏兵・破門隊・退却・門を打つ */ }
+    else if (MTN.on && e.ramCrew && mtnRamBrain(e, dt)) { /* 山城：破城槌を担いで門へ */ }
+    else if (MTN.on && e.team === 'orange' && mtnDefenderBrain(e, dt)) { /* 階段の上と横の足場から射る。峰の間は回る */ }
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
       e.cd -= dt; e.t += dt;
@@ -7320,8 +7475,12 @@ function updateEnemies(dt) {
     p.x = clamp(p.x, -CFG.field, CFG.field); p.z = clamp(p.z, -CFG.field, CFG.field);
     if (MTN.on && !e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && e.state !== 'down' && e.state !== 'seppuku') {
       const fy = floorUnder(p.x, p.z, e.baseY + 0.35);
-      if (fy > e.baseY + 0.02) e.baseY = Math.min(fy, e.baseY + 2.4 * dt);
-      else if (fy < e.baseY - 0.05) e.baseY = Math.max(fy, e.baseY - 4.2 * dt);
+      if (fy < e.baseY - 0.55 && e.baseY > 0.3 && e.footOk) { p.x = e.footOk[0]; p.z = e.footOk[1]; }
+      else {
+        if (fy > e.baseY + 0.02) e.baseY = Math.min(fy, e.baseY + 2.4 * dt);
+        else if (fy >= e.baseY - 0.45) e.baseY = Math.max(fy, e.baseY - 2.2 * dt);
+        e.footOk = [p.x, p.z];
+      }
       for (const f of floors) if (f.slide && Math.abs(f.y - e.baseY) < 0.28 && p.x > f.x0 && p.x < f.x1 && p.z > f.z0 && p.z < f.z1) { p.z += 1.6 * dt; break; }
     }
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);

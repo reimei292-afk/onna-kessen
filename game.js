@@ -675,7 +675,7 @@ function yagura(cx, cz, Y) {
   roof.rotation.y = Math.PI / 4; roof.position.set(cx, Y + 4.3, cz); stageRoot.add(roof);
   ladder(cx, cz + S, cz + S + 0.9, Y);
   for (let i = 0; i < 4; i++) perches.push({ x: cx - 1.65 + i * 1.1, z: cz - S + 0.55, y: Y, taken: null, tower: true });
-  nobori(cx + S - 0.3, cz + S - 0.3, '#1f5fb8', '#f4f1e8', '青組').position.y = Y;
+  (atkMode ? nobori(cx + S - 0.3, cz + S - 0.3, '#d9741c', '#fff6e8', '橙組') : nobori(cx + S - 0.3, cz + S - 0.3, '#1f5fb8', '#f4f1e8', '青組')).position.y = Y;
 }
 // ---- 井闌（せいらん）：橙組の攻城櫓。味方の櫓より高い車付きの木の塔で、門の外からゆっくり壁へ近づく。
 //      上の床に弓兵 2〜4 人（前と左右は胸壁、狭間の隙間から上半身が出る）。上の弓兵を全員倒すと止まる。
@@ -1294,7 +1294,8 @@ function stageLook(name) {
 //   ③ 城内（奥御殿：畳の間と襖。いちばん奥が殿の本陣）：隠し落とし穴と、襖の陰の伏兵
 // ====================================================================
 const CS = { WX: 34, WZ1: 75, IZ: 40, BX: 8.1, BZ0: 44, BZ1: 67.4, ZA: 49.4, ZB: 54.8, ZC: 60.2, XC: 2.7, CAP: [0, 31], GATE_MAX: 170, RAM_GOAL: -2.3 };
-const CASTLE = { on: false, phase: 0, gateHP: 0, cap: 0, doors: [], pits: [], amb: [], portals: [], next: null, ram: null, gate: null, capT: 0, banner: '' };
+const CD = () => CASTLE.atk ? 'orange' : 'blue', CA = () => CASTLE.atk ? 'blue' : 'orange';   // 城：守り手・攻め手の組（攻める：青組が攻め手）
+const CASTLE = { atk: false, on: false, phase: 0, gateHP: 0, cap: 0, doors: [], pits: [], amb: [], portals: [], next: null, ram: null, gate: null, capT: 0, banner: '' };
 let CSM = null;
 function castleMats() {
   if (CSM) return CSM;
@@ -1420,9 +1421,25 @@ function buildCastle() {
   stageRoot.add(ram);
   CASTLE.ram = { g: ram, x: 0, z: -50, y: 0.24, swing: 0, t: 0, crew: [], hitDone: false };
   // ---- 二の丸：中の塀（石垣＋漆喰）と中門、遮蔽物 ----
-  castleWall(B, -CS.WX, -2.2, CS.IZ, true, 2.8); castleWall(B, 2.2, CS.WX, CS.IZ, true, 2.8);
-  for (const s of [-1, 1]) B.dark.add(s * 2.2 - 0.2, s * 2.2 + 0.2, 0, 3.6, CS.IZ - 0.3, CS.IZ + 0.3, true);
-  B.dark.add(-2.8, 2.8, 3.3, 3.6, CS.IZ - 0.35, CS.IZ + 0.35); B.tile.add(-3.2, 3.2, 3.6, 3.8, CS.IZ - 0.7, CS.IZ + 0.7);
+  // v9：中の塀にも狭間（中門の左右）。守り手が二の丸へ射る
+  const inSl = [7.2, 9.6, 12.4, 15.6], inAll = [...inSl, ...inSl.map(x => -x)];
+  castleWall(B, -CS.WX, -2.2, CS.IZ, true, 2.8, inAll.filter(x => x < 0)); castleWall(B, 2.2, CS.WX, CS.IZ, true, 2.8, inAll.filter(x => x > 0));
+  { const sb = []; for (const x of inAll) for (const z of [-0.39, 0.39]) sb.push([x - 0.09, x + 0.09, 1.15, 1.75, CS.IZ + z - 0.01, CS.IZ + z + 0.01]); instBoxes(M.black, sb); }
+  for (const x of inAll) perches.push({ x, z: CS.IZ + 0.85, y: 0, taken: null, slit: true, inner: true });
+  // v9：中門の門櫓（門の上の足場）。前（二の丸側）に胸壁、内側と二の丸側の両方に梯子。弓兵 5 人が二の丸へ射下ろす
+  const GY = 3.6; CS.GY = GY;
+  for (const s of [-1, 1]) B.dark.add(s * 2.2 - 0.2, s * 2.2 + 0.2, 0, GY - 0.2, CS.IZ - 0.3, CS.IZ + 0.3, true);
+  B.dark.add(-6.2, 6.2, GY - 0.25, GY, CS.IZ - 0.95, CS.IZ + 1.45);
+  floors.push({ x0: -6.0, x1: 6.0, z0: CS.IZ - 0.9, z1: CS.IZ + 1.4, y: GY, gt: true });
+  CASTLE.gtFloor = floors[floors.length - 1];
+  B.plaster.add(-4.7, 4.7, GY, GY + 0.9, CS.IZ - 0.95, CS.IZ - 0.8, true); boxes[boxes.length - 1].rail = true;   // 前の胸壁（しゃがめば隠れ、立てば上半身が出る）
+  for (const s of [-1, 1]) B.plaster.add(s > 0 ? 6.0 : -6.2, s > 0 ? 6.2 : -6.0, GY, GY + 1.0, CS.IZ - 0.2, CS.IZ + 1.45, true);   // 左右の板壁（前の角は梯子口）
+  B.dark.add(-3.6, 3.6, GY + 0.85, GY + 0.95, CS.IZ + 1.35, CS.IZ + 1.45, true); boxes[boxes.length - 1].y0 = GY; boxes[boxes.length - 1].rail = true;   // 後ろの手すり
+  for (const x of [-6.1, 6.1]) for (const z of [CS.IZ - 0.85, CS.IZ + 1.35]) B.dark.add(x - 0.1, x + 0.1, GY, GY + 2.3, z - 0.1, z + 0.1);
+  hipRoof(-7.2, 7.2, CS.IZ - 2.0, CS.IZ + 2.5, GY + 2.3, 1.5, M.tile); B.tile.add(-7.2, 7.2, GY + 2.2, GY + 2.32, CS.IZ - 2.0, CS.IZ + 2.5);
+  ladder(4.8, CS.IZ + 1.45, CS.IZ + 2.35, GY); ladder(-4.8, CS.IZ + 1.45, CS.IZ + 2.35, GY);   // 内側（守り手が上る）
+  ladder(5.4, CS.IZ - 1.85, CS.IZ - 0.95, GY); ladder(-5.4, CS.IZ - 1.85, CS.IZ - 0.95, GY);   // 二の丸側（攻め手の梯子攻め）
+  for (let i = 0; i < 5; i++) perches.push({ x: -3.8 + i * 1.9, z: CS.IZ - 0.4, y: GY, taken: null, gt: true });
   for (const [x, z, a] of [[-9, 9, 0.1], [9, 10, -0.1], [-16, 18, 0.2], [15, 19, -0.15], [-5, 24, 0], [6, 25, 0.05], [-22, 27, 0.1], [21, 28, -0.1]]) bamboobundle(x, z, a);
   const lanterns = [[-3.4, 35.5], [3.4, 35.5], [-12, 14], [12, 14]];
   for (const [x, z] of lanterns) {   // 石灯籠
@@ -1436,7 +1453,8 @@ function buildCastle() {
   tree(-28, 34, 1.2); tree(28, 33, 1.1); tree(-29, 4, 1.0); tree(29, 5, 1.0);
   { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.8, 0.8, 14), M.stone); w.position.set(-18, 0.4, 33); stageRoot.add(w); colliders.push({ x: -18, z: 33, r: 0.9 }); covers.push({ x: -18, z: 33, r: 0.8, type: 'bundle', h: 0.8 }); }   // 井戸
   yagura(-23, 34, 4.2); yagura(19, 34, 4.2);   // v8：二の丸の櫓（味方の弓兵が射下ろす。梯子は奥側）
-  nobori(-1.6, CS.CAP[1], '#1f5fb8', '#f4f1e8', '二の丸'); nobori(1.6, CS.CAP[1], '#1f5fb8', '#f4f1e8', '青組');
+  const DC = CASTLE.atk ? ['#d9741c', '#fff6e8', '橙組'] : ['#1f5fb8', '#f4f1e8', '青組'], AC = CASTLE.atk ? ['#1f5fb8', '#f4f1e8', '青組'] : ['#d9741c', '#fff6e8', '橙組'];
+  nobori(-1.6, CS.CAP[1], DC[0], DC[1], '二の丸'); nobori(1.6, CS.CAP[1], DC[0], DC[1], DC[2]);
   // ---- 城内（奥御殿）：外壁・柱・畳・襖・欄間・天井・屋根 ----
   const X0 = -CS.BX, X1 = CS.BX, Z0 = CS.BZ0, Z1 = CS.BZ1, CH = 2.8, WT = 0.08;
   B.stone.add(X0 - 0.4, X1 + 0.4, 0, 0.05, Z0 - 0.4, Z1 + 0.4, false, 0.5);                       // 基壇
@@ -1525,12 +1543,18 @@ function buildCastle() {
   // 伏兵の部屋（左右の B の間）
   CASTLE.amb = [4, 6].map(r => ({ room: r, sprung: false, members: [], spots: (r === 4 ? [[-6.95, 50.25], [-3.85, 50.25], [-7.2, 52.9], [-3.6, 52.9]] : [[6.95, 50.25], [3.85, 50.25], [7.2, 52.9], [3.6, 52.9]]) }));
   // 本陣（いちばん奥の間）と救護
-  buildHQ(X0 + 0.1, X1 - 0.1, CS.ZC + 0.15, Z1 - 0.1, -1, 63.9);
-  buildMedPost(4.4, 64.8, 'blue'); buildMedPost(0, -48, 'orange');
-  for (const x of [-7.6, 7.6]) nobori(x, Z1 - 0.6, '#1f5fb8', '#f4f1e8', '本陣');
+  if (!CASTLE.atk) { buildHQ(X0 + 0.1, X1 - 0.1, CS.ZC + 0.15, Z1 - 0.1, -1, 63.9); buildMedPost(4.4, 64.8, 'blue'); buildMedPost(0, -48, 'orange'); }
+  else {   // v9 攻める：殿の本陣は門の外の陣幕（野営の本陣）。橙組の救護は奥御殿
+    maku(-4, -44, 4, 0); maku(4, -44, 4, 0); maku(-6, -50, 12, Math.PI / 2); maku(6, -50, 12, Math.PI / 2); maku(0, -56, 12, 0);
+    buildHQ(-6, 6, -56, -44, 0, -53);
+    buildMedPost(8.5, -50, 'blue'); buildMedPost(4.4, 64.8, 'orange');
+    for (let i = -2; i <= 2; i++) nobori(i * 3, -41.5, '#1f5fb8', '#f4f1e8', i % 2 ? '青組' : '必勝');
+    CASTLE.flag = { x: 0, z: 65.5 };   // 奪う旗（奥御殿の本陣）
+  }
+  for (const x of [-7.6, 7.6]) nobori(x, Z1 - 0.6, DC[0], DC[1], '本陣');
   // ---- 外：橙組の陣（竹束・幟）、木々、遠くの天守 ----
   for (const [z, n] of [[-14, 7], [-26, 8], [-38, 8]]) for (let i = 0; i < n; i++) { const x = -30 + (i + 0.5) * 60 / n + rand(-2, 2); if (Math.abs(x) < 4) continue; bamboobundle(x, z + rand(-2, 2), rand(-0.2, 0.2)); }
-  for (let i = 0; i < 10; i++) nobori(rand(-40, 40), rand(-75, -60), '#d9741c', '#fff6e8', pick(['橙組', '必勝', '破門', '一番']));
+  for (let i = 0; i < 10; i++) nobori(rand(-40, 40), rand(-75, -60), AC[0], AC[1], pick([AC[2], '必勝', '破門', '一番']));
   for (let i = 0; i < 40; i++) {
     const a = Math.random() * Math.PI * 2, r = rand(50, 110), x = Math.cos(a) * r, z = Math.sin(a) * r + 20;
     if (z < 0 && z > -80 && Math.abs(x) < 45) continue; if (z >= -3 && z < CS.WZ1 + 10 && Math.abs(x) < CS.WX + 8) continue;
@@ -1615,7 +1639,7 @@ function doorSet(d, open, by) {
   d.open = open; d.by = by || null; d.closeT = 0;
   d.box.y1 = open ? -1 : 2.8;
   if (by !== undefined) { const o = Sfx.at(new V3(d.x, 1, d.z), 30); if (o) Sfx.noiseBurst(0.32, 'bandpass', 900, 500, 0.12, 0.8, 0, o); }   // するっ（襖を引く音）
-  if (open && by && by !== 'player' && by.team === 'orange' && d.amb) castleSpring(d.amb, by);
+  if (open && by && by !== 'player' && by.team === CA() && d.amb) castleSpring(d.amb, by);
 }
 function doorWrite(d) {
   const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
@@ -1657,7 +1681,7 @@ function castleSpring(room, by) {
   if (!live.length) return;
   for (const m of live) {
     m.hiddenAmb = null; m.kneel = false; m.passive = false; m.state = m.kind === 'archer' ? 'aim' : 'approach'; m.t = 0; m.cd = 0;
-    if (by && by.team === 'orange' && isUp(by)) { m.tgt = by; m.tgtT = 2.5; }
+    if (by && by.team === CA() && isUp(by)) { m.tgt = by; m.tgtT = 2.5; }
   }
   for (const d of CASTLE.doors) if (d.amb === room && !d.open && by && Math.hypot(d.x - by.s.position.x, d.z - by.s.position.z) < 2.5) doorSet(d, true, live[0]);
   showBanner('伏兵！', '奥御殿伏兵隊が襖の陰から一斉にかかる！');
@@ -1704,19 +1728,23 @@ function castleGateBreak() {
   showBanner('大手門、破られる！', '橙組が二の丸へなだれ込む — 二の丸で迎え撃て');
   Sfx.thudAt(Math.hypot(player.pos.x, player.pos.z) * 0.5); Sfx.fanfare && Sfx.chime && Sfx.chime(true);
   for (let i = 0; i < 4; i++) puff(new V3(rand(-2.4, 2.4), rand(0.5, 3), rand(-0.5, 1.5)), 0xc8b48a, 6, 1.0, 2.0, 1.0);
-  const L = enemies.find(o => o.team === 'blue' && isUp(o) && !o.special); if (L) yariSay(L, 'gate_broken');
+  const L = enemies.find(o => o.team === CD() && isUp(o) && !o.special); if (L) yariSay(L, 'gate_broken');
   for (const m of CASTLE.ram.crew) if (isUp(m)) { m.ramCrew = false; m.state = 'approach'; }
   CASTLE.ram.crew = [];
-  for (const o of enemies) if (o.team === 'blue' && isUp(o) && !o.special && !o.perch && !o.guard && o.s.position.z < 8) o.fallback = { x: rand(-9, 9), z: rand(24, 32), until: time + 7 };
+  for (const o of enemies) if (o.team === CD() && isUp(o) && !o.special && !o.perch && !o.guard && o.s.position.z < 8) o.fallback = { x: rand(-9, 9), z: rand(24, 32), until: time + 7 };
   // 二の丸の備え：奥御殿から予備の守り手が出てくる（波の援軍の残りが少なければ足す）
   wave.blueToSpawn = Math.max(wave.blueToSpawn, 6);
-  for (let i = 0; i < 4; i++) { const e = spawnEnemy(rand(-8, 8), rand(30, 37), i === 3 ? 'archer' : 'mob', false, 'blue'); if (e && e.sq && e.sq.k !== 'bailey') { /* 分隊は assignSquad が決める */ } }
+  for (let i = 0; i < 4; i++) { const e = spawnEnemy(rand(-8, 8), rand(30, 37), i === 3 ? 'archer' : 'mob', false, CD()); if (e && e.sq && e.sq.k !== 'bailey') { /* 分隊は assignSquad が決める */ } }
   // v8：二の丸の櫓へ弓兵を上げる（狭間の弓兵が梯子で上る＋予備の弓兵 2 人は櫓の上から）
   const tw = perches.filter(q => q.tower && !q.taken);
-  for (let i = 0; i < 2 && tw.length; i++) { const q = tw.splice(Math.floor(Math.random() * tw.length), 1)[0]; spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); }
+  for (let i = 0; i < 2 && tw.length; i++) { const q = tw.splice(Math.floor(Math.random() * tw.length), 1)[0]; spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); }
+  // v9：中門の門櫓に弓兵 4 人、中の塀の狭間に 2 人（二の丸の攻め手を上と横から射る）
+  { const gq = perches.filter(q => q.gt && !q.taken), sq = perches.filter(q => q.slit && q.inner && !q.taken);
+    for (let i = 0; i < 4 && gq.length; i++) { const q = gq.splice(Math.floor(Math.random() * gq.length), 1)[0]; spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); }
+    for (let i = 0; i < 2 && sq.length; i++) { const q = sq.splice(Math.floor(Math.random() * sq.length), 1)[0]; spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); } }
   for (const o of enemies) {
     if (!tw.length) break;
-    if (o.team !== 'blue' || !isUp(o) || o.kind !== 'archer' || o.special || !(o.perch && o.perch.slit)) continue;
+    if (o.team !== CD() || !isUp(o) || o.kind !== 'archer' || o.special || !(o.perch && o.perch.slit)) continue;
     let qi = 0, bd = 1e9; tw.forEach((q, i) => { const d = Math.hypot(q.x - o.s.position.x, q.z - o.s.position.z); if (d < bd) { bd = d; qi = i; } });
     const q = tw.splice(qi, 1)[0], F = floorAt(q.x, q.z, q.y), L = F && ladderTo(F, o.s.position.x, o.s.position.z);
     if (!L) continue;
@@ -1730,13 +1758,13 @@ function castleBaileyLost() {
   Sfx.chime && Sfx.chime(true);
   const spots = [[-5.4, 57.5], [0, 57.5], [5.4, 57.5], [0, 52.1], [-3, 61.5], [3, 61.5]];
   let k = 0, L = null;
-  for (const o of enemies) if (o.team === 'blue' && isUp(o) && !o.special && !o.perch && !o.hiddenAmb && castleRegion(o.s.position.x, o.s.position.z) <= 2) {
+  for (const o of enemies) if (o.team === CD() && isUp(o) && !o.special && !o.perch && !o.hiddenAmb && castleRegion(o.s.position.x, o.s.position.z) <= 2) {
     const s = spots[k++ % spots.length]; o.fallback = { x: s[0] + rand(-1, 1), z: s[1] + rand(-0.8, 0.8), until: time + 22 }; L = L || o; }
   if (L) yariSay(L, 'bailey_lost');
   CASTLE.log.push('bailey');
 }
 function castleReset() {
-  CASTLE.phase = 0; CASTLE.gateHP = CS.GATE_MAX; CASTLE.cap = 0; CASTLE.capT = 0; CASTLE.log = [];
+  CASTLE.phase = 0; CASTLE.gtThin = false; CASTLE.gtUp = 0; CASTLE.gateHP = CS.GATE_MAX; CASTLE.cap = 0; CASTLE.capT = 0; CASTLE.log = [];
   const g = CASTLE.gate; if (g) { g.box.y1 = 4.0; g.opening = 0; g.k = 0; g.shake = 0; g.leaves.forEach((l, i) => { l.rotation.y = 0; }); }
   for (const d of CASTLE.doors) { d.open = d.open0; d.by = null; d.closeT = 0; d.box.y1 = d.open ? -1 : 2.8; d.k = d.open0 ? 1 : 0; doorWrite(d); }
   for (const p of CASTLE.pits) { p.open = false; p.k = 0; p.hinge.rotation.z = 0; p.hole.visible = false; if (p.box) { const i = boxes.indexOf(p.box); if (i >= 0) boxes.splice(i, 1); p.box = null; } }
@@ -1752,14 +1780,16 @@ function updateCastle(dt) {
   if ((CASTLE.sallyT = (CASTLE.sallyT || 0) - dt) <= 0) {   // v8：二の丸で敵が減れば、味方の近接・槍が打って出る
     CASTLE.sallyT = 1;
     const was = CASTLE.sally;
+    CASTLE.gtUp = enemies.filter(o => o.team === CD() && isUp(o) && o.perch && (o.perch.gt || (o.perch.slit && o.perch.inner))).length;
+    if (CASTLE.phase === 1 && CASTLE.gtUp < 3 && !CASTLE.gtThin && CASTLE.phT > 8) { CASTLE.gtThin = true; popup(CASTLE.atk ? '中門の上の守りが薄くなった — 突入！' : '中門の上の弓兵が減った — 攻め手が門へ迫る'); (CASTLE.log || (CASTLE.log = [])).push('gtThin'); }
     if (CASTLE.phase !== CASTLE.lastPh) { CASTLE.lastPh = CASTLE.phase; CASTLE.phT = 0; } CASTLE.phT = (CASTLE.phT || 0) + 1;
     if (CASTLE.phase !== 1 || CASTLE.phT < 12) CASTLE.sally = false;
     else {
-      const oc = enemies.filter(o => o.team === 'orange' && isUp(o) && castleRegion(o.s.position.x, o.s.position.z) <= 1 && o.s.position.z > -15).length;
-      const bc = enemies.filter(o => o.team === 'blue' && isUp(o) && o.kind === 'mob' && !o.special && !o.guard && castleRegion(o.s.position.x, o.s.position.z) === 1).length;
+      const oc = enemies.filter(o => o.team === CA() && isUp(o) && castleRegion(o.s.position.x, o.s.position.z) <= 1 && o.s.position.z > -15).length;
+      const bc = enemies.filter(o => o.team === CD() && isUp(o) && o.kind === 'mob' && !o.special && !o.guard && castleRegion(o.s.position.x, o.s.position.z) === 1).length;
       CASTLE.sally = was ? oc <= Math.max(8, bc * 0.9) : (oc <= 5 && bc >= 3) || (bc >= 4 && bc >= oc * 1.6);
     }
-    if (CASTLE.sally && !was) { const L = enemies.find(o => o.team === 'blue' && isUp(o) && o.kind === 'mob' && !o.special && castleRegion(o.s.position.x, o.s.position.z) === 1); if (L) yariSay(L, 'sally_go'); popup('味方が打って出た！'); (CASTLE.log || (CASTLE.log = [])).push('sally'); }
+    if (CASTLE.sally && !was) { const L = enemies.find(o => o.team === CD() && isUp(o) && o.kind === 'mob' && !o.special && castleRegion(o.s.position.x, o.s.position.z) === 1); if (L) yariSay(L, 'sally_go'); popup('味方が打って出た！'); (CASTLE.log || (CASTLE.log = [])).push('sally'); }
   }
   const g = CASTLE.gate;
   // 門の扉：揺れ、破れたら内側へ開く
@@ -1789,7 +1819,7 @@ function updateCastle(dt) {
   // 襖のアニメと、伏兵の部屋の襖を（味方が通ったあと）静かに閉める
   for (const d of CASTLE.doors) {
     const want = d.open ? 1 : 0; if (d.k !== want) { d.k += Math.sign(want - d.k) * Math.min(Math.abs(want - d.k), dt / 0.3); doorWrite(d); }
-    if (d.open && d.amb && !CASTLE.amb.find(a => a.room === d.amb).sprung && d.by && d.by.team !== 'orange') {
+    if (d.open && d.amb && !CASTLE.amb.find(a => a.room === d.amb).sprung && d.by && d.by.team !== CA()) {
       const busy = Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 1.6 || enemies.some(o => o.state !== 'down' && Math.hypot(o.s.position.x - d.x, o.s.position.z - d.z) < 1.4);
       d.closeT = busy ? 0 : d.closeT + dt; if (d.closeT > 1.8) doorSet(d, false, null);
     }
@@ -1799,7 +1829,7 @@ function updateCastle(dt) {
     if (pit.open && pit.k < 1) { pit.k = Math.min(1, pit.k + dt / 0.25); pit.hinge.rotation.z = pit.sign * 1.45 * pit.k; }
     if (pit.open) continue;
     for (const e of enemies) {
-      if (e.team !== 'orange' || e.state === 'down' || e.state === 'pit' || e.special || e.baseY > 0.3) continue;
+      if (e.team !== CA() || e.state === 'down' || e.state === 'pit' || e.special || e.baseY > 0.3) continue;
       const p = e.s.position; if (p.x > pit.x0 + 0.12 && p.x < pit.x1 - 0.12 && p.z > pit.z0 + 0.1 && p.z < pit.z1 - 0.1) { castlePitFall(e, pit); break; }
     }
   }
@@ -1807,7 +1837,7 @@ function updateCastle(dt) {
   for (const A of CASTLE.amb) {
     if (A.sprung || !A.members.some(isUp)) continue;
     const [x0, x1, z0, z1] = CASTLE.rooms[A.room];
-    const intr = enemies.find(o => o.team === 'orange' && isUp(o) && o.s.position.x > x0 && o.s.position.x < x1 && o.s.position.z > z0 && o.s.position.z < z1);
+    const intr = enemies.find(o => o.team === CA() && isUp(o) && o.s.position.x > x0 && o.s.position.x < x1 && o.s.position.z > z0 && o.s.position.z < z1);
     if (intr) castleSpring(A.room, intr);
   }
   // 二の丸の制圧
@@ -1815,12 +1845,13 @@ function updateCastle(dt) {
     CASTLE.capT = 0.5;
     const [cx, cz] = CS.CAP; let oc = 0, bc = 0, bAll = 0;
     for (const o of enemies) { if (!isUp(o) || o.special || o.state === 'pit') continue; const p = o.s.position, r = castleRegion(p.x, p.z), d = Math.hypot(p.x - cx, p.z - cz);
-      const fighter = o.team === 'blue' && !o.perch && !o.guard && !o.hiddenAmb && (r === 1 || r === 2);
-      if (o.team === 'orange' && ((r === 1 && d < 9) || r === 2)) oc++; if (fighter && d < 9) bc++; if (fighter) bAll++; }
+      const fighter = o.team === CD() && !o.perch && !o.guard && !o.hiddenAmb && (r === 1 || r === 2);
+      if (o.team === CA() && ((r === 1 && d < 9) || r === 2)) oc++; if (fighter && d < 9) bc++; if (fighter) bAll++; }
     if (oc >= 3 && oc > bc * 2) CASTLE.cap += 0.5 / 28;          // v7 調整：押さえるのに約28秒
     else if (bAll === 0 && oc >= 3) CASTLE.cap += 0.5 / 14;
     else if (bc >= oc) CASTLE.cap = Math.max(0, CASTLE.cap - 0.5 / 15);
-    if (enemies.some(o => o.team === 'orange' && isUp(o) && inCastleBldg(o.s.position.x, o.s.position.z))) CASTLE.cap = 1;   // 奥御殿に踏み込まれた
+    if (enemies.some(o => o.team === CA() && isUp(o) && inCastleBldg(o.s.position.x, o.s.position.z))) CASTLE.cap = 1;   // 奥御殿に踏み込まれた
+    if ((CASTLE.gtUp || 0) >= 3 && !CASTLE.gtThin) CASTLE.cap = Math.min(CASTLE.cap, 0.6);   // v9：中門の上が健在なうちは押さえきれない
     if (CASTLE.cap >= 1) castleBaileyLost();
   }
 }
@@ -1854,17 +1885,17 @@ function castleBrain(e, dt) {
     return true;
   }
   // v8：門が破れた後、梯子攻め役は櫓門・二の丸の櫓の上の弓兵を目指して梯子を上る
-  if (CASTLE.phase >= 1 && e.team === 'orange' && e.raider && e.kind === 'mob' && !e.lad && !e.onFloor && castleRegion(p.x, p.z) === 1 && (e.raidT = (e.raidT || 0) - dt) <= 0) {
+  if (CASTLE.phase >= 1 && e.team === CA() && e.raider && e.kind === 'mob' && !e.lad && !e.onFloor && castleRegion(p.x, p.z) === 1 && (e.raidT = (e.raidT || 0) - dt) <= 0) {
     e.raidT = 1.5;
-    const near = e.tgt && !e.tgt.isPlayer && isUp(e.tgt) && !tgtFloor(e.tgt) && Math.hypot(tgtPos(e.tgt).x - p.x, tgtPos(e.tgt).z - p.z) < 5;
+    const near = e.tgt && !e.tgt.isPlayer && isUp(e.tgt) && !tgtFloor(e.tgt) && Math.hypot(tgtPos(e.tgt).x - p.x, tgtPos(e.tgt).z - p.z) < (CASTLE.gtUp >= 3 ? 2.2 : 5);
     if (!near) {
       let best = null, bd = 30;
-      for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || !o.perch || o.perch.slit) continue; const F = floorAt(o.s.position.x, o.s.position.z, o.baseY); if (!F) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = [o, F]; } }
+      for (const o of enemies) { if (o.team !== CD() || !isUp(o) || !o.perch || o.perch.slit) continue; const F = floorAt(o.s.position.x, o.s.position.z, o.baseY); if (!F) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = [o, F]; } }
       if (best && tryClimb(e, best[1])) { e.tgt = best[0]; e.tgtT = 3; if (Math.random() < 0.4) yariSay(e, 'ladder_go'); return false; }
     }
   }
   // 門が閉じている間：外の橙組の近接兵は、近くに相手がいなければ門を打つ
-  if (CASTLE.phase === 0 && e.team === 'orange' && e.kind === 'mob' && !e.special && castleRegion(p.x, p.z) === 0) {
+  if (CASTLE.phase === 0 && e.team === CA() && e.kind === 'mob' && !e.special && castleRegion(p.x, p.z) === 0) {
     if ((e.gateT = (e.gateT || 0) - dt) <= 0) { e.gateT = 0.6; const t = chooseTarget(e); e.gateFoe = t && Math.hypot(tgtPos(t).x - p.x, tgtPos(t).z - p.z) < 9 ? t : null; }
     if (e.gateFoe && (e.gateFoe.isPlayer || isUp(e.gateFoe))) return false;
     if (Math.abs(p.x) > 6 || p.z < -6) { steer(e, clamp(p.x, -2.2, 2.2) * 0.6 + Math.sin(e.ph) * 1.2, -1.6, e.speed, dt); e.state = 'approach'; e.tgt = null; return true; }
@@ -1884,12 +1915,18 @@ function castleCanTarget(e, t, x, z) {
   if (t.hiddenAmb) return false;
   const ep = e.s.position, re = castleRegion(ep.x, ep.z), rt = castleRegion(x, z);
   if (CASTLE.phase === 0) {
-    if (e.team === 'orange') return re !== 0 ? true : e.kind === 'mob' ? rt === 0 : (rt === 0 || !!t.perch || t.isPlayer);
-    if (e.perch && e.perch.slit) return rt === 0;
+    if (e.team === CA()) return re !== 0 ? true : e.kind === 'mob' ? rt === 0 : (rt === 0 || !!t.perch || t.isPlayer);
+    if (e.perch && e.perch.slit) return e.perch.inner ? rt === 1 : rt === 0;
+    if (e.perch && e.perch.gt) return rt === 1;
     if (e.perch) return true;
     return rt !== 0;
   }
-  if (e.team === 'blue' && !e.perch && e.kind === 'mob' && !e.ambushed) {
+  if (e.team === CA() && t.perch && (t.perch.gt || (t.perch.slit && t.perch.inner)) && (re === 0 || Math.hypot(x - ep.x, z - ep.z) > 30)) return false;   // v9：中門の上へは二の丸に入って 30m 以内から
+  if (e.perch && e.perch.slit && e.perch.inner) return rt === 1;   // v9：中の塀の狭間・中門の門櫓は二の丸（と本丸の庭）へ
+  if (e.perch && e.perch.gt) return rt === 1 || rt === 2;
+  // v9：二の丸の攻め手の近接は、中門の上と狭間の弓兵が減るまで門をくぐらない（竹束の陰で弓の撃ち合い→梯子攻め→突入）
+  if (CASTLE.phase === 1 && e.team === CA() && e.kind === 'mob' && !e.raider && !e.special && (CASTLE.gtUp || 0) >= 3 && (rt >= 2 || z > CS.IZ - 3) && !t.isPlayer && Math.hypot(x - ep.x, z - ep.z) > 4) return false;
+  if (e.team === CD() && !e.perch && e.kind === 'mob' && !e.ambushed) {
     if (CASTLE.phase === 1) return CASTLE.sally ? rt <= 1 && z > -12 : rt !== 0 && (z > 14 || Math.hypot(x - ep.x, z - ep.z) < 4);   // 二の丸の守り：門口まで追わず、奥で迎え撃つ（v8：敵が減れば打って出る）
     return rt >= 2 || z > 36;
   }
@@ -1904,7 +1941,7 @@ function castleLOS(e, t) {
   return true;
 }
 // 線分と箱（矢の当たり）：入った点を返す。狭間の窓は通す
-const slitHalfW = (b, team) => b.slitIn ? (team === b.slitIn ? b.slitW[0] : b.slitW[1]) : (team === 'orange' ? 0.16 : 0.42);
+const slitHalfW = (b, team) => b.slitIn ? (team === b.slitIn ? b.slitW[0] : b.slitW[1]) : (team === CA() ? 0.16 : 0.42);
 function castleSegHit(p0, p1, team) {
   let best = null, bt = 2;
   for (const b of boxes) {
@@ -1927,14 +1964,15 @@ function castleAllySpawn(kind) {
   const ph = CASTLE.phase;
   if (ph === 0 && kind === 'archer') {
     const free = perches.filter(q => !q.taken && (q.slit || q.gh));
-    if (free.length) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); }
+    if (free.length) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); }
   }
-  if (kind === 'archer' && ph === 1) { const tw = perches.filter(q => !q.taken && q.tower); if (tw.length && Math.random() < 0.75) { const q = pick(tw); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); } }
-  if (ph <= 1 && kind === 'archer' && ph === 1) { const free = perches.filter(q => !q.taken && q.gh); if (free.length && Math.random() < 0.5) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, 'blue', { y: q.y, perch: q }); } }
-  if (ph === 0) return spawnEnemy(rand(-10, 10), kind === 'archer' ? rand(12, 20) : rand(3, 12), kind, false, 'blue');
-  if (ph === 1) return spawnEnemy(rand(-12, 12), rand(26, 37), kind, false, 'blue');
+  if (kind === 'archer' && ph === 1) { const gt = perches.filter(q => !q.taken && (q.gt || (q.slit && q.inner))); if (gt.length && !CASTLE.gtThin && Math.random() < 0.6) { const q = pick(gt); return spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); } }   // v9：中門の門櫓・中の狭間
+  if (kind === 'archer' && ph === 1) { const tw = perches.filter(q => !q.taken && q.tower); if (tw.length && Math.random() < 0.75) { const q = pick(tw); return spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); } }
+  if (ph <= 1 && kind === 'archer' && ph === 1) { const free = perches.filter(q => !q.taken && q.gh); if (free.length && Math.random() < 0.5) { const q = pick(free); return spawnEnemy(q.x, q.z, 'archer', false, CD(), { y: q.y, perch: q }); } }
+  if (ph === 0) return spawnEnemy(rand(-10, 10), kind === 'archer' ? rand(12, 20) : rand(3, 12), kind, false, CD());
+  if (ph === 1) return spawnEnemy(rand(-12, 12), rand(26, 37), kind, false, CD());
   const s = pick([[-5.4, 57.5], [0, 57.5], [5.4, 57.5], [0, 63], [0, 52.1]]);
-  return spawnEnemy(s[0] + rand(-1.2, 1.2), s[1] + rand(-1, 1), kind, false, 'blue');
+  return spawnEnemy(s[0] + rand(-1.2, 1.2), s[1] + rand(-1, 1), kind, false, CD());
 }
 // 波の始め：伏兵を襖の陰へ（一部屋 2〜4 人、まだ見破られていない部屋だけ）
 function castleWave(n) {
@@ -1946,7 +1984,7 @@ function castleWave(n) {
     const want = Math.min(4, 2 + Math.floor(n / 2));
     for (let i = A.members.length; i < want; i++) {
       const [x, z] = A.spots[i % 4];
-      const e = spawnEnemy(x, z, Math.random() < 0.25 ? 'archer' : 'mob', false, 'blue', { set: { hiddenAmb: A.room, ambush: true, home: [x, z] } });
+      const e = spawnEnemy(x, z, Math.random() < 0.25 ? 'archer' : 'mob', false, CD(), { set: { hiddenAmb: A.room, ambush: true, home: [x, z] } });
       if (e) { e.kneel = true; e.crouch = 1; e.s.rotation.y = e.face = Math.PI; A.members.push(e); k++; }
     }
   }
@@ -3049,7 +3087,7 @@ function updateSmoke(dt) {
         if (Math.hypot(p.x - c.x, p.z - c.z) > c.r || Math.abs(o.baseY - c.y) > 2.2) continue;
         o.smokeD = (o.smokeD || 0) + 1;
         if (o.smokeD >= 3) { o.smokeD = 0; damageEnemy(o, 1, new V3(c.x, c.y, c.z), false, null, { team: 'smoke', state: 'idle', s: { position: new V3(c.x, c.y, c.z) } }); }
-        if (!c.said.has(o.team) && o.team === 'blue') { c.said.add(o.team); yariSay(o, 'smoke_out'); }
+        if (!c.said.has(o.team) && o.team === (CASTLE.on ? CD() : 'blue')) { c.said.add(o.team); yariSay(o, 'smoke_out'); }
       }
     }
   }
@@ -3066,7 +3104,7 @@ function smokeFlee(e, dt) {
 }
 // 橙組の煙玉役：味方の籠もる所（城内・櫓の上・狭間）を見つけて投げる
 function smokerBrain(e, dt) {
-  if (!e.smoker || e.team !== 'orange' || e.lad) return false;
+  if (!e.smoker || e.team !== CA() || e.lad) return false;
   const p = e.s.position;
   if (e.throwing) {
     e.throwing.t += dt; e.tgt = null; e.state = 'windup'; e.faceWant = e.face = Math.atan2(e.throwing.x - p.x, e.throwing.z - p.z);
@@ -3078,12 +3116,13 @@ function smokerBrain(e, dt) {
   e.smokeCd = 1;
   let best = null, bs = -1;
   for (const o of enemies) {
-    if (o.team !== 'blue' || !isUp(o) || o.seated) continue;
+    if (o.team !== CD() || !isUp(o) || o.seated) continue;
+    if (o.perch && (o.perch.gt || (o.perch.slit && o.perch.inner)) && (CASTLE.phT || 0) < 45) continue;   // v9：中門の上はまず弓で撃ち合う（煙は後から）
     const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d < 5 || d > 17) continue;
     if (inSmoke(q.x, q.z, o.baseY)) continue;
     const held = (CASTLE.on && inCastleBldg(q.x, q.z) ? 3 : 0) + (o.perch ? 2 : 0) + (o.baseY > 1 ? 1 : 0);
     if (!held) continue;
-    let n = 0; for (const k of enemies) if (k.team === 'blue' && isUp(k) && Math.hypot(k.s.position.x - q.x, k.s.position.z - q.z) < 3) n++;
+    let n = 0; for (const k of enemies) if (k.team === CD() && isUp(k) && Math.hypot(k.s.position.x - q.x, k.s.position.z - q.z) < 3) n++;
     const sc = held * 2 + n - d * 0.1; if (sc > bs) { bs = sc; best = o; }
   }
   if (!best) return false;
@@ -3187,7 +3226,13 @@ function npcKnifeFetch(e, dt) {
   steer(e, g.x, g.z, e.speed * 1.1, dt); e.state = 'advance'; e.cover = null; return true;
 }
 
-let builtStage = null, stageName = 'plains';
+let builtStage = null, stageName = 'plains', atkMode = false, builtAtk = false;
+// v9：櫃・城の「守る／攻める」。攻める：青組（殿の側）が攻め手、橙組が守り手
+const MODE_STAGES = ['fort', 'castle'];
+const FORT = { atk: false };
+let stageModes = { fort: 'def', castle: 'def' };
+try { Object.assign(stageModes, JSON.parse(localStorage.getItem('onna_modes') || '{}')); } catch (e) {}
+{ const mq = (location.search.match(/[?&]mode=(atk|def)/) || [])[1]; if (mq) stageModes.fort = stageModes.castle = mq; }
 try { stageName = localStorage.getItem('onna_stage') || 'plains'; } catch (e) {}
 // 足元の床の高さ（櫃・武者走り）。y より 0.4 以上高い床には乗らない
 function floorUnder(x, z, y) {
@@ -3220,7 +3265,9 @@ const STAGES = {
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
 };
 function loadStage(name) {
-  if (builtStage === name) return;
+  const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
+  if (builtStage === name && builtAtk === am) return;
+  atkMode = am; builtAtk = am; CASTLE.atk = am && name === 'castle'; FORT.atk = am && name === 'fort';
   for (const c of [...stageRoot.children]) stageRoot.remove(c);
   colliders.length = covers.length = flags.length = boxes.length = floors.length = ladders.length = perches.length = 0;
   fortGate = null; hq = null; seirans.length = 0; CAR.g = null; CAR.driver = null; CAR.riding = false;
@@ -4109,7 +4156,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
   e.climber = kind === 'archer' && team === 'orange' && Math.random() < 0.25;
   e.raider = kind === 'mob' && team === 'orange' && !e.special && Math.random() < 0.35;   // 梯子攻め役（約1/3）：砦の中に入ると櫓・足場の弓兵を狙って梯子を上る   // 砦の中で梯子を上る弓兵（約1/4）
-  e.smoker = CASTLE.on && kind === 'mob' && team === 'orange' && !e.special && !e.raider && Math.random() < 0.16 && enemies.filter(o => o.smoker && isUp(o)).length < 3;   // v8：毒煙玉の投げ手（数人）
+  e.smoker = CASTLE.on && kind === 'mob' && team === CA() && !e.special && !e.raider && Math.random() < 0.16 && enemies.filter(o => o.smoker && isUp(o)).length < 3;   // v8：毒煙玉の投げ手（数人）
   if (e.smoker) e.smokeCd = rand(4, 9);
   if (opt.set) Object.assign(e, opt.set);
   if (kind === 'mob' && !e.special && !e.ramCrew && !e.hiddenAmb && (opt.yari === 1 || (opt.yari !== -1 && Math.random() < YARI.rate))) { e.yari = true; makeYari(e); }   // 槍兵（近接の約2割）
@@ -4686,6 +4733,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   if (PLANE.intro) planeAmbush();   // 静かな機内で攻撃すれば、その場で奇襲が始まる
   if (e.hiddenAmb) castleSpring(e.hiddenAmb, by && by !== 'player' ? by : null);   // 伏兵が見つかった
   if (TEST) { const D = window.__dmgT || (window.__dmgT = {}); D[e.team] = (D[e.team] || 0) + dmg; }
+  if (TEST && CASTLE.on) { const G = window.__gt || (window.__gt = { out: 0, inn: 0, outK: 0, inK: 0 }); const gp = q => q && (q.gt || (q.slit && q.inner)); if (by && by !== 'player' && gp(by.perch)) { G.out++; if (e.hp - dmg <= 0) G.outK++; } if (gp(e.perch)) { G.inn++; if (e.hp - dmg <= 0) G.inK++; } }
   if (e.seated && e.standAt == null && !(e.seated.boat && !e.seated.boat.beached) && !e.seated.car) e.standAt = time + rand(0.1, 0.4);   // 舟の上・車の中では座ったまま
   // 話している最中の娘が撃たれた：会話を打ち切る（メニューを閉じ、声と字幕を止める。短い悲鳴だけ）
   const partner = menuOpen && menuGirl() === e;
@@ -4805,7 +4853,8 @@ function chooseTarget(e) {
     if (mine && t.kind === 'mob' && !t.special && !t.isPlayer && mine.some(a => Math.hypot(a.s.position.x - x, a.s.position.z - z) < SCREEN.guardR)) d *= SCREEN.interceptK;   // 味方の弓兵に迫る近接兵を迎え撃つ
     else if (melee && t.kind === 'archer' && d > 5 && !e.raider) d *= SCREEN.archerK;   // 弓兵より先に前に立つ近接兵と当たる
     if (melee && !BEACH.on && Math.abs(y - e.baseY) > 1.5) d += (fortGate || (CASTLE.on && CASTLE.phase >= 1)) && !e.special && (e.onFloor || tgtFloor(t)) ? (e.raider && (fortGate ? inFort(p.x, p.z) : castleRegion(p.x, p.z) >= 1) ? 2 : 14) : 80;   // 梯子で届く高所は少し遠い扱い（梯子攻め役は砦に入ると櫓を狙う）
-    if (melee && t.lad && t.team !== e.team && t.baseY < 1.6) d *= 0.6;   // 梯子に取り付いた敵を下で迎え撃つ
+    if (melee && t.lad && t.team !== e.team && t.baseY < 1.6) d *= 0.6;
+    if (CASTLE.on && !melee && CASTLE.phase >= 1 && t.perch && t.perch.gt && e.team === CA()) d *= 0.3;   // v9：二の丸の攻め手の弓は中門の上・狭間の弓兵を優先して撃ち返す   // 梯子に取り付いた敵を下で迎え撃つ
     if (cands) { cands.push([d, t]); return; }
     if (d < bd) { bd = d; best = t; }
   };
@@ -6039,7 +6088,7 @@ function updateEnemies(dt) {
     else if (!e.tgt || e.tgtT <= 0 || (!e.tgt.isPlayer && e.tgt.state === 'down')) {
       const nt = chooseTarget(e);
       if (nt !== e.tgt && e.kind === 'archer' && !['aim', 'zanshin', 'retreat', 'stagger'].includes(e.state)) { e.cover = null; if (e.state !== 'advance') { e.state = 'advance'; e.t = 0; } }
-      e.tgt = nt; e.tgtT = 0.6;
+      e.tgt = nt; e.tgtT = CASTLE.on && nt && nt.perch && nt.perch.gt && e.kind === 'archer' ? 5 : 0.6;   // v9：中門の上を狙う弓兵は狙いを保つ（遮蔽物へ向かい直し続けない）
     }
     e.cd -= dt; e.t += dt; e.moving = false;
     const tint = k => npcTint(e, k);
@@ -6107,6 +6156,7 @@ function updateEnemies(dt) {
         if (!e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) * (PLANE.on ? 0.45 : 1) || (dist < (PLANE.on ? 2.5 : 6) && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
         if (e.state === 'advance' && e.team === 'orange' && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; if (!tryArcherClimb(e)) seiranBoard(e); }
         if (e.climb) seiranClimb(e, dt);
+        else if (e.state === 'advance' && CASTLE.on && e.tgt && e.tgt.perch && e.tgt.perch.gt && dist < 28 && e.t > 1.6 && ammoOK(e) && (e.cover && !e.cover.open ? Math.hypot(e.cp ? e.cp.x - p.x : 0, e.cp ? e.cp.z - p.z : 0) < 1.2 || e.t > 4 : true)) { e.state = 'aim'; e.t = 0; }   // v9：中門の上へ撃ち返す（遮蔽物に着いたら／開けた所ならその場で）
         else if (e.state === 'advance' && BEACH.on && dist < (e.team === 'orange' ? 52 : e.bowSeat ? 46 : 40) && e.t > (e.bowSeat ? 0.6 : 1.4) && ammoOK(e)) { e.state = 'aim'; e.t = 0; e.cover = null; }   // 浜：斜面越しに、その場で射る
         else if (e.state === 'advance') {
           if (!e.cover || e.t > 8) {
@@ -6309,6 +6359,8 @@ const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 0.5;
 function enemyShoot(e, t) {
   if (e.ammo !== undefined) e.ammo = Math.max(0, e.ammo - 1);
   const from = e.s.position.clone(); from.y = e.baseY + e.figH * 0.85;
+  if (TEST && CASTLE.on && e.perch && (e.perch.gt || (e.perch.slit && e.perch.inner))) { const G = window.__gt || (window.__gt = { out: 0, inn: 0, outK: 0, inK: 0 }); G.shots = (G.shots || 0) + 1; }
+  if (TEST && CASTLE.on && t && t.perch && (t.perch.gt || (t.perch.slit && t.perch.inner))) { const G = window.__gt || (window.__gt = { out: 0, inn: 0, outK: 0, inK: 0 }); G.shotsIn = (G.shotsIn || 0) + 1; }
   const tp = tgtPos(t);
   const target = new V3(tp.x, t.isPlayer ? player.pos.y + 1.2 : t.baseY + t.figH * (t.baseY > 0.5 ? 0.78 : 0.65), tp.z);
   const v = 30, d = from.distanceTo(target), tf = d / v;
@@ -6317,7 +6369,7 @@ function enemyShoot(e, t) {
   dir.x += gauss() * err; dir.y += gauss() * err; dir.z += gauss() * err; dir.normalize();
   const vel = dir.multiplyScalar(v); vel.y += 0.5 * 9.8 * tf;
   from.addScaledVector(dir, 0.5);
-  addArrow(e.team, from, vel, { dmg: (e.captain ? 12 : 8) + Math.min(6, wave.n), shooter: e });
+  addArrow(e.team, from, vel, { dmg: (e.captain ? 12 : 8) + Math.min(6, wave.n), shooter: e, gtShot: TEST && CASTLE.on && t && t.perch && (t.perch.gt || (t.perch.slit && t.perch.inner)) });
   Sfx.twangAt(e.s.position.clone().setY(e.baseY + 1.3));
 }
 function hitsCover(p) {
@@ -6387,6 +6439,7 @@ function updateArrows(dt) {
       boxHit = false;
       if (a.team === 'player' || a.life > 0.06 || a.shooter && !a.shooter.perch) { const t = castleSegHit(p0, p1, a.team); if (t >= 0) { p1.lerpVectors(p0, p1, Math.max(0, t - 0.02)); boxHit = true; } }
     } else boxHit = (a.team === 'player' || a.life > 0.08) && boxes.length && hitsBox(p1);
+    if (TEST && a.gtShot && (boxHit || hitsCover(p1))) { const L = window.__gtA || (window.__gtA = []); if (L.length < 60) L.push([boxHit ? 'box' : 'cov', +p1.x.toFixed(1), +p1.y.toFixed(2), +p1.z.toFixed(2)]); }
     if (TEST && (boxHit || hitsCover(p1))) { const A = window.__arr || (window.__arr = {}); const k = a.team + (boxHit ? ':box' : ':cov') + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
     if (boxHit) { hitWood(p1); noteTowerHit(p1, a.team === 'orange' ? 'orange' : 'blue'); }
     const cv = boxHit ? null : hitsCover(p1);
@@ -6397,7 +6450,7 @@ function updateArrows(dt) {
     }
     const fl = floorUnder(p1.x, p1.z, p1.y);
     if (p1.y <= fl + 0.02) {
-      p1.y = fl + 0.05; a.stuck = true; a.life = 0; if (TEST) { const A = window.__arr || (window.__arr = {}); const k = a.team + ':gnd' + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
+      p1.y = fl + 0.05; a.stuck = true; a.life = 0; if (TEST && a.gtShot) { const L = window.__gtA || (window.__gtA = []); if (L.length < 60) L.push(['gnd', +p1.x.toFixed(1), +p1.y.toFixed(2), +p1.z.toFixed(2)]); } if (TEST) { const A = window.__arr || (window.__arr = {}); const k = a.team + ':gnd' + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
       if (BEACH.on && p1.z < 0 && fl <= BH.WATER + 0.01) { puff(p1.clone(), 0xdfeef5, 4, 0.5, 1.2, 0.5); Sfx.impactGround(p1); }
       else if (BEACH.on ? (floors.some(f => f.y === fl)) : fl > 0.1) Sfx.impactWood(p1);
       else { puff(p1.clone(), 0xc8b48a, 3, 0.4, 0.9, 0.5); Sfx.impactGround(p1); }   // 土埃
@@ -7187,5 +7240,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

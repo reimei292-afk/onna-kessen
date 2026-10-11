@@ -791,18 +791,21 @@ function seiranReset() { for (const T of seirans) { for (const q of T.perches) q
 const bundleGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.6, 6);
 const bundleMat = new THREE.MeshLambertMaterial({ color: 0x8aa04a });
 const ropeMat = new THREE.MeshLambertMaterial({ color: 0x6b5a3a });
-function bamboobundle(x, z, ang) {
+function bamboobundle(x, z, ang, opt) {
+  opt = opt || {};
+  const y = opt.y || 0;
   const g = new THREE.Group();
   for (let i = 0; i < 14; i++) {
     const c = new THREE.Mesh(bundleGeo, bundleMat);
     c.position.set(-0.75 + i * 0.115 + rand(-0.02, 0.02), 0.8, rand(-0.05, 0.05)); c.scale.y = rand(0.92, 1.05); g.add(c);
   }
-  for (const y of [0.45, 1.15]) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 0.16), ropeMat); r.position.y = y; g.add(r); }
-  // 支え棒
+  for (const yy of [0.45, 1.15]) { const r = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 0.16), ropeMat); r.position.y = yy; g.add(r); }
   const s = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 5), WOOD_D); s.position.set(0, 0.7, 0.6); s.rotation.x = -0.6; g.add(s);
-  g.rotation.set(-0.12, ang, 0); g.position.set(x, 0, z); stageRoot.add(g);
-  covers.push({ x, z, r: 0.85, type: 'bundle', h: 1.45, ang, mesh: g, breakable: true, hp: 3 });
-  colliders.push({ x, z, r: 0.6 });
+  g.rotation.set(-0.12, ang, 0); g.position.set(x, y, z); stageRoot.add(g);
+  const cv = { x, z, y, r: 0.85, type: 'bundle', h: opt.h || (y + 1.45), ang, mesh: g, breakable: true, hp: opt.hp || 3, mtn: !!opt.mtn, side: opt.side || null };
+  covers.push(cv);
+  if (!opt.noCol) colliders.push({ x, z, r: 0.6 });
+  return cv;
 }
 function breakBundle(cv) {
   if (!cv || cv.broken) return;
@@ -813,7 +816,10 @@ function breakBundle(cv) {
     const c = colliders[i];
     if (Math.hypot(c.x - cv.x, c.z - cv.z) < 0.25) colliders.splice(i, 1);
   }
-  for (const e of enemies) if (e.cover === cv) { e.cover = null; if (e.state === 'hide' || e.state === 'tocover' || e.state === 'return') e.state = e.kind === 'archer' ? 'advance' : 'approach'; }
+  for (const e of enemies) {
+    if (e.cover === cv) { e.cover = null; if (e.state === 'hide' || e.state === 'tocover' || e.state === 'return') e.state = e.kind === 'archer' ? 'advance' : 'approach'; }
+    if (e.mtnBundle === cv) { e.mtnBundle = null; e.bundleBear = false; e.crouch = 0; }
+  }
   puff(new V3(cv.x, 0.8, cv.z), 0xc5d6a4, 14, 0.35, 2.2, 0.7);
   popup('竹束が壊れた');
 }
@@ -3137,12 +3143,12 @@ function smokeThrow(e, x, z, y) {
   Sfx.whoosh ? Sfx.whoosh(from) : Sfx.twangAt(from);
 }
 function smokeCloud(x, y, z) {
-  const spr = [], tex = smokeTex(), indoor = CASTLE.on && inCastleBldg(x, z);
+  const spr = [], tex = smokeTex(), indoor = CASTLE.on && inCastleBldg(x, z), mtn = MTN.on;
   for (let i = 0; i < 9; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0, color: 0xc8d4b4 }));
     s.userData = { ox: rand(-1.6, 1.6), oz: rand(-1.6, 1.6), oy: rand(0.3, 1.6), sc: rand(2.2, 3.4), ph: rand(0, 6) }; s.position.set(x, y + 1, z); scene.add(s); spr.push(s);
   }
-  SMOKE.clouds.push({ x, y, z, r: indoor ? 2.6 : 3.0, t: 0, life: indoor ? 11 : 9, spr, indoor, tick: 0, said: new Set() });
+  SMOKE.clouds.push({ x, y, z, r: indoor ? 2.6 : mtn ? 2.15 : 3.0, t: 0, life: indoor ? 11 : mtn ? 8 : 9, spr, indoor, tick: 0, said: new Set() });
   puff(new V3(x, y + 0.3, z), 0xb4c0a0, 8, 0.6, 1.6, 0.8);
   Sfx.impactGround && Sfx.impactGround(new V3(x, y, z));
 }
@@ -3171,14 +3177,14 @@ function updateSmoke(dt) {
         if (Math.hypot(p.x - c.x, p.z - c.z) > c.r || Math.abs(o.baseY - c.y) > 2.2) continue;
         o.smokeD = (o.smokeD || 0) + 1;
         if (o.smokeD >= 3) { o.smokeD = 0; damageEnemy(o, 1, new V3(c.x, c.y, c.z), false, null, { team: 'smoke', state: 'idle', s: { position: new V3(c.x, c.y, c.z) } }); }
-        if (!c.said.has(o.team) && o.team === (CASTLE.on ? CD() : 'blue')) { c.said.add(o.team); yariSay(o, 'smoke_out'); }
+        if (!c.said.has(o.team) && o.team === (MTN.on ? 'orange' : (CASTLE.on ? CD() : 'blue'))) { c.said.add(o.team); yariSay(o, 'smoke_out'); }
       }
     }
   }
 }
 // 娘：煙の中にいれば外へ逃げる（true＝逃げている）
 function smokeFlee(e, dt) {
-  if (!SMOKE.clouds.length || e.seated || e.lad || e.climb || e.hiddenAmb) return false;
+  if (!SMOKE.clouds.length || e.seated || e.lad || e.climb || e.hiddenAmb || e.ramCrew || e.bundleBear) return false;
   const p = e.s.position, c = inSmoke(p.x, p.z, e.baseY); if (!c) { e.smokeFlee = false; return false; }
   if (e.perch) { e.perch.taken = null; e.perch = null; e.onFloor = floorAt(p.x, p.z, e.baseY); e.crouch = 0; }
   const dx = p.x - c.x, dz = p.z - c.z, d = Math.hypot(dx, dz) || 0.01;
@@ -3591,6 +3597,7 @@ function buildMountain() {
   if (MTN.stones) for (const s of MTN.stones) if (s.m) scene.remove(s.m);
   MTN.on = true; MTN.phase = 0; MTN.gates = []; MTN.pits = []; MTN.traps = []; MTN.needles = []; MTN.doors = []; MTN.stones = [];
   MTN.garrison = false; MTN.slowT = 0; MTN.volley = false; MTN.won = false; MTN.spawnI = 0; MTN.bar = null; MTN.entered = false; MTN.cleared = false; MTN.balT = 3; MTN.rams = []; MTN.sidePosts = { west: [], east: [] };
+  MTN.ramHits = 0; MTN.poisonThrows = 0; MTN.shotHits = 0; MTN.meleeHits = 0; MTN.noFill = false; MTN.bundleSaid = false; MTN.fillT = 1.2; MTN.roster = null;
   const earth = new THREE.MeshLambertMaterial({ color: 0x6e7358 });
   const earthD = new THREE.MeshLambertMaterial({ color: 0x5a5344 });
   const stone = new THREE.MeshLambertMaterial({ color: 0x8d8980 });
@@ -3672,7 +3679,7 @@ function buildMountain() {
       m.position.set((a + b) / 2, y + 1.2, (z0 + z1) / 2); stageRoot.add(m); leaves.push(m);
       const box = { x0: a + 0.02, x1: b - 0.02, y0: y, y1: y + 2.5, z0, z1 }; boxes.push(box); bs.push(box);
     });
-    MTN.gates.push({ id, hp: 18, open: false, meshes: leaves, boxes: bs, y, x0, x1, z0, z1 });
+    MTN.gates.push({ id, hp: 24, open: false, meshes: leaves, boxes: bs, y, x0, x1, z0, z1 });
   };
   gate('west', -1.35, 1.35, 31.15, 31.95, 6.4);
   gate('east', 10.65, 13.35, 31.15, 31.95, 6.4);
@@ -3772,7 +3779,7 @@ function buildMountain() {
     g.rotation.y = Math.PI;
     const y = zy(z);
     g.position.set(x, y + 0.95, z); stageRoot.add(g);
-    MTN.rams.push({ id: side, g, x, z, y, swing: 0, t: 0, crew: [] });
+    MTN.rams.push({ id: side, g, x, z, y, swing: 0, t: 0, crew: [], hits: 0, carrying: false, struck: false });
   };
   ramLog('west', 0, 63);
   ramLog('east', 12, 63);
@@ -3792,26 +3799,38 @@ function buildMountain() {
     [-3.5, 2.2, 9.6, false, 'nino'], [3.6, 1.4, 9.6, false, 'nino'], [-2.2, -0.6, 9.6, true, 'nino'], [2.8, -1.2, 9.6, false, 'nino'],
     [-2.5, -17, 12.8, false, 'hon'], [3, -20, 12.8, true, 'hon'], [0, -25, 12.8, false, 'hon']
   );
+  // 守りを増やす（足場の外と峰）。門は開けない
+  hold.push([-11, 22, 6.4, false, 'approach', 'west'], [17, 22, 6.4, false, 'approach', 'east']);
+  for (const z of [52, 42, 36]) {
+    const y = zy(z);
+    hold.push([-4.0, z + 0.55, y, false, 'approach', 'west']);
+    hold.push([14.9, z + 0.55, y, z === 42, 'approach', 'east']);
+  }
   MTN.hold = hold;
   for (const h of hold) if (h[5]) MTN.sidePosts[h[5]].push([h[0], h[1], h[2]]);
 }
-function mtnOpenGate(g) {
+function mtnOpenGate(g, why) {
   if (!g || g.open) return;
-  g.open = true;
+  g.open = true; g.why = why || 'ram';
+  MTN.lastOpen = g.why;
   for (const b of g.boxes) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
   g.meshes.forEach((m, i) => { m.rotation.y += (i ? 1.15 : -1.15); m.position.x += (i ? 0.45 : -0.45); });
   showBanner(g.id === 'west' ? '大手門、落ちた' : '搦手門、落ちた', '峰の上は土塁。守りは西峰と東峰を行き来する。次は二の丸');
   if (MTN.phase < 1) MTN.phase = 1;
 }
-function mtnGateShot(p, team) {
-  if (!MTN.on || team === 'orange') return;
+function mtnGateShot(p0, p1, a) {
+  // 門を射て削れるのは殿の矢だけ。味方の流れ矢では門は落ちない（破城隊が突いて破る）
+  if (!MTN.on || !a || a.team !== 'player' || a.mtnGate) return;
   for (const g of MTN.gates) {
     if (g.open) continue;
-    if (p.x > g.x0 - 0.3 && p.x < g.x1 + 0.3 && p.z > g.z0 - 0.45 && p.z < g.z1 + 0.45 && p.y > g.y && p.y < g.y + 2.6) {
-      g.hp -= 1;
-      if (g.hp <= 0) mtnOpenGate(g);
-      else if (gate.hp === 12 || gate.hp === 6) popup((g.id === 'west' ? '大手門' : '搦手門') + 'が緩む');
-      return;
+    for (const t of [0.3, 0.65, 1]) {
+      const x = p0.x + (p1.x - p0.x) * t, y = p0.y + (p1.y - p0.y) * t, z = p0.z + (p1.z - p0.z) * t;
+      if (x > g.x0 && x < g.x1 && z > g.z0 - 0.05 && z < g.z1 + 0.08 && y > g.y + 0.15 && y < g.y + 2.45) {
+        a.mtnGate = true; g.hp -= 1; MTN.shotHits = (MTN.shotHits || 0) + 1;
+        if (g.hp <= 0) mtnOpenGate(g, 'shot');
+        else if (g.hp === 12 || g.hp === 6) popup((g.id === 'west' ? '大手門' : '搦手門') + 'が緩む');
+        return;
+      }
     }
   }
 }
@@ -3824,8 +3843,8 @@ function mtnMeleeGate() {
     const dx = cx - player.pos.x, dz = cz - player.pos.z, d = Math.hypot(dx, dz);
     if (d > 1.7 || Math.abs(player.pos.y - g.y) > 1.2) continue;
     if (dx * fwd.x + dz * fwd.z < 0.3) continue;
-    g.hp -= 2;
-    if (g.hp <= 0) mtnOpenGate(g); else popup('門を叩いた');
+    g.hp -= 2; MTN.meleeHits = (MTN.meleeHits || 0) + 1;
+    if (g.hp <= 0) mtnOpenGate(g, 'melee'); else popup('門を叩いた');
     return true;
   }
   return false;
@@ -3875,17 +3894,65 @@ function mtnBoot() {
     const ne = mtnPlace(h[0], h[1], h[2], h[3] ? 'mob' : 'archer', 'orange', { set: { stone: !!h[3], mtnZone: h[4], mtnSide: h[5] || null, mtnPost: [h[0], h[1], h[2], h[5] || null], mtnHold: true } });
     if (ne) ne.face = Math.PI;
   }
+  const lineN = 19;
   for (const side of ['west', 'east']) {
     const x0 = side === 'west' ? 0 : 12;
     const R = MTN.rams.find(r => r.id === side);
-    for (let i = 0; i < 8; i++) {
-      const kind = i < 5 ? 'archer' : 'mob';
-      mtnPlace(x0 + rand(-1.05, 1.05), rand(70, 78), 0, kind, 'blue', { set: { mtnSide: side } });
+    for (let i = 0; i < lineN; i++) {
+      const col = i % 3, row = (i / 3) | 0;
+      const kind = i % 4 === 0 ? 'mob' : 'archer';
+      mtnPlace(x0 + (col - 1) * 0.95, 70 + row * 1.15, 0, kind, 'blue', { yari: kind === 'mob' ? -1 : undefined, set: { mtnSide: side } });
+    }
+    for (let i = 0; i < 3; i++) {
+      const lane = (i - 1) * 0.72, z = 64.2 - i * 1.7, y = 6.4 * (66 - z) / 33.6;
+      const ne = mtnPlace(x0 + lane, z, y, 'mob', 'blue', { yari: -1, set: { bundleBear: true, mtnSide: side, bundleLane: lane } });
+      if (ne) {
+        ne.hp = ne.hpMax = 8;
+        const cv = bamboobundle(ne.s.position.x, z - 0.95, 0, { y, mtn: true, side, noCol: true, hp: 8 });
+        ne.mtnBundle = cv; cv.bearer = ne;
+      }
+    }
+    for (let i = 0; i < 2; i++) {
+      const ne = mtnPlace(x0 + (i ? 1.05 : -1.05), 68.5 + i * 1.2, 0, 'mob', 'blue', { yari: -1, set: { smoker: true, mtnSide: side, smokeCd: rand(2.5, 5.5) } });
+      if (ne) ne.hp = ne.hpMax = 8;
     }
     for (let i = 0; i < 4; i++) {
-      const ne = mtnPlace(x0 + (i % 2 ? 0.7 : -0.7), 66 + (i < 2 ? 0.2 : -0.6), 0, 'mob', 'blue', { yari: -1, set: { ramCrew: true, mtnSide: side } });
-      if (ne && R) R.crew.push(ne);
+      const slot = mtnRamSlot(R, i), y = 6.4 * (66 - slot[1]) / 33.6;
+      const ne = mtnPlace(slot[0], slot[1], y, 'mob', 'blue', { yari: -1, set: { ramCrew: true, mtnSide: side } });
+      if (ne && R) { ne.hp = ne.hpMax = 14; R.crew.push(ne); }
     }
+  }
+  MTN.blueBoot = enemies.filter(e => e.team === 'blue' && !e.special).length;
+}
+function mtnRamSlot(R, i) {
+  const S = [[-0.62, 0.72], [0.62, 0.72], [-0.62, -0.78], [0.62, -0.78]][i % 4];
+  return [R.x + S[0], R.z + S[1]];
+}
+function mtnSyncBundle(e) {
+  const c = e.mtnBundle;
+  if (!c || c.broken || e.state === 'down') return;
+  const p = e.s.position;
+  c.x = p.x; c.z = p.z - 0.95; c.y = e.baseY; c.h = e.baseY + 1.55;
+  if (c.mesh) c.mesh.position.set(c.x, c.y, c.z);
+}
+function mtnLeadBundle(side) {
+  let best = null;
+  for (const c of covers) if (c.mtn && !c.broken && c.side === side && (!best || c.z < best.z)) best = c;
+  return best;
+}
+function mtnFillRam(R) {
+  if (MTN.noFill) return;
+  const gate = MTN.gates.find(g => g.id === R.id);
+  if (!gate || gate.open) return;
+  const alive = () => R.crew.filter(isUp).length;
+  if (alive() >= 4) return;
+  for (const e of enemies) {
+    if (alive() >= 4) break;
+    if (e.team !== 'blue' || !isUp(e) || e.special || e.guard || e.ramCrew || e.bundleBear || e.smoker || e.kind !== 'mob') continue;
+    if (e.mtnSide && e.mtnSide !== R.id) continue;
+    if (Math.hypot(e.s.position.x - R.x, e.s.position.z - R.z) > 4.2) continue;
+    e.ramCrew = true; e.mtnSide = R.id; e.yari = false; if (e.spear) yariDrop(e);
+    R.crew.push(e);
   }
 }
 function mtnRamBrain(e, dt) {
@@ -3895,11 +3962,99 @@ function mtnRamBrain(e, dt) {
   if (!R || !gate || gate.open) { e.ramCrew = false; return false; }
   if (!R.crew.includes(e)) R.crew.push(e);
   const i = Math.max(0, R.crew.indexOf(e));
-  const sx = R.x + (i % 2 ? 0.65 : -0.65), sz = R.z + (i < 2 ? 0.85 : -0.85);
+  const slot = mtnRamSlot(R, i), p = e.s.position, d = Math.hypot(slot[0] - p.x, slot[1] - p.z);
+  if (R.carrying && d < 1.7) { p.x = slot[0]; p.z = slot[1]; e.moving = !!R.moving; }
+  else if (d > 0.35) steer(e, slot[0], slot[1], e.speed * 1.15, dt);
+  e.baseY = floorUnder(p.x, p.z, (e.baseY || 0) + 0.45);
+  e.footOk = [p.x, p.z];
+  e.tgt = null; e.faceWant = Math.PI; e.state = 'approach'; e.crouch = 0;
+  return true;
+}
+function mtnBundleBrain(e, dt) {
+  if (!e.bundleBear) return false;
+  const c = e.mtnBundle;
+  if (!c || c.broken) { e.bundleBear = false; e.crouch = 0; return false; }
+  const gate = MTN.gates.find(g => g.id === (e.mtnSide || 'west'));
+  if (!gate || gate.open) { e.bundleBear = false; e.crouch = 0; return false; }
+  const p = e.s.position, gx = (e.mtnSide === 'east' ? 12 : 0) + (e.bundleLane || 0);
+  const goalZ = (gate.z0 + gate.z1) / 2 + 3.6;   // 門の前で止まる。守りは門を開けない
+  if (p.z > goalZ + 0.45) {
+    e.crouch = 0;
+    steer(e, gx, Math.max(goalZ, p.z - 4.5), e.speed * 0.7, dt);
+    e.state = 'approach'; e.moving = true;
+    if (!MTN.bundleSaid && p.z < 60) { MTN.bundleSaid = true; popup('竹束を押し立てて進む。門は開かない'); }
+  } else {
+    e.crouch = 0.72; e.state = 'hide'; e.moving = false;
+  }
+  e.tgt = null; e.faceWant = Math.PI;
+  mtnSyncBundle(e);
+  return true;
+}
+function mtnSmokeBrain(e, dt) {
+  if (!e.smoker || e.team !== 'blue') return false;
   const p = e.s.position;
-  if (Math.hypot(sx - p.x, sz - p.z) > 0.4) steer(e, sx, sz, e.speed * 1.2, dt);
-  e.baseY = floorUnder(p.x, p.z, (R.y || 0) + 0.4);
-  e.tgt = null; e.faceWant = Math.PI; e.state = 'approach';
+  if (e.throwing) {
+    e.throwing.t += dt; e.tgt = null; e.state = 'windup'; e.faceWant = e.face = Math.atan2(e.throwing.x - p.x, e.throwing.z - p.z);
+    if (e.throwing.t >= 0.55) {
+      const T = e.throwing; e.throwing = null; e.state = 'recover'; e.t = 0; npcTint(e, 0);
+      smokeThrow(e, T.x, T.z, T.y); MTN.poisonThrows = (MTN.poisonThrows || 0) + 1;
+    } else npcTint(e, e.throwing.t / 0.55 * 0.6);
+    return true;
+  }
+  if ((e.smokeCd = (e.smokeCd || 0) - dt) > 0) return false;
+  e.smokeCd = 0.7;
+  const gate = MTN.gates.find(g => g.id === (e.mtnSide || 'west'));
+  if (!gate || gate.open) return false;   // 門は守りが開けない。毒は足場の守りへ
+  let best = null, bs = -1;
+  for (const o of enemies) {
+    if (o.team !== 'orange' || !isUp(o)) continue;
+    if (o.mtnSide && e.mtnSide && o.mtnSide !== e.mtnSide && o.mtnZone === 'approach') continue;
+    const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z);
+    if (d < 5.5 || d > 20) continue;
+    if (inSmoke(q.x, q.z, o.baseY)) continue;
+    const sc = (o.baseY - e.baseY) + (o.mtnZone === 'approach' ? 3 : 0) - d * 0.08;
+    if (sc > bs) { bs = sc; best = o; }
+  }
+  if (!best) return false;
+  const q = best.s.position;
+  e.throwing = { x: q.x + rand(-0.35, 0.35), z: q.z + rand(-0.25, 0.25), y: best.baseY, t: 0 };
+  e.smokeCd = rand(8, 13);
+  yariSay(e, 'smoke_throw');
+  return true;
+}
+function mtnAllyAdvance(e, dt) {
+  if (e.special || e.ramCrew || e.bundleBear || e.guard || e.hold) return false;
+  const side = e.mtnSide === 'east' ? 'east' : e.mtnSide === 'west' ? 'west' : (e.s.position.x > 6 ? 'east' : 'west');
+  const gate = MTN.gates.find(g => g.id === side);
+  if (!gate || gate.open) return false;
+  const p = e.s.position;
+  e.t += dt;
+  let near = null, nd = 1e9;
+  for (const o of enemies) {
+    if (o.team !== 'orange' || o.state === 'down') continue;
+    const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z);
+    if (d < nd) { nd = d; near = o; }
+  }
+  if (e.kind === 'mob' && near && nd < 2.3 && Math.abs(near.baseY - e.baseY) < 1.3) return false;
+  const lead = mtnLeadBundle(side);
+  const holdZ = (gate.z0 + gate.z1) / 2 + 4.2;
+  let tx = side === 'east' ? 12 : 0, tz = Math.max(holdZ, p.z - 5);
+  if (lead) {
+    const lateral = (e.id % 2 ? 0.5 : -0.5);
+    if (p.z > lead.z + 1.15) { tx = lead.x + lateral; tz = Math.max(holdZ, lead.z + 1.35); }
+    else { tx = lead.x + lateral; tz = lead.z + 1.45; }
+  }
+  if (Math.hypot(tx - p.x, tz - p.z) > 0.75) steer(e, tx, tz, e.speed * (e.kind === 'archer' ? 0.88 : 1), dt);
+  if (e.kind === 'archer' && near && nd < 42 && Math.abs(near.baseY - e.baseY) < 9 && ammoOK(e)) {
+    e.tgt = near; e.tgtT = 0.7;
+    e.faceWant = Math.atan2(near.s.position.x - p.x, near.s.position.z - p.z);
+    if (e.state !== 'aim' && e.state !== 'zanshin') { e.state = 'aim'; e.t = 0; }
+    if (e.state === 'aim' && e.t >= aimTotal(e, nd < 8)) { enemyShoot(e, near); e.state = 'zanshin'; e.t = 0; }
+    else if (e.state === 'zanshin' && e.t > 0.35) { e.state = 'aim'; e.t = 0; }
+    return true;
+  }
+  e.faceWant = Math.PI;
+  e.state = e.kind === 'archer' ? 'advance' : 'approach';
   return true;
 }
 function mtnDefenderBrain(e, dt) {
@@ -3980,19 +4135,54 @@ function updateMountain(dt) {
   const px = player.pos.x, pz = player.pos.z, py = player.pos.y;
   if (MTN.slowT > 0) MTN.slowT -= dt;
   if ((MTN.balT -= dt) <= 0) { MTN.balT = 5; mtnBalance(); }
+  if ((MTN.fillT -= dt) <= 0) { MTN.fillT = 0.8; for (const R of MTN.rams || []) mtnFillRam(R); }
   for (const R of MTN.rams || []) {
     const gate = MTN.gates.find(g => g.id === R.id);
     if (!gate || gate.open) { if (R.g) R.g.visible = false; continue; }
-    const alive = R.crew.filter(isUp);
-    if (alive.length >= 2 && R.z > 33.4) { R.z -= dt * 0.85; R.y = 6.4 * (66 - R.z) / 33.6; }
-    R.t += dt; R.swing = Math.max(0, R.swing - dt * 1.6);
-    if (alive.length >= 2 && R.z <= 33.6 && R.t > 2.3) {
-      R.t = 0; R.swing = 0.7; gate.hp -= 3;
-      popup((gate.id === 'west' ? '大手門' : '搦手門') + 'に破城槌（残り ' + Math.max(0, gate.hp) + '）');
-      if (gate.hp <= 0) mtnOpenGate(gate);
+    R.crew = R.crew.filter(isUp);
+    const at = R.crew.filter(m => {
+      const i = R.crew.indexOf(m), s = mtnRamSlot(R, i);
+      return Math.hypot(m.s.position.x - s[0], m.s.position.z - s[1]) < 2.4;
+    });
+    // 担ぎ手が門の前にいない丸太は、勝手に坂を上って門を破らない
+    R.carrying = at.length >= 2;
+    R.moving = false;
+    const gateZ = gate.z1 + 1.55;
+    if (R.carrying) {
+      for (const m of R.crew) {
+        if (Math.hypot(m.s.position.x - R.x, m.s.position.z - R.z) > 8) continue;
+        const i = R.crew.indexOf(m), s = mtnRamSlot(R, i);
+        m.s.position.x = s[0]; m.s.position.z = s[1];
+        m.baseY = floorUnder(s[0], s[1], (R.y || 0) + 0.9); m.footOk = [s[0], s[1]];
+      }
     }
-    if (R.g) R.g.position.set(R.x, R.y + 0.95, R.z - R.swing);
+    if (R.carrying && R.z > gateZ) {
+      const step = Math.min(R.z - gateZ, dt * 1.55);
+      R.z -= step; R.y = 6.4 * (66 - R.z) / 33.6; R.moving = step > 0.02;
+      R.t = 0; R.struck = false; R.swing = Math.max(0, R.swing - dt * 3);
+      for (const m of at) {
+        const i = R.crew.indexOf(m), s = mtnRamSlot(R, i);
+        m.s.position.x = s[0]; m.s.position.z = s[1];
+        m.baseY = floorUnder(s[0], s[1], R.y + 0.9); m.footOk = [s[0], s[1]];
+      }
+    } else if (R.carrying) {
+      const u0 = R.t; R.t += dt;
+      if (R.t < 1.45) R.swing = -0.42 * (R.t / 1.45);
+      else if (R.t < 1.7) R.swing = -0.42 + 0.9 * ((R.t - 1.45) / 0.25);
+      else {
+        if (!R.struck) {
+          R.struck = true; gate.hp -= 4; R.hits = (R.hits || 0) + 1; MTN.ramHits = (MTN.ramHits || 0) + 1;
+          popup((gate.id === 'west' ? '大手門' : '搦手門') + 'に破城槌（残り ' + Math.max(0, gate.hp) + '）');
+          if (gate.hp <= 0) mtnOpenGate(gate, 'ram');
+        }
+        R.swing = 0.48 * Math.max(0, 1 - (R.t - 1.7) / 0.45);
+        if (R.t > 2.35) { R.t = 0; R.struck = false; }
+      }
+      if (u0 > R.t) R.struck = false;
+    } else { R.t = 0; R.struck = false; R.swing = Math.max(0, R.swing - dt * 2); }
+    if (R.g) { R.g.visible = true; R.g.position.set(R.x, R.y + 0.95, R.z - R.swing); }
   }
+  for (const e of enemies) if (e.mtnBundle && e.state !== 'down') mtnSyncBundle(e);
   for (const s of MTN.stones) {
     s.life += dt; s.vy -= 9.8 * dt; s.m.position.x += s.vx * dt; s.m.position.y += s.vy * dt; s.m.position.z += s.vz * dt;
   }
@@ -4085,7 +4275,7 @@ const STAGES = {
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
-  mtn: { name: '山城の戦い', desc: '味方が二つに分かれる。半分は西峰の大手門、半分は東峰の搦手門。各大門には破城隊の丸太がつき、あなたも門を射て、近くで叩ける。守りは階段の上と、階段の横の足場から矢とつぶてを落とす。押されている峰へ、もう一方の峰から兵が回る。門の次は二の丸、その次が本丸。' },
+  mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。攻め手は敵の二倍。竹束を押し立てて坂を上り、守りは門を開けない。毒煙を足場へ投げ、破城隊が丸太を門の前まで担いで突く。あなたも門を射て、近くなら叩ける。門の次は二の丸、その次が本丸。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -5684,18 +5874,24 @@ function startWave(n) {
     SNOW.spawnI = 0;
   }
   if (MTN.on) {
-    wave.toSpawn = n === 1 ? 8 : 10;
-    wave.blueToSpawn = n === 1 ? 8 : 10;
-    wave.maxAlive = 40;
-    wave.blueMax = 32;
     wave.archerRate = 0.62;
-    wave.total = { blue: wave.blueToSpawn + 24, orange: wave.toSpawn + MTN.hold.length };
+    wave.maxAlive = 56;
+    wave.blueMax = 110;
     if (n === 1 && !MTN.garrison) { MTN.garrison = true; mtnBoot(); }
+    const oBoot = enemies.filter(e => e.team === 'orange' && !e.special).length;
+    const bBoot = enemies.filter(e => e.team === 'blue' && !e.special).length;
+    const oWave = n === 1 ? 12 : 16;   // 以前は 8 / 10。守りも増やす
+    wave.toSpawn = oWave;
+    const oTotal = (n === 1 ? oBoot : 0) + oWave;
+    const bWant = oTotal * 2;           // 味方は敵の 2 倍（この波に出す人数）
+    wave.blueToSpawn = Math.max(0, bWant - (n === 1 ? bBoot : 0));
+    wave.total = { blue: (n === 1 ? bBoot : 0) + wave.blueToSpawn, orange: oTotal };
+    if (n === 1) MTN.roster = { blue: wave.total.blue, orange: wave.total.orange, bootBlue: bBoot, bootOrange: oBoot };
   }
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '味方が二つに分かれて大手と搦手を攻める。破城隊の丸太が門を突く。あなたも門を射て、近くなら叩ける' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? '押されている峰へ、もう一方から兵が回る' : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '竹束を立てて坂を上れ。守りは門を開けない。毒を投げ、破城隊が門の前で丸太を突く' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? '押されている峰へ、もう一方から兵が回る' : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -5745,7 +5941,7 @@ function waveUpdate(dt) {
       wave.toSpawn--;
       if (cap) wave.captain = false;
     }
-    wave.blueOwed = (wave.blueOwed || 0) + grp / ENEMY_RATIO;   // 敵の人数に見合う味方を出す
+    wave.blueOwed = (wave.blueOwed || 0) + (MTN.on ? grp * 2 : grp / ENEMY_RATIO);   // 山城：味方が敵の 2 倍になるよう寄せる
     if (wave.toSpawn <= 0) wave.blueOwed = Math.max(wave.blueOwed, wave.blueToSpawn);   // 端数を残さない
     wave.spawnT = rand(0.6, 1.4);
   }
@@ -7245,8 +7441,11 @@ function updateEnemies(dt) {
     else if (e.runner && !e.hold) runnerBrain(e, dt);
     else if (e.guard && !e.hold && e.state !== 'charge' && e.state !== 'windup' && e.state !== 'recover' && guardBrain(e, dt)) { /* 近衛：殿のまわりの輪 */ }
     else if (CASTLE.on && !e.hold && !e.special && castleBrain(e, dt)) { /* 城：伏兵・破門隊・退却・門を打つ */ }
-    else if (MTN.on && e.ramCrew && mtnRamBrain(e, dt)) { /* 山城：破城槌を担いで門へ */ }
-    else if (MTN.on && e.team === 'orange' && mtnDefenderBrain(e, dt)) { /* 階段の上と横の足場から射る。峰の間は回る */ }
+    else if (MTN.on && e.team === 'blue' && e.smoker && mtnSmokeBrain(e, dt)) { /* 山城：開かない門の足場へ毒煙 */ }
+    else if (MTN.on && e.ramCrew && mtnRamBrain(e, dt)) { /* 山城：破城槌を担いで門の前まで */ }
+    else if (MTN.on && e.bundleBear && mtnBundleBrain(e, dt)) { /* 山城：竹束を押し立てて前進 */ }
+    else if (MTN.on && e.team === 'blue' && mtnAllyAdvance(e, dt)) { /* 竹束の陰について坂を上る */ }
+    else if (MTN.on && e.team === 'orange' && mtnDefenderBrain(e, dt)) { /* 階段の上と横の足場から射る。門は開けない */ }
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
       e.cd -= dt; e.t += dt;
@@ -7465,7 +7664,7 @@ function updateEnemies(dt) {
     }
     }
     // 群れの分離
-    if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go')) for (const o of enemies) {
+    if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && !e.ramCrew) for (const o of enemies) {
       if (o === e || o.state === 'down' || o.seated || Math.abs(o.baseY - e.baseY) > 1) continue;
       const ox = p.x - o.s.position.x, oz = p.z - o.s.position.z, d2 = ox * ox + oz * oz;
       if (d2 < 0.81 && d2 > 1e-6) { const d = Math.sqrt(d2); p.x += ox / d * (0.9 - d) * 0.5 * Math.min(1, dt * 10); p.z += oz / d * (0.9 - d) * 0.5 * Math.min(1, dt * 10); }
@@ -7565,7 +7764,10 @@ function enemyShoot(e, t) {
 }
 function hitsCover(p) {
   if (p.y > (MTN.on ? 24 : 9)) return false;
-  for (const c of covers) if (p.y < (c.h || 7.5) && Math.hypot(p.x - c.x, p.z - c.z) < c.r * 0.85) return c;
+  for (const c of covers) {
+    if (c.mtn && p.y < (c.y || 0) - 0.25) continue;   // 山の竹束は、その段より下の矢までは遮らない
+    if (p.y < (c.h || 7.5) && Math.hypot(p.x - c.x, p.z - c.z) < c.r * 0.85) return c;
+  }
   return null;
 }
 function updateArrows(dt) {
@@ -7633,7 +7835,7 @@ function updateArrows(dt) {
     if (TEST && a.gtShot && (boxHit || hitsCover(p1))) { const L = window.__gtA || (window.__gtA = []); if (L.length < 60) L.push([boxHit ? 'box' : 'cov', +p1.x.toFixed(1), +p1.y.toFixed(2), +p1.z.toFixed(2)]); }
     if (TEST && (boxHit || hitsCover(p1))) { const A = window.__arr || (window.__arr = {}); const k = a.team + (boxHit ? ':box' : ':cov') + Math.round(p1.z / 10) * 10; A[k] = (A[k] || 0) + 1; }
     if (boxHit) { hitWood(p1); noteTowerHit(p1, a.team === 'orange' ? 'orange' : 'blue'); }
-    if (MTN.on && a.team !== 'orange') { mtnGateShot(p1, a.team); mtnGateShot(p0.clone().lerp(p1, 0.5), a.team); }
+    if (MTN.on && a.team === 'player') mtnGateShot(p0, p1, a);
     const cv = boxHit ? null : hitsCover(p1);
     if (cv || boxHit) {   // 竹林・竹束・木の壁が矢を防ぐ。竹束は何本か受けると壊れる
       if (cv && cv.breakable) {
@@ -8459,5 +8661,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

@@ -39,6 +39,7 @@
   #secmenu button small{display:block;font-size:11px;opacity:.75}
   #secmenu #secClose{margin-top:10px;width:100%}
   #secmenu .caOnly{display:none} html.plane #secmenu .caOnly{display:block}
+  #secmenu .snowOnly{display:none} html.snow #secmenu .snowOnly{display:block}
   #secmenu button.back{min-height:52px;font-size:18px;background:rgba(232,217,168,.3);color:#f4ecd6;border:1px solid rgba(232,217,168,.6)}
   #secsay{min-height:2.6em;margin:10px 0 0;font-size:14px;color:#ffe9b8;line-height:1.5}
   #ladhint{position:absolute;left:50%;top:24%;transform:translateX(-50%);padding:7px 16px;border-radius:8px;background:rgba(20,30,20,.62);border:1px solid rgba(255,230,160,.7);color:#ffe9b8;font-size:18px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
@@ -184,7 +185,7 @@
   <h2 class="serif">― 模擬戦 ―</h2>
   <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button></div>
   <div id="modesel" class="serif" style="display:none"><button data-md="def">守る</button><button data-md="atk">攻める</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
@@ -213,6 +214,7 @@
     <button data-req="plan">作戦を相談<small>攻勢／守勢の切替</small></button>
     <button data-req="shoulder">肩を揉んで<small>しばらく矢の回復が速い</small></button>
     <button data-req="fan">扇であおいで<small>ひと休み</small></button>
+    <button data-req="coldclothes" class="snowOnly">その服装、寒くない（笑）？<small>王の皮肉</small></button>
     <button data-req="arrows">矢を補充して<small>矢が満タンに</small></button>
     <button data-req="follow">一緒に来て<small>弓で援護しながら同行</small></button>
     <button data-req="back">本陣に戻って<small>同行をやめて本陣へ</small></button>

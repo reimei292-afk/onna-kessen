@@ -1285,14 +1285,15 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane';
+  const pl = name === 'plane', sn = name === 'snow';
+  document.documentElement.classList.toggle('snow', sn);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  ground.visible = !pl && name !== 'beach'; sky.visible = !pl; for (const m of mountains) m.visible = !pl;
-  scene.fog.near = pl ? 200 : LOOK0.fogN; scene.fog.far = pl ? 600 : LOOK0.fogF;
-  scene.background.setHex(pl ? 0x1a1a1e : LOOK0.bg);
-  hemiL.color.setHex(pl ? 0xfff2df : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : LOOK0.hemi[2];
-  ambL.intensity = pl ? 0.95 : LOOK0.amb; sun.intensity = pl ? 0.9 : LOOK0.sun;
+  ground.visible = !pl && name !== 'beach' && !sn; sky.visible = !pl; for (const m of mountains) m.visible = !pl;
+  scene.fog.near = pl ? 200 : sn ? 8 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : LOOK0.fogF;
+  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : LOOK0.bg);
+  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : LOOK0.hemi[2];
+  ambL.intensity = pl ? 0.95 : sn ? 0.9 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : SUN_DIR0);
 }
 // ====================================================================
@@ -2258,6 +2259,18 @@ function updateGuards() {
 // ====================================================================
 const BH = { TOP: 5, Z1: 24, Z2: 48, SHORE: 0, WATER: -0.15, XW: 50, MG_R: 76, BOAT_GOAL: -4.3 };
 const BEACH = { on: false, boats: [], pbs: [], tracers: [], waveT: 0, king: null, gboat: null, won: false, looks: new Set(), log: [] };
+// 極寒ステージ：縦に長い峡谷。雪に隠れたクレバス、橋のない凍てつく川、針状の木片、凍傷、吹雪、野営
+const SNOW = {
+  on: false, cold: 0, blizzard: false, riverT: 0, riverOpen: false, riverSaid: false, riverBarrier: null, riverBridge: null,
+  debrisT: 8, campT: 0, campDone: false, cleared: false, won: false, pits: [], markers: [], flakes: [], shards: [],
+  lastHurt: 0, supplies: 2, npcT: 0, spawnI: 0, shardMat: null,
+  posts: [
+    [[-2.2, 58], [2.6, 46], [-1.4, 34], [3.1, 22], [0.2, 12], [-3.0, 16]],
+    [[1.6, -10], [-2.8, -20], [2.4, -32], [-1.1, -44], [3.0, -52], [0, -36]],
+    [[-2.2, -60], [2.5, -68], [0.2, -76], [-3.0, -84], [2.2, -90], [0.4, -64]],
+  ],
+};
+function snowUse() { if (!SNOW.on || SNOW.riverOpen || Math.abs(player.pos.z) > 5) return false; SNOW.riverT = Math.max(SNOW.riverT, 0.1); popup('川は凍てついている……渡るには時間がかかる'); return true; }
 function groundH(x, z) {
   if (!BEACH.on) return 0;
   let h;
@@ -3315,12 +3328,185 @@ function ladderNear(P) {
   }
   return best;
 }
+function buildSnow() {
+  SNOW.on = true; SNOW.cold = 0; SNOW.blizzard = false; SNOW.riverT = 0; SNOW.riverOpen = false; SNOW.riverSaid = false;
+  SNOW.riverBarrier = null; SNOW.riverBridge = null; SNOW.debrisT = 8; SNOW.campT = 0; SNOW.campDone = false;
+  SNOW.cleared = false; SNOW.won = false; SNOW.pits = []; SNOW.markers = []; SNOW.flakes = []; SNOW.shards = [];
+  SNOW.supplies = 2; SNOW.npcT = 0; SNOW.spawnI = 0; SNOW.lastHurt = 0;
+  SNOW.shardMat = new THREE.MeshLambertMaterial({ color: 0xe9f4ff });
+  const snow = new THREE.MeshLambertMaterial({ color: 0xe5eef5 });
+  const ice = new THREE.MeshLambertMaterial({ color: 0x7da8c4, transparent: true, opacity: 0.82 });
+  const darkIce = new THREE.MeshLambertMaterial({ color: 0x142c42 });
+  const rock = new THREE.MeshLambertMaterial({ color: 0x687987 });
+  const trunk = new THREE.MeshLambertMaterial({ color: 0x514b45 });
+  const branch = new THREE.MeshLambertMaterial({ color: 0xdce7ef });
+  const groundGeo = new THREE.PlaneGeometry(26, 220, 18, 120); groundGeo.rotateX(-Math.PI / 2);
+  const pos = groundGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const x = pos.getX(i), z = pos.getZ(i); pos.setY(i, 0.08 * Math.sin(z * 0.16 + x * 0.6) + 0.035 * Math.cos(z * 0.7)); }
+  groundGeo.computeVertexNormals(); const floor = new THREE.Mesh(groundGeo, snow); floor.position.z = -4; stageRoot.add(floor);
+  // 谷壁：左右から迫る、横幅の狭い自然の要害
+  for (const side of [-1, 1]) {
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(5, 16, 220), rock); wall.position.set(side * 15, 5.8, -4); stageRoot.add(wall);
+    boxes.push({ x0: Math.min(side * 12.5, side * 17.5), x1: Math.max(side * 12.5, side * 17.5), z0: -114, z1: 106, y0: 0, y1: 16 });
+    for (let i = 0; i < 18; i++) {
+      const x = side * rand(9.5, 14), z = rand(-108, 100), h = rand(3, 9);
+      const b = new THREE.Mesh(new THREE.ConeGeometry(rand(1.8, 4.5), h, 5), branch);
+      b.position.set(x, h * 0.45, z); b.rotation.z = side * rand(-0.4, 0.4); stageRoot.add(b);
+    }
+  }
+  // 雪をかぶった針葉樹。進路中央は空け、左右に配置
+  for (let i = 0; i < 44; i++) {
+    const x = (Math.random() < 0.5 ? -1 : 1) * rand(5.7, 10.8), z = rand(-100, 95), h = rand(4.5, 8.5);
+    if (Math.abs(z) < 8 && Math.abs(x) < 8) continue;
+    const g = new THREE.Group();
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.22, h * 0.45, 6), trunk); t.position.y = h * 0.22; g.add(t);
+    for (let k = 0; k < 3; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(h * (0.25 - k * 0.045), h * 0.36, 7), branch); c.position.y = h * (0.35 + k * 0.2); g.add(c); }
+    g.position.set(x, 0, z); stageRoot.add(g); colliders.push({ x, z, r: 0.45 });
+  }
+  // 雪で覆われたクレバス。暗い裂け目は近づくと見える。踏むと落ちて押し戻される
+  for (const [x, z, w] of [[-2.8, 52, 2.4], [3.2, 28, 2.0], [-3.5, -25, 2.6], [2.7, -53, 2.2]]) {
+    const hole = new THREE.Mesh(new THREE.PlaneGeometry(w, 5.5), darkIce); hole.rotation.x = -Math.PI / 2; hole.position.set(x, -0.02, z); hole.visible = false; stageRoot.add(hole);
+    const cap = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.7, 6.2), snow); cap.rotation.x = -Math.PI / 2; cap.position.set(x, 0.015, z); stageRoot.add(cap);
+    SNOW.pits.push({ x, z, w, hole, cap, triggered: false, seen: false });
+  }
+  // 川は峡谷を横断。最初は渡れず、岸で数秒耐えると凍死者をつないだ橋ができる
+  const river = new THREE.Mesh(new THREE.PlaneGeometry(25, 7), ice); river.rotation.x = -Math.PI / 2; river.position.set(0, -0.08, 0); stageRoot.add(river);
+  const deep = new THREE.Mesh(new THREE.PlaneGeometry(25, 5.4), darkIce); deep.rotation.x = -Math.PI / 2; deep.position.set(0, -0.1, 0); stageRoot.add(deep);
+  const barrier = { x0: -13, x1: 13, z0: -1.25, z1: 1.25, y0: 0, y1: 3 }; boxes.push(barrier); SNOW.riverBarrier = barrier;
+  for (const side of [-1, 1]) { const bank = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.35, 7.5), snow); bank.position.set(side * 12.4, 0.05, 0); stageRoot.add(bank); }
+  // 吹雪の道しるべ（凍死者を模した雪まみれの人影）。普段は雪に埋もれて見えない
+  const markerMat = new THREE.MeshLambertMaterial({ color: 0x6d3437 });
+  for (const z of [38, 12, -17, -44, -70]) {
+    const m = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.24, 1.0, 3, 5), markerMat); body.position.y = 0.8; m.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.19, 6, 5), snow); head.position.y = 1.48; m.add(head);
+    m.position.set((z % 2 ? 1 : -1) * 2.6, 0, z); m.visible = false; stageRoot.add(m); SNOW.markers.push(m);
+  }
+  // 出発地点の本陣（北が出口）。秘書との会話はここで
+  maku(0, 96, 8, 0); maku(-4, 88, 16, Math.PI / 2); maku(4, 88, 16, Math.PI / 2);
+  buildHQ(-4, 4, 80, 96, 0, 87);
+  buildMedPost(2.4, 90, 'blue'); buildMedPost(4.2, -94, 'orange');
+  // 終盤のかまくら
+  const igloo = new THREE.Mesh(new THREE.SphereGeometry(2.3, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), snow);
+  igloo.position.set(0, 0, -77); igloo.scale.set(1.25, 1, 1.8); stageRoot.add(igloo);
+  const entrance = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.1, 0.12), darkIce); entrance.position.set(0, 0.55, -73.1); stageRoot.add(entrance);
+  colliders.push({ x: 0, z: -77.6, r: 1.35 });
+  nobori(3.4, -74, '#1f5fb8', '#f4f1e8', '営');
+  for (let i = 0; i < 48; i++) {
+    const flake = new THREE.Mesh(new THREE.SphereGeometry(rand(0.02, 0.06), 4, 3), snow);
+    flake.position.set(rand(-11, 11), rand(1, 11), rand(-105, 100)); stageRoot.add(flake); SNOW.flakes.push(flake);
+  }
+}
+function updateSnow(dt) {
+  if (!SNOW.on || state !== 'play') return;
+  const warm = inHQ();
+  if (warm) SNOW.cold = Math.max(0, SNOW.cold - dt * 2.2);
+  else SNOW.cold += dt * (SNOW.blizzard ? 1.45 : 1);
+  // 本陣の中は暖まる。外では凍傷。お茶やご飯で持ちこたえて進む
+  if (!warm && SNOW.cold > 14) {
+    const rate = SNOW.cold > 42 ? 1.05 : 0.38;
+    player.hp -= rate * dt; SNOW.lastHurt += dt;
+    if (SNOW.lastHurt > 6) { SNOW.lastHurt = 0; popup(warm ? '' : '凍傷：体力が低下している。本陣で暖まれ'); }
+    if (player.hp <= 0) { player.hp = 0; gameOver(false); return; }
+  }
+  // 敵（北海道出身の侍女が多い）は寒さに強い。味方の戦う娘は外にいると少しずつ削られる。本陣の非戦闘員は対象外
+  SNOW.npcT -= dt;
+  if (SNOW.npcT <= 0) {
+    SNOW.npcT = 1;
+    for (const e of enemies) {
+      if (e.state === 'down' || e.special) continue;
+      const p = e.s.position;
+      if (hq && p.x > hq.x0 && p.x < hq.x1 && p.z > hq.z0 && p.z < hq.z1) { e.snowCold = Math.max(0, (e.snowCold || 0) - 2); continue; }
+      e.snowCold = (e.snowCold || 0) + 1;
+      const every = e.team === 'orange' ? 22 : 9;
+      if (e.snowCold > 20 && e.snowCold % every === 0) {
+        e.hp -= 1;
+        if (e.hp <= 0) killEnemy(e, false, player.pos);
+      }
+    }
+  }
+  // 川岸で数秒足止め。凍死者をつないだ仮設の橋ができる
+  const onBank = !SNOW.riverOpen && Math.abs(player.pos.x) < 11 && Math.abs(player.pos.z) < 4.4 && Math.abs(player.pos.z) > 1.15;
+  if (onBank) {
+    SNOW.riverT += dt;
+    if (!SNOW.riverSaid) { SNOW.riverSaid = true; popup('川は凍てついている。岸で耐えろ。橋ができる'); }
+    if (SNOW.riverT > 5.5 && SNOW.riverBarrier) {
+      SNOW.riverOpen = true;
+      const bi = boxes.indexOf(SNOW.riverBarrier); if (bi >= 0) boxes.splice(bi, 1);
+      const mat = new THREE.MeshLambertMaterial({ color: 0x79575b }); const bridge = new THREE.Group();
+      for (let i = 0; i < 8; i++) {
+        const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.22, 0.65, 2, 5), mat);
+        torso.rotation.x = Math.PI / 2; torso.position.set(0, 0.08, -3.35 + i * 0.96); bridge.add(torso);
+      }
+      bridge.position.set(0, 0.08, 0); stageRoot.add(bridge); SNOW.riverBridge = bridge;
+      showBanner('仮設の橋', '凍死者をつないだ橋ができた。急いで渡れ');
+    }
+  }
+  // 雪下の落とし穴：近づくと裂け目が見え、踏むと手前へ押し戻す
+  for (const pit of SNOW.pits) {
+    const dx = (player.pos.x - pit.x) / (pit.w * 0.42), dz = (player.pos.z - pit.z) / 2.15, d2 = dx * dx + dz * dz;
+    if (!pit.seen && d2 < 3.6) { pit.seen = true; pit.hole.visible = true; pit.cap.visible = false; }
+    if (!pit.triggered && d2 < 1) {
+      pit.triggered = true; pit.hole.visible = true; pit.cap.visible = false;
+      player.hp -= 26; player.hurtT = 1.3; player.shake = 0.7;
+      const ang = Math.atan2(player.pos.x - pit.x, player.pos.z - pit.z);
+      player.pos.x = clamp(player.pos.x + Math.sin(ang) * 2.6, -8.5, 8.5);
+      player.pos.z += Math.cos(ang) * 3.4;
+      puff(player.pos.clone().setY(0.8), 0xb10f25, 12, 0.18, 2.2, 0.45); popup('雪に隠れたクレバス！');
+    }
+  }
+  // 雪の重みで折れた枝から針状の木片が降る。着地したとき近くにいれば刺さる
+  SNOW.debrisT -= dt;
+  if (SNOW.debrisT <= 0) {
+    SNOW.debrisT = rand(8, 14);
+    const x = rand(-5.2, 5.2), z = player.pos.z - rand(2.5, 8);
+    const shard = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.75, 4), SNOW.shardMat);
+    shard.position.set(x, 8, z); shard.rotation.z = Math.PI / 2; stageRoot.add(shard);
+    SNOW.shards.push({ m: shard, hit: false });
+  }
+  for (let i = SNOW.shards.length - 1; i >= 0; i--) {
+    const s = SNOW.shards[i]; s.m.position.y -= 16 * dt;
+    if (!s.hit && s.m.position.y < 1.35 && Math.hypot(player.pos.x - s.m.position.x, player.pos.z - s.m.position.z) < 0.75) {
+      s.hit = true; player.hp -= 8; player.hurtT = 0.8;
+      puff(player.pos.clone().setY(1), 0xb10f25, 8, 0.16, 1.7, 0.35); popup('針状の木片が刺さった！');
+    }
+    if (s.m.position.y <= 0.15) { stageRoot.remove(s.m); s.m.geometry.dispose(); SNOW.shards.splice(i, 1); }
+  }
+  for (const f of SNOW.flakes) {
+    f.position.y -= dt * (SNOW.blizzard ? 7 : 1.6);
+    f.position.z -= dt * (SNOW.blizzard ? 5 : 0.4);
+    if (f.position.y < 0.15) { f.position.y = rand(7, 11); f.position.x = rand(-11, 11); }
+    if (f.position.z < player.pos.z - 28) f.position.z = player.pos.z + rand(8, 24);
+  }
+  if (!SNOW.blizzard && SNOW.cold > 36) {
+    SNOW.blizzard = true; scene.fog.near = 4; scene.fog.far = 28;
+    for (const m of SNOW.markers) m.visible = true;
+    showBanner('ブリザード', '立たされた凍死者を道しるべに、北へ進め');
+  }
+  if (!SNOW.campDone && player.pos.z < -72) {
+    SNOW.campT += dt;
+    if (SNOW.campT > 8) {
+      SNOW.campDone = true; SNOW.supplies = 0;
+      showBanner('かまくらで野営', '食料が尽きた。味方の遺体を食料にし、生存者から体力を分けてもらった');
+      player.hp = Math.min(CFG.maxHp, player.hp + 22);
+      const ally = enemies.find(e => e.team === 'blue' && e.state !== 'down' && !e.special && !e.guard);
+      if (ally) ally.hp = Math.max(1, Math.round(ally.hp * 0.5));
+    }
+  }
+  if (player.hp <= 0) { player.hp = 0; gameOver(false); return; }
+  if (!SNOW.won && SNOW.campDone && (SNOW.cleared || wave.n >= 3) && player.pos.z < -98) {
+    const foes = enemies.some(e => e.team === 'orange' && e.state !== 'down' && !e.special);
+    if (!foes && wave.toSpawn <= 0) { SNOW.won = true; gameOver(true); }
+  }
+}
+
 const STAGES = {
   plains: { name: '平原の戦い', desc: '竹林の点在する平原で、青組と橙組が正面からぶつかる。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
   castle: { name: '城の戦い', desc: '青組は城を守る。大手門の狭間と櫓から射て、破門隊の丸太を食い止めよ。門が破れれば二の丸、二の丸が落ちれば奥御殿へ。畳の間には隠し落とし穴、襖の陰には伏兵。襖は E（スマホは「襖」ボタン）で開け閉め。' },
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
+  snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、橋のない凍てつく川、針状の木片、凍傷、ブリザードが待つ。敵は寒さに強く、終盤にはかまくらでの過酷な野営もある。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -3330,8 +3516,9 @@ function loadStage(name) {
   colliders.length = covers.length = flags.length = boxes.length = floors.length = ladders.length = perches.length = 0;
   fortGate = null; hq = null; seirans.length = 0; CAR.g = null; CAR.driver = null; CAR.riding = false;
   road.visible = name === 'plains';
+  SNOW.on = false; SNOW.blizzard = false; BEACH.on = false;
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -4234,6 +4421,12 @@ const ENEMY_RATIO = (() => { const q = new URLSearchParams(location.search), v =
 const TROOP_K = (() => { const v = parseFloat(new URLSearchParams(location.search).get('troops')); return isFinite(v) && v > 0 ? v : 2.28; })();   // ?troops=1 で以前の人数（v7：1.75→2.28、約+30%。?troops=1.75 で v6 の人数）
 // 青組（味方）を一人出す。平原：プレイヤーの後方。櫃の戦い：弓兵は櫃・武者走りの射撃位置、近接兵は門の内側
 function spawnAlly() {
+  if (SNOW.on) {
+    const kind = Math.random() < 0.34 ? 'archer' : 'mob';
+    const x = clamp(player.pos.x + rand(-2.4, 2.4), -7.2, 7.2);
+    const z = clamp(player.pos.z + rand(5, 13), -100, 100);
+    return spawnEnemy(x, z, kind, false, 'blue');
+  }
   const kind = Math.random() < (PLANE.on ? 0.3 : (CASTLE.atk || FORT.atk) ? 0.4 : ARCHER_RATE) ? 'archer' : 'mob';   // 攻める：攻め手は近接が多め
   if (PLANE.on) return spawnEnemy(rand(-1.0, 1.0), rand(12.5, 13.3), kind, false, 'blue');   // 機内：前方（ラウンジ側）から援軍
   if (CASTLE.on) return CASTLE.atk ? castleAtkSpawn(kind) : castleAllySpawn(kind);
@@ -4266,7 +4459,8 @@ const SQUAD_DEFS = {
   castle: { blue: [['guard', '近衛分隊'], ['yari', '槍衆'], ['gate', '大手門守備隊'], ['bailey', '二の丸分隊'], ['ambush', '奥御殿伏兵隊']],
             orange: [['ram', '破門隊'], ['yari', '槍隊'], ['a1', '第1攻撃隊'], ['a2', '第2攻撃隊'], ['bow', '弓隊']] },
   beach: { blue: [['guard', '近衛分隊'], ['b1', '第1小早隊'], ['b2', '第2小早隊'], ['b3', '第3小早隊'], ['b4', '第4小早隊'], ['b5', '第5小早隊'], ['b6', '第6小早隊']],
-           orange: [['p1', '第1トーチカ隊'], ['p2', '第2トーチカ隊'], ['p3', '第3トーチカ隊'], ['p4', '第4トーチカ隊']] },   // 浜：攻め手は舟ごと、守り手はトーチカごと
+           orange: [['p1', '第1トーチカ隊'], ['p2', '第2トーチカ隊'], ['p3', '第3トーチカ隊'], ['p4', '第4トーチカ隊']] },
+  snow: { blue: [['guard', '近衛分隊'], ['front', '雪峡谷先遣隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['roam', '遊撃弓隊']], orange: [['m1', '雪壁守備隊'], ['m2', 'クレバス伏兵隊'], ['yari', '氷槍隊'], ['roam', '氷弓隊']] },   // 浜：攻め手は舟ごと、守り手はトーチカごと
   plane: { blue: [['guard', '近衛分隊'], ['front', '前方客室分隊'], ['rear', '後方客室分隊']], orange: [['front', '前方奴襲隊'], ['rear', '後方奴襲隊']] },   // 機内：客室の前と後ろ
   plains: { blue: [['guard', '近衛分隊'], ['front', '前衛分隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']],   // 平原には櫃がないので弓分隊
             orange: [['m1', '第1近接部隊'], ['m2', '第2近接部隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']] },
@@ -4303,6 +4497,7 @@ function assignSquad(e) {
   else if (e.yari && !e.ramCrew && !e.ambush && !e.seated && !PLANE.on && sqBy(t, 'yari')) s = sqBy(t, 'yari');
   else if (CASTLE.on) s = t === CD() ? sqBy(t, e.ambush ? 'ambush' : (e.perch || CASTLE.phase === 0) ? 'gate' : 'bailey') : sqBy(t, e.ramCrew ? 'ram' : e.kind === 'archer' ? 'bow' : 'x') || pickBalanced(t, ['a1', 'a2']);
   else if (PLANE.on) s = e.seated || PLANE.intro ? sqBy(t, e.s.position.z > -4 ? 'front' : 'rear') : pickBalanced(t, ['front', 'rear']);   // 席の位置で前・後ろ、援軍は少ない方へ
+  else if (SNOW.on) s = e.kind === 'archer' ? sqBy(t, 'roam') : (t === 'blue' ? sqBy(t, e.screen ? 'front' : 'melee') : pickBalanced(t, ['m1', 'm2']));
   else if (t === DEF() && (t === 'blue' || fort)) {
     if (fort) s = e.kind === 'archer' ? (e.perch ? sqBy(t, e.perch.tower ? (e.perch.x < 0 ? 'tw1' : 'tw2') : 'gate') : sqBy(t, 'roam')) : sqBy(t, e.screen ? 'gate' : 'melee');
     else s = e.kind === 'archer' ? pickBalanced(t, ['a1', 'a2', 'roam']) : sqBy(t, e.screen ? 'front' : 'melee');
@@ -4737,10 +4932,19 @@ function startWave(n) {
   const sk = seiranWave(n);                      // 櫃の戦い：井闌の上の弓兵（同じ人数だけ味方も増やす）
   if (sk) { if (FORT.atk) wave.blueToSpawn = Math.max(2, wave.blueToSpawn - sk); else { wave.blueToSpawn += sk; wave.blueOwed = (wave.blueOwed || 0) + sk; } }   // 攻める：井闌の弓兵は味方の数に含める
   wave.archerRate = ARCHER_RATE;
+  if (SNOW.on) {   // 狭い峡谷なので人数を抑え、弓は少なめ。上書きされないよう兵数決定の最後に掛ける
+    wave.toSpawn = Math.max(5, Math.round(wave.toSpawn * 0.42));
+    wave.blueToSpawn = Math.max(4, Math.round(wave.blueToSpawn * 0.7));
+    wave.maxAlive = Math.min(9, 5 + n);
+    wave.blueMax = Math.min(wave.blueMax, 12);
+    wave.archerRate = 0.34;
+    wave.total = { blue: wave.blueToSpawn, orange: wave.toSpawn };
+    SNOW.spawnI = 0;
+  }
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (SNOW.on ? '極寒の峡谷を突破せよ。敵には北海道出身の侍女が多い。クレバスと凍傷に注意し、川岸では橋ができるまで耐えろ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。寒さに耐えて進め！' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -4755,7 +4959,12 @@ function waveUpdate(dt) {
     if (builtStage === 'fort') { cx = rand(-30, 30); cz = rand(-80, -62); }   // 門の外、竹束の列の向こうから
     else if (PLANE.on) { cx = 0; cz = -17.6; }   // 機内：後方ギャレーから
     else if (CASTLE.on) { if (CASTLE.phase === 0) { cx = rand(-24, 24); cz = rand(-60, -48); } else if (CASTLE.phase === 1) { cx = rand(-10, 10); cz = rand(-22, -12); } else { cx = rand(-8, 8); cz = rand(3, 9); } }   // 城：門の外の陣から／破れた門から／二の丸から
-    else {
+    else if (builtStage === 'snow') {
+      const posts = SNOW.posts[Math.min(SNOW.posts.length - 1, Math.max(0, wave.n - 1))];
+      const slot = posts[(SNOW.spawnI++) % posts.length];
+      cx = clamp(slot[0] + rand(-0.9, 0.9), -7.2, 7.2);
+      cz = clamp(slot[1] + rand(-1.4, 1.4), -102, 102);
+    } else {
       const front = Math.random() < 0.7;
       const a = front ? -Math.PI / 2 + rand(-1.2, 1.2) : rand(0, Math.PI * 2);
       const r = rand(42, 58);
@@ -4766,7 +4975,7 @@ function waveUpdate(dt) {
     for (let i = 0; i < grp; i++) {
       if (CASTLE.atk || FORT.atk) { const k = Math.random() < wave.archerRate ? 'archer' : 'mob'; if (CASTLE.atk) castleAllySpawn(k); else fortDefSpawn(k); wave.toSpawn--; continue; }   // 攻める：橙組は守りの持ち場に出る
       const cap = wave.captain && wave.toSpawn === 1;
-      const sp = PLANE.on ? [cx + rand(-1.4, 1.4), cz + rand(-1.0, 1.0)] : [cx + rand(-3, 3), cz + rand(-3, 3)];
+      const sp = SNOW.on ? [clamp(cx + rand(-0.5, 0.5), -7.4, 7.4), cz + rand(-0.6, 0.6)] : PLANE.on ? [cx + rand(-1.4, 1.4), cz + rand(-1.0, 1.0)] : [cx + rand(-3, 3), cz + rand(-3, 3)];
       const crew = CASTLE.on && CASTLE.phase === 0 && !cap && (wave.ramWant || 0) > CASTLE.ram.crew.filter(isUp).length;   // 破門隊：丸太の担ぎ手を 4 人まで
       const ne = spawnEnemy(sp[0], sp[1], crew ? 'mob' : Math.random() < wave.archerRate ? 'archer' : 'mob', cap, 'orange', crew ? { set: { ramCrew: true } } : {});
       if (crew && ne) { CASTLE.ram.crew.push(ne); if (!CASTLE.ram.crew.some((m, j) => j < CASTLE.ram.crew.length - 1 && isUp(m)) && CASTLE.ram.y < 0.5 && CASTLE.ram.z < -20) { CASTLE.ram.x = sp[0]; CASTLE.ram.z = sp[1] + 2; } }
@@ -4784,6 +4993,10 @@ function waveUpdate(dt) {
   }
   if ((CASTLE.atk || FORT.atk) && wave.blueToSpawn <= 0 && (wave.trickT = (wave.trickT || 0) - dt) <= 0) { wave.trickT = 3.5; if (aliveOf('blue').length < (wave.blueMax || 20)) spawnAlly(); }   // 攻める：攻め手は後続が途切れず寄せる（守り手は波ごとに決まった数）
   if (wave.toSpawn <= 0 && foes === 0) {
+    if (SNOW.on && wave.n >= 3) {
+      if (!SNOW.cleared) { SNOW.cleared = true; showBanner('敵の守りが崩れた', 'かまくらを抜け、峡谷の北口へ'); }
+      wave.inter = 0;
+    } else {
     wave.inter = 5;
     showBanner(`第${waveName(wave.n)}波 制圧！`, '矢と体力が少し回復した');
     Sfx.fanfare();
@@ -4791,6 +5004,7 @@ function waveUpdate(dt) {
     for (const e of enemies) if (e.ammo !== undefined) e.ammo = AMMO_MAX;   // 波の合間に矢を補充
     for (const s of squads.blue) s.needAmmo = false;
     player.hp = Math.min(CFG.maxHp, player.hp + 20);
+    }
   }
 }
 
@@ -4815,8 +5029,9 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
     if (hit.arrow && hit.dir) stickArrow(e, hit.pt, hit.dir);
   }
   if (!hitPos) { hitPos = e.s.position.clone(); hitPos.y += e.figH * 0.6; }
-  puff(hitPos, 0xffffff, 3, 0.25, 1.6, 0.22);                             // 白い閃光
-  puff(e.s.position.clone().setY(e.baseY + 0.3), 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 砂埃
+  puff(hitPos, 0xb10f25, 7, 0.18, 1.8, 0.34);                             // 赤い飛沫・ダメージパーティクル
+  puff(hitPos, 0xff263f, 4, 0.12, 2.2, 0.2);                              // 赤いヒットエフェクト
+  puff(e.s.position.clone().setY(e.baseY + 0.3), builtStage === 'snow' ? 0xd7e5ef : 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 雪煙／砂埃
   const k = new V3(e.s.position.x - from.x, 0, e.s.position.z - from.z).normalize();
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
   if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
@@ -4833,6 +5048,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
 }
 // 戦死判定：倒れるアニメを一度だけ再生し、その姿勢のまま地面に残る（以後は動かない・しゃべらない）
 function killEnemy(e, byPlayer, from) {
+  if (e.icicleMesh) { stageRoot.remove(e.icicleMesh); e.icicleMesh.geometry.dispose(); e.icicleMesh.material.dispose(); e.icicleMesh = null; }
   e.state = 'down'; e.t = 0;
   if (e.spear) yariDrop(e);   // 槍は手を離れて床に落ちる
   e.knock.set(0, 0, 0);
@@ -5708,6 +5924,7 @@ const SEC_REQ = {
   meal() { askMeal(); },
   shoulder() { sec.buffT = 60; popup('60秒間 矢の回復が速くなる'); secReply('sec_shoulder'); },
   fan() { sec.fanT = 4; Sfx.noiseBurst(1.2, 'bandpass', 500, 300, 0.12, 0.6); secReply('sec_fan'); },
+  coldclothes() { if (!SNOW.on) return; const text='その服装、寒くない（笑）？ ……と王は聞いた。そもそも、その服装を命じたのは王自身である。'; $('secsay').textContent=`「${text}」`; popup('秘書は無言で王を見つめた'); },
   follow() { startEscort(); },
   back() { sendBack(); },
   ca() { caBit(); },
@@ -6188,7 +6405,11 @@ function updateEnemies(dt) {
       const nx = dx / dist, nz = dz / dist;
       if (!e.spotted && dist < 32) { e.spotted = true; npcSay(e, 'spot', 0, e.team === 'orange' ? 0.45 : 0.25); }
 
-      if (e.state === 'kthrow' || npcKnifeStart(e, dist, dt)) npcKnifeStep(e, dt, nx, nz);   // v8：近い相手へ懐刀を投げる
+      if (SNOW.on && e.team === 'orange' && e.kind === 'archer' && (e.state === 'icicle' || (dist < 2.6 && Math.random() < dt * 0.65))) {
+        if (e.state !== 'icicle') { e.state = 'icicle'; e.t = 0; e.icicleTarget = e.tgt; e.icicleMesh = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.75, 5), new THREE.MeshLambertMaterial({ color: 0xc7efff, emissive: 0x477b99, emissiveIntensity: 0.35 })); e.icicleMesh.position.set(p.x + nx * 0.65, e.baseY + 0.85, p.z + nz * 0.65); e.icicleMesh.rotation.x = Math.PI / 2; stageRoot.add(e.icicleMesh); }
+        e.t += dt; if (e.icicleMesh) e.icicleMesh.position.set(p.x + nx * 0.65, e.baseY + 0.85, p.z + nz * 0.65);
+        if (e.t > 0.55) { const target = e.icicleTarget; if (e.icicleMesh) { stageRoot.remove(e.icicleMesh); e.icicleMesh.geometry.dispose(); e.icicleMesh.material.dispose(); e.icicleMesh = null; } e.state = 'advance'; e.t = 0; if (target && target.isPlayer && dist < 3.0) { hurtPlayer(14); puff(player.pos.clone().setY(1), 0xb10f25, 8, 0.16, 1.7, 0.35); popup('敵弓兵がツララを手に突撃！'); } else if (target && !target.isPlayer && isUp(target) && dist < 3.0) damageEnemy(target, 16, p, false, null, e); }
+      } else if (e.state === 'kthrow' || npcKnifeStart(e, dist, dt)) npcKnifeStep(e, dt, nx, nz);   // v8：近い相手へ懐刀を投げる
       else if (e.state === 'retreat') {            // 臆病：被弾すると一旦下がる
         steer(e, p.x - nx * 10, p.z - nz * 10, e.speed * 1.2, dt);
         e.retreatT -= dt;
@@ -6392,6 +6613,7 @@ function updateEnemies(dt) {
 function hurtPlayer(dmg) {
   if (state !== 'play' || inHQ()) return;
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
+  puff(player.pos.clone().setY(1), 0xb10f25, 7, 0.16, 1.6, 0.3);
   Sfx.hurt();
   if (player.hp <= 0) { player.hp = 0; gameOver(); }
 }
@@ -6617,7 +6839,7 @@ function updateHud(dt) {
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
   setText('wavetxt', `第${waveName(Math.max(1, wave.n))}波`);
-  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
+  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (inHQ() ? '（暖）' : '') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);
@@ -7029,19 +7251,21 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
+  if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
+  else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
   else if (builtStage === 'fort') player.pos.set(-12, 6, 8.6);   // 左の櫃の上から
   else if (builtStage === 'plane') player.pos.set(-0.95, 0, 17.8);   // ラウンジの殿の席
   else if (builtStage === 'castle') { if (CASTLE.atk) { player.pos.set(-1, 0, -52); player.yaw = Math.PI; } else player.pos.set(-1, 0, 65.6); castleReset(); }   // 奥御殿の本陣から
   else if (builtStage === 'beach') beachReset();   // 殿の舟の屋形の中
   else player.pos.set(0, 0, 0);
-  PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : LOOK0.hemi[2];
+  PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
   if (CAR.g && builtStage === 'plains') carReset();
   smokeReset(); knifeReset();
 }
 function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
+  if (stageName === 'snow') builtStage = null;   // 橋・クレバス・吹雪をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
@@ -7070,7 +7294,7 @@ function toTitle() {
 }
 function gameOver(win) {
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
-  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (BEACH.on ? 'すべてのトーチカを制圧した' : '勝利') : 'あなたに戦死判定が下った'; }
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : '勝利') : (SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   $('over').style.display = 'flex';
@@ -7113,7 +7337,8 @@ function updatePlayer(dt) {
   const ml = Math.hypot(mx, mz), mag = Math.min(1, ml);
   let sp = ((keys.ShiftLeft || keys.ShiftRight || touch.run) && !player.drawing ? CFG.run : CFG.walk) * (player.speedT > 0 ? 1.2 : 1);   // 靴を磨いてもらうと少し速い
   if (player.drawing) sp *= 0.5;
-  if (PLANE.on && bodies.length) { const h = pileAt(player.pos.x, player.pos.z); if (h > 0) sp *= h > 0.5 ? 0.45 : 0.65; }   // 倒れた娘をまたぐ
+  if (PLANE.on && bodies.length) { const h = pileAt(player.pos.x, player.pos.z); if (h > 0) sp *= h > 0.5 ? 0.45 : 0.65; }
+  if (SNOW.on && SNOW.cold > 20) sp *= SNOW.cold > 36 ? 0.62 : 0.82;   // 寒さで足が鈍る
   // 梯子：前進で上る・後退で下りる（途中は横移動しない）
   let fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;
   // 自動で上り下り（E キー／スマホの「梯子」ボタン）：梯子の中心へ寄せ、端まで運ぶ。逆の入力・跳ぶで止める
@@ -7228,7 +7453,7 @@ function frame(now) {
     if (TEST) testBot(dt);
     stepBudget = 3;
     if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
-    updatePlayer(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
+    updatePlayer(dt); if (SNOW.on) updateSnow(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
   } else if (state === 'title') {

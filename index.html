@@ -56,6 +56,9 @@
   #stagesel{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #stagesel button{font:inherit;font-size:18px;letter-spacing:.2em;padding:8px 22px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
   #stagesel button.on{background:rgba(232,217,168,.9);color:#1a1410;border-color:#e8d9a8}
+  #modesel{margin-top:8px;display:flex;gap:10px;justify-content:center}
+  #modesel button{font:inherit;font-size:16px;letter-spacing:.3em;padding:5px 18px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
+  #modesel button.on{background:rgba(232,217,168,.9);color:#1a1410;border-color:#e8d9a8}
   #stagedesc{font-size:13px;opacity:.85;min-height:1.4em;max-width:640px;margin:8px auto 0}
   #target em{display:block;font-style:normal;color:#ffe38a;font-size:14px;margin-top:2px;letter-spacing:.2em}
   .serif{font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","MS PMincho",serif}
@@ -182,6 +185,7 @@
   <p>青組のあなたは、青組の侍女たちと共に橙組を迎え撃つ。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
   <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button></div>
+  <div id="modesel" class="serif" style="display:none"><button data-md="def">守る</button><button data-md="atk">攻める</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
   <div class="help help-desk">

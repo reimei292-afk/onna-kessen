@@ -801,7 +801,7 @@ function bamboobundle(x, z, ang) {
   // 支え棒
   const s = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.8, 5), WOOD_D); s.position.set(0, 0.7, 0.6); s.rotation.x = -0.6; g.add(s);
   g.rotation.set(-0.12, ang, 0); g.position.set(x, 0, z); stageRoot.add(g);
-  covers.push({ x, z, r: 0.85, type: 'bundle', h: 1.45, ang, mesh: g, breakable: true, hp: 5 });
+  covers.push({ x, z, r: 0.85, type: 'bundle', h: 1.45, ang, mesh: g, breakable: true, hp: 3 });
   colliders.push({ x, z, r: 0.6 });
 }
 function breakBundle(cv) {
@@ -3367,10 +3367,45 @@ function buildSnow() {
     const cap = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.7, 6.2), snow); cap.rotation.x = -Math.PI / 2; cap.position.set(x, 0.015, z); stageRoot.add(cap);
     SNOW.pits.push({ x, z, w, hole, cap, triggered: false, seen: false });
   }
-  // 川は左右の谷壁まで届き、迂回できない。渡る幅も広く、橋が無いあいだは中に入ると冷える
-  SNOW.half = 10;
-  const river = new THREE.Mesh(new THREE.PlaneGeometry(32, SNOW.half * 2), ice); river.rotation.x = -Math.PI / 2; river.position.set(0, -0.08, 0); stageRoot.add(river);
-  const deep = new THREE.Mesh(new THREE.PlaneGeometry(32, SNOW.half * 2 - 1.4), darkIce); deep.rotation.x = -Math.PI / 2; deep.position.set(0, -0.12, 0); stageRoot.add(deep);
+  // 川は谷を横切る一本。暗い流れに雪の岸と流氷。左右の壁まで届き、迂回できない
+  SNOW.half = 6.8;
+  const rt = document.createElement('canvas'); rt.width = 512; rt.height = 256;
+  const rg = rt.getContext('2d');
+  rg.fillStyle = '#09141f'; rg.fillRect(0, 0, 512, 256);
+  for (let i = 0; i < 64; i++) {
+    const y = (i + 0.5) / 64 * 256, a = 0.16 + (i % 5) * 0.07;
+    rg.strokeStyle = 'rgba(' + (16 + (i % 4) * 8) + ',' + (38 + (i % 6) * 5) + ',' + (62 + (i % 3) * 12) + ',' + a + ')';
+    rg.lineWidth = 1 + (i % 3); rg.beginPath();
+    for (let x = 0; x <= 512; x += 12) {
+      const yy = y + Math.sin(x * 0.045 + i * 0.7) * 2.4 + Math.sin(x * 0.012 + i) * 1.6;
+      if (x === 0) rg.moveTo(x, yy); else rg.lineTo(x, yy);
+    }
+    rg.stroke();
+  }
+  rg.fillStyle = 'rgba(214,226,236,0.42)';
+  for (let i = 0; i < 36; i++) { rg.beginPath(); rg.ellipse((i * 47) % 512, (i * 83) % 256, 7 + (i % 5) * 4, 1.25, 0, 0, Math.PI * 2); rg.fill(); }
+  const rtex = new THREE.CanvasTexture(rt);
+  rtex.wrapS = rtex.wrapT = THREE.RepeatWrapping; rtex.repeat.set(2.6, 1); rtex.colorSpace = THREE.SRGBColorSpace;
+  const riverMat = new THREE.MeshLambertMaterial({ map: rtex });
+  SNOW.riverMat = riverMat;
+  const river = new THREE.Mesh(new THREE.PlaneGeometry(32, SNOW.half * 2), riverMat);
+  river.rotation.x = -Math.PI / 2; river.position.set(0, -0.05, 0); stageRoot.add(river);
+  const bankMat = new THREE.MeshLambertMaterial({ color: 0xf4f8fc });
+  const floeMat = new THREE.MeshLambertMaterial({ color: 0xe7f0f7 });
+  for (const side of [-1, 1]) {
+    const shelf = new THREE.Mesh(new THREE.PlaneGeometry(30, 0.9), floeMat);
+    shelf.rotation.x = -Math.PI / 2; shelf.position.set(0, -0.02, side * (SNOW.half - 0.32)); stageRoot.add(shelf);
+    for (let i = 0; i < 16; i++) {
+      const mound = new THREE.Mesh(new THREE.SphereGeometry(0.55 + (i % 4) * 0.18, 7, 5), bankMat);
+      mound.scale.set(1.6, 0.4, 0.95);
+      mound.position.set(-15 + i * 2.0, 0.1, side * (SNOW.half + 0.42 + (i % 3) * 0.16));
+      stageRoot.add(mound);
+    }
+  }
+  for (const [x, z, rad] of [[-7.4, 1.4, 0.72], [5.6, -1.1, 0.95], [-4.2, -2.6, 0.55], [8.2, 2.2, 0.62], [-9.1, -0.5, 0.8], [3.6, 3.2, 0.48], [10.4, -2.3, 0.66], [-2.4, -4.1, 0.42], [6.6, 4.5, 0.38]]) {
+    const f = new THREE.Mesh(new THREE.CircleGeometry(rad, 6), floeMat);
+    f.rotation.x = -Math.PI / 2; f.position.set(x, -0.012, z); stageRoot.add(f);
+  }
   SNOW.riverBarrier = null;
   // ブリザードの道しるべは、あとで遺体を垂直に立てる位置
   SNOW.markerAt = [[-2.4, 40], [2.2, 14], [-1.8, -22], [2.6, -48], [0.2, -70]];
@@ -3468,6 +3503,10 @@ function updateSnow(dt) {
   const nearRiver = !SNOW.riverOpen && Math.abs(px) < 12.6 && Math.abs(pz) < (SNOW.half || 10) + 3;
   if (nearRiver) { SNOW.riverT += dt; if (SNOW.riverT > 1.2) { SNOW.riverT = 0; trySnowBridge(); } }
   else SNOW.riverT = 0;
+  if (!SNOW.riverHint && Math.abs(px) < 12 && Math.abs(Math.abs(pz) - (SNOW.half || 10)) < 16) {
+    SNOW.riverHint = true;
+    showBanner('一本の川', '谷を暗い流れが塞いでいる。雪の岸と流氷。冷えるのはこの川だけ。遺体を縦に並べて渡れ');
+  }
   for (const pit of SNOW.pits) {
     const see = (x, z) => { const dx = (x - pit.x) / (pit.w * 0.42), dz = (z - pit.z) / 2.15; return dx * dx + dz * dz; };
     if (!pit.seen && see(px, pz) < 3.6) { pit.seen = true; pit.hole.visible = true; pit.cap.visible = false; }
@@ -3518,6 +3557,7 @@ function updateSnow(dt) {
     SNOW.blizzard = true; scene.fog.near = 4; scene.fog.far = 28;
   }
   if (SNOW.blizzard && !SNOW.postsDone) raiseBlizzardPosts();
+  if (SNOW.riverMat && SNOW.riverMat.map) SNOW.riverMat.map.offset.x = (SNOW.riverMat.map.offset.x + dt * 0.055) % 1;
   const fight = enemies.some(e => e.team === 'orange' && e.state !== 'down' && e.state !== 'seppuku' && Math.hypot(e.s.position.x - px, e.s.position.z - pz) < 20);
   if (player.pos.z < -70 && !fight) SNOW.quiet = (SNOW.quiet || 0) + dt; else SNOW.quiet = 0;
   if (!SNOW.fed && SNOW.quiet > 8) {
@@ -3539,7 +3579,7 @@ const STAGES = {
   castle: { name: '城の戦い', desc: '青組は城を守る。大手門の狭間と櫓から射て、破門隊の丸太を食い止めよ。門が破れれば二の丸、二の丸が落ちれば奥御殿へ。畳の間には隠し落とし穴、襖の陰には伏兵。襖は E（スマホは「襖」ボタン）で開け閉め。' },
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
-  snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を塞ぐ広い川。冷えるのは橋の無い川に入ったときだけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
+  snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -3595,25 +3635,32 @@ const puffTex = canvasTex(64, 64, (g, w) => {
 const particles = [];
 const bloodMat = new THREE.MeshBasicMaterial({ color: 0x7a1218, transparent: true, opacity: 0.94, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, side: THREE.DoubleSide });
 const bloodPoolGeo = new THREE.CircleGeometry(1, 12);
+const bloodDecals = [];
 function spillBlood(x, y, z, scale) {
   const pool = new THREE.Mesh(bloodPoolGeo, bloodMat);
   pool.rotation.x = -Math.PI / 2; pool.rotation.z = rand(0, 6.2);
-  pool.position.set(x, (y || 0) + 0.035, z); pool.scale.setScalar(scale || rand(0.42, 0.75));
-  scene.add(pool);
-  let best = null, bd = 1.15;
+  pool.position.set(x, (y || 0) + 0.035, z); pool.scale.setScalar((scale || rand(0.85, 1.2)) * 1.35);
+  scene.add(pool); bloodDecals.push(pool);
+  let best = null, bd = 2.4;
   for (const b of boxes) {
     if (b.y1 != null && b.y1 < 0.4) continue;
     const cx = clamp(x, b.x0, b.x1), cz = clamp(z, b.z0, b.z1), d = Math.hypot(x - cx, z - cz);
     if (d < bd && d > 0.02) { bd = d; best = { b, cx, cz, d }; }
   }
   if (best) {
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(rand(0.28, 0.62), rand(0.45, 1.05)), bloodMat);
+    const geo = new THREE.PlaneGeometry(rand(0.28, 0.62), rand(0.45, 1.05));
+    const s = new THREE.Mesh(geo, bloodMat);
+    s.userData.ownGeo = geo;
     const nx = (x - best.cx) / best.d, nz = (z - best.cz) / best.d;
     const wy = (best.b.y0 || 0) + rand(0.35, 1.35);
     s.position.set(best.cx + nx * 0.05, wy, best.cz + nz * 0.05);
     s.lookAt(best.cx + nx * 2, wy, best.cz + nz * 2);
-    scene.add(s);
+    scene.add(s); bloodDecals.push(s);
   }
+}
+function clearBlood() {
+  for (const m of bloodDecals) { scene.remove(m); if (m.userData.ownGeo) m.userData.ownGeo.dispose(); }
+  bloodDecals.length = 0;
 }
 function puff(pos, color, n, size, speed, life) {
   for (let i = 0; i < n; i++) {
@@ -3682,6 +3729,66 @@ function cycleFrame(C, stepT) {
   const u = stepT / (Math.PI * C.steps); const k = Math.floor((u - Math.floor(u)) * C.n);
   return C.frs[C.seq[(k + C.contact) % C.n]];
 }
+// 足りない斜め・上・下は、今の服と髪の写真から作る（新しい顔や衣装は足さない）
+function synthFrame(base, kind, sideImg) {
+  const img = base && base.tex && base.tex.image;
+  if (!img || img.width < 4 || img.height < 4) return null;
+  const maxH = 420, sc = Math.min(1, maxH / img.height);
+  const w = Math.max(8, Math.round(img.width * sc)), h = Math.max(8, Math.round(img.height * sc));
+  const c = document.createElement('canvas'), ctx = c.getContext('2d');
+  try {
+    if (kind === 'front_diag' || kind === 'back_diag') {
+      c.width = Math.round(w * 1.2); c.height = h;
+      ctx.save(); ctx.translate(c.width * 0.1, 0); ctx.transform(0.9, 0, -0.07, 1, 0, 0);
+      ctx.drawImage(img, 0, 0, w, h); ctx.restore();
+      if (sideImg && sideImg.width > 4) {
+        ctx.save(); ctx.globalAlpha = 0.5;
+        const sw = Math.round(c.width * 0.2);
+        ctx.drawImage(sideImg, 0, 0, sideImg.width, sideImg.height, c.width - sw, 0, sw, h);
+        ctx.restore();
+      }
+    } else if (kind === 'top') {
+      c.width = Math.round(w * 1.08); c.height = h;
+      ctx.drawImage(img, 0, 0, img.width, img.height * 0.42, c.width * 0.06, 0, c.width * 0.88, h * 0.58);
+      ctx.drawImage(img, 0, img.height * 0.3, img.width, img.height * 0.7, c.width * 0.14, h * 0.46, c.width * 0.72, h * 0.54);
+    } else {
+      c.width = w; c.height = h;
+      ctx.drawImage(img, 0, img.height * 0.4, img.width, img.height * 0.6, w * 0.04, h * 0.36, w * 0.92, h * 0.64);
+      ctx.drawImage(img, 0, 0, img.width, img.height * 0.48, w * 0.08, 0, w * 0.84, h * 0.46);
+    }
+  } catch (err) { return null; }
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+  const dir = (kind === 'front_diag' || kind === 'back_diag') ? (base.dir || 1) : 0;
+  return { tex, aspect: c.width / c.height, hk: base.hk || 1, ax: base.ax == null ? 0.5 : base.ax, dir };
+}
+function ensureViews(g) {
+  const sideImg = g.side && g.side.tex && g.side.tex.image;
+  if (!g.front_diag) g.front_diag = synthFrame(g.front, 'front_diag', sideImg);
+  if (!g.back_diag) g.back_diag = synthFrame(g.back || g.front, 'back_diag', sideImg);
+  if (!g.top) g.top = synthFrame(g.front, 'top', null);
+  if (!g.low) g.low = synthFrame(g.front, 'low', null);
+}
+// 横歩きの連続写真が無い娘は、横（無ければ正面）の下半身をずらして歩幅を作る
+function synthWalk(g) {
+  const src = g.side || g.walk || g.front;
+  const img = src && src.tex && src.tex.image;
+  if (!img || img.width < 8 || img.height < 8) return null;
+  const maxH = 420, sc = Math.min(1, maxH / img.height);
+  const w = Math.max(8, Math.round(img.width * sc)), h = Math.max(8, Math.round(img.height * sc));
+  const shifts = [0, 0.05, 0.02, -0.012, -0.05, -0.02], lifts = [0, -0.015, 0.006, 0, -0.015, 0.006];
+  const frs = [];
+  try {
+    for (let i = 0; i < 6; i++) {
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const ctx = c.getContext('2d'), split = Math.round(h * 0.52), dx = Math.round(shifts[i] * w), dy = Math.round(lifts[i] * h);
+      ctx.drawImage(img, 0, 0, img.width, img.height * 0.52, 0, dy, w, split);
+      ctx.drawImage(img, 0, img.height * 0.48, img.width, img.height * 0.52, dx, split - 2, w, h - split + 2);
+      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
+      frs.push({ tex, aspect: w / h, hk: src.hk || 1, ax: src.ax == null ? 0.5 : src.ax, dir: src.dir || 0 });
+    }
+  } catch (err) { return null; }
+  return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
+}
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -3706,6 +3813,8 @@ function loadFrames(done) {
       if (g.bowOnly) {   // 弓を引く写真しか無い娘：どの見え方もその写真（横は向きに合わせて反転）。倒れたあとは写真のまま横たわる
         const b = g.bow || g.front; g.bow = b; g.front = b; g.side = g.side || b; g.walk = g.walk || b;
       }
+      ensureViews(g);
+      if (!g.cycle) g.cycle = synthWalk(g);
       if (!g.spr) g.spr = { id: gid, img: g.front.tex.image, top: Math.max(0, 1 - 1 / g.front.hk), tex: g.front.tex, aspect: g.front.aspect }; }
     if (!GIRLS[SEC2_ID]) SEC2_ID = Object.keys(GIRLS).find(k => GIRLS[k].type === 'mob' && k !== SEC_ID && k !== FLUTE_ID) || SEC_ID;
     if (!GIRLS[MEDIC_ID]) MEDIC_ID = GIRLS.mob05 ? 'mob05' : SEC_ID;
@@ -3758,7 +3867,7 @@ function fallImages(e) {
     const ctx = c.getContext('2d');
     ctx.translate(c.width / 2, c.height);
     ctx.scale(1, squash);
-    ctx.drawImage(img, -c.width / 2, -c.height);
+    try { ctx.drawImage(img, -c.width / 2, -c.height); } catch (err) { break; }
     const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.needsUpdate = true;
     seq.push({ tex, aspect: src.aspect, hk: (src.hk || 1) * (0.86 + squash * 0.14), ax: src.ax, dir: src.dir || 0 });
   }
@@ -3893,6 +4002,22 @@ const Mo = MOTION ? (() => {
       for (let j = 0; j < N3; j++) G[o + j] = F[a + j] + (F[b + j] - F[a + j]) * f;
     }
     c.f = G; c.n = n2;
+  }
+  function densify(c, mul) {
+    if (!c || c.n > 60) return;
+    const n = c.n, n2 = (n - 1) * mul + 1, F = c.f, G = new Float32Array(n2 * N3);
+    for (let i = 0; i < n2; i++) {
+      const x = i / mul, i0 = Math.min(n - 1, Math.floor(x)), i1 = Math.min(n - 1, i0 + 1), f = x - i0, a = i0 * N3, b = i1 * N3, o = i * N3;
+      for (let j = 0; j < N3; j++) G[o + j] = F[a + j] + (F[b + j] - F[a + j]) * f;
+    }
+    c.f = G; c.n = n2;
+  }
+  for (const k of ['walk', 'jog', 'run', 'idle']) densify(C[k], 2);
+  if (window.DEATH_CLIPS) {
+    for (const [key, src] of [['deathFwd', window.DEATH_CLIPS.fwd], ['deathBack', window.DEATH_CLIPS.back]]) {
+      if (!src || !src.f || src.n < 8 || src.f.length < N3 * 2) continue;
+      C[key] = { loop: 0, dur: src.dur || 1, n: src.n, f: src.f instanceof Float32Array ? src.f : new Float32Array(src.f) };
+    }
   }
   const GAITS = [C.walk, C.jog, C.run];
   // 速さによる前傾（度）：小走り・走りは計測値（待機姿勢との差 約6°/12°）を写真向けに控えめに、歩きはほぼ直立
@@ -4047,6 +4172,17 @@ const Mo = MOTION ? (() => {
           setRel(P, I.rEl, I.rSh, 0.0, -0.06, 0.15, aw); setRel(P, I.rWr, I.rSh, 0.04, -0.05, 0.3, aw);
         }
       }
+      const rk = Math.min(1, (e.recoil || 0) / 0.36);
+      if (rk > 0.01) {
+        for (const j of [I.chest, I.neck, I.head]) { P[j + 2] -= rk * 0.07; }
+        P[I.head + 1] += rk * 0.015;
+      }
+      if ((e.clutch || 0) > 0.01) {
+        const w = Math.min(1, e.clutch / 0.35), left = e.clutchArm === 'l';
+        const el = left ? I.lEl : I.rEl, wr = left ? I.lWr : I.rWr, sh = left ? I.lSh : I.rSh, sx = left ? 0.05 : -0.05;
+        setRel(P, el, sh, sx, -0.1, 0.05, w);
+        setRel(P, wr, I.chest, sx * 0.4, 0.02, 0.1, w);
+      }
       if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.s.rotation.y, e.figH); }
       return out;
     },
@@ -4054,11 +4190,12 @@ const Mo = MOTION ? (() => {
     death(e, u) {
       const mo = e.mo, P = mo.pose;
       if (!isFinite(e.fallYaw)) e.fallYaw = e.s.rotation.y;
-      sample(C.death, u, P, 1, false);
+      const clip = (e.fallBack ? C.deathBack : C.deathFwd) || C.deathFwd || C.deathBack || C.death;
+      sample(clip, u, P, 1, false);
       if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.fallYaw, e.figH); }
       const hx = P[I.hips], hy = P[I.hips + 1], hz = P[I.hips + 2];
       const th = Math.atan2(P[I.neck + 2] - hz, P[I.neck + 1] - hy);
-      return { hx, hy, hz, th, hr: C.death.f[I.hips + 1] };
+      return { hx, hy, hz, th, hr: clip.f[I.hips + 1] };
     },
     // 倒れる写真：体の軸（腰→首）を人形と同じに傾け、板はできるだけカメラへ向ける（横から見れば画面の中で倒れ、
     // 手前・奥へ倒れるときは縮んで見える）。腰を支点にするので、膝が抜けると脚は地面の下に沈んで見えない
@@ -5123,6 +5260,10 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   puff(e.s.position.clone().setY(e.baseY + 0.3), builtStage === 'snow' ? 0xd7e5ef : 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 雪煙／砂埃
   const k = new V3(e.s.position.x - from.x, 0, e.s.position.z - from.z).normalize();
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
+  e.recoil = 0.36;
+  if (e.prof && (e.prof.pers === '臆病' || e.prof.pers === '慎重' || e.prof.pers === '冷静' || Math.random() < 0.4)) {
+    e.clutch = 0.85; e.clutchArm = Math.random() < 0.5 ? 'l' : 'r';
+  }
   if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
   if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
   else if (!(hit && hit.arrow)) Sfx.impactBody(hitPos);   // 矢は updateArrows で「ズブッ」
@@ -5142,7 +5283,11 @@ function killEnemy(e, byPlayer, from) {
   if (e.spear) yariDrop(e);   // 槍は手を離れて床に落ちる
   e.knock.set(0, 0, 0);
   const leaned = !e.lad && !e.climb && !e.seated && !(BEACH.on && e.boat) && !e.driver && tryLean(e);   // v7：柵・胸壁のそばなら寄りかかる（向きは倒れた瞬間のまま）
-  if (from) e.face = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);   // 攻撃側を向いてから倒れる
+  if (from) {
+    const toAtk = Math.atan2(from.x - e.s.position.x, from.z - e.s.position.z);
+    e.fallBack = Math.abs(angDiff(e.s.rotation.y, toAtk)) < Math.PI * 0.5;
+    e.face = toAtk;
+  } else e.fallBack = false;
   if (e.perch) { e.perch.taken = null; }
   if (e.climb) { if (e.climb.q.taken === e) e.climb.q.taken = null; e.climb = null; e.baseY = 0; e.s.position.y = 0; }
   if (e.climbPerch) { if (e.climbPerch.taken === e) e.climbPerch.taken = null; e.climbPerch = null; }
@@ -6287,6 +6432,8 @@ let frameNo = 0;
 let stepBudget = 3;   // 1フレームに鳴らす娘の足音の上限
 function animateNpc(e, dt, lean) {
   const p = e.s.position;
+  if (e.recoil > 0) e.recoil = Math.max(0, e.recoil - dt);
+  if (e.clutch > 0) e.clutch = Math.max(0, e.clutch - dt);
   const vx = p.x - e.px, vz = p.z - e.pz, v = Math.hypot(vx, vz) / Math.max(dt, 1e-4);
   e.px = p.x; e.pz = p.z;
   e.vs = (e.vs || 0) + (v - (e.vs || 0)) * Math.min(1, dt * 8);   // 速度（平滑化）
@@ -6386,9 +6533,9 @@ function animateNpc(e, dt, lean) {
     bob += (o.bob * (kc ? kc.bob : 1) - bob) * w; rock += (o.roll * (kc ? kc.roll : 1) - rock) * w;
     sway = o.sway * w * (kc ? kc.sway : 1); surge = o.surge * w * (kc ? kc.surge : 1); twist = o.twist * w * (kc ? kc.twist : 1);
   }
-  // ビルボード（Y 軸のみ）：板をカメラへ向ける
-  e.tilt.rotation.set(0, camYaw - f + twist, lean * 0.5 + rock);
-  e.tilt.position.set(sway, bob - e.crouch * 0.42 * e.figH, surge);          // 物陰ではしゃがむ（体が沈む）
+  // ビルボード（Y 軸のみ）：板をカメラへ向ける。被弾は一瞬、後ろへ反る
+  e.tilt.rotation.set(e.recoil > 0 ? -Math.sin(Math.min(1, e.recoil / 0.36) * Math.PI) * 0.16 : 0, camYaw - f + twist, lean * 0.5 + rock);
+  e.tilt.position.set(sway, bob - e.crouch * 0.42 * e.figH, surge - (e.recoil > 0 ? 0.05 * e.figH * Math.sin(Math.min(1, e.recoil / 0.36) * Math.PI) : 0));
 }
 // 歩行サイクルを使っているときのモーションの効き（1＝そのまま）。横から見るので左右の揺れ（画面の奥行き）とひねりも小さく
 const CYCLE_DAMP = { bob: 0.2, roll: 0.25, sway: 0.5, surge: 0.6, twist: 0.3 };
@@ -6401,9 +6548,10 @@ function archerMelee(e, dt, dist, nx, nz, tx, tz) {
   if (e.special && !(e.secretary && sec.mode === 'escort')) return false;
   if (elevD(e) >= 1.2) return false;
   const icy = SNOW.on && e.team === 'orange';
-  const reach = 2.25;
+  const reach = icy ? 3.6 : 3.1;
+  const chase = icy ? 11 : 7.2;
   const swinging = e.melee && (e.state === 'windup' || e.state === 'icicle' || e.state === 'recover');
-  if (!swinging && dist >= reach) return false;
+  if (!swinging && dist >= chase) { e.melee = false; return false; }
   e.melee = true;
   e.faceWant = Math.atan2(nx, nz);
   const p = e.s.position;
@@ -6411,12 +6559,17 @@ function archerMelee(e, dt, dist, nx, nz, tx, tz) {
     if (e.t > 0.32) { e.state = 'advance'; e.t = 0; e.melee = false; }
     return true;
   }
+  if (!swinging && dist > reach) {
+    steer(e, tx - nx * 1.15, tz - nz * 1.15, e.speed * (icy ? 1.35 : 1.15), dt);
+    if (e.state !== 'advance') { e.state = 'advance'; e.t = 0; e.cover = null; }
+    return true;
+  }
   if (e.state !== 'windup' && e.state !== 'icicle') {
     if (e.cd > 0) return true;
     e.state = icy ? 'icicle' : 'windup'; e.t = 0;
     if (icy) {
       if (e.icicleMesh) { stageRoot.remove(e.icicleMesh); e.icicleMesh.geometry.dispose(); e.icicleMesh.material.dispose(); }
-      e.icicleMesh = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.72, 5), new THREE.MeshLambertMaterial({ color: 0xd7f6ff }));
+      e.icicleMesh = new THREE.Mesh(new THREE.ConeGeometry(0.14, 1.15, 5), new THREE.MeshLambertMaterial({ color: 0xd7f6ff }));
       stageRoot.add(e.icicleMesh);
     }
   }
@@ -7406,6 +7559,7 @@ function setWeapon(w) {
 // ====================================================================
 function resetGame() {
   if (menuOpen) closeSecMenu(false);
+  clearBlood();
   for (const k in towers) towers[k].paint = towers[k].press = 0;
   removeFluter(); fluter.dead = false;
   removeOjou(); ojou.dead = false; ojou.mode = 'hq'; ojou.stayHQ = false; ojou.auto = false; ojou.careT = 20;

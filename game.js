@@ -3599,6 +3599,7 @@ function buildMountain() {
   MTN.garrison = false; MTN.slowT = 0; MTN.volley = false; MTN.won = false; MTN.spawnI = 0; MTN.bar = null; MTN.entered = false; MTN.cleared = false; MTN.balT = 3; MTN.rams = []; MTN.sidePosts = { west: [], east: [] };
   MTN.ramHits = 0; MTN.poisonThrows = 0; MTN.shotHits = 0; MTN.meleeHits = 0; MTN.noFill = false; MTN.bundleSaid = false; MTN.fillT = 1.2; MTN.roster = null;
   MTN.slotN = { west: { bow: 0, mob: 0 }, east: { bow: 0, mob: 0 } };
+  MTN.ramGo = { west: false, east: false }; MTN.fightT = 0; MTN.reliefT = 0; MTN.approach0 = { west: 0, east: 0 }; MTN.extraI = 0;
   const earth = new THREE.MeshLambertMaterial({ color: 0x6e7358 });
   const earthD = new THREE.MeshLambertMaterial({ color: 0x5a5344 });
   const stone = new THREE.MeshLambertMaterial({ color: 0x8d8980 });
@@ -3704,20 +3705,84 @@ function buildMountain() {
   };
   gate('west', -1.35, 1.35, 31.15, 31.95, 6.4);
   gate('east', 10.65, 13.35, 31.15, 31.95, 6.4);
-  // 二の丸へ上がる石段（門は最初から無い）と、落とし穴のある庭
+  // 二の丸へ上がる石段（門は最初から無い）。脇は土。柵の外には落ちない
   stair(-1.4, 1.4, 8, 1.2, 6.4, 9.6, false);
+  const stairDirt = (x0, x1, z0, z1, y0, y1) => {
+    const n = Math.max(4, Math.ceil(Math.abs(y1 - y0) / 0.3));
+    for (let i = 0; i < n; i++) {
+      const b = (i + 1) / n;
+      const za = z0 + (z1 - z0) * (i / n), zb = z0 + (z1 - z0) * b, y = y0 + (y1 - y0) * b;
+      const zLo = Math.min(za, zb) - 0.06, zHi = Math.max(za, zb) + 0.06;
+      floors.push({ x0, x1, z0: zLo, z1: zHi, y });
+      const top = Math.max(0.2, y - 0.06);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.1, x1 - x0), top, zHi - zLo), i % 2 ? earth : earthD);
+      m.position.set((x0 + x1) / 2, top / 2, (zLo + zHi) / 2); stageRoot.add(m);
+    }
+  };
+  const stepRail = (x, z0, z1, y0, y1) => {
+    const n = Math.max(4, Math.ceil(Math.abs(y1 - y0) / 0.3));
+    for (let i = 0; i < n; i++) {
+      const b = (i + 1) / n;
+      const za = z0 + (z1 - z0) * (i / n), zb = z0 + (z1 - z0) * b, y = y0 + (y1 - y0) * b;
+      const zLo = Math.min(za, zb), zHi = Math.max(za, zb);
+      boxes.push({ x0: x - 0.1, x1: x + 0.1, y0: y, y1: y + 1.05, z0: zLo, z1: zHi });
+      if (i % 2 === 0) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.95, 0.1), woodD);
+        post.position.set(x, y + 0.48, (zLo + zHi) / 2); stageRoot.add(post);
+      }
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, Math.max(0.12, zHi - zLo)), wood);
+      bar.position.set(x, y + 0.72, (zLo + zHi) / 2); stageRoot.add(bar);
+    }
+  };
+  stairDirt(-7.05, -1.32, 8, 1.15, 6.4, 9.6);
+  stairDirt(1.32, 7.05, 8, 1.15, 6.4, 9.6);
+  stepRail(-6.95, 8, 6.15, 6.4, 7.5);
+  stepRail(6.95, 8, 6.15, 6.4, 7.5);
+  deck(-8, -1.5, 8, 12.2, 6.4, earth);   // 石段の前は土。穴に落ちてから登らない
+  deck(1.5, 8, 8, 12.2, 6.4, earth);
   deck(-7.2, 7.2, -4.2, 6.6, 9.6, stone);
   wall(-7.4, -6.6, 9.6, 11.4, -4, 6.4, earthD);
   wall(6.6, 7.4, 9.6, 11.4, -4, 6.4, earthD);
   wall(-7.2, 7.2, 9.6, 11.2, 6.2, 6.8, earth);
+  const fence = (x0, x1, z0, z1, y) => {
+    boxes.push({ x0, x1, y0: y, y1: y + 1.05, z0, z1 });
+    const dx = x1 - x0, dz = z1 - z0, alongX = dx >= dz;
+    const len = Math.max(dx, dz), n = Math.max(2, Math.ceil(len / 1.5));
+    for (let i = 0; i < n; i++) {
+      const t = n === 1 ? 0.5 : i / (n - 1);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.05, 0.12), woodD);
+      post.position.set(x0 + dx * t, y + 0.52, z0 + dz * t); stageRoot.add(post);
+    }
+    for (const rh of [0.42, 0.82]) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(alongX ? Math.max(0.2, dx) : 0.08, 0.07, alongX ? 0.08 : Math.max(0.2, dz)), wood);
+      m.position.set((x0 + x1) / 2, y + rh, (z0 + z1) / 2); stageRoot.add(m);
+    }
+  };
+  // 二の丸の縁。床の内側で押し返す。南北は石段の口だけ空ける
+  fence(-7.12, -6.88, -4.05, 6.45, 9.6);
+  fence(6.88, 7.12, -4.05, 6.45, 9.6);
+  fence(-7.05, -1.85, 6.22, 6.48, 9.6);
+  fence(1.85, 7.05, 6.22, 6.48, 9.6);
+  fence(-7.05, -1.55, -4.18, -3.92, 9.6);
+  fence(1.55, 7.05, -4.18, -3.92, 9.6);
   for (const [x, z] of [[-3.2, 3.2], [3.4, 1.2], [0.2, -1.4]]) {
     const hole = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5), dark);
     hole.rotation.x = -Math.PI / 2; hole.position.set(x, 9.62, z); stageRoot.add(hole);
     MTN.pits.push({ x, z, on: true });
   }
-  // 本丸への入り口は、二の丸が落ちるまで桟で塞ぐ。石段は滑る
+  // 本丸への入り口は、二の丸が落ちるまで桟で塞ぐ。石段は滑る。外した一歩は土と柵
   stair(-1.4, 1.4, -3.2, -11.2, 9.6, 12.8, true);
+  stairDirt(-1.9, -1.32, -3.6, -11.4, 9.6, 12.8);
+  stairDirt(1.32, 1.9, -3.6, -11.4, 9.6, 12.8);
+  stepRail(-1.75, -3.6, -11.4, 9.6, 12.8);
+  stepRail(1.75, -3.6, -11.4, 9.6, 12.8);
   MTN.bar = wall(-1.55, 1.55, 9.6, 12.2, -4.15, -3.45, woodD);
+  // 西峰と東峰をつなぐ峰道。土塁の手前（南側）を渡って援軍が移る
+  floors.push({ x0: -15, x1: 18, z0: 13.45, z1: 16.15, y: 6.4 });
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(33, 0.06, 2.15), stone);
+  ridge.position.set(1.5, 6.46, 14.8); stageRoot.add(ridge);
+  const mine = nobori(0.4, 14.2, '#5c3318', '#f4efe4', '峰道');
+  mine.position.y = 6.4;
   // 本丸：暗い木の間。梁、柱、狭間。床は板
   deck(-7.4, 7.4, -28, -10.6, 12.8, floorM);
   wall(-7.6, -6.9, 12.8, 16.2, -28, -10.6, wood);
@@ -3881,12 +3946,15 @@ function mtnRoute(p, tx, tz) {
   const py = e && e.baseY != null ? e.baseY : floorUnder(p.x, p.z, (p.y || 0) + 0.3);
   const ty = floorUnder(tx, tz, 30);
   if (e && e.team === 'orange' && e.mtnPost && !e.mtnGo) return [e.mtnPost[0], e.mtnPost[1]];
-  const side = e && (e.mtnGo ? e.mtnGo[3] : e.mtnSide);
-  // 土の坂の上は道の中心へ吸い寄せない。分隊の列を崩して団子にしない
-  if (e && e.team === 'blue' && p.z > 20 && tz > 20) {
-    const x0 = side === 'east' ? 12 : 0;
-    if (Math.abs(tx - x0) < 5 && Math.abs(p.x - tx) < 6) return [tx, tz];
+  // 峰から峰へは、土塁の手前の峰道（z≈14.8）を渡る
+  if (e && e.team === 'orange' && e.mtnGo && Math.abs(e.mtnGo[0] - p.x) > 5 && p.z < 28 && (e.baseY || 0) > 5.5) {
+    const rz = 14.8;
+    if (Math.abs(p.z - rz) > 1.8) return [clamp(p.x, -14, 17), rz];
+    return [clamp(e.mtnGo[0], -14, 17), rz];
   }
+  const side = e && (e.mtnGo ? e.mtnGo[3] : e.mtnSide);
+  // 同じ高さの土の上は、道の中心へ吸い寄せて団子にしない
+  if (e && e.team === 'blue' && Math.abs(py - ty) < 1.8 && Math.hypot(tx - p.x, tz - p.z) < 18) return [tx, tz];
   const west = [[0, 60, 1.1], [0, 50, 3.0], [0, 42, 4.6], [0, 36, 5.7], [0, 33, 6.2], [-2, 22, 6.4], [4, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
   const east = [[12, 60, 1.1], [12, 50, 3.0], [12, 42, 4.6], [12, 36, 5.7], [12, 33, 6.2], [14, 22, 6.4], [8, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
   const wps = side === 'east' ? east : side === 'west' ? west : west.concat(east);
@@ -3951,6 +4019,64 @@ function mtnBoot() {
   }
   MTN.blueBoot = enemies.filter(e => e.team === 'blue' && !e.special).length;
 }
+function mtnLiving(team) {
+  let n = 0;
+  for (const e of enemies) if (e.team === team && !e.special && e.state !== 'down') n++;
+  return n;
+}
+function mtnFillRoster() {
+  // 第一波はここで敵55・味方70まで埋める。後の波は足さない
+  const zy = z => 6.4 * (66 - z) / 33.6;
+  const rear = [
+    [-5.4, 1.6, 9.6, null, 'nino'],
+    [5.4, 0.2, 9.6, null, 'nino'],
+    [-1.6, -16.2, 12.8, null, 'hon'],
+    [2.4, -19.4, 12.8, null, 'hon'],
+  ];
+  let guard = 0;
+  while (mtnLiving('orange') < 55 && guard++ < 80) {
+    const i = MTN.extraI = (MTN.extraI || 0) + 1;
+    const arch = i % 5 !== 0;
+    let x, z, y, side, zone;
+    if (55 - mtnLiving('orange') <= rear.length && rear.length) {
+      const r = rear.pop();
+      x = r[0]; z = r[1]; y = r[2]; side = r[3]; zone = r[4];
+    } else {
+      let w = 0, ea = 0;
+      for (const e of enemies) {
+        if (e.team !== 'orange' || e.state === 'down' || e.special || e.mtnZone !== 'approach') continue;
+        if (e.mtnSide === 'east') ea++; else w++;
+      }
+      side = ea <= w ? 'east' : 'west';
+      const xs = side === 'west' ? [-3.4, -2.0, 2.0, 3.3] : [9.1, 10.4, 13.7, 15.0];
+      const zs = [54, 48, 44, 40, 37, 33.6];
+      x = xs[i % xs.length] + ((i % 3) - 1) * 0.18;
+      z = zs[i % zs.length] + (i % 2 ? 0.24 : -0.18);
+      y = zy(z); zone = 'approach';
+    }
+    const ne = mtnPlace(x, z, y, arch ? 'archer' : 'mob', 'orange', { set: { stone: !arch && zone === 'approach', mtnZone: zone, mtnSide: side, mtnPost: [x, z, y, side], mtnHold: true } });
+    if (!ne) break;
+    ne.face = Math.PI;
+  }
+  guard = 0; let bi = 0;
+  while (mtnLiving('blue') < 70 && guard++ < 100) {
+    const side = bi % 2 ? 'east' : 'west';
+    const x0 = side === 'east' ? 12 : 0;
+    const z = 74 + (bi % 12) * 1.05;
+    const x = x0 + ((bi % 4) < 2 ? -1.05 : 1.05) + ((bi % 3) - 1) * 0.1;
+    const kind = bi % 5 === 0 ? 'mob' : 'archer';
+    const ne = mtnPlace(x, z, 0, kind, 'blue', { yari: kind === 'mob' ? -1 : undefined, set: { mtnSide: side } });
+    if (!ne) break;
+    mtnGiveSlot(ne);
+    bi++;
+  }
+  const ap = { west: 0, east: 0 };
+  for (const e of enemies) {
+    if (e.team !== 'orange' || e.state === 'down' || e.special || e.mtnZone !== 'approach') continue;
+    if (e.mtnSide === 'east') ap.east++; else ap.west++;
+  }
+  MTN.approach0 = ap;
+}
 function mtnRamSlot(R, i) {
   const S = [[-0.62, 0.72], [0.62, 0.72], [-0.62, -0.78], [0.62, -0.78]][i % 4];
   return [R.x + S[0], R.z + S[1]];
@@ -4006,7 +4132,8 @@ function mtnBundleBrain(e, dt) {
   if (!gate || gate.open) { e.bundleBear = false; e.crouch = 0; return false; }
   MTN.who = e;
   const p = e.s.position, gx = (e.mtnSide === 'east' ? 12 : 0) + (e.bundleLane || 0);
-  const goalZ = (gate.z0 + gate.z1) / 2 + 3.6;   // 門の前で止まる。守りは門を開けない
+  const go = !!(MTN.ramGo && MTN.ramGo[e.mtnSide || 'west']);
+  const goalZ = go ? (gate.z0 + gate.z1) / 2 + 3.6 : 61;   // 弓の撃ち合いが済むまで、射線で待つ
   if (p.z > goalZ + 0.45) {
     e.crouch = 0;
     steer(e, gx, Math.max(goalZ, p.z - 4.5), e.speed * 0.92, dt);
@@ -4062,36 +4189,44 @@ function mtnAllyAdvance(e, dt) {
   const p = e.s.position;
   e.t += dt;
   MTN.who = e;
+  const go = !!(MTN.ramGo && MTN.ramGo[side]);
+  const open = !!gate.open;
   let near = null, nd = 1e9;
   for (const o of enemies) {
     if (o.team !== 'orange' || o.state === 'down') continue;
     const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z);
     if (d < nd) { nd = d; near = o; }
   }
-  if (e.kind !== 'archer' && near && nd < 2.15 && Math.abs(near.baseY - e.baseY) < 1.25) return false;
+  const meleeR = go ? 2.15 : 1.35;
+  if (e.kind !== 'archer' && near && nd < meleeR && Math.abs(near.baseY - e.baseY) < 1.25) return false;
   const file = e.mtnFile == null ? 1 : e.mtnFile;
   const rank = e.mtnRank || 0;
-  const open = !!gate.open;
-  let frontZ, x0;
-  if (!open || p.z > 22) {
-    x0 = side === 'east' ? 12 : 0;
-    frontZ = open ? 16.5 : (gate.z0 + gate.z1) / 2 + 3.3;
+  const lane = (file - 1) * (open && p.z <= 20 ? 0.42 : 1.05);
+  const step = rank * 1.15;
+  let tx, tz;
+  if (!open) {
+    tx = (side === 'east' ? 12 : 0) + lane;
+    tz = (go ? (gate.z0 + gate.z1) / 2 + 3.4 : 61) + step;
+    if (p.z < tz) tz = p.z;
+  } else if (p.z > 20) {
+    tx = (side === 'east' ? 12 : 0) + lane * 0.65;
+    tz = 16 + Math.min(step, 8);
+    if (p.z < tz) tz = p.z - 0.2;
+  } else if (side === 'east' && p.x > 2.4) {
+    tx = 1.0 + lane * 0.35;
+    tz = 14.8;
   } else if (e.baseY < 8.9) {
-    x0 = side === 'east' ? 0.7 : -0.7;
-    frontZ = 2.2;
+    tx = (side === 'east' ? 0.4 : -0.4) + (file === 2 ? 0.32 : file === 0 ? -0.32 : 0);
+    tz = 2.4 + Math.min(step * 0.35, 2.2);
+    if (p.z < tz) tz = p.z - 0.15;
   } else if (e.baseY < 12.2) {
-    x0 = side === 'east' ? 0.45 : -0.45;
-    frontZ = -9.5;
+    tx = (file - 1) * 0.38;
+    tz = -8.5;
   } else {
-    x0 = 0;
-    frontZ = -22;
+    tx = (file - 1) * 0.65;
+    tz = -20 + Math.min(rank, 4) * 0.9;
   }
-  const spread = (!open || p.z > 22) ? 1.05 : 0.48;
-  const tx = x0 + (file - 1) * spread;
-  let tz = frontZ + rank * 1.4 + (open && side === 'east' ? 5.2 : 0);
-  if (!open && p.z < tz) tz = p.z;
-  else if (open && p.z < tz) tz = frontZ + (file === 0 ? 0.3 : 0.9);
-  if (Math.hypot(tx - p.x, tz - p.z) > 0.55) steer(e, tx, tz, e.speed * (open ? 1.18 : 1), dt);
+  if (Math.hypot(tx - p.x, tz - p.z) > 0.55) steer(e, tx, tz, e.speed * (open ? 1.18 : go ? 1.05 : 0.92), dt);
   if (e.kind === 'archer' && near && nd > 5 && nd < 38 && Math.abs(near.baseY - e.baseY) < 9 && ammoOK(e)) {
     e.tgt = near; e.tgtT = 0.7;
     e.faceWant = Math.atan2(near.s.position.x - p.x, near.s.position.z - p.z);
@@ -4146,6 +4281,7 @@ function mtnHotSide() {
   return w >= ea ? 'west' : 'east';
 }
 function mtnBalance() {
+  if (MTN.reliefT && time < MTN.reliefT) return;
   const pressure = { west: 0, east: 0 }, defs = { west: [], east: [] };
   if (player.pos.z < 72 && player.pos.y < 10) pressure[Math.abs(player.pos.x) < Math.abs(player.pos.x - 12) ? 'west' : 'east'] += 2;
   for (const e of enemies) {
@@ -4159,19 +4295,31 @@ function mtnBalance() {
   else if (score('east') > score('west') + 0.45) hot = 'east';
   if (!hot) return;
   const cold = hot === 'west' ? 'east' : 'west';
-  if (defs[cold].length < 4) return;
-  const mover = defs[cold][defs[cold].length - 1];
-  const spots = MTN.sidePosts[hot] || [];
+  const peakish = defs[cold].filter(e => (e.baseY || 0) > 5.8 && e.s.position.z < 30);
+  const pool = peakish.length >= 4 ? peakish : defs[cold];
+  if (pool.length < 7 && defs[cold].length < 7) return;
+  const spots = (MTN.sidePosts[hot] || []).slice();
   if (!spots.length) return;
-  let spot = spots[0], bd = 1e9;
-  for (const s of spots) {
-    const taken = enemies.some(o => o !== mover && o.state !== 'down' && Math.hypot((o.mtnPost ? o.mtnPost[0] : o.s.position.x) - s[0], (o.mtnPost ? o.mtnPost[1] : o.s.position.z) - s[1]) < 0.7);
-    if (taken) continue;
-    const d = Math.hypot(s[0] - mover.s.position.x, s[1] - mover.s.position.z);
-    if (d < bd) { bd = d; spot = s; }
+  let sent = 0;
+  for (const mover of pool) {
+    if (defs[cold].length - sent <= 3 || sent >= 4) break;
+    let spot = null, bd = 1e9;
+    for (const s of spots) {
+      const taken = enemies.some(o => o.state !== 'down' && Math.hypot((o.mtnGo ? o.mtnGo[0] : o.mtnPost ? o.mtnPost[0] : 99) - s[0], (o.mtnGo ? o.mtnGo[1] : o.mtnPost ? o.mtnPost[1] : 99) - s[1]) < 0.8);
+      if (taken) continue;
+      const d = Math.hypot(s[0] - mover.s.position.x, s[1] - mover.s.position.z);
+      if (d < bd) { bd = d; spot = s; }
+    }
+    if (!spot) {
+      const s = spots[sent % spots.length];
+      spot = [s[0] + (sent % 2 ? 0.8 : -0.8), s[1] + 0.4, s[2]];
+    }
+    mover.mtnGo = [spot[0], spot[1], spot[2], hot];
+    sent++;
   }
-  mover.mtnGo = [spot[0], spot[1], spot[2], hot];
-  popup(hot === 'west' ? '西峰が押されている。東の兵を回す' : '東峰が押されている。西の兵を回す');
+  if (!sent) return;
+  MTN.reliefT = time + 18;
+  showBanner(hot === 'west' ? '西峰、援軍を乞う' : '東峰、援軍を乞う', 'もう一方の峰から、峰道を渡って兵が移る');
 }
 function updateMountain(dt) {
   if (!MTN.on || state !== 'play') return;
@@ -4179,6 +4327,18 @@ function updateMountain(dt) {
   if (MTN.slowT > 0) MTN.slowT -= dt;
   if ((MTN.balT -= dt) <= 0) { MTN.balT = 5; mtnBalance(); }
   if ((MTN.fillT -= dt) <= 0) { MTN.fillT = 0.8; for (const R of MTN.rams || []) mtnFillRam(R); }
+  MTN.fightT = (MTN.fightT || 0) + dt;
+  if (!MTN.ramGo) MTN.ramGo = { west: false, east: false };
+  for (const side of ['west', 'east']) {
+    if (MTN.ramGo[side]) continue;
+    let alive = 0;
+    for (const e of enemies) if (e.team === 'orange' && e.state !== 'down' && !e.special && e.mtnZone === 'approach' && e.mtnSide === side) alive++;
+    const base = (MTN.approach0 && MTN.approach0[side]) || alive || 1;
+    if ((MTN.fightT > 20 && alive <= Math.max(3, Math.floor(base * 0.3))) || MTN.fightT > 75) {
+      MTN.ramGo[side] = true;
+      showBanner(side === 'west' ? '大手、守りが薄い。破門隊、押せ！' : '搦手、守りが薄い。破門隊、押せ！', '弓の撃ち合いはここまで');
+    }
+  }
   for (const R of MTN.rams || []) {
     const gate = MTN.gates.find(g => g.id === R.id);
     if (!gate || gate.open) { if (R.g) R.g.visible = false; continue; }
@@ -4187,8 +4347,9 @@ function updateMountain(dt) {
       const i = R.crew.indexOf(m), s = mtnRamSlot(R, i);
       return Math.hypot(m.s.position.x - s[0], m.s.position.z - s[1]) < 2.4;
     });
-    // 担ぎ手が門の前にいない丸太は、勝手に坂を上って門を破らない
-    R.carrying = at.length >= 2;
+    // 担ぎ手が揃っても、弓の撃ち合いが済むまで丸太は動かない
+    const ordered = !!(MTN.ramGo && MTN.ramGo[R.id]);
+    R.carrying = at.length >= 2 && ordered;
     R.moving = false;
     const gateZ = gate.z1 + 1.55;
     if (R.carrying) {
@@ -4318,7 +4479,7 @@ const STAGES = {
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
-  mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。攻め手は敵の二倍。竹束を押し立てて坂を上り、守りは門を開けない。毒煙を足場へ投げ、破城隊が丸太を門の前まで担いで突く。あなたも門を射て、近くなら叩ける。門の次は二の丸、その次が本丸。' },
+  mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。第一波は敵五十五、味方七十。しばらく弓を交わし、守りが薄れたら破門隊が門を突く。門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -5920,23 +6081,29 @@ function startWave(n) {
   }
   if (MTN.on) {
     wave.archerRate = 0.62;
-    wave.maxAlive = 40;
-    wave.blueMax = 78;
-    if (n === 1 && !MTN.garrison) { MTN.garrison = true; mtnBoot(); }
-    const oBoot = enemies.filter(e => e.team === 'orange' && !e.special).length;
-    const bBoot = enemies.filter(e => e.team === 'blue' && !e.special).length;
-    const oWave = n === 1 ? 8 : 10;   // 敵は少し増やす。味方は二倍のまま
-    wave.toSpawn = oWave;
-    const oTotal = (n === 1 ? oBoot : 0) + oWave;
-    const bWant = oTotal * 2;           // 味方は敵の 2 倍（この波に出す人数）
-    wave.blueToSpawn = Math.max(0, bWant - (n === 1 ? bBoot : 0));
-    wave.total = { blue: (n === 1 ? bBoot : 0) + wave.blueToSpawn, orange: oTotal };
-    if (n === 1) MTN.roster = { blue: wave.total.blue, orange: wave.total.orange, bootBlue: bBoot, bootOrange: oBoot };
+    wave.maxAlive = 90;
+    wave.blueMax = 120;
+    if (n === 1 && !MTN.garrison) { MTN.garrison = true; mtnBoot(); mtnFillRoster(); }
+    if (n === 1) {
+      wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0;
+      const o = enemies.filter(e => e.team === 'orange' && !e.special).length;
+      const b = enemies.filter(e => e.team === 'blue' && !e.special).length;
+      wave.total = { blue: b, orange: o };
+      MTN.roster = { blue: b, orange: o, bootBlue: b, bootOrange: o };
+    } else if (n === 2) {
+      wave.toSpawn = 16; wave.blueToSpawn = 12; wave.blueOwed = 0;
+      wave.total = { blue: 12, orange: 16 };
+      MTN.spawnZone = 'ridge';
+    } else {
+      wave.toSpawn = 12; wave.blueToSpawn = 8; wave.blueOwed = 0;
+      wave.total = { blue: 8, orange: 12 };
+      MTN.spawnZone = 'hon';
+    }
   }
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '竹束を立てて坂を上れ。守りは門を開けない。毒を投げ、破城隊が門の前で丸太を突く' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? '押されている峰へ、もう一方から兵が回る' : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? 'しばらく弓を交わせ。守りが薄れたら破門隊が門を突く。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -5957,10 +6124,21 @@ function waveUpdate(dt) {
       cx = clamp(slot[0] + rand(-0.9, 0.9), -7.2, 7.2);
       cz = clamp(slot[1] + rand(-1.4, 1.4), -102, 102);
     } else if (MTN.on) {
-      const side = mtnHotSide();
-      const spots = (MTN.sidePosts && MTN.sidePosts[side]) || [];
-      const slot = spots.length ? spots[(MTN.spawnI++) % spots.length] : [side === 'west' ? 0 : 12, 42, 4.6];
-      cx = slot[0]; cz = slot[1]; MTN.spawnY = slot[2]; MTN.spawnSide = side;
+      if (wave.n >= 3 || MTN.spawnZone === 'hon') {
+        const spots = [[-2.4, -17, 12.8, null, 'hon'], [2.6, -20, 12.8, null, 'hon'], [0.2, -24, 12.8, null, 'hon'], [-3.6, -22, 12.8, null, 'hon'], [3.4, -15, 12.8, null, 'hon']];
+        const slot = spots[(MTN.spawnI++) % spots.length];
+        cx = slot[0]; cz = slot[1]; MTN.spawnY = slot[2]; MTN.spawnSide = slot[3]; MTN.spawnZone = slot[4];
+      } else if (wave.n >= 2) {
+        const spots = [[-4.2, 2.2, 9.6, null, 'nino'], [4.2, 1.2, 9.6, null, 'nino'], [-2.4, -0.8, 9.6, null, 'nino'], [3.2, -1.4, 9.6, null, 'nino'], [0.2, 3.6, 9.6, null, 'nino'],
+          [-8, 14.8, 6.4, 'west', 'approach'], [-3, 14.8, 6.4, 'west', 'approach'], [4, 14.8, 6.4, 'east', 'approach'], [10, 14.8, 6.4, 'east', 'approach'], [15, 14.8, 6.4, 'east', 'approach']];
+        const slot = spots[(MTN.spawnI++) % spots.length];
+        cx = slot[0]; cz = slot[1]; MTN.spawnY = slot[2]; MTN.spawnSide = slot[3]; MTN.spawnZone = slot[4];
+      } else {
+        const side = mtnHotSide();
+        const spots = (MTN.sidePosts && MTN.sidePosts[side]) || [];
+        const slot = spots.length ? spots[(MTN.spawnI++) % spots.length] : [side === 'west' ? 0 : 12, 42, 4.6];
+        cx = slot[0]; cz = slot[1]; MTN.spawnY = slot[2]; MTN.spawnSide = side; MTN.spawnZone = 'approach';
+      }
     } else {
       const front = Math.random() < 0.7;
       const a = front ? -Math.PI / 2 + rand(-1.2, 1.2) : rand(0, Math.PI * 2);
@@ -5976,17 +6154,17 @@ function waveUpdate(dt) {
       const crew = CASTLE.on && CASTLE.phase === 0 && !cap && (wave.ramWant || 0) > CASTLE.ram.crew.filter(isUp).length;   // 破門隊：丸太の担ぎ手を 4 人まで
       const ne = spawnEnemy(sp[0], sp[1], crew ? 'mob' : Math.random() < wave.archerRate ? 'archer' : 'mob', cap, 'orange', crew ? { set: { ramCrew: true } } : (MTN.on ? { yari: -1 } : {}));
       if (MTN.on && ne) {
-        const y = MTN.spawnY || 4.6, side = MTN.spawnSide || 'west';
+        const y = MTN.spawnY || 4.6;
         ne.s.position.set(cx + rand(-0.2, 0.2), y, cz + rand(-0.2, 0.2));
         ne.baseY = y; ne.footOk = [ne.s.position.x, ne.s.position.z];
-        ne.mtnSide = side; ne.mtnZone = 'approach'; ne.mtnPost = [cx, cz, y, side]; ne.mtnHold = true;
+        ne.mtnSide = MTN.spawnSide || null; ne.mtnZone = MTN.spawnZone || 'approach'; ne.mtnPost = [cx, cz, y, MTN.spawnSide || null]; ne.mtnHold = true;
         if (ne.kind === 'mob') ne.stone = true;
       }
       if (crew && ne) { CASTLE.ram.crew.push(ne); if (!CASTLE.ram.crew.some((m, j) => j < CASTLE.ram.crew.length - 1 && isUp(m)) && CASTLE.ram.y < 0.5 && CASTLE.ram.z < -20) { CASTLE.ram.x = sp[0]; CASTLE.ram.z = sp[1] + 2; } }
       wave.toSpawn--;
       if (cap) wave.captain = false;
     }
-    wave.blueOwed = (wave.blueOwed || 0) + (MTN.on ? grp * 2 : grp / ENEMY_RATIO);   // 山城：味方が敵の 2 倍になるよう寄せる
+    wave.blueOwed = (wave.blueOwed || 0) + (MTN.on ? 0 : grp / ENEMY_RATIO);   // 山城の味方は波ごとに決めた人数だけ。二倍にはしない
     if (wave.toSpawn <= 0) wave.blueOwed = Math.max(wave.blueOwed, wave.blueToSpawn);   // 端数を残さない
     wave.spawnT = rand(0.6, 1.4);
   }
@@ -5996,6 +6174,22 @@ function waveUpdate(dt) {
     wave.blueOwed -= k; wave.blueToSpawn -= k;
   }
   if ((CASTLE.atk || FORT.atk) && wave.blueToSpawn <= 0 && (wave.trickT = (wave.trickT || 0) - dt) <= 0) { wave.trickT = 3.5; if (aliveOf('blue').length < (wave.blueMax || 20)) spawnAlly(); }   // 攻める：攻め手は後続が途切れず寄せる（守り手は波ごとに決まった数）
+  if (MTN.on) {
+    if (wave.toSpawn <= 0 && (wave.blueToSpawn || 0) <= 0 && (wave.blueOwed || 0) < 1 && wave.n < 3) {
+      const zAlive = z => enemies.some(e => e.team === 'orange' && e.state !== 'down' && !e.special && e.mtnZone === z);
+      const clear = wave.n <= 1 ? !zAlive('approach') : (!zAlive('approach') && !zAlive('nino'));
+      if (clear) {
+        wave.inter = 6;
+        showBanner(wave.n <= 1 ? '坂の守りが落ちた' : '二の丸の守りが落ちた', wave.n <= 1 ? '第二波が稜線と二の丸へ来る' : '第三波が本丸を固める');
+        Sfx.fanfare();
+        player.arrows = Math.min(arrowsMax(), player.arrows + 10);
+        for (const e of enemies) if (e.ammo !== undefined) e.ammo = AMMO_MAX;
+        for (const s of squads.blue) s.needAmmo = false;
+        player.hp = Math.min(CFG.maxHp, player.hp + 20);
+      }
+    }
+    return;
+  }
   if (wave.toSpawn <= 0 && foes === 0) {
     if ((SNOW.on && wave.n >= 3) || (MTN.on && (wave.n >= 3 || MTN.phase >= 2))) {
       if (SNOW.on && !SNOW.cleared) { SNOW.cleared = true; showBanner('敵の守りが崩れた', 'かまくらを抜け、峡谷の北口へ'); }

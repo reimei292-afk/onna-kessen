@@ -4026,7 +4026,10 @@ function mtnAllyAdvance(e, dt) {
   if (e.special || e.ramCrew || e.bundleBear || e.guard || e.hold) return false;
   const side = e.mtnSide === 'east' ? 'east' : e.mtnSide === 'west' ? 'west' : (e.s.position.x > 6 ? 'east' : 'west');
   const gate = MTN.gates.find(g => g.id === side);
-  if (!gate || gate.open) return false;
+  if (!gate || gate.open) {
+    if (e.state === 'zanshin' || e.state === 'aim') { e.state = 'advance'; e.t = 0; e.zanNext = null; }
+    return false;
+  }
   const p = e.s.position;
   e.t += dt;
   let near = null, nd = 1e9;
@@ -4049,7 +4052,7 @@ function mtnAllyAdvance(e, dt) {
     e.tgt = near; e.tgtT = 0.7;
     e.faceWant = Math.atan2(near.s.position.x - p.x, near.s.position.z - p.z);
     if (e.state !== 'aim' && e.state !== 'zanshin') { e.state = 'aim'; e.t = 0; }
-    if (e.state === 'aim' && e.t >= aimTotal(e, nd < 8)) { enemyShoot(e, near); e.state = 'zanshin'; e.t = 0; }
+    if (e.state === 'aim' && e.t >= aimTotal(e, nd < 8)) { enemyShoot(e, near); e.state = 'zanshin'; e.t = 0; e.zanNext = () => { e.state = 'aim'; e.t = 0; }; }
     else if (e.state === 'zanshin' && e.t > 0.35) { e.state = 'aim'; e.t = 0; }
     return true;
   }
@@ -4084,7 +4087,7 @@ function mtnDefenderBrain(e, dt) {
   if (e.stone && dist > 3.5 && dist < 20 && e.cd <= 0 && Math.abs(ty - e.baseY) < 8) { mtnThrowStone(e); e.cd = rand(1.2, 2); e.state = 'approach'; return true; }
   if (e.kind === 'archer' && dist < 52 && Math.abs(ty - e.baseY) < 10 && ammoOK(e)) {
     if (e.state !== 'aim' && e.state !== 'zanshin') { e.state = 'aim'; e.t = 0; }
-    if (e.state === 'aim' && e.t >= aimTotal(e, dist < 8)) { enemyShoot(e, e.tgt); e.state = 'zanshin'; e.t = 0; }
+    if (e.state === 'aim' && e.t >= aimTotal(e, dist < 8)) { enemyShoot(e, e.tgt); e.state = 'zanshin'; e.t = 0; e.zanNext = () => { e.state = 'aim'; e.t = 0; }; }
     else if (e.state === 'zanshin' && e.t > 0.35) { e.state = 'aim'; e.t = 0; }
     return true;
   }
@@ -7508,7 +7511,7 @@ function updateEnemies(dt) {
       } else if (e.perch) {
         // ===== 櫃・武者走りの弓兵：胸壁の陰にしゃがみ、立ち上がって射る =====
         if (e.state === 'zanshin') {
-          if (e.t >= KY_ZAN) e.zanNext();
+          if (e.t >= KY_ZAN) { if (typeof e.zanNext === 'function') e.zanNext(); else { e.state = 'hide'; e.t = 0; e.hideT = 0.4; } }
         } else if (e.state === 'aim') {
           const T = aimTotal(e, false);
           tint(e.t / T);
@@ -7583,7 +7586,7 @@ function updateEnemies(dt) {
             };
           }
         } else if (e.state === 'zanshin') {
-          if (e.t >= KY_ZAN) e.zanNext();
+          if (e.t >= KY_ZAN) { if (typeof e.zanNext === 'function') e.zanNext(); else { e.state = 'advance'; e.t = 0; e.cover = null; } }
         } else if (e.state === 'return') {
           if (steer(e, e.cp.x, e.cp.z, e.speed * 1.2, dt) < 0.5 || e.t > 3) { e.state = 'hide'; e.t = 0; e.hideT = rand(P.hideT[0], P.hideT[1]); }
         } else if (e.state === 'backoff') {

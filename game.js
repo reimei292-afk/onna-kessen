@@ -719,6 +719,7 @@ function buildMech() {
   [[-6, 18], [0, 15], [6, 18], [-3, 12]].forEach(([x, z]) => mechMake(x, z, 'kei'));
   [[-8, 8], [8, 9]].forEach(([x, z], i) => { const C = mechMake(x, z, 'truck'); C.goalX = i ? 8 : -8; });
   mechMedEnsure();
+  mechSiege();
 }
 function mechOpenGate(F) {
   F = F || mechFort(); if (!F) return;
@@ -1270,6 +1271,79 @@ function mechYield(e, dt) {
   }
   return false;
 }
+function mechTakeCata(e, dt) {
+  if (!MECH.on || !e || e.team !== 'blue' || !isUp(e) || e.seated || e.special || e.guard || e.perch || e.baseY > 1.2) return false;
+  let K = e.cataGo;
+  if (K && (K.wrecked || K.locked || (K.side === 'blue' && cataLiving(K) >= 2))) K = e.cataGo = null;
+  if (!K) {
+    if ((e.cataScan = (e.cataScan || 0) - dt) > 0) return false;
+    e.cataScan = 0.45;
+    let best = null, bd = 34;
+    for (const O of MECH.catas) {
+      if (O.locked || O.wrecked) continue;
+      if (O.side === 'blue' && cataLiving(O) >= 2) continue;
+      const d = Math.hypot(e.s.position.x - O.x, e.s.position.z - O.z);
+      if (d < bd) { bd = d; best = O; }
+    }
+    K = e.cataGo = best;
+  }
+  if (!K) return false;
+  const d = Math.hypot(e.s.position.x - K.x, e.s.position.z - K.z);
+  if (d < 7.5 && K.side !== 'blue' && cataLiving(K, 'orange') > 0) return false;
+  e.tgt = null;
+  if (d > 1.7) { steer(e, K.x, K.z + 1.5, e.speed * 1.25, dt); e.state = 'approach'; return true; }
+  if (cataSit(e, K)) { e.cataGo = null; return true; }
+  return false;
+}
+function mechSiege() {
+  const F = MECH.forts[0]; if (!F) return;
+  const x = -20, z = F.z + 24, top = 4.1, parts = [], bs = [];
+  const add = (a, b, c, d, e, f) => { parts.push(boxMesh(a, b, c, d, e, f, WOOD_D)); bs.push(boxes[boxes.length - 1]); };
+  add(x - 1.55, x - 1.15, 0, top, z - 1.55, z - 1.15);
+  add(x + 1.15, x + 1.55, 0, top, z - 1.55, z - 1.15);
+  add(x - 1.55, x - 1.15, 0, top, z + 1.15, z + 1.55);
+  add(x + 1.15, x + 1.55, 0, top, z + 1.15, z + 1.55);
+  const floor = { x0: x - 1.7, x1: x + 1.7, z0: z - 1.7, z1: z + 1.7, y: top };
+  floors.push(floor);
+  parts.push(boxMesh(x - 1.7, x + 1.7, top, top + 0.16, z - 1.7, z + 1.7, WOOD_L, false));
+  const L = { x0: x - 0.6, x1: x + 0.6, z0: z + 1.55, z1: z + 3.7, y0: 0, y1: top, dir: 1, zStand: z + 3.9, zTop: z + 0.2 };
+  ladders.push(L);
+  const vis = mechLadderVis(x, z + 3.3, z + 0.3, top);
+  nobori(x - 2.4, z, '#d9741c', '#fff6e8', '井闌');
+  MECH.siege = { x, z, hp: 14, parts, bs, floor, L, vis, dead: false };
+}
+function mechSiegeTick(dt) {
+  const S = MECH.siege; if (!S || S.dead) return;
+  let n = 0;
+  for (const e of enemies) if (e.team === 'blue' && isUp(e) && !e.seated && e.baseY < 1.2 && Math.hypot(e.s.position.x - S.x, e.s.position.z - S.z) < 3.4) n++;
+  if (Math.hypot(player.pos.x - S.x, player.pos.z - S.z) < 3.2 && player.pos.y < 1.2) n++;
+  if (n) S.hp -= dt * Math.min(4, n) * 0.45;
+  if (S.hp > 0) return;
+  S.dead = true;
+  for (const m of S.parts) m.visible = false;
+  for (const b of S.bs) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
+  const fi = floors.indexOf(S.floor); if (fi >= 0) floors.splice(fi, 1);
+  const li = ladders.indexOf(S.L); if (li >= 0) ladders.splice(li, 1);
+  if (S.vis && S.vis.parent) S.vis.parent.remove(S.vis);
+  popup('井闌を倒した');
+  MECH.log.push('siege');
+}
+function mechSiegeJob(e, dt) {
+  const S = MECH.siege; if (!S || S.dead || !MECH.on || !e || e.team !== 'blue' || !isUp(e) || e.seated || e.special || e.guard || e.perch) return false;
+  if (e.baseY > 2) return false;
+  if ((e.id % 4) !== 0) return false;
+  const zx = S.x, zz = S.L.zStand, d = Math.hypot(e.s.position.x - zx, e.s.position.z - zz);
+  if (d > 20) return false;
+  e.tgt = null;
+  if (d > 0.85) { steer(e, zx, zz, e.speed * 1.2, dt); e.state = 'approach'; return true; }
+  e.climbT = (e.climbT || 0) + dt;
+  if (e.climbT > 0.7) {
+    e.onFloor = S.floor; e.baseY = S.floor.y; e.passive = false;
+    e.s.position.set(S.x, S.floor.y, S.z);
+    e.climbT = 0; e.state = 'approach';
+  }
+  return true;
+}
 function mechMarch(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.guard || e.perch || e.baseY > 1.2) return false;
   if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.driver) return false;
@@ -1312,7 +1386,7 @@ function updateMech(dt) {
   if (!MECH.on || state !== 'play') return;
   for (const C of mechVehicles()) mechDrive(C, dt);
   for (const K of MECH.catas) cataDrive(K, dt);
-  mechLob(dt); mechSteal(dt); mechRepairTick(dt); mechWin();
+  mechLob(dt); mechSteal(dt); mechRepairTick(dt); mechSiegeTick(dt); mechWin();
   MECH.nudge = (MECH.nudge || 0) - dt; if (MECH.nudge <= 0) { MECH.nudge = 0.8; mechNudge(); }
 }
 function mechCrew() {
@@ -6268,6 +6342,193 @@ function updateMountain(dt) {
   if (player.hp <= 0) { player.hp = 0; gameOver(false); }
 }
 
+const DUAL = { on: false, kingCleared: false, saionjiCleared: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
+function dualLine(text) { popup(text); if (typeof subtitle === 'function') subtitle(text); }
+function buildTwoFront() {
+  buildHQ(-78, -64, 2, 16, -70, 10);
+  buildMedPost(-66, 12, 'blue');
+  nobori(-74, 18, '#1f5fb8', '#f4f1e8', '王');
+  nobori(74, 8, '#b99a45', '#fff6e8', '西園寺');
+  const stone = new THREE.MeshLambertMaterial({ color: 0x7a776e });
+  const wall = (x0, x1, z0, z1, h) => boxMesh(x0, x1, 0, h, z0, z1, stone);
+  wall(-47.2, -44.8, -22, -4.2, 3.4);
+  wall(-47.2, -44.8, 4.2, 22, 3.4);
+  boxMesh(-48.4, -43.6, 3.2, 3.7, -22, -4, WOOD_D, false);
+  boxMesh(-48.4, -43.6, 3.2, 3.7, 4, 22, WOOD_D, false);
+  for (const z of [-16, 16]) {
+    const yag = boxMesh(-50, -42, 0, 5.2, z - 2.2, z + 2.2, stone);
+    yag.castShadow = false;
+    floors.push({ x0: -49.2, x1: -42.8, z0: z - 1.8, z1: z + 1.8, y: 5.0 });
+    const L = { x0: -41.4, x1: -40.2, z0: z - 0.6, z1: z + 0.6, y0: 0, y1: 5, dir: 1, zStand: z, zTop: z };
+    L.x0 = -41.6; L.x1 = -40.3; L.z0 = z - 0.7; L.z1 = z + 0.7;
+    ladders.push({ x0: -41.8, x1: -40.2, z0: z - 0.7, z1: z + 0.7, y0: 0, y1: 5, dir: 1, zStand: z + 1.4, zTop: z });
+  }
+  const steps = [];
+  for (let i = 0; i < 6; i++) {
+    const x0 = 54 + i * 2.4, y = 0.55 * (i + 1);
+    floors.push({ x0, x1: x0 + 2.5, z0: -3.2, z1: 3.2, y });
+    boxMesh(x0, x0 + 2.5, 0, y, -3.2, 3.2, stone, false);
+    steps.push(y);
+  }
+  floors.push({ x0: 68.5, x1: 80, z0: -8, z1: 8, y: 3.4 });
+  boxMesh(68.5, 80, 0, 3.4, -8, 8, stone, false);
+  boxMesh(68.2, 80.2, 3.4, 3.7, -8, 8, WOOD_L, false);
+  for (let i = 0; i < 8; i++) tree(-20 + i * 4, 28 + (i % 2) * 3, 1);
+  for (let i = 0; i < 6; i++) tree(30 + i * 5, -24, 1.1);
+}
+function dualSpawn(front, team, count, xBase, z0, z1) {
+  const goalX = team === 'orange' ? (front === 'king' ? -60 : 72) : (front === 'king' ? -68 : 70);
+  for (let i = 0; i < count; i++) {
+    const kind = i % 5 < 2 ? 'archer' : 'mob';
+    const z = z0 + (z1 - z0) * ((i % 10) / 9);
+    const e = spawnEnemy(xBase + rand(-3, 3), z + rand(-0.6, 0.6), kind, false, team, kind === 'mob' && i % 3 === 0 ? { yari: 1 } : {});
+    if (!e) continue;
+    e.missionFront = front; e.missionTeam = team;
+    e.missionGoto = [goalX + rand(-2, 2), clamp(z, z0, z1)];
+  }
+}
+function startDualMission() {
+  Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [] });
+  player.pos.set(-70, 0, 8); player.yaw = Math.PI / 2; player.hp = CFG.maxHp;
+  wave.n = 1; wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0; wave.inter = 0; wave.maxAlive = 240; wave.blueMax = 240;
+  if (ojou.e && isUp(ojou.e)) {
+    ojou.e.s.position.set(74, 3.4, 0); ojou.e.baseY = 3.4; ojou.e.home = [74, 0]; ojou.mode = 'hq';
+    ojou.e.missionFront = 'saionji'; DUAL.saionji = ojou.e;
+  }
+  const miyA = aides.find(A => A.id === 'sec4');
+  if (miyA && miyA.e && isUp(miyA.e)) {
+    miyA.e.s.position.set(72.2, 3.4, 1.4); miyA.e.baseY = 3.4; miyA.e.home = [72.2, 1.4];
+    miyA.e.missionFront = 'saionji'; DUAL.miyashita = miyA.e;
+  }
+  if (sec.e && isUp(sec.e)) { sec.e.s.position.set(-68, 0, 6); sec.e.missionFront = 'king'; DUAL.shira = sec.e; }
+  dualSpawn('king', 'blue', 50, -66, -12, 14);
+  dualSpawn('saionji', 'blue', 40, 66, -10, 10);
+  dualSpawn('king', 'orange', 50, -24, -14, 14);
+  dualSpawn('saionji', 'orange', 50, 30, -12, 12);
+  showBanner('二正面戦、開始', '西は王が城を守る。東は西園寺が山城を守る。敵は各50人');
+  Sfx.fluteCall();
+}
+function dualDeployShira() {
+  const born = [];
+  for (let i = 0; i < 20; i++) {
+    const e = spawnEnemy(-62 + rand(-2, 2), rand(-6, 8), 'mob', false, 'blue', { yari: 1 });
+    if (e) { e.missionFront = 'king'; e.missionReinforcement = true; e.missionGoto = [70, rand(-3, 3)]; born.push(e); }
+  }
+  for (let i = 0; i < 20; i++) {
+    const e = spawnEnemy(-62 + rand(-2, 2), rand(-6, 8), 'archer', false, 'blue');
+    if (e) { e.missionFront = 'king'; e.missionReinforcement = true; e.missionGoto = [70, rand(-3, 3)]; born.push(e); }
+  }
+  let meds = 0;
+  for (const m of medics.blue) if (m.e && isUp(m.e) && meds < 2) {
+    m.e.s.position.set(-64, 0, 4 + meds * 1.4); m.e.baseY = 0; m.e.home = [m.e.s.position.x, m.e.s.position.z];
+    m.e.missionFront = 'king'; m.e.missionReinforcement = true; meds++;
+  }
+  DUAL.reinforcements = born;
+  DUAL.relayStage = 4; DUAL.eventT = 0;
+  dualLine('王「白瀬、裏切り者を討ち取れ」');
+  showBanner('白瀬、討伐隊を率いて出陣', '槍隊20、弓隊20、医務班2');
+}
+function dualBrain(e, dt) {
+  if (!DUAL.on || !e || !isUp(e) || e.seated) return false;
+  if (e === DUAL.saionji && !DUAL.betrayed) {
+    if (Math.hypot(e.s.position.x - 74, e.s.position.z) > 1.3) { steer(e, 74, 0, e.speed, dt); e.baseY = 3.4; }
+    e.tgt = null; e.state = 'idle'; return true;
+  }
+  if (e === DUAL.miyashita && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji)) {
+    const s = DUAL.saionji.s.position;
+    if (Math.hypot(e.s.position.x - s.x, e.s.position.z - s.z) > 1.8) steer(e, s.x - 1.3, s.z + 1.1, e.speed, dt);
+    e.tgt = null; return true;
+  }
+  if (e === DUAL.miyashita && DUAL.betrayed) {
+    if (e.s.position.x > -40) { steer(e, -66, 8, e.speed * 1.3, dt); e.state = 'approach'; e.tgt = null; return true; }
+  }
+  if ((e === DUAL.shira || e.missionReinforcement) && DUAL.relayStage >= 4 && DUAL.saionji && isUp(DUAL.saionji)) {
+    const s = DUAL.saionji.s.position;
+    const near = Math.hypot(e.s.position.x - s.x, e.s.position.z - s.z);
+    let foe = false;
+    if (near < 10) for (const o of enemies) if (o.team !== e.team && isUp(o) && !o.special && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 6) foe = true;
+    if (!foe && near > 3.2) { steer(e, s.x - 2.4, s.z, e.speed * 1.3, dt); e.state = 'approach'; e.tgt = null; return true; }
+    if (!foe && e === DUAL.shira) return false;
+  }
+  if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.aide) return false;
+  let foe = null, fd = e.kind === 'archer' ? 20 : 8;
+  for (const o of enemies) {
+    if (!isUp(o) || o.team === e.team || o.special) continue;
+    const d = Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z);
+    if (d < fd) { fd = d; foe = o; }
+  }
+  if (foe) return false;
+  const g = e.missionGoto; if (!g) return false;
+  if (Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) < 2.4) return false;
+  steer(e, g[0], g[1], e.speed * 1.12, dt); e.state = 'approach'; e.tgt = null;
+  return true;
+}
+function updateDual(dt) {
+  if (!DUAL.on || state !== 'play' || DUAL.won) return;
+  DUAL.healT -= dt;
+  if (DUAL.healT <= 0) {
+    DUAL.healT = 2.4;
+    const s = DUAL.saionji, m = DUAL.miyashita;
+    if (s && isUp(s) && !DUAL.betrayed && m && isUp(m) && s.hp < s.hpMax && Math.hypot(m.s.position.x - s.s.position.x, m.s.position.z - s.s.position.z) < 4) {
+      s.hp = Math.min(s.hpMax, s.hp + 2);
+    }
+  }
+  const up = (team, front) => enemies.filter(e => e.team === team && isUp(e) && e.missionFront === front && !e.special && !e.ojou);
+  if (!DUAL.kingCleared && up('orange', 'king').length === 0 && enemies.some(e => e.missionFront === 'king')) {
+    DUAL.kingCleared = true;
+    dualLine('王側の敵を壊滅させた。生き残った味方は東の山城へ援軍に向かう');
+    for (const e of up('blue', 'king')) { e.missionFront = 'saionji'; e.missionGoto = [70, rand(-4, 4)]; }
+  }
+  if (!DUAL.saionjiCleared && !DUAL.betrayed && up('orange', 'saionji').length === 0 && enemies.some(e => e.missionFront === 'saionji' && e.team === 'orange')) {
+    DUAL.saionjiCleared = true;
+    dualLine('山城側の敵を壊滅させた。生き残った味方は王の城へ援軍に向かう');
+    for (const e of up('blue', 'saionji')) { e.missionFront = 'king'; e.missionGoto = [-64, rand(-4, 4)]; }
+  }
+  if (!DUAL.joined && DUAL.saionji && isUp(DUAL.saionji) && !DUAL.betrayed && (player.pos.x > 60 || enemies.some(e => e.team === 'blue' && e.missionFront === 'saionji' && e.s.position.x > 55 && !e.special && Math.hypot(e.s.position.x - 74, e.s.position.z) < 12 && e.home && e.home[0] < 0))) {
+    // 援軍が山城に着いた、または王が西園寺のもとへ来た
+  }
+  const meet = !DUAL.joined && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji) && (Math.hypot(player.pos.x - DUAL.saionji.s.position.x, player.pos.z - DUAL.saionji.s.position.z) < 8 || (DUAL.kingCleared && enemies.some(e => e.team === 'blue' && !e.special && e.s.position.x > 60 && isUp(e))));
+  if (meet) {
+    DUAL.joined = true;
+    dualLine('西園寺「王、ご無事で。こちらはまだ持ちこたえております」');
+    showBanner('王と西園寺', '王「間に合って何よりだ。ともに押し返せ」');
+  }
+  if (!DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji) && enemies.some(e => e.team === 'orange' && isUp(e) && !e.special && e.s.position.x > 66 && Math.abs(e.s.position.z) < 8)) {
+    DUAL.betrayed = true;
+    const s = DUAL.saionji;
+    s.team = 'orange'; s.special = false; s.ojou = false; s.wasOjou = true; s.state = 'approach'; s.t = 0; s.tgt = null;
+    s.hp = Math.max(s.hp, 8); s.missionFront = 'saionji'; s.missionGoto = [74, 0];
+    DUAL.relayStage = 1; DUAL.eventT = 3.2;
+    dualLine('西園寺「私はここまでです。これより敵方に降ります」');
+    showBanner('西園寺、降伏', '宮下「西園寺様……本当に、王を裏切るのですか」');
+  }
+  if (DUAL.betrayed && DUAL.relayStage > 0 && DUAL.relayStage < 4) {
+    DUAL.eventT -= dt;
+    if (DUAL.eventT <= 0) {
+      if (DUAL.relayStage === 1) {
+        DUAL.relayStage = 2; DUAL.eventT = 3.4;
+        dualLine('宮下「私はこの場を離れます。伝令に、真実を伝えます」');
+      } else if (DUAL.relayStage === 2) {
+        DUAL.relayStage = 3; DUAL.eventT = 3.6;
+        dualLine('伝令「白瀬殿。西園寺殿が、敵方へ寝返りました」');
+        showBanner('伝令から白瀬へ', '白瀬「殿。西園寺が裏切りました」');
+      } else if (DUAL.relayStage === 3) {
+        dualLine('王「……西園寺が。信じたくはなかった」');
+        dualDeployShira();
+      }
+    }
+  }
+  if (DUAL.shira && !DUAL.arrivalTalk && DUAL.relayStage >= 4 && isUp(DUAL.shira) && DUAL.saionji && isUp(DUAL.saionji) && Math.hypot(DUAL.shira.s.position.x - DUAL.saionji.s.position.x, DUAL.shira.s.position.z - DUAL.saionji.s.position.z) < 6) {
+    DUAL.arrivalTalk = true;
+    dualLine('白瀬「西園寺殿。王を裏切った罪、ここで償ってもらいます」');
+    showBanner('白瀬、西園寺に到着', '西園寺「王には王の道が、私には私の道があります」');
+  }
+  const oranges = enemies.filter(e => e.team === 'orange' && isUp(e) && !e.medic);
+  if (!DUAL.won && oranges.length === 0 && (DUAL.saionjiCleared && DUAL.kingCleared || (DUAL.betrayed && DUAL.relayStage >= 4))) {
+    DUAL.won = true; showBanner('二正面を制した', DUAL.betrayed ? '裏切り者を討った' : '両方の戦線を守り切った'); gameOver(true);
+  }
+}
+
 const STAGES = {
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
@@ -6276,6 +6537,7 @@ const STAGES = {
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
   mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。攻め手は射ちながら破門隊について門へ上がり、門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
+  twofront: { name: '王と西園寺の二正面戦', desc: '西は王が城を守り、東は西園寺が山城を守る。味方は王に50人、西園寺に40人。敵は各50人。片方を壊滅させれば、もう一方へ援軍が走る。本丸まで押されると西園寺は寝返り、白瀬が討伐隊を率いて出る。' },
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
@@ -6291,7 +6553,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false;
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -8013,7 +8275,7 @@ function waveUpdate(dt) {
     }
     return;
   }
-  if (!MECH.on && wave.toSpawn <= 0 && foes === 0) {
+  if (!MECH.on && !DUAL.on && wave.toSpawn <= 0 && foes === 0) {
     if ((SNOW.on && wave.n >= 3) || (MTN.on && (wave.n >= 3 || MTN.phase >= 2))) {
       if (SNOW.on && !SNOW.cleared) { SNOW.cleared = true; showBanner('敵の守りが崩れた', 'かまくらを抜け、峡谷の北口へ'); }
       if (MTN.on && MTN.phase >= 2 && !MTN.cleared) { MTN.cleared = true; showBanner('二の丸の先は本丸', '石段の奥。残った守りを落とせ'); }
@@ -9521,8 +9783,11 @@ function updateEnemies(dt) {
     else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
     else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
     else if (MECH.on && mechYield(e, dt)) { /* 車の前からはどく */ }
+    else if (MECH.on && e.team === 'blue' && mechTakeCata(e, dt)) { /* 立ち尽くすなら投石車を奪う */ }
     else if (MECH.on && mechFixJob(e, dt)) { /* 破れたタイヤへ。秘書も直す */ }
     else if (MECH.on && e.team === 'blue' && mechFillJob(e, dt)) { /* 人が足りない車に乗って前へ */ }
+    else if (MECH.on && e.team === 'blue' && mechSiegeJob(e, dt)) { /* 井闌の梯子を登る */ }
+    else if (DUAL.on && dualBrain(e, dt)) { /* 二正面：自分の戦線を守り、援軍は向こうへ */ }
     else if (MECH.on && e.team === 'blue' && mechClimb(e, dt)) { /* はしごが門にかかっていれば壁へ */ }
     else if (MECH.on && e.team === 'blue' && mechPress(e, dt)) { /* 砦の中を攻め続ける */ }
     else if (MECH.on && e.team === 'orange' && mechCounter(e, dt)) { /* 優勢なら車を奪って本陣へ */ }
@@ -10469,6 +10734,8 @@ function setWeapon(w) {
 //  ゲーム進行
 // ====================================================================
 function resetGame() {
+  DUAL.on = builtStage === 'twofront';
+  if (!DUAL.on) DUAL.won = false;
   if (menuOpen) closeSecMenu(false);
   clearBlood();
   for (const k in towers) towers[k].paint = towers[k].press = 0;
@@ -10497,7 +10764,8 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
+  if (builtStage === 'twofront') { player.pos.set(-70, 0, 8); player.yaw = Math.PI / 2; }
+  else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
   else if (builtStage === 'fort') player.pos.set(-12, 6, 8.6);   // 左の櫃の上から
@@ -10520,12 +10788,12 @@ function startGame() {
   spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
   for (const A of aides) spawnAide(A);
   for (const R of runners) spawnRunner(R);
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   state = 'play'; lock();
-  startWave(1);
+  if (builtStage === 'twofront') startDualMission(); else startWave(1);
 }
 function pauseGame() {
   if (state !== 'play') return;
@@ -10675,7 +10943,7 @@ function updatePlayer(dt) {
   if (player.pos.y <= gh && !player.climbing) { player.pos.y = gh; player.vy = 0; player.onGround = true; }
   if (MTN.on && player.onGround) {
     const slot = player.mtnFoot;
-    if (slot && player.pos.y > 0.35 && gh < slot[2] - 1.05) {
+    if (slot && player.pos.y > 0.35 && gh < slot[2] - 1.05 && gh < 0.25) {
       player.pos.x = slot[0]; player.pos.z = slot[1]; player.pos.y = slot[2]; player.vy = 0; gh = slot[2];
     } else player.mtnFoot = [player.pos.x, player.pos.z, player.pos.y];
   }
@@ -10731,7 +10999,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (MECH.on) updateMech(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
@@ -10834,5 +11102,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual };
 })();

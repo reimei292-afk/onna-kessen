@@ -3806,8 +3806,8 @@ function buildMountain() {
     hold.push([-4.0, z + 0.55, y, false, 'approach', 'west']);
     hold.push([14.9, z + 0.55, y, z === 42, 'approach', 'east']);
   }
-  MTN.hold = hold;
-  for (const h of hold) if (h[5]) MTN.sidePosts[h[5]].push([h[0], h[1], h[2]]);
+  MTN.hold = hold.filter((_, i) => i % 2 === 0);   // 守りは半分。足場・峰・二の丸・本丸は交互に残す
+  for (const h of MTN.hold) if (h[5]) MTN.sidePosts[h[5]].push([h[0], h[1], h[2]]);
 }
 function mtnOpenGate(g, why) {
   if (!g || g.open) return;
@@ -3894,7 +3894,7 @@ function mtnBoot() {
     const ne = mtnPlace(h[0], h[1], h[2], h[3] ? 'mob' : 'archer', 'orange', { set: { stone: !!h[3], mtnZone: h[4], mtnSide: h[5] || null, mtnPost: [h[0], h[1], h[2], h[5] || null], mtnHold: true } });
     if (ne) ne.face = Math.PI;
   }
-  const lineN = 19;
+  const lineN = 9;
   for (const side of ['west', 'east']) {
     const x0 = side === 'west' ? 0 : 12;
     const R = MTN.rams.find(r => r.id === side);
@@ -3903,8 +3903,8 @@ function mtnBoot() {
       const kind = i % 4 === 0 ? 'mob' : 'archer';
       mtnPlace(x0 + (col - 1) * 0.95, 70 + row * 1.15, 0, kind, 'blue', { yari: kind === 'mob' ? -1 : undefined, set: { mtnSide: side } });
     }
-    for (let i = 0; i < 3; i++) {
-      const lane = (i - 1) * 0.72, z = 64.2 - i * 1.7, y = 6.4 * (66 - z) / 33.6;
+    for (let i = 0; i < 2; i++) {
+      const lane = (i ? 0.72 : -0.72), z = 64.2 - i * 1.7, y = 6.4 * (66 - z) / 33.6;
       const ne = mtnPlace(x0 + lane, z, y, 'mob', 'blue', { yari: -1, set: { bundleBear: true, mtnSide: side, bundleLane: lane } });
       if (ne) {
         ne.hp = ne.hpMax = 8;
@@ -3912,11 +3912,11 @@ function mtnBoot() {
         ne.mtnBundle = cv; cv.bearer = ne;
       }
     }
-    for (let i = 0; i < 2; i++) {
-      const ne = mtnPlace(x0 + (i ? 1.05 : -1.05), 68.5 + i * 1.2, 0, 'mob', 'blue', { yari: -1, set: { smoker: true, mtnSide: side, smokeCd: rand(2.5, 5.5) } });
+    {
+      const ne = mtnPlace(x0, 68.5, 0, 'mob', 'blue', { yari: -1, set: { smoker: true, mtnSide: side, smokeCd: rand(2.5, 5.5) } });
       if (ne) ne.hp = ne.hpMax = 8;
     }
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       const slot = mtnRamSlot(R, i), y = 6.4 * (66 - slot[1]) / 33.6;
       const ne = mtnPlace(slot[0], slot[1], y, 'mob', 'blue', { yari: -1, set: { ramCrew: true, mtnSide: side } });
       if (ne && R) { ne.hp = ne.hpMax = 14; R.crew.push(ne); }
@@ -3945,9 +3945,9 @@ function mtnFillRam(R) {
   const gate = MTN.gates.find(g => g.id === R.id);
   if (!gate || gate.open) return;
   const alive = () => R.crew.filter(isUp).length;
-  if (alive() >= 4) return;
+  if (alive() >= 2) return;
   for (const e of enemies) {
-    if (alive() >= 4) break;
+    if (alive() >= 2) break;
     if (e.team !== 'blue' || !isUp(e) || e.special || e.guard || e.ramCrew || e.bundleBear || e.smoker || e.kind !== 'mob') continue;
     if (e.mtnSide && e.mtnSide !== R.id) continue;
     if (Math.hypot(e.s.position.x - R.x, e.s.position.z - R.z) > 4.2) continue;
@@ -5875,12 +5875,12 @@ function startWave(n) {
   }
   if (MTN.on) {
     wave.archerRate = 0.62;
-    wave.maxAlive = 56;
-    wave.blueMax = 110;
+    wave.maxAlive = 28;
+    wave.blueMax = 55;
     if (n === 1 && !MTN.garrison) { MTN.garrison = true; mtnBoot(); }
     const oBoot = enemies.filter(e => e.team === 'orange' && !e.special).length;
     const bBoot = enemies.filter(e => e.team === 'blue' && !e.special).length;
-    const oWave = n === 1 ? 12 : 16;   // 以前は 8 / 10。守りも増やす
+    const oWave = n === 1 ? 6 : 8;   // 増援も半分
     wave.toSpawn = oWave;
     const oTotal = (n === 1 ? oBoot : 0) + oWave;
     const bWant = oTotal * 2;           // 味方は敵の 2 倍（この波に出す人数）

@@ -76,6 +76,10 @@
   #weapons{position:absolute;left:24px;bottom:22px;font-size:17px;text-shadow:0 1px 3px #000}
   #weapons div{padding:4px 12px;margin-top:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.35);border-radius:3px;opacity:.55}
   #weapons div.on{opacity:1;border-color:#ffe38a;background:rgba(80,50,0,.5)}
+  #bGod{position:absolute;left:24px;bottom:128px;pointer-events:auto;display:none;z-index:30;
+    font:inherit;font-size:18px;letter-spacing:.25em;padding:8px 18px;color:#e8d9a8;
+    background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.75);border-radius:4px;cursor:pointer}
+  #bGod.on{background:rgba(232,217,168,.92);color:#1a1410}
   #arrows{position:absolute;right:28px;bottom:24px;font-size:20px;text-shadow:0 1px 3px #000;text-align:right}
   #arrows b{font-size:36px;color:#ffe38a}
   #radar{position:absolute;right:20px;top:20px;width:150px;height:150px;border-radius:50%;
@@ -163,6 +167,7 @@
   <div id="talk">秘書課の侍女に頼む（E / 頼むボタン）</div><div id="hqtag"></div>
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
   <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
+  <button id="bGod" class="serif" type="button">無敵</button>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
 
@@ -286,6 +291,6 @@
 <script src="assets/voices/voices.js?v=20261011f"></script>
 <script src="lib/motion_data.js"></script>
 <script src="lib/death_clips.js?v=20261011e"></script>
-<script src="game.js?v=20261012g"></script>
+<script src="game.js?v=20261012h"></script>
 </body>
 </html>

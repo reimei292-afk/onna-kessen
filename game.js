@@ -561,12 +561,18 @@ function finishBamboo() {
   stageRoot.add(lm);
   bambooStalks.length = 0; bambooLeaves.length = 0;
 }
+function plainsClear(x, z) {
+  if (Math.abs(x) < 16 && z < 40 && z > -400) return true;          // 軽とはしご車の進撃路
+  if (Math.abs(x - 8) < 8 && z > -20 && z < 52) return true;        // 本陣近くの街道
+  return false;
+}
 function buildPlains() {
   // 竹林を中盤に配置
   for (let tries = 0, made = 0; made < 18 && tries < 400; tries++) {
     const a = rand(0, 6.283), r = rand(14, 95), x = Math.cos(a) * r, z = Math.sin(a) * r * 1.1 - 10;
     if (Math.abs(x - 8 - (z + 60) * 0.12) < 7) continue;            // 街道
     if (z > 8 && Math.abs(x) < 14) continue;                          // 自陣
+    if (plainsClear(x, z)) continue;
     if (Math.abs(x) < 22 && z < 24 && z > -400) continue;             // 機械化の進撃路
     if (Math.hypot(x, z) < 12) continue;                              // 開始地点
     if (covers.some(c => Math.hypot(c.x - x, c.z - z) < 14)) continue;
@@ -591,12 +597,13 @@ function buildPlains() {
     const a = Math.random() * Math.PI * 2, r = rand(35, CFG.field + 20);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.abs(z) < 140 && Math.abs(x - 8) < 6) continue; // 街道を避ける
+    if (plainsClear(x, z)) continue;
     if (Math.abs(x) < 22 && z < 24 && z > -400) continue;   // 砦までの進撃路
     if (covers.some(c => Math.hypot(c.x - x, c.z - z) < c.r + 2)) continue;
     tree(x, z, rand(0.8, 1.6));
   }
-  for (let i = 0; i < 12; i++) { const a = rand(0, 6.28), r = rand(8, 30); if (covers.some(c => Math.hypot(c.x - (Math.cos(a) * r + 30), c.z - (Math.sin(a) * r - 10)) < c.r + 2)) continue; tree(Math.cos(a) * r + 30, Math.sin(a) * r - 10, rand(.8, 1.3)); }
-  for (let i = 0; i < 30; i++) { const x = rand(-120, 120), z = rand(-120, 120); if (Math.abs(x) < 22 && z < 24 && z > -400) continue; if (!covers.some(c => Math.hypot(c.x - x, c.z - z) < c.r + 2) && Math.hypot(x, z) > 6) rock(x, z, rand(0.4, 1.4)); }
+  for (let i = 0; i < 12; i++) { const a = rand(0, 6.28), r = rand(8, 30), x = Math.cos(a) * r + 30, z = Math.sin(a) * r - 10; if (plainsClear(x, z) || covers.some(c => Math.hypot(c.x - x, c.z - z) < c.r + 2)) continue; tree(x, z, rand(.8, 1.3)); }
+  for (let i = 0; i < 30; i++) { const x = rand(-120, 120), z = rand(-120, 120); if (plainsClear(x, z)) continue; if (!covers.some(c => Math.hypot(c.x - x, c.z - z) < c.r + 2) && Math.hypot(x, z) > 6) rock(x, z, rand(0.4, 1.4)); }
   buildMech();
 }
 
@@ -909,21 +916,26 @@ function mechLob(dt) {
 }
 function mechRockHit(r) {
   const A = r.aim || {}, side = r.side || 'orange';
+  const from = new V3(r.tx, 0.5, r.tz);
   puff(r.m.position.clone(), 0xc8b48a, 8, 0.55, 2.2, 0.6);
   if (A.what === 'pb' && A.ref && !A.ref.dead && Math.hypot(A.ref.x - r.tx, A.ref.z - r.tz) < 8) {
     A.ref.hp -= 3.2; MECH.log.push('pbhit:' + A.ref.hp.toFixed(1));
     if (A.ref.hp <= 0) mechPbKill(A.ref);
   }
-  if (A.what === 'veh' && A.ref && !A.ref.wrecked && Math.hypot(A.ref.x - r.tx, A.ref.z - r.tz) < 8) {
-    const C = A.ref; C.hp -= C.kind === 'truck' ? 2.2 : 1.2;
-    MECH.log.push('stone:' + C.kind + ':' + C.hp.toFixed(1));
-    if (C.hp <= 0) { C.wrecked = true; C.lame = true; C.v = 0; C.phase = 'hold'; mechDropLiving(C); popup(C.kind === 'truck' ? '投石ではしご車が止まった' : '投石で軽自動車が止まった'); }
+  let veh = A.what === 'veh' ? A.ref : null;
+  if (!veh && A.ref && A.ref.seated && A.ref.seated.kei && A.ref.seated.kei.kind) veh = A.ref.seated.kei;
+  let broke = false;
+  if (veh && !veh.wrecked && Math.hypot(veh.x - r.tx, veh.z - r.tz) < 8) {
+    veh.hp -= veh.kind === 'truck' ? 2.2 : 1.2;
+    MECH.log.push('stone:' + veh.kind + ':' + veh.hp.toFixed(1));
+    if (veh.hp <= 0) { veh.wrecked = true; veh.lame = true; veh.v = 0; veh.phase = 'hold'; broke = true; }
   }
   const crew = MECH.catas.flatMap(K => K.seats).find(isUp);
   for (const e of enemies) {
-    if (!isUp(e) || e.team === side) continue;
-    if (Math.hypot(e.s.position.x - r.tx, e.s.position.z - r.tz) < 2.6) damageEnemy(e, 5, null, false, null, crew || 'player');
+    if (!isUp(e) || e.team === side || e.seated) continue;
+    if (Math.hypot(e.s.position.x - r.tx, e.s.position.z - r.tz) < 2.6) damageEnemy(e, 5, from, false, null, crew || 'player');
   }
+  if (broke) { mechDropLiving(veh); popup(veh.kind === 'truck' ? '投石ではしご車が止まった' : '投石で軽自動車が止まった'); }
   if (side === 'orange' && Math.hypot(player.pos.x - r.tx, player.pos.z - r.tz) < 2.3) hurtPlayer(8);
   MECH.log.push('rock:' + (A.what || '?'));
 }
@@ -1234,7 +1246,7 @@ function mechPbKill(P) {
   P.dead = true; P.hp = 0;
   for (const b of P.bs) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
   for (const m of P.parts) m.visible = false;
-  if (P.gun && isUp(P.gun)) damageEnemy(P.gun, 99, null, false, null, 'player');
+  if (P.gun && isUp(P.gun)) damageEnemy(P.gun, 99, new V3(P.x, 1, P.z + 1), false, null, 'player');
   popup('投石でトーチカが崩れた');
   MECH.log.push('pb');
 }
@@ -7762,7 +7774,10 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
   puff(hitPos, 0xb10f25, 7, 0.18, 1.8, 0.34);                             // 赤い飛沫・ダメージパーティクル
   puff(hitPos, 0xff263f, 4, 0.12, 2.2, 0.2);                              // 赤いヒットエフェクト
   puff(e.s.position.clone().setY(e.baseY + 0.3), builtStage === 'snow' ? 0xd7e5ef : 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 雪煙／砂埃
-  const k = new V3(e.s.position.x - from.x, 0, e.s.position.z - from.z).normalize();
+  let kx = 0, kz = 1;
+  if (from) { kx = e.s.position.x - from.x; kz = e.s.position.z - from.z; }
+  const kl = Math.hypot(kx, kz) || 1;
+  const k = new V3(kx / kl, 0, kz / kl);
   if (!e.perch) e.knock.addScaledVector(k, crit ? 4 : 2.5);
   e.recoil = 0.36;
   if (e.prof && (e.prof.pers === '臆病' || e.prof.pers === '慎重' || e.prof.pers === '冷静' || Math.random() < 0.4)) {
@@ -10520,5 +10535,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer };
 })();

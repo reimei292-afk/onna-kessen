@@ -868,13 +868,17 @@ function mechDock(C) {
   if (C.docked || C.kind !== 'truck' || mechLiving(C) < 2) return;
   const F = mechFort(); if (!F || !F.walk) return;
   C.docked = true; C.v = 0; C.phase = 'hold';
-  const x = C.x;
-  const zFoot = C.z + 2.4, zTop = F.z - 1.55, y1 = F.walk.y;
+  const nose = mechW(C, 0, 2.55);
+  const x = nose[0];
+  const zFoot = nose[1];
+  const zTop = F.z - 1.75;
+  const y1 = F.walk.y;
   const vis = mechLadderVis(x, zFoot, zTop, y1);
-  const L = { x0: x - 0.75, x1: x + 0.75, z0: Math.min(zFoot, zTop) - 0.4, z1: Math.max(zFoot, zTop) + 1.3, y0: 0, y1, mech: true, F: F.walk, dir: -1, zStand: C.z + 3.5, zTop, vis };
-  ladders.push(L); C.lad = L; C.ladBase = [x, L.zStand];
+  const zStand = zFoot + Math.sign(zFoot - F.z || 1) * 1.35;
+  const L = { x0: x - 0.85, x1: x + 0.85, z0: Math.min(zStand, zTop) - 0.45, z1: Math.max(zStand, zFoot) + 0.45, y0: 0, y1, mech: true, F: F.walk, dir: -1, zStand, zTop, vis };
+  ladders.push(L); C.lad = L; C.ladBase = [x, zStand];
   const who = C.seats.find(isUp); if (who) mechSay(who, 'dock');
-  MECH.log.push('dock:' + x.toFixed(1));
+  MECH.log.push('dock:' + x.toFixed(1) + ':' + zFoot.toFixed(1) + ':' + zTop.toFixed(1));
   if (!MECH.saidLad) { MECH.saidLad = true; popup('はしごが門にかかった。後ろから E で渡れる'); }
 }
 function mechCarAhead(C) {
@@ -903,11 +907,11 @@ function mechDrive(C, dt) {
   if (!blue) { gx = 0; gz = 26; }
   else if (mouth) { gx = mouth.x; gz = mouth.z; }
   else if (!F) { gx = C.x; gz = C.z; }
-  else if (C.kind === 'truck' && !open) { gx = C.goalX; gz = F.z + 6.2; dock = true; }
+  else if (C.kind === 'truck' && !open) { gx = C.goalX; gz = F.z + 4.5; dock = true; }
   else if (C.kind === 'kei' && !open) { gx = clamp(C.lane, -3.2, 3.2); gz = F.z + 8.5; }
   else { gx = clamp((C.lane || C.goalX || 0) * 0.35, -2.2, 2.2); gz = F.z - (C.kind === 'truck' ? 10 : 14); }
   const dist = mechSeek(C, gx, gz, dt, C.kind === 'truck' ? 3.6 : 4.2);
-  if (dock && F && dist < 3.4 && C.z < F.z + 11 && Math.abs(C.x - C.goalX) < 2.8 && Math.abs(C.v) < 1.1) mechDock(C);
+  if (dock && F && dist < 2.8 && C.z < F.z + 8 && C.z > F.z + 2.2 && Math.abs(C.x - C.goalX) < 2.4 && Math.abs(C.v) < 1.1) mechDock(C);
   if (blue && F && C.kind === 'kei' && !open && C.z < F.z + 12 && Math.abs(C.x) < (F.hw || 5) + 1.4 && Math.abs(C.v) < 0.4) mechDropLiving(C);
   if (blue && F && open && !F.done && C.z < F.z - 4 && Math.abs(C.x) < 18 && Math.abs(C.v) < 0.45) mechDropLiving(C);
   if (!blue && C.z > 16 && Math.abs(C.x) < 16 && Math.abs(C.v) < 0.45) { mechDropLiving(C); const who = C.seats.find(isUp); if (who) mechSay(who, 'hq'); }
@@ -2867,7 +2871,7 @@ function castleDoorNear() {
   return best;
 }
 function castleUse() {   // E／スマホのボタン：近くの襖を開け閉め
-  if (!CASTLE.on || player.pos.y > 0.5) return false;
+  if (!castleLive() || player.pos.y > 0.5) return false;
   const d = castleDoorNear(); if (!d) return false;
   if (d.open && enemies.some(o => o.state !== 'down' && Math.abs(o.s.position.x - d.x) < (d.dir === 'x' ? 0.95 : 0.4) && Math.abs(o.s.position.z - d.z) < (d.dir === 'x' ? 0.4 : 0.95))) { popup('敷居に人がいて閉められない'); return true; }
   const pd = d.dir === 'x' ? Math.abs(player.pos.z - d.z) : Math.abs(player.pos.x - d.x), pa = d.dir === 'x' ? Math.abs(player.pos.x - d.x) : Math.abs(player.pos.z - d.z);
@@ -2973,8 +2977,9 @@ function castleReset() {
   const R = CASTLE.ram; if (R) { R.x = 0; R.z = -46; R.y = 0.24; R.swing = 0; R.t = 0; R.crew = []; }
   if (CASTLE.next) castleGraph();
 }
-function castleDoorClose() { if (!CASTLE.on || player.pos.y > 0.5) return false; const d = castleDoorNear(); return !!d && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 1.25; }
-function castleDoorNearHint() { const d = CASTLE.on && player.pos.y < 0.5 ? castleDoorNear() : null; return d; }
+function castleLive() { return !!(CASTLE.on || DUAL.on); }
+function castleDoorClose() { if (!castleLive() || player.pos.y > 0.5) return false; const d = castleDoorNear(); return !!d && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 1.25; }
+function castleDoorNearHint() { const d = castleLive() && player.pos.y < 0.5 ? castleDoorNear() : null; return d; }
 // ---- 毎フレーム：門・槌・襖・落とし穴・伏兵・二の丸の制圧 ----
 function updateCastle(dt) {
   if (!CASTLE.on) return;
@@ -6555,6 +6560,13 @@ function dualBrain(e, dt) {
 }
 function updateDual(dt) {
   if (!DUAL.on || state !== 'play' || DUAL.won) return;
+  if (CASTLE.doors) for (const d of CASTLE.doors) {
+    const want = d.open ? 1 : 0;
+    if (Math.abs((d.k || 0) - want) > 0.001) {
+      d.k += Math.sign(want - d.k) * Math.min(Math.abs(want - d.k), dt / 0.3);
+      doorWrite(d);
+    }
+  }
   DUAL.healT -= dt;
   if (DUAL.healT <= 0) {
     DUAL.healT = 2.4;
@@ -7745,9 +7757,7 @@ function spawnAlly() {
   if (MECH.on) {
     const R = MECH.rally;
     if (R) return spawnEnemy(rand(-8, 8), rand(R.z - 24, R.z - 7), kind, false, 'blue');
-    const F = mechFort();
-    const z0 = F ? F.z + 12 : 8, z1 = F ? F.z + 24 : 26;
-    return spawnEnemy(rand(-10, 10), rand(z0, z1), kind, false, 'blue');
+    return spawnEnemy(rand(-8, 8), rand(14, 20.5), kind, false, 'blue');
   }
   const a = rand(0.6, 2.5), r = rand(10, 18);   // プレイヤーの後方（+Z 側）
   const x = clamp(player.pos.x + Math.cos(a) * r, -CFG.field + 3, CFG.field - 3);
@@ -8791,7 +8801,7 @@ function steer(e, tx, tz, sp, dt) {
   if (BEACH.on) { if (p.z > 11 && p.z < 23) sp *= 0.72; else if (p.z > BH.Z1 && p.z < BH.Z2 && tz > p.z) sp *= 0.85; }   // 乱杭の中・斜面の上り
   if (PLANE.on && bodies.length) { const h = pileAt(p.x, p.z); if (h > 0) sp *= h > 0.5 ? 0.3 : 0.5; }   // 倒れた娘をまたぐ・乗り越える
   const rt = routeTo(p, tx, tz), routed = rt[0] !== tx || rt[1] !== tz;
-  if (CASTLE.on) castleDoorTouch(e, rt[0], rt[1]);   // 閉じた襖：通るなら開ける
+  if (CASTLE.on || DUAL.on) castleDoorTouch(e, rt[0], rt[1]);   // 閉じた襖：通るなら開ける
   const dx = rt[0] - p.x, dz = rt[1] - p.z, d = Math.hypot(dx, dz);
   if (d > 0.05) { const k = Math.min(d, sp * dt) / d; p.x += dx * k; p.z += dz * k; e.moving = true; }
   return routed ? Math.max(d, 1) + 5 : d;
@@ -10983,6 +10993,7 @@ function updatePlayer(dt) {
   let fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;
   // 自動で上り下り（E キー／スマホの「梯子」ボタン）：梯子の中心へ寄せ、端まで運ぶ。逆の入力・跳ぶで止める
   const AC = player.autoClimb;
+  let mechLadPass = !!(AC && AC.L && AC.L.mech);
   if (AC) {
     const L = AC.L, cx = (L.x0 + L.x1) / 2, zc = (L.z0 + L.z1) / 2, F = L.F;
     AC.t += dt;
@@ -10995,7 +11006,7 @@ function updatePlayer(dt) {
       fin = 1;
       if (player.pos.y >= L.y1 - 0.05 && F) {
         player.pos.y = L.y1; player.pos.z = L.zTop; player.pos.x = clamp(cx, F.x0 + 0.5, F.x1 - 0.5);
-        player.autoClimb = null; player.onGround = true;
+        player.autoClimb = null; player.onGround = true; mechLadPass = true;
       }
     } else {
       const onL = player.pos.y > L.y0 + 0.05 && player.pos.y < L.y1 - 0.05;
@@ -11011,6 +11022,7 @@ function updatePlayer(dt) {
   const lad = player.autoClimb ? player.autoClimb.L : ladderAt(player.pos.x, player.pos.z, player.pos.y);
   const midLadder = lad && player.pos.y > lad.y0 + 0.08 && player.pos.y < lad.y1 - 0.45;
   player.climbing = !!lad && (Math.abs(fin) > 0.2 || midLadder);
+  if (player.climbing && lad && lad.mech) mechLadPass = true;
   if (ml > 0 && !(player.climbing && midLadder) && !player.autoClimb) {
     const hk = player.climbing && fin < 0 && player.pos.y > lad.y0 + 0.08 ? 0.2 : 1;
     player.pos.x += mx / ml * sp * mag * dt * hk; player.pos.z += mz / ml * sp * mag * dt * hk; player.seated = false;
@@ -11039,7 +11051,7 @@ function updatePlayer(dt) {
     if (d < r && d > 1e-4) { player.pos.x = c.x + dx / d * r; player.pos.z = c.z + dz / d * r; }
   }
   if (PLANE.on) { player.autoClimb = null; player.climbing = false; }   // 機内に梯子は無い（他のステージの上り下りを持ち込まない）
-  if (boxes.length) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, Math.min(player.pos.y + 1.75, PLANE.on ? 2.3 : 99));
+  if (boxes.length && !mechLadPass) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, Math.min(player.pos.y + 1.75, PLANE.on ? 2.3 : 99));
   if (PLANE.on) planeClamp(player.pos, 0.35);
   if (BEACH.on) beachPlayerClamp();
   if (BEACH.on && !player.kei) keiPushAll(player.pos, 0.35);

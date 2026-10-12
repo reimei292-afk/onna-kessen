@@ -924,13 +924,16 @@ function mechFix(C, who) {
   return true;
 }
 function mechNearLame() {
-  let best = null, bd = 2.6;
+  let best = null, bd = 5.2;
   for (const C of mechVehicles()) {
-    if (!C.lame && !C.wrecked) continue;
+    if ((!C.lame && !C.wrecked) || C.side === 'orange') continue;
     const d = Math.hypot(player.pos.x - C.x, player.pos.z - C.z);
     if (d < bd) { bd = d; best = C; }
   }
   return best;
+}
+function mechAnyLame() {
+  return !!(MECH.on && mechVehicles().some(C => (C.lame || C.wrecked) && C.side !== 'orange'));
 }
 function mechUse() {
   if (!MECH.on) return false;
@@ -984,8 +987,13 @@ function mechRockHit(r) {
   let veh = A.what === 'veh' ? A.ref : null;
   if (!veh && A.ref && A.ref.seated && A.ref.seated.kei && A.ref.seated.kei.kind) veh = A.ref.seated.kei;
   let broke = false;
-  if (veh && !veh.wrecked && Math.hypot(veh.x - r.tx, veh.z - r.tz) < 8) {
-    veh.hp -= veh.kind === 'truck' ? 2.2 : 1.2;
+  if (veh && !veh.wrecked && veh.kind && Math.hypot(veh.x - r.tx, veh.z - r.tz) < 3.4) {
+    if (Math.random() < 0.32) {
+      const live = [];
+      veh.tires.forEach((t, i) => { if (t > 0) live.push(i); });
+      if (live.length) mechPuncture(veh, live[(Math.random() * live.length) | 0], side);
+    }
+    veh.hp -= veh.kind === 'truck' ? 0.7 : 0.4;
     MECH.log.push('stone:' + veh.kind + ':' + veh.hp.toFixed(1));
     if (veh.hp <= 0) { veh.wrecked = true; veh.lame = true; veh.v = 0; veh.phase = 'hold'; broke = true; }
   }
@@ -1029,6 +1037,7 @@ function mechSteal(dt) {
 function mechRepairTick(dt) {
   for (const C of mechVehicles()) {
     if (!C.lame && !C.wrecked) continue;
+    if (enemies.some(e => e.fixCar === C && isUp(e))) continue;
     let who = null;
     for (const e of enemies) {
       if (!isUp(e) || e.seated || e.team !== (C.side || 'blue')) continue;
@@ -1036,8 +1045,38 @@ function mechRepairTick(dt) {
     }
     if (!who) { C.fixT = 0; continue; }
     C.fixT = (C.fixT || 0) + dt;
-    if (C.fixT > 2.5) mechFix(C, who);
+    if (C.fixT > 1.7) mechFix(C, who);
   }
+}
+function mechFixJob(e, dt) {
+  if (!MECH.on || !e || e.team !== 'blue' || !isUp(e) || e.seated || e.perch || e.guard || e.medic || e.driver || e.gunner) return false;
+  let C = e.fixCar;
+  if (C && (C.side !== 'blue' || (!C.lame && !C.wrecked))) C = e.fixCar = null;
+  if (!C || (!C.lame && !C.wrecked)) {
+    if ((e.fixScan = (e.fixScan || 0) - dt) > 0) return !!e.fixCar;
+    e.fixScan = 0.35;
+    let bd = (e.secretary || e.aide || e.ojou || e.sec2) ? 70 : 42, best = null;
+    for (const O of mechVehicles()) {
+      if (O.side !== 'blue' || (!O.lame && !O.wrecked)) continue;
+      const d = Math.hypot(e.s.position.x - O.x, e.s.position.z - O.z);
+      if (d < bd) { bd = d; best = O; }
+    }
+    e.fixCar = C = best;
+  }
+  if (!C) return false;
+  const p = e.s.position, d = Math.hypot(p.x - C.x, p.z - C.z);
+  e.tgt = null; e.passive = true;
+  if (d > 1.7) {
+    steer(e, C.x, C.z + 1.4, e.speed * 1.3, dt);
+    e.faceWant = Math.atan2(C.x - p.x, C.z - p.z);
+    e.state = 'approach';
+    return true;
+  }
+  C.fixT = (C.fixT || 0) + dt;
+  e.state = 'idle';
+  e.faceWant = Math.atan2(C.x - p.x, (C.z + 0.2) - p.z);
+  if (C.fixT > 1.7) { mechFix(C, e); e.fixCar = null; }
+  return true;
 }
 function mechWin() {
   if (!MECH.on || MECH.won || state !== 'play') return;
@@ -1486,14 +1525,14 @@ function mechCapture() {
   mechUseFort(prev + 1);
   const N = mechFort();
   if (N) { mechGarrison(N); mechMedMove(N); }
-  for (let i = 0; i < (MECH.fi >= 2 ? 12 : 8); i++) spawnAlly();
+  for (let i = 0; i < (MECH.fi >= 2 ? 36 : 24); i++) spawnAlly();
   mechReuse();
   wave.n = MECH.fi + 1;
-  wave.toSpawn = MECH.fi >= 2 ? 28 : 16;
-  wave.blueToSpawn = MECH.fi >= 2 ? 14 : 10;
+  wave.toSpawn = MECH.fi >= 2 ? 56 : 32;
+  wave.blueToSpawn = MECH.fi >= 2 ? 42 : 30;
   wave.blueOwed = wave.blueToSpawn;
-  wave.maxAlive = MECH.fi >= 2 ? 52 : 36;
-  wave.blueMax = wave.blueToSpawn + 8;
+  wave.maxAlive = MECH.fi >= 2 ? 120 : 90;
+  wave.blueMax = wave.blueToSpawn + 16;
   wave.spawnT = 0.6; wave.inter = 0;
   showBanner(prev === 0 ? '一の砦を落とした' : '二の砦を落とした', MECH.fi >= 2 ? '三の砦。敵が多い。トーチカは投石で崩せ' : '奥の砦へ。車は増やさない。援軍が来る');
   const who = enemies.find(e => e.team === 'blue' && isUp(e) && !e.special);
@@ -7761,7 +7800,16 @@ function startWave(n) {
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
   if (MECH.on) {
-    if (n <= 1) { wave.blueToSpawn = Math.max(2, wave.blueToSpawn - 16); wave.toSpawn = Math.max(8, wave.toSpawn - 6); }
+    if (n <= 1) {
+      const foot = Math.max(2, wave.blueToSpawn - 16), foe = Math.max(8, wave.toSpawn - 6);
+      wave.blueToSpawn = foot * 3 + 32;
+      wave.toSpawn = foe * 2;
+    } else {
+      wave.blueToSpawn = Math.round(wave.blueToSpawn * 3);
+      wave.toSpawn = Math.round(wave.toSpawn * 2);
+    }
+    wave.blueMax = Math.min(180, Math.max(wave.blueToSpawn + 16, wave.blueMax * 3));
+    wave.maxAlive = Math.min(180, Math.max(wave.toSpawn + 16, wave.maxAlive * 2));
     mechWave(n);
   }
   showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '弓を撃ちながら破門隊について門へ。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : MECH.on ? '軽自動車とはしご車で砦へ。門は広いが閉まっている' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : MECH.on ? '車は増やさない。空いた席を使え' : '新手の橙組が迫る！ 青組の援軍が到着');
@@ -9356,6 +9404,7 @@ function updateEnemies(dt) {
     else if (BEACH.on && e.keiGo && e.team !== 'orange' && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
     else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
     else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
+    else if (MECH.on && mechFixJob(e, dt)) { /* 破れたタイヤへ。秘書も直す */ }
     else if (MECH.on && e.team === 'blue' && mechClimb(e, dt)) { /* はしごが門にかかっていれば壁へ */ }
     else if (MECH.on && e.team === 'blue' && mechPress(e, dt)) { /* 砦の中を攻め続ける */ }
     else if (MECH.on && e.team === 'orange' && mechCounter(e, dt)) { /* 優勢なら車を奪って本陣へ */ }
@@ -10409,12 +10458,14 @@ function updateLadderHint() {
   const dr = !n && !player.autoClimb && state === 'play' && !menuOpen ? castleDoorNearHint() : null;   // 城：襖
   if (dr) t = MOBILE ? `襖：「襖」ボタンで${dr.open ? '閉める' : '開ける'}` : `襖：E で${dr.open ? '閉める' : '開ける'}`;
   const tire = !menuOpen && MECH.on && state === 'play' && mechNearLame();
-  if (tire) t = MOBILE ? 'タイヤ：「梯子」ボタンで直す' : 'タイヤ：E で直す';
+  const anyTire = !menuOpen && state === 'play' && mechAnyLame();
+  if (tire) t = 'タイヤ：修理ボタン、または E';
   const ch = !menuOpen && carOn() ? carHint() : (!menuOpen && BEACH.on ? keiHint() : ''), car = !!ch;   // 軽自動車（平原の運転手／浜の乗り合い）
   if (car) t = ch;
   if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr || car);
     const bl = $('bLadL'); if (bl) bl.textContent = car ? (CAR.riding ? '降りる' : '乗る') : dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る';
     const bt = document.querySelector('#bLad span'); if (bt) bt.textContent = car ? '車' : dr ? '襖' : '梯子'; }
+  document.documentElement.classList.toggle('canfix', !!anyTire);
 }
 function updatePlayer(dt) {
   updateLadderHint();
@@ -10609,6 +10660,13 @@ function frame(now) {
 }
 resize();
 setupTouch();
+let fixTap = 0;
+{
+  const fixBtn = $('bFix');
+  const doFix = () => { if (state !== 'play') return; if (!mechUse()) popup('破れたタイヤのそばまで来て'); };
+  fixBtn.addEventListener('touchend', ev => { ev.preventDefault(); ev.stopPropagation(); fixTap = performance.now(); doFix(); }, { passive: false });
+  fixBtn.addEventListener('click', ev => { ev.stopPropagation(); if (performance.now() - fixTap < 700) return; doFix(); });
+}
 // ステージ選択（タイトル画面）
 const STAGE_Q = (location.search.match(/[?&]stage=(\w+)/) || [])[1];
 if (STAGE_Q && STAGES[STAGE_Q]) stageName = STAGE_Q;

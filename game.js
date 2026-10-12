@@ -2804,13 +2804,18 @@ function beachKingLooks(dt) {
 }
 // 青組の上陸後の待機位置・橙組の持ち場
 function beachIdleSpot(e) {
-  if (e.team === 'orange' && e.home) return e.home;
+  if (e.team === 'orange' && e.home && !e.beachRaid) return e.home;
+  if (e.team === 'blue' && e.beachAssault != null) {
+    const P = BEACH.pbs[e.beachAssault];
+    if (P && !P.taken) return [P.door[0] + ((e.id % 2) ? 0.7 : -0.7), P.door[1]];
+  }
   const live = BEACH.pbs.filter(P => !P.taken); if (!live.length) return [player.pos.x, player.pos.z];
   let best = live[0], bd = 1e9; for (const P of live) { const d = Math.hypot(P.x - e.s.position.x, P.z - e.s.position.z) + (e.id % 4 === P.i ? -15 : 0); if (d < bd) { bd = d; best = P; } }
   return [best.x + Math.cos(e.ph) * 3, best.z - 6 + Math.sin(e.ph) * 2];
 }
 // 橙組の持ち場の娘は、トーチカから離れすぎない（20m）
 function beachCanTarget(e, t, x, z) {
+  if (e.beachRaid) return true;
   if (e.team === 'orange' && e.pb != null) { const P = BEACH.pbs[e.pb]; if (P && Math.hypot(x - P.x, z - P.z) > (e.kind === 'archer' ? 48 : 22)) return false; }
   if (e.team === 'blue' && t.gunner && e.kind !== 'archer') return true;
   return true;
@@ -3293,7 +3298,10 @@ function keiSpawnFor(B, riders) {
   }
 }
 function keiSit(e, C, slot) {
-  if (!e || !C || C.dropped || !isUp(e)) { if (e) e.keiGo = null; return false; }
+  if (!e || !C || !isUp(e) || C.usedRaid) { if (e) e.keiGo = null; return false; }
+  if (e.team === 'orange') {
+    if (!(C.dropped || C.phase === 'stall' || C.phase === 'done' || C.phase === 'flee')) { e.keiGo = null; return false; }
+  } else if (C.dropped) { e.keiGo = null; return false; }
   if (C.seats[slot]) slot = C.seats.findIndex(s => !s);
   if (slot < 0 || keiCount(C) >= 4) {
     if (e.keiGo === C) { e.keiGo = null; e.passive = false; e.state = e.kind === 'archer' ? 'advance' : 'approach'; }
@@ -3308,19 +3316,29 @@ function keiSit(e, C, slot) {
   C.seats[slot] = e; e.keiGo = null; e.keiSlot = slot; e.keiTail = null; e.standAt = null;
   e.seated = { x: wx, z: wz, car: true, kei: C }; e.baseY = C.y + CAR_FLOOR; e.s.position.set(wx, e.baseY, wz);
   e.state = 'idle'; e.passive = true; e.tgt = null; e.knock.set(0, 0, 0);
+  if (e.team === 'orange') {
+    C.dropped = false; C.phase = 'flee'; C.flee = true; C.side = 'orange'; C.v = 0;
+    for (const o of enemies) {
+      if (o.keiTail === C) { o.keiTail = null; o.crouch = 0; }
+      if (o.team === 'blue' && o.keiGo === C) o.keiGo = null;
+    }
+    if (!BEACH.raidSaid) { BEACH.raidSaid = true; popup('橙組が軽自動車を奪って浜へ向かう'); }
+    BEACH.log.push('raid:' + C.pb);
+  }
   if (keiHasBody(C)) keiBloodSay(e);
   return true;
 }
 function keiWalkBrain(e, dt) {
   const C = e.keiGo;
-  if (!C || C.dropped || !BEACH.cars.includes(C)) { e.keiGo = null; return false; }
+  if (!C || !BEACH.cars.includes(C)) { e.keiGo = null; return false; }
+  if (C.usedRaid || (C.dropped && e.team !== 'orange')) { e.keiGo = null; return false; }
   if (e.seated && e.seated.kei === C) return false;
   beachEnsureBundle(e);
   e.keiWalk = (e.keiWalk || 0) + dt; e.tgt = null; e.passive = true; e.state = 'idle';
   const slot = (e.keiSlot == null ? 0 : e.keiSlot) | 0, seat = KEI_SEAT[slot] || KEI_SEAT[0], side = seat[0] < 0 ? -1 : 1;
   const [dx, dz] = keiW(C, side * (CAR_W / 2 + 0.7), seat[1]), p = e.s.position;
   if (e.keiWalk > 9 || Math.hypot(p.x - dx, p.z - dz) < 0.9) { keiSit(e, C, slot); return true; }
-  if (C.phase !== 'wait' && Math.hypot(p.x - C.x, p.z - C.z) > 16) { e.keiGo = null; e.passive = false; e.state = e.kind === 'archer' ? 'advance' : 'approach'; return false; }
+  if (C.phase !== 'wait' && C.phase !== 'done' && C.phase !== 'stall' && C.phase !== 'flee' && Math.hypot(p.x - C.x, p.z - C.z) > 16) { e.keiGo = null; e.passive = false; e.state = e.kind === 'archer' ? 'advance' : 'approach'; return false; }
   steer(e, dx, dz, e.speed * 1.3, dt); e.faceWant = Math.atan2(dx - p.x, dz - p.z);
   return true;
 }
@@ -3339,29 +3357,159 @@ function keiExitPlayer(C, quiet) {
   player.pos.set(wx, groundH(wx, wz), wz); player.vy = 0; player.onGround = true; player.drawing = false;
   if (!quiet) popup('軽自動車を降りた');
 }
-function keiDrop(C) {
-  if (!C || C.dropped) return;
-  C.dropped = true; C.phase = 'done'; C.v = 0;
+function keiNearPb(C, gap) {
   const P = BEACH.pbs[C.pb];
-  for (const e of enemies) if (e.keiGo === C) e.keiGo = null;
+  if (!P) return false;
+  return C.z > P.z0 - (gap || 14) && Math.hypot(C.x - P.x, C.z - P.z) < (gap || 14) + 6;
+}
+function keiCrowd(C) {
+  let n = 0;
+  for (const o of enemies) {
+    if (!isUp(o) || o.team !== 'orange' || o.seated) continue;
+    const [lx, lz] = keiL(C, o.s.position.x, o.s.position.z);
+    if (lz > 0.3 && lz < 8 && Math.abs(lx) < 3.4) n++;
+  }
+  return n;
+}
+function keiDrop(C, why) {
+  if (!C || (C.dropped && C.phase === 'done')) return;
+  C.dropped = true; C.phase = 'done'; C.v = 0; C.flee = false;
+  const P = BEACH.pbs[C.pb];
+  for (const e of enemies) if (e.keiGo === C && e.team === 'blue') e.keiGo = null;
   for (const e of enemies) if (e.keiTail === C) {
-    if (isUp(e) && P) e.home = [P.door[0] + ((e.keiTailI % 2) ? 0.7 : -0.7), P.door[1]];
+    if (isUp(e) && P) { e.home = [P.door[0] + ((e.keiTailI % 2) ? 0.7 : -0.7), P.door[1]]; e.beachAssault = P.i; }
     e.keiTail = null; e.crouch = 0;
   }
   for (let s = 0; s < C.seats.length; s++) {
     const o = C.seats[s];
     if (!o || o === 'P') continue;
+    if (!isUp(o)) { o.keiDead = C; continue; }   // 遺体は席に残す。奪った側がそれを見る
     const [wx, wz] = keiW(C, (s % 2 ? 1 : -1) * (CAR_W / 2 + 0.9), s < 2 ? 0.55 : -1.15);
     C.seats[s] = null; o.keiDead = null; o.keiGo = null;
     o.s.position.x = wx; o.s.position.z = wz; o.baseY = groundH(wx, wz);
-    if (isUp(o)) {
-      o.seated = o.seated || { x: wx, z: wz };
-      standUp(o); o.s.position.x = wx; o.s.position.z = wz; o.baseY = groundH(wx, wz);
-      if (P) o.home = [P.door[0] + ((s % 2) ? 0.6 : -0.6), P.door[1]];
-    }
+    o.seated = o.seated || { x: wx, z: wz };
+    standUp(o); o.s.position.x = wx; o.s.position.z = wz; o.baseY = groundH(wx, wz);
+    if (P) { o.home = [P.door[0] + ((s % 2) ? 0.6 : -0.6), P.door[1]]; o.beachAssault = P.i; }
   }
   if (C.player) keiExitPlayer(C, true);
-  if (!C.saidDrop) { C.saidDrop = true; popup('トーチカのそばだ、降りる'); BEACH.log.push('keiDrop:' + C.pb); }
+  if (!C.saidDrop) {
+    C.saidDrop = true;
+    popup(why === 'stuck' ? '人がいる。降りてトーチカを攻めろ' : 'トーチカのそばだ、降りる');
+    BEACH.log.push('keiDrop:' + (why || 'side') + ':' + C.pb);
+  }
+}
+function keiLiving(C, team) {
+  let n = 0;
+  for (const o of C.seats) if (o && o !== 'P' && isUp(o) && (!team || o.team === team)) n++;
+  return n;
+}
+function keiClaimable(C) {
+  if (!C || C.player || C.usedRaid || !BEACH.cars.includes(C)) return false;
+  if (keiLiving(C, 'blue') > 0) return false;
+  if (enemies.some(e => e.team === 'blue' && isUp(e) && e.keiGo === C)) return false;
+  if (C.phase === 'flee') return keiLiving(C) < 4;
+  return C.dropped || C.phase === 'stall' || C.phase === 'done';
+}
+function keiOrangeBrain(e, dt) {
+  if (!e || e.team !== 'orange' || e.gunner || e.hold || e.seated) return false;
+  let C = e.keiGo;
+  if (C && (!keiClaimable(C) && C.phase !== 'flee')) { e.keiGo = null; C = null; }
+  if (!C) {
+    if ((e.keiScan = (e.keiScan || 0) - dt) > 0) return false;
+    e.keiScan = 0.65;
+    let best = null, bd = 12;
+    for (const O of BEACH.cars) {
+      if (!keiClaimable(O)) continue;
+      const pending = enemies.filter(o => o.keiGo === O && isUp(o)).length;
+      if (keiLiving(O) + pending >= 4) continue;
+      const d = Math.hypot(e.s.position.x - O.x, e.s.position.z - O.z);
+      if (d < bd) { bd = d; best = O; }
+    }
+    if (!best) return false;
+    e.keiGo = best; e.keiSlot = Math.max(0, best.seats.findIndex(s => !s));
+    C = best;
+  }
+  return keiWalkBrain(e, dt);
+}
+function keiFleeAim(C) {
+  let row = null;
+  for (const R of ABATIS) if (C.z > R.z - 1.1 && (!row || R.z > row.z)) row = R;
+  if (row) {
+    let g = row.gaps[0], bd = 1e9;
+    for (const gx of row.gaps) { const d = Math.abs(gx - C.x) + (C.fleeGap === gx ? -4 : 0); if (d < bd) { bd = d; g = gx; } }
+    C.fleeGap = g;
+    if (C.z > row.z + 1.3 && Math.abs(C.x - g) > 0.45) return [g, row.z + 2.4];
+    return [g, row.z - 4.2];
+  }
+  return [clamp(C.x, -16, 16), 4.2];
+}
+function keiBeachArrival(C) {
+  if (!C || C.usedRaid) return;
+  C.usedRaid = true; C.dropped = true; C.phase = 'done'; C.v = 0; C.flee = false;
+  for (let s = 0; s < C.seats.length; s++) {
+    const o = C.seats[s];
+    if (!o || o === 'P' || !isUp(o)) continue;
+    const [wx, wz] = keiW(C, (s % 2 ? 1 : -1) * (CAR_W / 2 + 0.9), -0.4);
+    C.seats[s] = null; o.keiGo = null; o.keiDead = null;
+    o.seated = o.seated || { x: wx, z: wz };
+    standUp(o); o.s.position.x = wx; o.s.position.z = wz; o.baseY = groundH(wx, wz);
+    o.beachRaid = true; o.pb = null; o.home = [wx, clamp(wz, 2, 8)];
+  }
+  if (C.player) keiExitPlayer(C, true);
+  if (!BEACH.raidLand) { BEACH.raidLand = true; popup('橙組の軽自動車が浜に着いた'); }
+  BEACH.log.push('raidLand:' + C.pb);
+}
+function keiCarRel(C, dir) {
+  let best = null, bd = 1e9;
+  for (const O of BEACH.cars) {
+    if (O === C || O.dropped) continue;
+    const [lx, lz] = keiL(C, O.x, O.z);
+    const ok = dir > 0 ? (lz > 0.25 && lz < CAR_L + 2.5) : (lz < -0.25 && lz > -(CAR_L + 2.5));
+    if (!ok || Math.abs(lx) > CAR_W * 0.95) continue;
+    const d = Math.abs(lz); if (d < bd) { bd = d; best = O; }
+  }
+  return best;
+}
+function beachHqJob(e) {
+  if (!BEACH.on || !e || e.team !== 'blue' || !isUp(e) || e.seated || e.patient) return false;
+  if (e.polishT > 0 || e.defending) return false;
+  if (e.secretary && sec.mode !== 'hq') return false;
+  if (e.sec2 && sec2.mode !== 'hq') return false;
+  if (e.ojou && ojou.mode !== 'hq') return false;
+  if (e.aide && e.aide.follow) return false;
+  if (e.runner && e.runner.job) return false;
+  if (e.medic) return false;
+  return !!(e.secretary || e.sec2 || e.ojou || e.aide || e.fluter || e.runner);
+}
+function beachHqPoint(e) {
+  let car = null;
+  const pz = e.s.position.z || 0;
+  for (const C of BEACH.cars) {
+    if (C.side === 'orange' || C.flee || C.usedRaid || C.dropped) continue;
+    if (C.phase === 'wait' || C.phase === 'stall' || C.phase === 'done') continue;
+    if (C.z < pz + 1.2) continue;
+    if (!car || C.z > car.z) car = C;
+  }
+  const k = (e.id || 1) % 7;
+  if (car) return keiW(car, ((k % 3) - 1) * 0.85, -(CAR_L / 2 + 1.15 + (k % 4) * 0.7));
+  const z = Math.min(46, Math.max(pz + 7, 8 + (k % 4)));
+  return [clamp((e.home && e.home[0]) || e.s.position.x || 0, -20, 20) + ((k % 5) - 2) * 1.1, z];
+}
+function beachHqBrain(e, dt) {
+  if (!beachHqJob(e)) return false;
+  const goal = beachHqPoint(e), p = e.s.position, d = Math.hypot(goal[0] - p.x, goal[1] - p.z);
+  e.tgt = null; e.passive = true;
+  if (d > 1.15) {
+    steer(e, goal[0], goal[1], e.speed * (d > 8 ? 1.3 : 1.05), dt);
+    e.faceWant = Math.atan2(goal[0] - p.x, goal[1] - p.z);
+    e.state = 'approach'; e.crouch = 0;
+  } else {
+    e.hqSid = (e.hqSid || 0) + dt;
+    if (e.hqSid > 1.4) { e.hqSid = 0; p.x += (e.id % 2 ? 1 : -1) * 0.9; }
+    e.crouch = 0.28; e.state = 'idle'; e.faceWant = 0;
+  }
+  if (!BEACH.hqSaid && p.z > 10) { BEACH.hqSaid = true; popup('本陣も前へ。止まると撃たれる'); }
+  return true;
 }
 function keiHasBody(C) {
   if (!C) return false;
@@ -3506,12 +3654,24 @@ function updateKei(dt) {
       else if (keiCount(C) >= 1 && C.waitT > 16) C.phase = 'go';
       if (C.player && !pending && C.waitT > 2.2) C.phase = 'go';
     }
-    let want = 0, steerWant = 0;
-    if (C.phase === 'go' && (living || C.player)) {
+    let want = 0, steerWant = 0, fleeDiff = 0;
+    const livingDrive = living || C.player;
+    if (C.phase === 'flee' && livingDrive) {
+      const wp = keiFleeAim(C);
+      const arrived = C.z < 7.4 && Math.hypot(C.x - wp[0], C.z - wp[1]) < 3.4;
+      if (arrived || C.z < 5.6) { keiBeachArrival(C); continue; }
+      const dy = Math.atan2(wp[0] - C.x, wp[1] - C.z);
+      fleeDiff = dy - C.yaw;
+      while (fleeDiff > Math.PI) fleeDiff -= Math.PI * 2;
+      while (fleeDiff < -Math.PI) fleeDiff += Math.PI * 2;
+      steerWant = clamp(fleeDiff * 1.3, -0.7, 0.7);
+      C.holdYaw = false; C.fleeAlign = Math.abs(fleeDiff) < 0.75;
+      want = Math.abs(fleeDiff) > 1.05 ? 0.7 : Math.min(4.8, 2.3 + Math.hypot(wp[0] - C.x, wp[1] - C.z) * 0.12);
+    } else if (C.phase === 'go' && livingDrive) {
       if (keiBeside(C)) { keiDrop(C); continue; }
       const wp = keiAim(C), drop = C.drop;
       const [lx, lz] = keiL(C, wp[0], wp[1]), d = Math.hypot(lx, lz), ang = Math.atan2(lx, lz);
-      const atDrop = Math.hypot(C.x - drop[0], C.z - drop[1]) < 2.15;
+      const atDrop = drop && Math.hypot(C.x - drop[0], C.z - drop[1]) < 2.15;
       let straight = false, gx = wp[0];
       for (let i = 0; i < ABATIS.length; i++) if (Math.abs(C.z - ABATIS[i].z) < 2.4) { straight = true; gx = C.gaps[i]; }
       steerWant = straight ? clamp((gx - C.x) * 1.1, -0.32, 0.32) : clamp(ang * 1.35, -0.68, 0.68);
@@ -3522,33 +3682,54 @@ function updateKei(dt) {
       if (lag > 3.1) want = Math.min(Math.max(want, 0), 0.45);
       else if (lag > 1.3) want = Math.min(want, 1.5);
       else if (lag > 0) want = Math.min(want, 2.25);
-      if (atDrop) keiDrop(C);
-    } else if (C.phase === 'go' && !living && !C.player) { C.phase = 'stall'; want = 0; }
+      if (atDrop) { keiDrop(C); continue; }
+    } else if ((C.phase === 'go' || C.phase === 'flee') && !livingDrive) { C.phase = 'stall'; want = 0; }
+    const behindCar = C.phase === 'wait' || C.dropped ? null : keiCarRel(C, -1);
+    const leadJam = !!(behindCar && !keiCarRel(C, 1));
+    if (leadJam && !(C.phase === 'go' && keiNearPb(C, 9)) && (C.phase !== 'flee' || C.fleeAlign)) {
+      want = Math.max(want, 2.1);
+      if (C.phase !== 'flee' && C.gaps) {
+        for (let i = 0; i < ABATIS.length; i++) {
+          const R = ABATIS[i];
+          if (C.z > R.z - 5 && C.z < R.z + 2.4) { steerWant = clamp((C.gaps[i] - C.x) * 0.9, -0.5, 0.5); break; }
+        }
+      }
+    }
     if (C.exitReq) want = 0;
     const ahead = want > 0.2 && keiAhead(C, 1.05 + Math.max(0, C.v) * 0.55, dt);
     C.aheadT = ahead ? C.aheadT + dt : 0;
+    if (C.phase === 'go' && livingDrive && keiNearPb(C, 9) && (Math.abs(C.v) < 0.45 || ahead)) C.stopT = (C.stopT || 0) + dt;
+    else C.stopT = 0;
+    if (C.phase === 'go' && livingDrive && keiNearPb(C, 9) && (keiCrowd(C) >= 3 || C.aheadT > 0.45 || C.stopT > 1.3)) { keiDrop(C, 'stuck'); continue; }
     if (ahead) { if (C.aheadT < 0.7) want = 0; else want = Math.min(Math.max(want, 0), 1.25); }
     const acc = want > C.v ? 2.8 : (ahead ? 10 : 4.2);
     C.v += clamp(want - C.v, -acc * dt, acc * dt);
     C.steer += clamp(steerWant - C.steer, -dt * 2, dt * 2);
-    if (Math.abs(C.v) > 0.02 && C.phase === 'go') {
-      const yaw2 = C.v < 0 || C.holdYaw ? C.yaw * (C.v < 0 ? 1 : 0.45) : C.yaw + C.v / 2.15 * Math.tan(clamp(C.steer, -0.7, 0.7)) * dt;
-      const nx = C.x + Math.sin(yaw2) * C.v * dt, nz = C.z + Math.cos(yaw2) * C.v * dt;
+    const drive = !C.dropped && (C.phase === 'go' || C.phase === 'flee' || (leadJam && C.phase === 'stall'));
+    if (Math.abs(C.v) > 0.02 && drive) {
+      const yaw2 = C.phase === 'flee'
+        ? C.yaw + clamp(fleeDiff, -1.8 * dt, 1.8 * dt)
+        : (C.v < 0 || C.holdYaw ? C.yaw * (C.v < 0 ? 1 : 0.45) : C.yaw + C.v / 2.15 * Math.tan(clamp(C.steer, -0.7, 0.7)) * dt);
+      const spd = C.phase === 'flee' && Math.abs(fleeDiff) > 1.05 ? Math.min(Math.max(C.v, 0), 0.9) : C.v;
+      const nx = C.x + Math.sin(yaw2) * spd * dt, nz = C.z + Math.cos(yaw2) * spd * dt;
       if (keiBlocked(C, nx, nz, yaw2)) {
         C.v *= 0.15; C.blockT += dt;
-        const wp = keiAim(C), dir = Math.sign(wp[0] - C.x) || 1, sx = C.x + dir * 0.4;
+        const snap = leadJam || C.phase === 'flee' ? 0.9 : 0.32;
+        const wp = C.phase === 'flee' ? keiFleeAim(C) : keiAim(C);
+        const dir = Math.sign(wp[0] - C.x) || 1, sx = C.x + dir * (leadJam ? 0.55 : 0.4);
         let moved = false;
-        if (!keiBlocked(C, sx, C.z, 0)) { C.x = sx; C.yaw *= 0.35; moved = true; }
+        if (!keiBlocked(C, sx, C.z, C.phase === 'flee' ? yaw2 : 0)) { C.x = sx; if (C.phase !== 'flee') C.yaw *= 0.35; moved = true; }
         else {
           for (let i = 0; i < ABATIS.length; i++) {
             const R = ABATIS[i];
-            if (Math.abs(C.z - R.z) > 4.2) continue;
-            const gx = C.gaps[i];
-            if (Math.abs(C.x - gx) < GAP_HW + 0.35) { C.x += clamp(gx - C.x, -0.32, 0.32); C.yaw *= 0.25; moved = true; break; }
+            if (Math.abs(C.z - R.z) > 5.6) continue;
+            const gx = C.phase === 'flee' ? (C.fleeGap != null ? C.fleeGap : R.gaps[0]) : C.gaps[i];
+            if (Math.abs(C.x - gx) < GAP_HW + 1.4) { C.x += clamp(gx - C.x, -snap, snap); if (C.phase !== 'flee') C.yaw *= 0.25; moved = true; break; }
           }
         }
         if (moved) C.blockT *= 0.5;
-        if (C.blockT > 2.4 && keiBeside(C)) keiDrop(C);
+        if (C.phase !== 'flee' && C.blockT > 1.5 && keiNearPb(C, 9)) keiDrop(C, 'stuck');
+        else if (C.blockT > 2.4 && keiBeside(C) && C.phase !== 'flee') keiDrop(C);
       } else { C.x = nx; C.z = nz; C.yaw = yaw2; C.blockT = 0; }
     }
     if (C.dropped) continue;
@@ -7418,10 +7599,13 @@ function medicBrain(e, dt) {
       }
     }
   }
-  if (!pt) {   // 持ち場へ戻る／待つ（殿について来た者は殿の後ろ）
-    const [hx, hz] = e.follow ? followPt(e.fi) : e.home, d = Math.hypot(hx - p.x, hz - p.z);
-    if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? (e.follow ? 1.35 : 0.9) : 0.5), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
-    else e.faceWant = e.follow ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : e.team === 'blue' ? Math.PI : 0;
+  if (!pt) {   // 持ち場へ戻る／待つ。浜では本陣も止まらず、先頭の車の後ろへ
+    let hx, hz;
+    if (BEACH.on && e.team === 'blue' && !e.follow) { const g = beachHqPoint(e); hx = g[0]; hz = g[1]; }
+    else { const h = e.follow ? followPt(e.fi) : e.home; hx = h[0]; hz = h[1]; }
+    const d = Math.hypot(hx - p.x, hz - p.z);
+    if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? (e.follow ? 1.35 : 1.05) : 0.7), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); e.crouch = 0; }
+    else { e.faceWant = e.follow ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : 0; if (BEACH.on && e.team === 'blue') { e.hqSid = (e.hqSid || 0) + dt; if (e.hqSid > 1.4) { e.hqSid = 0; p.x += (e.id % 2 ? 0.8 : -0.8); } } }
     return;
   }
   const live = isLiving(pt), [bx, bz] = ptPos(pt);
@@ -8188,7 +8372,9 @@ function updateEnemies(dt) {
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
     else if (e.carCall && carCallBrain(e, dt)) { /* 運転を代わりに行く */ }
     else if (BEACH.on && e.keiTail && keiTailBrain(e, dt)) { /* 浜：軽自動車のすぐ後ろを歩く */ }
-    else if (BEACH.on && e.keiGo && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
+    else if (BEACH.on && e.keiGo && e.team !== 'orange' && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
+    else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
+    else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
     else if (SMOKE.clouds.length && smokeFlee(e, dt)) { /* 毒煙から逃げる */ }
     else if (e.smoker && !e.hold && smokerBrain(e, dt)) { /* 毒煙玉を投げる */ }
     else if (e.knife === false && e.kind === 'archer' && !e.hold && npcKnifeFetch(e, dt)) { /* 投げた懐刀を拾いに行く */ }
@@ -9449,5 +9635,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

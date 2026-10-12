@@ -744,7 +744,7 @@ function mechSeek(C, gx, gz, dt, spd) {
   if (dist < 1.7 && C.revT <= 0) want = 0;
   else if (C.revT > 0) want = -2.7;
   else want = Math.abs(diff) > 1.15 ? 0.4 : spd;
-  if (want > 0.15 && (mechAhead(C) || mechCarAhead(C))) want = 0;
+  if (want > 0.15 && mechAhead(C)) want = 0;
   C.v += clamp(want - C.v, -8 * dt, 3.4 * dt);
   if (Math.abs(C.v) > 0.04) {
     const nx = C.x + Math.sin(C.yaw) * C.v * dt, nz = C.z + Math.cos(C.yaw) * C.v * dt;
@@ -876,7 +876,7 @@ function mechDrive(C, dt) {
   else if (!F) { gx = C.x; gz = C.z; }
   else if (C.kind === 'truck' && !open) { gx = C.goalX; gz = F.z + 6.2; dock = true; }
   else if (C.kind === 'kei' && !open) { gx = clamp(C.lane, -3.2, 3.2); gz = F.z + 8.5; }
-  else { gx = 0; gz = F.z - (C.kind === 'truck' ? 10 : 14); }
+  else { gx = clamp((C.lane || C.goalX || 0) * 0.35, -2.2, 2.2); gz = F.z - (C.kind === 'truck' ? 10 : 14); }
   const dist = mechSeek(C, gx, gz, dt, C.kind === 'truck' ? 3.6 : 4.2);
   if (dock && F && dist < 3.4 && C.z < F.z + 11 && Math.abs(C.x - C.goalX) < 2.8 && Math.abs(C.v) < 1.1) mechDock(C);
   if (blue && F && C.kind === 'kei' && !open && C.z < F.z + 12 && Math.abs(C.x) < (F.hw || 5) + 1.4 && Math.abs(C.v) < 0.4) mechDropLiving(C);
@@ -1004,6 +1004,14 @@ function mechRockHit(r) {
   }
   if (broke) { mechDropLiving(veh); popup(veh.kind === 'truck' ? '投石ではしご車が止まった' : '投石で軽自動車が止まった'); }
   if (side === 'orange' && Math.hypot(player.pos.x - r.tx, player.pos.z - r.tz) < 2.3) hurtPlayer(8);
+  for (const F of MECH.forts) for (const G of [F.gate, F.back]) {
+    if (!G || G.open) continue;
+    if (Math.abs(r.tx) < (G.hw || 5) + 2.4 && Math.abs(r.tz - G.z) < 3.2) {
+      G.hp = (G.hp == null ? 9 : G.hp) - 3.2;
+      MECH.log.push('gatehit:' + G.hp.toFixed(1));
+      if (G.hp <= 0) { mechSwing(G, true); popup(G === F.gate ? '投石で門が開いた' : '投石で裏門が開いた'); MECH.log.push('gateopen'); }
+    }
+  }
   MECH.log.push('rock:' + (A.what || '?'));
 }
 function mechSteal(dt) {
@@ -1168,6 +1176,62 @@ function mechCounter(e, dt) {
   }
   return false;
 }
+function mechNeedCrew(C) {
+  if (!C || C.wrecked || C.lame || C.side !== 'blue') return 0;
+  const need = C.kind === 'truck' || C.kind === 'cata' ? 2 : 1;
+  const live = C.kind === 'cata' ? cataLiving(C) : mechLiving(C);
+  const empty = C.seats.filter(s => !s).length;
+  if (live >= need || empty <= 0) return 0;
+  return Math.min(empty, need - live);
+}
+function mechFillJob(e, dt) {
+  if (!MECH.on || !e || e.team !== 'blue' || !isUp(e) || e.seated || e.perch || e.guard || e.special || e.gunner || e.baseY > 1.2) return false;
+  let C = e.rideCar;
+  if (C && mechNeedCrew(C) <= 0) C = e.rideCar = null;
+  if (!C) {
+    if ((e.rideScan = (e.rideScan || 0) - dt) > 0) return false;
+    e.rideScan = 0.35;
+    let best = null, bd = 40;
+    for (const O of mechVehicles().concat(MECH.catas)) {
+      const need = mechNeedCrew(O); if (!need) continue;
+      const going = enemies.filter(x => x !== e && x.rideCar === O && isUp(x)).length;
+      if (going >= need) continue;
+      const d = Math.hypot(e.s.position.x - O.x, e.s.position.z - O.z);
+      if (d < bd) { bd = d; best = O; }
+    }
+    e.rideCar = C = best;
+  }
+  if (!C) return false;
+  const p = e.s.position, d = Math.hypot(p.x - C.x, p.z - C.z);
+  e.tgt = null;
+  if (d > 1.8) {
+    steer(e, C.x + ((e.id || 0) % 2 ? 1.5 : -1.5), C.z + 2.1, e.speed * 1.35, dt);
+    e.state = 'approach';
+    return true;
+  }
+  const ok = C.kind === 'cata' ? cataSit(e, C) : mechSit(e, C);
+  e.rideCar = null;
+  if (ok) {
+    const need = C.kind === 'truck' || C.kind === 'cata' ? 2 : 1;
+    const live = C.kind === 'cata' ? cataLiving(C) : mechLiving(C);
+    if (live >= need) { C.phase = 'go'; if (C.kind !== 'cata') C.docked = false; }
+  }
+  return !!ok;
+}
+function mechYield(e, dt) {
+  if (!MECH.on || !isUp(e) || e.seated || e.perch || e.baseY > 1.5) return false;
+  for (const C of mechVehicles().concat(MECH.catas)) {
+    if (!C || C.wrecked || C.phase !== 'go') continue;
+    const [lx, lz] = mechL(C, e.s.position.x, e.s.position.z);
+    if (lz > 0.3 && lz < 4.4 && Math.abs(lx) < 1.7) {
+      const [wx, wz] = mechW(C, lx >= 0 ? 2.8 : -2.8, Math.max(0.4, lz));
+      steer(e, wx, wz, e.speed * 1.45, dt);
+      e.state = 'approach';
+      return true;
+    }
+  }
+  return false;
+}
 function mechMarch(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.guard || e.perch || e.baseY > 1.2) return false;
   if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.driver) return false;
@@ -1298,7 +1362,7 @@ function mechDoubleDoor(hw, z, h) {
     const m = boxMesh(x0 + 0.06, x1 - 0.06, 0, h, z - 0.16, z + 0.16, WOOD_D);
     leaves.push(m); doorBoxes.push(boxes[boxes.length - 1]);
   }
-  return { z, hw, leaves, doorBoxes, open: false };
+  return { z, hw, leaves, doorBoxes, open: false, hp: 9, hpMax: 9 };
 }
 function mechCataMake(x, z, locked, fi) {
   const g = new THREE.Group();
@@ -1426,7 +1490,11 @@ function cataDrive(K, dt) {
 }
 function cataAim(K) {
   const mine = K.side || 'orange', foe = mine === 'orange' ? 'blue' : 'orange';
-  if (mine === 'blue') for (const F of MECH.forts) for (const P of F.pbs) if (!P.dead) return { x: P.x, z: P.z, what: 'pb', ref: P };
+  if (mine === 'blue') {
+    const F = mechFort();
+    if (F && F.gate && !F.gate.open) return { x: 0, z: F.gate.z, what: 'gate', ref: F.gate };
+    for (const P of (F ? F.pbs : [])) if (!P.dead) return { x: P.x, z: P.z, what: 'pb', ref: P };
+  }
   let best = null, bd = 90;
   for (const C of mechVehicles()) {
     if (C.wrecked || C.side === mine) continue;
@@ -1522,6 +1590,7 @@ function mechCapture() {
     if (!C.wrecked && !C.lame && mechLiving(C) >= (C.kind === 'truck' ? 2 : 1)) C.phase = 'go';
   }
   MECH.saidLad = false;
+  MECH.rally = MECH.forts[prev];
   mechUseFort(prev + 1);
   const N = mechFort();
   if (N) { mechGarrison(N); mechMedMove(N); }
@@ -7264,6 +7333,8 @@ function spawnAlly() {
     return spawnEnemy(rand(-8, 8), rand(5, 13), 'mob', false, 'blue');
   }
   if (MECH.on) {
+    const R = MECH.rally;
+    if (R) return spawnEnemy(rand(-8, 8), rand(R.z - 24, R.z - 7), kind, false, 'blue');
     const F = mechFort();
     const z0 = F ? F.z + 12 : 8, z1 = F ? F.z + 24 : 26;
     return spawnEnemy(rand(-10, 10), rand(z0, z1), kind, false, 'blue');
@@ -9404,7 +9475,9 @@ function updateEnemies(dt) {
     else if (BEACH.on && e.keiGo && e.team !== 'orange' && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
     else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
     else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
+    else if (MECH.on && mechYield(e, dt)) { /* 車の前からはどく */ }
     else if (MECH.on && mechFixJob(e, dt)) { /* 破れたタイヤへ。秘書も直す */ }
+    else if (MECH.on && e.team === 'blue' && mechFillJob(e, dt)) { /* 人が足りない車に乗って前へ */ }
     else if (MECH.on && e.team === 'blue' && mechClimb(e, dt)) { /* はしごが門にかかっていれば壁へ */ }
     else if (MECH.on && e.team === 'blue' && mechPress(e, dt)) { /* 砦の中を攻め続ける */ }
     else if (MECH.on && e.team === 'orange' && mechCounter(e, dt)) { /* 優勢なら車を奪って本陣へ */ }
@@ -10716,5 +10789,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate };
 })();

@@ -807,21 +807,24 @@ function bamboobundle(x, z, ang, opt) {
   if (!opt.noCol) colliders.push({ x, z, r: 0.6 });
   return cv;
 }
-function breakBundle(cv) {
+function breakBundle(cv, mode) {
   if (!cv || cv.broken) return;
   cv.broken = true;
   if (cv.mesh) { stageRoot.remove(cv.mesh); cv.mesh = null; }
   const ci = covers.indexOf(cv); if (ci >= 0) covers.splice(ci, 1);
-  for (let i = colliders.length - 1; i >= 0; i--) {
+  for (let i = colliders.length - 1; i >= 0 && !cv.beach; i--) {
     const c = colliders[i];
     if (Math.hypot(c.x - cv.x, c.z - cv.z) < 0.25) colliders.splice(i, 1);
   }
   for (const e of enemies) {
     if (e.cover === cv) { e.cover = null; if (e.state === 'hide' || e.state === 'tocover' || e.state === 'return') e.state = e.kind === 'archer' ? 'advance' : 'approach'; }
     if (e.mtnBundle === cv) { e.mtnBundle = null; e.bundleBear = false; e.crouch = 0; }
+    if (e.beachBundle === cv) e.beachBundle = null;
   }
-  puff(new V3(cv.x, 0.8, cv.z), 0xc5d6a4, 14, 0.35, 2.2, 0.7);
-  popup('竹束が壊れた');
+  if (mode === 'stow') return;
+  puff(new V3(cv.x, (cv.y || 0) + 0.8, cv.z), 0xc5d6a4, mode === 'quiet' ? 6 : 14, 0.35, 2.2, 0.7);
+  if (cv.beach) { if (!BEACH.bundleSaid) { BEACH.bundleSaid = true; popup('竹束が銃弾で壊れた'); } }
+  else if (mode !== 'quiet') popup('竹束が壊れた');
 }
 function buildFort() {
   const WALL_Z = 0, WH = 3.8, WX = 42, GATE = 3.2;
@@ -2589,9 +2592,10 @@ function mgTargets(P) {
     if (d > BH.MG_R || d < 8.5 || p.z > P.z0 - 1.5) continue;   // 銃眼の向き（海側）だけ。真下（8m 以内）は銃口が下がらない死角
     const off = Math.abs(Math.atan2(p.x - muz.x, muz.z - p.z)); if (off > 1.0) continue;
     if ((o.state === 'hide' || o.state === 'tocover') && o.cover && o.cover.type === 'bundle' && Math.random() < 0.75) continue;   // 逆茂木の陰に伏せている
-    L.push([d + (o.seated ? -14 : p.z < 12 ? -8 : 0) + Math.random() * 12, o]);
+    const shade = keiShields(p.x, p.z, P.x, P.z0) ? 70 : 0;   // 軽自動車の真後ろは機関銃が当てにくい
+    L.push([d + shade + (o.seated && !(o.seated && o.seated.kei) ? -14 : p.z < 12 ? -8 : 0) + Math.random() * 12, o]);
   }
-  if (state === 'play' && !inHQ()) { const p = player.pos, d = Math.hypot(p.x - muz.x, p.z - muz.z); if (d < BH.MG_R && p.z < P.z0 - 1.5 && Math.abs(Math.atan2(p.x - muz.x, muz.z - p.z)) < 1.1) L.push([d + 4 + Math.random() * 10, { isPlayer: true }]); }
+  if (state === 'play' && !inHQ()) { const p = player.pos, d = Math.hypot(p.x - muz.x, p.z - muz.z); if (d < BH.MG_R && p.z < P.z0 - 1.5 && Math.abs(Math.atan2(p.x - muz.x, muz.z - p.z)) < 1.1) L.push([d + (keiShields(p.x, p.z, P.x, P.z0) ? 70 : 0) + 4 + Math.random() * 10, { isPlayer: true }]); }
   L.sort((a, b) => a[0] - b[0]);
   return L.slice(0, 4).map(a => a[1]);
 }
@@ -2638,9 +2642,14 @@ function mgShot(P) {
   const ray = new V3().copy(I).sub(muz), rl = ray.length(); ray.divideScalar(rl);
   const L2 = rl + 3;
   let hit = null, bestT = L2, blockB = null;
+  const ch0 = BEACH.on ? keiRayHit(muz, ray, L2) : null, bh0 = BEACH.on ? bundleRayHit(muz, ray, L2) : null;
+  let shield = null, shieldT = 1e9;
+  if (ch0) { shield = { kind: 'car', x: ch0.x, y: ch0.y, z: ch0.z }; shieldT = ch0.t; }
+  if (bh0 && bh0.t < shieldT) { shield = { kind: 'bundle', cv: bh0.cv, x: bh0.x, y: bh0.y, z: bh0.z }; shieldT = bh0.t; }
   const test = (px, pz, y0, y1, r, who) => {   // 弾道と縦の筒（px,pz、高さ y0〜y1、半径 r）
     const t = clamp(((px - muz.x) * ray.x + (pz - muz.z) * ray.z) / Math.max(1e-4, ray.x * ray.x + ray.z * ray.z), 0, L2);
     if (t <= 0.5 || t >= bestT) return;
+    if (shield && t > shieldT + 0.12) return;   // 車か竹束が手前
     const qx = muz.x + ray.x * t, qz = muz.z + ray.z * t, qy = muz.y + ray.y * t;
     if (Math.hypot(qx - px, qz - pz) > r || qy < y0 - 0.05 || qy > y1 + 0.05) return;
     const B = who.isPlayer ? boatAt(px, pz) : (who.boat && (who.seated || inBoat(who.boat, px, pz)) ? who.boat : null);
@@ -2657,14 +2666,23 @@ function mgShot(P) {
   if (blockB) { kind = 'boat'; end.set(blockB[1], blockB[2], blockB[3]); }
   else if (hit && !hit.isPlayer && hit.seated && hit.boat && Math.random() < 0.12) { kind = 'boat'; hit = null; }   // 幟・櫂の陰
   if (TEST) { if (hit) window.__mgh = (window.__mgh || 0) + 1; if (kind === 'boat' && blockB) window.__mgb = (window.__mgb || 0) + 1; }
+  if (blockB && shield && shieldT < bestT - 0.05) blockB = null;
   if (hit) {
     if (hit.isPlayer) { if (TEST) window.__mgp = (window.__mgp || 0) + 1; hurtPlayer(7); end.set(player.pos.x, player.pos.y + 1.1, player.pos.z); kind = 'body'; }
     else { const p = hit.s.position; end.set(p.x, hit.baseY + hit.figH * (hit.seated ? 0.45 : rand(0.5, 0.68)), p.z); kind = 'body';
       if (TEST) window.__mgd = (window.__mgd || 0) + 1;
       damageEnemy(hit, 1, muz, false, { pt: end.clone(), thrust: true }, { team: 'orange', state: 'idle', mg: true, s: { position: muz } }); }
+  } else if (shield && !blockB) {
+    end.set(shield.x, shield.y, shield.z); kind = shield.kind;
+    if (shield.kind === 'car') { puff(end.clone(), 0xffe7a8, 3, 0.06, 2.2, 0.2); puff(end.clone(), 0xd5d2c8, 3, 0.1, 1.4, 0.25); if (TEST) window.__mgc = (window.__mgc || 0) + 1; }
+    else {
+      const cv = shield.cv; cv.hp -= 1; puff(end.clone(), 0xc5d6a4, 4, 0.14, 1.6, 0.3);
+      if (Math.hypot(end.x - player.pos.x, end.z - player.pos.z) < 28) Sfx.impactBamboo(end);
+      if (cv.hp <= 0) breakBundle(cv); if (TEST) window.__mgbd = (window.__mgbd || 0) + 1;
+    }
   } else if (kind === 'boat' || (B && I.y < B.g.position.y + BOAT_GW)) { kind = 'boat'; const bb = (blockB && blockB[0]) || B || boatAt(I.x, I.z, 0.5) || BEACH.boats.find(q => Math.hypot(q.x - I.x, q.z - I.z) < 6); if (bb) boatHole(bb, end); }
   else if (I.z < BH.SHORE - 0.5 || I.y < BH.WATER + 0.05) kind = groundH(I.x, I.z) < BH.WATER ? 'water' : 'ground';
-  if (kind !== 'body' && kind !== 'boat') { const gh = Math.max(groundH(end.x, end.z), BH.WATER); end.y = gh + 0.02; }
+  if (kind !== 'body' && kind !== 'boat' && kind !== 'car' && kind !== 'bundle') { const gh = Math.max(groundH(end.x, end.z), BH.WATER); end.y = gh + 0.02; }
   // 見た目：曳光、水しぶき・砂煙・木っ端
   const tr = BEACH.tracers.find(t => t.t >= 1) || BEACH.tracers[0];
   tr.a.copy(muz); tr.b.copy(end); tr.t = 0; tr.d = muz.distanceTo(end); tr.m.visible = true;
@@ -2734,7 +2752,7 @@ function updateBeach(dt) {
   beachKingLooks(dt);
   updateKei(dt);
 }
-// 舟が浜に着いた：戦いの娘は軽自動車（最大4人）へ。殿の舟・近衛は徒歩のまま
+// 舟が浜に着いた：戦いの娘は軽自動車（最大4人）へ。あふれは車のすぐ後ろを歩き、竹束を前に出す。殿の舟・近衛は徒歩のまま
 function beachLand(B) {
   BEACH.log.push('land:' + B.i);
   const riders = (!B.yakata && !B.guard) ? B.crew.filter(o => isUp(o) && keiEligible(o)) : [];
@@ -3103,7 +3121,7 @@ function carHint() {
   return carNear() ? (MOBILE ? '軽自動車：「乗る」ボタンで助手席へ' : '軽自動車：E で助手席に乗る') : '';
 }
 
-// ---- 浜の軽自動車：上陸した戦いの娘が乗り（最大4人）、トーチカの横まで行って降りる。人はひかない ----
+// ---- 浜の軽自動車：1台4人まで。あふれた兵は車のすぐ後ろを歩き、竹束を銃弾よけにする。トーチカの横で降りる。人はひかない ----
 function keiEligible(e) {
   return !!(e && e.team === 'blue' && !e.special && !e.medic && !e.guard && !e.secretary && !e.aide && !e.runner && !e.fluter && !e.ojou && !e.driver && !e.hold);
 }
@@ -3146,22 +3164,132 @@ function keiMake(x, z, yaw, pb) {
   const C = { g, wheels: built.wheels, wheelM: built.wheelM, x, z, y, yaw, v: 0, steer: 0, pb, seats: [null, null, null, null], phase: 'wait', waitT: 0, wp: 0, dropped: false, player: false, playerSeat: -1, exitReq: false, blockT: 0, aheadT: 0, saidDrop: false, reserve: false };
   C.wps = keiPlan(C); BEACH.cars.push(C); return C;
 }
+// 浜：車体が機関銃の弾道を遮るか（車のローカル箱）。当たった点を返す
+function keiRayHit(muz, ray, L2) {
+  if (!BEACH.on || !BEACH.cars.length) return null;
+  let best = null;
+  const hw = CAR_W / 2 + 0.05, hl = CAR_L / 2 + 0.06, y0 = 0.22, y1 = 1.64;
+  for (const C of BEACH.cars) {
+    const co = Math.cos(C.yaw), si = Math.sin(C.yaw);
+    const dx = muz.x - C.x, dz = muz.z - C.z;
+    const ox = dx * co - dz * si, oz = dx * si + dz * co, oy = muz.y - C.y;
+    const dxr = ray.x * co - ray.z * si, dzr = ray.x * si + ray.z * co, dyr = ray.y;
+    let t0 = 0, t1 = L2, ok = true;
+    const slab = (o, d, a, b) => {
+      if (!ok) return;
+      if (Math.abs(d) < 1e-8) { if (o < a || o > b) ok = false; return; }
+      let ta = (a - o) / d, tb = (b - o) / d;
+      if (ta > tb) { const u = ta; ta = tb; tb = u; }
+      if (ta > t0) t0 = ta;
+      if (tb < t1) t1 = tb;
+      if (t0 > t1) ok = false;
+    };
+    slab(ox, dxr, -hw, hw); slab(oy, dyr, y0, y1); slab(oz, dzr, -hl, hl);
+    if (!ok || t0 < 0.35 || t0 > L2) continue;
+    if (!best || t0 < best.t) best = { t: t0, x: muz.x + ray.x * t0, y: muz.y + ray.y * t0, z: muz.z + ray.z * t0, C };
+  }
+  return best;
+}
+function bundleRayHit(muz, ray, L2) {
+  if (!BEACH.on) return null;
+  let best = null;
+  const denom = Math.max(1e-4, ray.x * ray.x + ray.z * ray.z);
+  for (const cv of covers) {
+    if (!cv.beach || cv.broken) continue;
+    const t = ((cv.x - muz.x) * ray.x + (cv.z - muz.z) * ray.z) / denom;
+    if (t < 0.35 || t > L2) continue;
+    const qx = muz.x + ray.x * t, qz = muz.z + ray.z * t, qy = muz.y + ray.y * t;
+    if (Math.hypot(qx - cv.x, qz - cv.z) > 0.78) continue;
+    if (qy < (cv.y || 0) + 0.02 || qy > (cv.h || 1.5) + 0.04) continue;
+    if (!best || t < best.t) best = { t, cv, x: qx, y: qy, z: qz };
+  }
+  return best;
+}
+// 軽の真後ろ（銃口が車の前方にあるとき）にいれば、車体が盾になる
+function keiShields(px, pz, gx, gz) {
+  if (!BEACH.on) return false;
+  for (const C of BEACH.cars) {
+    const [lx, lz] = keiL(C, px, pz);
+    if (lz > -0.2 || lz < -(CAR_L / 2 + 5.2)) continue;
+    if (Math.abs(lx) > CAR_W * 0.46) continue;
+    if (keiL(C, gx, gz)[1] > 0.6) return true;
+  }
+  return false;
+}
+function beachGiveBundle(e) {
+  if (!e || e.beachBundle) return e && e.beachBundle;
+  const p = e.s.position, y = e.baseY || 0;
+  const cv = bamboobundle(p.x, p.z + 0.6, e.face || 0, { y, noCol: true, hp: 5, h: y + 1.52 });
+  cv.beach = true; cv.bearer = e; e.beachBundle = cv; e.beachGot = true;
+  return cv;
+}
+function beachStowBundle(e) {
+  const c = e && e.beachBundle; if (!c) return;
+  e.beachBundle = null; c.bearer = null;
+  if (!c.broken) breakBundle(c, 'stow');
+}
+function beachSyncBundle(e) {
+  const c = e.beachBundle;
+  if (!c || c.broken) { if (c && c.broken) e.beachBundle = null; return; }
+  const face = e.faceWant != null ? e.faceWant : (e.face || 0);
+  c.x = e.s.position.x + Math.sin(face) * 0.62;
+  c.z = e.s.position.z + Math.cos(face) * 0.62;
+  c.y = e.baseY || 0; c.h = c.y + 1.52; c.ang = face;
+  if (c.mesh) { c.mesh.position.set(c.x, c.y, c.z); c.mesh.rotation.y = face; }
+}
+function beachEnsureBundle(e) {
+  if (!e || e.beachGot || e.seated || e.beachBundle || !isUp(e)) return;
+  beachGiveBundle(e);
+}
+function keiTailSlot(i) {
+  const col = i % 2, row = (i / 2) | 0;
+  return [col ? 0.26 : -0.26, -(CAR_L / 2 + 0.7 + row * 0.86)];
+}
+function keiTailLag(C) {
+  let lag = 0;
+  for (const e of enemies) {
+    if (e.keiTail !== C || !isUp(e)) continue;
+    const s = keiTailSlot(e.keiTailI | 0), w = keiW(C, s[0], s[1]);
+    lag = Math.max(lag, Math.hypot(e.s.position.x - w[0], e.s.position.z - w[1]));
+  }
+  return lag;
+}
+function keiTailBrain(e, dt) {
+  const C = e.keiTail;
+  if (!C || C.dropped || !BEACH.cars.includes(C)) { e.keiTail = null; e.crouch = 0; return false; }
+  beachEnsureBundle(e);
+  e.keiWalk = (e.keiWalk || 0) + dt; e.tgt = null; e.passive = true;
+  const s = keiTailSlot(e.keiTailI | 0), w = keiW(C, s[0], s[1]), p = e.s.position;
+  const d = Math.hypot(p.x - w[0], p.z - w[1]);
+  e.crouch = d < 1.15 ? 0.58 : 0.12;
+  if (d > 0.32) steer(e, w[0], w[1], e.speed * (d > 4 ? 1.35 : 1.05), dt);
+  else { const k = Math.min(1, dt * 8); p.x += (w[0] - p.x) * k; p.z += (w[1] - p.z) * k; e.moving = false; }
+  e.faceWant = C.yaw; e.state = d > 0.5 ? 'approach' : 'hide';
+  return true;
+}
 function keiSpawnFor(B, riders) {
   const live = BEACH.pbs.filter(P => !P.taken), targets = live.length ? live : BEACH.pbs;
   let i = 0;
   while (i < riders.length) {
     const reserve = !BEACH.lordCar && Math.abs(B.x - 4) < 18;
     const cap = reserve ? 3 : 4;
-    const group = riders.slice(i, i + cap); i += group.length;
+    const room = Math.min(riders.length - i, cap + 6);
+    const nSeat = Math.min(cap, room);
+    const group = riders.slice(i, i + nSeat);
+    const tail = riders.slice(i + nSeat, i + room);
+    i += group.length + tail.length;
+    if (!group.length) break;
     const P = targets[(BEACH.carN || 0) % targets.length];
-    let x = clamp(reserve ? 6.2 : B.x, -40, 40), z = 8, step = x >= 0 ? 4.4 : -4.4, guard = 0;
+    let x = clamp(reserve ? 6.2 : B.x, -40, 40), z = 3.4, step = x >= 0 ? 4.4 : -4.4, guard = 0;
     while (BEACH.cars.some(O => Math.abs(O.x - x) < 4.05) && guard++ < 14) x = clamp(x + step, -40, 40);
     const C = keiMake(x, z, 0, P.i);
     if (reserve) { C.reserve = true; BEACH.lordCar = C; }
-    group.forEach((e, si) => { e.keiGo = C; e.keiSlot = si === 1 && reserve ? 2 : si; e.standAt = time + 0.2 + si * 0.18; });
-    if (reserve) group.forEach((e, si) => { e.keiSlot = [0, 2, 3][si]; });
+    const seats = reserve ? [0, 2, 3, 1] : [0, 1, 2, 3];
+    group.forEach((e, si) => { e.keiGo = C; e.keiSlot = seats[si]; e.keiTail = null; e.standAt = time + 0.15 + si * 0.12; });
+    tail.forEach((e, ti) => { e.keiTail = C; e.keiTailI = ti; e.keiGo = null; e.standAt = time + 0.18 + ti * 0.1; });
     BEACH.carN = (BEACH.carN || 0) + 1;
-    BEACH.log.push('kei:' + C.pb + ':' + group.length);
+    BEACH.log.push('kei:' + C.pb + ':' + group.length + '+' + tail.length);
+    if (tail.length && !BEACH.tailSaid) { BEACH.tailSaid = true; popup('車のすぐ後ろにつけ。竹束を前に出せ'); }
   }
 }
 function keiSit(e, C, slot) {
@@ -3176,15 +3304,18 @@ function keiSit(e, C, slot) {
     e.boat.crew = e.boat.crew.filter(o => o !== e); e.boat = null; e.boatSlot = null;
   }
   const [wx, wz] = keiW(C, KEI_SEAT[slot][0], KEI_SEAT[slot][1]);
-  C.seats[slot] = e; e.keiGo = null; e.keiSlot = slot; e.standAt = null;
+  beachStowBundle(e);
+  C.seats[slot] = e; e.keiGo = null; e.keiSlot = slot; e.keiTail = null; e.standAt = null;
   e.seated = { x: wx, z: wz, car: true, kei: C }; e.baseY = C.y + CAR_FLOOR; e.s.position.set(wx, e.baseY, wz);
   e.state = 'idle'; e.passive = true; e.tgt = null; e.knock.set(0, 0, 0);
+  if (keiHasBody(C)) keiBloodSay(e);
   return true;
 }
 function keiWalkBrain(e, dt) {
   const C = e.keiGo;
   if (!C || C.dropped || !BEACH.cars.includes(C)) { e.keiGo = null; return false; }
   if (e.seated && e.seated.kei === C) return false;
+  beachEnsureBundle(e);
   e.keiWalk = (e.keiWalk || 0) + dt; e.tgt = null; e.passive = true; e.state = 'idle';
   const slot = (e.keiSlot == null ? 0 : e.keiSlot) | 0, seat = KEI_SEAT[slot] || KEI_SEAT[0], side = seat[0] < 0 ? -1 : 1;
   const [dx, dz] = keiW(C, side * (CAR_W / 2 + 0.7), seat[1]), p = e.s.position;
@@ -3213,6 +3344,10 @@ function keiDrop(C) {
   C.dropped = true; C.phase = 'done'; C.v = 0;
   const P = BEACH.pbs[C.pb];
   for (const e of enemies) if (e.keiGo === C) e.keiGo = null;
+  for (const e of enemies) if (e.keiTail === C) {
+    if (isUp(e) && P) e.home = [P.door[0] + ((e.keiTailI % 2) ? 0.7 : -0.7), P.door[1]];
+    e.keiTail = null; e.crouch = 0;
+  }
   for (let s = 0; s < C.seats.length; s++) {
     const o = C.seats[s];
     if (!o || o === 'P') continue;
@@ -3227,6 +3362,25 @@ function keiDrop(C) {
   }
   if (C.player) keiExitPlayer(C, true);
   if (!C.saidDrop) { C.saidDrop = true; popup('トーチカのそばだ、降りる'); BEACH.log.push('keiDrop:' + C.pb); }
+}
+function keiHasBody(C) {
+  if (!C) return false;
+  for (const o of C.seats) if (o && o !== 'P' && !isUp(o)) return true;
+  if (enemies.some(e => e.keiDead === C)) return true;
+  return bodies.some(b => b.keiDead === C);
+}
+const KEI_BLOOD = ['血だらけじゃん…', 'うわぁ…', '血の匂いがする…', 'ちょ、この車、血だらけなんだけど', 'う、臭い。血の匂い…', 'えっ、遺体のまま乗ってるの…'];
+function keiBloodSay(e) {
+  if (!e || !isUp(e) || e.bloodSaid) return;
+  e.bloodSaid = true;
+  const line = KEI_BLOOD[(Math.random() * KEI_BLOOD.length) | 0];
+  const name = (e.prof && e.prof.name) || '戦いの娘';
+  Talk.as(e, () => {
+    Voice.say(line, e.prof || { pitch: 1.28, rate: 1.08 }, 1);
+    subtitle(line);
+    const el = $('subtitle'); if (el) el.textContent = name + '「' + line + '」';
+  });
+  if (BEACH.log) BEACH.log.push('blood:' + name + ':' + line);
 }
 function keiNearCar() {
   if (!BEACH.on || player.kei) return null;
@@ -3254,6 +3408,7 @@ function keiUse() {
   C.seats[seat] = 'P'; C.player = true; C.playerSeat = seat; player.kei = C;
   player.drawing = false; player.autoClimb = null; player.charge = 0;
   popup('軽自動車に乗った（' + keiCount(C) + ' / 4）— トーチカのそばで降ります');
+  if (keiHasBody(C)) { const g = enemies.find(o => isUp(o) && o.seated && o.seated.kei === C); if (g) keiBloodSay(g); }
   return true;
 }
 function keiHint() {
@@ -3342,13 +3497,14 @@ function updateKei(dt) {
     if (C.phase === 'wait') {
       C.waitT += dt;
       const pending = enemies.some(e => e.keiGo === C && isUp(e));
+      const tailFar = enemies.some(e => e.keiTail === C && isUp(e) && Math.hypot(e.s.position.x - C.x, e.s.position.z - C.z) > 7.5);
       const kingReady = BEACH.king && BEACH.king.beached;
       if (C.reserve && !C.player) {
-        if (!pending && keiCount(C) >= 1 && kingReady && C.waitT > 14) C.phase = 'go';
-        else if (!pending && keiCount(C) >= 1 && C.waitT > 48) C.phase = 'go';
-      } else if (!pending && keiCount(C) >= 1 && (C.waitT > 1.2 || C.player)) C.phase = 'go';
-      else if (keiCount(C) >= 1 && C.waitT > 12) C.phase = 'go';
-      if (C.player && !pending && C.waitT > 2) C.phase = 'go';
+        if (!pending && !tailFar && keiCount(C) >= 1 && kingReady && C.waitT > 14) C.phase = 'go';
+        else if (!pending && !tailFar && keiCount(C) >= 1 && C.waitT > 48) C.phase = 'go';
+      } else if (!pending && !tailFar && keiCount(C) >= 1 && (C.waitT > 1.2 || C.player)) C.phase = 'go';
+      else if (keiCount(C) >= 1 && C.waitT > 16) C.phase = 'go';
+      if (C.player && !pending && C.waitT > 2.2) C.phase = 'go';
     }
     let want = 0, steerWant = 0;
     if (C.phase === 'go' && (living || C.player)) {
@@ -3362,6 +3518,10 @@ function updateKei(dt) {
       C.holdYaw = straight && Math.abs(C.x - gx) < 0.75;
       want = atDrop ? 0 : Math.min(5.3, 2.4 + d * 0.28) * (Math.abs(ang) > 1.05 && Math.abs(ang) < 2.05 ? 0.42 : 1);
       if (Math.abs(ang) > 2.05) want = -1.45;
+      const lag = keiTailLag(C);
+      if (lag > 3.1) want = Math.min(Math.max(want, 0), 0.45);
+      else if (lag > 1.3) want = Math.min(want, 1.5);
+      else if (lag > 0) want = Math.min(want, 2.25);
       if (atDrop) keiDrop(C);
     } else if (C.phase === 'go' && !living && !C.player) { C.phase = 'stall'; want = 0; }
     if (C.exitReq) want = 0;
@@ -6637,6 +6797,8 @@ function killEnemy(e, byPlayer, from) {
   }
   else if (BEACH.on && e.boat && (e.seated || inBoat(e.boat, e.s.position.x, e.s.position.z, 0.2))) boatFall(e);   // 舟の中で崩れる（海には落ちない）
   if (e.keiGo) e.keiGo = null;
+  if (e.keiTail) { e.keiTail = null; e.crouch = 0; }
+  if (e.beachBundle) { e.beachBundle.bearer = null; e.beachBundle = null; }
   e.bg.visible = e.fg.visible = e.mk.visible = false; if (e.wmk) e.wmk.visible = false; e.wounded = false; e.kneel = false;
   e.fallT = rand(0.5, 0.62);
   if (byPlayer) {
@@ -8025,6 +8187,7 @@ function updateEnemies(dt) {
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
     else if (e.carCall && carCallBrain(e, dt)) { /* 運転を代わりに行く */ }
+    else if (BEACH.on && e.keiTail && keiTailBrain(e, dt)) { /* 浜：軽自動車のすぐ後ろを歩く */ }
     else if (BEACH.on && e.keiGo && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
     else if (SMOKE.clouds.length && smokeFlee(e, dt)) { /* 毒煙から逃げる */ }
     else if (e.smoker && !e.hold && smokerBrain(e, dt)) { /* 毒煙玉を投げる */ }
@@ -8280,6 +8443,7 @@ function updateEnemies(dt) {
     if (e.onFloor && !e.lad && !e.perch) { const F = e.onFloor; p.x = clamp(p.x, F.x0 + 0.25, F.x1 - 0.25); p.z = clamp(p.z, F.z0 + 0.25, F.z1 - 0.25); }   // 床から落ちない
     if (e.bowSeat) { p.x = e.seated.x; p.z = e.seated.z; e.baseY = e.seated.boat.floor.y; }
     if (BEACH.on) beachFeet(e, p);
+    if (BEACH.on && e.beachBundle) { if (e.seated) beachStowBundle(e); else beachSyncBundle(e); }
     if (!e.seated && CAR.g) carPush(p, 0.3);
     if (BEACH.on && !e.seated) keiPushAll(p, 0.3);
     p.y = e.baseY;
@@ -8364,6 +8528,25 @@ function hitsCover(p) {
   }
   return null;
 }
+function beachBundleOnSeg(p0, sx, sz, sy, sl, maxT) {
+  let best = null, bt = maxT == null ? 1 : maxT;
+  for (const cv of covers) {
+    if (!cv.beach || cv.broken) continue;
+    const t = clamp(((cv.x - p0.x) * sx + (cv.z - p0.z) * sz) / sl, 0, 1);
+    if (t >= bt) continue;
+    if (Math.hypot(p0.x + sx * t - cv.x, p0.z + sz * t - cv.z) > 0.78) continue;
+    const y = p0.y + sy * t;
+    if (y < (cv.y || 0) + 0.05 || y > (cv.h || 1.5) + 0.02) continue;
+    bt = t; best = cv;
+  }
+  return best;
+}
+function beachArrowBundle(cv) {
+  cv.hp -= 1;
+  const p = new V3(cv.x, (cv.y || 0) + 0.85, cv.z);
+  puff(p, 0xc5d6a4, 4, 0.16, 1.2, 0.3); Sfx.impactBamboo(p);
+  if (cv.hp <= 0) breakBundle(cv);
+}
 function updateArrows(dt) {
   const rx = Math.cos(player.yaw), rz = -Math.sin(player.yaw);   // カメラの右方向
   for (let i = arrows.length - 1; i >= 0; i--) {
@@ -8395,6 +8578,8 @@ function updateArrows(dt) {
       const d = Math.hypot(p0.x + sx * t - player.pos.x, p0.z + sz * t - player.pos.z);
       const y = p0.y + (p1.y - p0.y) * t - player.pos.y;
       if (d < 0.45 && y > 0 && y < 1.85 && t < best) {
+        const cv = BEACH.on && beachBundleOnSeg(p0, sx, sz, p1.y - p0.y, sl, t);
+        if (cv) { beachArrowBundle(cv); scene.remove(a.m); arrows.splice(i, 1); continue; }
         hurtPlayer(a.dmg); popup('被弾！'); if (!inHQ()) Sfx.arrowFlesh(null, true);
         scene.remove(a.m); arrows.splice(i, 1); continue;
       }
@@ -8409,6 +8594,8 @@ function updateArrows(dt) {
       }
     }
     if (hit) {
+      const cv = BEACH.on && beachBundleOnSeg(p0, sx, sz, p1.y - p0.y, sl, best);
+      if (cv) { beachArrowBundle(cv); scene.remove(a.m); arrows.splice(i, 1); continue; }
       const e = hit.e, info = { pt: hit.pt, dir: a.vel.clone(), arrow: true };
       Sfx.arrowFlesh(hit.pt);   // ズブッ
       if (a.team === 'player') {
@@ -9262,5 +9449,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx };
 })();

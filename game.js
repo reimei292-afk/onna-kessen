@@ -3639,6 +3639,7 @@ function buildMountain() {
   maku(0, 90, 8, 0); maku(-4, 82, 14, Math.PI / 2); maku(4, 82, 14, Math.PI / 2);
   buildHQ(-4, 4, 74, 88, 0, 80);
   buildMedPost(3.2, 84, 'blue');
+  buildMedPost(4.0, -24.6, 'orange', 12.8);   // 本丸の奥。橙組の救護班（外科医2・看護師2）
   nobori(5.2, 76, '#1f5fb8', '#f4f1e8', '麓');
   // 急斜面。道と足場の外は登れない。山の中身は矢を止めない
   wall(-26, -4.7, 0, 8.2, 32.2, 70, earthD).noShot = true;
@@ -4483,7 +4484,7 @@ const STAGES = {
   beach: { name: '浜の戦い', desc: '小早（こばや）の舟で浜へ漕ぎ寄せ、高台の機関銃トーチカを攻め取る。沖から浜までは機関銃の射程。舟べりに身を低く、上陸したら逆茂木のすき間と乱杭を抜け、狭間を射るか横・裏から回り込め。トーチカをすべて制圧すれば勝ち。' },
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
-  mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。第一波は敵五十五、味方七十。しばらく弓を交わし、守りが薄れたら破門隊が門を突く。門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
+  mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。しばらく弓を交わし、守りが薄れたら破門隊が門を突く。門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
 };
 function loadStage(name) {
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
@@ -5442,9 +5443,10 @@ for (const [team, col] of [['blue', '#2a8cff'], ['orange', '#ff8a12']]) {
 const armbandGeo = new THREE.PlaneGeometry(1, 1);
 const armbandMat = { blue: new THREE.MeshBasicMaterial({ color: 0x2a7ae0, side: THREE.DoubleSide }), orange: new THREE.MeshBasicMaterial({ color: 0xf08a20, side: THREE.DoubleSide }) };
 const MEDIC_NAMES = { blue: '医療係 朝比奈 しずく', orange: '医療係 楠 かおる' };
-const isFoe = e => e.team === 'orange' && !e.special && e.state !== 'down';   // 波の残り：橙組の救護班（非戦闘員）は数えない（v5 修正：以前は救護班が残ると波が終わらなかった）
-// 秘書・笛役（special）は人数に数えない
+const isFoe = e => e.team === 'orange' && !e.special && e.state !== 'down';   // 波の残り：救護班など非戦闘員が残っても波は終わらせる
+// 増援の上限は戦闘員だけ。頭上の「残敵・味方」は livingHead（全員）
 const aliveOf = team => enemies.filter(e => e.team === team && e.state !== 'down' && !e.special);
+const livingHead = team => enemies.filter(e => e.team === team && e.state !== 'down').length;
 // team: 'orange'（敵・橙組） / 'blue'（味方・青組）
 function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind);
@@ -6107,7 +6109,7 @@ function startWave(n) {
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '第一波は敵五十五、味方七十。しばらく弓を交わせ。守りが薄れたら破門隊が門を突く。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? 'しばらく弓を交わせ。守りが薄れたら破門隊が門を突く。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -6797,11 +6799,12 @@ const clothMat = new THREE.SpriteMaterial({ map: canvasTex(64, 48, (g, w, h) => 
   g.fillStyle = '#fbfaf6'; g.beginPath(); g.moveTo(6, 10); g.lineTo(56, 4); g.lineTo(60, 40); g.lineTo(8, 44); g.closePath(); g.fill();
   g.strokeStyle = 'rgba(160,160,150,.6)'; g.lineWidth = 2; for (const y of [16, 26, 34]) { g.beginPath(); g.moveTo(10, y); g.lineTo(56, y - 4); g.stroke(); }
 }), transparent: true, depthWrite: false });
-function buildMedPost(x, z, team) {
-  medPost[team] = [x, z];
-  const mat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 1.9), new THREE.MeshLambertMaterial({ color: 0xece8dc })); mat.position.set(x + 1.2, 0.03, z); stageRoot.add(mat);   // 担架の敷布
-  const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), WOOD_L); box.position.set(x - 0.9, 0.15, z + 0.3); stageRoot.add(box);   // 薬箱
-  if (team === 'orange') { nobori(x - 2, z - 1, '#d9741c', '#fff6e8', '救護'); maku(x + 0.5, z - 2.5, 6, 0); }
+function buildMedPost(x, z, team, y) {
+  y = y || 0;
+  medPost[team] = [x, z, y];
+  const mat = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 1.9), new THREE.MeshLambertMaterial({ color: 0xece8dc })); mat.position.set(x + 1.2, y + 0.03, z); stageRoot.add(mat);   // 担架の敷布
+  const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), WOOD_L); box.position.set(x - 0.9, y + 0.15, z + 0.3); stageRoot.add(box);   // 薬箱
+  if (team === 'orange' && y < 1) { nobori(x - 2, z - 1, '#d9741c', '#fff6e8', '救護'); maku(x + 0.5, z - 2.5, 6, 0); }
 }
 function spawnMedic(team, m) {
   removeMedic(m);
@@ -6809,7 +6812,9 @@ function spawnMedic(team, m) {
   const i = medics[team].indexOf(m), gid = m.role === 'surgeon' && GIRLS[SURGEON_ID] ? SURGEON_ID : MEDIC_ID;
   if (!GIRLS[gid]) return;
   const [dx, dz] = (PLANE.on ? PLANE_MED[team][i] : MED_HOME[i]) || [0, 0], sg = PLANE.on || team === 'blue' ? 1 : -1;
-  const e = spawnEnemy(hp[0] + dx * sg, hp[1] + dz * sg, 'mob', false, team, { medic: true, role: m.role, slot: i, girl: gid, medName: MED_NAMES[team][m.role][i % 2] });
+  const y = hp[2] || 0;
+  const e = spawnEnemy(hp[0] + dx * sg, hp[1] + dz * sg, 'mob', false, team, { y, medic: true, role: m.role, slot: i, girl: gid, medName: MED_NAMES[team][m.role][i % 2] });
+  if (e) { e.baseY = y; e.s.position.y = y; e.footOk = [e.s.position.x, e.s.position.z]; if (MTN.on && team === 'orange') { e.mtnZone = 'hon'; e.mtnHold = true; } }
   m.e = e; m.dead = false;
 }
 function removeMedic(m) {
@@ -7125,7 +7130,7 @@ const SEC_REQ = {
     player.hp = Math.min(CFG.maxHp, player.hp + 45); sec.teaT = 20; popup('お茶 体力+45'); Sfx.pickup(); secReply('sec_tea');
   },
   report() {
-    const aReal = aliveOf('blue').length, eReal = aliveOf('orange').length + Math.max(0, wave.toSpawn), w = clamp(wave.n, 1, 20);
+    const aReal = livingHead('blue'), eReal = livingHead('orange') + Math.max(0, wave.toSpawn), w = clamp(wave.n, 1, 20);
     const a = Math.min(30, aReal), e = Math.min(30, eReal);
     const oj = menuWho === 'ojou';
     const text = oj ? `王様、ご報告いたしますわ。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波です。`;
@@ -8189,8 +8194,8 @@ function updateHud(dt) {
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
   setText('wavetxt', `第${waveName(Math.max(1, wave.n))}波`);
-  const foeN = wave.toSpawn + enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !(MTN.on && e.special)).length;
-  const allyN = enemies.filter(e => e.team === 'blue' && e.state !== 'down' && !(MTN.on && e.special)).length;
+  const foeN = wave.toSpawn + livingHead('orange');
+  const allyN = livingHead('blue');
   setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }

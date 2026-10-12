@@ -2254,6 +2254,7 @@ function guardBrain(e, dt) {
   if (thr && !far && (!PLANE.intro)) { if (GUARD.lead === e) guardCall(e, 'guard_protect', 25); return false; }
   const near = guardThreat(26);
   const [sx, sz] = guardSlot(e, near);
+  if (MTN.on) MTN.who = e;
   const d = Math.hypot(sx - p.x, sz - p.z);
   e.tgt = null; npcTint(e, 0);
   if (d > 0.5) { steer(e, sx, sz, e.speed * (d > 4 ? 1.2 : d > 1.5 ? 1 : 0.6), dt); e.state = e.kind === 'archer' ? 'advance' : 'approach'; }
@@ -3770,8 +3771,8 @@ function buildMountain() {
     hole.rotation.x = -Math.PI / 2; hole.position.set(x, 9.62, z); stageRoot.add(hole);
     MTN.pits.push({ x, z, on: true });
   }
-  // 本丸への入り口は、二の丸が落ちるまで桟で塞ぐ。石段は滑る。外した一歩は土と柵
-  stair(-1.4, 1.4, -3.2, -11.2, 9.6, 12.8, true);
+  // 本丸への入り口は、二の丸が落ちるまで桟で塞ぐ。石段は滑らない。外した一歩は土と柵
+  stair(-1.4, 1.4, -3.2, -11.2, 9.6, 12.8, false);
   stairDirt(-1.9, -1.32, -3.6, -11.4, 9.6, 12.8);
   stairDirt(1.32, 1.9, -3.6, -11.4, 9.6, 12.8);
   stepRail(-1.75, -3.6, -11.4, 9.6, 12.8);
@@ -3955,6 +3956,8 @@ function mtnRoute(p, tx, tz) {
   const side = e && (e.mtnGo ? e.mtnGo[3] : e.mtnSide);
   // 同じ高さの土の上は、道の中心へ吸い寄せて団子にしない
   if (e && e.team === 'blue' && Math.abs(py - ty) < 1.8 && Math.hypot(tx - p.x, tz - p.z) < 18) return [tx, tz];
+  // 二の丸から本丸の石段は、途中の足場に止めず段の上をまっすぐ歩く
+  if (e && e.team === 'blue' && py > 8.5 && Math.abs(p.x) < 3 && Math.abs(tx) < 3 && p.z < 3 && tz < p.z - 0.4) return [tx, tz];
   const west = [[0, 60, 1.1], [0, 50, 3.0], [0, 42, 4.6], [0, 36, 5.7], [0, 33, 6.2], [-2, 22, 6.4], [4, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
   const east = [[12, 60, 1.1], [12, 50, 3.0], [12, 42, 4.6], [12, 36, 5.7], [12, 33, 6.2], [14, 22, 6.4], [8, 14.5, 6.4], [0, 4, 8.2], [0, 0, 9.6], [0, -8, 11.2], [0, -16, 12.8]];
   const wps = side === 'east' ? east : side === 'west' ? west : west.concat(east);
@@ -4219,9 +4222,10 @@ function mtnAllyAdvance(e, dt) {
     tx = (side === 'east' ? 0.4 : -0.4) + (file === 2 ? 0.32 : file === 0 ? -0.32 : 0);
     tz = 2.4 + Math.min(step * 0.35, 2.2);
     if (p.z < tz) tz = p.z - 0.15;
-  } else if (e.baseY < 12.2) {
-    tx = (file - 1) * 0.38;
-    tz = -8.5;
+  } else if (e.baseY < 12.5) {
+    const mouth = p.z > -2.8 || Math.abs(p.x) > 1.55;
+    tx = (file - 1) * 0.36;
+    tz = mouth ? -3.6 : -16;
   } else {
     tx = (file - 1) * 0.65;
     tz = -20 + Math.min(rank, 4) * 0.9;
@@ -4462,7 +4466,7 @@ function updateMountain(dt) {
     if (!left && MTN.entered) {
       const i = boxes.indexOf(MTN.bar); if (i >= 0) boxes.splice(i, 1);
       MTN.bar = null; MTN.phase = 2;
-      showBanner('二の丸、落ちた', '本丸だ。石段は滑る。トラバサミ、針山、開けると矢の出る扉');
+      showBanner('二の丸、落ちた', '本丸だ。石段を上れ。トラバサミ、針山、開けると矢の出る扉');
     }
   }
   if (!MTN.won && player.hp > 0 && MTN.phase >= 2 && py > 11.5 && pz < -22) {
@@ -6103,7 +6107,7 @@ function startWave(n) {
   if (CASTLE.on) { wave.archerRate = 0.5; const k = castleWave(n); if (CASTLE.atk) wave.toSpawn = Math.max(2, wave.toSpawn - k); else wave.blueToSpawn = Math.max(2, wave.blueToSpawn - k); wave.ramWant = CASTLE.phase === 0 ? 4 : 0; }   // 城：攻め手は近接が多め。伏兵は味方の数に含める
   if (BEACH.on) { wave.archerRate = 0.35; beachWave(n); beachSeatStaff(); Sfx.fluteCall(); setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('漕げーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600); return; }
   if (PLANE.on) { wave.archerRate = 0.3; if (n === 1) { planeIntro(); return; } }   // 機内：狭いので弓は少なめ（懐刀が中心）
-  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? 'しばらく弓を交わせ。守りが薄れたら破門隊が門を突く。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
+  showBanner(`第${waveName(n)}波`, n === 1 ? (MTN.on ? '第一波は敵五十五、味方七十。しばらく弓を交わせ。守りが薄れたら破門隊が門を突く。次は二の丸、その次が本丸' : SNOW.on ? '極寒の峡谷を突破せよ。冷えるのは橋の無い川だけ。遺体を縦に並べて渡れ' : CASTLE.atk ? '模擬戦、開始！ 城を攻めよ — 破門隊の丸太で大手門を破れ。奥御殿の本陣の旗が目標' : FORT.atk ? '模擬戦、開始！ 砦を攻めよ — 井闌と梯子で二基の櫃を奪え' : CASTLE.on ? '模擬戦、開始！ 城を守れ — 破門隊の丸太が大手門へ' : '模擬戦、開始！ 青組の味方と共に戦え') : MTN.on ? (n === 2 ? '第二波。稜線と二の丸に新手' : '第三波。本丸に新手') : SNOW.on ? '敵の弓兵が峡谷の要所を守っている。川は遺体の橋で渡れ' : PLANE.on ? '後方ギャレーから新手！ 前方から青組の援軍' : '新手の橙組が迫る！ 青組の援軍が到着');
   Sfx.fluteCall();
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
@@ -6193,7 +6197,7 @@ function waveUpdate(dt) {
   if (wave.toSpawn <= 0 && foes === 0) {
     if ((SNOW.on && wave.n >= 3) || (MTN.on && (wave.n >= 3 || MTN.phase >= 2))) {
       if (SNOW.on && !SNOW.cleared) { SNOW.cleared = true; showBanner('敵の守りが崩れた', 'かまくらを抜け、峡谷の北口へ'); }
-      if (MTN.on && MTN.phase >= 2 && !MTN.cleared) { MTN.cleared = true; showBanner('二の丸の先は本丸', '滑る石段の奥。残った守りを落とせ'); }
+      if (MTN.on && MTN.phase >= 2 && !MTN.cleared) { MTN.cleared = true; showBanner('二の丸の先は本丸', '石段の奥。残った守りを落とせ'); }
       else if (MTN.on && !MTN.cleared) { MTN.cleared = true; showBanner('寄せ手が尽きた', '門を破って上へ'); }
       wave.inter = 0;
     } else {
@@ -7121,9 +7125,10 @@ const SEC_REQ = {
     player.hp = Math.min(CFG.maxHp, player.hp + 45); sec.teaT = 20; popup('お茶 体力+45'); Sfx.pickup(); secReply('sec_tea');
   },
   report() {
-    const a = Math.min(30, aliveOf('blue').length), e = Math.min(30, aliveOf('orange').length + Math.max(0, wave.toSpawn)), w = clamp(wave.n, 1, 20);
+    const aReal = aliveOf('blue').length, eReal = aliveOf('orange').length + Math.max(0, wave.toSpawn), w = clamp(wave.n, 1, 20);
+    const a = Math.min(30, aReal), e = Math.min(30, eReal);
     const oj = menuWho === 'ojou';
-    const text = oj ? `王様、ご報告いたしますわ。味方は${a}名、敵は${e}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${a}名、敵は${e}名。ただいま、第${w}波です。`;
+    const text = oj ? `王様、ご報告いたしますわ。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波です。`;
     $('secsay').textContent = `「${text}」`;
     const s2 = menuWho === 'sec2' ? 'sec2_' : oj ? 'ojou_' : '';
     secSay([[s2 ? s2 + 'report' : 'sec_report', 0], [s2 + 'num_ally', a], [s2 + 'num_enemy', e], [s2 + 'num_wave', w - 1]], text);
@@ -7919,7 +7924,6 @@ function updateEnemies(dt) {
         else if (fy >= e.baseY - 0.45) e.baseY = Math.max(fy, e.baseY - 2.2 * dt);
         e.footOk = [p.x, p.z];
       }
-      for (const f of floors) if (f.slide && Math.abs(f.y - e.baseY) < 0.28 && p.x > f.x0 && p.x < f.x1 && p.z > f.z0 && p.z < f.z1) { p.z += 1.6 * dt; break; }
     }
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
     if (PLANE.on && !e.seated) planeClamp(p, 0.28);
@@ -8185,7 +8189,9 @@ function updateHud(dt) {
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
   setText('wavetxt', `第${waveName(Math.max(1, wave.n))}波`);
-  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${wave.toSpawn + enemies.filter(e => e.team === 'orange').length}　味方 ${enemies.filter(e => e.team === 'blue' && e.state !== 'down').length}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
+  const foeN = wave.toSpawn + enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !(MTN.on && e.special)).length;
+  const allyN = enemies.filter(e => e.team === 'blue' && e.state !== 'down' && !(MTN.on && e.special)).length;
+  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);
@@ -8750,7 +8756,6 @@ function updatePlayer(dt) {
   }
   if (player.pos.y <= gh && !player.climbing) { player.pos.y = gh; player.vy = 0; player.onGround = true; }
   if (MTN.on && player.onGround) {
-    for (const f of floors) if (f.slide && Math.abs(f.y - player.pos.y) < 0.22 && player.pos.x > f.x0 && player.pos.x < f.x1 && player.pos.z > f.z0 && player.pos.z < f.z1) { player.pos.z += 4.6 * dt; break; }
     const slot = player.mtnFoot;
     if (slot && player.pos.y > 0.35 && gh < slot[2] - 0.75) {
       player.pos.x = slot[0]; player.pos.z = slot[1]; player.pos.y = slot[2]; player.vy = 0; gh = slot[2];

@@ -2476,13 +2476,13 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn';
+  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront';
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   ground.visible = !pl && name !== 'beach' && !sn && !mt; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
-  scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : LOOK0.fogF;
+  scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
   scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : LOOK0.bg);
   hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : LOOK0.hemi[2];
   ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : LOOK0.sun;
@@ -2756,7 +2756,7 @@ function buildCastle() {
   // ---- 外：橙組の陣（竹束・幟）、木々、遠くの天守 ----
   for (const [z, n] of [[-14, 7], [-26, 8], [-38, 8]]) for (let i = 0; i < n; i++) { const x = -30 + (i + 0.5) * 60 / n + rand(-2, 2); if (Math.abs(x) < 4) continue; bamboobundle(x, z + rand(-2, 2), rand(-0.2, 0.2)); }
   for (let i = 0; i < 10; i++) nobori(rand(-40, 40), rand(-75, -60), AC[0], AC[1], pick([AC[2], '必勝', '破門', '一番']));
-  for (let i = 0; i < 40; i++) {
+  if (!DUAL.build) for (let i = 0; i < 40; i++) {
     const a = Math.random() * Math.PI * 2, r = rand(50, 110), x = Math.cos(a) * r, z = Math.sin(a) * r + 20;
     if (z < 0 && z > -80 && Math.abs(x) < 45) continue; if (z >= -3 && z < CS.WZ1 + 10 && Math.abs(x) < CS.WX + 8) continue;
     tree(x, z, rand(0.8, 1.6));
@@ -6342,125 +6342,215 @@ function updateMountain(dt) {
   if (player.hp <= 0) { player.hp = 0; gameOver(false); }
 }
 
-const DUAL = { on: false, kingCleared: false, saionjiCleared: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
+const DUAL_COX = -62, DUAL_MOX = 78;
+const DUAL = { on: false, build: false, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
 function dualLine(text) { popup(text); if (typeof subtitle === 'function') subtitle(text); }
-function buildTwoFront() {
-  buildHQ(-78, -64, 2, 16, -70, 10);
-  buildMedPost(-66, 12, 'blue');
-  nobori(-74, 18, '#1f5fb8', '#f4f1e8', '王');
-  nobori(74, 8, '#b99a45', '#fff6e8', '西園寺');
-  const stone = new THREE.MeshLambertMaterial({ color: 0x7a776e });
-  const wall = (x0, x1, z0, z1, h) => boxMesh(x0, x1, 0, h, z0, z1, stone);
-  wall(-47.2, -44.8, -22, -4.2, 3.4);
-  wall(-47.2, -44.8, 4.2, 22, 3.4);
-  boxMesh(-48.4, -43.6, 3.2, 3.7, -22, -4, WOOD_D, false);
-  boxMesh(-48.4, -43.6, 3.2, 3.7, 4, 22, WOOD_D, false);
-  for (const z of [-16, 16]) {
-    const yag = boxMesh(-50, -42, 0, 5.2, z - 2.2, z + 2.2, stone);
-    yag.castShadow = false;
-    floors.push({ x0: -49.2, x1: -42.8, z0: z - 1.8, z1: z + 1.8, y: 5.0 });
-    const L = { x0: -41.4, x1: -40.2, z0: z - 0.6, z1: z + 0.6, y0: 0, y1: 5, dir: 1, zStand: z, zTop: z };
-    L.x0 = -41.6; L.x1 = -40.3; L.z0 = z - 0.7; L.z1 = z + 0.7;
-    ladders.push({ x0: -41.8, x1: -40.2, z0: z - 0.7, z1: z + 0.7, y0: 0, y1: 5, dir: 1, zStand: z + 1.4, zTop: z });
-  }
-  const steps = [];
-  for (let i = 0; i < 6; i++) {
-    const x0 = 54 + i * 2.4, y = 0.55 * (i + 1);
-    floors.push({ x0, x1: x0 + 2.5, z0: -3.2, z1: 3.2, y });
-    boxMesh(x0, x0 + 2.5, 0, y, -3.2, 3.2, stone, false);
-    steps.push(y);
-  }
-  floors.push({ x0: 68.5, x1: 80, z0: -8, z1: 8, y: 3.4 });
-  boxMesh(68.5, 80, 0, 3.4, -8, 8, stone, false);
-  boxMesh(68.2, 80.2, 3.4, 3.7, -8, 8, WOOD_L, false);
-  for (let i = 0; i < 8; i++) tree(-20 + i * 4, 28 + (i % 2) * 3, 1);
-  for (let i = 0; i < 6; i++) tree(30 + i * 5, -24, 1.1);
+function dualShift(ox, oz, fn) {
+  const before = new Set(stageRoot.children);
+  const nB = boxes.length, nF = floors.length, nL = ladders.length, nP = perches.length, nC = covers.length, nK = colliders.length;
+  const hq0 = hq, mb0 = medPost.blue, mo0 = medPost.orange, gatesArr = MTN.gates;
+  fn();
+  const sh = o => {
+    if (!o) return;
+    if (typeof o.x === 'number') o.x += ox;
+    if (typeof o.z === 'number') o.z += oz;
+    if (typeof o.x0 === 'number') o.x0 += ox;
+    if (typeof o.x1 === 'number') o.x1 += ox;
+    if (typeof o.z0 === 'number') o.z0 += oz;
+    if (typeof o.z1 === 'number') o.z1 += oz;
+    if (o.slits) o.slits = o.slits.map(x => x + ox);
+  };
+  for (const c of stageRoot.children) if (!before.has(c) && c !== CASTLE.doorMesh) { c.position.x += ox; c.position.z += oz; }
+  for (let i = nB; i < boxes.length; i++) sh(boxes[i]);
+  for (let i = nF; i < floors.length; i++) sh(floors[i]);
+  for (let i = nL; i < ladders.length; i++) sh(ladders[i]);
+  for (let i = nP; i < perches.length; i++) sh(perches[i]);
+  for (let i = nC; i < covers.length; i++) sh(covers[i]);
+  for (let i = nK; i < colliders.length; i++) sh(colliders[i]);
+  if (hq && hq !== hq0) { hq.x0 += ox; hq.x1 += ox; hq.z0 += oz; hq.z1 += oz; hq.sx += ox; hq.sz += oz; }
+  if (medPost.blue && medPost.blue !== mb0) { medPost.blue[0] += ox; medPost.blue[1] += oz; }
+  if (medPost.orange && medPost.orange !== mo0) { medPost.orange[0] += ox; medPost.orange[1] += oz; }
+  if (MTN.gates && MTN.gates !== gatesArr) for (const g of MTN.gates) sh(g);
 }
-function dualSpawn(front, team, count, xBase, z0, z1) {
-  const goalX = team === 'orange' ? (front === 'king' ? -60 : 72) : (front === 'king' ? -68 : 70);
-  for (let i = 0; i < count; i++) {
-    const kind = i % 5 < 2 ? 'archer' : 'mob';
-    const z = z0 + (z1 - z0) * ((i % 10) / 9);
-    const e = spawnEnemy(xBase + rand(-3, 3), z + rand(-0.6, 0.6), kind, false, team, kind === 'mob' && i % 3 === 0 ? { yari: 1 } : {});
-    if (!e) continue;
-    e.missionFront = front; e.missionTeam = team;
-    e.missionGoto = [goalX + rand(-2, 2), clamp(z, z0, z1)];
+function buildTwoFront() {
+  DUAL.build = true;
+  dualShift(DUAL_MOX, 0, () => { buildMountain(); });
+  MTN.on = false;
+  dualShift(DUAL_COX, 0, () => { buildCastle(); });
+  DUAL.build = false;
+  MTN.on = false; CASTLE.on = false;
+  CASTLE.phase = 0; CASTLE.gateHP = CS.GATE_MAX; CASTLE.won = false; CASTLE.log = [];
+  if (CASTLE.gate) {
+    CASTLE.gate.box.y1 = 4; CASTLE.gate.k = 0; CASTLE.gate.opening = 0; CASTLE.gate.shake = 0;
+    CASTLE.gate.leaves.forEach(l => { l.rotation.y = 0; });
   }
+  if (CASTLE.ram && CASTLE.ram.g) {
+    CASTLE.ram.x = DUAL_COX; CASTLE.ram.z = -46; CASTLE.ram.y = 0.24; CASTLE.ram.crew = [];
+    CASTLE.ram.g.position.set(CASTLE.ram.x, CASTLE.ram.y, CASTLE.ram.z);
+  }
+  for (const d of CASTLE.doors || []) {
+    d.x += DUAL_COX;
+    d.open = !!d.open0; d.k = d.open ? 1 : 0; d.by = null; d.closeT = 0;
+    d.box.y1 = d.open ? -1 : 2.8;
+    doorWrite(d);
+  }
+  for (const p of CASTLE.pits || []) { p.x += DUAL_COX; if (p.x0 != null) { p.x0 += DUAL_COX; p.x1 += DUAL_COX; } }
+  nobori((DUAL_COX + DUAL_MOX) * 0.5, -40, '#f4f1e8', '#1d1d24', '連絡');
+  nobori(DUAL_COX - 4, 70, '#1f5fb8', '#f4f1e8', '王');
+  const saiFlag = nobori(DUAL_MOX + 5.2, -16, '#b99a45', '#fff6e8', '西園寺');
+  saiFlag.position.y = 12.8;
+}
+function dualOpenCastle(why) {
+  const g = CASTLE.gate; if (!g || !g.box || CASTLE.phase !== 0) return;
+  CASTLE.phase = 1; CASTLE.gateHP = 0; g.box.y1 = -1; g.k = 1; g.opening = 1;
+  if (g.leaves[0]) g.leaves[0].rotation.y = -Math.PI / 2 * 0.92;
+  if (g.leaves[1]) g.leaves[1].rotation.y = Math.PI / 2 * 0.92;
+  showBanner('大手門、破られた', why || '橙組が二の丸へなだれ込む');
+}
+function dualOpenMtn(g) {
+  if (!g || g.open) return;
+  g.open = true;
+  for (const b of g.boxes || []) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
+  (g.meshes || []).forEach((m, i) => { m.rotation.y += i ? 1.15 : -1.15; });
+  showBanner(g.id === 'west' ? '山城の大手、落ちた' : '山城の搦手、落ちた', '西園寺の守りが奥へ押される');
+  for (const e of enemies) if (e.missionStair === g.id && e.team === 'orange' && isUp(e)) {
+    const x = DUAL_MOX + (g.id === 'west' ? 0 : 12);
+    e.missionPath = [[x, 10], [x, -4], [DUAL_MOX, -18]];
+  }
+}
+function dualMarch() {
+  return [[DUAL_COX, 8], [DUAL_COX, -42], [DUAL_MOX + 34, -42], [DUAL_MOX + 34, 102], [DUAL_MOX, 90], [DUAL_MOX, 42], [DUAL_MOX, -16]];
+}
+function dualMarchBack() {
+  return [[DUAL_MOX, 88], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, -8], [DUAL_COX, 12]];
+}
+function dualUnit(front, team, x, z, y, opt) {
+  opt = opt || {};
+  const kind = opt.kind || 'mob';
+  const e = spawnEnemy(x, z, kind, false, team, { y: y || 0, yari: opt.yari ? 1 : -1 });
+  if (!e) return null;
+  e.missionFront = front;
+  e.missionGoto = opt.goto ? opt.goto.slice() : [x, z];
+  if (opt.path) e.missionPath = opt.path.map(p => p.slice());
+  if (opt.stair) e.missionStair = opt.stair;
+  if (opt.rein) e.missionReinforcement = true;
+  e.baseY = y || 0; e.s.position.y = e.baseY; e.footOk = [x, z];
+  return e;
+}
+function dualGoto(e) {
+  const path = e.missionPath;
+  if (path && path.length) {
+    const g = path[0];
+    if (Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) < 4.2) { path.shift(); return path[0] || e.missionGoto; }
+    return g;
+  }
+  return e.missionGoto;
+}
+function dualFoeNear(e, r) {
+  for (const o of enemies) {
+    if (!isUp(o) || o.team === e.team || o.special || o.wasOjou) continue;
+    if (Math.abs((o.baseY || 0) - (e.baseY || 0)) > 2.6) continue;
+    if (Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < r) return true;
+  }
+  return false;
 }
 function startDualMission() {
-  Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [] });
-  player.pos.set(-70, 0, 8); player.yaw = Math.PI / 2; player.hp = CFG.maxHp;
-  wave.n = 1; wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0; wave.inter = 0; wave.maxAlive = 240; wave.blueMax = 240;
+  Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [], nKingO: 0, nSaiO: 0 });
+  player.pos.set(hq ? hq.sx : DUAL_COX - 1, 0, hq ? hq.sz : 64.2); player.yaw = 0; player.hp = CFG.maxHp;
+  wave.n = 1; wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0; wave.inter = 0; wave.maxAlive = 280; wave.blueMax = 280;
   if (ojou.e && isUp(ojou.e)) {
-    ojou.e.s.position.set(74, 3.4, 0); ojou.e.baseY = 3.4; ojou.e.home = [74, 0]; ojou.mode = 'hq';
+    ojou.e.s.position.set(DUAL_MOX, 12.8, -18); ojou.e.baseY = 12.8; ojou.e.home = [DUAL_MOX, -18]; ojou.e.footOk = [DUAL_MOX, -18]; ojou.mode = 'hq';
     ojou.e.missionFront = 'saionji'; DUAL.saionji = ojou.e;
   }
   const miyA = aides.find(A => A.id === 'sec4');
   if (miyA && miyA.e && isUp(miyA.e)) {
-    miyA.e.s.position.set(72.2, 3.4, 1.4); miyA.e.baseY = 3.4; miyA.e.home = [72.2, 1.4];
+    miyA.e.s.position.set(DUAL_MOX - 1.6, 12.8, -16.6); miyA.e.baseY = 12.8; miyA.e.home = [DUAL_MOX - 1.6, -16.6]; miyA.e.footOk = [DUAL_MOX - 1.6, -16.6];
     miyA.e.missionFront = 'saionji'; DUAL.miyashita = miyA.e;
   }
-  if (sec.e && isUp(sec.e)) { sec.e.s.position.set(-68, 0, 6); sec.e.missionFront = 'king'; DUAL.shira = sec.e; }
-  dualSpawn('king', 'blue', 50, -66, -12, 14);
-  dualSpawn('saionji', 'blue', 40, 66, -10, 10);
-  dualSpawn('king', 'orange', 50, -24, -14, 14);
-  dualSpawn('saionji', 'orange', 50, 30, -12, 12);
-  showBanner('二正面戦、開始', '西は王が城を守る。東は西園寺が山城を守る。敵は各50人');
+  if (sec.e && isUp(sec.e)) { sec.e.missionFront = 'king'; DUAL.shira = sec.e; }
+  let nK = 0, nS = 0;
+  for (let i = 0; i < 50; i++) {
+    const x = DUAL_COX + rand(-12, 12), z = rand(6, 26);
+    if (dualUnit('king', 'blue', x, z, 0, { kind: i % 5 < 2 ? 'archer' : 'mob', yari: i % 3 === 0, goto: [x, z] })) nK++;
+  }
+  for (let i = 0; i < 50; i++) {
+    const x = DUAL_COX + rand(-14, 14), z = rand(-28, -8);
+    if (dualUnit('king', 'orange', x, z, 0, { kind: i % 5 < 2 ? 'archer' : 'mob', yari: i % 4 === 0, goto: [DUAL_COX + rand(-3, 3), -2.2] })) DUAL.nKingO++;
+  }
+  const spots = [];
+  for (let i = 0; i < 12; i++) spots.push([DUAL_MOX + rand(-4.2, 4.2), rand(-24, -13), 12.8]);
+  for (let i = 0; i < 10; i++) spots.push([DUAL_MOX + rand(-4, 4), rand(-1.2, 1.8), 9.6]);
+  for (let i = 0; i < 10; i++) spots.push([DUAL_MOX + rand(-12, -3.2), rand(13, 26), 6.4]);
+  for (let i = 0; i < 8; i++) spots.push([DUAL_MOX + rand(9.2, 16), rand(13, 26), 6.4]);
+  spots.forEach((s, i) => dualUnit('saionji', 'blue', s[0], s[1], s[2], { kind: i % 5 < 2 ? 'archer' : 'mob', yari: i % 3 === 0, goto: [s[0], s[1]] }));
+  for (let i = 0; i < 25; i++) {
+    const x = DUAL_MOX + rand(-0.6, 0.6), z = rand(74, 88);
+    if (dualUnit('saionji', 'orange', x, z, 0, { kind: i % 5 < 2 ? 'archer' : 'mob', stair: 'west', goto: [DUAL_MOX, 36], path: [[DUAL_MOX, 52], [DUAL_MOX, 36]] })) nS++;
+  }
+  for (let i = 0; i < 25; i++) {
+    const x = DUAL_MOX + 12 + rand(-0.6, 0.6), z = rand(74, 88);
+    if (dualUnit('saionji', 'orange', x, z, 0, { kind: i % 5 < 2 ? 'archer' : 'mob', stair: 'east', goto: [DUAL_MOX + 12, 36], path: [[DUAL_MOX + 12, 52], [DUAL_MOX + 12, 36]] })) nS++;
+  }
+  DUAL.nSaiO = nS; DUAL.spawned = nK > 20 && DUAL.nKingO > 20 && nS > 20;
+  showBanner('二正面戦、開始', '西は王が城を守る。東は西園寺が山城の本丸を守る。敵は各50人');
   Sfx.fluteCall();
 }
 function dualDeployShira() {
   const born = [];
+  const pathOf = () => dualMarch();
   for (let i = 0; i < 20; i++) {
-    const e = spawnEnemy(-62 + rand(-2, 2), rand(-6, 8), 'mob', false, 'blue', { yari: 1 });
-    if (e) { e.missionFront = 'king'; e.missionReinforcement = true; e.missionGoto = [70, rand(-3, 3)]; born.push(e); }
+    const e = dualUnit('king', 'blue', DUAL_COX + rand(-4, 4), rand(4, 14), 0, { kind: 'mob', yari: 1, rein: true, path: pathOf(), goto: [DUAL_MOX, -16] });
+    if (e) born.push(e);
   }
   for (let i = 0; i < 20; i++) {
-    const e = spawnEnemy(-62 + rand(-2, 2), rand(-6, 8), 'archer', false, 'blue');
-    if (e) { e.missionFront = 'king'; e.missionReinforcement = true; e.missionGoto = [70, rand(-3, 3)]; born.push(e); }
+    const e = dualUnit('king', 'blue', DUAL_COX + rand(-4, 4), rand(4, 14), 0, { kind: 'archer', rein: true, path: pathOf(), goto: [DUAL_MOX, -16] });
+    if (e) born.push(e);
   }
   let meds = 0;
   for (const m of medics.blue) if (m.e && isUp(m.e) && meds < 2) {
-    m.e.s.position.set(-64, 0, 4 + meds * 1.4); m.e.baseY = 0; m.e.home = [m.e.s.position.x, m.e.s.position.z];
-    m.e.missionFront = 'king'; m.e.missionReinforcement = true; meds++;
+    const x = DUAL_COX + 2 + meds * 1.2, z = 10;
+    m.e.s.position.set(x, 0, z); m.e.baseY = 0; m.e.home = [x, z]; m.e.footOk = [x, z];
+    m.e.missionFront = 'king'; m.e.missionReinforcement = true; m.e.missionPath = pathOf(); m.e.missionGoto = [DUAL_MOX, -16];
+    meds++;
   }
+  if (DUAL.shira && isUp(DUAL.shira)) { DUAL.shira.missionPath = pathOf(); DUAL.shira.missionGoto = [DUAL_MOX, -16]; DUAL.shira.missionReinforcement = true; }
   DUAL.reinforcements = born;
   DUAL.relayStage = 4; DUAL.eventT = 0;
+  dualOpenCastle('白瀬が討伐に出る');
   dualLine('王「白瀬、裏切り者を討ち取れ」');
   showBanner('白瀬、討伐隊を率いて出陣', '槍隊20、弓隊20、医務班2');
 }
 function dualBrain(e, dt) {
   if (!DUAL.on || !e || !isUp(e) || e.seated) return false;
   if (e === DUAL.saionji && !DUAL.betrayed) {
-    if (Math.hypot(e.s.position.x - 74, e.s.position.z) > 1.3) { steer(e, 74, 0, e.speed, dt); e.baseY = 3.4; }
-    e.tgt = null; e.state = 'idle'; return true;
+    const hx = DUAL_MOX, hz = -18;
+    if (Math.hypot(e.s.position.x - hx, e.s.position.z - hz) > 1.2) steer(e, hx, hz, e.speed, dt);
+    e.baseY = 12.8; e.tgt = null; e.state = 'idle'; return true;
   }
   if (e === DUAL.miyashita && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji)) {
     const s = DUAL.saionji.s.position;
-    if (Math.hypot(e.s.position.x - s.x, e.s.position.z - s.z) > 1.8) steer(e, s.x - 1.3, s.z + 1.1, e.speed, dt);
-    e.tgt = null; return true;
+    if (Math.hypot(e.s.position.x - (s.x - 1.5), e.s.position.z - (s.z + 1.2)) > 1.4) steer(e, s.x - 1.5, s.z + 1.2, e.speed, dt);
+    e.baseY = 12.8; e.tgt = null; return true;
   }
   if (e === DUAL.miyashita && DUAL.betrayed) {
-    if (e.s.position.x > -40) { steer(e, -66, 8, e.speed * 1.3, dt); e.state = 'approach'; e.tgt = null; return true; }
+    if (!e.missionPath) e.missionPath = [[DUAL_MOX, -6], [DUAL_MOX, 36], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 64]];
+    const g = dualGoto(e);
+    if (g && Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) > 2) { steer(e, g[0], g[1], e.speed * 1.6, dt); e.state = 'approach'; e.tgt = null; return true; }
   }
   if ((e === DUAL.shira || e.missionReinforcement) && DUAL.relayStage >= 4 && DUAL.saionji && isUp(DUAL.saionji)) {
     const s = DUAL.saionji.s.position;
     const near = Math.hypot(e.s.position.x - s.x, e.s.position.z - s.z);
-    let foe = false;
-    if (near < 10) for (const o of enemies) if (o.team !== e.team && isUp(o) && !o.special && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 6) foe = true;
-    if (!foe && near > 3.2) { steer(e, s.x - 2.4, s.z, e.speed * 1.3, dt); e.state = 'approach'; e.tgt = null; return true; }
-    if (!foe && e === DUAL.shira) return false;
+    if (!(dualFoeNear(e, 7) && near < 16) && near > 4.2) {
+      const g = dualGoto(e) || [s.x, s.z];
+      steer(e, g[0], g[1], e.speed * 1.85, dt); e.state = 'approach'; e.tgt = null; return true;
+    }
+    if (e === DUAL.shira && near <= 4.2) return false;
   }
   if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.aide) return false;
-  let foe = null, fd = e.kind === 'archer' ? 20 : 8;
-  for (const o of enemies) {
-    if (!isUp(o) || o.team === e.team || o.special) continue;
-    const d = Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z);
-    if (d < fd) { fd = d; foe = o; }
-  }
-  if (foe) return false;
-  const g = e.missionGoto; if (!g) return false;
-  if (Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) < 2.4) return false;
-  steer(e, g[0], g[1], e.speed * 1.12, dt); e.state = 'approach'; e.tgt = null;
+  if (dualFoeNear(e, e.kind === 'archer' ? 18 : 7.5)) return false;
+  const g = dualGoto(e); if (!g) return false;
+  if (Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) < 2.3) return false;
+  steer(e, g[0], g[1], e.speed * (e.missionPath ? 1.55 : 1.05), dt); e.state = 'approach'; e.tgt = null;
   return true;
 }
 function updateDual(dt) {
@@ -6469,35 +6559,54 @@ function updateDual(dt) {
   if (DUAL.healT <= 0) {
     DUAL.healT = 2.4;
     const s = DUAL.saionji, m = DUAL.miyashita;
-    if (s && isUp(s) && !DUAL.betrayed && m && isUp(m) && s.hp < s.hpMax && Math.hypot(m.s.position.x - s.s.position.x, m.s.position.z - s.s.position.z) < 4) {
+    if (s && isUp(s) && !DUAL.betrayed && m && isUp(m) && s.hp < s.hpMax && Math.hypot(m.s.position.x - s.s.position.x, m.s.position.z - s.s.position.z) < 4 && Math.abs(m.baseY - s.baseY) < 1.5) {
       s.hp = Math.min(s.hpMax, s.hp + 2);
     }
   }
-  const up = (team, front) => enemies.filter(e => e.team === team && isUp(e) && e.missionFront === front && !e.special && !e.ojou);
-  if (!DUAL.kingCleared && up('orange', 'king').length === 0 && enemies.some(e => e.missionFront === 'king')) {
+  const g = CASTLE.gate;
+  if (g && g.box && CASTLE.phase === 0) {
+    const cx = (g.box.x0 + g.box.x1) / 2, cz = (g.box.z0 + g.box.z1) / 2; let n = 0;
+    for (const e of enemies) if (e.team === 'orange' && isUp(e) && !e.special && !e.wasOjou && e.baseY < 2 && Math.hypot(e.s.position.x - cx, e.s.position.z - cz) < 6.5) n++;
+    if (n) {
+      CASTLE.gateHP -= dt * (5 + n * 1.3);
+      if (CASTLE.gateHP <= 0) {
+        dualOpenCastle('橙組が門を押し破った');
+        for (const e of enemies) if (e.team === 'orange' && e.missionFront === 'king' && isUp(e)) e.missionGoto = [DUAL_COX + rand(-8, 8), rand(8, 22)];
+      }
+    }
+  }
+  for (const gt of MTN.gates || []) {
+    if (!gt || gt.open) continue;
+    const cx = (gt.x0 + gt.x1) / 2, cz = (gt.z0 + gt.z1) / 2; let n = 0;
+    for (const e of enemies) if (e.team === 'orange' && isUp(e) && !e.special && Math.abs(e.s.position.x - cx) < 3.4 && Math.abs(e.s.position.z - cz) < 4.4 && Math.abs((e.baseY || 0) - (gt.y || 0)) < 2) n++;
+    if (!n) continue;
+    gt.hp -= dt * (1.05 + n * 0.42);
+    if (gt.hp <= 0) dualOpenMtn(gt);
+  }
+  const up = (team, front) => enemies.filter(e => e.team === team && isUp(e) && e.missionFront === front && !e.special && !e.ojou && !e.wasOjou && e !== DUAL.saionji);
+  if (!DUAL.kingCleared && DUAL.spawned && DUAL.nKingO > 10 && up('orange', 'king').length === 0) {
     DUAL.kingCleared = true;
+    dualOpenCastle('味方が山城へ出る');
     dualLine('王側の敵を壊滅させた。生き残った味方は東の山城へ援軍に向かう');
-    for (const e of up('blue', 'king')) { e.missionFront = 'saionji'; e.missionGoto = [70, rand(-4, 4)]; }
+    for (const e of up('blue', 'king')) { e.missionFront = 'saionji'; e.missionFrom = 'king'; e.missionPath = dualMarch(); e.missionGoto = [DUAL_MOX, -16]; }
   }
-  if (!DUAL.saionjiCleared && !DUAL.betrayed && up('orange', 'saionji').length === 0 && enemies.some(e => e.missionFront === 'saionji' && e.team === 'orange')) {
+  if (!DUAL.saionjiCleared && !DUAL.betrayed && DUAL.spawned && DUAL.nSaiO > 10 && up('orange', 'saionji').length === 0) {
     DUAL.saionjiCleared = true;
+    for (const gt of MTN.gates || []) dualOpenMtn(gt);
     dualLine('山城側の敵を壊滅させた。生き残った味方は王の城へ援軍に向かう');
-    for (const e of up('blue', 'saionji')) { e.missionFront = 'king'; e.missionGoto = [-64, rand(-4, 4)]; }
+    for (const e of up('blue', 'saionji')) { e.missionFront = 'king'; e.missionFrom = 'saionji'; e.missionPath = [[DUAL_MOX, 20], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 14]]; e.missionGoto = [DUAL_COX, 14]; }
   }
-  if (!DUAL.joined && DUAL.saionji && isUp(DUAL.saionji) && !DUAL.betrayed && (player.pos.x > 60 || enemies.some(e => e.team === 'blue' && e.missionFront === 'saionji' && e.s.position.x > 55 && !e.special && Math.hypot(e.s.position.x - 74, e.s.position.z) < 12 && e.home && e.home[0] < 0))) {
-    // 援軍が山城に着いた、または王が西園寺のもとへ来た
-  }
-  const meet = !DUAL.joined && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji) && (Math.hypot(player.pos.x - DUAL.saionji.s.position.x, player.pos.z - DUAL.saionji.s.position.z) < 8 || (DUAL.kingCleared && enemies.some(e => e.team === 'blue' && !e.special && e.s.position.x > 60 && isUp(e))));
+  const sai = DUAL.saionji;
+  const meet = !DUAL.joined && !DUAL.betrayed && sai && isUp(sai) && (Math.hypot(player.pos.x - sai.s.position.x, player.pos.z - sai.s.position.z) < 8 || enemies.some(e => e.team === 'blue' && e.missionFrom === 'king' && isUp(e) && e.baseY > 8 && Math.hypot(e.s.position.x - sai.s.position.x, e.s.position.z - sai.s.position.z) < 10));
   if (meet) {
     DUAL.joined = true;
     dualLine('西園寺「王、ご無事で。こちらはまだ持ちこたえております」');
     showBanner('王と西園寺', '王「間に合って何よりだ。ともに押し返せ」');
   }
-  if (!DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji) && enemies.some(e => e.team === 'orange' && isUp(e) && !e.special && e.s.position.x > 66 && Math.abs(e.s.position.z) < 8)) {
+  if (!DUAL.betrayed && sai && isUp(sai) && enemies.some(e => e.team === 'orange' && isUp(e) && !e.special && !e.wasOjou && e.baseY > 11.2 && e.s.position.x > DUAL_MOX - 7.2 && e.s.position.x < DUAL_MOX + 7.2 && e.s.position.z < -10.4 && e.s.position.z > -28)) {
     DUAL.betrayed = true;
-    const s = DUAL.saionji;
-    s.team = 'orange'; s.special = false; s.ojou = false; s.wasOjou = true; s.state = 'approach'; s.t = 0; s.tgt = null;
-    s.hp = Math.max(s.hp, 8); s.missionFront = 'saionji'; s.missionGoto = [74, 0];
+    sai.team = 'orange'; sai.special = false; sai.ojou = false; sai.wasOjou = true; sai.state = 'approach'; sai.t = 0; sai.tgt = null;
+    sai.hp = Math.max(sai.hp, 8); sai.missionFront = 'saionji'; sai.missionGoto = [DUAL_MOX, -18];
     DUAL.relayStage = 1; DUAL.eventT = 3.2;
     dualLine('西園寺「私はここまでです。これより敵方に降ります」');
     showBanner('西園寺、降伏', '宮下「西園寺様……本当に、王を裏切るのですか」');
@@ -6518,13 +6627,13 @@ function updateDual(dt) {
       }
     }
   }
-  if (DUAL.shira && !DUAL.arrivalTalk && DUAL.relayStage >= 4 && isUp(DUAL.shira) && DUAL.saionji && isUp(DUAL.saionji) && Math.hypot(DUAL.shira.s.position.x - DUAL.saionji.s.position.x, DUAL.shira.s.position.z - DUAL.saionji.s.position.z) < 6) {
+  if (DUAL.shira && !DUAL.arrivalTalk && DUAL.relayStage >= 4 && isUp(DUAL.shira) && sai && isUp(sai) && DUAL.shira.baseY > 8 && Math.hypot(DUAL.shira.s.position.x - sai.s.position.x, DUAL.shira.s.position.z - sai.s.position.z) < 6) {
     DUAL.arrivalTalk = true;
     dualLine('白瀬「西園寺殿。王を裏切った罪、ここで償ってもらいます」');
     showBanner('白瀬、西園寺に到着', '西園寺「王には王の道が、私には私の道があります」');
   }
   const oranges = enemies.filter(e => e.team === 'orange' && isUp(e) && !e.medic);
-  if (!DUAL.won && oranges.length === 0 && (DUAL.saionjiCleared && DUAL.kingCleared || (DUAL.betrayed && DUAL.relayStage >= 4))) {
+  if (!DUAL.won && DUAL.spawned && oranges.length === 0 && (DUAL.saionjiCleared && DUAL.kingCleared || (DUAL.betrayed && DUAL.relayStage >= 4))) {
     DUAL.won = true; showBanner('二正面を制した', DUAL.betrayed ? '裏切り者を討った' : '両方の戦線を守り切った'); gameOver(true);
   }
 }
@@ -6537,7 +6646,7 @@ const STAGES = {
   plane: { name: '機内の戦い', desc: '空の上の旅客機。殿はラウンジの席に、秘書課が客室乗務員のように控える。穏やかな機内で、乗客に紛れた橙組が突然襲いかかる。通路は一人分の幅、座席の背もたれが矢を防ぐ。' },
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
   mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。攻め手は射ちながら破門隊について門へ上がり、門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
-  twofront: { name: '王と西園寺の二正面戦', desc: '西は王が城を守り、東は西園寺が山城を守る。味方は王に50人、西園寺に40人。敵は各50人。片方を壊滅させれば、もう一方へ援軍が走る。本丸まで押されると西園寺は寝返り、白瀬が討伐隊を率いて出る。' },
+  twofront: { name: '王と西園寺の二正面戦', desc: '西に城の戦い、東に山城の戦いを並べた。王は城の奥で味方50人と守り、西園寺は山城の本丸で味方40人と守る。敵は各50人。門を破って押し合い、片方を壊滅させれば回り道で援軍が走る。本丸まで押されると西園寺は寝返り、白瀬が槍20・弓20・医務2を連れて討ちに出る。' },
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
@@ -10033,12 +10142,13 @@ function updateEnemies(dt) {
     if (!e.perch && !e.seated && pd < 0.9 && pd > 1e-4 && Math.abs(player.pos.y - e.baseY) < 1) { p.x -= pdx / pd * (0.9 - pd); p.z -= pdz / pd * (0.9 - pd); }
     const lim = MECH.on ? MECH.lim : CFG.field;
     p.x = clamp(p.x, -lim, lim); p.z = clamp(p.z, -lim, lim);
-    if (MTN.on && !e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && e.state !== 'down' && e.state !== 'seppuku') {
-      const fy = floorUnder(p.x, p.z, e.baseY + 0.35);
-      if (fy < e.baseY - 0.95 && e.baseY > 0.3 && e.footOk) { p.x = e.footOk[0]; p.z = e.footOk[1]; }
+    if ((MTN.on || DUAL.on) && !e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && e.state !== 'down' && e.state !== 'seppuku') {
+      const fy = floorUnder(p.x, p.z, e.baseY + 0.45);
+      const voidDrop = fy < 0.25 && fy < e.baseY - 1.05 && e.baseY > 0.35;
+      if (MTN.on && voidDrop && e.footOk) { p.x = e.footOk[0]; p.z = e.footOk[1]; }
       else {
-        if (fy > e.baseY + 0.02) e.baseY = Math.min(fy, e.baseY + 2.4 * dt);
-        else if (fy >= e.baseY - 0.45) e.baseY = Math.max(fy, e.baseY - 2.2 * dt);
+        if (fy > e.baseY + 0.02) e.baseY = Math.min(fy, e.baseY + 3.4 * dt);
+        else e.baseY = Math.max(fy, e.baseY - 3.8 * dt);
         e.footOk = [p.x, p.z];
       }
     }
@@ -10764,7 +10874,7 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'twofront') { player.pos.set(-70, 0, 8); player.yaw = Math.PI / 2; }
+  if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から

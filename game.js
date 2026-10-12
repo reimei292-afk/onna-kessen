@@ -626,12 +626,38 @@ const MECH_LINE = {
   hq: ['本陣まで押し返すよ', '優勢だ。車で本陣へ'],
   next: ['奥にも砦がある', '同じ車で次の門へ'],
 };
+function mechMedEnsure() {
+  medics.blue = medics.blue.filter(m => !m.extra);
+  if (MED_NAMES.blue.surgeon.length > 2) MED_NAMES.blue.surgeon.length = 2;
+  if (MED_NAMES.blue.nurse.length > 2) MED_NAMES.blue.nurse.length = 2;
+  const extra = { surgeon: ['外科医 九条 紗英', '外科医 葉山 みどり'], nurse: ['看護師 遠野 あかり', '看護師 水無瀬 ことね'] };
+  for (const role of ['surgeon', 'nurse']) for (let k = 0; k < 2; k++) {
+    medics.blue.push({ role, e: null, dead: false, extra: true });
+    MED_NAMES.blue[role].push(extra[role][k]);
+  }
+}
+function mechMedCenter() {
+  const F = mechFort();
+  const cars = mechVehicles().filter(C => C.side === 'blue' && !C.wrecked);
+  if (cars.length) { cars.sort((a, b) => a.z - b.z); return [0, cars[0].z + 7]; }
+  return F ? [0, F.z + 18] : [0, 14];
+}
+function mechMedFront(e) {
+  const [x, z] = mechMedCenter();
+  const slot = (e && e.slot) || 0;
+  return [((slot % 4) - 1.5) * 3.4, z];
+}
 function mechVehicles() { return MECH.cars.concat(MECH.trucks); }
 function mechClear() {
   for (const r of MECH.rocks) if (r.m && r.m.parent) r.m.parent.remove(r.m);
   for (const C of mechVehicles()) if (C.lad) mechLadderOff(C);
   MECH.on = false; MECH.cars = []; MECH.trucks = []; MECH.rocks = []; MECH.catas = []; MECH.towers = []; MECH.gate = null; MECH.walk = null; MECH.forts = []; MECH.fi = 0;
   MECH.won = false; MECH.crewed = false; MECH.sayAt = {}; MECH.log = []; MECH.hqT = 0;
+  if (typeof medics !== 'undefined') {
+    medics.blue = medics.blue.filter(m => !m.extra);
+    if (MED_NAMES.blue.surgeon.length > 2) MED_NAMES.blue.surgeon.length = 2;
+    if (MED_NAMES.blue.nurse.length > 2) MED_NAMES.blue.nurse.length = 2;
+  }
 }
 function mechW(C, lx, lz) { const c = Math.cos(C.yaw), s = Math.sin(C.yaw); return [C.x + lx * c + lz * s, C.z - lx * s + lz * c]; }
 function mechL(C, x, z) { const dx = x - C.x, dz = z - C.z, c = Math.cos(C.yaw), s = Math.sin(C.yaw); return [dx * c - dz * s, dx * s + dz * c]; }
@@ -692,6 +718,7 @@ function buildMech() {
   buildMedPost(0.6, MECH.forts[0].z - 14, 'orange');
   [[-6, 18], [0, 15], [6, 18], [-3, 12]].forEach(([x, z]) => mechMake(x, z, 'kei'));
   [[-8, 8], [8, 9]].forEach(([x, z], i) => { const C = mechMake(x, z, 'truck'); C.goalX = i ? 8 : -8; });
+  mechMedEnsure();
 }
 function mechOpenGate(F) {
   F = F || mechFort(); if (!F) return;
@@ -859,10 +886,11 @@ function mechCarAhead(C) {
 }
 function mechDrive(C, dt) {
   if (C.wrecked) { C.v = 0; mechPut(C); return; }
+  mechStill(C, dt);
   const F0 = mechFort();
   if (C.docked && F0 && F0.gate && F0.gate.open) mechLadderOff(C);
   if (C.docked) { C.v = 0; mechPut(C); return; }
-  const crew = mechLiving(C), need = C.kind === 'truck' ? 2 : 1;
+  const crew = mechLiving(C), need = C.kind === 'truck' && !C.solo ? 2 : 1;
   if (crew < need) { C.v = 0; if (C.phase === 'go') C.phase = 'hold'; mechPut(C); return; }
   if (C.phase === 'wait' || C.phase === 'hold') C.phase = 'go';
   if (C.lame) { C.v = 0; mechPut(C); return; }
@@ -885,6 +913,16 @@ function mechDrive(C, dt) {
   C.g.position.set(C.x, 0, C.z); C.g.rotation.y = C.yaw;
   for (const w of C.wheels) { const s = (w.spin = (w.spin || 0) + C.v * dt / 0.34); w.children[0].rotation.x = s; }
   mechPut(C);
+}
+function mechStill(C, dt) {
+  const moved = Math.hypot(C.x - (C.wasX == null ? C.x : C.wasX), C.z - (C.wasZ == null ? C.z : C.wasZ));
+  if (C.wasX != null && moved < 0.3 && !C.docked && !C.wrecked) C.stillT = (C.stillT || 0) + dt;
+  else C.stillT = 0;
+  C.wasX = C.x; C.wasZ = C.z;
+  if ((C.stillT || 0) < 30 || (C.kind === 'cata' ? cataLiving(C) : mechLiving(C)) < 1) return;
+  C.solo = true; C.phase = 'go'; C.stillT = 0;
+  if (!C.lame) { C.revT = 1.15; C.revSide = ((C.bumpN = (C.bumpN || 0) + 1) % 2) ? 1 : -1; }
+  if (!C.soloSaid) { C.soloSaid = true; const who = (C.seats || []).find(isUp); if (who) mechSay(who, 'go'); }
 }
 function mechPuncture(C, i, by) {
   if (!C || C.wrecked || C.tires[i] <= 0) return;
@@ -1402,7 +1440,7 @@ function mechMakeFort(i) {
   nobori(-20, zG - 8, '#d9741c', '#fff6e8', '橙組');
   nobori(20, zG - 8, '#d9741c', '#fff6e8', ['一の砦', '二の砦', '三の砦'][i]);
   const catas = [-16, 16].map(x => mechCataMake(x, zG - 12, i > 0, i));
-  const pbs = i === 2 ? [mechPb(-13, zG - 16), mechPb(13, zG - 16)] : [];
+  const pbs = i === 2 ? [mechPb(-22, zG + 16), mechPb(22, zG + 16)] : [];
   return { i, z: zG, name: ['一の砦', '二の砦', '三の砦'][i], hw, walk, gate, back, towers, catas, pbs, done: false, garrisoned: false, med: [0.6, zG - 14] };
 }
 function mechPb(x, z) {
@@ -1468,7 +1506,8 @@ function cataSit(e, K) {
 }
 function cataDrive(K, dt) {
   if (!K || K.wrecked || K.locked) { if (K) cataPut(K); return; }
-  if (cataLiving(K) < 2) { K.v = 0; cataPut(K); return; }
+  mechStill(K, dt);
+  if (cataLiving(K) < (K.solo ? 1 : 2)) { K.v = 0; cataPut(K); return; }
   const own = MECH.forts[K.fort];
   if (K.side !== 'blue' && own && !own.done) {
     K.yaw = mechWrap((K.yaw || 0) + clamp(mechWrap(0 - (K.yaw || 0)), -1.2 * dt, 1.2 * dt));
@@ -7112,7 +7151,7 @@ function woundedBrain(e, dt) {
   if (e.woundFight && !(e.medBy && e.medBy.state !== 'down' && Math.hypot(e.medBy.s.position.x - p.x, e.medBy.s.position.z - p.z) < 4)) return false;   // 戦い続ける娘も救護班が来れば止まって手当てを受ける
   for (const o of enemies) if (o.team !== e.team && o.state !== 'down' && !o.special && Math.abs(o.baseY - e.baseY) < 1.2 && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 2.4) { e.kneel = false; return false; }
   e.tgt = null; e.state = 'idle'; e.t += dt; e.cd -= dt;
-  const m = e.medBy, mp = medPost[e.team];
+  const m = e.medBy, mp = (MECH.on && e.team === 'blue') ? mechMedCenter() : medPost[e.team];
   if (m && m.state !== 'down' && Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z) < 7) { e.kneel = true; e.woundWait = true; e.faceWant = Math.atan2(m.s.position.x - p.x, m.s.position.z - p.z); e.passive = true; return true; }
   const [hx, hz] = mp || e.home || [p.x, p.z], d = Math.hypot(hx - p.x, hz - p.z);
   if (d > 4.5) { e.kneel = false; e.woundWait = false; steer(e, hx, hz, e.speed, dt); }
@@ -8578,7 +8617,7 @@ const MED_TEAM = role => [0, 1].map(i => ({ role, e: null, dead: false }));
 const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 白石 のぞみ'] },
   orange: { surgeon: ['外科医 楠 かおる', '外科医 柊 理沙'], nurse: ['看護師 若葉 つばさ', '看護師 小野寺 結衣'] } };
 const medics = { blue: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')], orange: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')] };
-const MED_HOME = [[0, 0], [1.4, 0.9], [-1.0, 1.0], [2.4, -0.6]];   // 持ち場の中の立ち位置
+const MED_HOME = [[0, 0], [1.4, 0.9], [-1.0, 1.0], [2.4, -0.6], [-2.2, 1.5], [0.2, 2.2], [-2.6, -0.8], [1.6, 2.4]];   // 持ち場の中の立ち位置
 const medPost = { blue: null, orange: null };
 const MED_R = 60;          // 救護班が出向く範囲（持ち場から）
 const SURGEON_ID = 'surgeon';
@@ -8600,7 +8639,9 @@ function spawnMedic(team, m) {
   if (!GIRLS[gid]) return;
   const [dx, dz] = (PLANE.on ? PLANE_MED[team][i] : MED_HOME[i]) || [0, 0], sg = PLANE.on || team === 'blue' ? 1 : -1;
   const y = hp[2] || 0;
-  const e = spawnEnemy(hp[0] + dx * sg, hp[1] + dz * sg, 'mob', false, team, { y, medic: true, role: m.role, slot: i, girl: gid, medName: MED_NAMES[team][m.role][i % 2] });
+  const names = MED_NAMES[team][m.role];
+  const nth = medics[team].slice(0, i + 1).filter(x => x.role === m.role).length - 1;
+  const e = spawnEnemy(hp[0] + dx * sg, hp[1] + dz * sg, 'mob', false, team, { y, medic: true, role: m.role, slot: i, girl: gid, medName: names[nth] || names[nth % names.length] });
   if (e) { e.baseY = y; e.s.position.y = y; e.footOk = [e.s.position.x, e.s.position.z]; if (MTN.on && team === 'orange') { e.mtnZone = 'hon'; e.mtnHold = true; } }
   m.e = e; m.dead = false;
 }
@@ -8633,8 +8674,11 @@ const ptPos = b => isLiving(b) ? [b.s.position.x, b.s.position.z] : bodyMid(b);
 function patientOK(e, b) {
   if (b.team !== e.team || b.special || b.medDone) return false;
   if (isLiving(b) ? !b.wounded || b.perch || b.lad || b.onFloor : time - (b.downAt || 0) > 90) return false;
-  const [bx, bz] = ptPos(b), hp = e.follow ? [player.pos.x, player.pos.z] : medPost[e.team] || e.home;
-  return Math.hypot(bx - hp[0], bz - hp[1]) <= (e.follow ? 22 : MED_R) && Math.abs(b.baseY - e.baseY) <= 0.5;
+  const [bx, bz] = ptPos(b);
+  let hp = e.follow ? [player.pos.x, player.pos.z] : medPost[e.team] || e.home;
+  let R = e.follow ? 22 : MED_R;
+  if (MECH.on && e.team === 'blue') { hp = mechMedCenter(); R = 90; }
+  return Math.hypot(bx - hp[0], bz - hp[1]) <= R && Math.abs(b.baseY - e.baseY) <= 0.5;
 }
 function findPatient(e, livingOnly) {   // 負傷者（生きている）を先に、いなければ倒れた娘（確かめるだけ）。誰も向かっていない一番近い娘
   const p = e.s.position; let best = null, bd = 1e9;
@@ -8702,6 +8746,7 @@ function medicBrain(e, dt) {
   if (!pt) {   // 持ち場へ戻る／待つ。浜では本陣も止まらず、先頭の車の後ろへ
     let hx, hz;
     if (BEACH.on && e.team === 'blue' && !e.follow) { const g = beachHqPoint(e); hx = g[0]; hz = g[1]; }
+    else if (MECH.on && e.team === 'blue') { const g = mechMedFront(e); hx = g[0]; hz = g[1]; }
     else { const h = e.follow ? followPt(e.fi) : e.home; hx = h[0]; hz = h[1]; }
     const d = Math.hypot(hx - p.x, hz - p.z);
     if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? (e.follow ? 1.35 : 1.05) : 0.7), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); e.crouch = 0; }

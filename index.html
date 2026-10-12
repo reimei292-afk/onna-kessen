@@ -53,6 +53,9 @@
   #roster{display:none;gap:22px;flex-wrap:wrap;justify-content:center;margin:6px 0 14px;padding:8px 14px;border-radius:8px;background:rgba(14,18,26,.55);color:#f2ead2;font-size:13px;text-align:left}
   html.touch #sqrep{top:118px;left:10px;right:auto;font-size:11px;max-height:52vh}
   #bLad{display:none;left:calc(50% + 70px);bottom:calc(24px + var(--sab));width:84px;height:84px;font-size:18px;background:rgba(120,80,20,.55)} html.touch.canlad #bLad{display:flex}
+  #bFix{display:none;position:fixed;z-index:32;left:calc(50% - 168px);bottom:calc(24px + var(--sab));width:84px;height:84px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,90,40,.72);color:#fff;align-items:center;justify-content:center;flex-direction:column;font-size:18px;pointer-events:auto;cursor:pointer;font-family:inherit}
+  html.canfix #bFix{display:flex}
+  #bFix small{font-size:10px;opacity:.85}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
   #stagesel{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #stagesel button{font:inherit;font-size:18px;letter-spacing:.2em;padding:8px 22px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
@@ -183,6 +186,7 @@
   <div class="tbtn" id="bTalk"><span>頼む</span></div>
   <div class="tbtn" id="bLad"><span>梯子</span><small id="bLadL">上る</small></div>
 </div>
+<button id="bFix" class="serif" type="button"><span>修理</span><small>タイヤ</small></button>
 <div id="rotate"><div class="ph"></div>横向きにしてください<br><small style="font-size:14px;opacity:.7;margin-top:10px;display:block">スマホを横に回すと遊べます</small></div>
 
 <div id="title" class="screen">
@@ -291,6 +295,6 @@
 <script src="assets/voices/voices.js?v=20261011f"></script>
 <script src="lib/motion_data.js"></script>
 <script src="lib/death_clips.js?v=20261011e"></script>
-<script src="game.js?v=20261012k"></script>
+<script src="game.js?v=20261012n"></script>
 </body>
 </html>

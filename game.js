@@ -5784,7 +5784,7 @@ function mtnMeleeGate() {
   }
   return false;
 }
-function mtnHonHit(dmg) {
+function mtnHonHit(dmg, source) {
   const b = MTN.bar; if (!b || b.gone) return;
   b.hp = (b.hp == null ? 8 : b.hp) - (dmg || 1);
   if (b.hp > 0) { if (b.hp % 2 === 0) popup('本丸の扉を叩いた（残り ' + b.hp + '）'); return; }
@@ -5793,7 +5793,44 @@ function mtnHonHit(dmg) {
   if (b.mesh) b.mesh.visible = false;
   MTN.bar = null;
   if (MTN.phase < 2) MTN.phase = 2;
-  showBanner('本丸の扉、破られた', '破城槌は要らない。近接で叩き破った');
+  showBanner('本丸の扉、開いた', source || '近接攻撃で扉を破った');
+}
+function mtnHonDoorDistance() {
+  const b = MTN.bar; if (!b || b.gone) return Infinity;
+  const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+  return Math.hypot(player.pos.x - cx, player.pos.z - cz);
+}
+function openMtnHonDoorByKing() {
+  const b = MTN.bar;
+  if (state !== 'play' || menuOpen || !DUAL.on || !b || b.gone) return false;
+  if (mtnHonDoorDistance() > 3.15 || Math.abs(player.pos.y - b.y0) > 1.7) {
+    popup('本丸の扉の前まで進め');
+    return false;
+  }
+  mtnHonHit(Math.max(1, b.hp == null ? 8 : b.hp), '王が「開く」を押した');
+  return true;
+}
+function updateDualHonDoorEvent(dt) {
+  const b = MTN.bar;
+  if (!DUAL.on || !b || b.gone || DUAL.honDoorEvent) {
+    if (!b) DUAL.honEventT = 0;
+    return;
+  }
+  const cx = (b.x0 + b.x1) / 2, faceZ = Math.max(b.z0, b.z1);
+  const arrived = enemies.some(e => {
+    if (e.team !== 'orange' || !isUp(e) || e.missionFront !== 'saionji' || e.special || e.wasOjou) return false;
+    const p = e.s.position;
+    return (e.baseY || 0) >= 8.2 &&
+      Math.abs((e.baseY || 0) - b.y0) < 1.7 &&
+      Math.abs(p.x - cx) < 2.25 &&
+      p.z > faceZ - 0.45 && p.z < faceZ + 3.5;
+  });
+  if (!arrived) { DUAL.honEventT = 0; return; }
+  DUAL.honEventT = (DUAL.honEventT || 0) + dt;
+  if (DUAL.honEventT >= 0.8) {
+    DUAL.honDoorEvent = true;
+    mtnHonHit(Math.max(1, b.hp == null ? 8 : b.hp), '敵が本丸門前の到達地点に到着した');
+  }
 }
 function mtnHonSlot(e) {
   const b = MTN.bar; if (!b) return [e.s.position.x, e.s.position.z];
@@ -6672,7 +6709,7 @@ function dualMtnAtkPost(e, x0, col) {
   e.missionPath = [[x0 + clamp(lane, -1.3, 1.3), Math.min(e.s.position.z - 1, 70)], [x0 + clamp(lane, -1.3, 1.3), destZ]];
 }
 function startDualMission() {
-  Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [], nKingO: 0, nSaiO: 0 });
+  Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [], nKingO: 0, nSaiO: 0, honDoorEvent: false, honEventT: 0 });
   player.pos.set(hq ? hq.sx : DUAL_COX - 1, 0, hq ? hq.sz : 64.2); player.yaw = 0; player.hp = CFG.maxHp;
   wave.n = 1; wave.toSpawn = 0; wave.blueToSpawn = 0; wave.blueOwed = 0; wave.inter = 0; wave.maxAlive = 280; wave.blueMax = 280;
   if (ojou.e && isUp(ojou.e)) {
@@ -7175,6 +7212,7 @@ function updateDual(dt) {
   }
   dualCastleRam(dt);
   dualMtnRamStep(dt);
+  updateDualHonDoorEvent(dt);
   dualFillRams();
   dualCastleTricks(dt);
   dualMtnTricks(dt);
@@ -11595,6 +11633,18 @@ if (godBtn) {
   godBtn.addEventListener('touchend', ev => { ev.preventDefault(); ev.stopPropagation(); godTap = performance.now(); toggleGod(); }, { passive: false });
   godBtn.addEventListener('click', ev => { ev.stopPropagation(); if (performance.now() - godTap < 700) return; toggleGod(); });
 }
+const mtnOpenBtn = $('bMtnOpen');
+if (mtnOpenBtn) {
+  let mtnOpenTap = 0;
+  mtnOpenBtn.addEventListener('touchend', ev => {
+    ev.preventDefault(); ev.stopPropagation(); mtnOpenTap = performance.now(); openMtnHonDoorByKing();
+  }, { passive: false });
+  mtnOpenBtn.addEventListener('click', ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    if (performance.now() - mtnOpenTap < 700) return;
+    openMtnHonDoorByKing();
+  });
+}
 $('titleBtn').onclick = toTitle;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = toTitle;
@@ -11608,6 +11658,10 @@ function ladderGo() {
 let ladHintTxt = '';
 function updateLadderHint() {
   const n = state === 'play' && !menuOpen ? ladderNear(player.pos) : null, el = $('ladhint');
+  const honBtn = $('bMtnOpen'), honBar = MTN.bar;
+  const honNear = !!(honBtn && DUAL.on && state === 'play' && !menuOpen && honBar && !honBar.gone &&
+    mtnHonDoorDistance() < 3.15 && Math.abs(player.pos.y - honBar.y0) < 1.7);
+  if (honBtn) honBtn.style.display = honNear ? 'block' : 'none';
   let t = '';
   if (player.autoClimb) t = player.autoClimb.up ? '上っています…' : '下りています…';
   else if (n) { const what = n.L.seiran ? '井闌の梯子' : '梯子'; t = MOBILE ? `${what}：スティックを${n.up ? '前' : '後ろ'}に倒す／「梯子」ボタン` : `${what}：${n.up ? 'W（前進）で上る' : 'S（後退）で下りる'}　E で自動`; }

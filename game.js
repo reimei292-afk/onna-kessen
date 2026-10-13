@@ -3070,6 +3070,14 @@ function ramSlot(m) {
   return [R.x + S[0], R.z + S[1] + R.swing];
 }
 // ---- 城の戦いの娘の動き（true：このフレームの動きはここで決まり） ----
+function castleAtkHasMelee() {
+  const team = CA();
+  for (const o of enemies) {
+    if (o.team !== team || !isUp(o) || o.kind === 'archer' || o.special || o.perch) continue;
+    return true;
+  }
+  return false;
+}
 function castleBrain(e, dt) {
   const p = e.s.position;
   if (e.hiddenAmb) {   // 襖の陰で膝をついて待つ
@@ -3104,7 +3112,7 @@ function castleBrain(e, dt) {
     }
   }
   // 門が閉じている間：外の橙組の近接兵は、近くに相手がいなければ門を打つ
-  if (CASTLE.phase === 0 && e.team === CA() && e.kind === 'mob' && !e.special && castleRegion(p.x, p.z) === 0) {
+  if (CASTLE.phase === 0 && e.team === CA() && !e.special && castleRegion(p.x, p.z) === 0 && (e.kind === 'mob' || (e.kind === 'archer' && !e.perch && !castleAtkHasMelee()))) {
     if ((e.gateT = (e.gateT || 0) - dt) <= 0) { e.gateT = 0.6; const t = chooseTarget(e); e.gateFoe = t && Math.hypot(tgtPos(t).x - p.x, tgtPos(t).z - p.z) < 9 ? t : null; }
     if (e.gateFoe && (e.gateFoe.isPlayer || isUp(e.gateFoe))) return false;
     if (Math.abs(p.x) > 6 || p.z < -6) { steer(e, clamp(p.x, -2.2, 2.2) * 0.6 + Math.sin(e.ph) * 1.2, -1.6, e.speed, dt); e.state = 'approach'; e.tgt = null; return true; }
@@ -5461,7 +5469,7 @@ function buildMountain() {
   const wall = (x0, x1, y0, y1, z0, z1, mat) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.05, x1 - x0), Math.max(0.05, y1 - y0), Math.max(0.05, z1 - z0)), mat || earth);
     m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); stageRoot.add(m);
-    const b = { x0, x1, y0, y1, z0, z1 }; boxes.push(b); return b;
+    const b = { x0, x1, y0, y1, z0, z1, mesh: m }; boxes.push(b); return b;
   };
   const deck = (x0, x1, z0, z1, y, mat, opt) => {
     floors.push(Object.assign({ x0, x1, z0, z1, y }, opt || {}));
@@ -5626,6 +5634,7 @@ function buildMountain() {
   stepRail(-1.75, -3.55, -10.55, 9.6, 12.8);
   stepRail(1.75, -3.55, -10.55, 9.6, 12.8);
   MTN.bar = wall(-1.55, 1.55, 9.6, 12.2, -4.15, -3.45, woodD);
+  MTN.bar.hp = 8; MTN.bar.hon = true;
   // 西峰と東峰をつなぐ峰道。土塁の手前（南側）を渡って援軍が移る
   floors.push({ x0: -15, x1: 18, z0: 13.45, z1: 16.15, y: 6.4 });
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(33, 0.06, 2.15), stone);
@@ -5775,6 +5784,70 @@ function mtnMeleeGate() {
   }
   return false;
 }
+function mtnHonHit(dmg) {
+  const b = MTN.bar; if (!b || b.gone) return;
+  b.hp = (b.hp == null ? 8 : b.hp) - (dmg || 1);
+  if (b.hp > 0) { if (b.hp % 2 === 0) popup('本丸の扉を叩いた（残り ' + b.hp + '）'); return; }
+  b.gone = true;
+  const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1);
+  if (b.mesh) b.mesh.visible = false;
+  MTN.bar = null;
+  if (MTN.phase < 2) MTN.phase = 2;
+  showBanner('本丸の扉、破られた', '破城槌は要らない。近接で叩き破った');
+}
+function mtnHonSlot(e) {
+  const b = MTN.bar; if (!b) return [e.s.position.x, e.s.position.z];
+  const cx = (b.x0 + b.x1) / 2, cz = Math.max(b.z0, b.z1);
+  const i = (e.mtnRank != null ? e.mtnRank : e.id) + (e.kind === 'archer' ? 3 : 0);
+  const col = i % 3, row = ((i / 3) | 0) % 3;
+  return [cx + (col - 1) * 1.02, cz + 1.35 + row * 0.8];
+}
+function mtnAtkMeleeAlive() {
+  const team = DUAL.on ? 'orange' : 'blue';
+  for (const o of enemies) {
+    if (o.team !== team || !isUp(o) || o.kind === 'archer' || o.special || o.medic || o.ramCrew || o.guard || o.saiGuard) continue;
+    if (DUAL.on && o.missionFront && o.missionFront !== 'saionji') continue;
+    return true;
+  }
+  return false;
+}
+function mtnBashHon(e, dt) {
+  const b = MTN.bar; if (!b || e.baseY < 8.2) return false;
+  if (e.kind === 'archer' && mtnAtkMeleeAlive()) return false;
+  const p = e.s.position, faceZ = Math.max(b.z0, b.z1), cx = (b.x0 + b.x1) / 2;
+  for (const o of enemies) {
+    if (!isUp(o) || o.team === e.team || o.special || o.wasOjou) continue;
+    if (Math.abs((o.baseY || 0) - e.baseY) > 1.6) continue;
+    if (o.s.position.z < b.z0 + 0.2 && p.z > faceZ - 0.3) continue;
+    if (Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 2.15) return false;
+  }
+  const slot = mtnHonSlot(e);
+  const doorD = Math.hypot(clamp(p.x, b.x0, b.x1) - p.x, faceZ - p.z);
+  const atDoor = doorD < 1.75 && p.z > faceZ - 0.45 && Math.abs(e.baseY - b.y0) < 1.7;
+  const d = Math.hypot(slot[0] - p.x, slot[1] - p.z);
+  e.faceWant = Math.atan2(cx - p.x, (b.z0 + b.z1) / 2 - p.z);
+  e.honCd = (e.honCd || 0) - dt;
+  if (e.honSw > 0) {
+    e.honSw -= dt; e.state = 'windup'; npcTint(e, Math.min(1, 1 - e.honSw / 0.42));
+    if (e.honSw <= 0) { npcTint(e, 0); e.state = 'recover'; e.honCd = 0.7; mtnHonHit(1); }
+    return true;
+  }
+  if (!atDoor && d > 1.2) { steer(e, slot[0], slot[1], e.speed * 1.05, dt); e.state = 'approach'; e.tgt = null; return true; }
+  if (e.honCd <= 0) { e.honSw = 0.42; e.state = 'windup'; e.t = 0; }
+  else e.state = 'approach';
+  e.tgt = null;
+  return true;
+}
+function mtnMeleeHon() {
+  const b = MTN.bar; if (!b || (!MTN.on && !DUAL.on)) return false;
+  const fwd = new V3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+  const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+  const dx = cx - player.pos.x, dz = cz - player.pos.z, d = Math.hypot(dx, dz);
+  if (d > 2.1 || Math.abs(player.pos.y - b.y0) > 1.3) return false;
+  if (dx * fwd.x + dz * fwd.z < 0.25) return false;
+  mtnHonHit(2);
+  return true;
+}
 function mtnThrowStone(e) {
   const t = e.tgt; if (!t) return;
   const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position;
@@ -5795,6 +5868,12 @@ function mtnRoute(p, tx, tz) {
   const py = e && e.baseY != null ? e.baseY : floorUnder(p.x, p.z, (p.y || 0) + 0.3);
   const ty = floorUnder(tx, tz, 30);
   if (e && e.team === 'orange' && e.mtnPost && !e.mtnGo) return [e.mtnPost[0], e.mtnPost[1]];
+  if (MTN.bar && tz < MTN.bar.z0 - 0.35 && p.z > MTN.bar.z1 - 0.2 && py < 12.1) {
+    const b = MTN.bar;
+    return [clamp(tx, b.x0 + 0.35, b.x1 - 0.35), Math.max(b.z0, b.z1) + 1.05];
+  }
+  // 峰道と二の丸への広い土段は、石段の中心へ吸い寄せて一列にしない
+  if (e && e.team === 'blue' && p.z < 16.8 && p.z > -3.6 && Math.abs(p.x) < 17 && py > 5.2 && py < 12.3) return [tx, tz];
   // 峰から峰へは、土塁の手前の峰道（z≈14.8）を渡る
   if (e && e.team === 'orange' && e.mtnGo && Math.abs(e.mtnGo[0] - p.x) > 5 && p.z < 28 && (e.baseY || 0) > 5.5) {
     const rz = 14.8;
@@ -5804,8 +5883,12 @@ function mtnRoute(p, tx, tz) {
   const side = e && (e.mtnGo ? e.mtnGo[3] : e.mtnSide);
   // 同じ高さの土の上は、道の中心へ吸い寄せて団子にしない
   if (e && e.team === 'blue' && Math.abs(py - ty) < 1.8 && Math.hypot(tx - p.x, tz - p.z) < 18) return [tx, tz];
-  // 二の丸から本丸、峰の中央から二の丸の石段は、横へ逸れず段の上をまっすぐ歩く
-  if (e && e.team === 'blue' && Math.abs(p.x) < 2.4 && Math.abs(tx) < 2.2 && tz < p.z - 0.3) return [clamp(tx, -1.15, 1.15), tz];
+  // 石段の上だけ幅を揃える。二の丸の床では横に広がる（一列にしない）
+  const onStair = (p.z < 66 && p.z > 32 && (Math.abs(p.x) < 2.6 || Math.abs(p.x - 12) < 2.6)) || (p.z < -2.8 && p.z > -11.2 && Math.abs(p.x) < 2.2);
+  if (e && e.team === 'blue' && onStair && tz < p.z - 0.3) {
+    const cx = Math.abs(p.x - 12) < Math.abs(p.x) && p.z > 20 ? 12 : 0;
+    return [cx + clamp(tx - cx, -1.15, 1.15), tz];
+  }
   const west = [[0, 60, 1.1], [0, 50, 3.0], [0, 42, 4.6], [0, 36, 5.7], [0, 33, 6.2], [-2, 22, 6.4], [4, 14.5, 6.4], [0, 6.6, 7.4], [0, 4.4, 8.8], [0, 2.2, 9.6], [0, -1.5, 9.6], [0, -6.2, 10.8], [0, -9.2, 12.1], [0, -16, 12.8]];
   const east = [[12, 60, 1.1], [12, 50, 3.0], [12, 42, 4.6], [12, 36, 5.7], [12, 33, 6.2], [14, 22, 6.4], [8, 14.5, 6.4], [0, 6.6, 7.4], [0, 4.4, 8.8], [0, 2.2, 9.6], [0, -1.5, 9.6], [0, -6.2, 10.8], [0, -9.2, 12.1], [0, -16, 12.8]];
   const wps = side === 'east' ? east : side === 'west' ? west : west.concat(east);
@@ -6069,7 +6152,8 @@ function mtnAllyAdvance(e, dt) {
   }
   const file = e.mtnFile == null ? 1 : e.mtnFile;
   const rank = e.mtnRank || 0;
-  const lane = (file - 1) * (open ? 0.42 : 0.85);
+  const spread = (file - 1) * 1.15 + ((rank % 5) - 2) * 0.35;
+  const lane = (file - 1) * (open ? 0.55 : 0.85);
   let tx, tz;
   if (!open) {
     const ramZ = R ? R.z : 62;
@@ -6080,21 +6164,38 @@ function mtnAllyAdvance(e, dt) {
     const gateZ = (gate.z0 + gate.z1) / 2 + 2.5;
     if (tz < gateZ) tz = gateZ + (rank % 4) * 0.35;
     if (p.z + 0.15 < tz) tz = p.z;
-  } else if (p.z > 17 && e.baseY < 8) {
-    tx = (side === 'east' ? 12 : 0) + lane * 0.35;
-    tz = 14.2;
-  } else if (Math.abs(p.x) > 1.8 && e.baseY < 8.5) {
-    tx = lane * 0.2;
-    tz = 14.6;
-  } else if (e.baseY < 9.25) {
-    tx = lane * 0.22;
-    tz = 1.5;
-  } else if (e.baseY < 12.4) {
-    tx = lane * 0.22;
-    tz = (Math.abs(p.x) > 1.6 || p.z > -2.4) ? -7.2 : -20;
+    const gcx = (gate.x0 + gate.x1) / 2, gcz = (gate.z0 + gate.z1) / 2;
+    if (e.kind !== 'archer' && Math.hypot(p.x - gcx, p.z - gcz) < 2.6 && Math.abs(e.baseY - gate.y) < 1.5 && !(near && nd < 2.2)) {
+      e.gateSw = (e.gateSw || 0) - dt;
+      e.faceWant = Math.atan2(gcx - p.x, gcz - p.z);
+      if (e.gateSw > 0) { e.state = 'windup'; npcTint(e, 0.8); }
+      else {
+        gate.hp -= 1; MTN.meleeHits = (MTN.meleeHits || 0) + 1; e.gateSw = 0.95; npcTint(e, 0);
+        popup((gate.id === 'west' ? '大手門' : '搦手門') + 'を叩いた（残り ' + Math.max(0, gate.hp) + '）');
+        if (gate.hp <= 0) mtnOpenGate(gate, 'melee');
+        e.state = 'recover';
+      }
+      e.tgt = null;
+      return true;
+    }
+  } else if (MTN.bar && e.baseY > 8.6 && (e.kind !== 'archer' || !mtnAtkMeleeAlive())) {
+    if (mtnBashHon(e, dt)) return true;
+    return false;
+  } else if ((p.z > 16 || Math.abs(p.x) > 6.8) && e.baseY < 8.2) {
+    tx = Math.abs(p.x) > 6.8 ? clamp(spread, -4.8, 4.8) : (side === 'east' ? 12 : 0) + clamp(spread, -3.2, 3.2);
+    tz = Math.abs(p.x) > 6.8 ? 14.7 : 16;
+  } else if (p.z > 3.05 && e.baseY < 9.75) {
+    tx = clamp(spread, -5.3, 5.3);
+    tz = 4.2;
+  } else if (e.baseY < 9.75) {
+    tx = clamp(spread, -5.4, 5.4);
+    tz = 1.15 - (rank % 3) * 0.9;
+  } else if (e.baseY < 12.35) {
+    tx = clamp(spread, -1.15, 1.15);
+    tz = p.z > -2.2 ? -6.5 : -18 - (rank % 4) * 1.2;
   } else {
-    tx = lane * 0.4;
-    tz = -22 - (rank % 3) * 0.8;
+    tx = clamp(spread * 1.3, -5.2, 5.2);
+    tz = -18 - (rank % 5) * 1.3;
   }
   if (e.kind !== 'archer' && near && nd < 9 && Math.abs(near.baseY - e.baseY) < 1.6) {
     const lim = open ? -30 : ((R ? R.z : p.z) - 0.8);
@@ -6335,14 +6436,6 @@ function updateMountain(dt) {
       popup('扉のからくり。矢が飛び出した');
     }
   }
-  if (MTN.phase < 2 && MTN.phase >= 1 && MTN.bar) {
-    const left = enemies.some(e => e.team === 'orange' && e.state !== 'down' && e.mtnZone === 'nino');
-    if (!left && MTN.entered) {
-      const i = boxes.indexOf(MTN.bar); if (i >= 0) boxes.splice(i, 1);
-      MTN.bar = null; MTN.phase = 2;
-      showBanner('二の丸、落ちた', '本丸だ。石段を上れ。トラバサミ、針山、開けると矢の出る扉');
-    }
-  }
   if (!MTN.won && player.hp > 0 && MTN.phase >= 2 && py > 11.5 && pz < -22) {
     const foes = enemies.some(e => e.team === 'orange' && e.state !== 'down' && e.mtnZone === 'hon');
     if (!foes && wave.toSpawn <= 0) { MTN.won = true; gameOver(true); return; }
@@ -6413,13 +6506,35 @@ function dualRoute(p, tx, tz) {
 function dualMtnRoute(p, tx, tz) {
   const py = floorUnder(p.x, p.z, (p.y || 0) + 2.2);
   const ty = floorUnder(tx, tz, 40);
-  if (Math.abs(py - ty) < 1.35 && Math.hypot(tx - p.x, tz - p.z) < 12) return [tx, tz];
+  const bar = MTN.bar;
+  if (bar && py > 8.5 && p.z > bar.z1 - 0.15 && tz < bar.z0 - 0.25) {
+    const who = MTN.who;
+    if (!(who && who.team === 'blue' && who.missionRelief)) return [clamp(tx, bar.x0 + 0.35, bar.x1 - 0.35), bar.z1 + 1.05];
+  }
+  if (!bar && py > 8.5 && ty > 11 && p.z < -2.3 && p.z > -11.5) {
+    const sx = DUAL_MOX + clamp(tx - DUAL_MOX, -1.15, 1.15);
+    if (py < 12.2) return [sx, Math.min(tz, p.z - 0.35)];
+    return [tx, tz];
+  }
+  if (!bar && py > 8.4 && ty > 11.2 && p.z > -2.7) {
+    return [DUAL_MOX + clamp(tx - DUAL_MOX, -1.15, 1.15), -5.6];
+  }
+  if (py > 8.6 && p.z > -4.5 && p.z < 8.6) return [tx, tz];
+  if (py > 5.6 && py < 10.4 && p.z > 2.4 && p.z < 12.8) {
+    const ax = DUAL_MOX + clamp(tx - DUAL_MOX, -5.4, 5.4);
+    if (Math.abs(p.x - ax) > 1.3) return [ax, p.z];
+    return [ax, tz];
+  }
+  if (Math.abs(py - ty) < 1.45 && Math.hypot(tx - p.x, tz - p.z) < 18) return [tx, tz];
   const westX = DUAL_MOX, eastX = DUAL_MOX + 12;
   const here = Math.abs(p.x - eastX) < Math.abs(p.x - westX) ? eastX : westX;
   const dest = Math.abs(tx - eastX) < Math.abs(tx - westX) ? eastX : westX;
-  const spine = Math.abs(p.x - here) < 4 ? here : dest;
-  if (Math.abs(p.x - spine) > 1.5) return [spine, clamp(p.z, -28, 96)];
-  if (Math.abs(tz - p.z) > 2.4) return [spine, tz];
+  const narrow = p.z > 32 && py < 7.2;
+  const spine = narrow ? here : dest;
+  const band = narrow ? 1.15 : 3.6;
+  const ax = spine + clamp(tx - spine, -band, band);
+  if (Math.abs(p.x - ax) > 1.5) return [ax, clamp(p.z, -30, 96)];
+  if (Math.abs(tz - p.z) > 3.2) return [ax, tz > p.z ? Math.min(tz, p.z + 8) : Math.max(tz, p.z - 8)];
   return [tx, tz];
 }
 function buildTwoFront() {
@@ -6459,6 +6574,13 @@ function dualOpenCastle(why) {
   if (g.leaves[1]) g.leaves[1].rotation.y = Math.PI / 2 * 0.92;
   castleGraph();
   showBanner('大手門、破られた', why || '橙組が二の丸へなだれ込む');
+  if (CASTLE.ram) {
+    for (const m of CASTLE.ram.crew || []) if (isUp(m)) { m.ramCrew = false; m.state = 'approach'; }
+    CASTLE.ram.crew = [];
+  }
+  for (const e of enemies) if (e.team === 'orange' && e.missionFront === 'king' && isUp(e) && !e.ramCrew) {
+    e.missionPath = null; e.missionGoto = [DUAL_COX + rand(-8, 8), rand(8, 28)];
+  }
 }
 function dualOpenMtn(g) {
   if (!g || g.open) return;
@@ -6466,9 +6588,13 @@ function dualOpenMtn(g) {
   for (const b of g.boxes || []) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
   (g.meshes || []).forEach((m, i) => { m.rotation.y += i ? 1.15 : -1.15; });
   showBanner(g.id === 'west' ? '山城の大手、落ちた' : '山城の搦手、落ちた', '西園寺の守りが奥へ押される');
-  for (const e of enemies) if (e.missionStair === g.id && e.team === 'orange' && isUp(e)) {
+  for (const e of enemies) if (e.missionStair === g.id && e.team === 'orange' && isUp(e) && !e.ramCrew) {
+    const i = e.id, lane = ((i % 7) - 3) * 1.45;
     const x = DUAL_MOX + (g.id === 'west' ? 0 : 12);
-    e.missionPath = [[x, 10], [x, -4], [DUAL_MOX, -18]];
+    const ninoX = DUAL_MOX + clamp(lane, -5.2, 5.2);
+    const doorX = DUAL_MOX + clamp(((i % 3) - 1) * 0.95, -1.15, 1.15);
+    e.missionPath = [[x + clamp(lane * 0.4, -2.6, 2.6), 18], [ninoX, 1.6], [doorX, -2.15], [ninoX, -16 - (i % 4) * 0.7]];
+    e.missionGoto = [ninoX, -17 - (i % 3)];
   }
 }
 function dualMarch() {
@@ -6539,10 +6665,11 @@ function dualKingAtkPost(e) {
   else e.missionGoto = [DUAL_COX + clamp((x - DUAL_COX) * 0.35, -6, 6), -6 - (e.id % 4)];
 }
 function dualMtnAtkPost(e, x0, col) {
-  const pers = dualPers(e), lane = (col - 1) * 0.85;
-  const destZ = pers === '臆病' ? 60 : pers === '慎重' ? 50 : pers === '冷静' ? 40 : pers === '陽気' ? 34 : 22;
-  e.missionGoto = [x0 + lane, destZ];
-  e.missionPath = [[x0 + lane * 0.25, Math.min(e.s.position.z - 1, 68)], [x0 + lane * 0.25, destZ]];
+  const pers = dualPers(e);
+  const lane = (col - 1) * 1.35 + ((e.id % 3) - 1) * 0.45;
+  const destZ = pers === '臆病' ? 56 : pers === '慎重' ? 48 : pers === '冷静' ? 40 : pers === '陽気' ? 36 : 33.5;
+  e.missionGoto = [x0 + clamp(lane, -2.2, 2.2), destZ];
+  e.missionPath = [[x0 + clamp(lane, -1.3, 1.3), Math.min(e.s.position.z - 1, 70)], [x0 + clamp(lane, -1.3, 1.3), destZ]];
 }
 function startDualMission() {
   Object.assign(DUAL, { on: true, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 1.5, won: false, reinforcements: [], nKingO: 0, nSaiO: 0 });
@@ -6627,6 +6754,24 @@ function startDualMission() {
     }
   }
   DUAL.nSaiO = nS; DUAL.spawned = nK > 15 && DUAL.nKingO > 10 && nS > 10;
+  GUARD.list = GUARD.list.filter(isUp);
+  for (let i = 0; i < 5; i++) {
+    const a = i / 5 * Math.PI * 2;
+    const x = DUAL_COX + Math.sin(a) * 2.7, z = 63.2 + Math.cos(a) * 1.8;
+    const kind = i === 0 || i === 3 ? 'archer' : 'mob';
+    const e = dualUnit('king', 'blue', x, z, 0, { kind, yari: i === 1 || i === 2, sq: 'k_guard', goto: [x, z], set: { guard: i + 1 } });
+    if (e) { e.face = e.faceWant = 0; GUARD.list.push(e); }
+  }
+  DUAL.saiGuard = [];
+  for (let i = 0; i < 5; i++) {
+    const x = DUAL_MOX + (i - 2) * 1.15, z = -15.4 - (i % 2) * 1.05;
+    const e = dualUnit('saionji', 'blue', x, z, 12.8, { kind: i === 4 ? 'archer' : 'mob', yari: i === 1 || i === 2, sq: 's_guard', goto: [x, z], set: { saiGuard: i + 1 } });
+    if (e) { e.face = e.faceWant = 0; e.s.rotation.y = 0; DUAL.saiGuard.push(e); }
+  }
+  {
+    const e = dualUnit('saionji', 'blue', DUAL_MOX + 2.4, -15.6, 12.8, { kind: 'mob', sq: 's_den', goto: [DUAL_MOX + 2.4, -15.6], set: { saiRunner: true } });
+    if (e) { e.face = e.faceWant = 0; e.s.rotation.y = 0; DUAL.saiRunner = e; }
+  }
   if (VoicePack.ok) VoicePack.load('cheer_kill_1_1.mp3', true);
   showBanner('二正面戦、開始', '城は狭間・櫓・伏兵・落とし穴。山城は足場と門。分隊の戦況を出します');
   showSquadReport();
@@ -6650,31 +6795,135 @@ function dualDeployShira() {
     m.e.missionFront = 'king'; m.e.missionReinforcement = true; m.e.missionPath = pathOf(); m.e.missionGoto = [DUAL_MOX, -16];
     meds++;
   }
-  if (DUAL.shira && isUp(DUAL.shira)) { DUAL.shira.missionPath = pathOf(); DUAL.shira.missionGoto = [DUAL_MOX, -16]; DUAL.shira.missionReinforcement = true; }
+  if (DUAL.shira && isUp(DUAL.shira)) { DUAL.shira.missionPath = pathOf(); DUAL.shira.missionGoto = [DUAL_MOX, -16]; DUAL.shira.missionReinforcement = true; DUAL.shira.missionRelief = true; }
   DUAL.reinforcements = born;
-  DUAL.relayStage = 4; DUAL.eventT = 0;
+  DUAL.relayStage = 5; DUAL.eventT = 0; DUAL.deployed = true;
   dualOpenCastle('白瀬が討伐に出る');
   dualLine('王「白瀬、裏切り者を討ち取れ」');
   showBanner('白瀬、討伐隊を率いて出陣', '槍隊20、弓隊20、医務班2');
 }
+function dualSideMelee(front) {
+  for (const o of enemies) {
+    if (!isUp(o) || o.team !== 'orange' || o.missionFront !== front || o.kind === 'archer' || o.special || o.wasOjou) continue;
+    return true;
+  }
+  return false;
+}
+function dualClosest(e, r) {
+  const p = e.s.position; let best = null, bd = r;
+  for (const o of enemies) {
+    if (!isUp(o) || o.team === e.team || o.special || o.wasOjou || o.hiddenAmb) continue;
+    if (Math.abs((o.baseY || 0) - (e.baseY || 0)) > 3.2) continue;
+    const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z);
+    if (d < bd) { bd = d; best = o; }
+  }
+  if (e.team === 'orange' && !inHQ()) {
+    const d = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+    if (Math.abs(player.pos.y - (e.baseY || 0)) < 3.2 && d < bd) return PLAYER_T;
+  }
+  return best;
+}
+function dualCastleGateHit(dmg) {
+  if (!DUAL.on || CASTLE.phase !== 0) return;
+  CASTLE.gateHP = Math.max(0, CASTLE.gateHP - dmg);
+  const g = CASTLE.gate; if (g) g.shake = 0.28;
+  if (CASTLE.gateHP <= 0) dualOpenCastle('破城槌が大手門を破った');
+}
+function dualOnFront(e, front) {
+  if (!e || e.team !== 'blue' || !isUp(e)) return false;
+  if (e.missionFrom && e.missionFrom !== front) return false;
+  if (front === 'saionji') {
+    if (e === DUAL.saionji || e === DUAL.miyashita || e.saiGuard || e.saiRunner) return true;
+    if (e.missionFront === 'king' || e.secretary || (e.guard && !e.saiGuard) || (e.runner && !e.saiRunner)) return false;
+    return e.missionFront === 'saionji' || e.s.position.x > (DUAL_COX + DUAL_MOX) * 0.5;
+  }
+  if (e === DUAL.saionji || e === DUAL.miyashita || e.saiGuard || e.saiRunner || e.missionFront === 'saionji') return false;
+  return e.missionFront === 'king' || e.secretary || e.sec2 || e.guard || e.runner || e.aide || e.medic || e.s.position.x < (DUAL_COX + DUAL_MOX) * 0.5;
+}
+function dualSendRelief(from) {
+  const toMtn = from === 'king';
+  const path = toMtn ? dualMarch() : [[DUAL_MOX, 20], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 16]];
+  const dest = toMtn ? [DUAL_MOX, -16] : [DUAL_COX, 16];
+  let n = 0;
+  for (const e of enemies) {
+    if (!dualOnFront(e, from)) continue;
+    e.missionFront = toMtn ? 'saionji' : 'king';
+    e.missionFrom = from;
+    e.missionRelief = true;
+    e.missionPath = path.map(p => p.slice());
+    e.missionGoto = dest.slice();
+    if (e.perch) { e.perch.taken = null; e.perch = null; e.crouch = 0; }
+    if (e.hiddenAmb) { e.hiddenAmb = null; e.kneel = false; }
+    e.ramCrew = false;
+    n++;
+  }
+  return n;
+}
+function dualMarchRelief(e, dt) {
+  if (!e.missionRelief) return false;
+  const g = dualGoto(e), p = e.s.position;
+  const arrived = (!e.missionPath || !e.missionPath.length) && g && Math.hypot(p.x - g[0], p.z - g[1]) < 5.5;
+  if (!arrived && g) {
+    if (dualFoeNear(e, e.kind === 'archer' ? 6 : 3.2) && !e.medic && !e.runner && !e.saiRunner && !e.secretary && !e.sec2 && !e.ojou && !e.aide && !e.fluter && !e.guard && !e.saiGuard && !e.special) return false;
+    steer(e, g[0], g[1], e.speed * 1.35, dt);
+    e.state = 'approach'; e.tgt = null;
+    return true;
+  }
+  if (arrived || !g) {
+    if (e.medic || e.runner || e.saiRunner) { e.tgt = null; e.state = 'idle'; return true; }
+    if (e.ojou || e.aide || e.secretary || e.sec2 || e.saiGuard || e.guard || e.fluter) { dualReliefFight(e, dt); return true; }
+    return false;
+  }
+  return false;
+}
+function dualSwingGate(e, dt, gx, gz, hit) {
+  const p = e.s.position;
+  if (Math.hypot(p.x - gx, p.z - gz) > 6.5) { steer(e, gx, gz, e.speed, dt); e.state = 'approach'; e.tgt = null; e.faceWant = Math.atan2(gx - p.x, gz - p.z); return true; }
+  const d = Math.hypot(gx - p.x, gz - p.z);
+  e.tgt = null; e.t += dt;
+  e.faceWant = Math.atan2(gx - p.x, gz - p.z);
+  if (e.state === 'windup') {
+    npcTint(e, Math.min(1, e.t / 0.48));
+    if (e.t >= 0.48) { e.state = 'recover'; e.t = 0; e.cd = rand(0.75, 1.15); npcTint(e, 0); hit(); }
+  } else if (e.state === 'recover') { if (e.t > 0.35) e.state = 'approach'; }
+  else if (d > 0.7) { steer(e, gx, gz, e.speed, dt); e.state = 'approach'; }
+  else if ((e.cd || 0) <= 0) { e.state = 'windup'; e.t = 0; }
+  else e.cd -= dt;
+  return true;
+}
 function dualBrain(e, dt) {
   if (!DUAL.on || !e || !isUp(e) || e.seated) return false;
-  if (e === DUAL.saionji && !DUAL.betrayed) {
+  if (e.missionRelief && dualMarchRelief(e, dt)) return true;
+  if (e === DUAL.saionji && !DUAL.betrayed && !e.missionRelief) {
     const hx = DUAL_MOX, hz = -18;
     if (Math.hypot(e.s.position.x - hx, e.s.position.z - hz) > 1.2) steer(e, hx, hz, e.speed, dt);
     e.baseY = 12.8; e.tgt = null; e.state = 'idle'; return true;
   }
-  if (e === DUAL.miyashita && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji)) {
+  if (e === DUAL.miyashita && !DUAL.betrayed && !e.missionRelief && DUAL.saionji && isUp(DUAL.saionji)) {
     const s = DUAL.saionji.s.position;
     if (Math.hypot(e.s.position.x - (s.x - 1.5), e.s.position.z - (s.z + 1.2)) > 1.4) steer(e, s.x - 1.5, s.z + 1.2, e.speed, dt);
     e.baseY = 12.8; e.tgt = null; return true;
   }
-  if (e === DUAL.miyashita && DUAL.betrayed) {
+  if (e === DUAL.miyashita && DUAL.betrayed && !e.missionRelief) {
     if (!e.missionPath) e.missionPath = [[DUAL_MOX, -6], [DUAL_MOX, 36], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 64]];
     const g = dualGoto(e);
     if (g && Math.hypot(e.s.position.x - g[0], e.s.position.z - g[1]) > 2) { steer(e, g[0], g[1], e.speed * 1.6, dt); e.state = 'approach'; e.tgt = null; return true; }
   }
-  if ((e === DUAL.shira || e.missionReinforcement) && DUAL.relayStage >= 4 && DUAL.saionji && isUp(DUAL.saionji)) {
+  if (e.saiRunner && !e.missionRelief && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji)) {
+    const s = DUAL.saionji.s.position;
+    if (Math.hypot(e.s.position.x - (s.x + 2.2), e.s.position.z - (s.z + 1.4)) > 1.3) steer(e, s.x + 2.2, s.z + 1.4, e.speed, dt);
+    e.baseY = 12.8; e.tgt = null; e.state = 'idle'; return true;
+  }
+  if (e.saiGuard && !e.missionRelief && !DUAL.betrayed && DUAL.saionji && isUp(DUAL.saionji)) {
+    const s = DUAL.saionji.s.position, i = Math.max(0, (DUAL.saiGuard || []).indexOf(e));
+    const a = i / 5 * Math.PI * 2, sx = s.x + Math.sin(a) * 2.5, sz = s.z + Math.cos(a) * 1.6;
+    const foe = dualFoeNear(e, e.kind === 'archer' ? 16 : 7);
+    if (foe) return false;
+    if (Math.hypot(e.s.position.x - sx, e.s.position.z - sz) > 0.8) steer(e, sx, sz, e.speed, dt);
+    e.baseY = Math.max(e.baseY, 12.8); e.tgt = null; e.state = 'idle'; e.faceWant = 0;
+    return true;
+  }
+  if ((e === DUAL.shira || e.missionReinforcement) && DUAL.relayStage >= 5 && DUAL.saionji && isUp(DUAL.saionji) && !e.missionRelief) {
     const s = DUAL.saionji.s.position;
     const near = Math.hypot(e.s.position.x - s.x, e.s.position.z - s.z);
     if (!(dualFoeNear(e, 7) && near < 16) && near > 4.2) {
@@ -6683,7 +6932,7 @@ function dualBrain(e, dt) {
     }
     if (e === DUAL.shira && near <= 4.2) return false;
   }
-  if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.aide) return false;
+  if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.aide || e.saiRunner) return false;
   if (e.perch) return false;
   if (e.hiddenAmb) return false;
   if (e.ramCrew && e.missionFront === 'king' && CASTLE.ram) {
@@ -6705,7 +6954,7 @@ function dualBrain(e, dt) {
     e.tgt = null; e.state = 'approach'; e.faceWant = Math.PI;
     return true;
   }
-  if (e.mtnHold && e.mtnPost && e.team === 'blue' && !e.missionFrom) {
+  if (e.mtnHold && e.mtnPost && e.team === 'blue' && !e.missionFrom && !e.missionRelief) {
     const post = e.mtnPost, p = e.s.position, foe = dualFoe(e);
     if (foe && dualPers(e) === '好戦的' && e.kind === 'mob' && !e.stone) return false;
     if (Math.hypot(post[0] - p.x, post[1] - p.z) > 1.2) { steer(e, post[0], post[1], e.speed, dt); e.tgt = null; e.state = 'approach'; return true; }
@@ -6716,34 +6965,47 @@ function dualBrain(e, dt) {
     const dist = Math.hypot(tp.x - p.x, tp.z - p.z);
     const ty = foe.isPlayer ? player.pos.y : foe.baseY;
     if (e.stone && dist > 3 && e.cd <= 0 && Math.abs(ty - e.baseY) < 9) { mtnThrowStone(e); e.cd = rand(1.15, 2.05); e.state = 'approach'; return true; }
-    if (e.kind === 'archer' && ammoOK(e)) {
+    if (e.kind === 'archer' && ammoOK(e) && dualSideMelee('saionji')) {
       if (e.state !== 'aim' && e.state !== 'zanshin') { e.state = 'aim'; e.t = 0; }
       if (e.state === 'aim' && e.t >= aimTotal(e, dist < 8)) { enemyShoot(e, foe); e.state = 'zanshin'; e.t = 0; }
       else if (e.state === 'zanshin' && e.t > 0.35) { e.state = 'aim'; e.t = 0; }
       return true;
     }
     if (e.kind === 'mob' && Math.abs(ty - e.baseY) < 1.6) return false;
+    if (e.kind === 'archer' && !dualSideMelee('saionji')) return false;
     e.state = 'idle'; return true;
   }
-  if (e.missionFront === 'king' && e.team === 'orange' && e.kind === 'mob' && !e.ramCrew && CASTLE.phase === 0) {
-    const foe = dualFoe(e);
-    if (foe) return false;
-    const pers = dualPers(e), p = e.s.position;
-    if (pers === '臆病' || pers === '慎重') {
-      const g0 = e.missionGoto;
-      if (g0 && Math.hypot(p.x - g0[0], p.z - g0[1]) > 1.5) { steer(e, g0[0], g0[1], e.speed * 0.9, dt); e.state = 'approach'; e.tgt = null; return true; }
-      e.tgt = null; e.state = 'idle'; e.faceWant = 0; return true;
+  const kingPress = e.team === 'orange' && e.missionFront === 'king' && e.kind === 'archer' && !dualSideMelee('king');
+  const saiPress = e.team === 'orange' && e.missionFront === 'saionji' && e.kind === 'archer' && !dualSideMelee('saionji');
+  if (kingPress || saiPress) e.pressMelee = true;
+  if (e.missionFront === 'king' && e.team === 'orange' && !e.ramCrew && CASTLE.phase === 0 && (e.kind !== 'archer' || kingPress)) {
+    if (!dualFoeNear(e, 5.2)) {
+      const gx = DUAL_COX + Math.sin(e.ph * 3) * 1.7, gz = -1.15;
+      return dualSwingGate(e, dt, gx, gz, () => dualCastleGateHit(e.kind === 'archer' ? 0.35 : 0.7));
     }
-    const gx = DUAL_COX + Math.sin(e.ph * 3) * 2.05, gz = -1.15;
-    if (Math.abs(p.x - DUAL_COX) > 7 || p.z < -7 || p.z > 3) { steer(e, DUAL_COX + Math.sin(e.ph) * 1.4, -2.6, e.speed, dt); e.state = 'approach'; e.tgt = null; return true; }
-    const d = Math.hypot(gx - p.x, gz - p.z);
-    e.tgt = null; e.t += dt; e.cd -= dt;
-    if (e.state === 'windup') { npcTint(e, Math.min(1, e.t / 0.5)); if (e.t >= 0.5) { e.state = 'recover'; e.t = 0; e.cd = rand(0.9, 1.6); npcTint(e, 0); castleGateHit(0.55, new V3(p.x, 1.2, gz), false); } }
-    else if (e.state === 'recover') { if (e.t > 0.4) e.state = 'approach'; }
-    else if (d > 0.42) { steer(e, gx, gz, e.speed, dt); e.state = 'approach'; }
-    else if (e.cd <= 0) { e.state = 'windup'; e.t = 0; }
-    e.faceWant = 0;
-    return true;
+  }
+  if (e.team === 'orange' && e.missionFront === 'saionji' && e.missionStair && !e.ramCrew) {
+    const gate = (MTN.gates || []).find(g => g.id === e.missionStair);
+    if (gate && !gate.open && (e.kind !== 'archer' || !dualSideMelee('saionji')) && !dualFoeNear(e, 5.2)) {
+      const gx = (gate.x0 + gate.x1) / 2 + Math.sin(e.ph) * 0.8, gz = gate.z1 + 1.7;
+      return dualSwingGate(e, dt, gx, gz, () => {
+        gate.hp -= e.kind === 'archer' ? 0.6 : 1.2;
+        if (gate.hp <= 0) dualOpenMtn(gate);
+        else if ((gate.hp | 0) % 6 === 0) popup((gate.id === 'west' ? '山城の大手' : '山城の搦手') + 'を叩いた（残り ' + Math.max(0, gate.hp | 0) + '）');
+      });
+    }
+  }
+  if (e.team === 'orange' && e.missionFront === 'saionji' && MTN.bar && (e.baseY || 0) > 8.1 && (e.kind !== 'archer' || !dualSideMelee('saionji'))) {
+    if (mtnBashHon(e, dt)) return true;
+  }
+  const pressIn = (kingPress && CASTLE.phase !== 0) || (saiPress && !MTN.bar);
+  if (pressIn) {
+    const foe = dualClosest(e, 46), p = e.s.position;
+    if (foe) {
+      const tp = tgtPos(foe), d = Math.hypot(tp.x - p.x, tp.z - p.z);
+      if (d > 2.35) { steer(e, tp.x, tp.z, e.speed * 1.15, dt); e.state = 'advance'; e.tgt = foe; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); return true; }
+      return false;
+    }
   }
   const foe = dualFoe(e);
   if (foe) return false;
@@ -6768,7 +7030,10 @@ function dualCastleRam(dt) {
     } else if (at) {
       const u0 = R.t || 0; R.t = (u0 + dt) % 2.4; const u = R.t;
       R.swing = u < 1.7 ? -0.5 * (u / 1.7) : u < 1.9 ? -0.5 + 0.95 * (u - 1.7) / 0.2 : 0.45 * (1 - (u - 1.9) / 0.5);
-      if (u0 < 1.9 && u >= 1.9) castleGateHit(11 * n / 4 + 2, new V3(R.x, 1.0, -0.3), true);
+      if (u0 < 1.9 && u >= 1.9) {
+        dualCastleGateHit(11 * n / 4 + 2);
+        if (CASTLE.phase === 0) popup('大手門に破城槌（残り ' + Math.max(0, CASTLE.gateHP | 0) + '）');
+      }
     }
   } else { R.y += (0.24 - (R.y || 0.24)) * Math.min(1, dt * 5); R.swing = (R.swing || 0) * Math.exp(-dt * 4); }
   R.g.position.set(R.x, R.y, R.z + (R.swing || 0));
@@ -6781,7 +7046,7 @@ function dualMtnRamStep(dt) {
     if (R.crew.length >= 2) {
       const gateZ = gate.z1 + 1.6;
       if (R.z > gateZ) { R.z -= Math.min(R.z - gateZ, dt * 1.35); R.y = Math.max(0, floorUnder(R.x, R.z, 12)); }
-      else { R.t = (R.t || 0) + dt; if (R.t > 1.7) { R.t = 0; gate.hp -= 5; if (gate.hp <= 0) dualOpenMtn(gate); } }
+      else { R.t = (R.t || 0) + dt; if (R.t > 1.7) { R.t = 0; gate.hp -= 5; if (gate.hp > 0) popup((gate.id === 'west' ? '山城の大手' : '山城の搦手') + 'に破城槌（残り ' + Math.max(0, gate.hp | 0) + '）'); if (gate.hp <= 0) dualOpenMtn(gate); } }
       for (const m of R.crew) {
         const i = R.crew.indexOf(m);
         m.s.position.x = R.x + (i % 2 ? 0.65 : -0.65); m.s.position.z = R.z + (i < 2 ? 0.75 : -0.7);
@@ -6862,6 +7127,43 @@ function dualMtnTricks(dt) {
     popup('扉のからくり。矢が飛び出した');
   }
 }
+function dualFillRams() {
+  const R = CASTLE.ram;
+  if (R && CASTLE.phase === 0) {
+    R.crew = (R.crew || []).filter(isUp);
+    for (const e of enemies) {
+      if (R.crew.length >= 4) break;
+      if (e.team !== 'orange' || !isUp(e) || e.kind === 'archer' || e.ramCrew || e.missionFront !== 'king' || e.special) continue;
+      if (Math.hypot(e.s.position.x - R.x, e.s.position.z - R.z) > 9) continue;
+      e.ramCrew = true; R.crew.push(e);
+    }
+  }
+  for (const Rm of MTN.rams || []) {
+    const gate = (MTN.gates || []).find(g => g.id === Rm.id);
+    if (!gate || gate.open) continue;
+    Rm.crew = (Rm.crew || []).filter(isUp);
+    for (const e of enemies) {
+      if (Rm.crew.length >= 2) break;
+      if (e.team !== 'orange' || !isUp(e) || e.kind === 'archer' || e.ramCrew || e.missionStair !== Rm.id) continue;
+      if (Math.hypot(e.s.position.x - Rm.x, e.s.position.z - Rm.z) > 8) continue;
+      e.ramCrew = true; e.mtnRam = Rm.id; Rm.crew.push(e);
+    }
+  }
+}
+function dualReliefFight(e, dt) {
+  const foe = dualClosest(e, e.kind === 'archer' ? 16 : 8);
+  if (!foe) { e.tgt = null; e.state = 'idle'; return; }
+  const tp = tgtPos(foe), p = e.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z);
+  e.tgt = foe; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z);
+  if (d > (e.kind === 'archer' ? 2.2 : 1.85)) { steer(e, tp.x, tp.z, e.speed, dt); e.state = 'approach'; return; }
+  e.t += dt;
+  if (e.state !== 'windup') { if ((e.cd || 0) <= 0) { e.state = 'windup'; e.t = 0; } else { e.cd -= dt; e.state = 'approach'; } return; }
+  if (e.t >= 0.45) {
+    e.state = 'recover'; e.t = 0; e.cd = 0.75; npcTint(e, 0);
+    if (foe.isPlayer) hurtPlayer(e.dmg || 8);
+    else if (isUp(foe)) damageEnemy(foe, 1, p, false, { pt: new V3(tp.x, (foe.baseY || 0) + 1, tp.z), thrust: true }, e);
+  } else npcTint(e, Math.min(1, e.t / 0.45));
+}
 function updateDual(dt) {
   if (!DUAL.on || state !== 'play' || DUAL.won) return;
   if (CASTLE.doors) for (const d of CASTLE.doors) {
@@ -6873,6 +7175,7 @@ function updateDual(dt) {
   }
   dualCastleRam(dt);
   dualMtnRamStep(dt);
+  dualFillRams();
   dualCastleTricks(dt);
   dualMtnTricks(dt);
   DUAL.healT -= dt;
@@ -6883,38 +7186,24 @@ function updateDual(dt) {
       s.hp = Math.min(s.hpMax, s.hp + 2);
     }
   }
-  const g = CASTLE.gate;
-  if (g && g.box && CASTLE.phase === 0) {
-    const cx = (g.box.x0 + g.box.x1) / 2, cz = (g.box.z0 + g.box.z1) / 2; let n = 0;
-    for (const e of enemies) if (e.team === 'orange' && isUp(e) && !e.special && !e.wasOjou && e.baseY < 2 && Math.hypot(e.s.position.x - cx, e.s.position.z - cz) < 6.5) n++;
-    if (n) {
-      CASTLE.gateHP -= dt * (5 + n * 1.3);
-      if (CASTLE.gateHP <= 0) {
-        dualOpenCastle('橙組が門を押し破った');
-        for (const e of enemies) if (e.team === 'orange' && e.missionFront === 'king' && isUp(e) && !e.ramCrew) { e.missionPath = null; e.missionGoto = [DUAL_COX + rand(-9, 9), rand(10, 30)]; }
-      }
-    }
-  }
-  for (const gt of MTN.gates || []) {
-    if (!gt || gt.open) continue;
-    const cx = (gt.x0 + gt.x1) / 2, cz = (gt.z0 + gt.z1) / 2; let n = 0;
-    for (const e of enemies) if (e.team === 'orange' && isUp(e) && !e.special && Math.abs(e.s.position.x - cx) < 3.4 && Math.abs(e.s.position.z - cz) < 4.4 && Math.abs((e.baseY || 0) - (gt.y || 0)) < 2) n++;
-    if (!n) continue;
-    gt.hp -= dt * (1.05 + n * 0.42);
-    if (gt.hp <= 0) dualOpenMtn(gt);
-  }
   const up = (team, front) => enemies.filter(e => e.team === team && isUp(e) && e.missionFront === front && !e.special && !e.ojou && !e.wasOjou && e !== DUAL.saionji);
   if (!DUAL.kingCleared && DUAL.spawned && DUAL.nKingO > 10 && up('orange', 'king').length === 0) {
     DUAL.kingCleared = true;
     dualOpenCastle('味方が山城へ出る');
-    dualLine('王側の敵を壊滅させた。生き残った味方は東の山城へ援軍に向かう');
-    for (const e of up('blue', 'king')) { e.missionFront = 'saionji'; e.missionFrom = 'king'; e.missionPath = dualMarch(); e.missionGoto = [DUAL_MOX, -16]; }
+    const n = dualSendRelief('king');
+    dualLine('王側の敵を壊滅させた。秘書も近衛も、生き残った全員が東の山城へ援軍に向かう（' + n + '）');
   }
   if (!DUAL.saionjiCleared && !DUAL.betrayed && DUAL.spawned && DUAL.nSaiO > 10 && up('orange', 'saionji').length === 0) {
     DUAL.saionjiCleared = true;
     for (const gt of MTN.gates || []) dualOpenMtn(gt);
-    dualLine('山城側の敵を壊滅させた。生き残った味方は王の城へ援軍に向かう');
-    for (const e of up('blue', 'saionji')) { e.missionFront = 'king'; e.missionFrom = 'saionji'; e.missionPath = [[DUAL_MOX, 20], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 14]]; e.missionGoto = [DUAL_COX, 14]; }
+    if (MTN.bar && !MTN.bar.gone) {
+      const b = MTN.bar; b.gone = true;
+      const bi = boxes.indexOf(b); if (bi >= 0) boxes.splice(bi, 1);
+      if (b.mesh) b.mesh.visible = false;
+      MTN.bar = null;
+    }
+    const n = dualSendRelief('saionji');
+    dualLine('山城側の敵を壊滅させた。西園寺も宮下も、生き残った全員が王の城へ援軍に向かう（' + n + '）');
   }
   const sai = DUAL.saionji;
   const meet = !DUAL.joined && !DUAL.betrayed && sai && isUp(sai) && (Math.hypot(player.pos.x - sai.s.position.x, player.pos.z - sai.s.position.z) < 8 || enemies.some(e => e.team === 'blue' && e.missionFrom === 'king' && isUp(e) && e.baseY > 8 && Math.hypot(e.s.position.x - sai.s.position.x, e.s.position.z - sai.s.position.z) < 10));
@@ -6931,7 +7220,7 @@ function updateDual(dt) {
     dualLine('西園寺「私はここまでです。これより敵方に降ります」');
     showBanner('西園寺、降伏', '宮下「西園寺様……本当に、王を裏切るのですか」');
   }
-  if (DUAL.betrayed && DUAL.relayStage > 0 && DUAL.relayStage < 4) {
+  if (DUAL.betrayed && DUAL.relayStage > 0 && DUAL.relayStage < 5) {
     DUAL.eventT -= dt;
     if (DUAL.eventT <= 0) {
       if (DUAL.relayStage === 1) {
@@ -6940,20 +7229,31 @@ function updateDual(dt) {
       } else if (DUAL.relayStage === 2) {
         DUAL.relayStage = 3; DUAL.eventT = 3.6;
         dualLine('伝令「白瀬殿。西園寺殿が、敵方へ寝返りました」');
-        showBanner('伝令から白瀬へ', '白瀬「殿。西園寺が裏切りました」');
+        const r = DUAL.saiRunner;
+        if (r && isUp(r)) {
+          r.missionRelief = true;
+          r.missionFrom = 'saionji';
+          r.missionFront = 'king';
+          r.missionPath = [[DUAL_MOX, -6], [DUAL_MOX, 36], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 64]];
+          r.missionGoto = [DUAL_COX, 64];
+        }
       } else if (DUAL.relayStage === 3) {
+        DUAL.relayStage = 4; DUAL.eventT = 3.4;
+        dualLine('白瀬「殿。西園寺が裏切りました」');
+        showBanner('白瀬、王に報告', '伝令が倒れても、知らせは宮下、伝令、白瀬、王の順に届く');
+      } else if (DUAL.relayStage === 4) {
         dualLine('王「……西園寺が。信じたくはなかった」');
         dualDeployShira();
       }
     }
   }
-  if (DUAL.shira && !DUAL.arrivalTalk && DUAL.relayStage >= 4 && isUp(DUAL.shira) && sai && isUp(sai) && DUAL.shira.baseY > 8 && Math.hypot(DUAL.shira.s.position.x - sai.s.position.x, DUAL.shira.s.position.z - sai.s.position.z) < 6) {
+  if (DUAL.shira && !DUAL.arrivalTalk && DUAL.relayStage >= 5 && isUp(DUAL.shira) && sai && isUp(sai) && DUAL.shira.baseY > 8 && Math.hypot(DUAL.shira.s.position.x - sai.s.position.x, DUAL.shira.s.position.z - sai.s.position.z) < 6) {
     DUAL.arrivalTalk = true;
     dualLine('白瀬「西園寺殿。王を裏切った罪、ここで償ってもらいます」');
     showBanner('白瀬、西園寺に到着', '西園寺「王には王の道が、私には私の道があります」');
   }
   const oranges = enemies.filter(e => e.team === 'orange' && isUp(e) && !e.medic);
-  if (!DUAL.won && DUAL.spawned && oranges.length === 0 && (DUAL.saionjiCleared && DUAL.kingCleared || (DUAL.betrayed && DUAL.relayStage >= 4))) {
+  if (!DUAL.won && DUAL.spawned && oranges.length === 0 && (DUAL.saionjiCleared && DUAL.kingCleared || (DUAL.betrayed && DUAL.relayStage >= 5))) {
     DUAL.won = true; showBanner('二正面を制した', DUAL.betrayed ? '裏切り者を討った' : '両方の戦線を守り切った'); gameOver(true);
   }
 }
@@ -8090,7 +8390,7 @@ const SQUAD_DEFS = {
   snow: { blue: [['guard', '近衛分隊'], ['front', '雪峡谷先遣隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['roam', '遊撃弓隊']], orange: [['m1', '雪壁守備隊'], ['m2', 'クレバス伏兵隊'], ['yari', '氷槍隊'], ['roam', '氷弓隊']] },   // 浜：攻め手は舟ごと、守り手はトーチカごと
   mtn: { blue: [['guard', '近衛分隊'], ['west', '西峰攻撃隊'], ['east', '東峰攻撃隊'], ['ramw', '西破城隊'], ['rame', '東破城隊']],
          orange: [['west', '西峰守備隊'], ['east', '東峰守備隊'], ['nino', '二の丸伏兵隊'], ['hon', '本丸守備隊']] },
-  twofront: { blue: [['k_gh', '王・大手門'], ['k_slit', '王・狭間'], ['k_tower', '王・櫓'], ['k_gt', '王・二の丸門'], ['k_amb', '王・伏兵'], ['k_yari', '王・槍衆'], ['k_guard', '王・近衛'], ['s_west', '西園寺・西峰'], ['s_east', '西園寺・東峰'], ['s_nino', '西園寺・二の丸'], ['s_hon', '西園寺・本丸']],
+  twofront: { blue: [['k_gh', '王・大手門'], ['k_slit', '王・狭間'], ['k_tower', '王・櫓'], ['k_gt', '王・二の丸門'], ['k_amb', '王・伏兵'], ['k_yari', '王・槍衆'], ['k_guard', '王・近衛'], ['s_guard', '西園寺・近衛'], ['s_den', '西園寺・伝令'], ['s_west', '西園寺・西峰'], ['s_east', '西園寺・東峰'], ['s_nino', '西園寺・二の丸'], ['s_hon', '西園寺・本丸']],
               orange: [['k_ram', '城・破門隊'], ['k_yari', '城・槍隊'], ['k_atk', '城・攻撃隊'], ['k_bow', '城・弓隊'], ['s_west', '山・西攻め'], ['s_east', '山・東攻め'], ['s_bow', '山・弓隊']] },
   plane: { blue: [['guard', '近衛分隊'], ['front', '前方客室分隊'], ['rear', '後方客室分隊']], orange: [['front', '前方奴襲隊'], ['rear', '後方奴襲隊']] },   // 機内：客室の前と後ろ
   plains: { blue: [['guard', '近衛分隊'], ['front', '前衛分隊'], ['melee', '近接分隊'], ['yari', '槍分隊'], ['a1', '第1弓分隊'], ['a2', '第2弓分隊'], ['roam', '遊撃弓隊']],   // 平原には櫃がないので弓分隊
@@ -8123,7 +8423,9 @@ function pickBalanced(t, keys) {   // 援軍は人数の少ない分隊へ
 function assignSquad(e) {
   if (!SQUAD_ON || e.special || !squads[e.team].length) return;
   const t = e.team, fort = builtStage === 'fort'; let s = null;
-  if (e.guard) s = sqBy(t, 'guard');
+  if (e.guard) s = DUAL.on ? sqBy(t, 'k_guard') : sqBy(t, 'guard');
+  else if (e.saiGuard) s = sqBy(t, 's_guard');
+  else if (e.saiRunner) s = sqBy(t, 's_den');
   else if (BEACH.on) s = t === 'blue' ? (e.boatSq ? sqBy(t, e.boatSq) : pickBalanced(t, ['b1', 'b2', 'b3', 'b4', 'b5', 'b6'])) : (e.pb != null ? sqBy(t, 'p' + (e.pb + 1)) : pickBalanced(t, ['p1', 'p2', 'p3', 'p4']));
   else if (e.yari && !e.ramCrew && !e.ambush && !e.seated && !PLANE.on && sqBy(t, 'yari')) s = sqBy(t, 'yari');
   else if (CASTLE.on) s = t === CD() ? sqBy(t, e.ambush ? 'ambush' : (e.perch || CASTLE.phase === 0) ? 'gate' : 'bailey') : sqBy(t, e.ramCrew ? 'ram' : e.kind === 'archer' ? 'bow' : 'x') || pickBalanced(t, ['a1', 'a2']);
@@ -8334,7 +8636,7 @@ const TAG_R = 20, TAG_MAX = 14;
 function tagLabel(e) {
   const p = (e.prof.name || '').split(' '), nm = p.length >= 2 ? p.slice(0, -2).concat(p.slice(-2).join('')).join(' ') : e.prof.name;
   if (e.seated && PLANE.intro) return nm;   // 奇襲の前：乗客として名前だけ
-  const pre = e.sq ? e.sq.name + (e.sq.leader === e ? '長' : '') : e.runner ? '伝令' : e.medic ? '医務班' : '';
+  const pre = e.sq ? e.sq.name + (e.sq.leader === e ? '長' : '') : (e.runner || e.saiRunner) ? '伝令' : e.medic ? '医務班' : '';
   return (pre ? pre + ' ' : '') + nm;
 }
 function makeTag(e, text) {
@@ -8354,7 +8656,7 @@ function updateTags() {
     if (e.tag) e.tag.visible = false;
     if (e.state === 'down') continue;
     const d = Math.hypot(e.s.position.x - camera.position.x, e.s.position.z - camera.position.z);
-    if (d < TAG_R && (e.sq || e.runner || e.medic)) tagNear.push([d, e]);
+    if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic)) tagNear.push([d, e]);
   }
   tagNear.sort((a, b) => a[0] - b[0]);
   for (let i = 0; i < Math.min(TAG_MAX, tagNear.length); i++) {
@@ -8939,8 +9241,9 @@ function routeTo(p, tx, tz) {
   return [clamp(p.x, -1, 1) * 0.8, pin ? 3 : -3];                                              // まず門の前へ
 }
 // 当たり箱（壁・柱）から押し出す
-function pushOutBoxes(pos, r, y0, y1) {
+function pushOutBoxes(pos, r, y0, y1, skip) {
   for (const b of boxes) {
+    if (skip && skip(b)) continue;
     if (b.ceil || b.y1 <= y0 || b.y0 >= y1) continue;
     if (pos.x < b.x0 - r || pos.x > b.x1 + r || pos.z < b.z0 - r || pos.z > b.z1 + r) continue;
     const cx = clamp(pos.x, b.x0, b.x1), cz = clamp(pos.z, b.z0, b.z1);
@@ -10145,7 +10448,7 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
-    if (MTN.on) MTN.who = e;
+    if (MTN.on || DUAL.on) MTN.who = e;
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {
       e.t += dt; e.kneel = true; e.tgt = null; e.passive = true; p.y = e.baseY;
@@ -10313,7 +10616,12 @@ function updateEnemies(dt) {
       if (MTN.on && e.stone && e.team === 'orange' && dist > 4.5 && dist < 17 && e.cd <= 0 && elevD(e) < 6 && e.state !== 'windup' && e.state !== 'recover' && e.state !== 'icicle') {
         mtnThrowStone(e); e.cd = rand(1.35, 2.15); e.faceWant = Math.atan2(nx, nz);
       }
+      if (CASTLE.on && e.team === CA() && e.kind === 'archer' && !e.perch && !e.special) e.pressMelee = !castleAtkHasMelee();
       if (archerMelee(e, dt, dist, nx, nz, tx, tz)) { /* 弓兵の突き。雪の敵はツララ */ }
+      else if (e.pressMelee && e.kind === 'archer' && !e.perch && dist > 2.2) {
+        steer(e, tx - nx * 1.15, tz - nz * 1.15, e.speed * 1.15, dt);
+        e.faceWant = Math.atan2(nx, nz); e.state = 'advance'; e.cover = null;
+      }
       else if (e.state === 'retreat') {            // 臆病：被弾すると一旦下がる
         steer(e, p.x - nx * 10, p.z - nz * 10, e.speed * 1.2, dt);
         e.retreatT -= dt;
@@ -10348,7 +10656,7 @@ function updateEnemies(dt) {
         if ((e.thrT = (e.thrT || 0) - dt) <= 0) { e.thrT = 0.3; e.threat = nearestFoeMelee(e, 12); }
         const th = e.threat && e.threat.state !== 'down' && enemies.includes(e.threat) ? e.threat : null;
         const thd = th ? Math.hypot(th.s.position.x - p.x, th.s.position.z - p.z) : 99;
-        if (!e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) * (PLANE.on ? 0.45 : 1) || (dist < (PLANE.on ? 2.5 : 6) && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
+        if (!e.pressMelee && !e.climb && !['backoff', 'aim', 'zanshin'].includes(e.state) && (thd < (P === PERS.好戦的 ? SCREEN.kiteAggR : SCREEN.kiteR) * (PLANE.on ? 0.45 : 1) || (dist < (PLANE.on ? 2.5 : 6) && P !== PERS.好戦的))) { e.state = 'backoff'; e.t = 0; e.kite = th; e.cover = null; }
         if (e.state === 'advance' && e.team === ATK() && seirans.length && !e.climb && (e.clT = (e.clT || 0) - dt) <= 0) { e.clT = 2; if (!tryArcherClimb(e)) seiranBoard(e); }
         if (e.climb) seiranClimb(e, dt);
         else if (e.state === 'advance' && CASTLE.on && e.tgt && e.tgt.perch && e.tgt.perch.gt && dist < 28 && e.t > 1.6 && ammoOK(e) && (e.cover && !e.cover.open ? Math.hypot(e.cp ? e.cp.x - p.x : 0, e.cp ? e.cp.z - p.z : 0) < 1.2 || e.t > 4 : true)) { e.state = 'aim'; e.t = 0; }   // v9：中門の上へ撃ち返す（遮蔽物に着いたら／開けた所ならその場で）
@@ -10499,7 +10807,11 @@ function updateEnemies(dt) {
         e.footOk = [p.x, p.z];
       }
     }
-    if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6);
+    if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) {
+      const slipBar = DUAL.on && MTN.bar && ((DUAL.betrayed && (e.saiRunner || e === DUAL.miyashita)) || (e.missionRelief && e.team === 'blue'));
+      const slipGate = e.missionRelief && e.team === 'blue' && DUAL.on;
+      pushOutBoxes(p, 0.3, e.baseY + 0.1, e.baseY + 1.6, (slipBar || slipGate) ? (b => (slipBar && b === MTN.bar) || (slipGate && (MTN.gates || []).some(g => g.boxes && g.boxes.includes(b)))) : null);
+    }
     if (PLANE.on && !e.seated) planeClamp(p, 0.28);
     if (e.onFloor && !e.lad && !e.perch) { const F = e.onFloor; p.x = clamp(p.x, F.x0 + 0.25, F.x1 - 0.25); p.z = clamp(p.z, F.z0 + 0.25, F.z1 - 0.25); }   // 床から落ちない
     if (e.bowSeat) { p.x = e.seated.x; p.z = e.seated.z; e.baseY = e.seated.boat.floor.y; }
@@ -10731,7 +11043,8 @@ function swingResolve() {
     const bp = best.s.position, yy = best.baseY + clamp(camera.position.y - 0.25 - best.baseY, best.figH * 0.45, best.figH * 0.75);
     damageEnemy(best, 2, player.pos, false, { pt: new V3(bp.x - fwd.x * 0.15, yy, bp.z - fwd.z * 0.15), thrust: true }, 'player');
     Sfx.clash(); player.shake = Math.max(player.shake, 0.08);
-  } else if (MTN.on) mtnMeleeGate();
+  } else if ((MTN.on || DUAL.on) && mtnMeleeHon()) { /* 本丸の扉は近接で叩く */ }
+  else if (MTN.on) mtnMeleeGate();
 }
 
 // ---- 拾い物 ----
@@ -10879,7 +11192,7 @@ function updateTargetInfo(dt) {
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
     const tm = disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
-    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${t.sq.name}${t.sq.leader === t ? '・隊長' : ''}</small>` : t.runner || t.wasRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner ? '伝令' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.ojou || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
+    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${t.sq.name}${t.sq.leader === t ? '・隊長' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.ojou || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
     el.style.opacity = Math.min(1, targetHold * 3);

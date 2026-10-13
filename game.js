@@ -6482,7 +6482,19 @@ function updateMountain(dt) {
 
 const DUAL_COX = -62, DUAL_MOX = 78;
 const DUAL = { on: false, build: false, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
-function dualLine(text) { popup(text); if (typeof subtitle === 'function') subtitle(text); }
+function dualVoice(text) {
+  // 日本語音声は端末・ブラウザー内蔵の音声合成を使用。利用できない環境では字幕のみ。
+  if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+  const lines = [...String(text).matchAll(/[「『]([^」』]+)[」』]/g)].map(m => m[1].replace(/^[^：:]{1,12}[：:]/, '').trim()).filter(Boolean);
+  if (!lines.length) return;
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(lines.join('。 '));
+    u.lang = 'ja-JP'; u.rate = 0.92; u.pitch = 0.92; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  } catch (_) {}
+}
+function dualLine(text) { popup(text); if (typeof subtitle === 'function') subtitle(text); dualVoice(text); }
 function dualShift(ox, oz, fn) {
   const before = new Set(stageRoot.children);
   const nB = boxes.length, nF = floors.length, nL = ladders.length, nP = perches.length, nC = covers.length, nK = colliders.length;
@@ -6617,6 +6629,17 @@ function dualOpenCastle(why) {
   }
   for (const e of enemies) if (e.team === 'orange' && e.missionFront === 'king' && isUp(e) && !e.ramCrew) {
     e.missionPath = null; e.missionGoto = [DUAL_COX + rand(-8, 8), rand(8, 28)];
+  }
+  // 二の丸の門が開いたら、門内で滞留する青組の近接兵も広間へ出撃させる。
+  for (const e of enemies) {
+    if (e.team !== 'blue' || !isUp(e) || e.kind === 'archer' || e.special || e.wasOjou || e.missionFrom) continue;
+    const p = e.s.position;
+    if ((e.missionFront === 'king' || !e.missionFront) && (e.baseY || 0) < 2.4 &&
+        Math.abs(p.x - DUAL_COX) < 13 && p.z > -8 && p.z < 27) {
+      e.mtnHold = false; e.tgt = null; e.state = 'approach';
+      e.missionPath = [[DUAL_COX + clamp(p.x - DUAL_COX, -2.4, 2.4), -1.5], [DUAL_COX + clamp(p.x - DUAL_COX, -2.4, 2.4), -16]];
+      e.missionGoto = [DUAL_COX, -16];
+    }
   }
 }
 function dualOpenMtn(g) {

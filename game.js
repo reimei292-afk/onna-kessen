@@ -6628,17 +6628,22 @@ function dualOpenCastle(why) {
     CASTLE.ram.crew = [];
   }
   for (const e of enemies) if (e.team === 'orange' && e.missionFront === 'king' && isUp(e) && !e.ramCrew) {
-    e.missionPath = null; e.missionGoto = [DUAL_COX + rand(-8, 8), rand(8, 28)];
+    const lane = ((e.id % 9) - 4) * 1.45;
+    const x = DUAL_COX + lane;
+    e.missionPath = [[DUAL_COX + clamp(lane * 0.45, -3.2, 3.2), -5], [x, 10], [x, 30], [DUAL_COX + clamp(lane * 0.55, -4.5, 4.5), 48], [DUAL_COX, 62]];
+    e.missionGoto = [DUAL_COX, 68]; e.missionAssaultKeep = true; e.mtnHold = false; e.tgt = null; e.state = 'approach';
   }
   // 二の丸の門が開いたら、門内で滞留する青組の近接兵も広間へ出撃させる。
+  let sortieIndex = 0;
   for (const e of enemies) {
     if (e.team !== 'blue' || !isUp(e) || e.kind === 'archer' || e.special || e.wasOjou || e.missionFrom) continue;
     const p = e.s.position;
     if ((e.missionFront === 'king' || !e.missionFront) && (e.baseY || 0) < 2.4 &&
         Math.abs(p.x - DUAL_COX) < 13 && p.z > -8 && p.z < 27) {
-      e.mtnHold = false; e.tgt = null; e.state = 'approach';
-      e.missionPath = [[DUAL_COX + clamp(p.x - DUAL_COX, -2.4, 2.4), -1.5], [DUAL_COX + clamp(p.x - DUAL_COX, -2.4, 2.4), -16]];
-      e.missionGoto = [DUAL_COX, -16];
+      const lane = ((sortieIndex % 7) - 3) * 2.15; sortieIndex++;
+      e.mtnHold = false; e.tgt = null; e.state = 'approach'; e.missionRelief = true; e.missionFrom = 'king'; e.missionFront = 'king'; e.missionSortie = true;
+      e.missionPath = [[DUAL_COX + lane, -2], [DUAL_COX + lane, -13], [DUAL_COX + lane * 0.7, -25]];
+      e.missionGoto = [DUAL_COX + lane * 0.45, -32];
     }
   }
 }
@@ -7038,6 +7043,12 @@ function dualBrain(e, dt) {
   const kingPress = e.team === 'orange' && e.missionFront === 'king' && e.kind === 'archer' && !dualSideMelee('king');
   const saiPress = e.team === 'orange' && e.missionFront === 'saionji' && e.kind === 'archer' && !dualSideMelee('saionji');
   if (kingPress || saiPress) e.pressMelee = true;
+  if (e.team === 'orange' && e.missionFront === 'king' && CASTLE.phase !== 0 && e.missionAssaultKeep && e.kind !== 'archer') {
+    const foe = dualClosest(e, 3.4), p = e.s.position;
+    if (foe) return false;
+    const g = dualGoto(e);
+    if (g && Math.hypot(p.x - g[0], p.z - g[1]) > 1.8) { steer(e, g[0], g[1], e.speed * 1.22, dt); e.state = 'approach'; e.tgt = null; return true; }
+  }
   if (e.missionFront === 'king' && e.team === 'orange' && !e.ramCrew && CASTLE.phase === 0 && (e.kind !== 'archer' || kingPress)) {
     if (!dualFoeNear(e, 5.2)) {
       const gx = DUAL_COX + Math.sin(e.ph * 3) * 1.7, gz = -1.15;

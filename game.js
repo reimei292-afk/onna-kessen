@@ -6836,8 +6836,8 @@ function dualDeployShira() {
   DUAL.reinforcements = born;
   DUAL.relayStage = 5; DUAL.eventT = 0; DUAL.deployed = true;
   dualOpenCastle('白瀬が討伐に出る');
-  dualLine('王「白瀬、裏切り者を討ち取れ」');
-  showBanner('白瀬、討伐隊を率いて出陣', '槍隊20、弓隊20、医務班2');
+  dualLine('白瀬「承知しました。西園寺の進軍を止め、宮下殿を保護します」');
+  showBanner('白瀬、討伐隊を率いて出陣', '王「宮下を信じよう。西園寺を止め、宮下を保護せよ」　槍隊20、弓隊20、医務班2');
 }
 function dualSideMelee(front) {
   for (const o of enemies) {
@@ -7251,36 +7251,54 @@ function updateDual(dt) {
     showBanner('王と西園寺', '王「間に合って何よりだ。ともに押し返せ」');
   }
   if (!DUAL.betrayed && sai && isUp(sai) && enemies.some(e => e.team === 'orange' && isUp(e) && !e.special && !e.wasOjou && e.baseY > 11.2 && e.s.position.x > DUAL_MOX - 7.2 && e.s.position.x < DUAL_MOX + 7.2 && e.s.position.z < -10.4 && e.s.position.z > -28)) {
+    // 反旗を翻す瞬間に西園寺側の味方を確定し、宮下以外を全員橙組へ移す。
+    const defectors = enemies.filter(e => e.team === 'blue' && e !== DUAL.miyashita && dualOnFront(e, 'saionji'));
     DUAL.betrayed = true;
-    sai.team = 'orange'; sai.special = false; sai.ojou = false; sai.wasOjou = true; sai.state = 'approach'; sai.t = 0; sai.tgt = null;
-    sai.hp = Math.max(sai.hp, 8); sai.missionFront = 'saionji'; sai.missionGoto = [DUAL_MOX, -18];
+    const marchPath = [[DUAL_MOX, 20], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 16]];
+    for (const e of defectors) {
+      e.team = 'orange';
+      e.special = false; e.ojou = false; e.wasOjou = false;
+      e.state = 'approach'; e.t = 0; e.tgt = null;
+      e.missionFrom = 'saionji'; e.missionFront = 'king';
+      e.missionRelief = true;
+      e.missionPath = marchPath.map(p => p.slice());
+      e.missionGoto = [DUAL_COX, 16];
+      e.ramCrew = false;
+      if (e.perch) { e.perch.taken = null; e.perch = null; e.crouch = 0; }
+      if (e.hiddenAmb) { e.hiddenAmb = null; e.kneel = false; }
+    }
+    // 宮下だけは王への忠義を守り、山城から王の城へ急ぐ。
+    if (DUAL.miyashita && isUp(DUAL.miyashita)) {
+      DUAL.miyashita.team = 'blue';
+      DUAL.miyashita.special = false; DUAL.miyashita.ojou = false; DUAL.miyashita.wasOjou = false;
+      DUAL.miyashita.missionFront = 'king';
+      DUAL.miyashita.missionPath = marchPath.map(p => p.slice());
+      DUAL.miyashita.missionGoto = [DUAL_COX, 16];
+      DUAL.miyashita.missionRelief = true;
+      DUAL.miyashita.state = 'approach'; DUAL.miyashita.t = 0; DUAL.miyashita.tgt = null;
+    }
+    sai.hp = Math.max(sai.hp, 8);
     DUAL.relayStage = 1; DUAL.eventT = 3.2;
-    dualLine('西園寺「私はここまでです。これより敵方に降ります」');
-    showBanner('西園寺、降伏', '宮下「西園寺様……本当に、王を裏切るのですか」');
+    dualLine('西園寺「王の策には、もはや従えぬ！ 山城の兵よ、我らは橙組に与し、王の城へ攻め入る！」');
+    showBanner('西園寺、反旗を翻す', '宮下「西園寺様！ 私は王に刃を向けません。皆まで道を誤らせるおつもりですか！」');
+    popup('西園寺側の寝返り：宮下を除く ' + defectors.length + ' 人が王の城へ進軍');
   }
   if (DUAL.betrayed && DUAL.relayStage > 0 && DUAL.relayStage < 5) {
     DUAL.eventT -= dt;
     if (DUAL.eventT <= 0) {
       if (DUAL.relayStage === 1) {
         DUAL.relayStage = 2; DUAL.eventT = 3.4;
-        dualLine('宮下「私はこの場を離れます。伝令に、真実を伝えます」');
+        dualLine('宮下「私は裏切りには加わりません。伝令を走らせ、白瀬殿と王に知らせます！」');
+        showBanner('宮下、忠義を貫く', '宮下は青組に残り、王の城へ急行する');
       } else if (DUAL.relayStage === 2) {
         DUAL.relayStage = 3; DUAL.eventT = 3.6;
-        dualLine('伝令「白瀬殿。西園寺殿が、敵方へ寝返りました」');
-        const r = DUAL.saiRunner;
-        if (r && isUp(r)) {
-          r.missionRelief = true;
-          r.missionFrom = 'saionji';
-          r.missionFront = 'king';
-          r.missionPath = [[DUAL_MOX, -6], [DUAL_MOX, 36], [DUAL_MOX, 90], [DUAL_MOX + 34, 102], [DUAL_MOX + 34, -42], [DUAL_COX, -42], [DUAL_COX, 64]];
-          r.missionGoto = [DUAL_COX, 64];
-        }
+        dualLine('伝令「白瀬殿、急報です！ 西園寺が宮下殿を除く一党を橙組に寝返らせ、王の城へ攻め寄せております！」');
+        showBanner('白瀬、急報を受ける', '白瀬「何ということだ……ただちに殿へお知らせせねば！」');
       } else if (DUAL.relayStage === 3) {
         DUAL.relayStage = 4; DUAL.eventT = 3.4;
-        dualLine('白瀬「殿。西園寺が裏切りました」');
-        showBanner('白瀬、王に報告', '伝令が倒れても、知らせは宮下、伝令、白瀬、王の順に届く');
+        dualLine('白瀬「殿、急報です。西園寺が宮下殿を除く山城の一党を寝返らせ、こちらの城へ攻め寄せています」');
+        showBanner('白瀬、王に報告', '王「西園寺が……。宮下はどうした」');
       } else if (DUAL.relayStage === 4) {
-        dualLine('王「……西園寺が。信じたくはなかった」');
         dualDeployShira();
       }
     }

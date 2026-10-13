@@ -8804,7 +8804,15 @@ function updateBodies(dt) {
     const ly = b.lying;
     if (b.lean) { updateLean(b, 0); continue; }
     if (b.slump) { b.tilt.rotation.y = Math.atan2(camera.position.x - b.s.position.x, camera.position.z - b.s.position.z) - b.s.rotation.y; continue; }
-    if (!ly) { if (MOTION && b.mo && b.mo.D && b.state === 'down') Mo.fallSprite(b, b.mo.D, 0); continue; }   // down の写真が無い娘：倒れた写真をカメラへ向け続ける
+    if (!ly) {
+      if (b.genericCorpse) {
+        // 汎用遺体は倒れた姿勢を維持し、視点に合わせて胴体だけ少し向きを補正する。
+        b.tilt.rotation.x = Math.PI * 0.43;
+        b.tilt.rotation.y = Math.atan2(camera.position.x - b.s.position.x, camera.position.z - b.s.position.z) - b.s.rotation.y;
+        b.tilt.rotation.z = (b.id % 2 ? 1 : -1) * 0.10;
+      } else if (MOTION && b.mo && b.mo.D && b.state === 'down') Mo.fallSprite(b, b.mo.D, 0);
+      continue;
+    }   // down画像のない兵種も汎用遺体姿で残す
     ly.t += dt;
     const p = b.s.position, fy = b.fallYaw;
     const cx = p.x + Math.sin(fy) * b.figH * 0.5, cz = p.z + Math.cos(fy) * b.figH * 0.5;
@@ -9252,8 +9260,17 @@ function toBodies(e) {
   if (e.landY !== undefined) { e.baseY = e.landY; e.s.position.y = e.landY; }
   if (e.lean) { e.shadow.visible = true; }   // 寄りかかったまま
   else if (e.slump) { /* 席で崩れたまま */ }
-  else if (e.girl.down) startLying(e);
-  else if (MOTION && e.mo) Mo.contactAO(e);
+  else if (e.girl && e.girl.down) startLying(e);
+  else if (MOTION && e.mo) { Mo.contactAO(e); e.genericCorpse = true; }
+  else {
+    // down画像を持たない兵種用の仮汎用遺体姿：既存の兵モデルを地面に横たえ、頭の向きを固定する。
+    e.genericCorpse = true;
+    e.s.rotation.y = e.fallYaw;
+    e.tilt.rotation.set(Math.PI * 0.43, 0, (e.id % 2 ? 1 : -1) * 0.10);
+    e.tilt.position.set(0, 0.04, e.figH * 0.34);
+    e.shadow.visible = true;
+    e.shadow.scale.set(0.95, 1, 1.35 * e.figH);
+  }
   bodies.push(e);
   while (bodies.length > CFG.maxBodies) {
     const i = bodies.findIndex(b => !b.snowUsed);

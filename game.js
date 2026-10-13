@@ -6836,7 +6836,7 @@ function dualDeployShira() {
   DUAL.reinforcements = born;
   DUAL.relayStage = 5; DUAL.eventT = 0; DUAL.deployed = true;
   dualOpenCastle('白瀬が討伐に出る');
-  dualLine('白瀬「承知しました。西園寺の進軍を止め、宮下殿を保護します」');
+  dualLine('白瀬「宮下殿は裏切りを拒み、こちらへ向かっております。私が保護し、西園寺の進軍を止めます」');
   showBanner('白瀬、討伐隊を率いて出陣', '王「宮下を信じよう。西園寺を止め、宮下を保護せよ」　槍隊20、弓隊20、医務班2');
 }
 function dualSideMelee(front) {

@@ -83,6 +83,12 @@
     font:inherit;font-size:18px;letter-spacing:.25em;padding:8px 18px;color:#e8d9a8;
     background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.75);border-radius:4px;cursor:pointer}
   #bGod.on{background:rgba(232,217,168,.92);color:#1a1410}
+  #bMtnOpen{display:none;position:fixed;z-index:36;left:50%;bottom:calc(26px + var(--sab));transform:translateX(-50%);
+    min-width:112px;padding:12px 28px;border:2px solid #f5df9c;border-radius:6px;
+    background:rgba(83,48,18,.94);color:#fff0bf;font:inherit;font-size:23px;letter-spacing:.25em;
+    text-shadow:0 1px 3px #000;box-shadow:0 2px 12px rgba(0,0,0,.65);cursor:pointer;pointer-events:auto}
+  #bMtnOpen:active{background:rgba(174,117,36,.98);transform:translateX(-50%) scale(.97)}
+  html.touch #bMtnOpen{bottom:calc(112px + var(--sab));min-width:100px;padding:10px 24px;font-size:21px}
   #arrows{position:absolute;right:28px;bottom:24px;font-size:20px;text-shadow:0 1px 3px #000;text-align:right}
   #arrows b{font-size:36px;color:#ffe38a}
   #radar{position:absolute;right:20px;top:20px;width:150px;height:150px;border-radius:50%;
@@ -173,6 +179,7 @@
   <button id="bGod" class="serif" type="button">無敵</button>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
+<button id="bMtnOpen" class="serif" type="button" aria-label="本丸の扉を開く">開く</button>
 
 <div id="touchui">
   <div id="touchlayer"></div>
@@ -295,6 +302,6 @@
 <script src="assets/voices/voices.js?v=20261011f"></script>
 <script src="lib/motion_data.js"></script>
 <script src="lib/death_clips.js?v=20261011e"></script>
-<script src="game.js?v=20261012t"></script>
+<script src="game.js?v=20261013a"></script>
 </body>
 </html>

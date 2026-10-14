@@ -1,0 +1,83 @@
+name: Plains machine-gun browser smoke test
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: |
+          python3 -m http.server 8000 > /tmp/onna-kessen-http.log 2>&1 &
+          echo $! > /tmp/onna-kessen-http.pid
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Test Plains Battle in Chromium
+        run: node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const pageErrors = [];
+            page.on('pageerror', e => pageErrors.push(e.message));
+            page.on('console', m => { if (m.type() === 'error') pageErrors.push(m.text()); });
+            try {
+              await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => typeof window.THREE !== 'undefined' && document.querySelector('#startBtn'), null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="plains"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.builtStage === 'plains' && window.PLAINMG && window.PLAINMG.on, null, { timeout: 60000 });
+              await page.waitForTimeout(3500);
+              const result = await page.evaluate(() => {
+                const up = e => typeof isUp === 'function' && isUp(e);
+                const gunners = PLAINMG.posts.map(p => p.gunners.filter(up).length);
+                const perched = enemies.filter(e => e.team === 'orange' && e.perch && up(e));
+                const catapultCrew = enemies.filter(e => e.team === 'orange' && e.seated && up(e) && e.kei && e.kei.kind === 'cata');
+                return {
+                  stage: builtStage,
+                  machineGunActive: PLAINMG.on,
+                  pillboxes: PLAINMG.posts.length,
+                  gunnersPerPillbox: gunners,
+                  friendlyVehicleGun: !!PLAINMG.car,
+                  perchedEnemyArchers: perched.length,
+                  enemyCatapultCrew: catapultCrew.length,
+                  mechCatapults: MECH.catas.length
+                };
+              });
+              if (!result.machineGunActive || result.pillboxes !== 2 || result.gunnersPerPillbox.some(n => n !== 4) || !result.friendlyVehicleGun) {
+                throw new Error('Core Plains machine-gun checks failed: ' + JSON.stringify(result));
+              }
+              // Force one live elevated archer to be the only eligible orange target, then
+              // verify the vehicle gun's real target-selection path can acquire it.
+              const elevatedCheck = await page.evaluate(() => {
+                const up = e => isUp(e);
+                const e = enemies.find(e => e.team === 'orange' && e.perch && up(e));
+                if (!e) return { tested: false, reason: 'No live orange tower archer found in Plains Battle' };
+                for (const other of enemies) if (other.team === 'orange' && other !== e && up(other)) other.state = 'down';
+                PLAINMG.car.burst = 0;
+                PLAINMG.car.nextT = 0;
+                plainMGUpdate(0.02);
+                return { tested: true, acquired: PLAINMG.car.target === e, targetHasPerch: !!PLAINMG.car.target?.perch };
+              });
+              if (!elevatedCheck.tested || !elevatedCheck.acquired) throw new Error('Elevated archer target check failed: ' + JSON.stringify(elevatedCheck));
+              if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
+              console.log(JSON.stringify({ result, elevatedCheck, pageErrors }, null, 2));
+            } finally {
+              await browser.close();
+            }
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE

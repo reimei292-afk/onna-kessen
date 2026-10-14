@@ -9282,14 +9282,14 @@ function waveUpdate(dt) {
     }
     return;
   }
-  // Plains Battle has a fortress objective: wave 2 must not arrive until all eight pillbox defenders are down.
+  // Plains Battle's fortress objective: finish every wave-one enemy and every fortress defender before wave 2.
   const plainsPostsReady = builtStage !== 'plains' || (PLAINMG.on && PLAINMG.posts.length === 2 && PLAINMG.posts.every(P => P.gunners.length === 4));
   const plainsGuardsCleared = builtStage === 'plains' && PLAINMG.on && plainsPostsReady && PLAINMG.posts.every(P => P.gunners.every(e => !isFoe(e)));
-  if (builtStage === 'plains' && wave.n === 1 && plainsGuardsCleared && !PLAINMG.objectiveCleared) {
+  if (builtStage === 'plains' && wave.n === 1 && !PLAINMG.objectiveCleared && wave.toSpawn <= 0 && foes === 0) {
+    if (!plainsGuardsCleared) return;
     PLAINMG.objectiveCleared = true;
-    wave.toSpawn = 0;
     wave.inter = 5;
-    showBanner('トーチカ制圧！', '守備兵を全員撃破。第二波が接近！');
+    showBanner('敵の砦を制圧！', '砦の敵兵を全員撃破。第二波が接近！');
     Sfx.fanfare();
     player.arrows = Math.min(arrowsMax(), player.arrows + 10);
     for (const e of enemies) if (e.ammo !== undefined) e.ammo = AMMO_MAX;

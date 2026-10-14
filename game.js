@@ -588,7 +588,8 @@ function buildPlainMG() {
     const q=plainGun(g,0,1.2,1.35,M);
     const P={i,x,z,g,gun:q.g,flash:q.flash,aim:new V3(x,1,-10),burst:0,shotT:0,nextT:1.5+i*.7,target:null,rounds:0,gunners:[]};
     PLAINMG.posts.push(P);
-    for(const dx of [-.6,.6]){const e=spawnEnemy(x+dx,z+.1,'mob',false,'orange',{set:{plainGunner:i},yari:-1});if(e){e.hold={face:Math.PI};e.passive=true;P.gunners.push(e);}}
+    // Each pillbox has four crew members, spread across the firing slit.
+    for(const dx of [-1.35,-.45,.45,1.35]){const e=spawnEnemy(x+dx,z+.1,'mob',false,'orange',{set:{plainGunner:i},yari:-1});if(e){e.hold={face:Math.PI};e.passive=true;P.gunners.push(e);}}
   }
   const geo=new THREE.BoxGeometry(.035,.035,1);geo.translate(0,0,-.5);const mat=beachMats().tracer;
   for(let i=0;i<32;i++){const m=new THREE.Mesh(geo,mat);m.visible=false;stageRoot.add(m);PLAINMG.tracers.push({m,t:1,d:0,a:new V3(),b:new V3()});}
@@ -602,7 +603,9 @@ function plainMGShot(S,T,team){
 }
 function plainMGUpdate(dt){
  if(!PLAINMG.on||builtStage!=='plains')return;
- const choose=(team,x,z)=>{let best=null,bd=78;for(const e of enemies){if(e.team===team||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=e;}}
+ const choose=(team,x,z)=>{let best=null,bd=180;for(const e of enemies){if(e.team===team||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=e;}}
+ // Tower archers and catapult crew are ordinary living units too; allow the wider
+ // machine-gun range to reach elevated perches and seated crews.
  if(team==='orange'&&state==='play'&&!inHQ()){const d=Math.hypot(player.pos.x-x,player.pos.z-z);if(d<bd)best={isPlayer:true};}return best;};
  const fire=(S,team,dt)=>{
    if(S.gunners&&!S.gunners.some(isUp)){S.flash.visible=false;S.burst=0;return;}

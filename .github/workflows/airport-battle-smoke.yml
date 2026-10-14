@@ -68,8 +68,23 @@ jobs:
               if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 20 || drop.remaining !== 47) {
                 throw new Error('Individual parachute drop check failed: ' + JSON.stringify(drop));
               }
+              const landing = await page.evaluate(() => {
+                const G = window.__game, e = G.AIRPORT.drops[0];
+                e.s.position.y = 0.01; e.baseY = 0.01;
+                G.updateEnemies(0.02);
+                const afterLanding = { state: e.state, y: e.s.position.y, chute: !!e.airChute,
+                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible };
+                G.updateEnemies(0.02);
+                return { afterLanding, afterGroundTick: { state: e.state, y: e.s.position.y,
+                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, isGroundTroop: e.state !== 'airportDrop' } };
+              });
+              if (landing.afterLanding.state === 'airportDrop' || landing.afterLanding.y !== 0 ||
+                  landing.afterLanding.chute || !landing.afterLanding.spriteVisible || !landing.afterLanding.shadowVisible ||
+                  !landing.afterGroundTick.isGroundTroop || !landing.afterGroundTick.spriteVisible || landing.afterGroundTick.y !== 0) {
+                throw new Error('Paratrooper ground visibility check failed: ' + JSON.stringify(landing));
+              }
               if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
-              console.log(JSON.stringify({ roster, drop, pageErrors }, null, 2));
+              console.log(JSON.stringify({ roster, drop, landing, pageErrors }, null, 2));
             } finally {
               await browser.close();
             }

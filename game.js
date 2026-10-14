@@ -597,7 +597,7 @@ function plainMGShot(S,T,team){
   const from=new V3(S.x,S.y,S.z),to=T.isPlayer?new V3(player.pos.x,player.pos.y+1.1,player.pos.z):new V3(T.s.position.x,T.baseY+T.figH*.58,T.s.position.z);
   const d=from.distanceTo(to),sp=.12+d*.012;to.x+=rand(-sp,sp);to.y+=rand(-sp*.4,sp*.5);to.z+=rand(-sp,sp);
   if(Sfx.mg)Sfx.mg(from);const tr=PLAINMG.tracers.find(t=>t.t>=1);if(tr){tr.a.copy(from);tr.b.copy(to);tr.d=from.distanceTo(to);tr.t=0;tr.m.visible=true;}
-  if(Math.random()<clamp(.78-d*.0035,.32,.78)){if(T.isPlayer)hurtPlayer(5);else damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team:team==='blue'?'orange':'blue',state:'idle',mg:true,s:{position:from}});}
+  if(Math.random()<clamp(.78-d*.0035,.32,.78)){if(T.isPlayer)hurtPlayer(5);else damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team,state:'idle',mg:true,s:{position:from}});}
   else puff(to.clone().setY(Math.max(.04,to.y)),0xb6a88a,3,.16,1.5,.35);
 }
 function plainMGUpdate(dt){

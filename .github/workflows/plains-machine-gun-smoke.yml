@@ -1,6 +1,6 @@
 name: Plains machine-gun browser smoke test
 
-on:
+"on":
   pull_request:
     branches: [main]
   workflow_dispatch:

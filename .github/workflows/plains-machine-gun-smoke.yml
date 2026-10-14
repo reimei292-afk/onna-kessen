@@ -43,7 +43,21 @@ jobs:
               await page.waitForFunction(() => typeof window.THREE !== 'undefined' && document.querySelector('#startBtn'), null, { timeout: 60000 });
               await page.locator('#stagesel button[data-st="plains"]').click();
               await page.locator('#startBtn').click();
-              await page.waitForFunction(() => typeof builtStage !== 'undefined' && builtStage === 'plains' && typeof PLAINMG !== 'undefined' && PLAINMG.on, null, { timeout: 60000 });
+              await page.waitForTimeout(5000);
+              const boot = await page.evaluate(() => ({
+                builtStage: typeof builtStage === 'undefined' ? 'undefined' : builtStage,
+                stageName: typeof stageName === 'undefined' ? 'undefined' : stageName,
+                state: typeof state === 'undefined' ? 'undefined' : state,
+                hasPlainMG: typeof PLAINMG !== 'undefined',
+                mgOn: typeof PLAINMG !== 'undefined' && PLAINMG.on,
+                hasStartGame: typeof startGame === 'function',
+                hasSelectStage: typeof selectStage === 'function',
+                titleDisplay: document.querySelector('#title')?.style.display,
+                loadingDisplay: document.querySelector('#loading')?.style.display
+              }));
+              if (boot.builtStage !== 'plains' || !boot.mgOn || boot.state !== 'play') {
+                throw new Error('Game did not enter Plains Battle: ' + JSON.stringify({boot, pageErrors}));
+              }
               await page.waitForTimeout(3500);
               const result = await page.evaluate(() => {
                 const up = e => typeof isUp === 'function' && isUp(e);

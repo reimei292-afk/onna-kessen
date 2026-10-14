@@ -2633,16 +2633,17 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront';
+  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport';
+  AIRPORT.on = ap;
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   ground.visible = !pl && name !== 'beach' && !sn && !mt; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
   scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
-  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : LOOK0.bg);
-  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : LOOK0.hemi[2];
-  ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : LOOK0.sun;
+  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : LOOK0.bg);
+  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : LOOK0.hemi[2];
+  ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : SUN_DIR0);
 }
 // ====================================================================
@@ -7500,6 +7501,37 @@ function updateDual(dt) {
   }
 }
 
+
+const AIRPORT={on:false,towerGuards:[],fieldAllies:[],drops:[],total:48,toDrop:0,dropTimer:0,dropCount:0,gun:null,gunTarget:null,gunBurst:0,gunShotT:0,gunNextT:0,tracer:null,tracerT:0,introT:0,lost:false,won:false};
+function airportBox(x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color,transparent:!!opts.transparent,opacity:opts.opacity==null?1:opts.opacity}));m.position.set(x,y,z);stageRoot.add(m);return m;}
+function airportCylinder(x,y,z,rt,rb,h,color,rx=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.rotation.x=rx;stageRoot.add(m);return m;}
+function buildAirport(){
+ AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=48;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;
+ airportBox(0,-.08,-8,42,.12,178,0x555d64);airportBox(0,-.005,-8,37,.025,173,0x646c72);airportBox(-28,-.035,-4,13,.07,118,0x6a716f);airportBox(26,-.03,-24,25,.06,62,0x737975);
+ for(const x of [-17.5,17.5])airportBox(x,.018,-8,.22,.025,165,0xe8e8d9);for(let z=70;z>-88;z-=12)airportBox(0,.022,z,.42,.03,6,0xf5f1dd);
+ for(const z of [-86,-80,64,70])for(let i=-4;i<=4;i++)airportBox(i*2.4,.025,z,1.3,.035,2.2,0xf1f0e6);
+ for(const x of [-33,-23,22,32])airportBox(x,.018,-28,.12,.02,42,0xd8cfa5);for(const z of [-46,-35,-24,-13])airportBox(26,.02,z,19,.025,.14,0xe2d8ae);
+ airportBox(-32,4.8,5,9,9.6,9,0x8b928f);airportBox(-32,10.1,5,10.5,.7,10.5,0x515b62);airportBox(-32,13.1,5,12,4.8,12,0x344c5a);
+ for(const x of [-37.8,-32,-26.2])airportBox(x,13.1,5,.13,4.1,11.5,0x9dc7d4,{transparent:true,opacity:.55});for(const z of [-.8,5,10.8])airportBox(-32,13.1,z,11.7,4.1,.13,0x9dc7d4,{transparent:true,opacity:.55});
+ airportBox(-32,15.65,5,12.5,.45,12.5,0x424d55);airportCylinder(-32,18.1,5,.09,.09,3.2,0x3c454a);airportCylinder(-32,19.5,5,1.7,1.7,.12,0xb5c3c8);
+ const gun=new THREE.Group();gun.position.set(-32,16.6,5);stageRoot.add(gun);const mount=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,.55,10),new THREE.MeshLambertMaterial({color:0x252b2d}));mount.position.y=.2;gun.add(mount);
+ const body=new THREE.Mesh(new THREE.BoxGeometry(.65,.45,.8),new THREE.MeshLambertMaterial({color:0x303638}));body.position.set(0,.58,0);gun.add(body);const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.7,8),new THREE.MeshLambertMaterial({color:0x171c1e}));barrel.rotation.x=Math.PI/2;barrel.position.set(0,.62,-.95);gun.add(barrel);AIRPORT.gun=gun;
+ AIRPORT.tracer=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(-32,17.2,4),new V3(-32,17.2,-8)]),new THREE.LineBasicMaterial({color:0xffdf8c,transparent:true,opacity:.9}));AIRPORT.tracer.visible=false;stageRoot.add(AIRPORT.tracer);
+ airportBox(39,5,-31,27,10,24,0x7c858a);airportBox(39,10.2,-31,29,.7,26,0x515b61);airportBox(25.7,4.8,-31,.6,9.6,23,0x657076);airportBox(52.3,4.8,-31,.6,9.6,23,0x657076);airportBox(39,9.2,-43.1,27,1.5,.6,0x657076);airportBox(39,3.8,-42.7,27,.25,.4,0xd1d3cc);
+ airportCylinder(17,2.2,-42,.95,1.05,18,0xd8dcd8,Math.PI/2);airportCylinder(17,2.2,-51.4,.05,.95,2.8,0xc4c9c7,Math.PI/2);airportBox(17,2.05,-41,17,.2,3.4,0x9da9ad);airportBox(17,2.45,-49.2,5.4,.14,2.2,0xa9b2b5);airportBox(17,2.75,-49.5,2.1,.15,1.1,0x435b66);
+ for(const x of [12.3,21.7]){airportCylinder(x,1.7,-40.4,.42,.42,2.4,0x77848a,Math.PI/2);airportCylinder(x,1.6,-37.4,.23,.23,1.1,0x343a3e,Math.PI/2);}
+ for(let i=0;i<6;i++){airportBox(-12+i*4,.55,-59,1.2,1.1,1.2,0x716b5a);airportCylinder(34,.7,-48+i*4,.55,.55,1.4,i%2?0x66756c:0x7c6b55);}
+ for(const x of [-48,48])for(const z of [-72,-48,-24,0,24,48]){airportCylinder(x,.75,z,.09,.12,1.5,0x4a5457);airportBox(x,1.5,z,.36,.28,.36,0xd3c58e);}
+ for(const x of [-48,48])for(let z=-78;z<=62;z+=7)airportBox(x,1.1,z,.12,2.2,.12,0x626b6b);for(const z of [-78,62])airportBox(0,1.1,z,96,.12,.12,0x626b6b);
+}
+function airportParachute(e){const group=new THREE.Group(),colors=[0xe4e0d0,0xd16c3a,0xe4e0d0,0xd16c3a];for(let i=0;i<4;i++){const geo=new THREE.SphereGeometry(1.05,8,6,i*Math.PI/2,Math.PI/2,0,Math.PI/2),panel=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:colors[i],side:THREE.DoubleSide}));panel.scale.set(1,.72,1);panel.position.y=2.6;group.add(panel);}const pts=[];for(let i=0;i<8;i++){const a=i*Math.PI/4;pts.push(new V3(Math.cos(a)*.82,2.58,Math.sin(a)*.82),new V3(Math.cos(a)*.16,.75,Math.sin(a)*.16));}group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xded9c9})));e.s.add(group);e.airChute=group;}
+function airportElite(e){if(!e)return;e.airElite=true;e.hp=e.hpMax=7;e.speed=Math.max(e.speed*1.28,3.35);e.dmg=Math.max(e.dmg+6,15);e.P=Object.assign({},e.P,{aimT:Math.max(.32,(e.P.aimT||.8)*.62});e.airDrop=true;e.passive=true;e.state='airportDrop';e.t=0;e.dropY=rand(25,34);e.baseY=e.dropY;e.s.position.y=e.dropY;e.shadow.visible=false;airportParachute(e);}
+function airportSpawnForces(){AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];for(let i=0;i<30;i++){const ring=Math.floor(i/10),a=(i%10)*Math.PI*2/10+ring*.16,r=7.2+ring*1.5,x=-32+Math.cos(a)*r,z=5+Math.sin(a)*r,e=spawnEnemy(x,z,'archer',false,'blue',{set:{airportTowerGuard:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state='idle';e.speed*=.9;e.hp=e.hpMax=5;AIRPORT.towerGuards.push(e);}}for(let i=0;i<50;i++){const col=i%10,row=Math.floor(i/10),x=-22+col*4.8,z=34-row*9.2+rand(-1.4,1.4),kind=Math.random()<.62?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportFieldAlly:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state=kind==='archer'?'advance':'approach';e.speed*=1.04;e.hp=e.hpMax=4;AIRPORT.fieldAllies.push(e);}}}
+function airportStartWave(n){wave.n=n;wave.inter=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.spawnT=0;if(n===1){AIRPORT.toDrop=AIRPORT.total;AIRPORT.dropCount=0;AIRPORT.dropTimer=2.5;wave.toSpawn=AIRPORT.toDrop;wave.maxAlive=24;wave.total={blue:80,orange:AIRPORT.total};showBanner('空港、奇襲！','空挺部隊が降下中。管制塔の管制官部隊を守れ！');Sfx.fluteCall();return;}wave.toSpawn=0;gameOver(true);}
+function airportFire(dt){if(!AIRPORT.gun)return;const alive=AIRPORT.towerGuards.filter(isUp).length;AIRPORT.gun.visible=alive>0;if(alive>0){AIRPORT.gunNextT-=dt;AIRPORT.gunShotT-=dt;if(AIRPORT.gunBurst<=0&&AIRPORT.gunNextT<=0){let best=null,bd=95;for(const e of enemies){if(e.team!=='orange'||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x+32,p.z-5);if(d<bd){bd=d;best=e;}}if(best){AIRPORT.gunTarget=best;AIRPORT.gunBurst=7;AIRPORT.gunShotT=0;}else AIRPORT.gunNextT=.5;}if(AIRPORT.gunTarget&&(!isUp(AIRPORT.gunTarget)||AIRPORT.gunTarget.team!=='orange'))AIRPORT.gunBurst=0;if(AIRPORT.gunBurst>0&&AIRPORT.gunShotT<=0){const T=AIRPORT.gunTarget,from=new V3(-32,17.2,4.2),to=new V3(T.s.position.x,T.s.position.y+T.figH*.6,T.s.position.z);AIRPORT.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);AIRPORT.tracer.geometry.dispose();AIRPORT.tracer.geometry=new THREE.BufferGeometry().setFromPoints([from,to]);AIRPORT.tracer.visible=true;AIRPORT.tracerT=.09;if(Sfx.mg)Sfx.mg(from);if(Math.random()<.76)damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team:'blue',state:'idle',mg:true,s:{position:from}});AIRPORT.gunBurst--;AIRPORT.gunShotT=.14;if(AIRPORT.gunBurst<=0)AIRPORT.gunNextT=rand(1,1.7);}}if(AIRPORT.tracerT>0){AIRPORT.tracerT-=dt;if(AIRPORT.tracerT<=0)AIRPORT.tracer.visible=false;}}
+function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<24){const x=rand(-19,19),z=rand(-58,-15),kind=Math.random()<.42?'archer':'mob',e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){airportElite(e);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.72,1.12);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length===30&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制官部隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e))){AIRPORT.won=true;gameOver(true);}}
+function airportParatrooperStep(e,dt){if(e.state!=='airportDrop')return;e.s.position.y=Math.max(0,e.s.position.y-2.65*dt);e.baseY=e.s.position.y;if(e.s.position.y<=.001){e.s.position.y=0;e.baseY=0;e.airDrop=false;e.passive=false;e.shadow.visible=true;if(e.airChute){e.s.remove(e.airChute);e.airChute=null;}e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.tgt=null;e.tgtT=0;e.cd=.2;e.spotted=false;}}
+
 const STAGES = {
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
@@ -7509,9 +7541,11 @@ const STAGES = {
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
   mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。攻め手は射ちながら破門隊について門へ上がり、門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
   twofront: { name: '王と西園寺の二正面戦', desc: '西に城、東に山城。王は狭間・大手門・櫓・二の丸の門上と伏兵で守り、西園寺は峰の足場と本丸で守る。落とし穴、つぶて、破城槌、針山もそのまま。性格で間合いが変わり、分隊の戦況は王と西園寺の両方で分かる。' },
+  airport: { name: '空港の戦い', desc: '滑走路・管制塔・航空機格納庫のある空軍基地。空挺部隊が一人ずつ落下傘で降下する。管制塔の管制官部隊30人を守り、初期配置の味方50人と共に練度の高い敵を撃退せよ。管制塔には機関銃が1台。' },
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
+  AIRPORT.on=false;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.gun=null;AIRPORT.tracer=null;
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
   if (builtStage === name && builtAtk === am) return;
   clearPlainMG();
@@ -7525,7 +7559,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false;
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -9196,6 +9230,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
+  if (AIRPORT.on) { airportUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
   if (PLANE.intro) { PLANE.introT -= dt; if (PLANE.introT <= 0) planeAmbush(); return; }
   if (wave.inter > 0) { wave.inter -= dt; if (wave.inter <= 0) startWave(wave.n + 1); return; }
@@ -10723,7 +10758,9 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
+    if (e.airChute && e.state !== 'airportDrop') { e.s.remove(e.airChute); e.airChute = null; }
     if (MTN.on || DUAL.on) MTN.who = e;
+    if (e.state === 'airportDrop') { airportParatrooperStep(e, dt); animateNpc(e, dt, 0); continue; }
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {
       e.t += dt; e.kneel = true; e.tgt = null; e.passive = true; p.y = e.baseY;
@@ -11809,7 +11846,8 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
+  if (builtStage === 'airport') { player.pos.set(0, 0, 43); player.yaw = 0; }
+  else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
@@ -11827,19 +11865,22 @@ function resetGame() {
 }
 function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   plainMGCrewEnsure();
-  spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
-  for (const A of aides) spawnAide(A);
-  for (const R of runners) spawnRunner(R);
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront') guardFill(1, false);   // 近衛分隊
+  if (builtStage !== 'airport') {
+    spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
+    for (const A of aides) spawnAide(A);
+    for (const R of runners) spawnRunner(R);
+  }
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'airport') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   state = 'play'; lock();
-  if (builtStage === 'twofront') startDualMission(); else startWave(1);
+  if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
+  else if (builtStage === 'twofront') startDualMission(); else startWave(1);
 }
 function pauseGame() {
   if (state !== 'play') return;
@@ -11858,7 +11899,7 @@ function toTitle() {
 function gameOver(win) {
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
-  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '空挺部隊を撃退した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の管制官部隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   $('over').style.display = 'flex';
@@ -12166,5 +12207,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

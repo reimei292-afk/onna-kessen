@@ -603,7 +603,7 @@ function plainMGShot(S,T,team){
 }
 function plainMGUpdate(dt){
  if(!PLAINMG.on||builtStage!=='plains')return;
- const choose=(team,x,z)=>{let best=null,bd=180;for(const e of enemies){if(e.team===team||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=e;}}
+ const choose=(team,x,z)=>{let best=null,bd=240;for(const e of enemies){if(e.team===team||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=e;}}
  // Tower archers and catapult crew are ordinary living units too; allow the wider
  // machine-gun range to reach elevated perches and seated crews.
  if(team==='orange'&&state==='play'&&!inHQ()){const d=Math.hypot(player.pos.x-x,player.pos.z-z);if(d<bd)best={isPlayer:true};}return best;};

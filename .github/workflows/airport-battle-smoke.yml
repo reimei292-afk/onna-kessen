@@ -1,0 +1,77 @@
+name: Airport Battle browser smoke test
+
+"on":
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  airport-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: |
+          python3 -m http.server 8000 > /tmp/airport-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Test Airport Battle in Chromium
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const pageErrors = [];
+            page.on('pageerror', e => pageErrors.push(e.message));
+            page.on('console', m => { if (m.type() === 'error') pageErrors.push(m.text()); });
+            try {
+              await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => window.__game && window.__game.AIRPORT && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="airport"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'airport' && window.__game.state === 'play', null, { timeout: 60000 });
+              await page.waitForTimeout(600);
+              const roster = await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                return {
+                  stage: G.stage, state: G.state, airportActive: A.on,
+                  towerGuards: A.towerGuards.length,
+                  fieldAllies: A.fieldAllies.length,
+                  allInitialBlue: G.enemies.filter(e => e.team === 'blue' && (e.airportTowerGuard || e.airportFieldAlly)).length,
+                  plannedDrops: A.total,
+                  machineGun: !!A.gun && A.gun.visible,
+                  runwayAndStageReady: !!document.querySelector('#hud')
+                };
+              });
+              if (roster.stage !== 'airport' || roster.state !== 'play' || !roster.airportActive ||
+                  roster.towerGuards !== 30 || roster.fieldAllies !== 50 || roster.allInitialBlue !== 80 ||
+                  roster.plannedDrops !== 48 || !roster.machineGun) {
+                throw new Error('Airport setup check failed: ' + JSON.stringify(roster));
+              }
+              const drop = await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                const before = A.drops.length;
+                A.introT = 0; A.dropTimer = 0;
+                G.waveUpdate(0.02);
+                const fresh = A.drops.slice(before);
+                return { before, after: A.drops.length, oneIndividualDrop: fresh.length === 1 && fresh[0].state === 'airportDrop' && !!fresh[0].airChute,
+                  altitude: fresh[0] ? fresh[0].s.position.y : -1, remaining: A.toDrop };
+              });
+              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 20 || drop.remaining !== 47) {
+                throw new Error('Individual parachute drop check failed: ' + JSON.stringify(drop));
+              }
+              if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
+              console.log(JSON.stringify({ roster, drop, pageErrors }, null, 2));
+            } finally {
+              await browser.close();
+            }
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE

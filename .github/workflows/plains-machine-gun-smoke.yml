@@ -115,7 +115,6 @@ jobs:
                   advancesAfterAllFortEnemiesDown: G.PLAINMG.objectiveCleared && G.wave.inter > 0,
                   intermission: G.wave.inter,
                   guardsAlive: G.PLAINMG.posts.reduce((n, P) => n + P.gunners.filter(G.isUp).length, 0),
-                  remainingOrangeEnemies: G.enemies.filter(e => e.team === 'orange' && G.isFoe(e)).length
                 };
               });
               if (!waveObjectiveCheck.tested || !waveObjectiveCheck.blockedWhileFortEnemyAlive || !waveObjectiveCheck.blockedWhileGuardAlive || !waveObjectiveCheck.advancesAfterAllFortEnemiesDown) {

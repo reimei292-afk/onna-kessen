@@ -689,6 +689,12 @@ function mechTruckMesh(g) {
   box(0.12, 0.55, 4.2, -0.45, 1.7, -0.5, wood);
   box(0.12, 0.55, 4.2, 0.45, 1.7, -0.5, wood);
   for (let i = 0; i < 7; i++) box(1.05, 0.06, 0.12, 0, 1.15 + i * 0.16, -0.4 - i * 0.28, iron);
+  // 平原の味方機関銃車：荷台中央に旋回式の銃架と長銃身を設置。
+  box(0.75, 0.16, 0.7, 0, 1.58, 0.05, dark);
+  box(0.18, 0.18, 0.72, 0, 1.76, -0.18, iron);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 1.05, 8), iron);
+  barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 1.8, -0.72); g.add(barrel);
+  box(0.28, 0.22, 0.3, 0.25, 1.68, 0.25, dark);
   const wheels = [];
   const locs = [[-1.05, 2.15], [1.05, 2.15], [-1.05, -2.15], [1.05, -2.15]];
   for (const [wx, wz] of locs) {
@@ -1390,6 +1396,26 @@ function mechNudge() {
 function updateMech(dt) {
   if (!MECH.on || state !== 'play') return;
   for (const C of mechVehicles()) mechDrive(C, dt);
+  // 味方機関銃車：第一波から前進し、射程内の敵へ連続射撃する。
+  MECH.mgT = (MECH.mgT || 0) - dt;
+  if (MECH.mgT <= 0) {
+    MECH.mgT = 0.11;
+    for (const C of MECH.trucks) {
+      if (C.side !== 'blue' || C.wrecked || C.lame || mechLiving(C, 'blue') < 2) continue;
+      let target = null, bd = 43;
+      for (const e of enemies) {
+        if (e.team !== 'orange' || !isUp(e) || e.seated || e.baseY > 3) continue;
+        const d = Math.hypot(e.s.position.x - C.x, e.s.position.z - C.z);
+        if (d < bd) { bd = d; target = e; }
+      }
+      if (!target) continue;
+      const a = new V3(C.x, 1.8, C.z - 1.0), p = target.s.position;
+      const end = new V3(p.x, target.baseY + target.figH * 0.55, p.z);
+      C.g.rotation.y = C.yaw;
+      if (Math.random() < 0.22) damageEnemy(target, 1, a, false, { pt: end, thrust: true }, { team: 'blue', state: 'idle', mg: true, s: { position: a } });
+      if (Math.random() < 0.18) { puff(a.clone().lerp(end, 0.12), 0xffd477, 2, 0.04, 0.45, 0.12); Sfx.mg && Sfx.mg(a); }
+    }
+  }
   for (const K of MECH.catas) cataDrive(K, dt);
   mechLob(dt); mechSteal(dt); mechRepairTick(dt); mechSiegeTick(dt); mechWin();
   MECH.nudge = (MECH.nudge || 0) - dt; if (MECH.nudge <= 0) { MECH.nudge = 0.8; mechNudge(); }
@@ -1405,6 +1431,7 @@ function mechCrew() {
     if (mechLiving(C) >= 1) C.phase = 'go';
   }
   for (const C of MECH.trucks) {
+    // 第一波から機関銃車を含む車両隊を出撃させる。機関銃車は乗員2名で稼働。
     for (let i = 0; i < 2; i++) {
       const e = spawnEnemy(C.x, C.z, 'mob', false, 'blue');
       if (e) mechSit(e, C);

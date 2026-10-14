@@ -73,9 +73,12 @@ jobs:
               if (!elevatedCheck.tested || !elevatedCheck.acquired) throw new Error('Elevated archer target check failed: ' + JSON.stringify(elevatedCheck));
               const catapultCheck = await page.evaluate(() => {
                 const G = window.__game;
-                const K = G.MECH.catas.find(k => !k.locked && !k.wrecked && k.side === 'orange' && k.seats.some(s => !s));
-                const rider = G.enemies.find(e => e.team === 'orange' && !e.perch && !e.special && !e.seated);
-                if (!K || !rider) return { tested: false, reason: 'No available orange catapult or ground crew member' };
+                const K = G.MECH.catas.find(k => !k.locked && !k.wrecked && k.side === 'orange');
+                if (!K) return { tested: false, reason: 'No available orange catapult' };
+                // Use a fresh ordinary orange unit as a deterministic test rider.
+                const rider = G.spawnEnemy(K.x, K.z, 'mob', false, 'orange', { yari: -1 });
+                if (!rider) return { tested: false, reason: 'Could not create test rider' };
+                K.seats = [null, null];
                 for (const other of G.enemies) if (other.team === 'orange' && other !== rider && G.isUp(other)) other.state = 'down';
                 rider.state = 'idle';
                 if (!G.cataSit(rider, K)) return { tested: false, reason: 'Could not seat test rider' };

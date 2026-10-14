@@ -573,13 +573,13 @@ function plainGun(parent,x,y,z,mat) {
   const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
   const body=new THREE.Mesh(new THREE.BoxGeometry(.22,.18,.62),mat.metal);body.position.z=-.12;g.add(body);
   const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.035,.04,.82,8),mat.metal);barrel.rotation.x=Math.PI/2;barrel.position.z=-.65;g.add(barrel);
-  const flash=new THREE.Sprite(beachMats().flash);flash.scale.set(.65,.65,1);flash.visible=false;parent.add(flash);
+  const flash=new THREE.Sprite(beachMats().flash);flash.scale.set(.65,.65,1);flash.visible=false;
   return {g,flash};
 }
 function buildPlainMG() {
   PLAINMG.on=true;PLAINMG.posts=[];PLAINMG.tracers=[];
   const M=carMats();
-  if(CAR.g){const q=plainGun(CAR.g,0,1.65,-.35,M);stageRoot.remove(q.flash);CAR.g.add(q.flash);PLAINMG.car={x:0,y:1.65,z:-.35,gun:q.g,flash:q.flash,aim:new V3(0,1,-20),burst:0,shotT:0,nextT:1.2,target:null,rounds:0};}
+  if(CAR.g){const q=plainGun(CAR.g,0,1.65,-.35,M);stageRoot.add(q.flash);PLAINMG.car={x:0,y:1.65,z:-.35,gun:q.g,flash:q.flash,aim:new V3(0,1,-20),burst:0,shotT:0,nextT:1.2,target:null,rounds:0,parentYaw:CAR.yaw};}
   for(const [i,x,z] of [[0,-22,-66],[1,22,-91]]){
     const g=new THREE.Group();g.position.set(x,0,z);stageRoot.add(g);
     const cm=new THREE.MeshLambertMaterial({color:0x777b79}),dm=new THREE.MeshLambertMaterial({color:0x242725});
@@ -609,11 +609,11 @@ function plainMGUpdate(dt){
    S.nextT-=dt;if(S.burst<=0){if(S.nextT>0){S.flash.visible=false;return;}S.target=choose(team,S.x,S.z);if(!S.target){S.nextT=.6;return;}S.burst=Math.round(rand(6,8));S.shotT=0;}
    if(S.target&&!S.target.isPlayer&&!isUp(S.target)){S.burst=0;S.nextT=.4;return;}
    const p=S.target.isPlayer?player.pos:S.target.s.position;S.aim.lerp(new V3(p.x,(S.target.isPlayer?player.pos.y:S.target.baseY)+1,p.z),Math.min(1,dt*3));
-   const yaw=Math.atan2(S.aim.x-S.x,S.aim.z-S.z),pit=Math.atan2(S.aim.y-S.y,Math.hypot(S.aim.x-S.x,S.aim.z-S.z));S.gun.rotation.set(pit,yaw+Math.PI,0,'YXZ');
+   const yaw=Math.atan2(S.aim.x-S.x,S.aim.z-S.z),pit=Math.atan2(S.aim.y-S.y,Math.hypot(S.aim.x-S.x,S.aim.z-S.z));S.gun.rotation.set(pit,yaw+Math.PI-(S.parentYaw||0),0,'YXZ');
    S.shotT-=dt;if(S.shotT<=0){S.shotT+=1/MG.rpm;S.burst--;S.flash.position.set(S.x,S.y,S.z);S.flash.visible=true;S.flash.material.rotation=Math.random()*6;plainMGShot(S,S.target,team);
      if(S.burst<=0){S.nextT=rand(MG.gapT[0],MG.gapT[1]);S.rounds++;if(S.rounds>=30){S.rounds=0;S.nextT=rand(4.5,6);}}}else S.flash.visible=false;
  };
- if(CAR.g&&PLAINMG.car){const C=PLAINMG.car,[x,z]=carW(0,-.35);C.x=x;C.y=CAR.g.position.y+1.65;C.z=z;fire(C,'blue',dt);}
+ if(CAR.g&&PLAINMG.car){const C=PLAINMG.car,[x,z]=carW(0,-.35);C.x=x;C.y=CAR.g.position.y+1.65;C.z=z;C.parentYaw=CAR.yaw;fire(C,'blue',dt);}
  for(const P of PLAINMG.posts)fire(P,'orange',dt);
  for(const T of PLAINMG.tracers)if(T.t<1){T.t+=dt*Math.min(9,300/Math.max(5,T.d));const k=Math.min(1,T.t),p=T.a.clone().lerp(T.b,k);T.m.position.copy(p);T.m.lookAt(T.b);T.m.rotateY(Math.PI);T.m.scale.set(1,1,Math.min(2.6,T.d*.3));T.m.visible=k<1;}
 }

@@ -1396,6 +1396,31 @@ function mechNudge() {
 function updateMech(dt) {
   if (!MECH.on || state !== 'play') return;
   for (const C of mechVehicles()) mechDrive(C, dt);
+  // 平原の敵トーチカは浜と同様に短い連射を繰り返す。
+  MECH.pbFireT = (MECH.pbFireT || 0) - dt;
+  if (MECH.pbFireT <= 0) {
+    MECH.pbFireT = 0.115;
+    const F = mechFort();
+    for (const P of (F ? F.pbs : [])) {
+      if (P.dead) continue;
+      let target = null, bd = 72;
+      for (const e of enemies) {
+        if (e.team !== 'blue' || !isUp(e) || e.seated || e.baseY > 3) continue;
+        const d = Math.hypot(e.s.position.x - P.x, e.s.position.z - P.z);
+        if (d < 8 || d > bd || e.s.position.z < P.z) continue;
+        target = e; bd = d;
+      }
+      if (!target) continue;
+      P.burst = (P.burst || 0) - 1;
+      if (P.burst <= 0 && (P.nextFire || 0) > time) continue;
+      if (P.burst <= 0) { P.burst = 7; P.nextFire = time + rand(1.5, 2.6); }
+      if (Math.random() < 0.18) {
+        const a = new V3(P.x, 1.4, P.z + 1.7), p = target.s.position;
+        damageEnemy(target, 1, a, false, { pt: new V3(p.x, target.baseY + target.figH * 0.55, p.z), thrust: true }, { team: 'orange', state: 'idle', mg: true, s: { position: a } });
+        if (Math.hypot(player.pos.x - P.x, player.pos.z - P.z) < 70 && Math.random() < 0.25) Sfx.mg && Sfx.mg(a);
+      }
+    }
+  }
   // 味方機関銃車：第一波から前進し、射程内の敵へ連続射撃する。
   MECH.mgT = (MECH.mgT || 0) - dt;
   if (MECH.mgT <= 0) {
@@ -1546,7 +1571,7 @@ function mechMakeFort(i) {
   nobori(-20, zG - 8, '#d9741c', '#fff6e8', '橙組');
   nobori(20, zG - 8, '#d9741c', '#fff6e8', ['一の砦', '二の砦', '三の砦'][i]);
   const catas = [-16, 16].map(x => mechCataMake(x, zG - 12, i > 0, i));
-  const pbs = i === 2 ? [mechPb(-22, zG + 16), mechPb(22, zG + 16)] : [];
+  const pbs = [-22, 22].map(x => mechPb(x, zG + 16));
   return { i, z: zG, name: ['一の砦', '二の砦', '三の砦'][i], hw, walk, gate, back, towers, catas, pbs, done: false, garrisoned: false, med: [0.6, zG - 14] };
 }
 function mechPb(x, z) {

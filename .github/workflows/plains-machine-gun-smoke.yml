@@ -91,26 +91,35 @@ jobs:
                 const G = window.__game;
                 G.wave.n = 1;
                 G.wave.inter = 0;
-                G.wave.toSpawn = 3;
+                G.wave.toSpawn = 0;
                 G.wave.blueToSpawn = 0;
                 G.wave.spawnT = 10;
                 G.PLAINMG.objectiveCleared = false;
-                for (const P of G.PLAINMG.posts) for (const e of P.gunners) e.state = 'approach';
+                for (const e of G.enemies) if (e.team === 'orange') e.state = 'down';
+                for (const P of G.PLAINMG.posts) for (const e of P.gunners) e.state = 'down';
+                const testFortEnemy = G.spawnEnemy(0, -50, 'mob', false, 'orange', { yari: -1 });
+                if (!testFortEnemy) return { tested: false, reason: 'Could not create test fortress enemy' };
+                testFortEnemy.state = 'idle';
+                G.waveUpdate(0.02);
+                const blockedWhileFortEnemyAlive = G.wave.inter === 0 && !G.PLAINMG.objectiveCleared;
+                testFortEnemy.state = 'down';
+                G.PLAINMG.posts[0].gunners[0].state = 'approach';
                 G.waveUpdate(0.02);
                 const blockedWhileGuardAlive = G.wave.inter === 0 && !G.PLAINMG.objectiveCleared;
                 for (const P of G.PLAINMG.posts) for (const e of P.gunners) e.state = 'down';
-                G.wave.toSpawn = 3;
-                G.wave.spawnT = 10;
                 G.waveUpdate(0.02);
                 return {
+                  tested: true,
+                  blockedWhileFortEnemyAlive,
                   blockedWhileGuardAlive,
-                  advancesAfterAllGuardsDown: G.PLAINMG.objectiveCleared && G.wave.inter > 0 && G.wave.toSpawn === 0,
+                  advancesAfterAllFortEnemiesDown: G.PLAINMG.objectiveCleared && G.wave.inter > 0,
                   intermission: G.wave.inter,
-                  guardsAlive: G.PLAINMG.posts.reduce((n, P) => n + P.gunners.filter(G.isUp).length, 0)
+                  guardsAlive: G.PLAINMG.posts.reduce((n, P) => n + P.gunners.filter(G.isUp).length, 0),
+                  remainingOrangeEnemies: G.enemies.filter(e => e.team === 'orange' && G.isFoe(e)).length
                 };
               });
-              if (!waveObjectiveCheck.blockedWhileGuardAlive || !waveObjectiveCheck.advancesAfterAllGuardsDown) {
-                throw new Error('Fort guard wave objective check failed: ' + JSON.stringify(waveObjectiveCheck));
+              if (!waveObjectiveCheck.tested || !waveObjectiveCheck.blockedWhileFortEnemyAlive || !waveObjectiveCheck.blockedWhileGuardAlive || !waveObjectiveCheck.advancesAfterAllFortEnemiesDown) {
+                throw new Error('Fortress wave objective check failed: ' + JSON.stringify(waveObjectiveCheck));
               }
               if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
               console.log(JSON.stringify({ result, elevatedCheck, catapultCheck, waveObjectiveCheck, pageErrors }, null, 2));

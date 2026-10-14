@@ -65,7 +65,7 @@ jobs:
                 const G = window.__game;
                 const e = G.enemies.find(e => e.team === 'orange' && e.perch && G.isUp(e));
                 if (!e) return { tested: false, reason: 'No live orange tower archer found in Plains Battle' };
-                for (const other of G.enemies) if (other.team === 'orange' && other !== e && !G.PLAINMG.posts.some(P => P.gunners.includes(other)) && G.isUp(other)) other.state = 'down';
+                for (const other of G.enemies) if (other.team === 'orange' && other !== e && G.isUp(other)) other.state = 'down';
                 G.PLAINMG.car.burst = 0; G.PLAINMG.car.nextT = 0;
                 G.plainMGUpdate(0.02);
                 return { tested: true, acquired: G.PLAINMG.car.target === e, targetHasPerch: !!G.PLAINMG.car.target?.perch };
@@ -79,7 +79,7 @@ jobs:
                 const rider = G.spawnEnemy(K.x, K.z, 'mob', false, 'orange', { yari: -1 });
                 if (!rider) return { tested: false, reason: 'Could not create test rider' };
                 K.seats = [null, null];
-                for (const other of G.enemies) if (other.team === 'orange' && other !== rider && !G.PLAINMG.posts.some(P => P.gunners.includes(other)) && G.isUp(other)) other.state = 'down';
+                for (const other of G.enemies) if (other.team === 'orange' && other !== rider && G.isUp(other)) other.state = 'down';
                 rider.state = 'idle';
                 if (!G.cataSit(rider, K)) return { tested: false, reason: 'Could not seat test rider' };
                 G.PLAINMG.car.burst = 0; G.PLAINMG.car.nextT = 0;
@@ -95,6 +95,7 @@ jobs:
                 G.wave.blueToSpawn = 0;
                 G.wave.spawnT = 10;
                 G.PLAINMG.objectiveCleared = false;
+                for (const P of G.PLAINMG.posts) for (const e of P.gunners) e.state = 'approach';
                 G.waveUpdate(0.02);
                 const blockedWhileGuardAlive = G.wave.inter === 0 && !G.PLAINMG.objectiveCleared;
                 for (const P of G.PLAINMG.posts) for (const e of P.gunners) e.state = 'down';

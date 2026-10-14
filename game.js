@@ -614,7 +614,7 @@ function buildPlains() {
 //  投石車は主にはしご車を撃つ。車は奪い合える。弓はタイヤを狙えて、直せる。
 //  第2波以降は車を増やさない。
 // ====================================================================
-const MECH = { on: false, lim: 400, cars: [], trucks: [], rocks: [], catas: [], towers: [], gate: null, walk: null, won: false, crewed: false, sayAt: {}, log: [], gateZ: -176, gateHW: 5, forts: [], fi: 0, hqT: 0 };
+const MECH = { on: false, lim: 400, cars: [], trucks: [], tracers: [], rocks: [], catas: [], towers: [], gate: null, walk: null, won: false, crewed: false, sayAt: {}, log: [], gateZ: -176, gateHW: 5, forts: [], fi: 0, hqT: 0 };
 const MECH_LINE = {
   go: ['軽で門まで行くよ', 'はしご車は2人いないと動かないよ', '門、広いね。軽なら通れる', '櫓が二つ。上、気をつけて'],
   tire: ['タイヤやられた！', '動けない…タイヤが', '足を狙われてる'],
@@ -689,12 +689,15 @@ function mechTruckMesh(g) {
   box(0.12, 0.55, 4.2, -0.45, 1.7, -0.5, wood);
   box(0.12, 0.55, 4.2, 0.45, 1.7, -0.5, wood);
   for (let i = 0; i < 7; i++) box(1.05, 0.06, 0.12, 0, 1.15 + i * 0.16, -0.4 - i * 0.28, iron);
-  // 平原の味方機関銃車：荷台中央に旋回式の銃架と長銃身を設置。
-  box(0.75, 0.16, 0.7, 0, 1.58, 0.05, dark);
-  box(0.18, 0.18, 0.72, 0, 1.76, -0.18, iron);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 1.05, 8), iron);
-  barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 1.8, -0.72); g.add(barrel);
-  box(0.28, 0.22, 0.3, 0.25, 1.68, 0.25, dark);
+  // 平原の味方機関銃車：大きく見える銃架・機関部・銃身・照準器。
+  box(0.92, 0.22, 0.88, 0, 1.58, 0.05, dark);
+  box(0.38, 0.38, 0.66, 0, 1.82, -0.18, iron);
+  box(0.20, 0.22, 0.52, 0, 2.00, -0.50, dark);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.10, 1.65, 10), iron);
+  barrel.rotation.x = Math.PI / 2; barrel.position.set(0, 2.00, -1.20); g.add(barrel);
+  const muzzle = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.16, 10), dark);
+  muzzle.rotation.x = Math.PI / 2; muzzle.position.set(0, 2.00, -2.02); g.add(muzzle);
+  box(0.12, 0.36, 0.12, 0.30, 1.88, -0.18, dark);
   const wheels = [];
   const locs = [[-1.05, 2.15], [1.05, 2.15], [-1.05, -2.15], [1.05, -2.15]];
   for (const [wx, wz] of locs) {
@@ -1393,9 +1396,31 @@ function mechNudge() {
     e.tgt = foe; e.tgtT = 1.4; e.state = e.kind === 'archer' ? 'advance' : 'approach';
   }
 }
+function mechTracer(a, b, color) {
+  if (!MECH.tracers) MECH.tracers = [];
+  let T = MECH.tracers.find(t => t.t >= 1);
+  if (!T) {
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.98, depthWrite: false });
+    const geom = new THREE.BoxGeometry(0.09, 0.09, 1);
+    geom.translate(0, 0, -0.5);
+    const m = new THREE.Mesh(geom, mat); m.visible = false; m.frustumCulled = false; stageRoot.add(m);
+    T = { m, t: 1, d: 0, a: new V3(), b: new V3() }; MECH.tracers.push(T);
+  }
+  T.m.material.color.setHex(color); T.t = 0; T.a.copy(a); T.b.copy(b); T.d = a.distanceTo(b); T.m.visible = true;
+}
+function updateMechTracers(dt) {
+  if (!MECH.tracers) return;
+  for (const T of MECH.tracers) {
+    if (T.t >= 1) continue;
+    T.t += dt * Math.min(9, 300 / Math.max(5, T.d));
+    const k = Math.min(1, T.t), L = Math.min(2.6, T.d * 0.3), p = T.a.clone().lerp(T.b, k);
+    T.m.position.copy(p); T.m.lookAt(T.b); T.m.rotateY(Math.PI); T.m.scale.set(1, 1, L); T.m.visible = k < 1;
+  }
+}
 function updateMech(dt) {
   if (!MECH.on || state !== 'play') return;
   for (const C of mechVehicles()) mechDrive(C, dt);
+  updateMechTracers(dt);
   // 平原の敵トーチカは浜と同様に短い連射を繰り返す。
   MECH.pbFireT = (MECH.pbFireT || 0) - dt;
   if (MECH.pbFireT <= 0) {
@@ -1414,8 +1439,10 @@ function updateMech(dt) {
       P.burst = (P.burst || 0) - 1;
       if (P.burst <= 0 && (P.nextFire || 0) > time) continue;
       if (P.burst <= 0) { P.burst = 7; P.nextFire = time + rand(1.5, 2.6); }
+      const a = new V3(P.x, 1.42, P.z + 2.65), p = target.s.position;
+      // 浜の戦いと同じ見える曳光弾を発射。命中判定とは独立して弾道を表示する。
+      mechTracer(a, new V3(p.x, target.baseY + target.figH * 0.55, p.z), 0xffd36a);
       if (Math.random() < 0.18) {
-        const a = new V3(P.x, 1.4, P.z + 1.7), p = target.s.position;
         damageEnemy(target, 1, a, false, { pt: new V3(p.x, target.baseY + target.figH * 0.55, p.z), thrust: true }, { team: 'orange', state: 'idle', mg: true, s: { position: a } });
         if (Math.hypot(player.pos.x - P.x, player.pos.z - P.z) < 70 && Math.random() < 0.25) Sfx.mg && Sfx.mg(a);
       }
@@ -1437,6 +1464,7 @@ function updateMech(dt) {
       const a = new V3(C.x, 1.8, C.z - 1.0), p = target.s.position;
       const end = new V3(p.x, target.baseY + target.figH * 0.55, p.z);
       C.g.rotation.y = C.yaw;
+      mechTracer(a, end, 0x8ee8ff);
       if (Math.random() < 0.22) damageEnemy(target, 1, a, false, { pt: end, thrust: true }, { team: 'blue', state: 'idle', mg: true, s: { position: a } });
       if (Math.random() < 0.18) { puff(a.clone().lerp(end, 0.12), 0xffd477, 2, 0.04, 0.45, 0.12); Sfx.mg && Sfx.mg(a); }
     }
@@ -1585,6 +1613,12 @@ function mechPb(x, z) {
   add(x0, x1, H - 0.22, H, z0, z1, dark);
   const slit = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.45), new THREE.MeshBasicMaterial({ color: 0x1a140e }));
   slit.position.set(x, 1.35, z1 + 0.02); stageRoot.add(slit); parts.push(slit);
+  // 銃眼から突き出す機関銃本体と銃身を明示的に配置。
+  const gunMat = new THREE.MeshLambertMaterial({ color: 0x292d31 });
+  const receiver = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.34, 0.48), gunMat);
+  receiver.position.set(x, 1.42, z1 + 0.18); stageRoot.add(receiver); parts.push(receiver);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.09, 1.35, 10), gunMat);
+  barrel.rotation.x = Math.PI / 2; barrel.position.set(x, 1.42, z1 + 0.92); stageRoot.add(barrel); parts.push(barrel);
   return { x, z, hp: 9, max: 9, dead: false, parts, bs, gun: null };
 }
 function mechPbKill(P) {

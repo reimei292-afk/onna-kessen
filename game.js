@@ -568,7 +568,7 @@ function plainsClear(x, z) {
   return false;
 }
 
-const PLAINMG = { on:false, posts:[], tracers:[], car:null };
+const PLAINMG = { on:false, posts:[], tracers:[], car:null, objectiveCleared:false };
 function plainGun(parent,x,y,z,mat) {
   const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
   const body=new THREE.Mesh(new THREE.BoxGeometry(.22,.18,.62),mat.metal);body.position.z=-.12;g.add(body);
@@ -577,7 +577,7 @@ function plainGun(parent,x,y,z,mat) {
   return {g,flash};
 }
 function buildPlainMG() {
-  PLAINMG.on=true;PLAINMG.posts=[];PLAINMG.tracers=[];
+  PLAINMG.on=true;PLAINMG.objectiveCleared=false;PLAINMG.posts=[];PLAINMG.tracers=[];
   const M=carMats();
   if(CAR.g){const q=plainGun(CAR.g,0,1.65,-.35,M);stageRoot.add(q.flash);PLAINMG.car={x:0,y:1.65,z:-.35,gun:q.g,flash:q.flash,aim:new V3(0,1,-20),burst:0,shotT:0,nextT:1.2,target:null,rounds:0,parentYaw:CAR.yaw};}
   for(const [i,x,z] of [[0,-22,-66],[1,22,-91]]){
@@ -630,7 +630,7 @@ function plainMGUpdate(dt){
  for(const P of PLAINMG.posts)fire(P,'orange',dt);
  for(const T of PLAINMG.tracers)if(T.t<1){T.t+=dt*Math.min(9,300/Math.max(5,T.d));const k=Math.min(1,T.t),p=T.a.clone().lerp(T.b,k);T.m.position.copy(p);T.m.lookAt(T.b);T.m.rotateY(Math.PI);T.m.scale.set(1,1,Math.min(2.6,T.d*.3));T.m.visible=k<1;}
 }
-function clearPlainMG(){PLAINMG.on=false;for(const P of PLAINMG.posts){stageRoot.remove(P.g);stageRoot.remove(P.flash);}for(const T of PLAINMG.tracers)stageRoot.remove(T.m);PLAINMG.posts=[];PLAINMG.tracers=[];PLAINMG.car=null;}
+function clearPlainMG(){PLAINMG.on=false;PLAINMG.objectiveCleared=false;for(const P of PLAINMG.posts){stageRoot.remove(P.g);stageRoot.remove(P.flash);}for(const T of PLAINMG.tracers)stageRoot.remove(T.m);PLAINMG.posts=[];PLAINMG.tracers=[];PLAINMG.car=null;}
 
 function buildPlains() {
   // 竹林を中盤に配置
@@ -9280,6 +9280,21 @@ function waveUpdate(dt) {
         player.hp = Math.min(CFG.maxHp, player.hp + 20);
       }
     }
+    return;
+  }
+  // Plains Battle has a fortress objective: wave 2 must not arrive until all eight pillbox defenders are down.
+  const plainsPostsReady = builtStage !== 'plains' || (PLAINMG.on && PLAINMG.posts.length === 2 && PLAINMG.posts.every(P => P.gunners.length === 4));
+  const plainsGuardsCleared = builtStage === 'plains' && PLAINMG.on && plainsPostsReady && PLAINMG.posts.every(P => P.gunners.every(e => !isFoe(e)));
+  if (builtStage === 'plains' && wave.n === 1 && plainsGuardsCleared && !PLAINMG.objectiveCleared) {
+    PLAINMG.objectiveCleared = true;
+    wave.toSpawn = 0;
+    wave.inter = 5;
+    showBanner('トーチカ制圧！', '守備兵を全員撃破。第二波が接近！');
+    Sfx.fanfare();
+    player.arrows = Math.min(arrowsMax(), player.arrows + 10);
+    for (const e of enemies) if (e.ammo !== undefined) e.ammo = AMMO_MAX;
+    for (const s of squads.blue) s.needAmmo = false;
+    player.hp = Math.min(CFG.maxHp, player.hp + 20);
     return;
   }
   if (!MECH.on && !DUAL.on && wave.toSpawn <= 0 && foes === 0) {

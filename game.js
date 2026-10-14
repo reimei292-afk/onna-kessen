@@ -9159,6 +9159,7 @@ function leanDoll(e) {
   Mo.putWorld(e, J);
 }
 function startWave(n) {
+  if (AIRPORT.on) { airportStartWave(n); return; }
   if (BEACH.on && !BEACH.king) beachKingBoats();
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
   if (ojou.dead || (!ojou.e && hq)) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }

@@ -7499,9 +7499,9 @@ const STAGES = {
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
-  clearPlainMG();
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
   if (builtStage === name && builtAtk === am) return;
+  clearPlainMG();
   mechClear();
   atkMode = am; builtAtk = am; CASTLE.atk = am && name === 'castle'; FORT.atk = am && name === 'fort';
   for (const c of [...stageRoot.children]) stageRoot.remove(c);

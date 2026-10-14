@@ -1,0 +1,96 @@
+name: Plains machine-gun browser smoke test
+
+"on":
+  push:
+    branches: [feature/plains-machine-guns]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: |
+          python3 -m http.server 8000 > /tmp/onna-kessen-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Test Plains Battle in Chromium
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const pageErrors = [];
+            page.on('pageerror', e => pageErrors.push(e.message));
+            page.on('console', m => { if (m.type() === 'error') pageErrors.push(m.text()); });
+            try {
+              await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function' && window.__game.PLAINMG, null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="plains"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'plains' && window.__game.PLAINMG.on && window.__game.state === 'play', null, { timeout: 60000 });
+              await page.waitForTimeout(3500);
+              const result = await page.evaluate(() => {
+                const G = window.__game;
+                const gunners = G.PLAINMG.posts.map(p => p.gunners.filter(e => G.isUp(e)).length);
+                const perched = G.enemies.filter(e => e.team === 'orange' && e.perch && G.isUp(e));
+                const catapultCrew = G.enemies.filter(e => e.team === 'orange' && e.seated && G.isUp(e) && e.kei && e.kei.kind === 'cata');
+                return {
+                  stage: G.stage,
+                  state: G.state,
+                  machineGunActive: G.PLAINMG.on,
+                  pillboxes: G.PLAINMG.posts.length,
+                  gunnersPerPillbox: gunners,
+                  friendlyVehicleGun: !!G.PLAINMG.car,
+                  perchedEnemyArchers: perched.length,
+                  enemyCatapultCrew: catapultCrew.length,
+                  mechCatapults: G.MECH.catas.length
+                };
+              });
+              if (result.state !== 'play' || !result.machineGunActive || result.pillboxes !== 2 || result.gunnersPerPillbox.some(n => n !== 4) || !result.friendlyVehicleGun) {
+                throw new Error('Core Plains machine-gun checks failed: ' + JSON.stringify(result));
+              }
+              const elevatedCheck = await page.evaluate(() => {
+                const G = window.__game;
+                const e = G.enemies.find(e => e.team === 'orange' && e.perch && G.isUp(e));
+                if (!e) return { tested: false, reason: 'No live orange tower archer found in Plains Battle' };
+                for (const other of G.enemies) if (other.team === 'orange' && other !== e && G.isUp(other)) other.state = 'down';
+                G.PLAINMG.car.burst = 0; G.PLAINMG.car.nextT = 0;
+                G.plainMGUpdate(0.02);
+                return { tested: true, acquired: G.PLAINMG.car.target === e, targetHasPerch: !!G.PLAINMG.car.target?.perch };
+              });
+              if (!elevatedCheck.tested || !elevatedCheck.acquired) throw new Error('Elevated archer target check failed: ' + JSON.stringify(elevatedCheck));
+              const catapultCheck = await page.evaluate(() => {
+                const G = window.__game;
+                const K = G.MECH.catas.find(k => !k.locked && !k.wrecked && k.side === 'orange');
+                if (!K) return { tested: false, reason: 'No available orange catapult' };
+                // Use a fresh ordinary orange unit as a deterministic test rider.
+                const rider = G.spawnEnemy(K.x, K.z, 'mob', false, 'orange', { yari: -1 });
+                if (!rider) return { tested: false, reason: 'Could not create test rider' };
+                K.seats = [null, null];
+                for (const other of G.enemies) if (other.team === 'orange' && other !== rider && G.isUp(other)) other.state = 'down';
+                rider.state = 'idle';
+                if (!G.cataSit(rider, K)) return { tested: false, reason: 'Could not seat test rider' };
+                G.PLAINMG.car.burst = 0; G.PLAINMG.car.nextT = 0;
+                G.plainMGUpdate(0.02);
+                return { tested: true, acquired: G.PLAINMG.car.target === rider, targetSeatedOnCatapult: !!rider.seated && rider.seated.kei === K };
+              });
+              if (!catapultCheck.tested || !catapultCheck.acquired) throw new Error('Catapult rider target check failed: ' + JSON.stringify(catapultCheck));
+              if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
+              console.log(JSON.stringify({ result, elevatedCheck, catapultCheck, pageErrors }, null, 2));
+            } finally {
+              await browser.close();
+            }
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE

@@ -567,6 +567,71 @@ function plainsClear(x, z) {
   if (Math.abs(x - 8) < 8 && z > -20 && z < 52) return true;        // 本陣近くの街道
   return false;
 }
+
+const PLAINMG = { on:false, posts:[], tracers:[], car:null };
+function plainGun(parent,x,y,z,mat) {
+  const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.22,.18,.62),mat.metal);body.position.z=-.12;g.add(body);
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.035,.04,.82,8),mat.metal);barrel.rotation.x=Math.PI/2;barrel.position.z=-.65;g.add(barrel);
+  const flash=new THREE.Sprite(beachMats().flash);flash.scale.set(.65,.65,1);flash.visible=false;
+  return {g,flash};
+}
+function buildPlainMG() {
+  PLAINMG.on=true;PLAINMG.posts=[];PLAINMG.tracers=[];
+  const M=carMats();
+  if(CAR.g){const q=plainGun(CAR.g,0,1.65,-.35,M);stageRoot.add(q.flash);PLAINMG.car={x:0,y:1.65,z:-.35,gun:q.g,flash:q.flash,aim:new V3(0,1,-20),burst:0,shotT:0,nextT:1.2,target:null,rounds:0,parentYaw:CAR.yaw};}
+  for(const [i,x,z] of [[0,-22,-66],[1,22,-91]]){
+    const g=new THREE.Group();g.position.set(x,0,z);stageRoot.add(g);
+    const cm=new THREE.MeshLambertMaterial({color:0x777b79}),dm=new THREE.MeshLambertMaterial({color:0x242725});
+    const wall=new THREE.Mesh(new THREE.BoxGeometry(5.2,2.3,4.2),cm);wall.position.y=1.15;g.add(wall);
+    const slit=new THREE.Mesh(new THREE.BoxGeometry(2.1,.35,.08),dm);slit.position.set(0,1.15,2.12);g.add(slit);
+    const q=plainGun(g,0,1.2,1.35,M);
+    const P={i,x,z,g,gun:q.g,flash:q.flash,aim:new V3(x,1,-10),burst:0,shotT:0,nextT:1.5+i*.7,target:null,rounds:0,gunners:[]};
+    PLAINMG.posts.push(P);
+  }
+  const geo=new THREE.BoxGeometry(.035,.035,1);geo.translate(0,0,-.5);const mat=beachMats().tracer;
+  for(let i=0;i<32;i++){const m=new THREE.Mesh(geo,mat);m.visible=false;stageRoot.add(m);PLAINMG.tracers.push({m,t:1,d:0,a:new V3(),b:new V3()});}
+}
+function plainMGCrewEnsure(){
+ if(!PLAINMG.on||builtStage!=='plains')return;
+ // startGame() calls resetGame(), which clears enemies after the stage is built.
+ // Spawn the four pillbox crew only after that reset so the gun emplacements stay manned.
+ for(const P of PLAINMG.posts){
+   P.gunners=[];
+   for(const dx of [-1.35,-.45,.45,1.35]){
+     const e=spawnEnemy(P.x+dx,P.z+.1,'mob',false,'orange',{set:{plainGunner:P.i},yari:-1});
+     if(e){e.hold={face:Math.PI};e.passive=true;P.gunners.push(e);}
+   }
+ }
+}
+function plainMGShot(S,T,team){
+  const from=new V3(S.x,S.y,S.z),to=T.isPlayer?new V3(player.pos.x,player.pos.y+1.1,player.pos.z):new V3(T.s.position.x,T.baseY+T.figH*.58,T.s.position.z);
+  const d=from.distanceTo(to),sp=.12+d*.012;to.x+=rand(-sp,sp);to.y+=rand(-sp*.4,sp*.5);to.z+=rand(-sp,sp);
+  if(Sfx.mg)Sfx.mg(from);const tr=PLAINMG.tracers.find(t=>t.t>=1);if(tr){tr.a.copy(from);tr.b.copy(to);tr.d=from.distanceTo(to);tr.t=0;tr.m.visible=true;}
+  if(Math.random()<clamp(.78-d*.0035,.32,.78)){if(T.isPlayer)hurtPlayer(5);else damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team,state:'idle',mg:true,s:{position:from}});}
+  else puff(to.clone().setY(Math.max(.04,to.y)),0xb6a88a,3,.16,1.5,.35);
+}
+function plainMGUpdate(dt){
+ if(!PLAINMG.on||builtStage!=='plains')return;
+ const choose=(team,x,z)=>{let best=null,bd=240;for(const e of enemies){if(e.team===team||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x-x,p.z-z);if(d<bd){bd=d;best=e;}}
+ // Tower archers and catapult crew are ordinary living units too; allow the wider
+ // machine-gun range to reach elevated perches and seated crews.
+ if(team==='orange'&&state==='play'&&!inHQ()){const d=Math.hypot(player.pos.x-x,player.pos.z-z);if(d<bd)best={isPlayer:true};}return best;};
+ const fire=(S,team,dt)=>{
+   if(S.gunners&&!S.gunners.some(isUp)){S.flash.visible=false;S.burst=0;return;}
+   S.nextT-=dt;if(S.burst<=0){if(S.nextT>0){S.flash.visible=false;return;}S.target=choose(team,S.x,S.z);if(!S.target){S.nextT=.6;return;}S.burst=Math.round(rand(6,8));S.shotT=0;}
+   if(S.target&&!S.target.isPlayer&&!isUp(S.target)){S.burst=0;S.nextT=.4;return;}
+   const p=S.target.isPlayer?player.pos:S.target.s.position;S.aim.lerp(new V3(p.x,(S.target.isPlayer?player.pos.y:S.target.baseY)+1,p.z),Math.min(1,dt*3));
+   const yaw=Math.atan2(S.aim.x-S.x,S.aim.z-S.z),pit=Math.atan2(S.aim.y-S.y,Math.hypot(S.aim.x-S.x,S.aim.z-S.z));S.gun.rotation.set(pit,yaw+Math.PI-(S.parentYaw||0),0,'YXZ');
+   S.shotT-=dt;if(S.shotT<=0){S.shotT+=1/MG.rpm;S.burst--;S.flash.position.set(S.x,S.y,S.z);S.flash.visible=true;S.flash.material.rotation=Math.random()*6;plainMGShot(S,S.target,team);
+     if(S.burst<=0){S.nextT=rand(MG.gapT[0],MG.gapT[1]);S.rounds++;if(S.rounds>=30){S.rounds=0;S.nextT=rand(4.5,6);}}}else S.flash.visible=false;
+ };
+ if(CAR.g&&PLAINMG.car){const C=PLAINMG.car,[x,z]=carW(0,-.35);C.x=x;C.y=CAR.g.position.y+1.65;C.z=z;C.parentYaw=CAR.yaw;fire(C,'blue',dt);}
+ for(const P of PLAINMG.posts)fire(P,'orange',dt);
+ for(const T of PLAINMG.tracers)if(T.t<1){T.t+=dt*Math.min(9,300/Math.max(5,T.d));const k=Math.min(1,T.t),p=T.a.clone().lerp(T.b,k);T.m.position.copy(p);T.m.lookAt(T.b);T.m.rotateY(Math.PI);T.m.scale.set(1,1,Math.min(2.6,T.d*.3));T.m.visible=k<1;}
+}
+function clearPlainMG(){PLAINMG.on=false;for(const P of PLAINMG.posts){stageRoot.remove(P.g);stageRoot.remove(P.flash);}for(const T of PLAINMG.tracers)stageRoot.remove(T.m);PLAINMG.posts=[];PLAINMG.tracers=[];PLAINMG.car=null;}
+
 function buildPlains() {
   // 竹林を中盤に配置
   for (let tries = 0, made = 0; made < 18 && tries < 400; tries++) {
@@ -587,6 +652,7 @@ function buildPlains() {
   buildMedPost(3.6, 29.5, 'blue');
   for (let i = -2; i <= 2; i++) nobori(i * 3, 18, '#1f5fb8', '#f4f1e8', i % 2 ? '青組' : '必勝');
   buildCar(4.6, 3.2, Math.PI);   // v8：軽自動車（運転手つき）。開始地点の右手
+  buildPlainMG();
   // 敵陣（前方）
   for (let i = 0; i < 16; i++) nobori(rand(-50, 50), rand(-130, -85), '#d9741c', '#fff6e8', pick(['橙組', '必勝', '勝鬨', '一番']));
   for (let i = 0; i < 8; i++) nobori(rand(-120, 120), rand(-60, 60), pick(['#2d5a3a', '#6b4a1f', '#4a2d6b']), '#f4f1e8', pick(['八幡', '一番', '先陣']));
@@ -7448,6 +7514,7 @@ function loadStage(name) {
   if (name !== 'beach') player.god = false;
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
   if (builtStage === name && builtAtk === am) return;
+  clearPlainMG();
   mechClear();
   atkMode = am; builtAtk = am; CASTLE.atk = am && name === 'castle'; FORT.atk = am && name === 'fort';
   for (const c of [...stageRoot.children]) stageRoot.remove(c);
@@ -11748,6 +11815,7 @@ function startGame() {
   if (stageName === 'snow' || stageName === 'mtn') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
+  plainMGCrewEnsure();
   spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
   for (const A of aides) spawnAide(A);
   for (const R of runners) spawnRunner(R);
@@ -11980,7 +12048,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
@@ -12083,5 +12151,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

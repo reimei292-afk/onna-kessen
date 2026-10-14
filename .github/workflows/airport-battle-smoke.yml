@@ -68,8 +68,23 @@ jobs:
               if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 20 || drop.remaining !== 47) {
                 throw new Error('Individual parachute drop check failed: ' + JSON.stringify(drop));
               }
+              const landing = await page.evaluate(() => {
+                const G = window.__game, e = G.AIRPORT.drops[G.AIRPORT.drops.length - 1];
+                G.updateEnemies(0.02);
+                G.airportParatrooperStep(e, 20);
+                G.updateEnemies(0.02);
+                return {
+                  state: e.state, y: e.s.position.y, visible: e.s.visible && e.tilt.visible && e.bb.visible,
+                  rotationFinite: Number.isFinite(e.s.rotation.y) && Number.isFinite(e.tilt.rotation.y),
+                  chuteRemoved: !e.airChute, opacity: e.mat.opacity
+                };
+              });
+              if (landing.state === 'airportDrop' || landing.y !== 0 || !landing.visible ||
+                  !landing.rotationFinite || !landing.chuteRemoved || landing.opacity !== 1) {
+                throw new Error('Paratrooper landing visibility check failed: ' + JSON.stringify(landing));
+              }
               if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
-              console.log(JSON.stringify({ roster, drop, pageErrors }, null, 2));
+              console.log(JSON.stringify({ roster, drop, landing, pageErrors }, null, 2));
             } finally {
               await browser.close();
             }

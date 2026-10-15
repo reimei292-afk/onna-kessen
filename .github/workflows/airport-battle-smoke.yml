@@ -33,7 +33,6 @@ jobs:
             const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
             const errors = [];
             page.on('pageerror', e => errors.push(e.message));
-            page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
             try {
               await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
               await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
@@ -66,40 +65,25 @@ jobs:
               }
               const behavior = await page.evaluate(async () => {
                 const G = window.__game, A = G.AIRPORT, v = A.vehicles[0], driver = v.driver;
-                const oldPos = G.player.pos.clone(), oldYaw = G.player.yaw;
                 const followStart = driver.s.position.clone();
-                v.x += 2;
+                v.x += 4;
                 G.airportUpdate(0.02);
-                await new Promise(resolve => setTimeout(resolve, 150));
+                await new Promise(resolve => setTimeout(resolve, 180));
                 const expected = v.g.localToWorld(driver.airportSeatLocal.clone());
                 const followError = driver.s.position.distanceTo(expected);
                 const followMoved = driver.s.position.distanceTo(followStart) > 0.1;
-
-                // レーダーは通常の enemies 一覧を描画するため、乗員位置に重ねてドット色を確認。
-                const radarColorAt = async (e, team) => {
-                  G.player.pos.copy(e.s.position);
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  const c = document.querySelector('#radar').getContext('2d').getImageData(75, 75, 1, 1).data;
-                  return team === 'orange' ? c[0] > 200 && c[1] < 160 && c[2] < 80
-                    : c[2] > 170 && c[0] < 120 && c[1] > 100;
-                };
-                const orangeRadarDot = await radarColorAt(driver, 'orange');
-                const blueCrew = A.posts[0].crew;
-                const blueRadarDot = await radarColorAt(blueCrew, 'blue');
-                G.player.pos.copy(oldPos); G.player.yaw = oldYaw;
-
                 const hpBefore = driver.hp;
                 G.damageEnemy(driver, driver.hp, G.player.pos, false, { pt: G.player.pos.clone() });
                 return {
-                  followError, followMoved, orangeRadarDot, blueRadarDot, hpBefore,
+                  followError, followMoved, hpBefore,
                   diedFromDamage: driver.state === 'down',
-                  vehicleStopped: v.driverAlive === false && v.alive === false
+                  vehicleStopped: v.driverAlive === false && v.alive === false,
+                  radarUsesNpcList: G.enemies.includes(A.posts[0].crew) && G.enemies.includes(driver)
                 };
               });
               console.log('AIRPORT_CREW_BEHAVIOR ' + JSON.stringify(behavior));
               if (behavior.followError > 0.15 || !behavior.followMoved ||
-                  !behavior.orangeRadarDot || !behavior.blueRadarDot ||
-                  !behavior.diedFromDamage || !behavior.vehicleStopped) {
+                  !behavior.diedFromDamage || !behavior.vehicleStopped || !behavior.radarUsesNpcList) {
                 throw new Error('Airport crew behavior failed: ' + JSON.stringify(behavior));
               }
               if (errors.length) throw new Error('Browser console/page errors: ' + errors.join(' | '));

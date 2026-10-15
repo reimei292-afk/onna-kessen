@@ -7507,13 +7507,12 @@ function airportBox(x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.
 function airportCylinder(x,y,z,rt,rb,h,color,rx=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.rotation.x=rx;stageRoot.add(m);return m;}
 
 function airportCrew(parent,x,y,z,scale=1,uniform=0x303840){
+ // 乗員は人形メッシュを使わず、本編と同じ侍女キャラクターの写真スプライトで描画する。
+ const girl=pickGirl('mob'), mat=spriteMat(girl.front.tex);
  const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);parent.add(g);
- const cloth=new THREE.MeshLambertMaterial({color:uniform}),skin=new THREE.MeshLambertMaterial({color:0xc69a7b}),dark=new THREE.MeshLambertMaterial({color:0x20262b});
- const part=(geo,mat,px,py,pz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(px,py,pz);g.add(m);return m;};
- part(new THREE.CylinderGeometry(.16,.2,.48,8),cloth,0,.62,0);
- part(new THREE.SphereGeometry(.15,10,8),skin,0,1,0);
- part(new THREE.BoxGeometry(.34,.07,.28),dark,0,1.13,0);
- for(const side of [-1,1]){const arm=part(new THREE.CylinderGeometry(.055,.07,.38,7),cloth,side*.22,.66,-.03);arm.rotation.z=side*.24;const leg=part(new THREE.CylinderGeometry(.07,.075,.4,7),dark,side*.09,.22,0);leg.rotation.z=side*.04;}
+ const tilt=new THREE.Group();g.add(tilt);
+ const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;tilt.add(body);
+ // 車内・陣地の向きに合わせて正面スプライトを見せる。親グループ側で向きを調整する。
  return g;
 }
 function buildAirport(){
@@ -7655,7 +7654,7 @@ function airportFighterUpdate(dt){
   if(f.t>7){f.phase=3;f.t=0;}
  }else if(f.phase===3){f.g.position.lerp(f.home,Math.min(1,dt*.22));if(f.g.position.distanceTo(f.home)<2){f.g.position.copy(f.home);f.g.rotation.set(0,0,0);f.active=false;f.phase=0;}}
 }
-function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;airportVehicleUpdate(dt);airportPostsUpdate(dt);airportFighterUpdate(dt);AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<30){const side=AIRPORT.dropCount%4,kind=Math.random()<.46?'archer':'mob';let x,z;if(side===0){x=rand(-24,18);z=rand(-82,-68);}else if(side===1){x=rand(-24,18);z=rand(62,78);}else if(side===2){x=rand(42,52);z=rand(-45,42);}else{x=rand(-55,-45);z=rand(-45,42);}const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){e.airElite=false;e.passive=false;e.state=kind==='archer'?'advance':'approach';e.t=0;e.hp=e.hpMax=6;e.speed=Math.max(e.speed*1.12,2.9);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e))){AIRPORT.won=true;gameOver(true);}}
+function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;airportVehicleUpdate(dt);airportPostsUpdate(dt);airportFighterUpdate(dt);AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<30){const side=AIRPORT.dropCount%4,kind=Math.random()<.46?'archer':'mob';let x,z;if(side===0){x=rand(-24,18);z=rand(-82,-68);}else if(side===1){x=rand(-24,18);z=rand(62,78);}else if(side===2){x=rand(42,52);z=rand(-45,42);}else{x=rand(-55,-45);z=rand(-45,42);}const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){airportElite(e);e.speed=Math.max(e.speed*1.12,2.9);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e))){AIRPORT.won=true;gameOver(true);}}
 function airportParatrooperStep(e,dt){if(e.state!=='airportDrop')return;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);e.s.position.y=Math.max(0,e.s.position.y-2.65*dt);e.baseY=e.s.position.y;if(e.airChute){e.airChute.visible=true;e.airChute.position.y=0;}if(e.s.position.y<=.001){e.s.position.y=0;e.baseY=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.airDrop=false;e.passive=false;e.shadow.visible=true;e.tilt.position.set(0,0,0);e.tilt.rotation.set(0,0,0);e.crouch=0;e.hid=false;e.hiding=false;if(e.airChute){e.s.remove(e.airChute);e.airChute=null;}setFrame(e,e.girl.front,false);e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.tgt=null;e.tgtT=0;e.cd=.2;e.spotted=false;e.airLanded=true;}}
 
 const STAGES = {

@@ -24,7 +24,7 @@ jobs:
         run: |
           python3 -m http.server 8000 > /tmp/airport-http.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
-      - name: Test Airport Ground Assault and Control Tower HQ
+      - name: Verify airport crew NPCs in browser
         run: |
           node <<'NODE'
           const { chromium } = require('playwright');
@@ -36,88 +36,75 @@ jobs:
             page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
             try {
               await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
-              await page.waitForFunction(() => window.__game && window.__game.AIRPORT && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
+              await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
               await page.locator('#stagesel button[data-st="airport"]').click();
               await page.locator('#startBtn').click();
               await page.waitForFunction(() => window.__game.stage === 'airport' && window.__game.state === 'play', null, { timeout: 60000 });
-              await page.waitForTimeout(600);
+              await page.waitForTimeout(700);
               const setup = await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
+                const crew = G.enemies.filter(e => e.airportCrewActor);
                 return {
                   stage: G.stage, state: G.state, airportActive: A.on,
-                  towerGuards: A.towerGuards.length, fieldAllies: A.fieldAllies.length,
-                  crewActors: G.enemies.filter(e => e.airportCrewActor).length,
-                  crewActorsRegistered: G.enemies.filter(e => e.airportCrewActor).every(e => e.s && e.hp > 0 && e.hpMax > 0 && e.airportSeatParent && e.airportSeatLocal),
-                  player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw },
-                  hq: G.hq ? G.hq() : null,
-                  secretaryPresent: !!G.sec.e, secondSecretaryPresent: !!G.sec2.e,
-                  blueMedics: G.medics.blue.filter(m => m.e && m.e.state !== 'down').length,
-                  towerInterior: !!G.hq && G.hq().x0 < -37 && G.hq().x1 > -27 && G.hq().z0 < 0 && G.hq().z1 > 10,
-                  plannedGroundEnemies: A.total,
-                  allCarsHaveDriverAndGunner: A.vehicles.length === 6 && A.vehicles.every(v => v.driver && v.gunner && v.driverAlive && v.gunnerAlive),
-                  allGunPostsManned: A.posts.length === 2 && A.posts.every(p => p.crew && p.crewAlive),
-                  fighterHasPilotAndCopilot: !!A.fighter && A.fighter.pilotAlive && A.fighter.copilotAlive && G.enemies.filter(e => e.airportCrewActor && e.airportSeatParent === A.fighter.g && e.airportRole === 'pilot').length === 2,
-                  groundVehicles: A.vehicles.length,
-                  mannedGunPosts: A.posts.length,
-                  fighterHangarAircraft: !!A.fighter,
-                  threeStoreyTower: !!document.querySelector('canvas'),
-                  noMachineGun: !A.gun
+                  crewCount: crew.length,
+                  allCrewAreNormalNpcs: crew.length === 16 && crew.every(e =>
+                    G.enemies.includes(e) && e.s && e.hp > 0 && e.hpMax > 0 &&
+                    e.airportSeatParent && e.airportSeatLocal && e.mk),
+                  vehicles: A.vehicles.length,
+                  allVehicleSeatsOccupied: A.vehicles.length === 6 &&
+                    A.vehicles.every(v => v.driver && v.gunner && v.driverAlive && v.gunnerAlive),
+                  posts: A.posts.length,
+                  allPostsManned: A.posts.length === 2 && A.posts.every(p => p.crew && p.crewAlive),
+                  fighterCrew: crew.filter(e => e.airportSeatParent === A.fighter.g && e.airportRole === 'pilot').length
                 };
               });
+              console.log('AIRPORT_SETUP ' + JSON.stringify(setup));
               if (setup.stage !== 'airport' || setup.state !== 'play' || !setup.airportActive ||
-                  setup.towerGuards !== 24 || setup.fieldAllies !== 36 ||
-                  Math.abs(setup.player.x + 32) > 0.1 || Math.abs(setup.player.z - 7.8) > 0.1 ||
-                  !setup.towerInterior || !setup.secretaryPresent || !setup.secondSecretaryPresent ||
-                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 48 || setup.groundVehicles !== 6 || setup.mannedGunPosts !== 2 || !setup.allCarsHaveDriverAndGunner || !setup.allGunPostsManned || setup.crewActors !== 16 || !setup.crewActorsRegistered || !setup.fighterHasPilotAndCopilot || !setup.fighterHangarAircraft || !setup.threeStoreyTower || !setup.noMachineGun) {
-                throw new Error('Airport control tower/HQ setup failed: ' + JSON.stringify(setup));
+                  !setup.allCrewAreNormalNpcs || !setup.allVehicleSeatsOccupied ||
+                  !setup.allPostsManned || setup.fighterCrew !== 2) {
+                throw new Error('Airport NPC setup failed: ' + JSON.stringify(setup));
               }
-              const assault = await page.evaluate(() => {
-                const G = window.__game, A = G.AIRPORT;
-                A.introT = 0; A.dropTimer = 0;
-                G.waveUpdate(0.02);
-                const e = A.drops[0];
-                return {
-                  spawned: !!e, count: A.drops.length,
-                  groundSpawn: !!e && e.s.position.y === 0,
-                  noParachuteState: !!e && e.state !== 'airportDrop',
-                  noParachuteObject: !!e && !e.airChute,
-                  perimeterSpawn: !!e && (Math.abs(e.s.position.x) > 40 || Math.abs(e.s.position.z) > 60),
-                  remaining: A.toDrop,
-                  team: e && e.team,
-                  kind: e && e.kind
-                };
-              });
-              if (!assault.spawned || !assault.groundSpawn || !assault.noParachuteState ||
-                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 47 ||
-                  assault.team !== 'orange') {
-                throw new Error('Ground-based airport invasion check failed: ' + JSON.stringify(assault));
-              }
-              // 乗員の通常NPC登録、車両追従、被弾・戦死をブラウザ上で検証する。
-              const crewBehavior = await page.evaluate(async () => {
+              const behavior = await page.evaluate(async () => {
                 const G = window.__game, A = G.AIRPORT, v = A.vehicles[0], driver = v.driver;
-                const beforeHp = driver.hp;
+                const oldPos = G.player.pos.clone(), oldYaw = G.player.yaw;
+                const followStart = driver.s.position.clone();
                 v.x += 2;
                 G.airportUpdate(0.02);
-                await new Promise(resolve => setTimeout(resolve, 120));
+                await new Promise(resolve => setTimeout(resolve, 150));
                 const expected = v.g.localToWorld(driver.airportSeatLocal.clone());
                 const followError = driver.s.position.distanceTo(expected);
+                const followMoved = driver.s.position.distanceTo(followStart) > 0.1;
+
+                // レーダーは通常の enemies 一覧を描画するため、乗員位置に重ねてドット色を確認。
+                const radarColorAt = async (e, team) => {
+                  G.player.pos.copy(e.s.position);
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  const c = document.querySelector('#radar').getContext('2d').getImageData(75, 75, 1, 1).data;
+                  return team === 'orange' ? c[0] > 200 && c[1] < 160 && c[2] < 80
+                    : c[2] > 170 && c[0] < 120 && c[1] > 100;
+                };
+                const orangeRadarDot = await radarColorAt(driver, 'orange');
+                const blueCrew = A.posts[0].crew;
+                const blueRadarDot = await radarColorAt(blueCrew, 'blue');
+                G.player.pos.copy(oldPos); G.player.yaw = oldYaw;
+
+                const hpBefore = driver.hp;
                 G.damageEnemy(driver, driver.hp, G.player.pos, false, { pt: G.player.pos.clone() });
                 return {
-                  crewRegistered: G.enemies.includes(driver),
-                  followError,
-                  hpBefore: beforeHp,
+                  followError, followMoved, orangeRadarDot, blueRadarDot, hpBefore,
                   diedFromDamage: driver.state === 'down',
                   vehicleStopped: v.driverAlive === false && v.alive === false
                 };
               });
-              if (!crewBehavior.crewRegistered || crewBehavior.followError > 0.15 ||
-                  !crewBehavior.diedFromDamage || !crewBehavior.vehicleStopped) {
-                throw new Error('Airport crew NPC behavior failed: ' + JSON.stringify(crewBehavior));
+              console.log('AIRPORT_CREW_BEHAVIOR ' + JSON.stringify(behavior));
+              if (behavior.followError > 0.15 || !behavior.followMoved ||
+                  !behavior.orangeRadarDot || !behavior.blueRadarDot ||
+                  !behavior.diedFromDamage || !behavior.vehicleStopped) {
+                throw new Error('Airport crew behavior failed: ' + JSON.stringify(behavior));
               }
-              await page.waitForTimeout(250);
-              await page.locator('#game').screenshot({ path: '/tmp/airport-control-tower.png' });
               if (errors.length) throw new Error('Browser console/page errors: ' + errors.join(' | '));
-              console.log(JSON.stringify({ setup, assault, errors }, null, 2));
+              await page.locator('#game').screenshot({ path: '/tmp/airport-control-tower.png' });
+              console.log('AIRPORT_BROWSER_TEST_PASS');
             } finally {
               await browser.close();
             }

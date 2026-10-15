@@ -7507,13 +7507,26 @@ function airportBox(x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.
 function airportCylinder(x,y,z,rt,rb,h,color,rx=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.rotation.x=rx;stageRoot.add(m);return m;}
 
 function airportCrew(parent,x,y,z,scale=1,uniform=0x303840){
- // 乗員は人形メッシュを使わず、本編と同じ侍女キャラクターの写真スプライトで描画する。
- const girl=pickGirl('mob'), mat=spriteMat(girl.front.tex);
- const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);parent.add(g);
- const tilt=new THREE.Group();g.add(tilt);
- const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;tilt.add(body);
- // 車内・陣地の向きに合わせて正面スプライトを見せる。親グループ側で向きを調整する。
+ // 乗員は汎用の人形モデルではなく、本編と同じ侍女の写真フレームを使う。
+ const girl=pickGirl('mob'), fr=girl.front, mat=spriteMat(fr.tex);
+ const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);g.userData.airportCrew=true;parent.add(g);
+ const tilt=new THREE.Group();tilt.rotation.order='YXZ';g.add(tilt);
+ const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;
+ const h=1.58*fr.hk,w=h*fr.aspect;
+ body.scale.set(w,h,1);body.position.x=(0.5-fr.ax)*w;tilt.add(body);
+ g.userData.airportTilt=tilt;
  return g;
+}
+function airportCrewFaceAll(){
+ const face=(crew,parentYaw=0)=>{
+  if(!crew||!crew.userData||!crew.userData.airportTilt)return;
+  const wp=crew.getWorldPosition(new V3());
+  crew.userData.airportTilt.rotation.y=Math.atan2(camera.position.x-wp.x,camera.position.z-wp.z)-parentYaw;
+ };
+ for(const p of AIRPORT.posts||[])face(p.crew,0);
+ for(const v of AIRPORT.vehicles||[]) { face(v.driver,v.g.rotation.y); face(v.gunner,v.g.rotation.y); }
+ const f=AIRPORT.fighter;
+ if(f&&f.g) for(const crew of f.g.children) if(crew.userData&&crew.userData.airportCrew) face(crew,f.g.rotation.y);
 }
 function buildAirport(){
  AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=60;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;
@@ -12292,6 +12305,7 @@ function frame(now) {
   if (document.documentElement.classList.contains('dagger') !== (player.weapon === 1 && !!player.knife)) document.documentElement.classList.toggle('dagger', player.weapon === 1 && !!player.knife);
   if (MOBILE) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
   sky.position.copy(camera.position);
+  if (AIRPORT.on) airportCrewFaceAll();
   if (PLANE.on) updatePlaneFx(state === 'play' ? dt : state === 'title' ? dt : 0);
   if (MOTION) { updateSunShadow((now - (frame.prev || now)) / 1000); frame.prev = now; Mo.flush(); }
   renderer.render(scene, camera);

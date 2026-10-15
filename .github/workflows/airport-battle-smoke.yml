@@ -72,18 +72,26 @@ jobs:
               }
               const landing = await page.evaluate(() => {
                 const G = window.__game, e = G.AIRPORT.drops[0];
-                e.s.position.y = 0.01; e.baseY = 0.01;
+                e.s.position.y = 0.01; e.baseY = 0.01; e.hp = e.hpMax = 999;
                 G.updateEnemies(0.02);
                 const afterLanding = { state: e.state, y: e.s.position.y, chute: !!e.airChute,
-                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible };
-                G.updateEnemies(0.02);
-                return { afterLanding, afterGroundTick: { state: e.state, y: e.s.position.y,
-                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, isGroundTroop: e.state !== 'airportDrop' } };
+                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible,
+                  frustumCulled: e.bb.frustumCulled, hasTexture: !!(e.bb.material && e.bb.material.map) };
+                // 着地直後だけでなく、地上の通常更新を3秒間続けて表示状態が維持されるか確認。
+                for (let i = 0; i < 180; i++) G.updateEnemies(1 / 60);
+                const afterGroundTicks = { state: e.state, y: e.s.position.y,
+                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible,
+                  frustumCulled: e.bb.frustumCulled, hasTexture: !!(e.bb.material && e.bb.material.map),
+                  isGroundTroop: e.state !== 'airportDrop' && e.state !== 'down' };
+                return { afterLanding, afterGroundTicks };
               });
               if (landing.afterLanding.state === 'airportDrop' || landing.afterLanding.y !== 0 ||
                   landing.afterLanding.chute || !landing.afterLanding.spriteVisible || !landing.afterLanding.shadowVisible ||
-                  !landing.afterGroundTick.isGroundTroop || !landing.afterGroundTick.spriteVisible || landing.afterGroundTick.y !== 0) {
-                throw new Error('Paratrooper ground visibility check failed: ' + JSON.stringify(landing));
+                  landing.afterLanding.frustumCulled || !landing.afterLanding.hasTexture ||
+                  !landing.afterGroundTicks.isGroundTroop || !landing.afterGroundTicks.spriteVisible ||
+                  !landing.afterGroundTicks.shadowVisible || landing.afterGroundTicks.frustumCulled ||
+                  !landing.afterGroundTicks.hasTexture || landing.afterGroundTicks.y !== 0) {
+                throw new Error('Paratrooper sustained ground visibility check failed: ' + JSON.stringify(landing));
               }
               if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
               console.log(JSON.stringify({ roster, drop, landing, pageErrors }, null, 2));

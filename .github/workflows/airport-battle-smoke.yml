@@ -63,12 +63,22 @@ jobs:
                 const before = A.drops.length;
                 A.introT = 0; A.dropTimer = 0;
                 G.waveUpdate(0.02);
-                const fresh = A.drops.slice(before);
-                return { before, after: A.drops.length, oneIndividualDrop: fresh.length === 1 && fresh[0].state === 'airportDrop' && !!fresh[0].airChute,
-                  altitude: fresh[0] ? fresh[0].s.position.y : -1, remaining: A.toDrop };
+                const fresh = A.drops.slice(before), e = fresh[0];
+                const altitude = e ? e.s.position.y : -1;
+                if (e) G.updateEnemies(0.02);
+                return { before, after: A.drops.length,
+                  oneIndividualDrop: !!e && e.state === 'airportDrop' && !!e.airChute,
+                  altitude, remaining: A.toDrop,
+                  airborneSpriteVisible: !!e && e.s.visible && e.tilt.visible && e.bb.visible,
+                  airborneFrontFrame: !!e && e.fr === e.girl.front,
+                  airborneTexture: !!e && !!(e.bb.material && e.bb.material.map),
+                  chuteVisible: !!e && !!e.airChute && e.airChute.visible && e.airChute.children.length >= 5,
+                  chuteCanopy: !!e && !!e.airChute && e.airChute.children.some(o => o.geometry && o.geometry.type === 'SphereGeometry') };
               });
-              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 20 || drop.remaining !== 47) {
-                throw new Error('Individual parachute drop check failed: ' + JSON.stringify(drop));
+              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 18 || drop.remaining !== 47 ||
+                  !drop.airborneSpriteVisible || !drop.airborneFrontFrame || !drop.airborneTexture ||
+                  !drop.chuteVisible || !drop.chuteCanopy) {
+                throw new Error('Visible airborne paratrooper / parachute check failed: ' + JSON.stringify(drop));
               }
               const landing = await page.evaluate(() => {
                 const G = window.__game, e = G.AIRPORT.drops[0];

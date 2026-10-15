@@ -10762,6 +10762,9 @@ function updateEnemies(dt) {
     if (e.airChute && e.state !== 'airportDrop') { e.s.remove(e.airChute); e.airChute = null; }
     if (MTN.on || DUAL.on) MTN.who = e;
     if (e.state === 'airportDrop') { airportParatrooperStep(e, dt); animateNpc(e, dt, 0); continue; }
+    // 空港：着地後の敵兵は通常の敵更新で表示状態を維持する。
+    // 降下アニメーション中に切り替わった可視フラグが残り、地上で消えるケースを防ぐ。
+    if (AIRPORT.on && e.airElite && e.airLanded && isUp(e)) { e.s.visible = true; e.tilt.visible = true; }
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {
       e.t += dt; e.kneel = true; e.tgt = null; e.passive = true; p.y = e.baseY;

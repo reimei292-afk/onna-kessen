@@ -7515,7 +7515,7 @@ function airportCrew(parent,x,y,z,scale=1,uniform=0x303840,role='gunner',team='o
  e.airportCrewActor=true;e.airportSeatParent=parent;e.airportSeatLocal=new V3(x,y,z);
  e.airportRole=role;e.airportRecoil=0;e.passive=true;e.special=true;e.speed=0;e.state='idle';e.hpMax=4;e.hp=4;
  e.s.scale.setScalar(scale);e.baseY=world.y;e.s.position.copy(world);e.px=world.x;e.pz=world.z;
- e.mk.visible=false;
+ // 通常NPCのマーカーも維持する（レーダーは敵一覧から描画される）。
  return e;
 }
 function airportCrewFaceAll(){

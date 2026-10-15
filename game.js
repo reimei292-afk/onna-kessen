@@ -7506,58 +7506,39 @@ const AIRPORT={on:false,posts:[],vehicles:[],fighter:null,towerGuards:[],fieldAl
 function airportBox(x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color,transparent:!!opts.transparent,opacity:opts.opacity==null?1:opts.opacity}));m.position.set(x,y,z);stageRoot.add(m);return m;}
 function airportCylinder(x,y,z,rt,rb,h,color,rx=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.rotation.x=rx;stageRoot.add(m);return m;}
 
-function airportCrew(parent,x,y,z,scale=1,uniform=0x303840,role='gunner'){
- // 乗員も本編と同じ侍女スプライト・方向別フレームを使う。親グループに所属させ、車体と一緒に移動する。
- const girl=pickGirl('mob'), fr=girl.front, mat=spriteMat(fr.tex);
- const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);
- g.userData.airportCrew=true;g.userData.airportGirl=girl;g.userData.airportFrame=fr;g.userData.airportRole=role;parent.add(g);
- const tilt=new THREE.Group();tilt.rotation.order='YXZ';g.add(tilt);
- const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;
- const h=1.58*fr.hk,w=h*fr.aspect;
- body.scale.set(w,h,1);body.position.set((.5-fr.ax)*w,h*.48,0);tilt.add(body);
- g.userData.airportTilt=tilt;g.userData.airportBody=body;g.userData.airportMat=mat;
- return g;
-}
-function airportCrewPose(crew,worldYaw,role){
- if(!crew||!crew.userData||!crew.userData.airportTilt)return;
- const u=crew.userData,girl=u.airportGirl;
- // キャラクターは視点ではなく、運転方向／銃身方向を向く。
- u.airportTilt.rotation.y=worldYaw-crew.parent.rotation.y;
- let fr;
- if(role==='driver'||role==='pilot') fr=girl.kneel||girl.low||girl.front;
- else {
-  const camYaw=Math.atan2(camera.position.x-crew.getWorldPosition(new V3()).x,camera.position.z-crew.getWorldPosition(new V3()).z);
-  const rel=Math.abs(angDiff(worldYaw,camYaw));
-  if(rel>2.25) fr=girlFrame(girl,'back');
-  else if(rel>.78) fr=girlFrame(girl,'side');
-  else fr=girl.stab||girl.action||girl.front;
- }
- if(!fr||!fr.tex)fr=girl.front;
- if(u.airportFrame!==fr){
-  u.airportFrame=fr;u.airportMat.map=fr.tex;
-  u.airportMat.userData.uTexel.value.set(1/fr.tex.image.width,1/fr.tex.image.height);
-  const h=1.58*fr.hk,w=h*fr.aspect;
-  u.airportBody.scale.set(w,h,1);u.airportBody.position.set((.5-fr.ax)*w,h*.48,0);
- }
- // 機銃手は射撃時にわずかに身を乗り出す。銃座・車両に固定された姿勢で揺らす。
- if(role==='gunner'){
-  const recoil=(crew.userData.airportRecoil||0);
-  crew.userData.airportTilt.rotation.x=-.035-recoil*.08;
- }
+function airportCrew(parent,x,y,z,scale=1,uniform=0x303840,role='gunner',team='orange'){
+ // 見た目だけの小物ではなく、通常NPCとして生成する。HP・被弾・戦死・レーダーは本編の共通処理を使用。
+ parent.updateMatrixWorld(true);
+ const world=parent.localToWorld(new V3(x,y,z));
+ const e=spawnEnemy(world.x,world.z,'mob',false,team,{y:world.y});
+ if(!e)return null;
+ e.airportCrewActor=true;e.airportSeatParent=parent;e.airportSeatLocal=new V3(x,y,z);
+ e.airportRole=role;e.airportRecoil=0;e.passive=true;e.special=true;e.speed=0;e.state='idle';e.hpMax=4;e.hp=4;
+ e.s.scale.setScalar(scale);e.baseY=world.y;e.s.position.copy(world);e.px=world.x;e.pz=world.z;
+ e.mk.visible=false;
+ return e;
 }
 function airportCrewFaceAll(){
- const crewTick=c=>{if(c&&c.userData&&c.userData.airportRecoil)c.userData.airportRecoil=Math.max(0,c.userData.airportRecoil-.12);};
- for(const p of AIRPORT.posts||[]){
-  crewTick(p.crew);
-  if(p.crew)airportCrewPose(p.crew,p.g.rotation.y+(p.gun?p.gun.rotation.y:0),'gunner');
- }
+ const place=(e,parent,yaw)=>{
+  if(!e||!parent||!e.airportCrewActor||e.state==='down')return;
+  parent.updateMatrixWorld(true);
+  const p=parent.localToWorld(e.airportSeatLocal.clone());
+  e.s.position.copy(p);e.baseY=p.y;e.px=p.x;e.pz=p.z;
+  e.s.rotation.y=yaw;e.face=yaw;
+  const g=e.girl,role=e.airportRole;
+  let fr=(role==='driver'||role==='pilot')?(g.kneel||g.low||g.front):(g.stab||g.action||g.front);
+  if(!fr||!fr.tex)fr=g.front;
+  if(e.fr!==fr)setFrame(e,fr,false);
+  e.tilt.rotation.x=role==='gunner'?-.035-(e.airportRecoil||0)*.08:0;
+  e.airportRecoil=Math.max(0,(e.airportRecoil||0)-.12);
+ };
+ for(const p of AIRPORT.posts||[])place(p.crew,p.g,p.g.rotation.y+(p.gun?p.gun.rotation.y:0));
  for(const v of AIRPORT.vehicles||[]){
-  crewTick(v.driver);crewTick(v.gunner);
-  if(v.driver)airportCrewPose(v.driver,v.g.rotation.y,'driver');
-  if(v.gunner)airportCrewPose(v.gunner,v.g.rotation.y+(v.gun?v.gun.rotation.y:0),'gunner');
+  place(v.driver,v.g,v.g.rotation.y);
+  place(v.gunner,v.g,v.g.rotation.y+(v.gun?v.gun.rotation.y:0));
  }
  const f=AIRPORT.fighter;
- if(f&&f.g)for(const crew of f.g.children)if(crew.userData&&crew.userData.airportCrew)airportCrewPose(crew,f.g.rotation.y,crew.userData.airportRole||'pilot');
+ if(f&&f.g)for(const e of enemies)if(e.airportCrewActor&&e.airportSeatParent===f.g)place(e,f.g,f.g.rotation.y);
 }
 function buildAirport(){
  AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=48;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;AIRPORT.fxTracers=[];
@@ -7597,7 +7578,7 @@ function buildAirport(){
    const g=new THREE.Group();g.position.set(x,0,z);stageRoot.add(g);
    airportBox(x,.55,z,5.8,1.1,4.8,0x626a6b);
    airportBox(x,1.25,z+1.65,4.8,1.4,.18,0x343b3f);
-   const q=plainGun(g,0,1.65,-.2,carMats());const crew=airportCrew(g,0,1.1,.65,.92,0x344b3a);
+   const q=plainGun(g,0,1.65,-.2,carMats());const crew=airportCrew(g,0,1.1,.65,.92,0x344b3a,'gunner','blue');
    AIRPORT.posts.push({x,z,g,gun:q.g,flash:q.flash,crew,crewAlive:true,target:null,next:1.1+Math.random(),tracerT:0});
  }
  // 格納庫と一機の二人乗り戦闘機
@@ -7611,7 +7592,7 @@ function buildAirport(){
  const wings=new THREE.Mesh(new THREE.BoxGeometry(10.5,.16,1.7),fm);wings.position.z=-.6;fg.add(wings);
  const tailw=new THREE.Mesh(new THREE.BoxGeometry(4.1,.12,.9),fm);tailw.position.z=3.1;fg.add(tailw);
  const fin=new THREE.Mesh(new THREE.BoxGeometry(.16,1.4,1.4),fd);fin.position.set(0,.65,3.1);fg.add(fin);
- for(const z of [-1.05,1.05]){const canopy=new THREE.Mesh(new THREE.SphereGeometry(.48,12,8),fc);canopy.scale.set(.8,.8,1.35);canopy.position.set(0,.43,z);fg.add(canopy);airportCrew(fg,0,.25,z,.66,0x35434b,'pilot');}
+ for(const z of [-1.05,1.05]){const canopy=new THREE.Mesh(new THREE.SphereGeometry(.48,12,8),fc);canopy.scale.set(.8,.8,1.35);canopy.position.set(0,.43,z);fg.add(canopy);airportCrew(fg,0,.25,z,.66,0x35434b,'pilot','orange');}
  for(const x of [-2.8,2.8]){const mg=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.9,8),fd);mg.rotation.x=Math.PI/2;mg.position.set(x,-.08,-1.5);fg.add(mg);}
  AIRPORT.fighter={g:fg,home:new V3(40,.5,35),active:false,t:0,phase:0,shotT:0,sortie:0,pilotAlive:true,copilotAlive:true};
  // 地上侵入用の機関銃付き軽自動車。既存の軽自動車シルエットを再利用
@@ -7622,7 +7603,7 @@ function buildAirport(){
    keiAssemble(g,VM);
    const q=plainGun(g,0,1.38,-.15,VM);q.g.rotation.y=Math.PI;
    g.scale.setScalar(1.12);
-   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52,'driver');const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32,'gunner');AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46,-46,46][i],z:[-70,-70,72,72,-38,38][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
+   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52,'driver','orange');const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32,'gunner','orange');AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46,-46,46][i],z:[-70,-70,72,72,-38,38][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
  }
 
  AIRPORT.gun=null;AIRPORT.tracer=null;
@@ -7662,7 +7643,7 @@ function airportVehicleUpdate(dt){
   if(target&&v.gunnerAlive&&v.next<=0){
    const p=target.s.position,from=new V3(v.x,1.45,v.z),to=new V3(p.x,p.y+1,p.z);
    v.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);
-   airportShowTracer(from,to,0xffd36c);if(v.gunner)v.gunner.userData.airportRecoil=1;
+   airportShowTracer(from,to,0xffd36c);if(v.gunner)v.gunner.airportRecoil=1;
    if(Math.random()<.66)damageEnemy(target,1,from,false,{pt:to,thrust:true},{team:'orange',state:'idle',mg:true,s:{position:from}});
    if(Sfx.mg)Sfx.mg(from);v.next=.22+Math.random()*.22;
   }
@@ -7691,7 +7672,7 @@ function airportPostsUpdate(dt){
   if(p.target&&p.next<=0){
    const e=p.target,from=new V3(p.x,1.8,p.z),to=new V3(e.s.position.x,e.s.position.y+e.figH*.6,e.s.position.z);
    p.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);
-   airportShowTracer(from,to,0xffe5a0);if(p.crew)p.crew.userData.airportRecoil=1;
+   airportShowTracer(from,to,0xffe5a0);if(p.crew)p.crew.airportRecoil=1;
    if(Math.random()<.78)damageEnemy(e,1,from,false,{pt:to.clone(),thrust:true},{team:'blue',state:'idle',mg:true,s:{position:from}});
    if(Sfx.mg)Sfx.mg(from);p.next=.13;
   }
@@ -9580,6 +9561,18 @@ function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
 }
 // 戦死判定：倒れるアニメを一度だけ再生し、その姿勢のまま地面に残る（以後は動かない・しゃべらない）
 function killEnemy(e, byPlayer, from) {
+  if (e.airportCrewActor && AIRPORT.on) {
+    for (const p of AIRPORT.posts || []) if (p.crew === e) p.crewAlive = false;
+    for (const v of AIRPORT.vehicles || []) {
+      if (v.driver === e) { v.driverAlive = false; v.alive = false; }
+      if (v.gunner === e) v.gunnerAlive = false;
+    }
+    if (AIRPORT.fighter && e.airportSeatParent === AIRPORT.fighter.g && e.airportRole === 'pilot') {
+      const seats = enemies.filter(o => o.airportCrewActor && o.airportSeatParent === AIRPORT.fighter.g && o.airportRole === 'pilot');
+      const idx = seats.indexOf(e);
+      if (idx === 0) AIRPORT.fighter.pilotAlive = false; else AIRPORT.fighter.copilotAlive = false;
+    }
+  }
   if (e.icicleMesh) { stageRoot.remove(e.icicleMesh); e.icicleMesh.geometry.dispose(); e.icicleMesh.material.dispose(); e.icicleMesh = null; }
   e.state = 'down'; e.t = 0;
   if (e.spear) yariDrop(e);   // 槍は手を離れて床に落ちる
@@ -10961,6 +10954,14 @@ function updateEnemies(dt) {
     // 降下アニメーション中に切り替わった可視フラグが残り、地上で消えるケースを防ぐ。
     // 空港の空挺兵は、着地後も写真メッシュが視錐台カリングで消えないようにする。
     // 生存中の兵だけに適用し、戦死・伏せ動作の可視状態は変更しない。
+    if (AIRPORT.on && e.airportCrewActor && isUp(e)) {
+      if (e.airportSeatParent) {
+        e.airportSeatParent.updateMatrixWorld(true);
+        const seatPos=e.airportSeatParent.localToWorld(e.airportSeatLocal.clone());
+        p.copy(seatPos); e.baseY=seatPos.y; e.px=seatPos.x; e.pz=seatPos.z;
+      }
+      animateNpc(e, dt, 0); continue;
+    }
     if (AIRPORT.on && e.airElite && e.airLanded && isUp(e)) {
       e.s.visible = true; e.tilt.visible = true; e.bb.visible = true; e.bb.frustumCulled = false;
       if (e.shadow) e.shadow.visible = true;

@@ -7591,7 +7591,7 @@ function buildAirport(){
    keiAssemble(g,VM);
    const q=plainGun(g,0,1.38,-.15,VM);q.g.rotation.y=Math.PI;
    g.scale.setScalar(1.12);
-   const driver=airportCrew(g,-.25,1.05,.65,.74,0x454b52);const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32);AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46][i],z:[-70,-70,72,72][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
+   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52);const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32);AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46][i],z:[-70,-70,72,72][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
  }
 
  AIRPORT.gun=null;AIRPORT.tracer=null;

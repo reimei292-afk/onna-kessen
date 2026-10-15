@@ -56,7 +56,7 @@ jobs:
                   plannedGroundEnemies: A.total,
                   allCarsHaveDriverAndGunner: A.vehicles.length === 6 && A.vehicles.every(v => v.driver && v.gunner && v.driverAlive && v.gunnerAlive),
                   allGunPostsManned: A.posts.length === 2 && A.posts.every(p => p.crew && p.crewAlive),
-                  fighterHasPilotAndCopilot: !!A.fighter && A.fighter.pilotAlive && A.fighter.copilotAlive && A.fighter.g.children.filter(c => c.type === 'Group').length >= 2,
+                  fighterHasPilotAndCopilot: !!A.fighter && A.fighter.pilotAlive && A.fighter.copilotAlive && G.enemies.filter(e => e.airportCrewActor && e.airportSeatParent === A.fighter.g && e.airportRole === 'pilot').length === 2,
                   groundVehicles: A.vehicles.length,
                   mannedGunPosts: A.posts.length,
                   fighterHangarAircraft: !!A.fighter,

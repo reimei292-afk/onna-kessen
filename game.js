@@ -7507,43 +7507,54 @@ function airportBox(x,y,z,w,h,d,color,opts={}){const m=new THREE.Mesh(new THREE.
 function airportCylinder(x,y,z,rt,rb,h,color,rx=0){const m=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,16),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);m.rotation.x=rx;stageRoot.add(m);return m;}
 
 function airportCrew(parent,x,y,z,scale=1,uniform=0x303840,role='gunner'){
- // 本編NPCと同じGIRLSフレーム／spriteMatを使い、乗員の役割に応じて構えを切り替える。
+ // 乗員も本編と同じ侍女スプライト・方向別フレームを使う。親グループに所属させ、車体と一緒に移動する。
  const girl=pickGirl('mob'), fr=girl.front, mat=spriteMat(fr.tex);
  const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);
  g.userData.airportCrew=true;g.userData.airportGirl=girl;g.userData.airportFrame=fr;g.userData.airportRole=role;parent.add(g);
  const tilt=new THREE.Group();tilt.rotation.order='YXZ';g.add(tilt);
  const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;
  const h=1.58*fr.hk,w=h*fr.aspect;
- body.scale.set(w,h,1);body.position.set((0.5-fr.ax)*w,h*.48,0);tilt.add(body);
+ body.scale.set(w,h,1);body.position.set((.5-fr.ax)*w,h*.48,0);tilt.add(body);
  g.userData.airportTilt=tilt;g.userData.airportBody=body;g.userData.airportMat=mat;
  return g;
 }
+function airportCrewPose(crew,worldYaw,role){
+ if(!crew||!crew.userData||!crew.userData.airportTilt)return;
+ const u=crew.userData,girl=u.airportGirl;
+ // キャラクターは視点ではなく、運転方向／銃身方向を向く。
+ u.airportTilt.rotation.y=worldYaw-crew.parent.rotation.y;
+ let fr;
+ if(role==='driver'||role==='pilot') fr=girl.kneel||girl.low||girl.front;
+ else {
+  const camYaw=Math.atan2(camera.position.x-crew.getWorldPosition(new V3()).x,camera.position.z-crew.getWorldPosition(new V3()).z);
+  const rel=Math.abs(angDiff(worldYaw,camYaw));
+  if(rel>2.25) fr=girlFrame(girl,'back');
+  else if(rel>.78) fr=girlFrame(girl,'side');
+  else fr=girl.stab||girl.action||girl.front;
+ }
+ if(!fr||!fr.tex)fr=girl.front;
+ if(u.airportFrame!==fr){
+  u.airportFrame=fr;u.airportMat.map=fr.tex;
+  u.airportMat.userData.uTexel.value.set(1/fr.tex.image.width,1/fr.tex.image.height);
+  const h=1.58*fr.hk,w=h*fr.aspect;
+  u.airportBody.scale.set(w,h,1);u.airportBody.position.set((.5-fr.ax)*w,h*.48,0);
+ }
+ // 機銃手は射撃時にわずかに身を乗り出す。銃座・車両に固定された姿勢で揺らす。
+ if(role==='gunner'){
+  const recoil=(crew.userData.airportRecoil||0);
+  crew.userData.airportTilt.rotation.x=-.035-recoil*.08;
+ }
+}
 function airportCrewFaceAll(){
- const face=(crew,parentYaw=0)=>{
-  if(!crew||!crew.userData||!crew.userData.airportTilt)return;
-  const u=crew.userData,wp=crew.getWorldPosition(new V3());
-  const cameraYaw=Math.atan2(camera.position.x-wp.x,camera.position.z-wp.z);
-  u.airportTilt.rotation.y=cameraYaw-parentYaw;
-  // 通常NPCと同じ方向別フレームを使い、運転手は着座寄り、機銃手は構え寄りの姿にする。
-  const rel=Math.abs(angDiff(parentYaw,cameraYaw));
-  let fr;
-  if(u.airportRole==='driver') fr=u.airportGirl.kneel||u.airportGirl.low||u.airportGirl.front;
-  else if(u.airportRole==='pilot') fr=u.airportGirl.kneel||u.airportGirl.low||u.airportGirl.front;
-  else if(rel>2.25) fr=girlFrame(u.airportGirl,'back');
-  else if(rel>0.78) fr=girlFrame(u.airportGirl,'side');
-  else fr=u.airportGirl.stab||u.airportGirl.action||u.airportGirl.front;
-  if(!fr||!fr.tex)fr=u.airportGirl.front;
-  if(u.airportFrame!==fr){
-   u.airportFrame=fr;u.airportMat.map=fr.tex;
-   u.airportMat.userData.uTexel.value.set(1/fr.tex.image.width,1/fr.tex.image.height);
-   const h=1.58*fr.hk,w=h*fr.aspect;
-   u.airportBody.scale.set(w,h,1);u.airportBody.position.set((.5-fr.ax)*w,h*.48,0);
-  }
- };
- for(const p of AIRPORT.posts||[])face(p.crew,0);
- for(const v of AIRPORT.vehicles||[]) { face(v.driver,v.g.rotation.y); face(v.gunner,v.g.rotation.y); }
+ for(const p of AIRPORT.posts||[]){
+  if(p.crew)airportCrewPose(p.crew,p.g.rotation.y+(p.gun?p.gun.rotation.y:0),'gunner');
+ }
+ for(const v of AIRPORT.vehicles||[]){
+  if(v.driver)airportCrewPose(v.driver,v.g.rotation.y,'driver');
+  if(v.gunner)airportCrewPose(v.gunner,v.g.rotation.y+(v.gun?v.gun.rotation.y:0),'gunner');
+ }
  const f=AIRPORT.fighter;
- if(f&&f.g) for(const crew of f.g.children) if(crew.userData&&crew.userData.airportCrew)face(crew,f.g.rotation.y);
+ if(f&&f.g)for(const crew of f.g.children)if(crew.userData&&crew.userData.airportCrew)airportCrewPose(crew,f.g.rotation.y,crew.userData.airportRole||'pilot');
 }
 function buildAirport(){
  AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=48;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;

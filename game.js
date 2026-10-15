@@ -7511,12 +7511,24 @@ function buildAirport(){
  for(const x of [-17.5,17.5])airportBox(x,.018,-8,.22,.025,165,0xe8e8d9);for(let z=70;z>-88;z-=12)airportBox(0,.022,z,.42,.03,6,0xf5f1dd);
  for(const z of [-86,-80,64,70])for(let i=-4;i<=4;i++)airportBox(i*2.4,.025,z,1.3,.035,2.2,0xf1f0e6);
  for(const x of [-33,-23,22,32])airportBox(x,.018,-28,.12,.02,42,0xd8cfa5);for(const z of [-46,-35,-24,-13])airportBox(26,.02,z,19,.025,.14,0xe2d8ae);
- airportBox(-32,4.8,5,9,9.6,9,0x8b928f);airportBox(-32,10.1,5,10.5,.7,10.5,0x515b62);airportBox(-32,13.1,5,12,4.8,12,0x344c5a);
- for(const x of [-37.8,-32,-26.2])airportBox(x,13.1,5,.13,4.1,11.5,0x9dc7d4,{transparent:true,opacity:.55});for(const z of [-.8,5,10.8])airportBox(-32,13.1,z,11.7,4.1,.13,0x9dc7d4,{transparent:true,opacity:.55});
- airportBox(-32,15.65,5,12.5,.45,12.5,0x424d55);airportCylinder(-32,18.1,5,.09,.09,3.2,0x3c454a);airportCylinder(-32,19.5,5,1.7,1.7,.12,0xb5c3c8);
- const gun=new THREE.Group();gun.position.set(-32,16.6,5);stageRoot.add(gun);const mount=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,.55,10),new THREE.MeshLambertMaterial({color:0x252b2d}));mount.position.y=.2;gun.add(mount);
- const body=new THREE.Mesh(new THREE.BoxGeometry(.65,.45,.8),new THREE.MeshLambertMaterial({color:0x303638}));body.position.set(0,.58,0);gun.add(body);const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.7,8),new THREE.MeshLambertMaterial({color:0x171c1e}));barrel.rotation.x=Math.PI/2;barrel.position.set(0,.62,-.95);gun.add(barrel);AIRPORT.gun=gun;
- AIRPORT.tracer=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new V3(-32,17.2,4),new V3(-32,17.2,-8)]),new THREE.LineBasicMaterial({color:0xffdf8c,transparent:true,opacity:.9}));AIRPORT.tracer.visible=false;stageRoot.add(AIRPORT.tracer);
+ // 管制塔本陣：ガラス張りの管制室。滑走路を見渡せるよう中央部は空ける。
+ airportBox(-32,.08,5,12,.16,12,0x343c42);
+ for(const x of [-38,-32,-26])for(const z of [-1,5,11])airportBox(x,2.55,z,.22,5.1,.22,0x354149);
+ for(const z of [-1,11])airportBox(-32,5.05,z,12,.28,.28,0x354149);
+ for(const x of [-38,-26])airportBox(x,5.05,5,.28,.28,12,0x354149);
+ for(const x of [-35,-29]){airportBox(x,2.55,-.92,5.7,4.7,.07,0x9dc7d4,{transparent:true,opacity:.22});airportBox(x,2.55,10.92,5.7,4.7,.07,0x9dc7d4,{transparent:true,opacity:.22});}
+ for(const z of [2,8]){airportBox(-37.92,2.55,z,.07,4.7,5.7,0x9dc7d4,{transparent:true,opacity:.22});airportBox(-26.08,2.55,z,.07,4.7,5.7,0x9dc7d4,{transparent:true,opacity:.22});}
+ // 窓枠と天井の梁
+ for(const y of [.45,4.85]){airportBox(-32,y,-.9,12,.12,.12,0x3c484f);airportBox(-32,y,10.9,12,.12,.12,0x3c484f);airportBox(-37.9,y,5,.12,.12,12,0x3c484f);airportBox(-26.1,y,5,.12,.12,12,0x3c484f);}
+ airportBox(-32,5.12,5,12.4,.2,12.4,0x424d55);
+ // 操作卓、倾斜控制台、黑色显示器，参考照片中的一排管制席
+ for(let i=0;i<5;i++){const x=-36.2+i*2.1,z=3.2;airportBox(x,.92,z,1.72,.16,1.15,0x394b5b);airportBox(x,1.12,z-.28,1.25,.48,.12,0xd7d9d4);airportBox(x,1.48,z-.38,.95,.64,.1,0x171e25);airportBox(x,1.19,z+.18,1.3,.06,.7,0x737b7d);for(let k=0;k<5;k++)airportBox(x-.48+k*.23,1.25,z+.2,.12,.035,.12,k%2?0x899b9e:0xbbb6a5);}
+ for(const x of [-35,-29]){airportBox(x,.55,7.1,1.3,.12,.55,0x303a43);airportBox(x,.9,7.1,.7,.58,.08,0x111820);}
+ airportCylinder(-32,5.65,5,.07,.07,1.0,0x3c454a);airportCylinder(-32,6.22,5,.72,.72,.1,0xb5c3c8);
+ AIRPORT.gun=null;AIRPORT.tracer=null;
+ hq={x0:-37.5,x1:-26.5,z0:-.5,z1:10.5,sx:-34.5,sz:7.2};
+ buildHQ(-37.5,-26.5,-.5,10.5,-34.5,7.2);
+ buildMedPost(-35.5,7.7,'blue'); buildMedPost(42,-31,'orange');
  airportBox(39,5,-31,27,10,24,0x7c858a);airportBox(39,10.2,-31,29,.7,26,0x515b61);airportBox(25.7,4.8,-31,.6,9.6,23,0x657076);airportBox(52.3,4.8,-31,.6,9.6,23,0x657076);airportBox(39,9.2,-43.1,27,1.5,.6,0x657076);airportBox(39,3.8,-42.7,27,.25,.4,0xd1d3cc);
  airportCylinder(17,2.2,-42,.95,1.05,18,0xd8dcd8,Math.PI/2);airportCylinder(17,2.2,-51.4,.05,.95,2.8,0xc4c9c7,Math.PI/2);airportBox(17,2.05,-41,17,.2,3.4,0x9da9ad);airportBox(17,2.45,-49.2,5.4,.14,2.2,0xa9b2b5);airportBox(17,2.75,-49.5,2.1,.15,1.1,0x435b66);
  for(const x of [12.3,21.7]){airportCylinder(x,1.7,-40.4,.42,.42,2.4,0x77848a,Math.PI/2);airportCylinder(x,1.6,-37.4,.23,.23,1.1,0x343a3e,Math.PI/2);}
@@ -7526,10 +7538,10 @@ function buildAirport(){
 }
 function airportParachute(e){const group=new THREE.Group(),colors=[0xf4eee0,0xc94d2c,0xf4eee0,0xc94d2c];group.name='airport-parachute';for(let i=0;i<4;i++){const geo=new THREE.SphereGeometry(2.05,12,8,i*Math.PI/2,Math.PI/2,0,Math.PI/2),panel=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:colors[i],side:THREE.DoubleSide}));panel.scale.set(1,.72,1);panel.position.y=3.25;panel.renderOrder=3;group.add(panel);}const pts=[];for(let i=0;i<12;i++){const a=i*Math.PI/6;pts.push(new V3(Math.cos(a)*1.62,3.2,Math.sin(a)*1.62),new V3(Math.cos(a)*.18,.72,Math.sin(a)*.18));}const lines=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xf7f0dc,depthTest:false}));lines.renderOrder=4;group.add(lines);group.position.set(0,0,0);e.s.add(group);e.airChute=group;}
 function airportElite(e){if(!e)return;e.airElite=true;e.hp=e.hpMax=7;e.speed=Math.max(e.speed*1.28,3.35);e.dmg=Math.max(e.dmg+6,15);e.P=Object.assign({},e.P,{aimT:Math.max(.32,(e.P.aimT||.8)*.62)});e.airDrop=true;e.passive=true;e.state='airportDrop';e.t=0;e.dropY=rand(12,15);e.baseY=e.dropY;e.s.position.y=e.dropY;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.shadow.visible=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);airportParachute(e);}
-function airportSpawnForces(){AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];for(let i=0;i<30;i++){const ring=Math.floor(i/10),a=(i%10)*Math.PI*2/10+ring*.16,r=7.2+ring*1.5,x=-32+Math.cos(a)*r,z=5+Math.sin(a)*r,e=spawnEnemy(x,z,'archer',false,'blue',{set:{airportTowerGuard:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state='idle';e.speed*=.9;e.hp=e.hpMax=5;AIRPORT.towerGuards.push(e);}}for(let i=0;i<50;i++){const col=i%10,row=Math.floor(i/10),x=-22+col*4.8,z=34-row*9.2+rand(-1.4,1.4),kind=Math.random()<.62?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportFieldAlly:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state=kind==='archer'?'advance':'approach';e.speed*=1.04;e.hp=e.hpMax=4;AIRPORT.fieldAllies.push(e);}}}
-function airportStartWave(n){wave.n=n;wave.inter=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.spawnT=0;if(n===1){AIRPORT.toDrop=AIRPORT.total;AIRPORT.dropCount=0;AIRPORT.dropTimer=2.5;wave.toSpawn=AIRPORT.toDrop;wave.maxAlive=24;wave.total={blue:80,orange:AIRPORT.total};showBanner('空港、奇襲！','空挺部隊が降下中。管制塔の管制官部隊を守れ！');Sfx.fluteCall();return;}wave.toSpawn=0;gameOver(true);}
+function airportSpawnForces(){AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];for(let i=0;i<12;i++){const a=i*Math.PI*2/12,r=7.8,x=-32+Math.cos(a)*r,z=5+Math.sin(a)*r,kind=i%3===0?'mob':'archer',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportTowerGuard:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state='idle';e.speed*=.92;e.hp=e.hpMax=6;AIRPORT.towerGuards.push(e);}}for(let i=0;i<20;i++){const col=i%5,row=Math.floor(i/5),x=-22+col*5.1,z=28+row*6.5+rand(-1,1),kind=Math.random()<.55?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportFieldAlly:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state=kind==='archer'?'advance':'approach';e.speed*=1.04;e.hp=e.hpMax=5;AIRPORT.fieldAllies.push(e);}}}
+function airportStartWave(n){wave.n=n;wave.inter=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.spawnT=0;if(n===1){AIRPORT.toDrop=AIRPORT.total;AIRPORT.dropCount=0;AIRPORT.dropTimer=2.5;wave.toSpawn=AIRPORT.toDrop;wave.maxAlive=24;wave.total={blue:32,orange:AIRPORT.total};showBanner('空港、地上侵入！','侵入部隊が地上から管制塔へ接近中。管制室を守れ！');Sfx.fluteCall();return;}wave.toSpawn=0;gameOver(true);}
 function airportFire(dt){if(!AIRPORT.gun)return;const alive=AIRPORT.towerGuards.filter(isUp).length;AIRPORT.gun.visible=alive>0;if(alive>0){AIRPORT.gunNextT-=dt;AIRPORT.gunShotT-=dt;if(AIRPORT.gunBurst<=0&&AIRPORT.gunNextT<=0){let best=null,bd=95;for(const e of enemies){if(e.team!=='orange'||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x+32,p.z-5);if(d<bd){bd=d;best=e;}}if(best){AIRPORT.gunTarget=best;AIRPORT.gunBurst=7;AIRPORT.gunShotT=0;}else AIRPORT.gunNextT=.5;}if(AIRPORT.gunTarget&&(!isUp(AIRPORT.gunTarget)||AIRPORT.gunTarget.team!=='orange'))AIRPORT.gunBurst=0;if(AIRPORT.gunBurst>0&&AIRPORT.gunShotT<=0){const T=AIRPORT.gunTarget,from=new V3(-32,17.2,4.2),to=new V3(T.s.position.x,T.s.position.y+T.figH*.6,T.s.position.z);AIRPORT.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);AIRPORT.tracer.geometry.dispose();AIRPORT.tracer.geometry=new THREE.BufferGeometry().setFromPoints([from,to]);AIRPORT.tracer.visible=true;AIRPORT.tracerT=.09;if(Sfx.mg)Sfx.mg(from);if(Math.random()<.76)damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team:'blue',state:'idle',mg:true,s:{position:from}});AIRPORT.gunBurst--;AIRPORT.gunShotT=.14;if(AIRPORT.gunBurst<=0)AIRPORT.gunNextT=rand(1,1.7);}}if(AIRPORT.tracerT>0){AIRPORT.tracerT-=dt;if(AIRPORT.tracerT<=0)AIRPORT.tracer.visible=false;}}
-function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<24){const x=rand(-4.5,4.5),z=rand(27,34),kind=Math.random()<.42?'archer':'mob',e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){airportElite(e);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.72,1.12);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length===30&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制官部隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e))){AIRPORT.won=true;gameOver(true);}}
+function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<24){const side=AIRPORT.dropCount%4,kind=Math.random()<.46?'archer':'mob';let x,z;if(side===0){x=rand(-24,18);z=rand(-82,-68);}else if(side===1){x=rand(-24,18);z=rand(62,78);}else if(side===2){x=rand(42,52);z=rand(-45,42);}else{x=rand(-55,-45);z=rand(-45,42);}const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){e.airElite=false;e.passive=false;e.state=kind==='archer'?'advance':'approach';e.t=0;e.hp=e.hpMax=6;e.speed=Math.max(e.speed*1.12,2.9);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e))){AIRPORT.won=true;gameOver(true);}}
 function airportParatrooperStep(e,dt){if(e.state!=='airportDrop')return;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);e.s.position.y=Math.max(0,e.s.position.y-2.65*dt);e.baseY=e.s.position.y;if(e.airChute){e.airChute.visible=true;e.airChute.position.y=0;}if(e.s.position.y<=.001){e.s.position.y=0;e.baseY=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.airDrop=false;e.passive=false;e.shadow.visible=true;e.tilt.position.set(0,0,0);e.tilt.rotation.set(0,0,0);e.crouch=0;e.hid=false;e.hiding=false;if(e.airChute){e.s.remove(e.airChute);e.airChute=null;}setFrame(e,e.girl.front,false);e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.tgt=null;e.tgtT=0;e.cd=.2;e.spotted=false;e.airLanded=true;}}
 
 const STAGES = {
@@ -7541,7 +7553,7 @@ const STAGES = {
   snow: { name: '極寒の戦い', desc: '攻め手として細い雪峡谷を突破せよ。雪に隠れたクレバス、谷を一本の暗い川が塞ぐ。雪の岸と流氷。冷えるのは川の中だけ。遺体を縦に並べて橋にし、ブリザードでは遺体を垂直に立てて道しるべにする。かまくらで戦闘が止むと、おにぎりで味方が少し回復する。' },
   mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。攻め手は射ちながら破門隊について門へ上がり、門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
   twofront: { name: '王と西園寺の二正面戦', desc: '西に城、東に山城。王は狭間・大手門・櫓・二の丸の門上と伏兵で守り、西園寺は峰の足場と本丸で守る。落とし穴、つぶて、破城槌、針山もそのまま。性格で間合いが変わり、分隊の戦況は王と西園寺の両方で分かる。' },
-  airport: { name: '空港の戦い', desc: '滑走路・管制塔・航空機格納庫のある空軍基地。空挺部隊が一人ずつ落下傘で降下する。管制塔の管制官部隊30人を守り、初期配置の味方50人と共に練度の高い敵を撃退せよ。管制塔には機関銃が1台。' },
+  airport: { name: '空港の戦い', desc: '管制塔のガラス張りの管制室が本陣。滑走路や格納庫から地上侵入してくる敵を、管制塔守備隊・近衛・秘書課・医務班と共に迎え撃つ。操作卓とモニターが並ぶ管制室で戦況を見極めよ。' },
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
@@ -11869,7 +11881,7 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'airport') { player.pos.set(0, 0, 43); player.yaw = 0; }
+  if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
@@ -11892,12 +11904,12 @@ function startGame() {
   loadStage(stageName);
   resetGame();
   plainMGCrewEnsure();
-  if (builtStage !== 'airport') {
+  {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'airport') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';

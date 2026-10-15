@@ -47,11 +47,10 @@ jobs:
                   stage: G.stage, state: G.state, airportActive: A.on,
                   towerGuards: A.towerGuards.length, fieldAllies: A.fieldAllies.length,
                   player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw },
-                  hq: G.hq || null,
+                  hq: G.hq ? G.hq() : null,
                   secretaryPresent: !!G.sec.e, secondSecretaryPresent: !!G.sec2.e,
                   blueMedics: G.medics.blue.filter(m => m.e && m.e.state !== 'down').length,
-                  consoleMeshes: G.stageRoot.children.filter(o => o.isMesh && o.position.x > -37 && o.position.x < -27 && o.position.z > 2 && o.position.z < 5).length,
-                  towerInterior: !!G.hq && G.hq.x0 < -37 && G.hq.x1 > -27 && G.hq.z0 < 0 && G.hq.z1 > 10,
+                  towerInterior: !!G.hq && G.hq().x0 < -37 && G.hq().x1 > -27 && G.hq().z0 < 0 && G.hq().z1 > 10,
                   plannedGroundEnemies: A.total,
                   noMachineGun: !A.gun
                 };

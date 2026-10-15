@@ -10679,6 +10679,16 @@ function animateNpc(e, dt, lean) {
       }
     }
   }
+  // 空港の空挺兵は、通常の視点別フレーム選択で透明／欠落フレームに切り替わる場合があるため、
+  // 着地後の生存中だけ、必ず実在する正面写真へ戻して描画状態を復元する。
+  const airportGroundAlive = AIRPORT.on && e.airElite && e.airLanded && isUp(e);
+  if (airportGroundAlive) {
+    fr = g.front || g.side || fr;
+    mirror = false;
+    e.s.visible = true; e.tilt.visible = true; e.bb.visible = true;
+    e.bb.frustumCulled = false;
+    if (e.mat) { e.mat.transparent = false; e.mat.opacity = 1; e.mat.alphaTest = 0.42; e.mat.needsUpdate = true; }
+  }
   setFrame(e, fr, mirror);
   if (e.armed) updateProps(e, fr, mirror, sgn);
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
@@ -10769,6 +10779,7 @@ function updateEnemies(dt) {
     if (AIRPORT.on && e.airElite && e.airLanded && isUp(e)) {
       e.s.visible = true; e.tilt.visible = true; e.bb.visible = true; e.bb.frustumCulled = false;
       if (e.shadow) e.shadow.visible = true;
+      if (e.mat) { e.mat.transparent = false; e.mat.opacity = 1; e.mat.alphaTest = 0.42; }
     }
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {

@@ -82,6 +82,58 @@ jobs:
                   !drop.chuteVisible || !drop.chuteCanopy) {
                 throw new Error('Visible airborne paratrooper / parachute check failed: ' + JSON.stringify(drop));
               }
+              // 実際のステージ開始位置・実カメラで自然に降下兵を出現させる（位置・向き・カメラを固定しない）。
+              await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                A.introT = 0; A.dropTimer = 0;
+                G.waveUpdate(0.02);
+                G.updateEnemies(0.02);
+              });
+              await page.waitForTimeout(250);
+              const naturalView = await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                const drops = A.drops.filter(e => e && e.state === 'airportDrop');
+                const cam = window.__cam;
+                return {
+                  count: drops.length,
+                  player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw, pitch: G.player.pitch },
+                  camera: cam ? { x: cam.position.x, y: cam.position.y, z: cam.position.z } : null,
+                  drops: drops.map(e => ({ x: e.s.position.x, y: e.s.position.y, z: e.s.position.z,
+                    sprite: e.bb.visible, chute: !!e.airChute && e.airChute.visible }))
+                };
+              });
+              if (!naturalView.count) throw new Error('No naturally spawned airborne troops in actual stage view: ' + JSON.stringify(naturalView));
+              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/natural-stage-view.png' });
+              await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                for (const e of A.drops) if (e && e.state === 'airportDrop') {
+                  e.tilt.visible = false;
+                  if (e.airChute) e.airChute.visible = false;
+                }
+              });
+              await page.waitForTimeout(100);
+              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/natural-stage-view-with-drops-hidden.png' });
+              const naturalFull = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/natural-stage-view.png'));
+              const naturalHidden = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/natural-stage-view-with-drops-hidden.png'));
+              const naturalChangedPixels = (() => {
+                let n = 0;
+                for (let i = 0; i < naturalFull.data.length; i += 4) {
+                  const d = Math.abs(naturalFull.data[i] - naturalHidden.data[i]) +
+                    Math.abs(naturalFull.data[i + 1] - naturalHidden.data[i + 1]) +
+                    Math.abs(naturalFull.data[i + 2] - naturalHidden.data[i + 2]);
+                  if (d > 35) n++;
+                }
+                return n;
+              })();
+              console.log('Natural stage camera visibility test: ' + JSON.stringify({ naturalView, naturalChangedPixels }));
+              if (naturalChangedPixels < 40) throw new Error('Naturally spawned drops are not visibly rendered from actual stage camera: ' + JSON.stringify({ naturalView, naturalChangedPixels }));
+              await page.evaluate(() => {
+                const G = window.__game, A = G.AIRPORT;
+                for (const e of A.drops) if (e && e.state === 'airportDrop') {
+                  e.tilt.visible = true;
+                  if (e.airChute) e.airChute.visible = true;
+                }
+              });
               // 物体の visible フラグではなく、実際のプレイヤー視点の WebGL 描画ピクセルを比較する。
               fs.mkdirSync('artifacts/airport-visual', { recursive: true });
               await page.evaluate(() => {

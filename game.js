@@ -7520,6 +7520,25 @@ function airportCrew(parent,x,y,z,scale=1,uniform=0x303840,role='gunner',team='o
  // 通常NPCのマーカーも維持する（レーダーは敵一覧から描画される）。
  return e;
 }
+function airportCrewRebuild(){
+ if(!AIRPORT.on)return;
+ // loadStage() が乗員を生成した後に resetGame() が敵一覧とNPCメッシュを初期化するため、
+ // 初期化完了後に座席ごとの実NPCを作り直して車両／銃座へ再接続する。
+ for(const p of AIRPORT.posts||[]){
+  p.crew=airportCrew(p.g,0,1.1,.65,.92,0x344b3a,'gunner','blue');p.crewAlive=true;
+ }
+ for(const v of AIRPORT.vehicles||[]){
+  v.driver=airportCrew(v.g,-.25,.56,.65,.58,0x454b52,'driver','orange');
+  v.gunner=airportCrew(v.g,0,1.52,-.15,.9,0x553d32,'gunner','orange');
+  v.driverAlive=true;v.gunnerAlive=true;v.alive=true;
+ }
+ const f=AIRPORT.fighter;
+ if(f&&f.g){
+  f.crew=[];
+  for(const z of [-1.05,1.05])f.crew.push(airportCrew(f.g,0,.25,z,.66,0x35434b,'pilot','orange'));
+  f.pilotAlive=true;f.copilotAlive=true;
+ }
+}
 function airportCrewFaceAll(){
  const place=(e,parent,yaw)=>{
   if(!e||!parent||!e.airportCrewActor||e.state==='down')return;
@@ -12076,6 +12095,7 @@ function startGame() {
   if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
+  if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);

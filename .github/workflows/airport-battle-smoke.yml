@@ -77,7 +77,7 @@ jobs:
                   chuteVisible: !!e && !!e.airChute && e.airChute.visible && e.airChute.children.length >= 5,
                   chuteCanopy: !!e && !!e.airChute && e.airChute.children.some(o => o.geometry && o.geometry.type === 'SphereGeometry') };
               });
-              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 18 || drop.remaining !== 47 ||
+              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 11.5 || drop.altitude > 15 || drop.remaining !== 47 ||
                   !drop.airborneSpriteVisible || !drop.airborneFrontFrame || !drop.airborneTexture ||
                   !drop.chuteVisible || !drop.chuteCanopy) {
                 throw new Error('Visible airborne paratrooper / parachute check failed: ' + JSON.stringify(drop));

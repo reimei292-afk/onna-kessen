@@ -46,13 +46,15 @@ jobs:
                 return {
                   stage: G.stage, state: G.state, airportActive: A.on,
                   towerGuards: A.towerGuards.length, fieldAllies: A.fieldAllies.length,
+                  crewActors: G.enemies.filter(e => e.airportCrewActor).length,
+                  crewActorsRegistered: G.enemies.filter(e => e.airportCrewActor).every(e => e.s && e.hp > 0 && e.hpMax > 0 && e.airportSeatParent && e.airportSeatLocal),
                   player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw },
                   hq: G.hq ? G.hq() : null,
                   secretaryPresent: !!G.sec.e, secondSecretaryPresent: !!G.sec2.e,
                   blueMedics: G.medics.blue.filter(m => m.e && m.e.state !== 'down').length,
                   towerInterior: !!G.hq && G.hq().x0 < -37 && G.hq().x1 > -27 && G.hq().z0 < 0 && G.hq().z1 > 10,
                   plannedGroundEnemies: A.total,
-                  allCarsHaveDriverAndGunner: A.vehicles.length === 4 && A.vehicles.every(v => v.driver && v.gunner && v.driverAlive && v.gunnerAlive),
+                  allCarsHaveDriverAndGunner: A.vehicles.length === 6 && A.vehicles.every(v => v.driver && v.gunner && v.driverAlive && v.gunnerAlive),
                   allGunPostsManned: A.posts.length === 2 && A.posts.every(p => p.crew && p.crewAlive),
                   fighterHasPilotAndCopilot: !!A.fighter && A.fighter.pilotAlive && A.fighter.copilotAlive && A.fighter.g.children.filter(c => c.type === 'Group').length >= 2,
                   groundVehicles: A.vehicles.length,
@@ -63,10 +65,10 @@ jobs:
                 };
               });
               if (setup.stage !== 'airport' || setup.state !== 'play' || !setup.airportActive ||
-                  setup.towerGuards !== 12 || setup.fieldAllies !== 20 ||
+                  setup.towerGuards !== 24 || setup.fieldAllies !== 36 ||
                   Math.abs(setup.player.x + 32) > 0.1 || Math.abs(setup.player.z - 7.8) > 0.1 ||
                   !setup.towerInterior || !setup.secretaryPresent || !setup.secondSecretaryPresent ||
-                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 60 || setup.groundVehicles !== 4 || setup.mannedGunPosts !== 2 || !setup.allCarsHaveDriverAndGunner || !setup.allGunPostsManned || !setup.fighterHasPilotAndCopilot || !setup.fighterHangarAircraft || !setup.threeStoreyTower || !setup.noMachineGun) {
+                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 48 || setup.groundVehicles !== 6 || setup.mannedGunPosts !== 2 || !setup.allCarsHaveDriverAndGunner || !setup.allGunPostsManned || setup.crewActors !== 16 || !setup.crewActorsRegistered || !setup.fighterHasPilotAndCopilot || !setup.fighterHangarAircraft || !setup.threeStoreyTower || !setup.noMachineGun) {
                 throw new Error('Airport control tower/HQ setup failed: ' + JSON.stringify(setup));
               }
               const assault = await page.evaluate(() => {
@@ -86,9 +88,31 @@ jobs:
                 };
               });
               if (!assault.spawned || !assault.groundSpawn || !assault.noParachuteState ||
-                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 59 ||
+                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 47 ||
                   assault.team !== 'orange') {
                 throw new Error('Ground-based airport invasion check failed: ' + JSON.stringify(assault));
+              }
+              // 乗員の通常NPC登録、車両追従、被弾・戦死をブラウザ上で検証する。
+              const crewBehavior = await page.evaluate(async () => {
+                const G = window.__game, A = G.AIRPORT, v = A.vehicles[0], driver = v.driver;
+                const beforeHp = driver.hp;
+                v.x += 2;
+                G.airportUpdate(0.02);
+                await new Promise(resolve => setTimeout(resolve, 120));
+                const expected = v.g.localToWorld(driver.airportSeatLocal.clone());
+                const followError = driver.s.position.distanceTo(expected);
+                G.damageEnemy(driver, driver.hp, G.player.pos, false, { pt: G.player.pos.clone() });
+                return {
+                  crewRegistered: G.enemies.includes(driver),
+                  followError,
+                  hpBefore: beforeHp,
+                  diedFromDamage: driver.state === 'down',
+                  vehicleStopped: v.driverAlive === false && v.alive === false
+                };
+              });
+              if (!crewBehavior.crewRegistered || crewBehavior.followError > 0.15 ||
+                  !crewBehavior.diedFromDamage || !crewBehavior.vehicleStopped) {
+                throw new Error('Airport crew NPC behavior failed: ' + JSON.stringify(crewBehavior));
               }
               await page.waitForTimeout(250);
               await page.locator('#game').screenshot({ path: '/tmp/airport-control-tower.png' });

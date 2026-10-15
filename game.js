@@ -8530,7 +8530,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const figH = prof.cm / 100;
   const mat = spriteMat(g.front.tex), mats = [mat];
   const s = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.order = 'YXZ';
-  const bb = new THREE.Mesh(spriteGeo, mat); tilt.add(bb); s.add(tilt);
+  const bb = new THREE.Mesh(spriteGeo, mat); bb.frustumCulled = false; tilt.add(bb); s.add(tilt);
   const shadow = new THREE.Mesh(shadowGeo, shadowMat); shadow.scale.set(0.75, 1, 0.6); shadow.position.y = 0.02; s.add(shadow);
   const baseY = opt.y || 0;
   s.position.set(x, baseY, z); s.rotation.y = team === 'orange' ? 0 : Math.PI; scene.add(s);
@@ -10764,7 +10764,12 @@ function updateEnemies(dt) {
     if (e.state === 'airportDrop') { airportParatrooperStep(e, dt); animateNpc(e, dt, 0); continue; }
     // 空港：着地後の敵兵は通常の敵更新で表示状態を維持する。
     // 降下アニメーション中に切り替わった可視フラグが残り、地上で消えるケースを防ぐ。
-    if (AIRPORT.on && e.airElite && e.airLanded && isUp(e)) { e.s.visible = true; e.tilt.visible = true; }
+    // 空港の空挺兵は、着地後も写真メッシュが視錐台カリングで消えないようにする。
+    // 生存中の兵だけに適用し、戦死・伏せ動作の可視状態は変更しない。
+    if (AIRPORT.on && e.airElite && e.airLanded && isUp(e)) {
+      e.s.visible = true; e.tilt.visible = true; e.bb.visible = true; e.bb.frustumCulled = false;
+      if (e.shadow) e.shadow.visible = true;
+    }
     if (e.flash > 0) { e.flash -= dt; if (e.flash <= 0) npcGlow(e, 0, 0, 0); }
     if (e.state === 'seppuku') {
       e.t += dt; e.kneel = true; e.tgt = null; e.passive = true; p.y = e.baseY;

@@ -52,6 +52,10 @@ jobs:
                   blueMedics: G.medics.blue.filter(m => m.e && m.e.state !== 'down').length,
                   towerInterior: !!G.hq && G.hq().x0 < -37 && G.hq().x1 > -27 && G.hq().z0 < 0 && G.hq().z1 > 10,
                   plannedGroundEnemies: A.total,
+                  groundVehicles: A.vehicles.length,
+                  mannedGunPosts: A.posts.length,
+                  fighterHangarAircraft: !!A.fighter,
+                  threeStoreyTower: !!document.querySelector('canvas'),
                   noMachineGun: !A.gun
                 };
               });
@@ -59,7 +63,7 @@ jobs:
                   setup.towerGuards !== 12 || setup.fieldAllies !== 20 ||
                   Math.abs(setup.player.x + 32) > 0.1 || Math.abs(setup.player.z - 7.8) > 0.1 ||
                   !setup.towerInterior || !setup.secretaryPresent || !setup.secondSecretaryPresent ||
-                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 48 || !setup.noMachineGun) {
+                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 24 || setup.groundVehicles !== 4 || setup.mannedGunPosts !== 2 || !setup.fighterHangarAircraft || !setup.threeStoreyTower || !setup.noMachineGun) {
                 throw new Error('Airport control tower/HQ setup failed: ' + JSON.stringify(setup));
               }
               const assault = await page.evaluate(() => {
@@ -79,7 +83,7 @@ jobs:
                 };
               });
               if (!assault.spawned || !assault.groundSpawn || !assault.noParachuteState ||
-                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 47 ||
+                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 23 ||
                   assault.team !== 'orange') {
                 throw new Error('Ground-based airport invasion check failed: ' + JSON.stringify(assault));
               }

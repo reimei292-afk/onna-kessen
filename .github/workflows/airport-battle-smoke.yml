@@ -108,7 +108,7 @@ jobs:
               await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
                 for (const e of A.drops) if (e && e.state === 'airportDrop') {
-                  e.tilt.visible = false;
+                  if (e.tilt) e.tilt.visible = false;
                   if (e.airChute) e.airChute.visible = false;
                 }
               });
@@ -131,7 +131,7 @@ jobs:
               await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
                 for (const e of A.drops) if (e && e.state === 'airportDrop') {
-                  e.tilt.visible = true;
+                  if (e.tilt) e.tilt.visible = true;
                   if (e.airChute) e.airChute.visible = true;
                 }
               });

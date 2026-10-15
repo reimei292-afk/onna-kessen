@@ -7513,7 +7513,8 @@ function airportCrew(parent,x,y,z,scale=1,uniform=0x303840){
  const tilt=new THREE.Group();tilt.rotation.order='YXZ';g.add(tilt);
  const body=new THREE.Mesh(spriteGeo,mat);body.frustumCulled=false;
  const h=1.58*fr.hk,w=h*fr.aspect;
- body.scale.set(w,h,1);body.position.x=(0.5-fr.ax)*w;tilt.add(body);
+ // 写真スプライトは足元を乗員位置に合わせ、車体・銃架の上から上半身が見えるようにする。
+ body.scale.set(w,h,1);body.position.set((0.5-fr.ax)*w,h*.48,0);tilt.add(body);
  g.userData.airportTilt=tilt;
  return g;
 }
@@ -7529,7 +7530,7 @@ function airportCrewFaceAll(){
  if(f&&f.g) for(const crew of f.g.children) if(crew.userData&&crew.userData.airportCrew) face(crew,f.g.rotation.y);
 }
 function buildAirport(){
- AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=60;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;
+ AIRPORT.on=true;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.total=48;AIRPORT.toDrop=0;AIRPORT.dropCount=0;AIRPORT.dropTimer=0;AIRPORT.gunTarget=null;AIRPORT.gunBurst=0;AIRPORT.gunShotT=0;AIRPORT.gunNextT=1.2;AIRPORT.introT=2.5;AIRPORT.lost=false;AIRPORT.won=false;AIRPORT.tracerT=0;
  airportBox(0,-.08,-8,42,.12,178,0x555d64);airportBox(0,-.005,-8,37,.025,173,0x646c72);airportBox(-28,-.035,-4,13,.07,118,0x6a716f);airportBox(26,-.03,-24,25,.06,62,0x737975);
  for(const x of [-17.5,17.5])airportBox(x,.018,-8,.22,.025,165,0xe8e8d9);for(let z=70;z>-88;z-=12)airportBox(0,.022,z,.42,.03,6,0xf5f1dd);
  for(const z of [-86,-80,64,70])for(let i=-4;i<=4;i++)airportBox(i*2.4,.025,z,1.3,.035,2.2,0xf1f0e6);
@@ -7586,12 +7587,12 @@ function buildAirport(){
  // 地上侵入用の機関銃付き軽自動車。既存の軽自動車シルエットを再利用
  AIRPORT.vehicles=[];
  const VM=carMats();
- for(let i=0;i<4;i++){
+ for(let i=0;i<6;i++){
    const g=new THREE.Group();stageRoot.add(g);
    keiAssemble(g,VM);
    const q=plainGun(g,0,1.38,-.15,VM);q.g.rotation.y=Math.PI;
    g.scale.setScalar(1.12);
-   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52);const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32);AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46][i],z:[-70,-70,72,72][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
+   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52);const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32);AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-46,46,-46,46,-46,46][i],z:[-70,-70,72,72,-38,38][i],yaw:i%2?Math.PI:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
  }
 
  AIRPORT.gun=null;AIRPORT.tracer=null;
@@ -7607,8 +7608,8 @@ function buildAirport(){
 }
 function airportParachute(e){const group=new THREE.Group(),colors=[0xf4eee0,0xc94d2c,0xf4eee0,0xc94d2c];group.name='airport-parachute';for(let i=0;i<4;i++){const geo=new THREE.SphereGeometry(2.05,12,8,i*Math.PI/2,Math.PI/2,0,Math.PI/2),panel=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:colors[i],side:THREE.DoubleSide}));panel.scale.set(1,.72,1);panel.position.y=3.25;panel.renderOrder=3;group.add(panel);}const pts=[];for(let i=0;i<12;i++){const a=i*Math.PI/6;pts.push(new V3(Math.cos(a)*1.62,3.2,Math.sin(a)*1.62),new V3(Math.cos(a)*.18,.72,Math.sin(a)*.18));}const lines=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xf7f0dc,depthTest:false}));lines.renderOrder=4;group.add(lines);group.position.set(0,0,0);e.s.add(group);e.airChute=group;}
 function airportElite(e){if(!e)return;e.airElite=true;e.hp=e.hpMax=7;e.speed=Math.max(e.speed*1.28,3.35);e.dmg=Math.max(e.dmg+6,15);e.P=Object.assign({},e.P,{aimT:Math.max(.32,(e.P.aimT||.8)*.62)});e.airDrop=true;e.passive=true;e.state='airportDrop';e.t=0;e.dropY=rand(12,15);e.baseY=e.dropY;e.s.position.y=e.dropY;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.shadow.visible=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);airportParachute(e);}
-function airportSpawnForces(){AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];for(let i=0;i<12;i++){const a=i*Math.PI*2/12,r=7.8,x=-32+Math.cos(a)*r,z=5+Math.sin(a)*r,kind=i%3===0?'mob':'archer',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportTowerGuard:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state='idle';e.speed*=.92;e.hp=e.hpMax=6;AIRPORT.towerGuards.push(e);}}for(let i=0;i<20;i++){const col=i%5,row=Math.floor(i/5),x=-42+col*4.4,z=28+row*6.5+rand(-1,1),kind=Math.random()<.55?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportFieldAlly:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state=kind==='archer'?'advance':'approach';e.speed*=1.04;e.hp=e.hpMax=5;AIRPORT.fieldAllies.push(e);}}}
-function airportStartWave(n){wave.n=n;wave.inter=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.spawnT=0;if(n===1){AIRPORT.toDrop=AIRPORT.total;AIRPORT.dropCount=0;AIRPORT.dropTimer=2.5;wave.toSpawn=AIRPORT.toDrop;wave.maxAlive=30;wave.total={blue:32,orange:AIRPORT.total};showBanner('空港、地上侵入！','機関銃付き軽自動車が接近中。管制塔と滑走路脇の陣地を守れ！');Sfx.fluteCall();return;}wave.toSpawn=0;gameOver(true);}
+function airportSpawnForces(){AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];for(let i=0;i<24;i++){const a=i*Math.PI*2/24,r=8.8,x=-32+Math.cos(a)*r,z=5+Math.sin(a)*r,kind=i%3===0?'mob':'archer',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportTowerGuard:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state='idle';e.speed*=.88;e.hp=e.hpMax=10;AIRPORT.towerGuards.push(e);}}for(let i=0;i<36;i++){const col=i%6,row=Math.floor(i/6),x=-44+col*4.8,z=27+row*5.2+rand(-1,1),kind=Math.random()<.55?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{set:{airportFieldAlly:true,airportHome:[x,z]}});if(e){e.home=e.airportHome.slice();e.state=kind==='archer'?'advance':'approach';e.speed*=1.08;e.hp=e.hpMax=8;AIRPORT.fieldAllies.push(e);}}}
+function airportStartWave(n){wave.n=n;wave.inter=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.spawnT=0;if(n===1){AIRPORT.toDrop=AIRPORT.total;AIRPORT.dropCount=0;AIRPORT.dropTimer=2.5;wave.toSpawn=AIRPORT.toDrop;wave.maxAlive=36;wave.total={blue:60,orange:AIRPORT.total};showBanner('空港、地上侵入！','機関銃付き軽自動車が接近中。管制塔と滑走路脇の陣地を守れ！');Sfx.fluteCall();return;}wave.toSpawn=0;gameOver(true);}
 function airportFire(dt){if(!AIRPORT.gun)return;const alive=AIRPORT.towerGuards.filter(isUp).length;AIRPORT.gun.visible=alive>0;if(alive>0){AIRPORT.gunNextT-=dt;AIRPORT.gunShotT-=dt;if(AIRPORT.gunBurst<=0&&AIRPORT.gunNextT<=0){let best=null,bd=95;for(const e of enemies){if(e.team!=='orange'||!isUp(e))continue;const p=e.s.position,d=Math.hypot(p.x+32,p.z-5);if(d<bd){bd=d;best=e;}}if(best){AIRPORT.gunTarget=best;AIRPORT.gunBurst=7;AIRPORT.gunShotT=0;}else AIRPORT.gunNextT=.5;}if(AIRPORT.gunTarget&&(!isUp(AIRPORT.gunTarget)||AIRPORT.gunTarget.team!=='orange'))AIRPORT.gunBurst=0;if(AIRPORT.gunBurst>0&&AIRPORT.gunShotT<=0){const T=AIRPORT.gunTarget,from=new V3(-32,17.2,4.2),to=new V3(T.s.position.x,T.s.position.y+T.figH*.6,T.s.position.z);AIRPORT.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z);AIRPORT.tracer.geometry.dispose();AIRPORT.tracer.geometry=new THREE.BufferGeometry().setFromPoints([from,to]);AIRPORT.tracer.visible=true;AIRPORT.tracerT=.09;if(Sfx.mg)Sfx.mg(from);if(Math.random()<.76)damageEnemy(T,1,from,false,{pt:to.clone(),thrust:true},{team:'blue',state:'idle',mg:true,s:{position:from}});AIRPORT.gunBurst--;AIRPORT.gunShotT=.14;if(AIRPORT.gunBurst<=0)AIRPORT.gunNextT=rand(1,1.7);}}if(AIRPORT.tracerT>0){AIRPORT.tracerT-=dt;if(AIRPORT.tracerT<=0)AIRPORT.tracer.visible=false;}}
 
 function airportRunwayClear(){

@@ -18,24 +18,22 @@ jobs:
           node-version: 22
       - name: Install Playwright
         run: |
-          npm install --no-save playwright pngjs
+          npm install --no-save playwright
           npx playwright install --with-deps chromium
       - name: Start local web server
         run: |
           python3 -m http.server 8000 > /tmp/airport-http.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
-      - name: Test Airport Battle in Chromium
+      - name: Test Airport Ground Assault and Control Tower HQ
         run: |
           node <<'NODE'
           const { chromium } = require('playwright');
-          const fs = require('fs');
-          const { PNG } = require('pngjs');
           (async () => {
             const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
             const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
-            const pageErrors = [];
-            page.on('pageerror', e => pageErrors.push(e.message));
-            page.on('console', m => { if (m.type() === 'error') pageErrors.push(m.text()); });
+            const errors = [];
+            page.on('pageerror', e => errors.push(e.message));
+            page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
             try {
               await page.goto('http://127.0.0.1:8000/', { waitUntil: 'domcontentloaded', timeout: 60000 });
               await page.waitForFunction(() => window.__game && window.__game.AIRPORT && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
@@ -43,187 +41,55 @@ jobs:
               await page.locator('#startBtn').click();
               await page.waitForFunction(() => window.__game.stage === 'airport' && window.__game.state === 'play', null, { timeout: 60000 });
               await page.waitForTimeout(600);
-              const roster = await page.evaluate(() => {
+              const setup = await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
                 return {
                   stage: G.stage, state: G.state, airportActive: A.on,
-                  towerGuards: A.towerGuards.length,
-                  fieldAllies: A.fieldAllies.length,
-                  allInitialBlue: G.enemies.filter(e => e.team === 'blue' && (e.airportTowerGuard || e.airportFieldAlly)).length,
-                  plannedDrops: A.total,
-                  machineGun: !!A.gun && A.gun.visible,
-                  runwayAndStageReady: !!document.querySelector('#hud')
+                  towerGuards: A.towerGuards.length, fieldAllies: A.fieldAllies.length,
+                  player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw },
+                  hq: G.hq || null,
+                  secretaryPresent: !!G.sec.e, secondSecretaryPresent: !!G.sec2.e,
+                  blueMedics: G.medics.blue.filter(m => m.e && m.e.state !== 'down').length,
+                  consoleMeshes: G.stageRoot.children.filter(o => o.isMesh && o.position.x > -37 && o.position.x < -27 && o.position.z > 2 && o.position.z < 5).length,
+                  towerInterior: !!G.hq && G.hq.x0 < -37 && G.hq.x1 > -27 && G.hq.z0 < 0 && G.hq.z1 > 10,
+                  plannedGroundEnemies: A.total,
+                  noMachineGun: !A.gun
                 };
               });
-              if (roster.stage !== 'airport' || roster.state !== 'play' || !roster.airportActive ||
-                  roster.towerGuards !== 30 || roster.fieldAllies !== 50 || roster.allInitialBlue !== 80 ||
-                  roster.plannedDrops !== 48 || !roster.machineGun) {
-                throw new Error('Airport setup check failed: ' + JSON.stringify(roster));
+              if (setup.stage !== 'airport' || setup.state !== 'play' || !setup.airportActive ||
+                  setup.towerGuards !== 12 || setup.fieldAllies !== 20 ||
+                  Math.abs(setup.player.x + 32) > 0.1 || Math.abs(setup.player.z - 7.8) > 0.1 ||
+                  !setup.towerInterior || !setup.secretaryPresent || !setup.secondSecretaryPresent ||
+                  setup.blueMedics < 1 || setup.plannedGroundEnemies !== 48 || !setup.noMachineGun) {
+                throw new Error('Airport control tower/HQ setup failed: ' + JSON.stringify(setup));
               }
-              const drop = await page.evaluate(() => {
-                const G = window.__game, A = G.AIRPORT;
-                const before = A.drops.length;
-                A.introT = 0; A.dropTimer = 0;
-                G.waveUpdate(0.02);
-                const fresh = A.drops.slice(before), e = fresh[0];
-                const altitude = e ? e.s.position.y : -1;
-                if (e) G.updateEnemies(0.02);
-                return { before, after: A.drops.length,
-                  oneIndividualDrop: !!e && e.state === 'airportDrop' && !!e.airChute,
-                  altitude, remaining: A.toDrop,
-                  airborneSpriteVisible: !!e && e.s.visible && e.tilt.visible && e.bb.visible,
-                  airborneFrontFrame: !!e && e.fr === e.girl.front,
-                  airborneTexture: !!e && !!(e.bb.material && e.bb.material.map),
-                  chuteVisible: !!e && !!e.airChute && e.airChute.visible && e.airChute.children.length >= 5,
-                  chuteCanopy: !!e && !!e.airChute && e.airChute.children.some(o => o.geometry && o.geometry.type === 'SphereGeometry') };
-              });
-              if (!drop.oneIndividualDrop || drop.after !== drop.before + 1 || drop.altitude < 11.5 || drop.altitude > 15 || drop.remaining !== 47 ||
-                  !drop.airborneSpriteVisible || !drop.airborneFrontFrame || !drop.airborneTexture ||
-                  !drop.chuteVisible || !drop.chuteCanopy) {
-                throw new Error('Visible airborne paratrooper / parachute check failed: ' + JSON.stringify(drop));
-              }
-              // 実際のステージ開始位置・実カメラで自然に降下兵を出現させる（位置・向き・カメラを固定しない）。
-              await page.evaluate(() => {
+              const assault = await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
                 A.introT = 0; A.dropTimer = 0;
                 G.waveUpdate(0.02);
-                G.updateEnemies(0.02);
-              });
-              await page.waitForTimeout(250);
-              const naturalView = await page.evaluate(() => {
-                const G = window.__game, A = G.AIRPORT;
-                const drops = A.drops.filter(e => e && e.state === 'airportDrop');
-                const cam = window.__cam;
+                const e = A.drops[0];
                 return {
-                  count: drops.length,
-                  player: { x: G.player.pos.x, y: G.player.pos.y, z: G.player.pos.z, yaw: G.player.yaw, pitch: G.player.pitch },
-                  camera: cam ? { x: cam.position.x, y: cam.position.y, z: cam.position.z } : null,
-                  drops: drops.map(e => ({ x: e.s.position.x, y: e.s.position.y, z: e.s.position.z,
-                    sprite: e.bb.visible, chute: !!e.airChute && e.airChute.visible }))
+                  spawned: !!e, count: A.drops.length,
+                  groundSpawn: !!e && e.s.position.y === 0,
+                  noParachuteState: !!e && e.state !== 'airportDrop',
+                  noParachuteObject: !!e && !e.airChute,
+                  perimeterSpawn: !!e && (Math.abs(e.s.position.x) > 40 || Math.abs(e.s.position.z) > 60),
+                  remaining: A.toDrop,
+                  team: e && e.team,
+                  kind: e && e.kind
                 };
               });
-              if (!naturalView.count) throw new Error('No naturally spawned airborne troops in actual stage view: ' + JSON.stringify(naturalView));
-              fs.mkdirSync('artifacts/airport-visual', { recursive: true });
-              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/natural-stage-view.png' });
-              await page.evaluate(() => {
-                const G = window.__game, A = G.AIRPORT;
-                for (const e of A.drops) if (e && e.state === 'airportDrop') {
-                  if (e.tilt) e.tilt.visible = false;
-                  if (e.airChute) e.airChute.visible = false;
-                }
-              });
-              await page.waitForTimeout(100);
-              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/natural-stage-view-with-drops-hidden.png' });
-              const naturalFull = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/natural-stage-view.png'));
-              const naturalHidden = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/natural-stage-view-with-drops-hidden.png'));
-              const naturalChangedPixels = (() => {
-                let n = 0;
-                for (let i = 0; i < naturalFull.data.length; i += 4) {
-                  const d = Math.abs(naturalFull.data[i] - naturalHidden.data[i]) +
-                    Math.abs(naturalFull.data[i + 1] - naturalHidden.data[i + 1]) +
-                    Math.abs(naturalFull.data[i + 2] - naturalHidden.data[i + 2]);
-                  if (d > 35) n++;
-                }
-                return n;
-              })();
-              console.log('Natural stage camera visibility test: ' + JSON.stringify({ naturalView, naturalChangedPixels }));
-              if (naturalChangedPixels < 40) throw new Error('Naturally spawned drops are not visibly rendered from actual stage camera: ' + JSON.stringify({ naturalView, naturalChangedPixels }));
-              await page.evaluate(() => {
-                const G = window.__game, A = G.AIRPORT;
-                for (const e of A.drops) if (e && e.state === 'airportDrop') {
-                  if (e.tilt) e.tilt.visible = true;
-                  if (e.airChute) e.airChute.visible = true;
-                }
-              });
-              // 物体の visible フラグではなく、実際のプレイヤー視点の WebGL 描画ピクセルを比較する。
-              await page.evaluate(() => {
-                window.__slowmo = 0;
-                window.__cam = null;
-                const G = window.__game, e = G.AIRPORT.drops[0];
-                G.player.pos.set(0, 0, 0); G.player.yaw = 0; G.player.pitch = 0;
-                e.s.position.set(0, 13, -34); e.baseY = 13; e.dropY = 13;
-                e.s.rotation.y = 0; e.face = 0; e.state = 'airportDrop';
-                e.s.visible = true; e.tilt.visible = true; e.bb.visible = true;
-                e.airChute.visible = true;
-                G.updatePlayer(0); G.updateEnemies(0);
-              });
-              await page.waitForTimeout(150);
-              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-full.png' });
-              await page.evaluate(() => {
-                const e = window.__game.AIRPORT.drops[0];
-                e.tilt.remove(e.bb);
-              });
-              await page.waitForTimeout(100);
-              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-without-soldier.png' });
-              await page.evaluate(() => {
-                const e = window.__game.AIRPORT.drops[0];
-                e.tilt.add(e.bb);
-                e.s.remove(e.airChute);
-              });
-              await page.waitForTimeout(100);
-              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-without-parachute.png' });
-              const fullPng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-full.png'));
-              const noSoldierPng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-without-soldier.png'));
-              const noChutePng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-without-parachute.png'));
-              const changedPixels = (a, b) => {
-                let n = 0;
-                for (let i = 0; i < a.data.length; i += 4) {
-                  const d = Math.abs(a.data[i] - b.data[i]) + Math.abs(a.data[i + 1] - b.data[i + 1]) + Math.abs(a.data[i + 2] - b.data[i + 2]);
-                  if (d > 35) n++;
-                }
-                return n;
-              };
-              const visual = {
-                viewport: { width: fullPng.width, height: fullPng.height },
-                soldierChangedPixels: changedPixels(fullPng, noSoldierPng),
-                parachuteChangedPixels: changedPixels(fullPng, noChutePng)
-              };
-              await page.evaluate(() => {
-                const e = window.__game.AIRPORT.drops[0];
-                e.s.add(e.airChute);
-              });
-              if (visual.soldierChangedPixels < 40 || visual.parachuteChangedPixels < 40) {
-                throw new Error('Actual player-view pixel test failed (objects may be off-screen or not rendered): ' + JSON.stringify(visual));
+              if (!assault.spawned || !assault.groundSpawn || !assault.noParachuteState ||
+                  !assault.noParachuteObject || !assault.perimeterSpawn || assault.remaining !== 47 ||
+                  assault.team !== 'orange') {
+                throw new Error('Ground-based airport invasion check failed: ' + JSON.stringify(assault));
               }
-              console.log('Actual player-view visual test: ' + JSON.stringify(visual));
-              const landing = await page.evaluate(() => {
-                const G = window.__game, e = G.AIRPORT.drops[0];
-                e.s.position.y = 0.01; e.baseY = 0.01; e.hp = e.hpMax = 999;
-                G.updateEnemies(0.02);
-                const afterLanding = { state: e.state, y: e.s.position.y, chute: !!e.airChute,
-                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible,
-                  frustumCulled: e.bb.frustumCulled, hasTexture: !!(e.bb.material && e.bb.material.map),
-                  frontFrame: e.fr === e.girl.front, opacity: e.mat.opacity, transparent: e.mat.transparent };
-                // 着地直後だけでなく、地上の通常更新を3秒間続けて表示状態が維持されるか確認。
-                for (let i = 0; i < 180; i++) G.updateEnemies(1 / 60);
-                const afterGroundTicks = { state: e.state, y: e.s.position.y,
-                  spriteVisible: e.s.visible && e.tilt.visible && e.bb.visible, shadowVisible: e.shadow.visible,
-                  frustumCulled: e.bb.frustumCulled, hasTexture: !!(e.bb.material && e.bb.material.map),
-                  frontFrame: e.fr === e.girl.front, opacity: e.mat.opacity, transparent: e.mat.transparent,
-                  isGroundTroop: e.state !== 'airportDrop' && e.state !== 'down' };
-                return { afterLanding, afterGroundTicks };
-              });
-              if (landing.afterLanding.state === 'airportDrop' || landing.afterLanding.y !== 0 ||
-                  landing.afterLanding.chute || !landing.afterLanding.spriteVisible || !landing.afterLanding.shadowVisible ||
-                  landing.afterLanding.frustumCulled || !landing.afterLanding.hasTexture ||
-                  !landing.afterLanding.frontFrame || landing.afterLanding.opacity !== 1 || landing.afterLanding.transparent ||
-                  !landing.afterGroundTicks.isGroundTroop || !landing.afterGroundTicks.spriteVisible ||
-                  !landing.afterGroundTicks.shadowVisible || landing.afterGroundTicks.frustumCulled ||
-                  !landing.afterGroundTicks.hasTexture || !landing.afterGroundTicks.frontFrame ||
-                  landing.afterGroundTicks.opacity !== 1 || landing.afterGroundTicks.transparent || landing.afterGroundTicks.y !== 0) {
-                throw new Error('Paratrooper sustained ground visibility check failed: ' + JSON.stringify(landing));
-              }
-              if (pageErrors.length) throw new Error('Browser console/page errors: ' + pageErrors.join(' | '));
-              console.log(JSON.stringify({ roster, drop, landing, pageErrors }, null, 2));
+              await page.waitForTimeout(250);
+              await page.locator('#game').screenshot({ path: '/tmp/airport-control-tower.png' });
+              if (errors.length) throw new Error('Browser console/page errors: ' + errors.join(' | '));
+              console.log(JSON.stringify({ setup, assault, errors }, null, 2));
             } finally {
               await browser.close();
             }
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
-      - name: Upload airborne visual diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: airport-airborne-visual-diagnostics
-          path: artifacts/airport-visual/*.png
-          if-no-files-found: ignore

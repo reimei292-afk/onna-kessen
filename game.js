@@ -7528,7 +7528,7 @@ function buildAirport(){
  AIRPORT.gun=null;AIRPORT.tracer=null;
  hq={x0:-37.5,x1:-26.5,z0:-.5,z1:10.5,sx:-34.5,sz:7.2};
  buildHQ(-37.5,-26.5,-.5,10.5,-34.5,7.2);
- buildMedPost(-35.5,7.7,'blue'); buildMedPost(42,-31,'orange');
+ buildMedPost(-35.5,7.7,'blue');
  airportBox(39,5,-31,27,10,24,0x7c858a);airportBox(39,10.2,-31,29,.7,26,0x515b61);airportBox(25.7,4.8,-31,.6,9.6,23,0x657076);airportBox(52.3,4.8,-31,.6,9.6,23,0x657076);airportBox(39,9.2,-43.1,27,1.5,.6,0x657076);airportBox(39,3.8,-42.7,27,.25,.4,0xd1d3cc);
  airportCylinder(17,2.2,-42,.95,1.05,18,0xd8dcd8,Math.PI/2);airportCylinder(17,2.2,-51.4,.05,.95,2.8,0xc4c9c7,Math.PI/2);airportBox(17,2.05,-41,17,.2,3.4,0x9da9ad);airportBox(17,2.45,-49.2,5.4,.14,2.2,0xa9b2b5);airportBox(17,2.75,-49.5,2.1,.15,1.1,0x435b66);
  for(const x of [12.3,21.7]){airportCylinder(x,1.7,-40.4,.42,.42,2.4,0x77848a,Math.PI/2);airportCylinder(x,1.6,-37.4,.23,.23,1.1,0x343a3e,Math.PI/2);}

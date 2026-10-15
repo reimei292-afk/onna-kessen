@@ -103,6 +103,7 @@ jobs:
                 };
               });
               if (!naturalView.count) throw new Error('No naturally spawned airborne troops in actual stage view: ' + JSON.stringify(naturalView));
+              fs.mkdirSync('artifacts/airport-visual', { recursive: true });
               await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/natural-stage-view.png' });
               await page.evaluate(() => {
                 const G = window.__game, A = G.AIRPORT;
@@ -135,7 +136,6 @@ jobs:
                 }
               });
               // 物体の visible フラグではなく、実際のプレイヤー視点の WebGL 描画ピクセルを比較する。
-              fs.mkdirSync('artifacts/airport-visual', { recursive: true });
               await page.evaluate(() => {
                 window.__slowmo = 0;
                 window.__cam = null;

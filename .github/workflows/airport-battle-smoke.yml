@@ -18,7 +18,7 @@ jobs:
           node-version: 22
       - name: Install Playwright
         run: |
-          npm install --no-save playwright
+          npm install --no-save playwright pngjs
           npx playwright install --with-deps chromium
       - name: Start local web server
         run: |
@@ -28,6 +28,8 @@ jobs:
         run: |
           node <<'NODE'
           const { chromium } = require('playwright');
+          const fs = require('fs');
+          const { PNG } = require('pngjs');
           (async () => {
             const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
             const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -80,6 +82,58 @@ jobs:
                   !drop.chuteVisible || !drop.chuteCanopy) {
                 throw new Error('Visible airborne paratrooper / parachute check failed: ' + JSON.stringify(drop));
               }
+              // 物体の visible フラグではなく、実際のプレイヤー視点の WebGL 描画ピクセルを比較する。
+              fs.mkdirSync('artifacts/airport-visual', { recursive: true });
+              await page.evaluate(() => {
+                window.__slowmo = 0;
+                window.__cam = null;
+                const G = window.__game, e = G.AIRPORT.drops[0];
+                G.player.pos.set(0, 0, 0); G.player.yaw = 0; G.player.pitch = 0;
+                e.s.position.set(0, 13, -34); e.baseY = 13; e.dropY = 13;
+                e.s.rotation.y = 0; e.face = 0; e.state = 'airportDrop';
+                e.s.visible = true; e.tilt.visible = true; e.bb.visible = true;
+                e.airChute.visible = true;
+                G.updatePlayer(0); G.updateEnemies(0);
+              });
+              await page.waitForTimeout(150);
+              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-full.png' });
+              await page.evaluate(() => {
+                const e = window.__game.AIRPORT.drops[0];
+                e.tilt.remove(e.bb);
+              });
+              await page.waitForTimeout(100);
+              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-without-soldier.png' });
+              await page.evaluate(() => {
+                const e = window.__game.AIRPORT.drops[0];
+                e.tilt.add(e.bb);
+                e.s.remove(e.airChute);
+              });
+              await page.waitForTimeout(100);
+              await page.locator('#game').screenshot({ path: 'artifacts/airport-visual/airborne-without-parachute.png' });
+              const fullPng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-full.png'));
+              const noSoldierPng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-without-soldier.png'));
+              const noChutePng = PNG.sync.read(fs.readFileSync('artifacts/airport-visual/airborne-without-parachute.png'));
+              const changedPixels = (a, b) => {
+                let n = 0;
+                for (let i = 0; i < a.data.length; i += 4) {
+                  const d = Math.abs(a.data[i] - b.data[i]) + Math.abs(a.data[i + 1] - b.data[i + 1]) + Math.abs(a.data[i + 2] - b.data[i + 2]);
+                  if (d > 35) n++;
+                }
+                return n;
+              };
+              const visual = {
+                viewport: { width: fullPng.width, height: fullPng.height },
+                soldierChangedPixels: changedPixels(fullPng, noSoldierPng),
+                parachuteChangedPixels: changedPixels(fullPng, noChutePng)
+              };
+              await page.evaluate(() => {
+                const e = window.__game.AIRPORT.drops[0];
+                e.s.add(e.airChute);
+              });
+              if (visual.soldierChangedPixels < 40 || visual.parachuteChangedPixels < 40) {
+                throw new Error('Actual player-view pixel test failed (objects may be off-screen or not rendered): ' + JSON.stringify(visual));
+              }
+              console.log('Actual player-view visual test: ' + JSON.stringify(visual));
               const landing = await page.evaluate(() => {
                 const G = window.__game, e = G.AIRPORT.drops[0];
                 e.s.position.y = 0.01; e.baseY = 0.01; e.hp = e.hpMax = 999;
@@ -114,3 +168,10 @@ jobs:
             }
           })().catch(e => { console.error(e); process.exit(1); });
           NODE
+      - name: Upload airborne visual diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: airport-airborne-visual-diagnostics
+          path: artifacts/airport-visual/*.png
+          if-no-files-found: ignore

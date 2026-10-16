@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>無人島サバイバル模擬戦闘</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07130f;color:#f4f0df;font-family:system-ui,"Yu Gothic",Meiryo,sans-serif}canvas{display:block;width:100%;height:100%;touch-action:none}#hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 4px #000}#top{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}.panel{background:#07130fce;border:1px solid #c9b88788;border-radius:8px;padding:9px 12px;backdrop-filter:blur(4px)}#stats{font-size:13px;line-height:1.7}#stats b{color:#f5d98a;font-size:17px}#stage{font-size:18px;letter-spacing:.08em}#objective{font-size:12px;opacity:.9;margin-top:3px}#message{position:absolute;left:50%;top:22%;transform:translateX(-50%);width:min(720px,90vw);text-align:center;font-size:clamp(15px,2vw,23px);line-height:1.6;color:#fff0b6;background:#07130fd9;border:1px solid #d7c38b88;border-radius:8px;padding:12px 18px;opacity:0;transition:opacity .25s}#message.show{opacity:1}#bottom{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:end;gap:10px}#hint{font-size:12px;line-height:1.6;max-width:75vw}button{pointer-events:auto;color:#f4f0df;background:#233b2e;border:1px solid #d8c58c;border-radius:7px;padding:10px 14px;font:inherit;cursor:pointer}button:hover{background:#38583e}#start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(#06110ac9,#06110af0),radial-gradient(ellipse,#42634b,#06110a);z-index:4;padding:20px}#card{width:min(780px,96vw);max-height:92vh;overflow:auto;border:1px solid #d8c58c88;border-radius:14px;background:#101f19ed;padding:clamp(18px,4vw,36px);box-shadow:0 20px 80px #000}h1{font-size:clamp(27px,5vw,48px);margin:0 0 6px;color:#f5d98a;letter-spacing:.06em}#card p{line-height:1.8}#card li{margin:5px 0}#startbtn{font-size:19px;padding:12px 28px;margin-top:10px;background:#725c2a}#end{display:none;position:fixed;inset:0;z-index:5;background:#06110aeb;align-items:center;justify-content:center;text-align:center;padding:20px}#end .panel{max-width:600px;padding:30px}#touch{position:fixed;right:16px;bottom:95px;display:none;gap:10px;pointer-events:auto}#touch button{width:66px;height:66px;border-radius:50%;background:#10271dc9}@media(pointer:coarse){#touch{display:flex}#hint{max-width:58vw}}a{color:#f5d98a}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><div id="top"><div class="panel"><div id="stage">南側の砂浜</div><div id="objective">島の北側にある最終広場を目指す</div></div><div class="panel" id="stats">生存者 <b id="alive">188</b> / 200　死亡記録 <b id="dead">12</b><br>味方・敵の区別：<b id="teams">解除</b><br>分隊：<span id="squad">第1小早隊</span></div></div><div id="message"></div><div id="bottom"><div class="panel" id="hint">移動：W A S D ／ 矢印キー　攻撃：Space・クリック<br>危険地帯は避け、秘書の警告を聞いて進んでください。</div><button id="pause">一時停止</button></div></div>
+<div id="touch"><button id="up">↑</button><button id="hit">攻撃</button></div>
+<div id="start"><div id="card"><h1>無人島サバイバル模擬戦闘</h1><div style="color:#c9b887;letter-spacing:.15em">SPECIAL EXERCISE — ISLAND INCIDENT</div><p>模擬戦闘に向かう200人を乗せた大型飛行機が、機体トラブルで無人島に不時着。事故で死亡者が出たうえ、島には流砂、アリジゴク、棘を撃つ木、毒の湖、吸血する草が待ち受けている。</p><p><b>敵味方の勝敗は一時停止。全員で一人でも多くの生還を目指す。</b> 秘書の警告を聞き、島の南側から森、草地を抜けて最終広場へ。そこでは、これまで死亡した侍女たちが模擬戦闘の敵役として立ちはだかる。</p><ul><li>本陣は不時着した飛行機の機内。</li><li>流砂・アリジゴクに捕まると脱落。毒の湖には近づかない。</li><li>分隊は小早隊・弓分隊・近接分隊・遊撃隊・秘書課・医務班を混成。</li><li>最終広場だけ敵味方の人数表示に戻り、敵役を全員倒せばクリア。</li></ul><p style="font-size:13px;color:#c9b887">操作：WASD / 矢印キーで移動、Space またはクリックで攻撃。スマートフォンでは画面右下のボタンも使えます。</p><button id="startbtn">生還作戦を開始</button>　<a href="index.html">元のゲームへ戻る</a></div></div>
+<div id="end"><div class="panel"><h1 id="endtitle">作戦終了</h1><p id="endtext"></p><button id="again">もう一度挑戦</button> <a href="index.html">元のゲームへ戻る</a></div></div>
+<script>
+(()=>{'use strict';
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+let W=innerWidth,H=innerHeight,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+const world={w:1900,h:3200};const zones=[{y:0,h:450,name:'南側の砂浜',kind:'beach'},{y:450,h:1150,name:'鬱蒼とした森',kind:'forest'},{y:1600,h:650,name:'吸血する草地',kind:'grass'},{y:2250,h:950,name:'最終広場',kind:'plaza'}];
+let player,allies,deadBodies,hazards,decor,shots,keys={},running=false,paused=false,won=false,camY=0,camX=0,dead=12,crashDead=12,lastTime=0,attackCooldown=0,visited={},warned={},squadNames=['第1小早隊','第2小早隊','第1弓分隊','第2弓分隊','近接分隊','遊撃隊','秘書課','医務班'],lastMsg=0;
+function msg(t,ms=4400){$('message').textContent=t;$('message').classList.add('show');lastMsg=performance.now()+ms}
+function currentZone(y){return zones.find(z=>y>=z.y&&y<z.y+z.h)||zones[3]}
+function setStage(){const z=currentZone(player.y);$('stage').textContent=z.name;$('squad').textContent=squadNames[Math.floor(player.y/400)%squadNames.length];$('teams').textContent=z.kind==='plaza'?'広場のみ再開':'解除';$('objective').textContent=z.kind==='plaza'?'死亡した侍女たちの敵役を全員倒す': '北へ進み、生存者をできるだけ多く救う';}
+function makeWorld(){
+ player={x:world.w/2,y:90,r:13,hp:100};allies=[];deadBodies=[];hazards=[];decor=[];shots=[];
+ // 176 surviving NPCs start after 12 crash casualties; squads deliberately interleaved.
+ for(let i=0;i<187;i++){const row=Math.floor(i/16),col=i%16;allies.push({id:i,x:world.w/2+(col-7.5)*23+(Math.random()-.5)*8,y:90+row*22+(Math.random()-.5)*8,r:7,hp:1,dead:false,kind:['archer','melee','scout','medic','secretary','guard'][i%6],squad:squadNames[i%8],target:null,move:Math.random()*6.28})}
+ for(let i=0;i<12;i++)deadBodies.push({x:world.w/2+(i-5.5)*25,y:145+(Math.random()-.5)*35,r:8,used:false});
+ // procedural vegetation and hazards
+ for(let i=0;i<330;i++){let y=470+Math.random()*1120;decor.push({x:30+Math.random()*(world.w-60),y,kind:Math.random()<.6?'tree':'fern',s:.6+Math.random()*1.5})}
+ for(let i=0;i<260;i++){let y=1640+Math.random()*590;decor.push({x:20+Math.random()*(world.w-40),y,kind:'grass',s:.7+Math.random()*1.4})}
+ // beach quicksand + antlion funnels; touching means eliminated
+ for(let i=0;i<8;i++)hazards.push({type:i%2?'antlion':'quicksand',x:180+Math.random()*(world.w-360),y:180+Math.random()*250,r:30+Math.random()*18,lethal:true});
+ // thorn trees shoot outward when player nears
+ for(let i=0;i<11;i++)hazards.push({type:'thorn',x:100+Math.random()*(world.w-200),y:560+Math.random()*950,r:48,cd:Math.random()*2});
+ // poisonous lake
+ hazards.push({type:'poison',x:world.w*.32,y:1120,rx:125,ry:78});hazards.push({type:'poison',x:world.w*.73,y:1370,rx:105,ry:70});
+ // blood-sucking grass patches
+ for(let i=0;i<9;i++)hazards.push({type:'suckgrass',x:120+Math.random()*(world.w-240),y:1710+Math.random()*470,rx:80+Math.random()*45,ry:48+Math.random()*30,cd:0});
+ // forest/grass pathways and plaza zombie enemies = all 12 initial dead + casualties along route
+}
+function aliveCount(){return allies.filter(a=>!a.dead).length+(player?1:0)}
+function eliminate(a,reason){if(a.dead)return;a.dead=true;dead++;deadBodies.push({x:a.x,y:a.y,r:8,used:false});if(reason==='antlion')a.gone=true}
+function warnHazards(dt){
+ for(const h of hazards){const dx=player.x-h.x,dy=player.y-h.y,d=Math.hypot(dx,dy);
+ if(h.type==='quicksand'&&d<h.r+player.r){msg('流砂です！ 砂に沈み込む……脱落！',2000);finish(false,'流砂に飲み込まれた。生存者 '+aliveCount()+' 人が島の奥へ進みました。');return}
+ if(h.type==='antlion'&&d<h.r+player.r){msg('アリジゴクに捕まった！ その姿は砂の中へ消えた。',2000);finish(false,'アリジゴクに捕食され、作戦から脱落しました。');return}
+ if(h.type==='thorn'&&d<125){h.cd-=dt;if(h.cd<=0){h.cd=2.6;shots.push({x:h.x,y:h.y,tx:player.x,ty:player.y,life:.7});if(d<70){player.hp-=9;msg('棘を撃つ木！ 棘がかすめた。',1200);if(player.hp<=0)finish(false,'棘の傷で進行不能になりました。')}}}
+ if(h.type==='poison'&&Math.abs(dx)<h.rx+player.r&&Math.abs(dy)<h.ry+player.r&&(dx*dx/(h.rx*h.rx)+dy*dy/(h.ry*h.ry)<1)){if(!warned.poison){warned.poison=true;msg('秘書「待ってください！ この湖は毒のようです。近づいてはなりません！」',5500)}player.hp-=dt*7;if(player.hp<=0)finish(false,'毒水の湖に近づきすぎました。')}
+ if(h.type==='suckgrass'&&Math.abs(dx)<h.rx&&Math.abs(dy)<h.ry){h.cd-=dt;if(h.cd<=0){h.cd=.8;player.hp-=4;msg('草が肌に絡みつく！ 吸血する草です。',1000);if(player.hp<=0)finish(false,'吸血する草地で体力を失いました。')}}
+ }
+}
+function draw(){
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);let scale=Math.min(W/820,H/680);scale=Math.max(.48,Math.min(scale,1.05));
+ const viewW=W/scale,viewH=H/scale;camX=Math.max(0,Math.min(world.w-viewW,player.x-viewW/2));camY=Math.max(0,Math.min(world.h-viewH,player.y-viewH/2));
+ ctx.save();ctx.scale(scale,scale);ctx.translate(-camX,-camY);
+ // zoned terrain
+ ctx.fillStyle='#d6bf86';ctx.fillRect(0,0,world.w,450);
+ ctx.fillStyle='#173c2b';ctx.fillRect(0,450,world.w,1150);
+ ctx.fillStyle='#648347';ctx.fillRect(0,1600,world.w,650);
+ ctx.fillStyle='#b4a77b';ctx.fillRect(0,2250,world.w,950);
+ // water + surf
+ ctx.fillStyle='#286b79';ctx.fillRect(0,0,world.w,55);ctx.strokeStyle='#c7e0d2';ctx.lineWidth=3;for(let i=0;i<24;i++){ctx.beginPath();ctx.moveTo(i*85,65+Math.sin(i)*8);ctx.lineTo(i*85+55,65+Math.sin(i)*8);ctx.stroke()}
+ // zone boundary signs
+ for(const z of zones){ctx.fillStyle='#0b1b14dc';ctx.fillRect(20,z.y+15,300,42);ctx.fillStyle='#fff0b6';ctx.font='bold 22px sans-serif';ctx.fillText(z.name,34,z.y+43)}
+ // pathways
+ ctx.fillStyle='#b9a77a';ctx.beginPath();ctx.moveTo(730,450);ctx.bezierCurveTo(950,720,500,950,900,1200);ctx.bezierCurveTo(1100,1400,720,1600,950,1840);ctx.bezierCurveTo(850,2040,1000,2150,950,2250);ctx.lineTo(1140,2250);ctx.bezierCurveTo(1190,2110,1050,1990,1120,1830);ctx.bezierCurveTo(920,1590,1290,1400,1060,1200);ctx.bezierCurveTo(700,960,1130,720,870,450);ctx.closePath();ctx.fill();
+ // decor
+ for(const d of decor){if(d.y<camY-60||d.y>camY+viewH+60)continue;ctx.save();ctx.translate(d.x,d.y);if(d.kind==='tree'){ctx.fillStyle='#3c281b';ctx.fillRect(-5,2,10,22);ctx.fillStyle='#0b281c';ctx.beginPath();ctx.arc(0,0,16*d.s,0,Math.PI*2);ctx.fill();ctx.fillStyle='#265638';ctx.beginPath();ctx.arc(-5,-5,10*d.s,0,Math.PI*2);ctx.fill()}else if(d.kind==='fern'){ctx.strokeStyle='#4c8b48';ctx.lineWidth=3;for(let k=0;k<5;k++){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(Math.cos(k*1.2)*15*d.s,-Math.abs(Math.sin(k*1.2))*20*d.s);ctx.stroke()}}else{ctx.strokeStyle='#c0d56b';ctx.lineWidth=2;for(let k=0;k<5;k++){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo((k-2)*4*d.s,-12*d.s);ctx.stroke()}}ctx.restore()}
+ // hazards
+ for(const h of hazards){ctx.save();ctx.translate(h.x,h.y);if(h.type==='quicksand'){ctx.fillStyle='#75613b';ctx.beginPath();ctx.ellipse(0,0,h.r*1.4,h.r*.72,-.2,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b7a06c';ctx.stroke();ctx.fillStyle='#3e392b';ctx.beginPath();ctx.ellipse(0,0,h.r*.7,h.r*.35,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffe8a2';ctx.font='12px sans-serif';ctx.fillText('流砂',-15,-h.r)}else if(h.type==='antlion'){ctx.fillStyle='#b18d4f';ctx.beginPath();ctx.moveTo(0,-h.r);ctx.lineTo(h.r,h.r*.8);ctx.lineTo(-h.r,h.r*.8);ctx.closePath();ctx.fill();ctx.fillStyle='#483c25';ctx.beginPath();ctx.arc(0,0,h.r*.25,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff0b6';ctx.font='12px sans-serif';ctx.fillText('アリジゴク',-30,-h.r-4)}else if(h.type==='thorn'){ctx.fillStyle='#18341e';ctx.beginPath();ctx.arc(0,0,22,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#b7d17b';for(let k=0;k<9;k++){ctx.beginPath();ctx.moveTo(Math.cos(k*6.28/9)*12,Math.sin(k*6.28/9)*12);ctx.lineTo(Math.cos(k*6.28/9)*32,Math.sin(k*6.28/9)*32);ctx.stroke()}}else if(h.type==='poison'){ctx.fillStyle='#6c8d79';ctx.beginPath();ctx.ellipse(0,0,h.rx,h.ry,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#c1d5a0';ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#d5edb0';ctx.font='bold 16px sans-serif';ctx.fillText('毒水',-20,4)}else{ctx.fillStyle='#31542c';ctx.beginPath();ctx.ellipse(0,0,h.rx,h.ry,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#d0e27b';ctx.stroke();ctx.fillStyle='#e6efb7';ctx.font='14px sans-serif';ctx.fillText('吸血草',-30,4)}ctx.restore()}
+ // survivors and player
+ for(const a of allies){if(a.dead||a.y<camY-40||a.y>camY+viewH+40)continue;ctx.fillStyle=a.kind==='secretary'?'#f1e4d2':a.kind==='medic'?'#a8d8a5':a.kind==='archer'?'#83b5e8':'#d9c6a3';ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#1b2c21';ctx.stroke()}
+ for(const b of deadBodies){ctx.fillStyle=b.used?'#725b49':'#54453a';ctx.beginPath();ctx.ellipse(b.x,b.y,11,5,-.2,0,Math.PI*2);ctx.fill()}
+ for(const s of shots){ctx.strokeStyle='#d6dfb6';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.tx,s.ty);ctx.stroke()}
+ // player marker
+ ctx.fillStyle='#ffe18b';ctx.beginPath();ctx.arc(player.x,player.y,player.r,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 13px sans-serif';ctx.fillText('あなた',player.x-20,player.y-20);
+ // plane HQ remains south, at map edge
+ ctx.fillStyle='#d8d8d0';ctx.fillRect(world.w/2-95,105,190,58);ctx.fillStyle='#283a43';ctx.fillRect(world.w/2-65,115,130,38);ctx.fillStyle='#fff';ctx.font='14px sans-serif';ctx.fillText('不時着機 — 本陣',world.w/2-50,96);
+ // plaza gate
+ if(player.y>2200){ctx.fillStyle='#4e4735';ctx.fillRect(520,2310,860,22);ctx.fillStyle='#fff0b6';ctx.font='bold 20px sans-serif';ctx.fillText('最終広場',world.w/2-40,2295)}
+ ctx.restore();
+ // mini compass / hp
+ ctx.fillStyle='#07130fdd';ctx.fillRect(W-172,H-80,158,64);ctx.fillStyle='#fff0b6';ctx.font='13px sans-serif';ctx.fillText('体力 '+Math.max(0,Math.ceil(player.hp))+'%',W-158,H-55);ctx.fillStyle='#3d4b38';ctx.fillRect(W-158,H-42,130,9);ctx.fillStyle=player.hp>35?'#b9d879':'#d67e64';ctx.fillRect(W-158,H-42,130*Math.max(0,player.hp)/100,9);
+}
+function finish(win,text){if(won||!running)return;won=true;running=false;$('end').style.display='flex';$('endtitle').textContent=win?'生還作戦 成功':'作戦終了';$('endtext').textContent=text+'　生存者 '+aliveCount()+' 人／死亡記録 '+dead+' 人。';}
+function update(dt){
+ if(!running||paused||won)return;attackCooldown=Math.max(0,attackCooldown-dt);let dx=0,dy=0;if(keys.KeyW||keys.ArrowUp)dy--;if(keys.KeyS||keys.ArrowDown)dy++;if(keys.KeyA||keys.ArrowLeft)dx--;if(keys.KeyD||keys.ArrowRight)dx++;const len=Math.hypot(dx,dy)||1;player.x=Math.max(18,Math.min(world.w-18,player.x+dx/len*205*dt));player.y=Math.max(80,Math.min(world.h-20,player.y+dy/len*205*dt));
+ // allies loosely follow northward, with a balanced mixture of squads
+ for(const a of allies){if(a.dead)continue;const desiredY=Math.max(110,player.y-100+(a.id%7)*18);if(a.y<player.y+160){a.y+=Math.min(25*dt,Math.max(0,desiredY-a.y));a.x+=Math.sin(performance.now()/1200+a.move)*18*dt+(player.x-a.x)*.012*dt*20;a.x=Math.max(20,Math.min(world.w-20,a.x))}if(a.y>player.y+330){a.y-=25*dt}}
+ // simulated island casualties to make deaths meaningful but preserve rescue goal
+ for(const a of allies){if(a.dead)continue;const z=currentZone(a.y);if(z.kind==='beach'&&a.y>190&&a.y<400&&Math.random()<dt*.006){eliminate(a,Math.random()<.5?'antlion':'quicksand')}if(z.kind==='forest'&&Math.random()<dt*.0009){eliminate(a,'thorn')}if(z.kind==='grass'&&Math.random()<dt*.0011){eliminate(a,'grass')}}
+ warnHazards(dt);for(const s of shots)s.life-=dt;shots=shots.filter(s=>s.life>0);
+ // when entering plaza, revive all casualties as theatrical enemy-role actors
+ if(player.y>=2280&&!visited.plaza){visited.plaza=true;for(const b of deadBodies)b.used=true;plazaEnemies=deadBodies.map((b,i)=>({x:260+(i%12)*118,y:2420+Math.floor(i/12)*90,hp:1,alive:true,id:i}));for(let i=0;i<Math.min(24,dead-12);i++)plazaEnemies.push({x:300+(i%10)*130,y:2650+Math.floor(i/10)*100,hp:1,alive:true,id:100+i});msg('秘書「ここにいるのは……これまでに倒れた侍女たちです！ 模擬戦闘の敵役として襲ってきます。敵を全員倒してください！」',6500);$('teams').textContent='広場のみ再開';$('objective').textContent='敵役を全員倒す';}
+ setStage();$('alive').textContent=aliveCount();$('dead').textContent=dead;
+ 
+ if(performance.now()>lastMsg)$('message').classList.remove('show');
+}
+let plazaEnemies=[];
+function attack(){if(!running||paused||won||attackCooldown>0)return;attackCooldown=.42;if(player.y<2280){msg('敵味方の模擬戦闘は一時停止中です。生還を優先してください。',900);return}if(!visited.plaza)return;
+ 
+ const target=plazaEnemies.filter(e=>e.alive).sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y))[0];if(target&&Math.hypot(target.x-player.x,target.y-player.y)<100){target.alive=false;const alive=plazaEnemies.filter(e=>e.alive).length;msg('敵役を撃破！ 残り '+alive+' 名',1000);if(alive===0){plazaEnemies=[];player.y=world.h-80;finish(true,'最終広場の敵役を全員倒しました。模擬戦闘を終了します。')}}else if(target){msg('敵役が遠い。近づいて攻撃してください。',800)}}
+const oldDraw=draw;draw=function(){oldDraw();if(plazaEnemies.length){ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);let scale=Math.min(W/820,H/680);scale=Math.max(.48,Math.min(scale,1.05));ctx.scale(scale,scale);ctx.translate(-camX,-camY);for(const e of plazaEnemies){if(!e.alive)continue;ctx.fillStyle='#b7c7a3';ctx.beginPath();ctx.arc(e.x,e.y,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5d2b25';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#301d19';ctx.font='11px sans-serif';ctx.fillText('敵役',e.x-12,e.y-15)}ctx.restore()}};
+function frame(t){const dt=Math.min(.04,(t-lastTime)/1000||0);lastTime=t;if(running&&!paused)update(dt);draw();requestAnimationFrame(frame)}
+$('startbtn').onclick=()=>{$('start').style.display='none';makeWorld();dead=crashDead;running=true;msg('秘書「機体トラブルです！ 不時着時にも犠牲が出ています。敵味方の区別をなくし、一人でも多く生還しましょう！」',6000);lastTime=performance.now();requestAnimationFrame(frame)};
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'再開':'一時停止';if(paused)msg('一時停止中',2000);else msg('作戦再開',1000)};
+$('again').onclick=()=>{plazaEnemies=[];visited={};warned={};dead=crashDead;won=false;paused=false;$('end').style.display='none';makeWorld();running=true;msg('再挑戦開始。島の危険に注意してください。',3000)};
+$('hit').onclick=attack;canvas.addEventListener('pointerdown',e=>{if(e.clientX>W*.65&&e.clientY>H*.55)attack();else if(e.pointerType==='touch'){keys.ArrowUp=true;setTimeout(()=>keys.ArrowUp=false,180)}});addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Space'){e.preventDefault();attack()}if(e.code==='Escape'){$('pause').click()}});addEventListener('keyup',e=>keys[e.code]=false);$('up').onpointerdown=()=>keys.ArrowUp=true;$('up').onpointerup=()=>keys.ArrowUp=false;
+})();
+</script></body></html>

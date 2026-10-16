@@ -7828,9 +7828,11 @@ function trenchStartBattle() {
       const P=TRENCH.posts.filter(p=>p.team===team)[pi];
       for(let k=0;k<4;k++){
         const e=list[list.length-16+pi*4+k];if(!e)continue;
-        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?53.5:-53.5;
-        e.s.position.set(xx,0,zz);e.px=xx;e.pz=zz;e.baseY=0;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
-        e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.2;
+        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?46.35:-46.35;
+        e.s.position.set(xx,.04,zz);e.px=xx;e.pz=zz;e.baseY=.04;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
+        e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.05;
+        e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;
+        if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
       }
     }
   }
@@ -7860,7 +7862,9 @@ function trenchBrain(e,dt){
     const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
   }
   if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
-    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?0:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;animateNpc(e,dt,0);return;
+    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?.04:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;
+    if(e.trenchBunkerCrew){e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;}}
+    animateNpc(e,dt,0);return;
   }
   const tz=e.trenchTargetZ==null?(e.trenchSide==='blue'?-38:38):e.trenchTargetZ,tx=e.trenchTargetX==null?p.x:e.trenchTargetX;
   if(e.trenchOrder==='advance'||e.trenchOrder==='retreat'){
@@ -7881,6 +7885,23 @@ function trenchPlane(team){
   g.position.set(team==='blue'?-108:108,17,team==='blue'?8:-8);g.rotation.y=team==='blue'?Math.PI/2:-Math.PI/2;stageRoot.add(g);
   return {team,g,x:g.position.x,z:g.position.z,dir:team==='blue'?1:-1,shotT:1,active:true};
 }
+function trenchPlanePilot(A){
+  if(!A||A.pilot)return;
+  A.g.updateMatrixWorld(true);
+  const p=A.g.localToWorld(new V3(0,.43,-.72));
+  const e=spawnEnemy(p.x,p.z,'mob',false,A.team,{y:p.y,yari:-1});
+  if(!e)return;
+  e.trenchPilot=true;e.trenchPlane=A;e.trenchUnit=false;e.hold=null;e.passive=false;e.quietDeath=true;
+  e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=70;
+  if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
+  A.pilot=e;
+}
+function trenchCrashPlane(A,attacker){
+  if(!A||!A.active||A.crashing)return;
+  A.crashing=true;A.crashV=1.8;A.crashT=0;A.shotT=99;
+  if(A.pilot&&isUp(A.pilot)){A.pilot.quietDeath=true;killEnemy(A.pilot,false,new V3(A.g.position.x,A.g.position.y,A.g.position.z));}
+  showBanner(A.team==='blue'?'味方戦闘機、被弾！':'敵戦闘機、被弾！','機体が制御を失い、荒野へ墜落していく。');
+}
 function trenchReinforce(){
   if(TRENCH.reinfDone)return;TRENCH.reinfDone=true;const M=carMats();
   for(let i=0;i<3;i++){
@@ -7897,8 +7918,8 @@ function trenchUpdate(dt) {
   if(!TRENCH.started&&document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
   TRENCH.elapsed+=dt;
   if(TRENCH.elapsed>35)trenchReinforce();
-  if(TRENCH.elapsed>52&&!TRENCH.airDone){TRENCH.airDone=true;TRENCH.planes.push(trenchPlane('blue'));showBanner('味方戦闘機、進入','上空から敵陣を掃射する。');}
-  if(TRENCH.elapsed>68&&!TRENCH.enemyAirDone){TRENCH.enemyAirDone=true;TRENCH.planes.push(trenchPlane('orange'));showBanner('敵戦闘機を確認','敵も航空支援を投入してきた。');}
+  if(TRENCH.elapsed>52&&!TRENCH.airDone){TRENCH.airDone=true;const A=trenchPlane('blue');TRENCH.planes.push(A);trenchPlanePilot(A);showBanner('味方戦闘機、進入','操縦士が搭乗した味方戦闘機が上空へ進入。敵機との空中戦に備える。');}
+  if(TRENCH.elapsed>68&&!TRENCH.enemyAirDone){TRENCH.enemyAirDone=true;const A=trenchPlane('orange');TRENCH.planes.push(A);trenchPlanePilot(A);showBanner('敵戦闘機を確認','敵機にも操縦士が搭乗。双方の戦闘機が空中戦を始める。');}
   if(TRENCH.elapsed>0){
     if(!TRENCH.enemyAssaultUntil){TRENCH.assaultT-=dt;if(TRENCH.assaultT<=0){
       const c=TRENCH.orange.filter(e=>isUp(e)&&e.trenchOrder!=='advance'&&e.trenchOrder!=='retreat'&&!e.trenchBunkerCrew);
@@ -7921,7 +7942,7 @@ function trenchUpdate(dt) {
     if(P.burst<=0){P.nextT-=dt;if(P.nextT>0){P.flash.visible=false;continue;}let best=null,bd=80;for(const e of foes){const d=Math.hypot(e.s.position.x-P.x,e.s.position.z-P.z);if(d<bd){bd=d;best=e;}}if(!best){P.nextT=.8;continue;}P.target=best;P.burst=5;P.shotT=0;}
     if(!P.target||!isUp(P.target)){P.burst=0;P.nextT=.5;continue;}
     const p=P.target.s.position,from=new V3(P.x,P.y,P.z),to=new V3(p.x,p.y+P.target.figH*.55,p.z);P.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z)+Math.PI;P.shotT-=dt;
-    if(P.shotT<=0){P.shotT=.18;P.burst--;P.flash.visible=true;P.gun.updateMatrixWorld(true);P.flash.position.copy(P.gun.localToWorld(new V3(0,0,-.85)));trenchTracer(from,to);if(Math.random()<.2)damageEnemy(P.target,1,from,false,{pt:to.clone(),thrust:true},'player');if(P.burst<=0)P.nextT=rand(1.5,3.2);}
+    if(P.shotT<=0){P.shotT=.18;P.burst--;P.flash.visible=true;P.gun.updateMatrixWorld(true);P.flash.position.copy(P.gun.localToWorld(new V3(0,0,-.85)));trenchTracer(from,to);if(Math.random()<.2)damageEnemy(P.target,1,from,false,{pt:to.clone(),thrust:true},null);if(P.burst<=0)P.nextT=rand(1.5,3.2);}
     else P.flash.visible=false;
   }
   TRENCH.fireT-=dt;
@@ -7929,10 +7950,10 @@ function trenchUpdate(dt) {
     for(const team of ['blue','orange']){
       const own=team==='blue'?TRENCH.blue:TRENCH.orange,foes=team==='blue'?TRENCH.orange:TRENCH.blue;
       const shooters=own.filter(e=>isUp(e)&&!e.trenchMounted),targets=foes.filter(e=>isUp(e)&&!e.trenchMounted);
-      for(let n=0;n<Math.min(6,shooters.length);n++){const e=shooters[(TRENCH.shots+n*13)%shooters.length];let best=null,bd=65;for(const t of targets){const d=Math.hypot(t.s.position.x-e.s.position.x,t.s.position.z-e.s.position.z);if(d<bd){bd=d;best=t;}}if(best){const from=new V3(e.s.position.x,e.s.position.y+e.figH*.62,e.s.position.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.55,best.s.position.z);trenchTracer(from,to);if(Math.random()<.12)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},'player');}}
+      for(let n=0;n<Math.min(6,shooters.length);n++){const e=shooters[(TRENCH.shots+n*13)%shooters.length];let best=null,bd=65;for(const t of targets){const d=Math.hypot(t.s.position.x-e.s.position.x,t.s.position.z-e.s.position.z);if(d<bd){bd=d;best=t;}}if(best){const from=new V3(e.s.position.x,e.s.position.y+e.figH*.62,e.s.position.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.55,best.s.position.z);trenchTracer(from,to);if(Math.random()<.12)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},e);}}
     }TRENCH.shots+=7;
   }
-  for(const C of TRENCH.cars){if(C.dead)continue;if(C.g.position.z>12){C.g.position.z-=C.speed*dt;C.z=C.g.position.z;}C.nextT-=dt;if(C.nextT<=0){const foes=TRENCH.orange.filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=65;for(const e of foes){const d=Math.hypot(e.s.position.x-C.g.position.x,e.s.position.z-C.g.position.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(C.g.position.x,1.5,C.g.position.z-1);const to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.22)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},'player');C.nextT=.22;}else C.nextT=.8;}}
+  for(const C of TRENCH.cars){if(C.dead)continue;if(C.g.position.z>12){C.g.position.z-=C.speed*dt;C.z=C.g.position.z;}C.nextT-=dt;if(C.nextT<=0){const foes=TRENCH.orange.filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=65;for(const e of foes){const d=Math.hypot(e.s.position.x-C.g.position.x,e.s.position.z-C.g.position.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(C.g.position.x,1.5,C.g.position.z-1);const to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.22)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},null);C.nextT=.22;}else C.nextT=.8;}}
   for(const A of TRENCH.planes){
     if(!A.active)continue;
     if(A.crashing){
@@ -11263,6 +11284,18 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
+    if (TRENCH.on && e.trenchPilot && e.trenchPlane && isUp(e)) {
+      const A=e.trenchPlane;
+      if(A.active&&!A.crashing){
+        A.g.updateMatrixWorld(true);
+        const q=A.g.localToWorld(new V3(0,.43,-.72));
+        p.copy(q);e.baseY=q.y;e.px=q.x;e.pz=q.z;e.s.rotation.y=A.g.rotation.y;
+        e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=70;
+        if(e.mat){e.mat.depthTest=false;e.mat.depthWrite=false;e.mat.transparent=true;e.mat.opacity=1;e.mat.side=THREE.DoubleSide;}
+        animateNpc(e,dt,0);
+      }
+      continue;
+    }
     if (TRENCH.on && e.trenchUnit && isUp(e)) { trenchBrain(e, dt); continue; }
     if (e.airChute && e.state !== 'airportDrop') { e.s.remove(e.airChute); e.airChute = null; }
     if (MTN.on || DUAL.on) MTN.who = e;

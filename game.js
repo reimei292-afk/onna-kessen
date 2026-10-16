@@ -8135,7 +8135,7 @@ function buildIsland(){
 }
 function islandAlive(){return enemies.filter(e=>e.islandRoster&&e.team==='blue'&&e.state!=='down').length+1;}
 function islandStart(){
-  ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;ISLAND.introT=0;ISLAND.crashed=false;
+  ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;ISLAND.introT=0;ISLAND.crashed=false;ISLAND.warned=ISLAND.warned||{};
   player.pos.set(0,0,68);player.yaw=0;player.hp=CFG.maxHp;player.kills=0;player.allyKills=0;
   // 200 departed: 12 lost in the crash, the player and 187 other survivors begin the landing.
   for(let i=0;i<187;i++){

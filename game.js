@@ -8080,6 +8080,21 @@ function buildIsland(){
   for(let row=0;row<7;row++)for(const side of [-1,1]){const z=57.5+row*3.4;cbox(side*4.88,1.75,z,.08,.72,1.25,glass);cbox(side*4.82,1.75,z,.1,.82,1.35,gold);}
   cbox(0,.55,56,3.8,.12,2.1,gold);cbox(0,.85,56,3.4,.42,1.8,chrome);cbox(-1.6,.4,54.7,1.1,.8,1.1,leather);cbox(1.6,.4,54.7,1.1,.8,1.1,leather);cbox(-2.7,2.65,68,.08,.08,24,gold);cbox(2.7,2.65,68,.08,.08,24,gold);
   for(let z=56;z<81;z+=2.5){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xffe6a3}));lamp.position.set(0,2.62,z);cabin.add(lamp);}
+  // First-class details: quilted seat headrests, individual reading lamps, brass trim, side consoles and service carts.
+  const ivory=new THREE.MeshStandardMaterial({color:0xf4ead7,roughness:.58}), burgundy=new THREE.MeshStandardMaterial({color:0x5a1f35,roughness:.42}), warmGlow=new THREE.MeshBasicMaterial({color:0xffc878});
+  for(let row=0;row<6;row++)for(const side of [-1,1]){
+    const z=58+row*3.6,x=side*2.15;
+    cbox(x,.99,z-.72,1.22,.18,.12,ivory); // padded headrest
+    cbox(side*3.55,.48,z,1.05,.08,1.8,gold); // private side console
+    cbox(side*3.55,.54,z,0.92,.08,1.65,burgundy);
+    cbox(side*3.55,.68,z-.55,.32,.05,.22,chrome); // service control panel
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.07,10,8),warmGlow);lamp.position.set(side*3.45,2.35,z-.4);cabin.add(lamp);
+  }
+  // Decorative ceiling panels, central aisle runner and lounge tableware.
+  for(let z=56.5;z<81;z+=3.1){cbox(0,2.66,z,3.2,.045,1.7,gold);cbox(0,2.69,z,2.95,.035,1.45,cabinWall);}
+  cbox(0,.67,56,1.8,.035,.8,ivory);for(const x of [-.48,0,.48]){const glassCup=new THREE.Mesh(new THREE.CylinderGeometry(.07,.055,.14,10),chrome);glassCup.position.set(x,.78,56);cabin.add(glassCup);}
+  // Wall sconces and plush trim make the cabin read as a luxury charter aircraft.
+  for(const side of [-1,1])for(let z=57;z<81;z+=6){cbox(side*4.7,2.15,z,.12,.36,.52,gold);cbox(side*4.62,2.15,z,.08,.22,.28,warmGlow);}
   ISLAND.introT=0;ISLAND.introDuration=8;ISLAND.crashed=false;
   // shoreline, beach driftwood, forest edge
   for(let i=0;i<16;i++){const x=-24+i*3.2;const log=islandBox(x,.18,32+Math.sin(i*1.7)*2,rand(1.1,2.6),.25,.24,wood,rand(-.5,.5));}
@@ -8150,13 +8165,40 @@ function updateIsland(dt){
  if(!ISLAND.on||!ISLAND.started||state!=='play')return;
  const p=player.pos;
  if(!ISLAND.crashed){ISLAND.introT+=dt;if(ISLAND.introT<2.8){$('stagedesc').textContent='雲海の上を飛行中 — 豪華な客室';}else if(ISLAND.introT<5.2){$('stagedesc').textContent='警報！ 機体が急降下している';if(!ISLAND.warned.alarm){ISLAND.warned.alarm=true;showBanner('機体トラブル','客室乗務員「衝撃に備えてください！」');}}else if(ISLAND.introT<8){$('stagedesc').textContent='緊急降下 — 不時着の衝撃！';camera.position.x+=(Math.random()-.5)*.12;camera.position.y+=(Math.random()-.5)*.08;}else{ISLAND.crashed=true;if(ISLAND.cabin)ISLAND.cabin.visible=false;p.set(0,0,60);player.yaw=0;let ri=0;for(const e of enemies){if(e.islandRoster){const row=Math.floor(ri/12),col=ri%12;e.s.position.set((col-5.5)*1.35+rand(-.25,.25),0,58+row*.7);e.home=[e.s.position.x,e.s.position.z];ri++;}if(e.islandCrashBody)e.s.position.set(rand(-4,4),0,74+rand(-2,2));}showBanner('不時着！','生存者を率いて、危険な島を突破せよ');}return;}
- // Follow in a loose column, with a mixed set of squads and no fighting before the final clearing.
+ // 侍女は王の隊列に固定しない。各自が探索目標を持ち、島を歩き回る。
  const followers=enemies.filter(e=>e.islandRoster&&e.state!=='down');
- for(let i=0;i<followers.length;i++){const e=followers[i],q=e.s.position;if(e.islandEscape)continue;const col=(i%9)-4,row=Math.floor(i/9);const tx=clamp(p.x+col*1.35,-20,20),tz=p.z+4+Math.min(17,row*.55);const d=Math.hypot(tx-q.x,tz-q.z);if(d>.9){steer(e,tx,tz,e.speed,dt);e.state='advance';e.passive=true;}else{e.state='idle';e.s.rotation.y=Math.PI;e.face=Math.PI;}}
+ for(let i=0;i<followers.length;i++){
+   const e=followers[i],q=e.s.position;if(e.islandEscape)continue;
+   e.islandThink=(e.islandThink||rand(.1,2.8))-dt;
+   const nearPlayer=Math.hypot(q.x-p.x,q.z-p.z);
+   if(!e.islandGoal||e.islandThink<=0||Math.hypot(e.islandGoal.x-q.x,e.islandGoal.z-q.z)<1.3||nearPlayer>34){
+     e.islandThink=rand(1.8,5.5);
+     // squad roles make different choices: scouts range wider, cautious members stay nearer.
+     const squadIndex=ISLAND.squadNames.indexOf(e.islandSquad),range=squadIndex%4===0?24:squadIndex%4===1?17:12;
+     let gx=clamp(p.x+rand(-range,range),-22,22),gz=clamp(p.z+rand(-range,range),-112,66);
+     // Most avoid obvious hazards, but distracted / reckless members can blunder into them.
+     if(Math.random()<.78){for(let tries=0;tries<5;tries++){const bad=ISLAND.hazards.find(h=>['quicksand','antlion','thorn','poison','suckgrass'].includes(h.type)&&Math.hypot(gx-h.x,gz-h.z)<h.r+2);if(!bad)break;gx=clamp(p.x+rand(-range,range),-22,22);gz=clamp(p.z+rand(-range,range),-112,66);}}
+     e.islandGoal={x:gx,z:gz};
+   }
+   const tx=e.islandGoal.x,tz=e.islandGoal.z,d=Math.hypot(tx-q.x,tz-q.z);
+   if(d>.65){steer(e,tx,tz,e.speed*(nearPlayer>25?1.12:1),dt);e.state='advance';e.passive=true;}
+   else{e.state='idle';e.islandGoal=null;}
+ }
  ISLAND.casualtyT+=dt;
  // 地形に入った分隊へまとめて危険判定。個々の死亡ポップアップは出さない。
  const activeHazards=ISLAND.hazards.filter(h=>['quicksand','antlion','thorn','poison','suckgrass'].includes(h.type));
- for(const h of activeHazards){h.allyCd=(h.allyCd||0)-dt;const victims=followers.filter(e=>!e.islandEscape&&Math.hypot(e.s.position.x-h.x,e.s.position.z-h.z)<h.r+(h.type==='thorn'?1.8:.5));if(victims.length&&h.allyCd<=0){h.allyCd=h.type==='thorn'?3.2:2.2;const lossCount=Math.min(victims.length,(h.type==='quicksand'||h.type==='antlion')?Math.ceil(rand(2,5)):Math.ceil(rand(1,4)));for(let k=0;k<lossCount;k++){const e=victims[(Math.random()*victims.length)|0];if(!e||e.state==='down')continue;e.quietDeath=true;e.hp=0;killEnemy(e,false,p);e.islandHazardDeath=h.type;}}}
+ for(const h of activeHazards){
+   h.allyCd=(h.allyCd||0)-dt;
+   const radius=h.r+(h.type==='thorn'?2.4:h.type==='poison'?1.2:.9);
+   const victims=followers.filter(e=>!e.islandEscape&&e.state!=='down'&&Math.hypot(e.s.position.x-h.x,e.s.position.z-h.z)<radius);
+   if(victims.length&&h.allyCd<=0){
+     h.allyCd=h.type==='thorn'?2.8:1.8;
+     const lossCount=Math.min(victims.length,(h.type==='quicksand'||h.type==='antlion')?Math.ceil(rand(2,5)):Math.ceil(rand(1,4));
+     // One hazard event can claim several attendants; never show individual death popups.
+     const shuffled=victims.slice().sort(()=>Math.random()-.5);
+     for(let k=0;k<lossCount;k++){const e=shuffled[k];if(!e||e.state==='down')continue;e.quietDeath=true;e.hp=0;killEnemy(e,false,p);e.islandHazardDeath=h.type;e.islandGoal=null;}
+   }
+ }
  if(ISLAND.casualtyT>6&&followers.length>8&&Math.random()<dt*.035){ISLAND.casualtyT=0;const e=followers[(Math.random()*followers.length)|0];if(e){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);}}
  for(const h of ISLAND.hazards){const d=Math.hypot(p.x-h.x,p.z-h.z);if(h.type==='crashbody')continue;
   if(h.type==='quicksand'&&d<h.r+.6){popup('流砂に足を取られた！');player.hp=0;gameOver(false);return;}

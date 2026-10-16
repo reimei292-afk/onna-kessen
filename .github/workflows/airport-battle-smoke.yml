@@ -92,8 +92,7 @@ jobs:
 
               // Regression check for the new trench stage: 100 troops each, held in the trench until the assault button is pressed.
               // Return to the title in-app instead of reloading a WebGL/pointer-locked page.
-              await page.evaluate(() => window.__game.pauseGame());
-              await page.locator('#quitBtn').click();
+              await page.evaluate(() => { window.__game.pauseGame(); document.querySelector('#quitBtn').click(); });
               await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 10000 });
               await page.locator('#stagesel button[data-st="trench"]').click();
               await page.locator('#startBtn').click();

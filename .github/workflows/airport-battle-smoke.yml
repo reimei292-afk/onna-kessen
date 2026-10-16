@@ -232,7 +232,7 @@ jobs:
               await page.locator('#stagesel button[data-st="nightRaid"]').click();
               await page.locator('#startBtn').click();
               await page.waitForFunction(() => window.__game.stage === 'nightRaid' && window.__game.state === 'play', null, { timeout: 60000 });
-              await page.waitForTimeout(500);
+              await page.waitForTimeout(1800);
               const nightRaid = await page.evaluate(() => {
                 const G=window.__game, scene=G.scene, lights=[];
                 scene.traverse(o=>{if(o.isPointLight)lights.push(o);});

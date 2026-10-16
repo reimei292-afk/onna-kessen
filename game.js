@@ -12298,6 +12298,16 @@ function gameOver(win) {
 }
 $('startBtn').onclick = startGame;
 $('bTrenchAttack').addEventListener('click', trenchCharge);
+// Pointer lock/canvas can win hit-testing on some mobile/desktop browsers. Route a press
+// inside the visible assault button to the command before the canvas handles it.
+document.addEventListener('pointerdown', ev => {
+  if (!TRENCH.on || TRENCH.started || state !== 'play') return;
+  const b = $('bTrenchAttack'), r = b.getBoundingClientRect();
+  if (b.style.display !== 'none' && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) {
+    ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+    trenchCharge();
+  }
+}, true);
 $('retryBtn').onclick = startGame;
 const godBtn = $('bGod');
 if (godBtn) {

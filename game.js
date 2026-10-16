@@ -10854,23 +10854,6 @@ const SEC_REQ = {
   },
   meal() { askMeal(); },
   shoulder() { sec.buffT = 60; popup('60秒間 矢の回復が速くなる'); secReply('sec_shoulder'); },
-  bodies() {
-    if (builtStage !== 'trench' || !hq) { popup('この命令は塹壕の本陣でのみ使える'); return; }
-    const candidates=bodies.filter(b=>b&&b.s&&!b.trenchBrought)
-      .sort((a,b)=>Math.hypot(a.s.position.x-hq.sx,a.s.position.z-hq.sz)-Math.hypot(b.s.position.x-hq.sx,b.s.position.z-hq.sz));
-    const chosen=candidates.slice(0,4);
-    if(!chosen.length){popup('運べる戦死者は近くにいない');$('secsay').textContent='「ただいま運べる方はいらっしゃいません」';return;}
-    chosen.forEach((b,i)=>{
-      const x=[-3.6,-1.2,1.2,3.6][i],z=71.2+(i%2)*1.1;
-      b.s.position.set(x,0.02,z);b.baseY=0.02;b.px=x;b.pz=z;b.trenchBrought=true;
-      b.s.visible=true;if(b.tilt)b.tilt.visible=true;if(b.bb)b.bb.visible=true;
-      if(b.shadow)b.shadow.visible=true;
-      if(b.mat){b.mat.transparent=true;b.mat.opacity=1;b.mat.alphaTest=.02;b.mat.depthWrite=false;b.mat.needsUpdate=true;}
-    });
-    $('secsay').textContent='「かしこまりました。近くの戦死者を本陣までお運びします」';
-    popup('戦死者を本陣へ運んだ：'+chosen.length+'人');
-    showBanner('本陣への搬送',chosen.length+'人を休息所の脇へ運びました。');
-  },
   corpse() {
     if (!hq || !inHQ()) { popup('本陣の休息所に戻ってから頼んで'); return; }
     const targetX=hq.sx-2.35, targetZ=hq.sz+0.08;

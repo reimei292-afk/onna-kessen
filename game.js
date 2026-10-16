@@ -7548,7 +7548,9 @@ function airportCrewFaceAll(){
   e.s.rotation.y=yaw;e.face=yaw;
   // 車体・銃座の内側で乗員の写真メッシュが隠れたり、カリングで消えたりしないよう描画状態を毎フレーム補正。
   e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;
-  if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.alphaTest=0.35;e.mat.needsUpdate=true;}
+  // 乗員は車体の内側に置くため、車体の深度に負けて写真全体が隠れないよう最前面へ描画。
+  e.bb.renderOrder=30;
+  if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=0.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
   const g=e.girl,role=e.airportRole;
   let fr=(role==='driver'||role==='pilot')?(g.front||g.low||g.kneel):(g.front||g.stab||g.action);
   if(!fr||!fr.tex)fr=g.front;

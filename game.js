@@ -7802,6 +7802,8 @@ function buildTrench() {
   const tracerMat=new THREE.MeshBasicMaterial({color:0xffd58b,transparent:true,opacity:.85});
   const tracerGeo=new THREE.BoxGeometry(.035,.035,1);tracerGeo.translate(0,0,-.5);
   for(let i=0;i<32;i++){const m=new THREE.Mesh(tracerGeo,tracerMat);m.visible=false;stageRoot.add(m);TRENCH.tracers.push({m,t:1,d:0,a:new V3(),b:new V3()});}
+  // 前線から離れた後方に王の本陣・休息所を設ける。
+  buildHQ(-6,6,59,75,0,67);
   // 遠景の低い土丘。戦場を荒野らしく縁取る。
   for(let i=0;i<18;i++){
     const x=-110+i*12.5, z=i%2?-105:105, r=rand(7,14);
@@ -10270,6 +10272,44 @@ function buildHQ(x0, x1, z0, z1, sx, sz) {
     const st = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.4), hqMat.cloth); st.position.set(sx + dx, 0.45, sz - 1.2); stageRoot.add(st);
     for (const s of [-1, 1]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.6, 0.04), hqMat.stool); l.position.set(sx + dx + s * 0.2, 0.22, sz - 1.2); l.rotation.z = s * 0.5; stageRoot.add(l); }
   }
+  // 本陣の一角を「リラックススペース」に。畳風の敷物、座布団、屏風、行灯。
+  if (!['plane','airport'].includes(stageName)) {
+    const mat = new THREE.MeshLambertMaterial({color:0x667451});
+    const trim = new THREE.MeshLambertMaterial({color:0xc7b78a});
+    const pillow = new THREE.MeshLambertMaterial({color:0x6f3030});
+    const rug = new THREE.Mesh(new THREE.BoxGeometry(3.1,0.08,2.35),mat);
+    rug.position.set(sx-2.35,0.04,sz-0.05); stageRoot.add(rug);
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(3.16,0.025,2.41),trim);
+    rim.position.set(sx-2.35,0.085,sz-0.05); stageRoot.add(rim);
+    const cushion = new THREE.Mesh(new THREE.BoxGeometry(.68,.13,.62),pillow);
+    cushion.position.set(sx-2.35,.15,sz+.38); stageRoot.add(cushion);
+    const lowTable = new THREE.Mesh(new THREE.BoxGeometry(1.05,.12,.62),WOOD_L);
+    lowTable.position.set(sx-2.35,.17,sz-.62); stageRoot.add(lowTable);
+    for (const dx of [-.42,.42]) for (const dz of [-.22,.22]) {
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(.06,.13,.06),WOOD_D);
+      leg.position.set(sx-2.35+dx,.065,sz-.62+dz);stageRoot.add(leg);
+    }
+    const screenMat=new THREE.MeshLambertMaterial({color:0x4a3827});
+    const panelMat=new THREE.MeshLambertMaterial({color:0xb6a174});
+    for(let i=0;i<3;i++){
+      const x=sx-4.25+i*.95;
+      const frame=new THREE.Mesh(new THREE.BoxGeometry(.07,1.45,.08),screenMat);
+      frame.position.set(x,.73,sz-1.34);stageRoot.add(frame);
+      const panel=new THREE.Mesh(new THREE.BoxGeometry(.82,1.3,.035),panelMat);
+      panel.position.set(x+.43,.72,sz-1.34);stageRoot.add(panel);
+    }
+    for(const dx of [-3.9,-.8]){
+      const lamp=new THREE.Group();
+      const base=new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,.1,8),WOOD_D);base.position.y=.05;lamp.add(base);
+      const glow=new THREE.Mesh(new THREE.BoxGeometry(.24,.38,.24),new THREE.MeshLambertMaterial({color:0xffd78b,emissive:0x5a3612}));
+      glow.position.y=.3;lamp.add(glow);lamp.position.set(sx+dx,.02,sz+.82);stageRoot.add(lamp);
+    }
+    const sign=new THREE.Mesh(new THREE.BoxGeometry(1.65,.75,.09),WOOD_D);
+    sign.position.set(sx-2.35,1.7,sz-1.4);stageRoot.add(sign);
+    const signTex=canvasTex(256,128,g=>{g.fillStyle='#e6d6ad';g.fillRect(0,0,256,128);g.strokeStyle='#47321f';g.lineWidth=7;g.strokeRect(5,5,246,118);g.fillStyle='#382819';g.font='bold 43px serif';g.textAlign='center';g.textBaseline='middle';g.fillText('休息所',128,64);});
+    const signFace=new THREE.Mesh(new THREE.PlaneGeometry(1.45,.62),new THREE.MeshBasicMaterial({map:signTex,transparent:true,side:THREE.DoubleSide}));
+    signFace.position.set(sx-2.35,1.7,sz-1.345);stageRoot.add(signFace);
+  }
 }
 // 秘書課の侍女：写真の侍女（既定 mob06）。本陣では立って用事を聞き、「一緒に来て」で弓兵として同行
 function spawnSecretary() {
@@ -10804,6 +10844,20 @@ const SEC_REQ = {
   },
   meal() { askMeal(); },
   shoulder() { sec.buffT = 60; popup('60秒間 矢の回復が速くなる'); secReply('sec_shoulder'); },
+  corpse() {
+    if (!hq || !inHQ()) { popup('本陣の休息所に戻ってから頼んで'); return; }
+    const targetX=hq.sx-2.35, targetZ=hq.sz+0.08;
+    const candidates=bodies.filter(b=>!b.relaxCorpse && b.state==='down' && !b.snowPost);
+    if (!candidates.length) { popup('運んでこられる遺体がまだない'); $('secsay').textContent='「承知しました。運べる方が見つかりましたら、お連れします」'; return; }
+    candidates.sort((a,b)=>Math.hypot(a.s.position.x-player.pos.x,a.s.position.z-player.pos.z)-Math.hypot(b.s.position.x-player.pos.x,b.s.position.z-player.pos.z));
+    const body=candidates[0];body.relaxCorpse=true;body.s.position.set(targetX,0.02,targetZ);body.baseY=0.02;body.px=targetX;body.pz=targetZ;body.s.rotation.y=body.fallYaw||body.s.rotation.y;
+    if(body.shadow){body.shadow.position.set(targetX,0.025,targetZ);body.shadow.visible=true;}
+    if(body.decal){body.decal.position.set(targetX,0.03,targetZ);body.decal.visible=true;}
+    if(body.wmk)body.wmk.visible=false;
+    $('secsay').textContent='「…承知しました。お休みの場所までお連れします」';
+    showBanner('遺体を運びました','休息所の敷物のそばに、遺体を運び入れた。');
+    popup('遺体を休息所へ運んだ');
+  },
   fan() { sec.fanT = 4; Sfx.noiseBurst(1.2, 'bandpass', 500, 300, 0.12, 0.6); secReply('sec_fan'); },
   coldclothes() {
     if (!SNOW.on) return;
@@ -12433,6 +12487,9 @@ function startGame() {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
+  } else {
+    // 塹壕戦でも本陣に秘書を配置。大規模な通常援護NPCは増やさない。
+    spawnSecretary();
   }
   GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();

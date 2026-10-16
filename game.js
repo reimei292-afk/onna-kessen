@@ -7828,7 +7828,7 @@ function trenchStartBattle() {
       const P=TRENCH.posts.filter(p=>p.team===team)[pi];
       for(let k=0;k<4;k++){
         const e=list[list.length-16+pi*4+k];if(!e)continue;
-        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?46.35:-46.35;
+        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?52.7:-46.35;
         e.s.position.set(xx,.04,zz);e.px=xx;e.pz=zz;e.baseY=.04;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
         e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.05;
         e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;
@@ -7863,7 +7863,7 @@ function trenchBrain(e,dt){
   }
   if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
     const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?.04:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;
-    if(e.trenchBunkerCrew){e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;}}
+    if(e.trenchBunkerCrew){e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=80;e.s.renderOrder=80;e.tilt.renderOrder=80;e.s.traverse(o=>{if(o.isMesh){o.frustumCulled=false;o.renderOrder=80;if(o.material){o.material.depthTest=false;o.material.depthWrite=false;o.material.transparent=true;o.material.opacity=1;o.material.side=THREE.DoubleSide;}}});if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}}
     animateNpc(e,dt,0);return;
   }
   const tz=e.trenchTargetZ==null?(e.trenchSide==='blue'?-38:38):e.trenchTargetZ,tx=e.trenchTargetX==null?p.x:e.trenchTargetX;
@@ -7883,7 +7883,7 @@ function trenchPlane(team){
   const box=(w,h,d,x,y,z,m)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);q.position.set(x,y,z);g.add(q);return q;};
   box(.65,.38,3.8,0,0,0,mat);box(7,.11,1.05,0,.02,.15,mat);box(2.2,.1,.8,0,.23,-.85,mat);box(.14,.08,1.2,0,-.08,2.1,dark);
   g.position.set(team==='blue'?-108:108,17,team==='blue'?8:-8);g.rotation.y=team==='blue'?Math.PI/2:-Math.PI/2;stageRoot.add(g);
-  return {team,g,x:g.position.x,z:g.position.z,dir:team==='blue'?1:-1,shotT:1,active:true};
+  return {team,g,x:g.position.x,z:g.position.z,dir:team==='blue'?1:-1,shotT:1,hp:100,maxHp:100,active:true,crashing:false};
 }
 function trenchPlanePilot(A){
   if(!A||A.pilot)return;
@@ -7899,7 +7899,7 @@ function trenchPlanePilot(A){
 function trenchCrashPlane(A,attacker){
   if(!A||!A.active||A.crashing)return;
   A.crashing=true;A.crashV=1.8;A.crashT=0;A.shotT=99;
-  if(A.pilot&&isUp(A.pilot)){A.pilot.quietDeath=true;killEnemy(A.pilot,false,new V3(A.g.position.x,A.g.position.y,A.g.position.z));}
+  if(A.pilot&&isUp(A.pilot)){A.pilot.quietDeath=true;A.pilot.s.visible=true;A.pilot.tilt.visible=true;A.pilot.bb.visible=true;killEnemy(A.pilot,false,new V3(A.g.position.x,A.g.position.y,A.g.position.z));}
   showBanner(A.team==='blue'?'味方戦闘機、被弾！':'敵戦闘機、被弾！','機体が制御を失い、荒野へ墜落していく。');
 }
 function trenchReinforce(){
@@ -9831,7 +9831,7 @@ function waveUpdate(dt) {
 
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
-function damageEnemy(e, dmg, from, crit, hit, by = 'player') {
+function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (e.state === 'down') return;
   const byPlayer = by === 'player';
   if (PLANE.intro) planeAmbush();   // 静かな機内で攻撃すれば、その場で奇襲が始まる

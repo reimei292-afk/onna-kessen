@@ -127,7 +127,7 @@ jobs:
                 return {
                   started: T.started,
                   commandHidden: getComputedStyle(document.querySelector('#bTrenchAttack')).display === 'none',
-                  blueOutsideTrench: T.blue.filter(e => e.s.position.z < 35.4 && !e.passive).length
+                  blueOutsideTrench: T.blue.filter(e => e.trenchOrder === 'advance' && !e.trenchBunkerCrew).length
                 };
               });
               console.log('TRENCH_CHARGE ' + JSON.stringify(charge));

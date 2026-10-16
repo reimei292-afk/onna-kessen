@@ -12510,14 +12510,13 @@ function startGame() {
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
-  if (builtStage === 'trench') spawnSecretary();
-  else {
+  if (builtStage === 'trench') {
+    // 塹壕戦は通常の100対100を維持し、本陣には秘書だけを配置する。
+    spawnSecretary();
+  } else {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
-  } else {
-    // 塹壕戦でも本陣に秘書を配置。大規模な通常援護NPCは増やさない。
-    spawnSecretary();
   }
   GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();

@@ -49,16 +49,35 @@ jobs:
                   threeD: G.scene && G.stageRoot && G.stageRoot.children.length > 100,
                   survivors: living.length + 1, roster: living.length,
                   crashCasualties: crash.length,
+                  cabinVisible: !!I.cabin && I.cabin.visible,
+                  fieldMaids: living.filter(e => !e.islandHQStaff).length,
+                  hqStaff: living.filter(e => e.islandHQStaff).length,
                   hazardTypes: [...new Set(I.hazards.map(h => h.type))].sort()
                 };
               });
               console.log('ISLAND_SETUP ' + JSON.stringify(setup));
               if (setup.stage !== 'island' || setup.state !== 'play' || !setup.active || !setup.threeD ||
-                  setup.roster !== 187 || setup.survivors !== 188 || setup.crashCasualties !== 12 ||
+                  setup.roster !== 187 || setup.survivors !== 188 || setup.crashCasualties !== 0 || setup.hqStaff !== 8 || !setup.cabinVisible ||
                   !setup.hazardTypes.includes('quicksand') || !setup.hazardTypes.includes('antlion') ||
                   !setup.hazardTypes.includes('thorn') || !setup.hazardTypes.includes('poison') ||
                   !setup.hazardTypes.includes('suckgrass')) {
                 throw new Error('Island 3D setup failed: ' + JSON.stringify(setup));
+              }
+              const crash = await page.evaluate(() => {
+                const G = window.__game, I = G.ISLAND;
+                I.introT = I.introDuration + 0.1;
+                G.updateIsland(0.016);
+                return {
+                  crashed: I.crashed,
+                  kingAtHQ: Math.abs(G.player.pos.z - 78) < 0.1,
+                  cabinVisible: !!I.cabin && I.cabin.visible,
+                  casualties: G.enemies.filter(e => e.islandCrashBody).length,
+                  hqStaff: G.enemies.filter(e => e.islandRoster && e.islandHQStaff && e.state !== 'down').length
+                };
+              });
+              console.log('ISLAND_CRASH ' + JSON.stringify(crash));
+              if (!crash.crashed || !crash.kingAtHQ || !crash.cabinVisible || crash.casualties !== 12 || crash.hqStaff !== 8) {
+                throw new Error('Crash/HQ state failed: ' + JSON.stringify(crash));
               }
               const plaza = await page.evaluate(() => {
                 const G = window.__game;

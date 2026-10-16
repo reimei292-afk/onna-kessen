@@ -8102,10 +8102,13 @@ function buildIsland(){
   for(let i=0;i<32;i++){const x=(Math.random()<.5?-1:1)*rand(8,22),z=rand(-105,-58);tree(x,z,rand(.65,1.2));}
   // small island cliffs at the outer edges
   for(const side of [-1,1])for(let i=0;i<12;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1.2,3),0),new THREE.MeshLambertMaterial({color:0x77796d}));r.position.set(side*rand(25,33),rand(.2,1),rand(-120,40));r.scale.y=.6;stageRoot.add(r);}
-  // plane wreckage / HQ at the southern end
+  // The luxurious cabin itself becomes the forward HQ after the crash.
   const fus=islandBox(0,1.5,78,8,2.5,18,new THREE.MeshLambertMaterial({color:0xbfc6c7}),0);
   const wing=islandBox(0,2.4,77,27,.25,4,new THREE.MeshLambertMaterial({color:0x9da9ad}),.06);
   for(const x of [-2.4,2.4])islandBox(x,2.9,78,1.4,.1,5,new THREE.MeshLambertMaterial({color:0x526b76}));
+  const dentMat=new THREE.MeshLambertMaterial({color:0x68777c});
+  const dent1=islandBox(-4.05,1.4,72,.18,1.1,5,dentMat,.16),dent2=islandBox(4.02,1.15,82,.18,.8,4,dentMat,-.2);
+  ISLAND.damageParts=[dent1,dent2];for(const d of ISLAND.damageParts)d.visible=false;
   // Quicksand and antlion funnels in the beach lane
   for(const [x,z,r,type] of [[-12,48,2.1,'quicksand'],[9,41,2.3,'antlion'],[14,57,2,'quicksand'],[-5,28,2.2,'antlion'],[3,61,1.9,'quicksand']]){
     const m=new THREE.Mesh(new THREE.CircleGeometry(r,24),new THREE.MeshLambertMaterial({color:type==='antlion'?0x7e633e:0x78664b}));m.rotation.x=-Math.PI/2;m.position.set(x,.035,z);stageRoot.add(m);
@@ -8137,15 +8140,16 @@ function islandAlive(){return enemies.filter(e=>e.islandRoster&&e.team==='blue'&
 function islandStart(){
   ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;ISLAND.introT=0;ISLAND.crashed=false;ISLAND.warned=ISLAND.warned||{};
   player.pos.set(0,0,68);player.yaw=0;player.hp=CFG.maxHp;player.kills=0;player.allyKills=0;
-  // 200 departed: 12 lost in the crash, the player and 187 other survivors begin the landing.
+  // All 200 are alive during the flight. The king stays aboard with the HQ staff.
+  // 187 field attendants are deployed after the crash; 8 staff members remain at HQ.
   for(let i=0;i<187;i++){
     const row=Math.floor(i/12),col=i%12,x=(col-5.5)*1.35+rand(-.25,.25),z=66+row*1.35;
     const kind=i%10<7?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{yari:kind==='mob'?1:-1});
-    if(!e)continue;e.islandRoster=true;e.islandSquad=ISLAND.squadNames[i%ISLAND.squadNames.length];e.islandCasualty=false;e.state='idle';e.home=[x,z];e.speed=rand(1.9,2.5);e.dmg=0;e.tgt=null;e.passive=true;
+    if(!e)continue;e.islandRoster=true;e.islandSquad=ISLAND.squadNames[i%ISLAND.squadNames.length];e.islandCasualty=false;e.state='idle';e.home=[x,z];e.speed=rand(2.8,3.8);e.dmg=0;e.tgt=null;e.passive=true;
+    e.islandHQStaff=i<8;e.islandField=!e.islandHQStaff;
     e.s.rotation.y=Math.PI;e.face=Math.PI;
+    if(e.islandHQStaff)e.s.position.set((i%4-1.5)*.85,0,76.5+Math.floor(i/4)*1.2);
   }
-  // Twelve crash casualties remain as the same sprite-based bodies used by the main game.
-  for(let i=0;i<12;i++){const e=spawnEnemy(rand(-4,4),rand(74,81),i%3?'archer':'mob',false,'blue');if(e){e.quietDeath=true;e.islandCrashBody=true;e.hp=0;killEnemy(e,false,player.pos);}}
   wave={n:1,toSpawn:0,spawnT:0,inter:0,maxAlive:0,blueToSpawn:0,blueOwed:0,blueMax:0,total:{blue:188,orange:0}};
   showBanner('上空・豪華旅客機の機内','雲海の上を飛行中。機体が大きく揺れ始める……');
 }
@@ -8164,24 +8168,33 @@ function islandPlaza(){
 function updateIsland(dt){
  if(!ISLAND.on||!ISLAND.started||state!=='play')return;
  const p=player.pos;
- if(!ISLAND.crashed){ISLAND.introT+=dt;if(ISLAND.introT<2.8){$('stagedesc').textContent='雲海の上を飛行中 — 豪華な客室';}else if(ISLAND.introT<5.2){$('stagedesc').textContent='警報！ 機体が急降下している';if(!ISLAND.warned.alarm){ISLAND.warned.alarm=true;showBanner('機体トラブル','客室乗務員「衝撃に備えてください！」');}}else if(ISLAND.introT<8){$('stagedesc').textContent='緊急降下 — 不時着の衝撃！';camera.position.x+=(Math.random()-.5)*.12;camera.position.y+=(Math.random()-.5)*.08;}else{ISLAND.crashed=true;if(ISLAND.cabin)ISLAND.cabin.visible=false;p.set(0,0,60);player.yaw=0;let ri=0;for(const e of enemies){if(e.islandRoster){const row=Math.floor(ri/12),col=ri%12;e.s.position.set((col-5.5)*1.35+rand(-.25,.25),0,58+row*.7);e.home=[e.s.position.x,e.s.position.z];ri++;}if(e.islandCrashBody)e.s.position.set(rand(-4,4),0,74+rand(-2,2));}showBanner('不時着！','生存者を率いて、危険な島を突破せよ');}return;}
+ if(!ISLAND.crashed){ISLAND.introT+=dt;if(ISLAND.introT<2.8){$('stagedesc').textContent='雲海の上を飛行中 — 豪華な客室';}else if(ISLAND.introT<5.2){$('stagedesc').textContent='警報！ 機体が急降下している';if(!ISLAND.warned.alarm){ISLAND.warned.alarm=true;showBanner('機体トラブル','客室乗務員「衝撃に備えてください！」');}}else if(ISLAND.introT<8){$('stagedesc').textContent='緊急降下 — 不時着の衝撃！';camera.position.x+=(Math.random()-.5)*.12;camera.position.y+=(Math.random()-.5)*.08;}else{
+  ISLAND.crashed=true;p.set(0,0,78);player.yaw=0;
+  if(ISLAND.damageParts)for(const d of ISLAND.damageParts)d.visible=true;
+  let ri=0;
+  for(const e of enemies){if(!e.islandRoster)continue;
+    if(e.islandHQStaff)e.s.position.set(((ri%4)-1.5)*.85,0,76.5+Math.floor((ri%8)/4)*1.2);
+    else{const row=Math.floor((ri-8)/12),col=(ri-8)%12;e.s.position.set((col-5.5)*1.35+rand(-.25,.25),0,54+row*.8);e.home=[e.s.position.x,e.s.position.z];}
+    ri++;
+  }
+  for(let i=0;i<ISLAND.deadAtCrash;i++){const e=spawnEnemy(rand(-3.5,3.5),rand(73,82),i%3?'archer':'mob',false,'blue');if(e){e.quietDeath=true;e.islandCrashBody=true;e.hp=0;killEnemy(e,false,player.pos);e.s.position.set(rand(-4,4),0,74+rand(-2,2));}}
+  showBanner('不時着！','王は損傷した機内本陣に残り、侍女たちは島へ進む');}return;}
  // 侍女は王の隊列に固定しない。各自が探索目標を持ち、島を歩き回る。
  const followers=enemies.filter(e=>e.islandRoster&&e.state!=='down');
  for(let i=0;i<followers.length;i++){
-   const e=followers[i],q=e.s.position;if(e.islandEscape)continue;
+   const e=followers[i],q=e.s.position;if(e.islandEscape||e.islandHQStaff)continue;
    e.islandThink=(e.islandThink||rand(.1,2.8))-dt;
    const nearPlayer=Math.hypot(q.x-p.x,q.z-p.z);
-   if(!e.islandGoal||e.islandThink<=0||Math.hypot(e.islandGoal.x-q.x,e.islandGoal.z-q.z)<1.3||nearPlayer>34){
-     e.islandThink=rand(1.8,5.5);
-     // squad roles make different choices: scouts range wider, cautious members stay nearer.
-     const squadIndex=ISLAND.squadNames.indexOf(e.islandSquad),range=squadIndex%4===0?24:squadIndex%4===1?17:12;
-     let gx=clamp(p.x+rand(-range,range),-22,22),gz=clamp(p.z+rand(-range,range),-112,66);
+   if(!e.islandGoal||e.islandThink<=0||Math.hypot(e.islandGoal.x-q.x,e.islandGoal.z-q.z)<1.3){
+     e.islandThink=rand(1.8,4.2);
+     const squadIndex=ISLAND.squadNames.indexOf(e.islandSquad),range=squadIndex%4===0?20:squadIndex%4===1?14:10;
+     let gx=clamp(q.x+rand(-range,range),-22,22),gz=clamp(q.z-rand(12,32),-112,58);
      // Most avoid obvious hazards, but distracted / reckless members can blunder into them.
      if(Math.random()<.78){for(let tries=0;tries<5;tries++){const bad=ISLAND.hazards.find(h=>['quicksand','antlion','thorn','poison','suckgrass'].includes(h.type)&&Math.hypot(gx-h.x,gz-h.z)<h.r+2);if(!bad)break;gx=clamp(p.x+rand(-range,range),-22,22);gz=clamp(p.z+rand(-range,range),-112,66);}}
      e.islandGoal={x:gx,z:gz};
    }
    const tx=e.islandGoal.x,tz=e.islandGoal.z,d=Math.hypot(tx-q.x,tz-q.z);
-   if(d>.65){steer(e,tx,tz,e.speed*(nearPlayer>25?1.12:1),dt);e.state='advance';e.passive=true;}
+   if(d>.65){steer(e,tx,tz,e.speed,dt);e.state='advance';e.passive=true;}
    else{e.state='idle';e.islandGoal=null;}
  }
  ISLAND.casualtyT+=dt;

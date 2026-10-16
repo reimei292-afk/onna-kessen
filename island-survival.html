@@ -93,14 +93,14 @@ function update(dt){
  for(const a of allies){if(a.dead)continue;const z=currentZone(a.y);if(z.kind==='beach'&&a.y>190&&a.y<400&&Math.random()<dt*.006){eliminate(a,Math.random()<.5?'antlion':'quicksand')}if(z.kind==='forest'&&Math.random()<dt*.0009){eliminate(a,'thorn')}if(z.kind==='grass'&&Math.random()<dt*.0011){eliminate(a,'grass')}}
  warnHazards(dt);for(const s of shots)s.life-=dt;shots=shots.filter(s=>s.life>0);
  // when entering plaza, revive all casualties as theatrical enemy-role actors
- if(player.y>=2280&&!visited.plaza){visited.plaza=true;for(const b of deadBodies)b.used=true;msg('秘書「ここにいるのは……これまでに倒れた侍女たちです！ 模擬戦闘の敵役として襲ってきます。敵を全員倒してください！」',6500);$('teams').textContent='広場のみ再開';$('objective').textContent='敵役を全員倒す';}
+ if(player.y>=2280&&!visited.plaza){visited.plaza=true;for(const b of deadBodies)b.used=true;plazaEnemies=deadBodies.map((b,i)=>({x:260+(i%12)*118,y:2420+Math.floor(i/12)*90,hp:1,alive:true,id:i}));for(let i=0;i<Math.min(24,dead-12);i++)plazaEnemies.push({x:300+(i%10)*130,y:2650+Math.floor(i/10)*100,hp:1,alive:true,id:100+i});msg('秘書「ここにいるのは……これまでに倒れた侍女たちです！ 模擬戦闘の敵役として襲ってきます。敵を全員倒してください！」',6500);$('teams').textContent='広場のみ再開';$('objective').textContent='敵役を全員倒す';}
  setStage();$('alive').textContent=aliveCount();$('dead').textContent=dead;
- if(player.y>world.h-80&&visited.plaza&&plazaEnemies.length===0)finish(true,'死亡した侍女たちの敵役を全員倒しました。生還作戦を達成！');
+ 
  if(performance.now()>lastMsg)$('message').classList.remove('show');
 }
 let plazaEnemies=[];
 function attack(){if(!running||paused||won||attackCooldown>0)return;attackCooldown=.42;if(player.y<2280){msg('敵味方の模擬戦闘は一時停止中です。生還を優先してください。',900);return}if(!visited.plaza)return;
- if(plazaEnemies.length===0){plazaEnemies=deadBodies.map((b,i)=>({x:260+(i%12)*118,y:2420+Math.floor(i/12)*90,hp:1,alive:true,id:i}));for(let i=0;i<Math.min(24,dead-12);i++)plazaEnemies.push({x:300+(i%10)*130,y:2650+Math.floor(i/10)*100,hp:1,alive:true,id:100+i});msg('敵役が現れた！ 近づいて攻撃してください。',3000)}
+ 
  const target=plazaEnemies.filter(e=>e.alive).sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y))[0];if(target&&Math.hypot(target.x-player.x,target.y-player.y)<100){target.alive=false;const alive=plazaEnemies.filter(e=>e.alive).length;msg('敵役を撃破！ 残り '+alive+' 名',1000);if(alive===0){plazaEnemies=[];player.y=world.h-80;finish(true,'最終広場の敵役を全員倒しました。模擬戦闘を終了します。')}}else if(target){msg('敵役が遠い。近づいて攻撃してください。',800)}}
 const oldDraw=draw;draw=function(){oldDraw();if(plazaEnemies.length){ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);let scale=Math.min(W/820,H/680);scale=Math.max(.48,Math.min(scale,1.05));ctx.scale(scale,scale);ctx.translate(-camX,-camY);for(const e of plazaEnemies){if(!e.alive)continue;ctx.fillStyle='#b7c7a3';ctx.beginPath();ctx.arc(e.x,e.y,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#5d2b25';ctx.lineWidth=3;ctx.stroke();ctx.fillStyle='#301d19';ctx.font='11px sans-serif';ctx.fillText('敵役',e.x-12,e.y-15)}ctx.restore()}};
 function frame(t){const dt=Math.min(.04,(t-lastTime)/1000||0);lastTime=t;if(running&&!paused)update(dt);draw();requestAnimationFrame(frame)}

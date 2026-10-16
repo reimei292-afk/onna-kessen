@@ -7797,16 +7797,16 @@ function buildTrench() {
   }
 }
 function trenchStartBattle() {
-  TRENCH.on=true; TRENCH.started=false; TRENCH.blue=[]; TRENCH.orange=[]; TRENCH.fireT=2.2; TRENCH.won=false; TRENCH.shots=0;
+  TRENCH.on=true;TRENCH.started=false;TRENCH.blue=[];TRENCH.orange=[];TRENCH.fireT=2.2;TRENCH.won=false;TRENCH.shots=0;TRENCH.elapsed=0;TRENCH.assaultT=rand(18,27);TRENCH.enemyAssaultUntil=0;TRENCH.blueRetreatT=0;TRENCH.blueRetreating=false;TRENCH.reinfDone=false;TRENCH.enemyAirDone=false;TRENCH.airDone=false;TRENCH.cars=[];TRENCH.planes=[];
   wave={n:1,toSpawn:0,blueToSpawn:0,blueOwed:0,spawnT:0,inter:0,maxAlive:200,blueMax:100,total:{blue:100,orange:100},archerRate:ARCHER_RATE};
   // 第一波は本当に100人ずつ配置。隊列は横一列、全員を塹壕の底に腰を落とした高さで待機させる。
   for(let i=0;i<100;i++){
     const x=-34.65+i*.7, kind=Math.random()<.22?'archer':'mob';
     const b=spawnEnemy(x,38,kind,false,'blue',{y:-1.08,yari:-1});
-    if(b){b.trenchSide='blue';b.trenchHome={x,z:38};b.home=[x,38];b.hold={face:Math.PI};b.passive=true;b.state='idle';b.tgt=null;b.tgtT=0;b.crouch=.25;TRENCH.blue.push(b);}
+    if(b){b.trenchSide='blue';b.trenchHome={x,z:38};b.home=[x,38];b.trenchOrder='hold';b.trenchTargetZ=38;b.hold={face:Math.PI};b.passive=true;b.state='idle';b.tgt=null;b.tgtT=0;b.crouch=.25;TRENCH.blue.push(b);}
     const ekind=Math.random()<.22?'archer':'mob';
     const e=spawnEnemy(x,-38,ekind,false,'orange',{y:-1.08,yari:-1});
-    if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
+    if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.trenchOrder='hold';e.trenchTargetZ=-38;e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
   }
   $('bTrenchAttack').style.display='block';
   $('bTrenchAttack').disabled=false;
@@ -11229,6 +11229,7 @@ function updateEnemies(dt) {
       continue;
     }
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
+    if(TRENCH.on&&(e.trenchUnit||e.trenchMounted)){if(trenchUnitBrain(e,dt))continue;}
     let lean = 0;
     e.bowSeat = BEACH.on && e.seated && e.seated.boat && e.kind === 'archer' && !e.special && e.seated.boat.z > -42 && !e.seated.boat.beached;   // 浜：舟の弓兵は漕ぎながら射る
     e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || e.runner || !!e.hold || (!!e.seated && !e.bowSeat) || !!e.hiddenAmb;   // hold: テスト用に止める／seated: 機内の席に座っている

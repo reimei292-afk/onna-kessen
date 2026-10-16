@@ -8127,9 +8127,10 @@ function islandStart(){
 }
 function islandPlaza(){
   if(ISLAND.plaza)return;ISLAND.plaza=true;
+  const fallenActors=enemies.filter(e=>e.islandCrashBody||(e.islandRoster&&e.state==='down'));
   const fallen=enemies.filter(e=>e.islandRoster&&e.state==='down').length;
   const count=Math.min(48,Math.max(12,ISLAND.deadAtCrash+fallen));
-  for(let i=0;i<count;i++){const x=((i%8)-3.5)*2.2,z=-129+Math.floor(i/8)*3.0;const kind=i%10<7?'archer':'mob';const e=spawnEnemy(x,z,kind,false,'orange',{yari:kind==='mob'?1:-1});if(e){e.islandZombie=true;e.state='approach';e.hp=Math.max(3,e.hp);e.hpMax=e.hp;e.speed=rand(1.8,2.4);e.dmg=6;e.s.rotation.y=0;e.face=0;}}
+  for(let i=0;i<count;i++){const x=((i%8)-3.5)*2.2,z=-129+Math.floor(i/8)*3.0;const kind=i%10<7?'archer':'mob';const deadActor=fallenActors[i%Math.max(1,fallenActors.length)];const girlKey=deadActor?Object.keys(GIRLS).find(k=>GIRLS[k]===deadActor.girl):null;const e=spawnEnemy(x,z,kind,false,'orange',{yari:kind==='mob'?1:-1,...(girlKey?{girl:girlKey}:{})});if(e){e.islandZombie=true;e.state='approach';e.hp=Math.max(3,e.hp);e.hpMax=e.hp;e.speed=rand(1.8,2.4);e.dmg=6;e.s.rotation.y=0;e.face=0;}}
   for(const e of enemies)if(e.islandRoster&&e.state!=='down'){e.islandRoster=false;e.islandEscape=true;e.dmg=0;e.tgt=null;e.passive=true;}
   wave.total={blue:enemies.filter(e=>e.team==='blue'&&e.state!=='down').length,orange:count};wave.toSpawn=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.inter=0;
   popup('秘書「ここにいるのは、これまでに倒れた侍女たち……！ 模擬戦闘の敵役です。全員を倒して突破してください！」');
@@ -12302,7 +12303,8 @@ function updateHud(dt) {
   }
   const foeN = wave.toSpawn + livingHead('orange');
   const allyN = livingHead('blue');
-  setText('remain', wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`);
+  const islandSurvivors = enemies.filter(e=>e.islandRoster&&e.state!=='down').length+1;
+  setText('remain', ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);

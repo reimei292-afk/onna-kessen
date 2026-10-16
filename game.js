@@ -8142,7 +8142,7 @@ function updateIsland(dt){
  for(let i=0;i<followers.length;i++){const e=followers[i],q=e.s.position;if(e.islandEscape)continue;const col=(i%9)-4,row=Math.floor(i/9);const tx=clamp(p.x+col*1.35,-20,20),tz=p.z+4+Math.min(17,row*.55);const d=Math.hypot(tx-q.x,tz-q.z);if(d>.9){steer(e,tx,tz,e.speed,dt);e.state='advance';e.passive=true;}else{e.state='idle';e.s.rotation.y=Math.PI;e.face=Math.PI;}}
  ISLAND.casualtyT+=dt;
  // The island causes occasional losses among the column as they cross its dangerous regions.
- if(ISLAND.casualtyT>3.8&&followers.length>4&&Math.random()<dt*.17){ISLAND.casualtyT=0;const z=p.z;const candidates=followers.filter(e=>Math.hypot(e.s.position.x-p.x,e.s.position.z-p.z)<18);const e=candidates.length?candidates[(Math.random()*candidates.length)|0]:followers[(Math.random()*followers.length)|0];if(e&&z<60&&z> -116){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);ISLAND.deadAtCrash++;popup('島の異常で侍女が脱落した。残る者は進路を変えて進む。');}}
+ if(ISLAND.casualtyT>3.8&&followers.length>4&&Math.random()<dt*.17){ISLAND.casualtyT=0;const z=p.z;const candidates=followers.filter(e=>Math.hypot(e.s.position.x-p.x,e.s.position.z-p.z)<18);const e=candidates.length?candidates[(Math.random()*candidates.length)|0]:followers[(Math.random()*followers.length)|0];if(e&&z<60&&z> -116){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);popup('島の異常で侍女が脱落した。残る者は進路を変えて進む。');}}
  for(const h of ISLAND.hazards){const d=Math.hypot(p.x-h.x,p.z-h.z);if(h.type==='crashbody')continue;
   if(h.type==='quicksand'&&d<h.r+.6){popup('流砂に足を取られた！');player.hp=0;gameOver(false);return;}
   if(h.type==='antlion'&&d<h.r+.4){popup('アリジゴクに飲み込まれた！');player.hp=0;gameOver(false);return;}
@@ -12785,7 +12785,7 @@ function toTitle() {
 function gameOver(win) {
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
-  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '地上侵入部隊を撃退した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   $('over').style.display = 'flex';
@@ -13002,7 +13002,7 @@ function frame(now) {
     if (TEST) testBot(dt);
     stepBudget = 3;
     if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
-    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); if (ISLAND.on) updateIsland(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
+    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
   } else if (state === 'title') {

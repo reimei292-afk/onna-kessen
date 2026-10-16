@@ -94,8 +94,7 @@ jobs:
               // Return to the title in-app instead of reloading a WebGL/pointer-locked page.
               await page.evaluate(() => { window.__game.pauseGame(); document.querySelector('#quitBtn').click(); });
               await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 10000 });
-              await page.locator('#stagesel button[data-st="trench"]').click();
-              await page.locator('#startBtn').click();
+              await page.evaluate(() => { document.querySelector('#stagesel button[data-st="trench"]').click(); document.querySelector('#startBtn').click(); });
               await page.waitForFunction(() => window.__game.stage === 'trench' && window.__game.state === 'play', null, { timeout: 60000 });
               const trenchSetup = await page.evaluate(() => {
                 const G = window.__game, T = G.TRENCH, button = document.querySelector('#bTrenchAttack');

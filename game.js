@@ -12248,22 +12248,24 @@ function resetGame() {
 }
 function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
-  {
+  $('bTrenchAttack').style.display='none';
+  if (builtStage !== 'trench') {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   state = 'play'; lock();
   if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
+  else if (builtStage === 'trench') trenchStartBattle();
   else if (builtStage === 'twofront') startDualMission(); else startWave(1);
 }
 function pauseGame() {
@@ -12289,6 +12291,7 @@ function gameOver(win) {
   $('over').style.display = 'flex';
 }
 $('startBtn').onclick = startGame;
+$('bTrenchAttack').addEventListener('click', trenchCharge);
 $('retryBtn').onclick = startGame;
 const godBtn = $('bGod');
 if (godBtn) {

@@ -8071,6 +8071,16 @@ function buildIsland(){
   const forest=new THREE.Mesh(new THREE.PlaneGeometry(46,90),darkGrass);forest.rotation.x=-Math.PI/2;forest.position.set(0,-.015,-18);stageRoot.add(forest);
   const meadow=new THREE.Mesh(new THREE.PlaneGeometry(48,42),grass);meadow.rotation.x=-Math.PI/2;meadow.position.set(0,-.01,-82);stageRoot.add(meadow);
   const plaza=new THREE.Mesh(new THREE.PlaneGeometry(52,48),plazaMat);plaza.rotation.x=-Math.PI/2;plaza.position.set(0,-.005,-124);stageRoot.add(plaza);
+  // 豪華旅客機の機内：革張り座席、金縁、窓、ラウンジ、照明レール。
+  const cabin=new THREE.Group();ISLAND.cabin=cabin;stageRoot.add(cabin);
+  const cabinWall=new THREE.MeshLambertMaterial({color:0xe7e0d2}),carpet=new THREE.MeshLambertMaterial({color:0x6c273d}),leather=new THREE.MeshLambertMaterial({color:0x3e2630}),gold=new THREE.MeshLambertMaterial({color:0xc8a65b}),glass=new THREE.MeshLambertMaterial({color:0x6da6c4,emissive:0x172d3b}),chrome=new THREE.MeshStandardMaterial({color:0x9da6ab,metalness:.7,roughness:.25});
+  const cbox=(x,y,z,w,h,d,mat)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);cabin.add(m);return m;};
+  cbox(0,-.18,68,10,.25,25,carpet);cbox(0,2.8,68,10,.22,25,cabinWall);cbox(-5,1.2,68,.22,2.8,25,cabinWall);cbox(5,1.2,68,.22,2.8,25,cabinWall);cbox(0,1.4,55,10,2.8,.25,cabinWall);cbox(0,1.4,81,10,2.8,.25,cabinWall);
+  for(let row=0;row<6;row++)for(const side of [-1,1]){const x=side*2.15,z=58+row*3.6;cbox(x,.72,z,1.7,1.05,1.55,leather);cbox(x,.95,z-.52,1.72,.42,.35,leather);cbox(x,.25,z,1.8,.12,1.6,gold);}
+  for(let row=0;row<7;row++)for(const side of [-1,1]){const z=57.5+row*3.4;cbox(side*4.88,1.75,z,.08,.72,1.25,glass);cbox(side*4.82,1.75,z,.1,.82,1.35,gold);}
+  cbox(0,.55,56,3.8,.12,2.1,gold);cbox(0,.85,56,3.4,.42,1.8,chrome);cbox(-1.6,.4,54.7,1.1,.8,1.1,leather);cbox(1.6,.4,54.7,1.1,.8,1.1,leather);cbox(-2.7,2.65,68,.08,.08,24,gold);cbox(2.7,2.65,68,.08,.08,24,gold);
+  for(let z=56;z<81;z+=2.5){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:0xffe6a3}));lamp.position.set(0,2.62,z);cabin.add(lamp);}
+  ISLAND.introT=0;ISLAND.introDuration=8;ISLAND.crashed=false;
   // shoreline, beach driftwood, forest edge
   for(let i=0;i<16;i++){const x=-24+i*3.2;const log=islandBox(x,.18,32+Math.sin(i*1.7)*2,rand(1.1,2.6),.25,.24,wood,rand(-.5,.5));}
   for(let i=0;i<54;i++){const x=rand(-20,20),z=rand(-59,21);if(Math.abs(x)<3.8&&z>-50&&z<10)continue;tree(x,z,rand(.8,1.5));ISLAND.trees.push({x,z});}
@@ -8110,7 +8120,7 @@ function buildIsland(){
 }
 function islandAlive(){return enemies.filter(e=>e.islandRoster&&e.team==='blue'&&e.state!=='down').length+1;}
 function islandStart(){
-  ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;
+  ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;ISLAND.introT=0;ISLAND.crashed=false;
   player.pos.set(0,0,68);player.yaw=0;player.hp=CFG.maxHp;player.kills=0;player.allyKills=0;
   // 200 departed: 12 lost in the crash, the player and 187 other survivors begin the landing.
   for(let i=0;i<187;i++){
@@ -8122,8 +8132,7 @@ function islandStart(){
   // Twelve crash casualties remain as the same sprite-based bodies used by the main game.
   for(let i=0;i<12;i++){const e=spawnEnemy(rand(-4,4),rand(74,81),i%3?'archer':'mob',false,'blue');if(e){e.quietDeath=true;e.islandCrashBody=true;e.hp=0;killEnemy(e,false,player.pos);}}
   wave={n:1,toSpawn:0,spawnT:0,inter:0,maxAlive:0,blueToSpawn:0,blueOwed:0,blueMax:0,total:{blue:188,orange:0}};
-  popup('秘書「機体トラブルです！ 不時着時にも犠牲者が出ています。敵味方の区別をなくし、一人でも多く生還しましょう！」');
-  showBanner('無人島サバイバル模擬戦闘','本陣は不時着した機内。南の砂浜から島の北側を目指せ');
+  showBanner('上空・豪華旅客機の機内','雲海の上を飛行中。機体が大きく揺れ始める……');
 }
 function islandPlaza(){
   if(ISLAND.plaza)return;ISLAND.plaza=true;
@@ -8140,16 +8149,19 @@ function islandPlaza(){
 function updateIsland(dt){
  if(!ISLAND.on||!ISLAND.started||state!=='play')return;
  const p=player.pos;
+ if(!ISLAND.crashed){ISLAND.introT+=dt;if(ISLAND.introT<2.8){$('stagedesc').textContent='雲海の上を飛行中 — 豪華な客室';}else if(ISLAND.introT<5.2){$('stagedesc').textContent='警報！ 機体が急降下している';if(!ISLAND.warned.alarm){ISLAND.warned.alarm=true;showBanner('機体トラブル','客室乗務員「衝撃に備えてください！」');}}else if(ISLAND.introT<8){$('stagedesc').textContent='緊急降下 — 不時着の衝撃！';camera.position.x+=(Math.random()-.5)*.12;camera.position.y+=(Math.random()-.5)*.08;}else{ISLAND.crashed=true;if(ISLAND.cabin)ISLAND.cabin.visible=false;p.set(0,0,60);player.yaw=0;let ri=0;for(const e of enemies){if(e.islandRoster){const row=Math.floor(ri/12),col=ri%12;e.s.position.set((col-5.5)*1.35+rand(-.25,.25),0,58+row*.7);e.home=[e.s.position.x,e.s.position.z];ri++;}if(e.islandCrashBody)e.s.position.set(rand(-4,4),0,74+rand(-2,2));}showBanner('不時着！','生存者を率いて、危険な島を突破せよ');}return;}
  // Follow in a loose column, with a mixed set of squads and no fighting before the final clearing.
  const followers=enemies.filter(e=>e.islandRoster&&e.state!=='down');
  for(let i=0;i<followers.length;i++){const e=followers[i],q=e.s.position;if(e.islandEscape)continue;const col=(i%9)-4,row=Math.floor(i/9);const tx=clamp(p.x+col*1.35,-20,20),tz=p.z+4+Math.min(17,row*.55);const d=Math.hypot(tx-q.x,tz-q.z);if(d>.9){steer(e,tx,tz,e.speed,dt);e.state='advance';e.passive=true;}else{e.state='idle';e.s.rotation.y=Math.PI;e.face=Math.PI;}}
  ISLAND.casualtyT+=dt;
- // The island causes occasional losses among the column as they cross its dangerous regions.
- if(ISLAND.casualtyT>3.8&&followers.length>4&&Math.random()<dt*.17){ISLAND.casualtyT=0;const z=p.z;const candidates=followers.filter(e=>Math.hypot(e.s.position.x-p.x,e.s.position.z-p.z)<18);const e=candidates.length?candidates[(Math.random()*candidates.length)|0]:followers[(Math.random()*followers.length)|0];if(e&&z<60&&z> -116){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);popup('島の異常で侍女が脱落した。残る者は進路を変えて進む。');}}
+ // 地形に入った分隊へまとめて危険判定。個々の死亡ポップアップは出さない。
+ const activeHazards=ISLAND.hazards.filter(h=>['quicksand','antlion','thorn','poison','suckgrass'].includes(h.type));
+ for(const h of activeHazards){h.allyCd=(h.allyCd||0)-dt;const victims=followers.filter(e=>!e.islandEscape&&Math.hypot(e.s.position.x-h.x,e.s.position.z-h.z)<h.r+(h.type==='thorn'?1.8:.5));if(victims.length&&h.allyCd<=0){h.allyCd=h.type==='thorn'?3.2:2.2;const lossCount=Math.min(victims.length,(h.type==='quicksand'||h.type==='antlion')?Math.ceil(rand(2,5)):Math.ceil(rand(1,4)));for(let k=0;k<lossCount;k++){const e=victims[(Math.random()*victims.length)|0];if(!e||e.state==='down')continue;e.quietDeath=true;e.hp=0;killEnemy(e,false,p);e.islandHazardDeath=h.type;}}}
+ if(ISLAND.casualtyT>6&&followers.length>8&&Math.random()<dt*.035){ISLAND.casualtyT=0;const e=followers[(Math.random()*followers.length)|0];if(e){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);}}
  for(const h of ISLAND.hazards){const d=Math.hypot(p.x-h.x,p.z-h.z);if(h.type==='crashbody')continue;
   if(h.type==='quicksand'&&d<h.r+.6){popup('流砂に足を取られた！');player.hp=0;gameOver(false);return;}
   if(h.type==='antlion'&&d<h.r+.4){popup('アリジゴクに飲み込まれた！');player.hp=0;gameOver(false);return;}
-  if(h.type==='poison'&&d<h.r+1){if(!ISLAND.warned.poison){ISLAND.warned.poison=true;showBanner('秘書の警告','これは毒の湖です。貴重な水に見えても近づいてはなりません！');}player.hp-=dt*6;}
+  if(h.type==='poison'&&d<h.r+1){if(!ISLAND.warned.poison){ISLAND.warned.poison=true;showBanner('秘書の警告','これは毒の湖です。貴重な水に見えても近づいてはなりません！');}player.hp-=dt*12;}
   if(h.type==='thorn'&&d<h.r){h.cd-=dt;if(h.cd<=0){h.cd=2.3;const dir=new V3(p.x-h.x,1.1,p.z-h.z).normalize();const thorn=new THREE.Mesh(new THREE.ConeGeometry(.08,.65,5),thornMat);thorn.position.set(h.x+dir.x*1.4,1.1,h.z+dir.z*1.4);thorn.rotation.x=Math.PI/2;stageRoot.add(thorn);ISLAND.hazards.push({type:'thornShot',mesh:thorn,x:thorn.position.x,z:thorn.position.z,life:1.1,vx:dir.x*11,vz:dir.z*11});}}
   if(h.type==='suckgrass'&&d<h.r){h.cd-=dt;if(h.cd<=0){h.cd=.8;player.hp-=4;popup('草が肌に絡みつく！ 吸血する草です。');}}
   if(h.type==='thornShot'){h.life-=dt;h.x+=h.vx*dt;h.z+=h.vz*dt;if(Math.hypot(p.x-h.x,p.z-h.z)<.65){player.hp-=8;h.life=0;popup('棘が刺さった！');}if(h.life<=0){stageRoot.remove(h.mesh);h.type='spent';}}

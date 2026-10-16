@@ -8131,7 +8131,7 @@ function islandPlaza(){
   const fallen=enemies.filter(e=>e.islandRoster&&e.state==='down').length;
   const count=Math.min(48,Math.max(12,ISLAND.deadAtCrash+fallen));
   for(let i=0;i<count;i++){const x=((i%8)-3.5)*2.2,z=-129+Math.floor(i/8)*3.0;const kind=i%10<7?'archer':'mob';const deadActor=fallenActors[i%Math.max(1,fallenActors.length)];const girlKey=deadActor?Object.keys(GIRLS).find(k=>GIRLS[k]===deadActor.girl):null;const e=spawnEnemy(x,z,kind,false,'orange',{yari:kind==='mob'?1:-1,...(girlKey?{girl:girlKey}:{})});if(e){e.islandZombie=true;e.state='approach';e.hp=Math.max(3,e.hp);e.hpMax=e.hp;e.speed=rand(1.8,2.4);e.dmg=6;e.s.rotation.y=0;e.face=0;}}
-  for(const e of enemies)if(e.islandRoster&&e.state!=='down'){e.islandRoster=false;e.islandEscape=true;e.dmg=0;e.tgt=null;e.passive=true;}
+  for(const e of enemies)if(e.islandRoster&&e.state!=='down'){e.islandEscape=true;e.dmg=0;e.tgt=null;e.passive=true;}
   wave.total={blue:enemies.filter(e=>e.team==='blue'&&e.state!=='down').length,orange:count};wave.toSpawn=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.inter=0;
   popup('秘書「ここにいるのは、これまでに倒れた侍女たち……！ 模擬戦闘の敵役です。全員を倒して突破してください！」');
   showBanner('最終広場','ここだけ敵味方の人数表示が復活する。敵役を全員倒せ');

@@ -92,7 +92,7 @@ jobs:
 
               // Regression check for the new trench stage: 100 troops each, held in the trench until the assault button is pressed.
               // Return to the title in-app instead of reloading a WebGL/pointer-locked page.
-              await page.keyboard.press('Escape');
+              await page.evaluate(() => window.__game.pauseGame());
               await page.locator('#quitBtn').click();
               await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 10000 });
               await page.locator('#stagesel button[data-st="trench"]').click();
@@ -146,6 +146,12 @@ jobs:
                   hqExists:!!h,
                   playerInside:!!h && G.inHQ(),
                   secretaryPresent:G.enemies.some(e=>e.secretary&&e.state!=='down'),
+                  secondSecretaryPresent:G.enemies.some(e=>e.sec2&&e.state!=='down'),
+                  ojouPresent:G.enemies.some(e=>e.ojou&&e.state!=='down'),
+                  fluterPresent:G.enemies.some(e=>e.fluter&&e.state!=='down'),
+                  medicCount:G.enemies.filter(e=>e.medic&&e.state!=='down').length,
+                  messengerCount:G.enemies.filter(e=>e.runner&&e.state!=='down').length,
+                  aideCount:G.enemies.filter(e=>e.aide&&e.state!=='down').length,
                   talkPrompt:parseFloat(getComputedStyle(talk).opacity)>.5,
                   shoulderButton:!!document.querySelector('#secmain [data-req="shoulder"]'),
                   mealButton:!!document.querySelector('#secmain [data-req="meal"]'),
@@ -154,10 +160,27 @@ jobs:
               });
               console.log('TRENCH_HQ ' + JSON.stringify(trenchHQ));
               if (!trenchHQ.hqExists || !trenchHQ.playerInside || !trenchHQ.secretaryPresent ||
+                  !trenchHQ.secondSecretaryPresent || !trenchHQ.ojouPresent || !trenchHQ.fluterPresent ||
+                  trenchHQ.medicCount < 8 || trenchHQ.messengerCount < 2 || trenchHQ.aideCount < 2 ||
                   !trenchHQ.talkPrompt || !trenchHQ.shoulderButton || !trenchHQ.mealButton || !trenchHQ.corpseButton) {
                 throw new Error('Trench HQ setup failed: ' + JSON.stringify(trenchHQ));
               }
               console.log('TRENCH_HQ_BROWSER_TEST_PASS');
+
+              // Spawn both sides' mechanized reinforcements and verify that a vehicle passenger is a normal, damageable NPC.
+              await page.evaluate(() => { window.__game.TRENCH.elapsed=35.01; window.__game.TRENCH.reinfDone=false; });
+              await page.waitForFunction(() => window.__game.TRENCH.cars.length === 6, null, { timeout: 10000 });
+              const mechTest = await page.evaluate(() => {
+                const G=window.__game,T=G.TRENCH;
+                const blue=T.cars.filter(c=>c.team==='blue'),orange=T.cars.filter(c=>c.team==='orange');
+                const passenger=orange[0]&&orange[0].crew[0];
+                const visible=!!passenger&&passenger.s.visible&&passenger.bb.visible&&Number.isFinite(passenger.s.position.x);
+                if(passenger)G.damageEnemy(passenger,passenger.hp+1,passenger.s.position.clone(),false,{pt:passenger.s.position.clone()},null);
+                return {blueCars:blue.length,orangeCars:orange.length,crewCount:T.cars.reduce((n,c)=>n+c.crew.length,0),visible,passengerDown:!!passenger&&passenger.state==='down',noWhiteFlash:!!passenger&&passenger.flash===0};
+              });
+              console.log('TRENCH_MECHANIZED ' + JSON.stringify(mechTest));
+              if(mechTest.blueCars!==3||mechTest.orangeCars!==3||mechTest.crewCount!==24||!mechTest.visible||!mechTest.passengerDown||!mechTest.noWhiteFlash) throw new Error('Trench mechanized test failed: '+JSON.stringify(mechTest));
+              console.log('TRENCH_MECHANIZED_BROWSER_TEST_PASS');
 
               // Regression check: the HQ relaxation corner and secretary requests, including moving a fallen NPC there.
               await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });

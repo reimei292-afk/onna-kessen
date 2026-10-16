@@ -25,7 +25,7 @@ function setStage(){const z=currentZone(player.y);$('stage').textContent=z.name;
 function makeWorld(){
  player={x:world.w/2,y:90,r:13,hp:100};allies=[];deadBodies=[];hazards=[];decor=[];shots=[];
  // 176 surviving NPCs start after 12 crash casualties; squads deliberately interleaved.
- for(let i=0;i<176;i++){const row=Math.floor(i/16),col=i%16;allies.push({id:i,x:world.w/2+(col-7.5)*23+(Math.random()-.5)*8,y:90+row*22+(Math.random()-.5)*8,r:7,hp:1,dead:false,kind:['archer','melee','scout','medic','secretary','guard'][i%6],squad:squadNames[i%8],target:null,move:Math.random()*6.28})}
+ for(let i=0;i<187;i++){const row=Math.floor(i/16),col=i%16;allies.push({id:i,x:world.w/2+(col-7.5)*23+(Math.random()-.5)*8,y:90+row*22+(Math.random()-.5)*8,r:7,hp:1,dead:false,kind:['archer','melee','scout','medic','secretary','guard'][i%6],squad:squadNames[i%8],target:null,move:Math.random()*6.28})}
  for(let i=0;i<12;i++)deadBodies.push({x:world.w/2+(i-5.5)*25,y:145+(Math.random()-.5)*35,r:8,used:false});
  // procedural vegetation and hazards
  for(let i=0;i<330;i++){let y=470+Math.random()*1120;decor.push({x:30+Math.random()*(world.w-60),y,kind:Math.random()<.6?'tree':'fern',s:.6+Math.random()*1.5})}
@@ -40,7 +40,7 @@ function makeWorld(){
  for(let i=0;i<9;i++)hazards.push({type:'suckgrass',x:120+Math.random()*(world.w-240),y:1710+Math.random()*470,rx:80+Math.random()*45,ry:48+Math.random()*30,cd:0});
  // forest/grass pathways and plaza zombie enemies = all 12 initial dead + casualties along route
 }
-function aliveCount(){return allies.filter(a=>!a.dead).length}
+function aliveCount(){return allies.filter(a=>!a.dead).length+(player?1:0)}
 function eliminate(a,reason){if(a.dead)return;a.dead=true;dead++;deadBodies.push({x:a.x,y:a.y,r:8,used:false});if(reason==='antlion')a.gone=true}
 function warnHazards(dt){
  for(const h of hazards){const dx=player.x-h.x,dy=player.y-h.y,d=Math.hypot(dx,dy);

@@ -11203,6 +11203,7 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
+    if (TRENCH.on && e.trenchUnit && isUp(e)) { trenchBrain(e, dt); continue; }
     if (e.airChute && e.state !== 'airportDrop') { e.s.remove(e.airChute); e.airChute = null; }
     if (MTN.on || DUAL.on) MTN.who = e;
     if (e.state === 'airportDrop') { airportParatrooperStep(e, dt); animateNpc(e, dt, 0); continue; }

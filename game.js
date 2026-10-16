@@ -7821,6 +7821,19 @@ function trenchStartBattle() {
     const e=spawnEnemy(x,-38,ekind,false,'orange',{y:-1.08,yari:-1});
     if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.trenchOrder='hold';e.trenchUnit=true;e.trenchTargetZ=-38;e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
   }
+  // 各陣地のトーチカ4基に、4人ずつの機関銃分隊を配置（各軍16人）。
+  for(const team of ['blue','orange']){
+    const list=team==='blue'?TRENCH.blue:TRENCH.orange;
+    for(let pi=0;pi<4;pi++){
+      const P=TRENCH.posts.filter(p=>p.team===team)[pi];
+      for(let k=0;k<4;k++){
+        const e=list[list.length-16+pi*4+k];if(!e)continue;
+        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?53.5:-53.5;
+        e.s.position.set(xx,0,zz);e.px=xx;e.pz=zz;e.baseY=0;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
+        e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.2;
+      }
+    }
+  }
   $('bTrenchAttack').style.display='block';
   $('bTrenchAttack').disabled=false;
   $('bTrenchAttack').textContent='攻めろ！';

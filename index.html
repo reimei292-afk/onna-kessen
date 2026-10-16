@@ -83,7 +83,7 @@
     font:inherit;font-size:18px;letter-spacing:.25em;padding:8px 18px;color:#e8d9a8;
     background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.75);border-radius:4px;cursor:pointer}
   #bGod.on{background:rgba(232,217,168,.92);color:#1a1410}
-  #bTrenchAttack{display:none;position:absolute;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto;z-index:35;
+  #bTrenchAttack{display:none;position:fixed;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto;z-index:120;
     min-width:150px;padding:11px 26px;border:2px solid #d5b47b;border-radius:5px;
     background:rgba(77,42,22,.94);color:#fff0c5;font:inherit;font-size:23px;letter-spacing:.3em;
     text-shadow:0 1px 3px #000;box-shadow:0 2px 12px rgba(0,0,0,.6);cursor:pointer}
@@ -183,9 +183,9 @@
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
   <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
   <button id="bGod" class="serif" type="button">無敵</button>
-  <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
+<button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <button id="bMtnOpen" class="serif" type="button" aria-label="本丸の扉を開く">開く</button>
 
 <div id="touchui">

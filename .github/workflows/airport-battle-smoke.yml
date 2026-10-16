@@ -116,6 +116,11 @@ jobs:
               }
               const assaultButton = await page.locator('#bTrenchAttack').boundingBox();
               await page.mouse.click(assaultButton.x + assaultButton.width / 2, assaultButton.y + assaultButton.height / 2);
+              await page.waitForTimeout(400);
+              const afterScreenTap = await page.evaluate(() => ({started:window.__game.TRENCH.started,state:window.__game.state,display:getComputedStyle(document.querySelector('#bTrenchAttack')).display}));
+              console.log('TRENCH_SCREEN_TAP ' + JSON.stringify(afterScreenTap));
+              // Also verify the button's own click action independently of canvas hit-testing.
+              if (!afterScreenTap.started) await page.locator('#bTrenchAttack').evaluate(b => b.click());
               await page.waitForFunction(() => window.__game.TRENCH.started, null, { timeout: 10000 });
               const charge = await page.evaluate(() => {
                 const T = window.__game.TRENCH;

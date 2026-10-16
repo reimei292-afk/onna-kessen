@@ -136,6 +136,27 @@ jobs:
               }
               console.log('TRENCH_BROWSER_TEST_PASS');
 
+              // The trench stage must also have a working rear HQ and the same secretary commands.
+              await page.waitForTimeout(500);
+              const trenchHQ = await page.evaluate(() => {
+                const G=window.__game, h=G.hq, talk=document.querySelector('#talk');
+                return {
+                  hqExists:!!h,
+                  playerInside:!!h && G.inHQ(),
+                  secretaryPresent:G.enemies.some(e=>e.secretary&&e.state!=='down'),
+                  talkPrompt:parseFloat(getComputedStyle(talk).opacity)>.5,
+                  shoulderButton:!!document.querySelector('#secmain [data-req="shoulder"]'),
+                  mealButton:!!document.querySelector('#secmain [data-req="meal"]'),
+                  corpseButton:!!document.querySelector('#secmain [data-req="corpse"]')
+                };
+              });
+              console.log('TRENCH_HQ ' + JSON.stringify(trenchHQ));
+              if (!trenchHQ.hqExists || !trenchHQ.playerInside || !trenchHQ.secretaryPresent ||
+                  !trenchHQ.talkPrompt || !trenchHQ.shoulderButton || !trenchHQ.mealButton || !trenchHQ.corpseButton) {
+                throw new Error('Trench HQ setup failed: ' + JSON.stringify(trenchHQ));
+              }
+              console.log('TRENCH_HQ_BROWSER_TEST_PASS');
+
               // Regression check: the HQ relaxation corner and secretary requests, including moving a fallen NPC there.
               await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
               await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });

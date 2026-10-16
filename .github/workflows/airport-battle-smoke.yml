@@ -113,7 +113,8 @@ jobs:
                   !trenchSetup.commandVisible || !trenchSetup.heldInTrench) {
                 throw new Error('Trench setup failed: ' + JSON.stringify(trenchSetup));
               }
-              await page.locator('#bTrenchAttack').click();
+              const assaultButton = await page.locator('#bTrenchAttack').boundingBox();
+              await page.mouse.click(assaultButton.x + assaultButton.width / 2, assaultButton.y + assaultButton.height / 2);
               await page.waitForFunction(() => window.__game.TRENCH.started, null, { timeout: 10000 });
               const charge = await page.evaluate(() => {
                 const T = window.__game.TRENCH;

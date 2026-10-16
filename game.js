@@ -12234,6 +12234,7 @@ function resetGame() {
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
   if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
+  else if (builtStage === 'trench') { player.pos.set(0, 0, 55); player.yaw = Math.PI; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }

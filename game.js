@@ -7829,7 +7829,7 @@ function trenchStartBattle() {
       for(let k=0;k<4;k++){
         const e=list[list.length-16+pi*4+k];if(!e)continue;
         const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?52.7:-46.35;
-        e.s.position.set(xx,.04,zz);e.px=xx;e.pz=zz;e.baseY=.04;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
+        e.s.position.set(xx,.72,zz);e.px=xx;e.pz=zz;e.baseY=.72;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
         e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.05;
         e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;
         if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
@@ -7862,8 +7862,8 @@ function trenchBrain(e,dt){
     const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
   }
   if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
-    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?.04:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;
-    if(e.trenchBunkerCrew){e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=80;e.s.renderOrder=80;e.tilt.renderOrder=80;e.s.traverse(o=>{if(o.isMesh){o.frustumCulled=false;o.renderOrder=80;if(o.material){o.material.depthTest=false;o.material.depthWrite=false;o.material.transparent=true;o.material.opacity=1;o.material.side=THREE.DoubleSide;}}});if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}}
+    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?.72:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;
+    e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=80;e.s.renderOrder=80;e.tilt.renderOrder=80;e.s.traverse(o=>{if(o.isMesh){o.frustumCulled=false;o.renderOrder=80;if(o.material){o.material.depthTest=false;o.material.depthWrite=false;o.material.transparent=true;o.material.opacity=1;o.material.side=THREE.DoubleSide;}}});if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
     animateNpc(e,dt,0);return;
   }
   const tz=e.trenchTargetZ==null?(e.trenchSide==='blue'?-38:38):e.trenchTargetZ,tx=e.trenchTargetX==null?p.x:e.trenchTargetX;
@@ -9843,7 +9843,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   const partner = menuOpen && menuGirl() === e;
   e.wasTalking = partner || Talk.speaking(e);
   if (e.wasTalking) { if (partner) closeSecMenu(false); Talk.hush(e); }
-  e.hp -= dmg; e.flash = 0.12; npcGlow(e, 0.9, 0.9, 0.9);
+  e.hp -= dmg; e.flash = 0.12; if (!TRENCH.on) npcGlow(e, 0.9, 0.9, 0.9); // 塹壕戦では被弾時の白い発光を使わない
   let hitPos = null;
   if (hit && hit.pt) {
     hitPos = hitSurface(e, hit.pt, from);

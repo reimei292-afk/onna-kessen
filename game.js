@@ -2634,6 +2634,7 @@ function updatePlaneFx(dt) {
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
   const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench';
+  document.documentElement.classList.toggle('trench', tr);
   AIRPORT.on = ap; TRENCH.on = tr;
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
@@ -7804,6 +7805,15 @@ function buildTrench() {
   for(let i=0;i<32;i++){const m=new THREE.Mesh(tracerGeo,tracerMat);m.visible=false;stageRoot.add(m);TRENCH.tracers.push({m,t:1,d:0,a:new V3(),b:new V3()});}
   // 前線から離れた後方に王の本陣・休息所を設ける。
   buildHQ(-6,6,59,75,0,67);
+  // 王のリラックススペース：三方を陣幕で囲み、入口は塹壕側へ開ける。
+  maku(-8,67,16,Math.PI/2); maku(8,67,16,Math.PI/2); maku(0,75,16,0);
+  trenchBlock(0,.045,67,12,.08,11,0x55463a); // 畳敷き風の床
+  trenchBlock(0,2.05,58.6,3.8,.9,.16,0x344d4c); // 本陣の看板
+  trenchBlock(0,2.54,58.6,3.9,.08,.19,0xc3a56a);
+  trenchBlock(-1.9,2.05,58.6,.08,.9,.19,0xc3a56a); trenchBlock(1.9,2.05,58.6,.08,.9,.19,0xc3a56a);
+  // 休息用の長椅子と灯り
+  trenchBlock(-4.6,.34,65,.65,.55,2.3,0x3b2922); trenchBlock(4.6,.34,65,.65,.55,2.3,0x3b2922);
+  for(const x of [-6.6,6.6]){trenchBlock(x,1.35,61,.12,2.7,.12,0x49372a);trenchBlock(x,2.65,61,.48,.24,.48,0xc8a75b);}
   // 遠景の低い土丘。戦場を荒野らしく縁取る。
   for(let i=0;i<18;i++){
     const x=-110+i*12.5, z=i%2?-105:105, r=rand(7,14);
@@ -10314,7 +10324,7 @@ function buildHQ(x0, x1, z0, z1, sx, sz) {
 // 秘書課の侍女：写真の侍女（既定 mob06）。本陣では立って用事を聞き、「一緒に来て」で弓兵として同行
 function spawnSecretary() {
   removeSecretary();
-  if (!fluter.e && !fluter.dead) spawnFluter();
+  if (builtStage !== 'trench' && !fluter.e && !fluter.dead) spawnFluter();
   if (!hq || !GIRLS[SEC_ID]) return;
   const e = spawnEnemy(hq.sx, hq.sz, 'archer', false, 'blue', { secretary: true, girl: SEC_ID });
   if (!e) return;
@@ -10844,6 +10854,23 @@ const SEC_REQ = {
   },
   meal() { askMeal(); },
   shoulder() { sec.buffT = 60; popup('60秒間 矢の回復が速くなる'); secReply('sec_shoulder'); },
+  bodies() {
+    if (builtStage !== 'trench' || !hq) { popup('この命令は塹壕の本陣でのみ使える'); return; }
+    const candidates=bodies.filter(b=>b&&b.s&&!b.trenchBrought)
+      .sort((a,b)=>Math.hypot(a.s.position.x-hq.sx,a.s.position.z-hq.sz)-Math.hypot(b.s.position.x-hq.sx,b.s.position.z-hq.sz));
+    const chosen=candidates.slice(0,4);
+    if(!chosen.length){popup('運べる戦死者は近くにいない');$('secsay').textContent='「ただいま運べる方はいらっしゃいません」';return;}
+    chosen.forEach((b,i)=>{
+      const x=[-3.6,-1.2,1.2,3.6][i],z=71.2+(i%2)*1.1;
+      b.s.position.set(x,0.02,z);b.baseY=0.02;b.px=x;b.pz=z;b.trenchBrought=true;
+      b.s.visible=true;if(b.tilt)b.tilt.visible=true;if(b.bb)b.bb.visible=true;
+      if(b.shadow)b.shadow.visible=true;
+      if(b.mat){b.mat.transparent=true;b.mat.opacity=1;b.mat.alphaTest=.02;b.mat.depthWrite=false;b.mat.needsUpdate=true;}
+    });
+    $('secsay').textContent='「かしこまりました。近くの戦死者を本陣までお運びします」';
+    popup('戦死者を本陣へ運んだ：'+chosen.length+'人');
+    showBanner('本陣への搬送',chosen.length+'人を休息所の脇へ運びました。');
+  },
   corpse() {
     if (!hq || !inHQ()) { popup('本陣の休息所に戻ってから頼んで'); return; }
     const targetX=hq.sx-2.35, targetZ=hq.sz+0.08;
@@ -12458,7 +12485,7 @@ function resetGame() {
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
   if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
-  else if (builtStage === 'trench') { player.pos.set(0, 0, 55); player.yaw = Math.PI; }
+  else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
@@ -12483,7 +12510,8 @@ function startGame() {
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
-  if (builtStage !== 'trench') {
+  if (builtStage === 'trench') spawnSecretary();
+  else {
     spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);

@@ -3622,7 +3622,7 @@ function updateGuards() {
 const BH = { TOP: 5, Z1: 24, Z2: 48, SHORE: 0, WATER: -0.15, XW: 50, MG_R: 76, BOAT_GOAL: -4.3 };
 const BEACH = { on: false, boats: [], pbs: [], tracers: [], waveT: 0, king: null, gboat: null, won: false, looks: new Set(), log: [], cars: [], carN: 0, lordCar: null };
 // 塹壕戦：第一波は両軍100人。青組は号令まで塹壕内で待機し、橙組は塹壕とトーチカを守る。
-const TRENCH = { on: false, started: false, blue: [], orange: [], fireT: 0, won: false, shots: 0 };
+const TRENCH = { on:false, started:false, blue:[], orange:[], fireT:0, won:false, shots:0, posts:[], cars:[], planes:[], tracers:[], elapsed:0, assaultT:22, enemyAssaultUntil:0, blueRetreatT:0, blueRetreating:false, reinfDone:false, enemyAirDone:false, airDone:false };
 // 極寒ステージ：縦に長い峡谷。雪のクレバス、道を塞ぐ川、針状の木片、川の冷気、吹雪、かまくら
 const SNOW = {
   on: false, cold: 0, blizzard: false, riverT: 0, riverOpen: false, riverSaid: false, riverBarrier: null, riverBridge: null,
@@ -7733,7 +7733,7 @@ function trenchBlock(x,y,z,w,h,d,color,opts={}) {
   m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true; stageRoot.add(m); return m;
 }
 function buildTrench() {
-  TRENCH.on = true; TRENCH.started = false; TRENCH.blue = []; TRENCH.orange = []; TRENCH.fireT = 2.2; TRENCH.won = false; TRENCH.shots = 0;
+  TRENCH.on=true;TRENCH.started=false;TRENCH.blue=[];TRENCH.orange=[];TRENCH.fireT=2.2;TRENCH.won=false;TRENCH.shots=0;TRENCH.posts=[];TRENCH.cars=[];TRENCH.planes=[];TRENCH.tracers=[];
   ground.visible = false;
   // 荒野の地表。塹壕の位置だけ地形ポリゴンに穴を開け、底が地表に隠れないようにする。
   const land = new THREE.Shape();
@@ -7789,6 +7789,19 @@ function buildTrench() {
     const pole=trenchBlock(team==='blue'?-36:36,1.8,z, .09,3.6,.09,team==='blue'?0x425d83:0x8c4a34);
     trenchBlock(team==='blue'?-35.5:35.5,2.65,z,.95,.52,.06,team==='blue'?0x547eaa:0xb85d3c);
   }
+  // トーチカ内の機関銃座。両軍4基ずつ。
+  const gm=carMats();
+  for(const team of ['blue','orange'])for(const x of [-28,-10,10,28]){
+    const z=team==='blue'?49:-49, face=team==='blue'?-1:1;
+    const q=plainGun(stageRoot,x,1.05,z+face*1.45,gm);
+    if(team==='orange')q.g.rotation.y=Math.PI;
+    q.g.rotation.x=0;
+    q.flash.visible=false;
+    TRENCH.posts.push({team,x,z:z+face*1.45,y:1.05,gun:q.g,flash:q.flash,burst:0,shotT:0,nextT:rand(1,3),target:null});
+  }
+  const tracerMat=new THREE.MeshBasicMaterial({color:0xffd58b,transparent:true,opacity:.85});
+  const tracerGeo=new THREE.BoxGeometry(.035,.035,1);tracerGeo.translate(0,0,-.5);
+  for(let i=0;i<32;i++){const m=new THREE.Mesh(tracerGeo,tracerMat);m.visible=false;stageRoot.add(m);TRENCH.tracers.push({m,t:1,d:0,a:new V3(),b:new V3()});}
   // 遠景の低い土丘。戦場を荒野らしく縁取る。
   for(let i=0;i<18;i++){
     const x=-110+i*12.5, z=i%2?-105:105, r=rand(7,14);
@@ -7803,10 +7816,10 @@ function trenchStartBattle() {
   for(let i=0;i<100;i++){
     const x=-34.65+i*.7, kind=Math.random()<.22?'archer':'mob';
     const b=spawnEnemy(x,38,kind,false,'blue',{y:-1.08,yari:-1});
-    if(b){b.trenchSide='blue';b.trenchHome={x,z:38};b.home=[x,38];b.trenchOrder='hold';b.trenchTargetZ=38;b.hold={face:Math.PI};b.passive=true;b.state='idle';b.tgt=null;b.tgtT=0;b.crouch=.25;TRENCH.blue.push(b);}
+    if(b){b.trenchSide='blue';b.trenchHome={x,z:38};b.home=[x,38];b.trenchOrder='hold';b.trenchUnit=true;b.trenchTargetZ=38;b.hold={face:Math.PI};b.passive=true;b.state='idle';b.tgt=null;b.tgtT=0;b.crouch=.25;TRENCH.blue.push(b);}
     const ekind=Math.random()<.22?'archer':'mob';
     const e=spawnEnemy(x,-38,ekind,false,'orange',{y:-1.08,yari:-1});
-    if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.trenchOrder='hold';e.trenchTargetZ=-38;e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
+    if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.trenchOrder='hold';e.trenchUnit=true;e.trenchTargetZ=-38;e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
   }
   $('bTrenchAttack').style.display='block';
   $('bTrenchAttack').disabled=false;
@@ -7815,39 +7828,101 @@ function trenchStartBattle() {
 }
 function trenchCharge() {
   if(!TRENCH.on||TRENCH.started||state!=='play')return;
-  TRENCH.started=true;
+  TRENCH.started=true;TRENCH.blueRetreating=false;TRENCH.blueRetreatT=rand(19,25);
   $('bTrenchAttack').style.display='none';
-  for(const e of TRENCH.blue){
-    if(!isUp(e))continue;
-    e.hold=null;e.passive=false;e.trenchCharge=true;e.crouch=0;e.baseY=0;e.s.position.y=0;e.px=e.s.position.x;e.pz=e.s.position.z;
-    e.s.position.z=35.25;e.pz=35.25;e.home=[e.s.position.x,35.25];e.tgt=null;e.tgtT=0;e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.cd=rand(.2,.9);e.faceWant=Math.PI;
-  }
+  for(const e of TRENCH.blue){if(!isUp(e))continue;trenchOrder(e,'advance',-38);}
   showBanner('突撃！','青組100人が塹壕を出て敵陣へ前進する。');
   Sfx.fluteCall();
 }
-function trenchUpdate(dt) {
-  if(!TRENCH.on||state!=='play'||!TRENCH.started)return;
-  TRENCH.fireT-=dt;
-  if(TRENCH.fireT<=0){
-    TRENCH.fireT=1.35;
-    const liveBlue=TRENCH.blue.filter(isUp);
-    const liveOrange=TRENCH.orange.filter(isUp);
-    // 敵塹壕の射撃は一斉射ではなく小隊単位。突撃側にも反撃の余地を残す。
-    for(let n=0;n<Math.min(9,liveOrange.length)&&liveBlue.length;n++){
-      const shooter=liveOrange[(TRENCH.shots+n*11)%liveOrange.length];
-      const candidates=liveBlue.filter(t=>Math.hypot(t.s.position.x-shooter.s.position.x,t.s.position.z-shooter.s.position.z)<78);
-      if(!candidates.length)continue;
-      const target=candidates[(TRENCH.shots*3+n*7)%candidates.length];
-      const from=new V3(shooter.s.position.x,Math.max(.05,shooter.s.position.y+shooter.figH*.62),shooter.s.position.z);
-      const to=new V3(target.s.position.x,target.s.position.y+target.figH*.55,target.s.position.z);
-      shooter.faceWant=Math.atan2(to.x-from.x,to.z-from.z);
-      if(Math.random()<.52)damageEnemy(target,1,from,false,{pt:to.clone(),thrust:true},{team:'orange',state:'idle',mg:true,s:{position:from}});
-      else puff(to.clone().setY(Math.max(.04,to.y)),0xb4a17c,2,.12,.8,.25);
-    }
-    TRENCH.shots+=9;
+function trenchOrder(e,order,targetZ){
+  e.trenchOrder=order;e.trenchTargetZ=targetZ;e.trenchTargetX=e.trenchHome?e.trenchHome.x:e.s.position.x;
+  e.hold=order==='hold'?{face:e.trenchSide==='blue'?Math.PI:0}:null;e.passive=order==='hold';e.trenchCharge=order==='advance';e.crouch=order==='hold'||order==='retreat'?.25:0;
+  e.tgt=null;e.tgtT=0;e.t=0;e.state=order==='advance'?'approach':'idle';e.faceWant=e.trenchSide==='blue'?Math.PI:0;
+}
+function trenchBrain(e,dt){
+  if(!e||!e.s||!isUp(e))return;
+  const p=e.s.position;
+  if(e.trenchMounted&&e.trenchMounted.car&&!e.trenchMounted.car.dead){
+    const C=e.trenchMounted.car,sl=e.trenchMounted.slot,loc=[[-.68,.95,.1],[.68,.95,.1],[-.68,1.08,-.72],[.68,1.08,-.72]][sl%4];
+    const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.px=p.x;e.pz=p.z;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
   }
-  const liveBlue=TRENCH.blue.filter(isUp).length, liveOrange=TRENCH.orange.filter(isUp).length;
-  wave.total={blue:100,orange:100}; wave.toSpawn=0; wave.blueToSpawn=0; wave.maxAlive=200;
+  if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
+    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=-1.08;e.baseY=-1.08;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;animateNpc(e,dt,0);return;
+  }
+  const tz=e.trenchTargetZ==null?(e.trenchSide==='blue'?-38:38):e.trenchTargetZ,tx=e.trenchTargetX==null?p.x:e.trenchTargetX;
+  if(e.trenchOrder==='advance'||e.trenchOrder==='retreat'){
+    const dx=tx-p.x,dz=tz-p.z,d=Math.hypot(dx,dz),spd=(e.trenchOrder==='retreat'?e.speed*1.25:e.speed*.82);
+    if(d>.6){p.x+=dx/d*spd*dt;p.z+=dz/d*spd*dt;e.s.rotation.y=Math.atan2(dx,dz);e.kneel=false;e.crouch=0;}
+    else{p.x=tx;p.z=tz;if(e.trenchOrder==='retreat'){e.trenchOrder='hold';e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;e.crouch=.25;}else e.trenchOrder='fight';}
+  }
+  p.y=0;e.baseY=0;e.px=p.x;e.pz=p.z;animateNpc(e,dt,0);
+}
+function trenchTracer(from,to){
+  const T=TRENCH.tracers.find(t=>t.t>=1);if(!T)return;
+  T.a.copy(from);T.b.copy(to);T.d=from.distanceTo(to);T.t=0;T.m.visible=true;
+}
+function trenchPlane(team){
+  const g=new THREE.Group(),mat=new THREE.MeshLambertMaterial({color:team==='blue'?0x4c6d87:0x9a4432}),dark=new THREE.MeshLambertMaterial({color:0x33363a});
+  const box=(w,h,d,x,y,z,m)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);q.position.set(x,y,z);g.add(q);return q;};
+  box(.65,.38,3.8,0,0,0,mat);box(7,.11,1.05,0,.02,.15,mat);box(2.2,.1,.8,0,.23,-.85,mat);box(.14,.08,1.2,0,-.08,2.1,dark);
+  g.position.set(team==='blue'?-108:108,17,team==='blue'?8:-8);g.rotation.y=team==='blue'?Math.PI/2:-Math.PI/2;stageRoot.add(g);
+  return {team,g,x:g.position.x,z:g.position.z,dir:team==='blue'?1:-1,shotT:1,active:true};
+}
+function trenchReinforce(){
+  if(TRENCH.reinfDone)return;TRENCH.reinfDone=true;const M=carMats();
+  for(let i=0;i<3;i++){
+    const g=new THREE.Group();keiAssemble(g,M);g.position.set((i-1)*5,0,75+i*2);g.rotation.y=0;stageRoot.add(g);
+    const q=plainGun(g,0,1.5,-.6,M);q.flash.visible=false;
+    const C={g,team:'blue',x:g.position.x,z:g.position.z,speed:4.3,gun:q.g,flash:q.flash,nextT:1+i*.4,crew:[],dead:false};TRENCH.cars.push(C);
+    for(let k=0;k<4;k++){const e=spawnEnemy(C.x,C.z,'mob',false,'blue',{yari:-1});if(e){e.trenchMounted={car:C,slot:k};e.trenchUnit=true;e.trenchSide='blue';e.hold=null;e.passive=false;C.crew.push(e);}}
+  }
+  showBanner('機械化分隊、到着','機関銃付き軽自動車3台と機械化分隊が援軍に加わった。');
+}
+function trenchUpdate(dt) {
+  if(!TRENCH.on||state!=='play')return;
+  TRENCH.elapsed+=dt;
+  if(TRENCH.elapsed>35)trenchReinforce();
+  if(TRENCH.elapsed>52&&!TRENCH.airDone){TRENCH.airDone=true;TRENCH.planes.push(trenchPlane('blue'));showBanner('味方戦闘機、進入','上空から敵陣を掃射する。');}
+  if(TRENCH.elapsed>68&&!TRENCH.enemyAirDone){TRENCH.enemyAirDone=true;TRENCH.planes.push(trenchPlane('orange'));showBanner('敵戦闘機を確認','敵も航空支援を投入してきた。');}
+  if(TRENCH.elapsed>0){
+    if(!TRENCH.enemyAssaultUntil){TRENCH.assaultT-=dt;if(TRENCH.assaultT<=0){
+      const c=TRENCH.orange.filter(e=>isUp(e)&&e.trenchOrder!=='advance'&&e.trenchOrder!=='retreat'&&!e.trenchBunkerCrew);
+      const n=Math.min(c.length,Math.round(rand(22,34)));for(let i=0;i<n;i++){const e=c[(i*7+TRENCH.shots)%c.length];e.trenchEnemyAssault=true;trenchOrder(e,'advance',rand(5,14));}
+      TRENCH.enemyAssaultUntil=TRENCH.elapsed+rand(12,17);if(n)showBanner('敵軍、突撃！',n+'人ほどの敵兵が塹壕を出て前進してくる。');
+    }}else if(TRENCH.elapsed>=TRENCH.enemyAssaultUntil){
+      for(const e of TRENCH.orange)if(isUp(e)&&e.trenchEnemyAssault){e.trenchEnemyAssault=false;trenchOrder(e,'retreat',-38);}
+      TRENCH.enemyAssaultUntil=0;TRENCH.assaultT=rand(28,39);showBanner('敵軍、後退','敵兵が塹壕へ戻り、陣地を立て直している。');
+    }
+  }
+  if(TRENCH.started&&!TRENCH.blueRetreating){TRENCH.blueRetreatT-=dt;if(TRENCH.blueRetreatT<=0){
+    TRENCH.blueRetreating=true;for(const e of TRENCH.blue)if(isUp(e))trenchOrder(e,'retreat',38);showBanner('味方、塹壕へ撤退','突撃を中断し、塹壕へ戻って再編成する。');
+  }}
+  if(TRENCH.blueRetreating&&TRENCH.blue.filter(isUp).every(e=>e.trenchOrder==='hold')){
+    TRENCH.started=false;TRENCH.blueRetreating=false;$('bTrenchAttack').style.display='block';$('bTrenchAttack').disabled=false;$('bTrenchAttack').textContent='再突撃！';showBanner('再編成完了','味方は塹壕に戻った。次の突撃を命じられる。');
+  }
+  for(const P of TRENCH.posts){
+    const foes=(P.team==='blue'?TRENCH.orange:TRENCH.blue).filter(e=>isUp(e)&&!e.trenchMounted);
+    if(!foes.length){P.flash.visible=false;continue;}
+    if(P.burst<=0){P.nextT-=dt;if(P.nextT>0){P.flash.visible=false;continue;}let best=null,bd=80;for(const e of foes){const d=Math.hypot(e.s.position.x-P.x,e.s.position.z-P.z);if(d<bd){bd=d;best=e;}}if(!best){P.nextT=.8;continue;}P.target=best;P.burst=5;P.shotT=0;}
+    if(!P.target||!isUp(P.target)){P.burst=0;P.nextT=.5;continue;}
+    const p=P.target.s.position,from=new V3(P.x,P.y,P.z),to=new V3(p.x,p.y+P.target.figH*.55,p.z);P.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z)+Math.PI;P.shotT-=dt;
+    if(P.shotT<=0){P.shotT=.18;P.burst--;P.flash.visible=true;P.flash.position.set(0,0,-.65);trenchTracer(from,to);if(Math.random()<.2)damageEnemy(P.target,1,from,false,{pt:to.clone(),thrust:true},'player');if(P.burst<=0)P.nextT=rand(1.5,3.2);}
+    else P.flash.visible=false;
+  }
+  TRENCH.fireT-=dt;
+  if(TRENCH.fireT<=0){TRENCH.fireT=.85;
+    for(const team of ['blue','orange']){
+      const own=team==='blue'?TRENCH.blue:TRENCH.orange,foes=team==='blue'?TRENCH.orange:TRENCH.blue;
+      const shooters=own.filter(e=>isUp(e)&&!e.trenchMounted),targets=foes.filter(e=>isUp(e)&&!e.trenchMounted);
+      for(let n=0;n<Math.min(6,shooters.length);n++){const e=shooters[(TRENCH.shots+n*13)%shooters.length];let best=null,bd=65;for(const t of targets){const d=Math.hypot(t.s.position.x-e.s.position.x,t.s.position.z-e.s.position.z);if(d<bd){bd=d;best=t;}}if(best){const from=new V3(e.s.position.x,e.s.position.y+e.figH*.62,e.s.position.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.55,best.s.position.z);trenchTracer(from,to);if(Math.random()<.12)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},'player');}}
+    }TRENCH.shots+=7;
+  }
+  for(const C of TRENCH.cars){if(C.dead)continue;if(C.g.position.z>12){C.g.position.z-=C.speed*dt;C.z=C.g.position.z;}C.nextT-=dt;if(C.nextT<=0){const foes=TRENCH.orange.filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=65;for(const e of foes){const d=Math.hypot(e.s.position.x-C.g.position.x,e.s.position.z-C.g.position.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(C.g.position.x,1.5,C.g.position.z-1);const to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.22)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},'player');C.nextT=.22;}else C.nextT=.8;}}
+  for(const A of TRENCH.planes){if(!A.active)continue;A.x+=A.dir*42*dt;A.g.position.x=A.x;A.shotT-=dt;if(A.shotT<=0){const foes=(A.team==='blue'?TRENCH.orange:TRENCH.blue).filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=70;for(const e of foes){const d=Math.hypot(e.s.position.x-A.x,e.s.position.z-A.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(A.x,16,A.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.4)damageEnemy(best,2,from,false,{pt:to.clone(),thrust:true},'player');A.shotT=.7;}else A.shotT=.3;if((A.dir>0&&A.x>108)||(A.dir<0&&A.x< -108)){A.dir*=-1;A.g.rotation.y=A.dir>0?Math.PI/2:-Math.PI/2;}}
+  }
+  for(const T of TRENCH.tracers)if(T.t<1){T.t+=dt*5;const k=Math.min(1,T.t);T.m.position.copy(T.a.clone().lerp(T.b,k));T.m.lookAt(T.b);T.m.scale.z=Math.min(2,T.d*.3);if(T.t>=1)T.m.visible=false;}
+  const liveBlue=TRENCH.blue.filter(isUp).length+TRENCH.cars.reduce((n,C)=>n+C.crew.filter(isUp).length,0),liveOrange=TRENCH.orange.filter(isUp).length;
+  wave.total={blue:liveBlue,orange:liveOrange};wave.toSpawn=0;wave.blueToSpawn=0;wave.maxAlive=260;
   if(liveOrange===0&&!TRENCH.won){TRENCH.won=true;TRENCH.on=false;$('bTrenchAttack').style.display='none';gameOver(true);return;}
   if(liveBlue===0){TRENCH.on=false;$('bTrenchAttack').style.display='none';gameOver(false);}
 }

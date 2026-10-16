@@ -94,7 +94,7 @@ jobs:
               // Return to the title in-app instead of reloading a WebGL/pointer-locked page.
               await page.evaluate(() => { window.__game.pauseGame(); document.querySelector('#quitBtn').click(); });
               await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 10000 });
-              await page.evaluate(() => { document.querySelector('#stagesel button[data-st="trench"]').click(); document.querySelector('#startBtn').click(); });
+              await page.evaluate(() => { document.querySelector('#stagesel button[data-st="trench"]').click(); window.__game.startGame(); });
               await page.waitForFunction(() => window.__game.stage === 'trench' && window.__game.state === 'play', null, { timeout: 60000 });
               const trenchSetup = await page.evaluate(() => {
                 const G = window.__game, T = G.TRENCH, button = document.querySelector('#bTrenchAttack');
@@ -104,14 +104,15 @@ jobs:
                   commandVisible: getComputedStyle(button).display !== 'none',
                   trenchRows: T.blue.filter(e => !e.trenchBunkerCrew && e.hold && e.passive && Math.abs(e.s.position.z - 38) < 0.02).length === 84 &&
                     T.orange.filter(e => !e.trenchBunkerCrew && e.hold && e.passive && Math.abs(e.s.position.z + 38) < 0.02).length === 84,
-                  bunkerSquads: T.blue.filter(e => e.trenchBunkerCrew).length === 16 && T.orange.filter(e => e.trenchBunkerCrew).length === 16
+                  bunkerSquads: T.blue.filter(e => e.trenchBunkerCrew).length === 16 && T.orange.filter(e => e.trenchBunkerCrew).length === 16,
+                  bunkerVisible: T.blue.concat(T.orange).filter(e => e.trenchBunkerCrew).every(e => e.s.visible && e.bb.visible && e.mat.depthTest === false)
                 };
               });
               console.log('TRENCH_SETUP ' + JSON.stringify(trenchSetup));
               if (trenchSetup.stage !== 'trench' || !trenchSetup.active ||
                   trenchSetup.blue !== 100 || trenchSetup.orange !== 100 ||
                   trenchSetup.liveBlue !== 100 || trenchSetup.liveOrange !== 100 ||
-                  !trenchSetup.commandVisible || !trenchSetup.trenchRows || !trenchSetup.bunkerSquads) {
+                  !trenchSetup.commandVisible || !trenchSetup.trenchRows || !trenchSetup.bunkerSquads || !trenchSetup.bunkerVisible) {
                 throw new Error('Trench setup failed: ' + JSON.stringify(trenchSetup));
               }
               const assaultButton = await page.locator('#bTrenchAttack').boundingBox();

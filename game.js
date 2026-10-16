@@ -7893,6 +7893,8 @@ function trenchReinforce(){
 }
 function trenchUpdate(dt) {
   if(!TRENCH.on||state!=='play')return;
+  // The game canvas may hold pointer lock; release it while the assault command is available so screen taps hit the button.
+  if(!TRENCH.started&&document.pointerLockElement&&document.exitPointerLock)document.exitPointerLock();
   TRENCH.elapsed+=dt;
   if(TRENCH.elapsed>35)trenchReinforce();
   if(TRENCH.elapsed>52&&!TRENCH.airDone){TRENCH.airDone=true;TRENCH.planes.push(trenchPlane('blue'));showBanner('味方戦闘機、進入','上空から敵陣を掃射する。');}

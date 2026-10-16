@@ -7807,8 +7807,16 @@ function buildTrench() {
   buildHQ(-6,6,59,75,0,67);
   // 王のリラックススペース：三方を陣幕で囲み、入口は塹壕側へ開ける。
   maku(-8,67,16,Math.PI/2); maku(8,67,16,Math.PI/2); maku(0,75,16,0);
-  trenchBlock(0,.045,67,12,.08,11,0x55463a); // 畳敷き風の床
+  // buildHQ が設けた畳・座布団を隠さない。休息所の床は既存の畳を使う。
   trenchBlock(0,2.05,58.6,3.8,.9,.16,0x344d4c); // 本陣の看板
+  const hqSignTex=canvasTex(512,128,(g,w,h)=>{
+    g.fillStyle='#26312d';g.fillRect(0,0,w,h);
+    g.strokeStyle='#d8bf7b';g.lineWidth=8;g.strokeRect(7,7,w-14,h-14);
+    g.fillStyle='#f2e2b0';g.textAlign='center';g.textBaseline='middle';
+    g.font='bold 48px serif';g.fillText('王の本陣・休息所',w/2,h/2);
+  });
+  const hqSign=new THREE.Mesh(new THREE.PlaneGeometry(3.48,.64),new THREE.MeshBasicMaterial({map:hqSignTex,side:THREE.DoubleSide}));
+  hqSign.position.set(0,2.05,58.49);stageRoot.add(hqSign);
   trenchBlock(0,2.54,58.6,3.9,.08,.19,0xc3a56a);
   trenchBlock(-1.9,2.05,58.6,.08,.9,.19,0xc3a56a); trenchBlock(1.9,2.05,58.6,.08,.9,.19,0xc3a56a);
   // 休息用の長椅子と灯り
@@ -11120,7 +11128,7 @@ function updateHQ(dt) {
   const inside = inHQ();
   if (inside !== inHqPrev) { inHqPrev = inside; if (inside) popup('本陣：ここは安全'); }
   $('hqtag').style.display = inside ? 'block' : 'none';
-  $('hqtag').textContent = inside ? '本陣（安全）' + (sec.buffT > 0 ? `　肩もみ ${Math.ceil(sec.buffT)}秒` : '') + (player.speedT > 0 ? `　靴 ${Math.ceil(player.speedT)}秒` : '') : '';
+  $('hqtag').textContent = inside ? (builtStage === 'trench' ? '王の本陣・休息所（安全）' : '本陣（安全）') + (sec.buffT > 0 ? `　肩もみ ${Math.ceil(sec.buffT)}秒` : '') + (player.speedT > 0 ? `　靴 ${Math.ceil(player.speedT)}秒` : '') : '';
   // 護衛から本陣に戻り着いた
   if (sec.mode === 'returning' && sec.esc && hq && sec.esc.state !== 'down' && Math.hypot(sec.esc.s.position.x - hq.sx, sec.esc.s.position.z - hq.sz) < 1.6) {
     sec.esc.returning = false; sec.esc = null; sec.mode = 'hq'; secReply('sec_back', 0);

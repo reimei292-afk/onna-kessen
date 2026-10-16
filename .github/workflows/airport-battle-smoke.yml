@@ -102,15 +102,16 @@ jobs:
                   stage: G.stage, active: T.on, blue: T.blue.length, orange: T.orange.length,
                   liveBlue: T.blue.filter(G.isUp).length, liveOrange: T.orange.filter(G.isUp).length,
                   commandVisible: getComputedStyle(button).display !== 'none',
-                  heldInTrench: T.blue.every(e => e.hold && e.passive && Math.abs(e.s.position.z - 38) < 0.02) &&
-                    T.orange.every(e => e.hold && e.passive && Math.abs(e.s.position.z + 38) < 0.02)
+                  trenchRows: T.blue.filter(e => !e.trenchBunkerCrew && e.hold && e.passive && Math.abs(e.s.position.z - 38) < 0.02).length === 84 &&
+                    T.orange.filter(e => !e.trenchBunkerCrew && e.hold && e.passive && Math.abs(e.s.position.z + 38) < 0.02).length === 84,
+                  bunkerSquads: T.blue.filter(e => e.trenchBunkerCrew).length === 16 && T.orange.filter(e => e.trenchBunkerCrew).length === 16
                 };
               });
               console.log('TRENCH_SETUP ' + JSON.stringify(trenchSetup));
               if (trenchSetup.stage !== 'trench' || !trenchSetup.active ||
                   trenchSetup.blue !== 100 || trenchSetup.orange !== 100 ||
                   trenchSetup.liveBlue !== 100 || trenchSetup.liveOrange !== 100 ||
-                  !trenchSetup.commandVisible || !trenchSetup.heldInTrench) {
+                  !trenchSetup.commandVisible || !trenchSetup.trenchRows || !trenchSetup.bunkerSquads) {
                 throw new Error('Trench setup failed: ' + JSON.stringify(trenchSetup));
               }
               const assaultButton = await page.locator('#bTrenchAttack').boundingBox();
@@ -125,7 +126,7 @@ jobs:
                 };
               });
               console.log('TRENCH_CHARGE ' + JSON.stringify(charge));
-              if (!charge.started || !charge.commandHidden || charge.blueOutsideTrench < 95) {
+              if (!charge.started || !charge.commandHidden || charge.blueOutsideTrench < 75) {
                 throw new Error('Trench charge failed: ' + JSON.stringify(charge));
               }
               console.log('TRENCH_BROWSER_TEST_PASS');

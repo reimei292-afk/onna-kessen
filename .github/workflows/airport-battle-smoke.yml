@@ -135,6 +135,51 @@ jobs:
                 throw new Error('Trench charge failed: ' + JSON.stringify(charge));
               }
               console.log('TRENCH_BROWSER_TEST_PASS');
+
+              // Regression check: the HQ relaxation corner and secretary requests, including moving a fallen NPC there.
+              await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="plains"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'plains' && window.__game.state === 'play', null, { timeout: 60000 });
+              const hqReady = await page.evaluate(() => {
+                const G=window.__game, h=G.hq;
+                return {
+                  hqExists:!!h, safeBounds:!!h && h.x1>h.x0 && h.z1>h.z0,
+                  secretaryPresent:G.enemies.some(e=>e.secretary&&e.state!=='down'),
+                  shoulderButton:!!document.querySelector('#secmain [data-req="shoulder"]'),
+                  mealButton:!!document.querySelector('#secmain [data-req="meal"]'),
+                  corpseButton:!!document.querySelector('#secmain [data-req="corpse"]')
+                };
+              });
+              console.log('RELAXATION_HQ ' + JSON.stringify(hqReady));
+              if (!hqReady.hqExists || !hqReady.safeBounds || !hqReady.secretaryPresent ||
+                  !hqReady.shoulderButton || !hqReady.mealButton || !hqReady.corpseButton) {
+                throw new Error('Relaxation HQ setup failed: ' + JSON.stringify(hqReady));
+              }
+              const corpseTest = await page.evaluate(async () => {
+                const G=window.__game, h=G.hq, target=G.enemies.find(e=>e.team==='orange'&&e.state!=='down'&&!e.special);
+                if(!target)throw new Error('No enemy available for corpse transport test');
+                G.damageEnemy(target,target.hp+1,G.player.pos,false,{pt:G.player.pos.clone()});
+                G.player.pos.set(h.sx,h.sz===undefined?0:h.sz,0);
+                G.player.pos.set(h.sx,0,h.sz);
+                await new Promise(resolve=>setTimeout(resolve,1400));
+                G.player.pos.set(h.sx,0,h.sz);
+                const before=G.bodies.length;
+                G.SEC_REQ.corpse();
+                const carried=G.bodies.find(b=>b.relaxCorpse);
+                return {bodyCreated:G.bodies.length>=before,carried:!!carried,
+                  x:carried&&carried.s.position.x,z:carried&&carried.s.position.z,
+                  expectedX:h.sx-2.35,expectedZ:h.sz+0.08,
+                  inHQ:G.inHQ()};
+              });
+              console.log('RELAXATION_CORPSE ' + JSON.stringify(corpseTest));
+              if (!corpseTest.bodyCreated || !corpseTest.carried || !corpseTest.inHQ ||
+                  Math.abs(corpseTest.x-corpseTest.expectedX)>0.1 ||
+                  Math.abs(corpseTest.z-corpseTest.expectedZ)>0.1) {
+                throw new Error('Corpse transport failed: ' + JSON.stringify(corpseTest));
+              }
+              console.log('RELAXATION_BROWSER_TEST_PASS');
             } finally {
               await browser.close();
             }

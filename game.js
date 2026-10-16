@@ -7843,7 +7843,7 @@ function trenchCharge() {
   if(!TRENCH.on||TRENCH.started||state!=='play')return;
   TRENCH.started=true;TRENCH.blueRetreating=false;TRENCH.blueRetreatT=rand(19,25);
   $('bTrenchAttack').style.display='none';
-  for(const e of TRENCH.blue){if(!isUp(e))continue;trenchOrder(e,'advance',-38);}
+  for(const e of TRENCH.blue){if(!isUp(e)||e.trenchBunkerCrew)continue;trenchOrder(e,'advance',-38);}
   showBanner('突撃！','青組100人が塹壕を出て敵陣へ前進する。');
   Sfx.fluteCall();
 }
@@ -7860,7 +7860,7 @@ function trenchBrain(e,dt){
     const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.px=p.x;e.pz=p.z;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
   }
   if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
-    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=-1.08;e.baseY=-1.08;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;animateNpc(e,dt,0);return;
+    const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?0:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;animateNpc(e,dt,0);return;
   }
   const tz=e.trenchTargetZ==null?(e.trenchSide==='blue'?-38:38):e.trenchTargetZ,tx=e.trenchTargetX==null?p.x:e.trenchTargetX;
   if(e.trenchOrder==='advance'||e.trenchOrder==='retreat'){
@@ -7908,7 +7908,7 @@ function trenchUpdate(dt) {
     }
   }
   if(TRENCH.started&&!TRENCH.blueRetreating){TRENCH.blueRetreatT-=dt;if(TRENCH.blueRetreatT<=0){
-    TRENCH.blueRetreating=true;for(const e of TRENCH.blue)if(isUp(e))trenchOrder(e,'retreat',38);showBanner('味方、塹壕へ撤退','突撃を中断し、塹壕へ戻って再編成する。');
+    TRENCH.blueRetreating=true;for(const e of TRENCH.blue)if(isUp(e)&&!e.trenchBunkerCrew)trenchOrder(e,'retreat',38);showBanner('味方、塹壕へ撤退','突撃を中断し、塹壕へ戻って再編成する。');
   }}
   if(TRENCH.blueRetreating&&TRENCH.blue.filter(isUp).every(e=>e.trenchOrder==='hold')){
     TRENCH.started=false;TRENCH.blueRetreating=false;$('bTrenchAttack').style.display='block';$('bTrenchAttack').disabled=false;$('bTrenchAttack').textContent='再突撃！';showBanner('再編成完了','味方は塹壕に戻った。次の突撃を命じられる。');

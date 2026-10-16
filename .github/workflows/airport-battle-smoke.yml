@@ -161,7 +161,6 @@ jobs:
                 const G=window.__game, h=G.hq, target=G.enemies.find(e=>e.team==='orange'&&e.state!=='down'&&!e.special);
                 if(!target)throw new Error('No enemy available for corpse transport test');
                 G.damageEnemy(target,target.hp+1,G.player.pos,false,{pt:G.player.pos.clone()});
-                G.player.pos.set(h.sx,h.sz===undefined?0:h.sz,0);
                 G.player.pos.set(h.sx,0,h.sz);
                 await new Promise(resolve=>setTimeout(resolve,1400));
                 G.player.pos.set(h.sx,0,h.sz);

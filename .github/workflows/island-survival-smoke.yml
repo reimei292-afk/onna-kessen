@@ -1,0 +1,85 @@
+name: Island Survival 3D browser smoke test
+
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  island-survival-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: |
+          python3 -m http.server 8000 > /tmp/island-http.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Verify 3D island stage and plaza transition
+        run: |
+          node <<'NODE'
+          const { chromium } = require('playwright');
+          (async () => {
+            const browser = await chromium.launch({ headless: true, args: ['--use-gl=swiftshader'] });
+            const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+            const errors = [];
+            page.on('pageerror', e => errors.push(e.message));
+            try {
+              await page.goto('http://127.0.0.1:8000/?stage=island', { waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="island"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'island' && window.__game.state === 'play', null, { timeout: 60000 });
+              await page.waitForTimeout(700);
+              const setup = await page.evaluate(() => {
+                const G = window.__game, I = G.ISLAND;
+                const living = G.enemies.filter(e => e.islandRoster && e.state !== 'down');
+                const crash = G.enemies.filter(e => e.islandCrashBody);
+                return {
+                  stage: G.stage, state: G.state, active: I.on,
+                  threeD: G.scene && G.stageRoot && G.stageRoot.children.length > 100,
+                  survivors: living.length + 1, roster: living.length,
+                  crashCasualties: crash.length,
+                  hazardTypes: [...new Set(I.hazards.map(h => h.type))].sort()
+                };
+              });
+              console.log('ISLAND_SETUP ' + JSON.stringify(setup));
+              if (setup.stage !== 'island' || setup.state !== 'play' || !setup.active || !setup.threeD ||
+                  setup.roster !== 187 || setup.survivors !== 188 || setup.crashCasualties !== 12 ||
+                  !setup.hazardTypes.includes('quicksand') || !setup.hazardTypes.includes('antlion') ||
+                  !setup.hazardTypes.includes('thorn') || !setup.hazardTypes.includes('poison') ||
+                  !setup.hazardTypes.includes('suckgrass')) {
+                throw new Error('Island 3D setup failed: ' + JSON.stringify(setup));
+              }
+              const plaza = await page.evaluate(() => {
+                const G = window.__game;
+                G.player.pos.set(0, 0, -120);
+                G.updateIsland(0.016);
+                const enemies = G.enemies.filter(e => e.islandZombie && e.state !== 'down');
+                return {
+                  plaza: G.ISLAND.plaza, enemyActors: enemies.length,
+                  allOrange: enemies.length > 0 && enemies.every(e => e.team === 'orange'),
+                  allSpriteActors: enemies.every(e => !!e.s && !!e.bb && !!e.girl),
+                  survivorsRetained: G.enemies.filter(e => e.islandRoster && e.state !== 'down').length + 1
+                };
+              });
+              console.log('ISLAND_PLAZA ' + JSON.stringify(plaza));
+              if (!plaza.plaza || plaza.enemyActors < 12 || !plaza.allOrange || !plaza.allSpriteActors || plaza.survivorsRetained < 1) {
+                throw new Error('Island plaza transition failed: ' + JSON.stringify(plaza));
+              }
+              if (errors.length) throw new Error('Browser errors: ' + errors.join(' | '));
+              console.log('ISLAND_SURVIVAL_BROWSER_TEST_PASS');
+            } finally {
+              await browser.close();
+            }
+          })().catch(e => { console.error(e); process.exit(1); });
+          NODE

@@ -8119,7 +8119,8 @@ function islandStart(){
     if(!e)continue;e.islandRoster=true;e.islandSquad=ISLAND.squadNames[i%ISLAND.squadNames.length];e.islandCasualty=false;e.state='idle';e.home=[x,z];e.speed=rand(1.9,2.5);e.dmg=0;e.tgt=null;e.passive=true;
     e.s.rotation.y=Math.PI;e.face=Math.PI;
   }
-  for(let i=0;i<12;i++)ISLAND.hazards.push({type:'crashbody',x:rand(-4,4),z:rand(74,81),r:.35});
+  // Twelve crash casualties remain as the same sprite-based bodies used by the main game.
+  for(let i=0;i<12;i++){const e=spawnEnemy(rand(-4,4),rand(74,81),i%3?'archer':'mob',false,'blue');if(e){e.quietDeath=true;e.islandCrashBody=true;e.hp=0;killEnemy(e,false,player.pos);}}
   wave={n:1,toSpawn:0,spawnT:0,inter:0,maxAlive:0,blueToSpawn:0,blueOwed:0,blueMax:0,total:{blue:188,orange:0}};
   popup('秘書「機体トラブルです！ 不時着時にも犠牲者が出ています。敵味方の区別をなくし、一人でも多く生還しましょう！」');
   showBanner('無人島サバイバル模擬戦闘','本陣は不時着した機内。南の砂浜から島の北側を目指せ');
@@ -12750,7 +12751,7 @@ function startGame() {
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';

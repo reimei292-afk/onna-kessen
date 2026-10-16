@@ -7777,8 +7777,13 @@ function buildTrench() {
   for (const team of ['blue','orange']) {
     const z=team==='blue'?49:-49, face=team==='blue'?-1:1, col=0x77776d;
     for (const x of [-28,-10,10,28]) {
-      trenchBlock(x,.78,z,5.2,1.8,4.4,col);
-      trenchBlock(x,1.78,z,5.55,.22,4.7,0x5c5d56);
+      // 見下ろし視点でも中の侍女が隠れないよう、正面と屋根を開いたカットアウェイ式のトーチカにする。
+      trenchBlock(x-2.45,.78,z,.3,1.8,4.4,col);
+      trenchBlock(x+2.45,.78,z,.3,1.8,4.4,col);
+      trenchBlock(x,.78,z-face*1.98,4.6,1.8,.36,col);
+      trenchBlock(x-2.0,.58,z+face*1.98,1.0,1.4,.36,col);
+      trenchBlock(x+2.0,.58,z+face*1.98,1.0,1.4,.36,col);
+      trenchBlock(x,1.72,z-face*.85,4.9,.16,2.5,0x5c5d56);
       trenchBlock(x,.62,z+face*2.23,2.3,.38,.12,0x282a27);
       trenchBlock(x-1.45,.82,z+face*2.15,.22,.52,.2,0x56584f);
       trenchBlock(x+1.45,.82,z+face*2.15,.22,.52,.2,0x56584f);
@@ -7850,10 +7855,11 @@ function trenchStartBattle() {
       const P=TRENCH.posts.filter(p=>p.team===team)[pi];
       for(let k=0;k<4;k++){
         const e=list[list.length-16+pi*4+k];if(!e)continue;
-        const xx=P.x+[-1.5,-.5,.5,1.5][k],zz=team==='blue'?47.12:-47.12;
+        const xx=P.x+[-1.2,-.4,.4,1.2][k],zz=team==='blue'?47.12:-47.12;
         e.s.position.set(xx,.72,zz);e.px=xx;e.pz=zz;e.baseY=.72;e.home=[xx,zz];e.trenchHome={x:xx,z:zz};e.trenchBunkerCrew=true;e.trenchPost=P;
         e.trenchOrder='hold';e.trenchTargetZ=zz;e.hold={face:team==='blue'?Math.PI:0};e.passive=true;e.state='idle';e.crouch=.05;
-        e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=50;
+        e.trenchSupport=true;
+        e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;e.bb.renderOrder=80;
         if(e.mat){e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.depthTest=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
       }
     }
@@ -7862,6 +7868,16 @@ function trenchStartBattle() {
   $('bTrenchAttack').disabled=false;
   $('bTrenchAttack').textContent='攻めろ！';
   showBanner('塹壕戦・第一波','味方100人／敵100人。号令まで塹壕内で待機せよ。');
+}
+function trenchSupportEnsure(){
+  const hqStaff=[sec.e,sec2.e,ojou.e,fluter.e,...aides.map(a=>a.e),...runners.map(r=>r.e)];
+  const all=[...hqStaff,...medics.blue.map(m=>m.e),...medics.orange.map(m=>m.e)].filter(Boolean);
+  for(const e of all){
+    if(!isUp(e))continue;
+    e.trenchSupport=true;
+    e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;
+    if(e.mat&&e.fr&&e.fr.tex){e.mat.map=e.fr.tex;e.mat.transparent=true;e.mat.opacity=1;e.mat.alphaTest=.02;e.mat.depthWrite=false;e.mat.side=THREE.DoubleSide;e.mat.needsUpdate=true;}
+  }
 }
 function trenchCharge() {
   if(!TRENCH.on||TRENCH.started||state!=='play')return;
@@ -7940,7 +7956,7 @@ function trenchReinforce(){
     g.position.set((i-1)*5,0,blue?75+i*2:-75-i*2);g.rotation.y=blue?0:Math.PI;stageRoot.add(g);
     const q=plainGun(g,0,1.5,-.6,M);q.flash.visible=false;g.add(q.flash);q.flash.position.set(0,1.5,-1.45);
     const C={g,team,x:g.position.x,z:g.position.z,speed:4.3,dirZ:blue?-1:1,targetZ:blue?12:-12,gun:q.g,flash:q.flash,nextT:1+i*.4,crew:[],dead:false};TRENCH.cars.push(C);
-    for(let k=0;k<4;k++){const e=spawnEnemy(C.x,C.z,'mob',false,team,{yari:-1});if(e){e.trenchMounted={car:C,slot:k};e.trenchUnit=true;e.trenchSide=team;e.hold=null;e.passive=false;e.special=false;C.crew.push(e);}}
+    for(let k=0;k<4;k++){const e=spawnEnemy(C.x,C.z,'mob',false,team,{yari:-1});if(e){e.trenchMounted={car:C,slot:k};e.trenchPassenger=true;e.trenchSeatHp=e.hp;e.trenchUnit=true;e.trenchSide=team;e.hold=null;e.passive=false;e.special=false;C.crew.push(e);}}
   }
   showBanner('機械化分隊が到着','味方・敵の両軍に、機関銃付き軽自動車3台と機械化分隊が到着した。');
 }
@@ -9921,6 +9937,10 @@ function killEnemy(e, byPlayer, from) {
     }
   }
   if (e.icicleMesh) { stageRoot.remove(e.icicleMesh); e.icicleMesh.geometry.dispose(); e.icicleMesh.material.dispose(); e.icicleMesh = null; }
+  if (e.trenchPassenger && e.trenchMounted && e.trenchMounted.car) {
+    const C=e.trenchMounted.car; C.crewDown=(C.crewDown||0)+1;
+    e.trenchPassengerDead=true;
+  }
   e.state = 'down'; e.t = 0;
   if (e.spear) yariDrop(e);   // 槍は手を離れて床に落ちる
   e.knock.set(0, 0, 0);
@@ -11289,6 +11309,23 @@ function animateNpc(e, dt, lean) {
       e.mat.needsUpdate = true;
     }
   }
+  // 塹壕のトーチカ要員・軽自動車の乗員・本陣スタッフは、写真フレーム切替後も描画状態を復旧する。
+  if (TRENCH.on && isUp(e) && (e.trenchBunkerCrew || e.trenchMounted || e.trenchSupport)) {
+    if (!fr || !fr.tex || !fr.tex.image || !fr.tex.image.width || !fr.tex.image.height) {
+      fr = g.front || g.side || fr; mirror = false;
+      if (fr && fr.tex) setFrame(e, fr, mirror);
+    }
+    e.s.visible = true; e.tilt.visible = true; e.bb.visible = true;
+    e.bb.frustumCulled = false;
+    e.bb.renderOrder = e.trenchBunkerCrew ? 90 : (e.trenchMounted ? 85 : 8);
+    if (e.mat && fr && fr.tex) {
+      e.mat.map = fr.tex;
+      e.mat.transparent = true; e.mat.opacity = 1; e.mat.alphaTest = 0.02;
+      e.mat.depthWrite = false; e.mat.side = THREE.DoubleSide;
+      if (e.trenchBunkerCrew || e.trenchMounted) e.mat.depthTest = false;
+      e.mat.needsUpdate = true;
+    }
+  }
   if (e.armed) updateProps(e, fr, mirror, sgn);
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
@@ -11482,7 +11519,7 @@ function updateEnemies(dt) {
       continue;
     }
     p.addScaledVector(e.knock, dt); e.knock.multiplyScalar(Math.exp(-7 * dt));
-    if(TRENCH.on&&(e.trenchUnit||e.trenchMounted)){if(trenchUnitBrain(e,dt))continue;}
+    if(TRENCH.on&&(e.trenchUnit||e.trenchMounted)){trenchBrain(e,dt);continue;}
     let lean = 0;
     e.bowSeat = BEACH.on && e.seated && e.seated.boat && e.kind === 'archer' && !e.special && e.seated.boat.z > -42 && !e.seated.boat.beached;   // 浜：舟の弓兵は漕ぎながら射る
     e.passive = (e.secretary && sec.mode === 'hq') || e.fluter || e.medic || e.aide || e.runner || !!e.hold || (!!e.seated && !e.bowSeat) || !!e.hiddenAmb;   // hold: テスト用に止める／seated: 機内の席に座っている
@@ -12513,14 +12550,10 @@ function startGame() {
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
-  if (builtStage === 'trench') {
-    // 塹壕戦でも本陣の秘書課・医務班・伝令・補佐役を通常どおり配置する。
+  // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
+  if (builtStage !== 'trench') {
     spawnSecretary(); spawnSec2(); spawnOjou();
     for (const t of ['blue','orange']) for (const m of medics[t]) spawnMedic(t,m);
-    for (const A of aides) spawnAide(A);
-    for (const R of runners) spawnRunner(R);
-  } else {
-    spawnSecretary(); spawnSec2(); spawnOjou(); for (const t of ['blue', 'orange']) for (const m of medics[t]) spawnMedic(t, m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
@@ -12530,7 +12563,14 @@ function startGame() {
   $('hud').style.display = 'block';
   state = 'play'; lock();
   if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
-  else if (builtStage === 'trench') trenchStartBattle();
+  else if (builtStage === 'trench') {
+    trenchStartBattle();
+    spawnSecretary(); spawnSec2(); spawnOjou();
+    for (const t of ['blue','orange']) for (const m of medics[t]) spawnMedic(t,m);
+    for (const A of aides) spawnAide(A);
+    for (const R of runners) spawnRunner(R);
+    trenchSupportEnsure();
+  }
   else if (builtStage === 'twofront') startDualMission(); else startWave(1);
 }
 function pauseGame() {

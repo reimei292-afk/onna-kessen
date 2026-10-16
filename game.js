@@ -7933,7 +7933,52 @@ function trenchUpdate(dt) {
     }TRENCH.shots+=7;
   }
   for(const C of TRENCH.cars){if(C.dead)continue;if(C.g.position.z>12){C.g.position.z-=C.speed*dt;C.z=C.g.position.z;}C.nextT-=dt;if(C.nextT<=0){const foes=TRENCH.orange.filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=65;for(const e of foes){const d=Math.hypot(e.s.position.x-C.g.position.x,e.s.position.z-C.g.position.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(C.g.position.x,1.5,C.g.position.z-1);const to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.22)damageEnemy(best,1,from,false,{pt:to.clone(),thrust:true},'player');C.nextT=.22;}else C.nextT=.8;}}
-  for(const A of TRENCH.planes){if(!A.active)continue;A.x+=A.dir*42*dt;A.g.position.x=A.x;A.shotT-=dt;if(A.shotT<=0){const foes=(A.team==='blue'?TRENCH.orange:TRENCH.blue).filter(e=>isUp(e)&&!e.trenchMounted);let best=null,bd=70;for(const e of foes){const d=Math.hypot(e.s.position.x-A.x,e.s.position.z-A.z);if(d<bd){bd=d;best=e;}}if(best){const from=new V3(A.x,16,A.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);trenchTracer(from,to);if(Math.random()<.4)damageEnemy(best,2,from,false,{pt:to.clone(),thrust:true},'player');A.shotT=.7;}else A.shotT=.3;if((A.dir>0&&A.x>108)||(A.dir<0&&A.x< -108)){A.dir*=-1;A.g.rotation.y=A.dir>0?Math.PI/2:-Math.PI/2;}}
+  for(const A of TRENCH.planes){
+    if(!A.active)continue;
+    if(A.crashing){
+      A.crashT+=dt;A.crashV+=8.5*dt;A.g.position.y-=A.crashV*dt;A.g.rotation.z+=A.dir*1.05*dt;A.g.rotation.x+=.45*dt;
+      if(Math.random()<.22)puff(new V3(A.g.position.x,A.g.position.y,A.g.position.z),0x4a4035,3,.35,1.5,.55);
+      if(A.g.position.y<=.25){
+        A.g.position.y=.25;A.active=false;A.g.rotation.z=A.dir*.15;A.g.rotation.x=0;
+        puff(new V3(A.g.position.x,.3,A.g.position.z),0x4b3d2c,20,.5,3.5,1.2);
+        puff(new V3(A.g.position.x,.5,A.g.position.z),0xd0a15f,12,.2,2.8,.7);
+        showBanner('戦闘機、墜落','機体が荒野に激突した。');
+      }
+      continue;
+    }
+    A.x+=A.dir*42*dt;A.g.position.x=A.x;A.shotT-=dt;
+    // 先に敵戦闘機を捕捉。双方が機銃を撃ち合い、被弾が重なると墜落する。
+    const rival=TRENCH.planes.find(B=>B!==A&&B.active&&!B.crashing&&B.team!==A.team);
+    const planeDist=rival?Math.hypot(A.x-rival.x,A.g.position.y-rival.g.position.y,A.z-rival.z):Infinity;
+    if(rival&&planeDist<74&&A.shotT<=0){
+      const from=new V3(A.x,A.g.position.y,A.z),to=new V3(rival.x,rival.g.position.y,rival.z);
+      trenchTracer(from,to);A.shotT=.28;
+      if(Math.random()<.43){
+        rival.hp-=13;rival.g.rotation.z+=(Math.random()-.5)*.12;
+        puff(to.clone(),0xd5b27a,3,.1,1.5,.3);
+        if(rival.hp<=0)trenchCrashPlane(rival,A);
+      }
+      continue;
+    }
+    // 敵機が射界にいない時は地上部隊へ機銃掃射。
+    if(A.shotT<=0){
+      const foes=(A.team==='blue'?TRENCH.orange:TRENCH.blue).filter(e=>isUp(e)&&!e.trenchMounted&&!e.trenchPilot);
+      let best=null,bd=70;
+      for(const e of foes){const d=Math.hypot(e.s.position.x-A.x,e.s.position.z-A.z);if(d<bd){bd=d;best=e;}}
+      if(best){
+        const from=new V3(A.x,A.g.position.y,A.z),to=new V3(best.s.position.x,best.s.position.y+best.figH*.5,best.s.position.z);
+        trenchTracer(from,to);if(Math.random()<.28)damageEnemy(best,2,from,false,{pt:to.clone(),thrust:true},A.pilot||null);A.shotT=.7;
+      }else A.shotT=.3;
+    }
+    if((A.dir>0&&A.x>108)||(A.dir<0&&A.x< -108)){
+      A.dir*=-1;A.g.rotation.y=A.dir>0?Math.PI/2:-Math.PI/2;A.pass++;A.shotT=.5;
+    }
+    // 地上の機関銃にも低確率で撃墜のチャンスを与える。
+    if(Math.random()<dt*.025){
+      for(const P of TRENCH.posts)if(P.team!==A.team&&Math.abs(P.x-A.x)<42&&Math.abs(P.z-A.z)<78){
+        A.hp-=2;if(A.hp<=0){trenchCrashPlane(A,P);break;}
+      }
+    }
   }
   for(const T of TRENCH.tracers)if(T.t<1){T.t+=dt*5;const k=Math.min(1,T.t);T.m.position.copy(T.a.clone().lerp(T.b,k));T.m.lookAt(T.b);T.m.scale.z=Math.min(2,T.d*.3);if(T.t>=1)T.m.visible=false;}
   const liveBlue=TRENCH.blue.filter(isUp).length+TRENCH.cars.reduce((n,C)=>n+C.crew.filter(isUp).length,0),liveOrange=TRENCH.orange.filter(isUp).length;

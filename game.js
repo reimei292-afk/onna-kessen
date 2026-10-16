@@ -8141,7 +8141,7 @@ function islandStart(){
   ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;ISLAND.introT=0;ISLAND.crashed=false;ISLAND.warned=ISLAND.warned||{};
   player.pos.set(0,0,68);player.yaw=0;player.hp=CFG.maxHp;player.kills=0;player.allyKills=0;
   // All 200 are alive during the flight. The king stays aboard with the HQ staff.
-  // 187 field attendants are deployed after the crash; 8 staff members remain at HQ.
+  // 179 field attendants advance after the crash; 8 staff members remain at HQ.
   for(let i=0;i<187;i++){
     const row=Math.floor(i/12),col=i%12,x=(col-5.5)*1.35+rand(-.25,.25),z=66+row*1.35;
     const kind=i%10<7?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{yari:kind==='mob'?1:-1});
@@ -8212,7 +8212,7 @@ function updateIsland(dt){
      for(let k=0;k<lossCount;k++){const e=shuffled[k];if(!e||e.state==='down')continue;e.quietDeath=true;e.hp=0;killEnemy(e,false,p);e.islandHazardDeath=h.type;e.islandGoal=null;}
    }
  }
- if(ISLAND.casualtyT>6&&followers.length>8&&Math.random()<dt*.035){ISLAND.casualtyT=0;const e=followers[(Math.random()*followers.length)|0];if(e){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);}}
+ if(ISLAND.casualtyT>6&&followers.filter(e=>!e.islandHQStaff).length>8&&Math.random()<dt*.035){ISLAND.casualtyT=0;const field=followers.filter(e=>!e.islandHQStaff),e=field[(Math.random()*field.length)|0];if(e){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);}}
  for(const h of ISLAND.hazards){const d=Math.hypot(p.x-h.x,p.z-h.z);if(h.type==='crashbody')continue;
   if(h.type==='quicksand'&&d<h.r+.6){popup('流砂に足を取られた！');player.hp=0;gameOver(false);return;}
   if(h.type==='antlion'&&d<h.r+.4){popup('アリジゴクに飲み込まれた！');player.hp=0;gameOver(false);return;}

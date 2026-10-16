@@ -2639,7 +2639,7 @@ function stageLook(name) {
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  ground.visible = !pl && name !== 'beach' && !sn && !mt; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
+  ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
   scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
   scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : LOOK0.bg);
   hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : LOOK0.hemi[2];
@@ -7808,7 +7808,7 @@ function trenchStartBattle() {
   }
   $('bTrenchAttack').style.display='block';
   $('bTrenchAttack').disabled=false;
-  $('bTrenchAttack').textContent='突撃開始';
+  $('bTrenchAttack').textContent='攻めろ！';
   showBanner('塹壕戦・第一波','味方100人／敵100人。号令まで塹壕内で待機せよ。');
 }
 function trenchCharge() {

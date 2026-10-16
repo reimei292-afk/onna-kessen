@@ -8129,6 +8129,7 @@ function islandPlaza(){
   if(ISLAND.plaza)return;ISLAND.plaza=true;
   const fallenActors=enemies.filter(e=>e.islandCrashBody||(e.islandRoster&&e.state==='down'));
   const fallen=enemies.filter(e=>e.islandRoster&&e.state==='down').length;
+  for(const e of fallenActors){e.islandTransferred=true;e.s.visible=false;if(e.bg)e.bg.visible=false;if(e.fg)e.fg.visible=false;if(e.mk)e.mk.visible=false;}
   const count=Math.min(48,Math.max(12,ISLAND.deadAtCrash+fallen));
   for(let i=0;i<count;i++){const x=((i%8)-3.5)*2.2,z=-129+Math.floor(i/8)*3.0;const kind=i%10<7?'archer':'mob';const deadActor=fallenActors[i%Math.max(1,fallenActors.length)];const girlKey=deadActor?Object.keys(GIRLS).find(k=>GIRLS[k]===deadActor.girl):null;const e=spawnEnemy(x,z,kind,false,'orange',{yari:kind==='mob'?1:-1,...(girlKey?{girl:girlKey}:{})});if(e){e.islandZombie=true;e.state='approach';e.hp=Math.max(3,e.hp);e.hpMax=e.hp;e.speed=rand(1.8,2.4);e.dmg=6;e.s.rotation.y=0;e.face=0;}}
   for(const e of enemies)if(e.islandRoster&&e.state!=='down'){e.islandEscape=true;e.dmg=0;e.tgt=null;e.passive=true;}
@@ -12740,7 +12741,7 @@ function resetGame() {
 }
 function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();

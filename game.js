@@ -2633,18 +2633,18 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench';
+  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench', nr = name === 'nightRaid';
   document.documentElement.classList.toggle('trench', tr);
   AIRPORT.on = ap; TRENCH.on = tr;
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
-  scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
-  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : tr ? 0x9b8c70 : LOOK0.bg);
-  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : tr ? 1.08 : LOOK0.hemi[2];
-  ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : tr ? 0.82 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : tr ? 0.88 : LOOK0.sun;
+  ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr && !nr; sky.visible = !pl && !nr; for (const m of mountains) m.visible = !pl && !mt && !nr;
+  scene.fog.near = pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
+  scene.background.setHex(pl ? 0x1a1a1e : nr ? 0x071020 : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : tr ? 0x9b8c70 : LOOK0.bg);
+  hemiL.color.setHex(pl ? 0xfff2df : nr ? 0x53698e : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : nr ? 0x151b26 : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : nr ? 0.38 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : tr ? 1.08 : LOOK0.hemi[2];
+  ambL.intensity = pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : tr ? 0.82 : LOOK0.amb; sun.intensity = pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : SUN_DIR0);
 }
 // ====================================================================
@@ -8067,7 +8067,92 @@ const STAGES = {
   twofront: { name: '王と西園寺の二正面戦', desc: '西に城、東に山城。王は狭間・大手門・櫓・二の丸の門上と伏兵で守り、西園寺は峰の足場と本丸で守る。落とし穴、つぶて、破城槌、針山もそのまま。性格で間合いが変わり、分隊の戦況は王と西園寺の両方で分かる。' },
   airport: { name: '空港の戦い', desc: '管制塔のガラス張りの管制室が本陣。滑走路や格納庫から地上侵入してくる敵を、管制塔守備隊・近衛・秘書課・医務班と共に迎え撃つ。操作卓とモニターが並ぶ管制室で戦況を見極めよ。' },
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
+  nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。敵は警鐘が鳴ると増援を呼び、夜霧と火の粉が戦場を照らす。' },
 };
+
+// ====================================================================
+//  ステージ「月影の関所」：夜襲。谷川の細橋、岩壁、松明、門楼、敵の野営地。
+// ====================================================================
+function buildNightRaid() {
+  ground.visible=false;
+  const dirt=new THREE.MeshLambertMaterial({color:0x252b2e});
+  const rock=new THREE.MeshLambertMaterial({color:0x343c46});
+  const stone=new THREE.MeshLambertMaterial({color:0x41464b});
+  const wood=new THREE.MeshLambertMaterial({color:0x49372a});
+  const plank=new THREE.MeshLambertMaterial({color:0x66503a});
+  const water=new THREE.MeshBasicMaterial({color:0x102b3a,transparent:true,opacity:.92});
+  const land=new THREE.Mesh(new THREE.PlaneGeometry(250,250),dirt);
+  land.rotation.x=-Math.PI/2;land.position.y=-.12;land.receiveShadow=true;stageRoot.add(land);
+  // 川と岸。川は道を横切り、橋の上だけが安全な渡河点。
+  const river=new THREE.Mesh(new THREE.PlaneGeometry(100,8),water);river.rotation.x=-Math.PI/2;river.position.set(0,-.035,12);stageRoot.add(river);
+  for(const x of [-45,-35,-25,-15,-10,10,15,25,35,45]){
+    const bank=trenchBlock(x,-.03,12,4,.18,9,0x343d40);bank.rotation.y=rand(-.08,.08);
+  }
+  for(let z=5;z<=19;z+=1.65){
+    const b=trenchBlock(0,.16,z,6.5,.28,1.45,0x5a4634);b.rotation.y=rand(-.025,.025);
+  }
+  for(const x of [-3.25,3.25])for(let z=5;z<=19;z+=2.5)trenchBlock(x,.42,z,.16,.45,.16,0x4a3829);
+  for(const x of [-2.9,2.9])trenchBlock(x,.68,12,.14,.12,14,0x4a3829);
+  // 谷の両側に切り立った岩壁と崩落石。
+  for(const side of [-1,1]){
+    for(let z=-18;z<=42;z+=6){
+      const h=rand(5,11),w=rand(4,8);
+      const b=new THREE.Mesh(new THREE.DodecahedronGeometry(1,1),rock);b.position.set(side*rand(15,21),h*.42,z+rand(-2,2));b.scale.set(w,h,rand(4,8));b.rotation.set(rand(-.12,.12),rand(-.2,.2),side*rand(-.08,.08));b.castShadow=true;b.receiveShadow=true;stageRoot.add(b);
+    }
+    for(let z=-12;z<38;z+=9){
+      const x=side*rand(7.5,11),r=rand(.7,1.6);
+      const b=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),rock);b.position.set(x,r*.45,z);b.scale.y=.55;stageRoot.add(b);
+    }
+  }
+  // 関所の横木塀、中央の門、左右の門楼。
+  for(const x of [-31,-26,-21,-16,-11,-7,7,11,16,21,26,31]){
+    trenchBlock(x,1.45,-27,.32,2.9,.42,wood);
+    trenchBlock(x,2.82,-27,4.8,.2,.55,wood);
+  }
+  trenchBlock(-4,1.4,-27,6,2.8,.42,wood);trenchBlock(4,1.4,-27,6,2.8,.42,wood);
+  for(const x of [-24,24]){
+    trenchBlock(x,2.3,-27,6.8,4.6,6.8,stone);
+    trenchBlock(x,4.72,-27,7.4,.28,7.4,wood);
+    for(const dx of [-2,0,2])trenchBlock(x+dx,5.05,-27,.18,.4,7.5,wood);
+    for(const z of [-29,-25])trenchBlock(x,5.05,z,7.5,.4,.18,wood);
+    // 狭間の暗い開口
+    trenchBlock(x,2.65,-23.52,2.1,.48,.08,0x111820);
+  }
+  // 奥の陣幕・見張り台・物資置場。
+  for(const x of [-13,13]){
+    trenchBlock(x,1.4,-45,10,2.8,.25,wood);
+    trenchBlock(x,2.85,-45,10,.18,.5,wood);
+    for(const z of [-52,-46,-40])trenchBlock(x,1.2,z,.25,2.4,.25,wood);
+  }
+  for(const x of [-12,12]){
+    const tower=trenchBlock(x,3.2,-53,5.5,6.4,5.5,stone);
+    trenchBlock(x,6.55,-53,6.2,.3,6.2,wood);
+    for(const dx of [-2,0,2])trenchBlock(x+dx,7,-53,.18,.6,6.3,wood);
+  }
+  // 夜営テント、樽、木箱、旗。
+  for(const [x,z] of [[-9,-39],[8,-43],[-4,-58],[5,-60]]){
+    const tent=new THREE.Mesh(new THREE.ConeGeometry(3.2,3.1,4),new THREE.MeshLambertMaterial({color:0x454b48,side:THREE.DoubleSide}));
+    tent.position.set(x,1.5,z);tent.rotation.y=Math.PI/4;tent.castShadow=true;stageRoot.add(tent);
+    trenchBlock(x,0.38,z+1.7,1.2,.75,.65,0x46372c);
+  }
+  for(let i=0;i<12;i++){const x=rand(-38,38),z=rand(-72,-34);if(Math.abs(x)<9&&z>-61)continue;nobori(x,z,'#7f3b32','#d9c59b',pick(['関所','夜警','橙組']));}
+  // 味方の後方陣地と休息所。
+  for(const x of [-15,15]){const t=new THREE.Mesh(new THREE.ConeGeometry(3.4,3.3,4),new THREE.MeshLambertMaterial({color:0x283e4b,side:THREE.DoubleSide}));t.position.set(x,1.55,48);t.rotation.y=Math.PI/4;stageRoot.add(t);}
+  buildHQ(-8,8,58,75,0,66);
+  buildMedPost(-15,63,'blue',0);
+  // 松明と火鉢：光源は点光源、炎は常に見える明るいメッシュ。
+  const flameMat=new THREE.MeshBasicMaterial({color:0xff9b36});
+  const emberMat=new THREE.MeshBasicMaterial({color:0xffd28a});
+  for(const [x,z] of [[-12,34],[12,34],[-5,4],[5,4],[-31,-27],[31,-27],[-24,-27],[24,-27],[-12,-44],[12,-44],[-2,-61],[2,-61]]){
+    trenchBlock(x,.7,z,.16,1.4,.16,wood);
+    const f=new THREE.Mesh(new THREE.ConeGeometry(.22,.62,7),flameMat);f.position.set(x,1.62,z);stageRoot.add(f);
+    const e=new THREE.Mesh(new THREE.SphereGeometry(.12,7,6),emberMat);e.position.set(x,1.45,z);stageRoot.add(e);
+    const light=new THREE.PointLight(0xff9a45,1.2,13,2);light.position.set(x,1.9,z);stageRoot.add(light);
+  }
+  // 小さな石標、足跡に見立てた暗い踏み固め土。
+  for(let i=0;i<55;i++){const x=rand(-6,6),z=rand(-24,48);const r=rand(.08,.24);const peb=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),i%3?rock:stone);peb.position.set(x,r*.3,z);peb.scale.y=.35;stageRoot.add(peb);}
+}
+
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
   AIRPORT.on=false;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.gun=null;AIRPORT.tracer=null;
@@ -8084,7 +8169,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -12526,6 +12611,7 @@ function resetGame() {
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
   if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
+  else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }

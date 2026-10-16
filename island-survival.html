@@ -89,6 +89,8 @@ function update(dt){
  if(!running||paused||won)return;attackCooldown=Math.max(0,attackCooldown-dt);let dx=0,dy=0;if(keys.KeyW||keys.ArrowUp)dy--;if(keys.KeyS||keys.ArrowDown)dy++;if(keys.KeyA||keys.ArrowLeft)dx--;if(keys.KeyD||keys.ArrowRight)dx++;const len=Math.hypot(dx,dy)||1;player.x=Math.max(18,Math.min(world.w-18,player.x+dx/len*205*dt));player.y=Math.max(80,Math.min(world.h-20,player.y+dy/len*205*dt));
  // allies loosely follow northward, with a balanced mixture of squads
  for(const a of allies){if(a.dead)continue;const desiredY=Math.max(110,player.y-100+(a.id%7)*18);if(a.y<player.y+160){a.y+=Math.min(25*dt,Math.max(0,desiredY-a.y));a.x+=Math.sin(performance.now()/1200+a.move)*18*dt+(player.x-a.x)*.012*dt*20;a.x=Math.max(20,Math.min(world.w-20,a.x))}if(a.y>player.y+330){a.y-=25*dt}}
+ // plaza enemies act out a shambling attack; the exercise remains non-graphic.
+ if(visited.plaza){for(const e of plazaEnemies){if(!e.alive)continue;const ex=player.x-e.x,ey=player.y-e.y,dist=Math.hypot(ex,ey)||1;if(dist>27){e.x+=ex/dist*38*dt;e.y+=ey/dist*38*dt}else{player.hp-=dt*5;if(!warned.zombieHit){warned.zombieHit=true;msg('敵役の侍女に取り囲まれています！ 距離を取って迎撃してください。',2600)}if(player.hp<=0)finish(false,'広場で敵役に囲まれ、作戦続行不能となりました。')}}}
  // simulated island casualties to make deaths meaningful but preserve rescue goal
  for(const a of allies){if(a.dead)continue;const z=currentZone(a.y);if(z.kind==='beach'&&a.y>190&&a.y<400&&Math.random()<dt*.006){eliminate(a,Math.random()<.5?'antlion':'quicksand')}if(z.kind==='forest'&&Math.random()<dt*.0009){eliminate(a,'thorn')}if(z.kind==='grass'&&Math.random()<dt*.0011){eliminate(a,'grass')}}
  warnHazards(dt);for(const s of shots)s.life-=dt;shots=shots.filter(s=>s.life>0);

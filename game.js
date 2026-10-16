@@ -8193,7 +8193,7 @@ function updateIsland(dt){
    const victims=followers.filter(e=>!e.islandEscape&&e.state!=='down'&&Math.hypot(e.s.position.x-h.x,e.s.position.z-h.z)<radius);
    if(victims.length&&h.allyCd<=0){
      h.allyCd=h.type==='thorn'?2.8:1.8;
-     const lossCount=Math.min(victims.length,(h.type==='quicksand'||h.type==='antlion')?Math.ceil(rand(2,5)):Math.ceil(rand(1,4));
+     const lossCount=Math.min(victims.length,(h.type==='quicksand'||h.type==='antlion')?Math.ceil(rand(2,5)):Math.ceil(rand(1,4)));
      // One hazard event can claim several attendants; never show individual death popups.
      const shuffled=victims.slice().sort(()=>Math.random()-.5);
      for(let k=0;k<lossCount;k++){const e=shuffled[k];if(!e||e.state==='down')continue;e.quietDeath=true;e.hp=0;killEnemy(e,false,p);e.islandHazardDeath=h.type;e.islandGoal=null;}

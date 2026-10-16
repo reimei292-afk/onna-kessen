@@ -225,6 +225,35 @@ jobs:
                 throw new Error('Corpse transport failed: ' + JSON.stringify(corpseTest));
               }
               console.log('RELAXATION_BROWSER_TEST_PASS');
+
+              // New stage smoke test: moonlit checkpoint, bridge, lanterns, and a live combat start.
+              await page.evaluate(() => { window.__game.pauseGame(); document.querySelector('#quitBtn').click(); });
+              await page.waitForFunction(() => window.__game && window.__game.state === 'title', null, { timeout: 10000 });
+              await page.locator('#stagesel button[data-st="nightRaid"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'nightRaid' && window.__game.state === 'play', null, { timeout: 60000 });
+              await page.waitForTimeout(500);
+              const nightRaid = await page.evaluate(() => {
+                const G=window.__game, scene=G.scene, lights=[];
+                scene.traverse(o=>{if(o.isPointLight)lights.push(o);});
+                return {
+                  stage:G.stage,state:G.state,hq:!!G.hq,
+                  playerAtStart:Math.abs(G.player.pos.z-49)<.2,
+                  nightBackground:scene.background.getHex()===0x071020,
+                  groundHidden:!G.ground.visible,
+                  torches:lights.length>=10,
+                  gateAndBridge:scene.children.some(o=>o===G.stageRoot)&&G.stageRoot.children.length>150,
+                  enemiesSpawned:G.enemies.some(e=>e.team==='orange'&&e.state!=='down'),
+                  pageErrors:errors.slice()
+                };
+              });
+              console.log('NIGHT_RAID_SETUP ' + JSON.stringify(nightRaid));
+              if(nightRaid.stage!=='nightRaid'||nightRaid.state!=='play'||!nightRaid.hq||
+                 !nightRaid.playerAtStart||!nightRaid.nightBackground||!nightRaid.groundHidden||
+                 !nightRaid.torches||!nightRaid.gateAndBridge||!nightRaid.enemiesSpawned||nightRaid.pageErrors.length) {
+                throw new Error('Night raid stage failed: '+JSON.stringify(nightRaid));
+              }
+              console.log('NIGHT_RAID_BROWSER_TEST_PASS');
             } finally {
               await browser.close();
             }

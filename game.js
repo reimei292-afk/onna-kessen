@@ -2633,18 +2633,18 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench', nr = name === 'nightRaid';
+  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench', nr = name === 'nightRaid', isl = name === 'island';
   document.documentElement.classList.toggle('trench', tr);
-  AIRPORT.on = ap; TRENCH.on = tr;
+  AIRPORT.on = ap; TRENCH.on = tr; ISLAND.on = isl;
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr && !nr; sky.visible = !pl && !nr; for (const m of mountains) m.visible = !pl && !mt && !nr;
-  scene.fog.near = pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
-  scene.background.setHex(pl ? 0x1a1a1e : nr ? 0x071020 : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : tr ? 0x9b8c70 : LOOK0.bg);
-  hemiL.color.setHex(pl ? 0xfff2df : nr ? 0x53698e : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : nr ? 0x151b26 : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : nr ? 0.38 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : tr ? 1.08 : LOOK0.hemi[2];
-  ambL.intensity = pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : tr ? 0.82 : LOOK0.amb; sun.intensity = pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : tr ? 0.88 : LOOK0.sun;
+  ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr; for (const m of mountains) m.visible = !pl && !mt && !nr;
+  scene.fog.near = pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
+  scene.background.setHex(pl ? 0x1a1a1e : nr ? 0x071020 : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : isl ? 0x93b9c7 : tr ? 0x9b8c70 : LOOK0.bg);
+  hemiL.color.setHex(pl ? 0xfff2df : nr ? 0x53698e : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : isl ? 0xe3f2e7 : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : nr ? 0x151b26 : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : isl ? 0x4d5e35 : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : nr ? 0.38 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : isl ? 1.45 : tr ? 1.08 : LOOK0.hemi[2];
+  ambL.intensity = pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : SUN_DIR0);
 }
 // ====================================================================
@@ -8056,6 +8056,110 @@ function trenchUpdate(dt) {
   if(liveBlue===0){TRENCH.on=false;$('bTrenchAttack').style.display='none';gameOver(false);}
 }
 
+// ====================================================================
+ // 無人島サバイバル模擬戦闘：既存の一人称 Three.js 戦闘・侍女スプライトを使用
+ // ====================================================================
+const ISLAND = { on:false, hazards:[], trees:[], started:false, plaza:false, warned:{}, casualtyT:0, deadAtCrash:12, lastCount:0, won:false, beachT:0, squadNames:['小早隊','弓分隊','近接分隊','遊撃隊','秘書課','医務班'], lastWarn:0 };
+function islandBox(x,y,z,w,h,d,mat,rot=0){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.rotation.y=rot;stageRoot.add(m);return m;}
+function buildIsland(){
+  ISLAND.on=true; ISLAND.hazards=[];ISLAND.trees=[];ISLAND.started=false;ISLAND.plaza=false;ISLAND.warned={};ISLAND.casualtyT=0;ISLAND.won=false;ISLAND.lastCount=0;
+  ground.visible=false; road.visible=false;
+  const sand=new THREE.MeshLambertMaterial({color:0xd9c18b}), grass=new THREE.MeshLambertMaterial({color:0x5d7b3a}), darkGrass=new THREE.MeshLambertMaterial({color:0x294b2c}), water=new THREE.MeshLambertMaterial({color:0x286d80}), lakeMat=new THREE.MeshLambertMaterial({color:0x536c55,transparent:true,opacity:.88}), wood=new THREE.MeshLambertMaterial({color:0x5a3e28}), thornMat=new THREE.MeshLambertMaterial({color:0x8b9b5c}), plazaMat=new THREE.MeshLambertMaterial({color:0xb2a17b});
+  scene.background.setHex(0x93b9c7);
+  const sea=new THREE.Mesh(new THREE.PlaneGeometry(240,240),water);sea.rotation.x=-Math.PI/2;sea.position.set(0,-.12,80);stageRoot.add(sea);
+  const beach=new THREE.Mesh(new THREE.PlaneGeometry(58,58),sand);beach.rotation.x=-Math.PI/2;beach.position.set(0,0,55);stageRoot.add(beach);
+  const forest=new THREE.Mesh(new THREE.PlaneGeometry(46,90),darkGrass);forest.rotation.x=-Math.PI/2;forest.position.set(0,-.015,-18);stageRoot.add(forest);
+  const meadow=new THREE.Mesh(new THREE.PlaneGeometry(48,42),grass);meadow.rotation.x=-Math.PI/2;meadow.position.set(0,-.01,-82);stageRoot.add(meadow);
+  const plaza=new THREE.Mesh(new THREE.PlaneGeometry(52,48),plazaMat);plaza.rotation.x=-Math.PI/2;plaza.position.set(0,-.005,-124);stageRoot.add(plaza);
+  // shoreline, beach driftwood, forest edge
+  for(let i=0;i<16;i++){const x=-24+i*3.2;const log=islandBox(x,.18,32+Math.sin(i*1.7)*2,rand(1.1,2.6),.25,.24,wood,rand(-.5,.5));}
+  for(let i=0;i<54;i++){const x=rand(-20,20),z=rand(-59,21);if(Math.abs(x)<3.8&&z>-50&&z<10)continue;tree(x,z,rand(.8,1.5));ISLAND.trees.push({x,z});}
+  for(let i=0;i<32;i++){const x=(Math.random()<.5?-1:1)*rand(8,22),z=rand(-105,-58);tree(x,z,rand(.65,1.2));}
+  // small island cliffs at the outer edges
+  for(const side of [-1,1])for(let i=0;i<12;i++){const r=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1.2,3),0),new THREE.MeshLambertMaterial({color:0x77796d}));r.position.set(side*rand(25,33),rand(.2,1),rand(-120,40));r.scale.y=.6;stageRoot.add(r);}
+  // plane wreckage / HQ at the southern end
+  const fus=islandBox(0,1.5,78,8,2.5,18,new THREE.MeshLambertMaterial({color:0xbfc6c7}),0);
+  const wing=islandBox(0,2.4,77,27,.25,4,new THREE.MeshLambertMaterial({color:0x9da9ad}),.06);
+  for(const x of [-2.4,2.4])islandBox(x,2.9,78,1.4,.1,5,new THREE.MeshLambertMaterial({color:0x526b76}));
+  // Quicksand and antlion funnels in the beach lane
+  for(const [x,z,r,type] of [[-12,48,2.1,'quicksand'],[9,41,2.3,'antlion'],[14,57,2,'quicksand'],[-5,28,2.2,'antlion'],[3,61,1.9,'quicksand']]){
+    const m=new THREE.Mesh(new THREE.CircleGeometry(r,24),new THREE.MeshLambertMaterial({color:type==='antlion'?0x7e633e:0x78664b}));m.rotation.x=-Math.PI/2;m.position.set(x,.035,z);stageRoot.add(m);
+    const inner=new THREE.Mesh(new THREE.CircleGeometry(r*.48,24),new THREE.MeshLambertMaterial({color:0x302d23}));inner.rotation.x=-Math.PI/2;inner.position.set(x,.04,z);stageRoot.add(inner);ISLAND.hazards.push({type,x,z,r,mesh:m,cd:0});
+  }
+  // thorn-spitting trees
+  for(const [x,z] of [[-12,-10],[10,-19],[-8,-30],[15,-39],[-16,-45],[5,-52],[0,-4]]){
+    const g=new THREE.Group();const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.25,.4,3,7),wood);trunk.position.y=1.5;g.add(trunk);
+    const crown=new THREE.Mesh(new THREE.IcosahedronGeometry(2,1),darkGrass);crown.position.y=3.2;g.add(crown);
+    for(let k=0;k<9;k++){const q=new THREE.Mesh(new THREE.ConeGeometry(.09,.8,5),thornMat);q.position.set(Math.cos(k*6.28/9)*1.7,3.1+Math.sin(k*3)*.45,Math.sin(k*6.28/9)*1.7);q.rotation.z=Math.cos(k*6.28/9)*.8;q.rotation.x=Math.sin(k*6.28/9)*.8;g.add(q);}
+    g.position.set(x,0,z);stageRoot.add(g);ISLAND.hazards.push({type:'thorn',x,z,r:6,cd:rand(1,3)});
+  }
+  // poisonous lake, off the safest route
+  const lake=new THREE.Mesh(new THREE.CircleGeometry(7.5,32),lakeMat);lake.rotation.x=-Math.PI/2;lake.position.set(13,.025,-28);stageRoot.add(lake);
+  ISLAND.hazards.push({type:'poison',x:13,z:-28,r:7.5});
+  // blood-sucking grass patches
+  for(const [x,z] of [[-12,-74],[-4,-88],[8,-79],[16,-92],[-17,-98],[0,-105],[12,-109]]){
+    const patch=new THREE.Mesh(new THREE.CircleGeometry(3.5,18),new THREE.MeshLambertMaterial({color:0x425e29}));patch.rotation.x=-Math.PI/2;patch.position.set(x,.02,z);stageRoot.add(patch);
+    for(let i=0;i<28;i++){const blade=new THREE.Mesh(new THREE.ConeGeometry(.07,rand(.5,1.2),4),thornMat);blade.position.set(x+rand(-2.8,2.8),.45,z+rand(-2.8,2.8));blade.rotation.z=rand(-.4,.4);stageRoot.add(blade);}
+    ISLAND.hazards.push({type:'suckgrass',x,z,r:3.5,cd:0});
+  }
+  // clearing perimeter, gate-like wrecked timber, and signboards
+  for(let i=0;i<18;i++){const a=i/18*Math.PI*2,x=Math.cos(a)*24,z=-124+Math.sin(a)*20;const p=islandBox(x,1.1,z,.35,2.2,1.1,wood,a);}
+  maku(0,-145,13,0);
+  buildHQ(-3,2,74,83,0,77);
+  scene.fog.near=28;scene.fog.far=220;hemiL.intensity=1.45;ambL.intensity=.95;sun.intensity=1.25;
+}
+function islandAlive(){return enemies.filter(e=>e.islandRoster&&e.team==='blue'&&e.state!=='down').length+1;}
+function islandStart(){
+  ISLAND.started=true;ISLAND.plaza=false;ISLAND.won=false;ISLAND.deadAtCrash=12;ISLAND.casualtyT=0;
+  player.pos.set(0,0,68);player.yaw=0;player.hp=CFG.maxHp;player.kills=0;player.allyKills=0;
+  // 200 departed: 12 lost in the crash, the player and 187 other survivors begin the landing.
+  for(let i=0;i<187;i++){
+    const row=Math.floor(i/12),col=i%12,x=(col-5.5)*1.35+rand(-.25,.25),z=66+row*1.35;
+    const kind=i%10<7?'archer':'mob',e=spawnEnemy(x,z,kind,false,'blue',{yari:kind==='mob'?1:-1});
+    if(!e)continue;e.islandRoster=true;e.islandSquad=ISLAND.squadNames[i%ISLAND.squadNames.length];e.islandCasualty=false;e.state='idle';e.home=[x,z];e.speed=rand(1.9,2.5);e.dmg=0;e.tgt=null;e.passive=true;
+    e.s.rotation.y=Math.PI;e.face=Math.PI;
+  }
+  for(let i=0;i<12;i++)ISLAND.hazards.push({type:'crashbody',x:rand(-4,4),z:rand(74,81),r:.35});
+  wave={n:1,toSpawn:0,spawnT:0,inter:0,maxAlive:0,blueToSpawn:0,blueOwed:0,blueMax:0,total:{blue:188,orange:0}};
+  popup('秘書「機体トラブルです！ 不時着時にも犠牲者が出ています。敵味方の区別をなくし、一人でも多く生還しましょう！」');
+  showBanner('無人島サバイバル模擬戦闘','本陣は不時着した機内。南の砂浜から島の北側を目指せ');
+}
+function islandPlaza(){
+  if(ISLAND.plaza)return;ISLAND.plaza=true;
+  const fallen=enemies.filter(e=>e.islandRoster&&e.state==='down').length;
+  const count=Math.min(48,Math.max(12,ISLAND.deadAtCrash+fallen));
+  for(let i=0;i<count;i++){const x=((i%8)-3.5)*2.2,z=-129+Math.floor(i/8)*3.0;const kind=i%10<7?'archer':'mob';const e=spawnEnemy(x,z,kind,false,'orange',{yari:kind==='mob'?1:-1});if(e){e.islandZombie=true;e.state='approach';e.hp=Math.max(3,e.hp);e.hpMax=e.hp;e.speed=rand(1.8,2.4);e.dmg=6;e.s.rotation.y=0;e.face=0;}}
+  for(const e of enemies)if(e.islandRoster&&e.state!=='down'){e.islandRoster=false;e.islandEscape=true;e.dmg=0;e.tgt=null;e.passive=true;}
+  wave.total={blue:enemies.filter(e=>e.team==='blue'&&e.state!=='down').length,orange:count};wave.toSpawn=0;wave.blueToSpawn=0;wave.blueOwed=0;wave.inter=0;
+  popup('秘書「ここにいるのは、これまでに倒れた侍女たち……！ 模擬戦闘の敵役です。全員を倒して突破してください！」');
+  showBanner('最終広場','ここだけ敵味方の人数表示が復活する。敵役を全員倒せ');
+}
+function updateIsland(dt){
+ if(!ISLAND.on||!ISLAND.started||state!=='play')return;
+ const p=player.pos;
+ // Follow in a loose column, with a mixed set of squads and no fighting before the final clearing.
+ const followers=enemies.filter(e=>e.islandRoster&&e.state!=='down');
+ for(let i=0;i<followers.length;i++){const e=followers[i],q=e.s.position;if(e.islandEscape)continue;const col=(i%9)-4,row=Math.floor(i/9);const tx=clamp(p.x+col*1.35,-20,20),tz=p.z+4+Math.min(17,row*.55);const d=Math.hypot(tx-q.x,tz-q.z);if(d>.9){steer(e,tx,tz,e.speed,dt);e.state='advance';e.passive=true;}else{e.state='idle';e.s.rotation.y=Math.PI;e.face=Math.PI;}}
+ ISLAND.casualtyT+=dt;
+ // The island causes occasional losses among the column as they cross its dangerous regions.
+ if(ISLAND.casualtyT>3.8&&followers.length>4&&Math.random()<dt*.17){ISLAND.casualtyT=0;const z=p.z;const candidates=followers.filter(e=>Math.hypot(e.s.position.x-p.x,e.s.position.z-p.z)<18);const e=candidates.length?candidates[(Math.random()*candidates.length)|0]:followers[(Math.random()*followers.length)|0];if(e&&z<60&&z> -116){e.quietDeath=true;e.hp=0;killEnemy(e,false,p);ISLAND.deadAtCrash++;popup('島の異常で侍女が脱落した。残る者は進路を変えて進む。');}}
+ for(const h of ISLAND.hazards){const d=Math.hypot(p.x-h.x,p.z-h.z);if(h.type==='crashbody')continue;
+  if(h.type==='quicksand'&&d<h.r+.6){popup('流砂に足を取られた！');player.hp=0;gameOver(false);return;}
+  if(h.type==='antlion'&&d<h.r+.4){popup('アリジゴクに飲み込まれた！');player.hp=0;gameOver(false);return;}
+  if(h.type==='poison'&&d<h.r+1){if(!ISLAND.warned.poison){ISLAND.warned.poison=true;showBanner('秘書の警告','これは毒の湖です。貴重な水に見えても近づいてはなりません！');}player.hp-=dt*6;}
+  if(h.type==='thorn'&&d<h.r){h.cd-=dt;if(h.cd<=0){h.cd=2.3;const dir=new V3(p.x-h.x,1.1,p.z-h.z).normalize();const thorn=new THREE.Mesh(new THREE.ConeGeometry(.08,.65,5),thornMat);thorn.position.set(h.x+dir.x*1.4,1.1,h.z+dir.z*1.4);thorn.rotation.x=Math.PI/2;stageRoot.add(thorn);ISLAND.hazards.push({type:'thornShot',mesh:thorn,x:thorn.position.x,z:thorn.position.z,life:1.1,vx:dir.x*11,vz:dir.z*11});}}
+  if(h.type==='suckgrass'&&d<h.r){h.cd-=dt;if(h.cd<=0){h.cd=.8;player.hp-=4;popup('草が肌に絡みつく！ 吸血する草です。');}}
+  if(h.type==='thornShot'){h.life-=dt;h.x+=h.vx*dt;h.z+=h.vz*dt;if(Math.hypot(p.x-h.x,p.z-h.z)<.65){player.hp-=8;h.life=0;popup('棘が刺さった！');}if(h.life<=0){stageRoot.remove(h.mesh);h.type='spent';}}
+ }
+ ISLAND.hazards=ISLAND.hazards.filter(h=>h.type!=='spent');
+ if(player.hp<=0){player.hp=0;gameOver(false);return;}
+ if(p.z < -116&&!ISLAND.plaza)islandPlaza();
+ if(ISLAND.plaza){const foes=enemies.filter(e=>e.islandZombie&&e.state!=='down');if(foes.length===0&&!ISLAND.won){ISLAND.won=true;gameOver(true);}}
+ const live=enemies.filter(e=>e.islandRoster&&e.state!=='down').length;
+ wave.total={blue:live+1,orange:ISLAND.plaza?enemies.filter(e=>e.islandZombie&&e.state!=='down').length:0};
+ if(ISLAND.plaza){$('stagedesc').textContent='最終広場：味方 '+wave.total.blue+' 名／敵 '+wave.total.orange+' 名';}
+}
+
 const STAGES = {
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
@@ -8068,6 +8172,7 @@ const STAGES = {
   airport: { name: '空港の戦い', desc: '管制塔のガラス張りの管制室が本陣。滑走路や格納庫から地上侵入してくる敵を、管制塔守備隊・近衛・秘書課・医務班と共に迎え撃つ。操作卓とモニターが並ぶ管制室で戦況を見極めよ。' },
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
+  island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
 };
 
 // ====================================================================
@@ -8154,7 +8259,7 @@ function buildNightRaid() {
 }
 
 function loadStage(name) {
-  if (name !== 'beach') player.god = false;
+  if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
   AIRPORT.on=false;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.gun=null;AIRPORT.tracer=null;
   const am = MODE_STAGES.includes(name) && stageModes[name] === 'atk';
   if (builtStage === name && builtAtk === am) return;
@@ -8169,7 +8274,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -9841,6 +9946,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
+  if (ISLAND.on) return;
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -12609,7 +12715,8 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
-  if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
+  if (builtStage === 'island') { player.pos.set(0,0,68); player.yaw=0; }
+  else if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
@@ -12637,7 +12744,7 @@ function startGame() {
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
-  if (builtStage !== 'trench') {
+  if (builtStage !== 'trench' && builtStage !== 'island') {
     spawnSecretary(); spawnSec2(); spawnOjou();
     for (const t of ['blue','orange']) for (const m of medics[t]) spawnMedic(t,m);
     for (const A of aides) spawnAide(A);
@@ -12648,7 +12755,8 @@ function startGame() {
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   state = 'play'; lock();
-  if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
+  if (builtStage === 'island') { islandStart(); }
+  else if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
   else if (builtStage === 'trench') {
     trenchStartBattle();
     spawnSecretary(); spawnSec2(); spawnOjou();
@@ -12894,12 +13002,13 @@ function frame(now) {
     if (TEST) testBot(dt);
     stepBudget = 3;
     if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
-    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
+    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); if (ISLAND.on) updateIsland(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     updateTags();
   } else if (state === 'title') {
     time += dt;
-    if (builtStage === 'beach') {   // 浜：沖から高台のトーチカを望む
+    if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
+    else if (builtStage === 'beach') {   // 浜：沖から高台のトーチカを望む
       if (BEACH.on) updateBeach(dt);
       camera.position.set(Math.sin(time * 0.08) * 14, 4.5, -38); camera.lookAt(Math.sin(time * 0.05) * 6, 3.5, 40);
     } else if (builtStage === 'plane') {   // 機内：ラウンジから客室の奥を眺める

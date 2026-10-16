@@ -12353,7 +12353,7 @@ function setupTouch() {
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
-  document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen')) e.preventDefault(); }, opt);
+  document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen, .screen-menu .panel')) e.preventDefault(); }, opt);
   let lastTap = 0;
   document.addEventListener('touchend', e => { const n = Date.now(); if (n - lastTap < 320 && !(e.target.closest && e.target.closest('button'))) e.preventDefault(); lastTap = n; }, opt);
   joyHome();
@@ -12420,7 +12420,7 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (!MOBILE && state === 'play') setWeapon(player.weapon ^ 1); }, { passive: true });
+addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen) setWeapon(player.weapon ^ 1); }, { passive: true });
 function primaryDown() {
   if (CAR.riding && carOn()) { carCommand(); return; }
   if (player.switchT > 0.15) return;

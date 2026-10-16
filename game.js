@@ -7721,6 +7721,135 @@ function airportFighterUpdate(dt){
 function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;airportVehicleUpdate(dt);airportPostsUpdate(dt);airportFighterUpdate(dt);airportTracerUpdate(dt);AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<42){const kind=Math.random()<.46?'archer':'mob';const x=rand(-24,18),z=rand(-88,-80);const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){e.speed=Math.max(e.speed*1.12,2.9);e.state=kind==='archer'?'advance':'approach';e.tgt=null;e.tgtT=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e)&&!e.airportCrewActor)){AIRPORT.won=true;gameOver(true);}}
 function airportParatrooperStep(e,dt){if(e.state!=='airportDrop')return;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);e.s.position.y=Math.max(0,e.s.position.y-2.65*dt);e.baseY=e.s.position.y;if(e.airChute){e.airChute.visible=true;e.airChute.position.y=0;}if(e.s.position.y<=.001){e.s.position.y=0;e.baseY=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.airDrop=false;e.passive=false;e.shadow.visible=true;e.tilt.position.set(0,0,0);e.tilt.rotation.set(0,0,0);e.crouch=0;e.hid=false;e.hiding=false;if(e.airChute){e.s.remove(e.airChute);e.airChute=null;}setFrame(e,e.girl.front,false);e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.tgt=null;e.tgtT=0;e.cd=.2;e.spotted=false;e.airLanded=true;}}
 
+// ====================================================================
+// 塹壕の戦い：荒野の両軍陣地。塹壕は地面に切り欠きを作り、底を地表より低く描画する。
+// ====================================================================
+function trenchBlock(x,y,z,w,h,d,color,opts={}) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({
+    color, transparent: !!opts.transparent, opacity: opts.opacity == null ? 1 : opts.opacity
+  }));
+  m.position.set(x,y,z); m.castShadow = true; m.receiveShadow = true; stageRoot.add(m); return m;
+}
+function buildTrench() {
+  TRENCH.on = true; TRENCH.started = false; TRENCH.blue = []; TRENCH.orange = []; TRENCH.fireT = 2.2; TRENCH.won = false; TRENCH.shots = 0;
+  ground.visible = false;
+  // 荒野の地表。塹壕の位置だけ地形ポリゴンに穴を開け、底が地表に隠れないようにする。
+  const land = new THREE.Shape();
+  land.moveTo(-120,-120); land.lineTo(120,-120); land.lineTo(120,120); land.lineTo(-120,120); land.closePath();
+  for (const z of [-38,38]) {
+    const hole = new THREE.Path();
+    hole.moveTo(-39,-z-2.7); hole.lineTo(-39,-z+2.7); hole.lineTo(39,-z+2.7); hole.lineTo(39,-z-2.7); hole.closePath();
+    land.holes.push(hole);
+  }
+  const terrain = new THREE.Mesh(new THREE.ShapeGeometry(land), new THREE.MeshLambertMaterial({color:0x8e805e}));
+  terrain.rotation.x = -Math.PI/2; terrain.position.y = -0.02; terrain.receiveShadow = true; stageRoot.add(terrain);
+  const dirt = new THREE.MeshLambertMaterial({color:0x62513b});
+  const earth = new THREE.MeshLambertMaterial({color:0x796344});
+  const sandbag = new THREE.MeshLambertMaterial({color:0x9b8967});
+  // 地表の荒れ、石、乾いた草
+  for (let i=0;i<180;i++) {
+    const x=rand(-95,95), z=rand(-95,95);
+    if (Math.abs(Math.abs(z)-38)<5 && Math.abs(x)<41) continue;
+    const r=rand(.12,.55);
+    const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),new THREE.MeshLambertMaterial({color:pick([0x756b55,0x9b8d6d,0x5d5949,0xa39778])}));
+    rock.position.set(x,r*.25,z); rock.scale.y=.35; stageRoot.add(rock);
+  }
+  for (const z of [-38,38]) {
+    // 塹壕底は地表から約1.4m下。前後の土壁は上端を地面付近に置く。
+    trenchBlock(0,-1.42,z,78,.12,5.2,0x332d24);
+    for (const side of [-1,1]) {
+      trenchBlock(0,-.66,z+side*2.45,78,1.48,.52,0x796344);
+      trenchBlock(0,.015,z+side*2.45,78,.16,.58,0x9b8967);
+      // 土嚢を区切って積み、長い一枚壁に見えないようにする。
+      for(let x=-37;x<=37;x+=2.6) {
+        const b=trenchBlock(x,.12,z+side*2.48,2.35,.25,.64,0xa18e6c);
+        b.rotation.y=rand(-.035,.035);
+      }
+    }
+    // 壁の土層・斜面を強調する内側の暗い帯
+    trenchBlock(0,-.9,z-2.12,77,.48,.12,0x4b3d2b);
+    trenchBlock(0,-.9,z+2.12,77,.48,.12,0x4b3d2b);
+  }
+  // 各陣地にコンクリート製トーチカ4基ずつ。射撃口は敵陣側に向ける。
+  for (const team of ['blue','orange']) {
+    const z=team==='blue'?49:-49, face=team==='blue'?-1:1, col=0x77776d;
+    for (const x of [-28,-10,10,28]) {
+      trenchBlock(x,.78,z,5.2,1.8,4.4,col);
+      trenchBlock(x,1.78,z,5.55,.22,4.7,0x5c5d56);
+      trenchBlock(x,.62,z+face*2.23,2.3,.38,.12,0x282a27);
+      trenchBlock(x-1.45,.82,z+face*2.15,.22,.52,.2,0x56584f);
+      trenchBlock(x+1.45,.82,z+face*2.15,.22,.52,.2,0x56584f);
+      // 入口は陣地後方側に開ける
+      trenchBlock(x,.3,z-face*2.25,1.15,.62,.16,0x282923);
+      for(let k=-1;k<=1;k++) trenchBlock(x+k*1.45,1.96,z,.12,.14,4.6,0x4b4d47);
+    }
+    // 陣地の識別旗
+    const pole=trenchBlock(team==='blue'?-36:36,1.8,z, .09,3.6,.09,team==='blue'?0x425d83:0x8c4a34);
+    trenchBlock(team==='blue'?-35.5:35.5,2.65,z,.95,.52,.06,team==='blue'?0x547eaa:0xb85d3c);
+  }
+  // 遠景の低い土丘。戦場を荒野らしく縁取る。
+  for(let i=0;i<18;i++){
+    const x=-110+i*12.5, z=i%2?-105:105, r=rand(7,14);
+    const hill=new THREE.Mesh(new THREE.SphereGeometry(1,10,6),earth);
+    hill.position.set(x,r*.22,z); hill.scale.set(r,r*.45,rand(5,10)); stageRoot.add(hill);
+  }
+}
+function trenchStartBattle() {
+  TRENCH.on=true; TRENCH.started=false; TRENCH.blue=[]; TRENCH.orange=[]; TRENCH.fireT=2.2; TRENCH.won=false; TRENCH.shots=0;
+  wave={n:1,toSpawn:0,blueToSpawn:0,blueOwed:0,spawnT:0,inter:0,maxAlive:200,blueMax:100,total:{blue:100,orange:100},archerRate:ARCHER_RATE};
+  // 第一波は本当に100人ずつ配置。隊列は横一列、全員を塹壕の底に腰を落とした高さで待機させる。
+  for(let i=0;i<100;i++){
+    const x=-34.65+i*.7, kind=Math.random()<.22?'archer':'mob';
+    const b=spawnEnemy(x,38,kind,false,'blue',{y:-1.08,yari:-1});
+    if(b){b.trenchSide='blue';b.trenchHome={x,z:38};b.home=[x,38];b.hold={face:Math.PI};b.passive=true;b.state='idle';b.tgt=null;b.tgtT=0;b.crouch=.25;TRENCH.blue.push(b);}
+    const ekind=Math.random()<.22?'archer':'mob';
+    const e=spawnEnemy(x,-38,ekind,false,'orange',{y:-1.08,yari:-1});
+    if(e){e.trenchSide='orange';e.trenchHome={x,z:-38};e.home=[x,-38];e.hold={face:0};e.passive=true;e.state='idle';e.tgt=null;e.tgtT=0;e.crouch=.25;TRENCH.orange.push(e);}
+  }
+  $('bTrenchAttack').style.display='block';
+  $('bTrenchAttack').disabled=false;
+  $('bTrenchAttack').textContent='突撃開始';
+  showBanner('塹壕戦・第一波','味方100人／敵100人。号令まで塹壕内で待機せよ。');
+}
+function trenchCharge() {
+  if(!TRENCH.on||TRENCH.started||state!=='play')return;
+  TRENCH.started=true;
+  $('bTrenchAttack').style.display='none';
+  for(const e of TRENCH.blue){
+    if(!isUp(e))continue;
+    e.hold=null;e.passive=false;e.trenchCharge=true;e.crouch=0;e.baseY=0;e.s.position.y=0;e.px=e.s.position.x;e.pz=e.s.position.z;
+    e.s.position.z=35.25;e.pz=35.25;e.home=[e.s.position.x,35.25];e.tgt=null;e.tgtT=0;e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.cd=rand(.2,.9);e.faceWant=Math.PI;
+  }
+  showBanner('突撃！','青組100人が塹壕を出て敵陣へ前進する。');
+  Sfx.fluteCall();
+}
+function trenchUpdate(dt) {
+  if(!TRENCH.on||state!=='play'||!TRENCH.started)return;
+  TRENCH.fireT-=dt;
+  if(TRENCH.fireT<=0){
+    TRENCH.fireT=1.35;
+    const liveBlue=TRENCH.blue.filter(isUp);
+    const liveOrange=TRENCH.orange.filter(isUp);
+    // 敵塹壕の射撃は一斉射ではなく小隊単位。突撃側にも反撃の余地を残す。
+    for(let n=0;n<Math.min(9,liveOrange.length)&&liveBlue.length;n++){
+      const shooter=liveOrange[(TRENCH.shots+n*11)%liveOrange.length];
+      const candidates=liveBlue.filter(t=>Math.hypot(t.s.position.x-shooter.s.position.x,t.s.position.z-shooter.s.position.z)<78);
+      if(!candidates.length)continue;
+      const target=candidates[(TRENCH.shots*3+n*7)%candidates.length];
+      const from=new V3(shooter.s.position.x,Math.max(.05,shooter.s.position.y+shooter.figH*.62),shooter.s.position.z);
+      const to=new V3(target.s.position.x,target.s.position.y+target.figH*.55,target.s.position.z);
+      shooter.faceWant=Math.atan2(to.x-from.x,to.z-from.z);
+      if(Math.random()<.52)damageEnemy(target,1,from,false,{pt:to.clone(),thrust:true},{team:'orange',state:'idle',mg:true,s:{position:from}});
+      else puff(to.clone().setY(Math.max(.04,to.y)),0xb4a17c,2,.12,.8,.25);
+    }
+    TRENCH.shots+=9;
+  }
+  const liveBlue=TRENCH.blue.filter(isUp).length, liveOrange=TRENCH.orange.filter(isUp).length;
+  wave.total={blue:100,orange:100}; wave.toSpawn=0; wave.blueToSpawn=0; wave.maxAlive=200;
+  if(liveOrange===0&&!TRENCH.won){TRENCH.won=true;TRENCH.on=false;$('bTrenchAttack').style.display='none';gameOver(true);return;}
+  if(liveBlue===0){TRENCH.on=false;$('bTrenchAttack').style.display='none';gameOver(false);}
+}
+
 const STAGES = {
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },

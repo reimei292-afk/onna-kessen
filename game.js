@@ -7796,7 +7796,7 @@ function buildTrench() {
     const q=plainGun(stageRoot,x,1.05,z+face*1.45,gm);
     if(team==='orange')q.g.rotation.y=Math.PI;
     q.g.rotation.x=0;
-    q.flash.visible=false;
+    q.flash.visible=false;stageRoot.add(q.flash);
     TRENCH.posts.push({team,x,z:z+face*1.45,y:1.05,gun:q.g,flash:q.flash,burst:0,shotT:0,nextT:rand(1,3),target:null});
   }
   const tracerMat=new THREE.MeshBasicMaterial({color:0xffd58b,transparent:true,opacity:.85});
@@ -7885,7 +7885,7 @@ function trenchReinforce(){
   if(TRENCH.reinfDone)return;TRENCH.reinfDone=true;const M=carMats();
   for(let i=0;i<3;i++){
     const g=new THREE.Group();keiAssemble(g,M);g.position.set((i-1)*5,0,75+i*2);g.rotation.y=0;stageRoot.add(g);
-    const q=plainGun(g,0,1.5,-.6,M);q.flash.visible=false;
+    const q=plainGun(g,0,1.5,-.6,M);q.flash.visible=false;g.add(q.flash);q.flash.position.set(0,1.5,-1.45);
     const C={g,team:'blue',x:g.position.x,z:g.position.z,speed:4.3,gun:q.g,flash:q.flash,nextT:1+i*.4,crew:[],dead:false};TRENCH.cars.push(C);
     for(let k=0;k<4;k++){const e=spawnEnemy(C.x,C.z,'mob',false,'blue',{yari:-1});if(e){e.trenchMounted={car:C,slot:k};e.trenchUnit=true;e.trenchSide='blue';e.hold=null;e.passive=false;C.crew.push(e);}}
   }
@@ -7919,7 +7919,7 @@ function trenchUpdate(dt) {
     if(P.burst<=0){P.nextT-=dt;if(P.nextT>0){P.flash.visible=false;continue;}let best=null,bd=80;for(const e of foes){const d=Math.hypot(e.s.position.x-P.x,e.s.position.z-P.z);if(d<bd){bd=d;best=e;}}if(!best){P.nextT=.8;continue;}P.target=best;P.burst=5;P.shotT=0;}
     if(!P.target||!isUp(P.target)){P.burst=0;P.nextT=.5;continue;}
     const p=P.target.s.position,from=new V3(P.x,P.y,P.z),to=new V3(p.x,p.y+P.target.figH*.55,p.z);P.gun.rotation.y=Math.atan2(to.x-from.x,to.z-from.z)+Math.PI;P.shotT-=dt;
-    if(P.shotT<=0){P.shotT=.18;P.burst--;P.flash.visible=true;P.flash.position.set(0,0,-.65);trenchTracer(from,to);if(Math.random()<.2)damageEnemy(P.target,1,from,false,{pt:to.clone(),thrust:true},'player');if(P.burst<=0)P.nextT=rand(1.5,3.2);}
+    if(P.shotT<=0){P.shotT=.18;P.burst--;P.flash.visible=true;P.gun.updateMatrixWorld(true);P.flash.position.copy(P.gun.localToWorld(new V3(0,0,-.85)));trenchTracer(from,to);if(Math.random()<.2)damageEnemy(P.target,1,from,false,{pt:to.clone(),thrust:true},'player');if(P.burst<=0)P.nextT=rand(1.5,3.2);}
     else P.flash.visible=false;
   }
   TRENCH.fireT-=dt;

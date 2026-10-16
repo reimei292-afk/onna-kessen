@@ -83,6 +83,12 @@
     font:inherit;font-size:18px;letter-spacing:.25em;padding:8px 18px;color:#e8d9a8;
     background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.75);border-radius:4px;cursor:pointer}
   #bGod.on{background:rgba(232,217,168,.92);color:#1a1410}
+  #bTrenchAttack{display:none;position:absolute;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto;z-index:35;
+    min-width:150px;padding:11px 26px;border:2px solid #d5b47b;border-radius:5px;
+    background:rgba(77,42,22,.94);color:#fff0c5;font:inherit;font-size:23px;letter-spacing:.3em;
+    text-shadow:0 1px 3px #000;box-shadow:0 2px 12px rgba(0,0,0,.6);cursor:pointer}
+  #bTrenchAttack:active{background:rgba(138,81,38,.98)}
+  #bTrenchAttack:disabled{opacity:.55;cursor:default}
   #bMtnOpen{display:none;position:fixed;z-index:36;left:50%;bottom:calc(26px + var(--sab));transform:translateX(-50%);
     min-width:112px;padding:12px 28px;border:2px solid #f5df9c;border-radius:6px;
     background:rgba(83,48,18,.94);color:#fff0bf;font:inherit;font-size:23px;letter-spacing:.25em;
@@ -177,6 +183,7 @@
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
   <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
   <button id="bGod" class="serif" type="button">無敵</button>
+  <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
 <button id="bMtnOpen" class="serif" type="button" aria-label="本丸の扉を開く">開く</button>
@@ -202,7 +209,7 @@
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button><button data-st="trench">塹壕の戦い</button></div>
   <div id="modesel" class="serif" style="display:none"><button data-md="def">守る</button><button data-md="atk">攻める</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>

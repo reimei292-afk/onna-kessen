@@ -10892,6 +10892,28 @@ function animateNpc(e, dt, lean) {
     if (airportAirborne && e.airChute) e.airChute.visible = true;
   }
   setFrame(e, fr, mirror);
+  // 空港ステージの生存兵は、状態遷移や方向別写真の欠落で本体メッシュが消えたままにならないよう、
+  // 毎フレーム、有効な写真テクスチャと描画設定を復旧する。負傷中の味方にも適用する。
+  if (AIRPORT.on && isUp(e) && !e.airportCrewActor) {
+    if (!fr || !fr.tex || !fr.tex.image || !fr.tex.image.width || !fr.tex.image.height) {
+      fr = g.front;
+      mirror = false;
+      if (fr && fr.tex) setFrame(e, fr, mirror);
+    }
+    e.s.visible = true;
+    e.tilt.visible = true;
+    e.bb.visible = true;
+    e.bb.frustumCulled = false;
+    if (e.mat && fr && fr.tex) {
+      e.mat.map = fr.tex;
+      e.mat.transparent = true;
+      e.mat.opacity = 1;
+      e.mat.alphaTest = 0.02;
+      e.mat.depthWrite = false;
+      e.mat.side = THREE.DoubleSide;
+      e.mat.needsUpdate = true;
+    }
+  }
   if (e.armed) updateProps(e, fr, mirror, sgn);
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり

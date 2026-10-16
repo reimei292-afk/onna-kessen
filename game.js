@@ -7857,7 +7857,7 @@ function trenchBrain(e,dt){
   const p=e.s.position;
   if(e.trenchMounted&&e.trenchMounted.car&&!e.trenchMounted.car.dead){
     const C=e.trenchMounted.car,sl=e.trenchMounted.slot,loc=[[-.68,.95,.1],[.68,.95,.1],[-.68,1.08,-.72],[.68,1.08,-.72]][sl%4];
-    const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.px=p.x;e.pz=p.z;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
+    const wp=C.g.localToWorld(new V3(loc[0],loc[1],loc[2]));p.copy(wp);e.baseY=wp.y;e.s.rotation.y=C.g.rotation.y;e.hold=null;e.passive=false;animateNpc(e,dt,0);return;
   }
   if(e.trenchOrder==='hold'||e.trenchBunkerCrew){
     const h=e.trenchHome||{x:p.x,z:p.z};p.x+=(h.x-p.x)*Math.min(1,dt*6);p.z+=(h.z-p.z)*Math.min(1,dt*6);p.y=e.trenchBunkerCrew?0:-1.08;e.baseY=p.y;e.px=p.x;e.pz=p.z;e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;animateNpc(e,dt,0);return;
@@ -7868,7 +7868,7 @@ function trenchBrain(e,dt){
     if(d>.6){p.x+=dx/d*spd*dt;p.z+=dz/d*spd*dt;e.s.rotation.y=Math.atan2(dx,dz);e.kneel=false;e.crouch=0;}
     else{p.x=tx;p.z=tz;if(e.trenchOrder==='retreat'){e.trenchOrder='hold';e.hold={face:e.trenchSide==='blue'?Math.PI:0};e.passive=true;e.crouch=.25;}else e.trenchOrder='fight';}
   }
-  p.y=0;e.baseY=0;e.px=p.x;e.pz=p.z;animateNpc(e,dt,0);
+  p.y=0;e.baseY=0;animateNpc(e,dt,0);
 }
 function trenchTracer(from,to){
   const T=TRENCH.tracers.find(t=>t.t>=1);if(!T)return;

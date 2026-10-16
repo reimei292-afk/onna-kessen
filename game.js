@@ -7528,8 +7528,8 @@ function airportCrewRebuild(){
   p.crew=airportCrew(p.g,0,1.1,.65,.92,0x344b3a,'gunner','blue');p.crewAlive=true;
  }
  for(const v of AIRPORT.vehicles||[]){
-  v.driver=airportCrew(v.g,-.25,.56,.65,.58,0x454b52,'driver','orange');
-  v.gunner=airportCrew(v.g,0,1.52,-.15,.9,0x553d32,'gunner','orange');
+  v.driver=airportCrew(v.g,-.25,.92,.65,.72,0x454b52,'driver','orange');
+  v.gunner=airportCrew(v.g,0,1.92,-.15,1.02,0x553d32,'gunner','orange');
   v.driverAlive=true;v.gunnerAlive=true;v.alive=true;
  }
  const f=AIRPORT.fighter;
@@ -7627,7 +7627,7 @@ function buildAirport(){
    keiAssemble(g,VM);
    const q=plainGun(g,0,1.38,-.15,VM);q.g.rotation.y=Math.PI;
    g.scale.setScalar(1.12);
-   const driver=airportCrew(g,-.25,.56,.65,.58,0x454b52,'driver','orange');const gunner=airportCrew(g,0,1.52,-.15,.9,0x553d32,'gunner','orange');AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-20,-12,-4,4,12,20][i],z:-82-i*1.8,yaw:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
+   const driver=airportCrew(g,-.25,.92,.65,.72,0x454b52,'driver','orange');const gunner=airportCrew(g,0,1.92,-.15,1.02,0x553d32,'gunner','orange');AIRPORT.vehicles.push({g,gun:q.g,flash:q.flash,driver,gunner,driverAlive:true,gunnerAlive:true,x:[-20,-12,-4,4,12,20][i],z:-82-i*1.8,yaw:0,hp:12,next:.8+i*.5,target:null,alive:true,drive:0});
  }
 
  AIRPORT.gun=null;AIRPORT.tracer=null;
@@ -7716,7 +7716,7 @@ function airportFighterUpdate(dt){
   if(f.t>7){f.phase=3;f.t=0;}
  }else if(f.phase===3){f.g.position.lerp(f.home,Math.min(1,dt*.22));if(f.g.position.distanceTo(f.home)<2){f.g.position.copy(f.home);f.g.rotation.set(0,0,0);f.active=false;f.phase=0;}}
 }
-function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;airportVehicleUpdate(dt);airportPostsUpdate(dt);airportFighterUpdate(dt);airportTracerUpdate(dt);AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<42){const kind=Math.random()<.46?'archer':'mob';const x=rand(-24,18),z=rand(-88,-80);const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){airportElite(e);e.speed=Math.max(e.speed*1.12,2.9);AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e)&&!e.airportCrewActor)){AIRPORT.won=true;gameOver(true);}}
+function airportUpdate(dt){if(!AIRPORT.on||state!=='play')return;airportVehicleUpdate(dt);airportPostsUpdate(dt);airportFighterUpdate(dt);airportTracerUpdate(dt);AIRPORT.introT-=dt;if(AIRPORT.introT<=0&&AIRPORT.toDrop>0){AIRPORT.dropTimer-=dt;const active=enemies.filter(e=>e.team==='orange'&&isUp(e)).length;if(AIRPORT.dropTimer<=0&&active<42){const kind=Math.random()<.46?'archer':'mob';const x=rand(-24,18),z=rand(-88,-80);const e=spawnEnemy(x,z,kind,false,'orange',{yari:-1});if(e){e.speed=Math.max(e.speed*1.12,2.9);e.state=kind==='archer'?'advance':'approach';e.tgt=null;e.tgtT=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;AIRPORT.drops.push(e);AIRPORT.dropCount++;AIRPORT.toDrop--;wave.toSpawn=AIRPORT.toDrop;AIRPORT.dropTimer=rand(.82,1.28);}}}airportFire(dt);if(!AIRPORT.lost&&AIRPORT.towerGuards.length>0&&AIRPORT.towerGuards.every(e=>!isUp(e))){AIRPORT.lost=true;showBanner('管制塔陥落','管制室の守備隊が全滅した');gameOver(false);return;}if(!AIRPORT.won&&AIRPORT.toDrop===0&&!enemies.some(e=>e.team==='orange'&&isUp(e)&&!e.airportCrewActor)){AIRPORT.won=true;gameOver(true);}}
 function airportParatrooperStep(e,dt){if(e.state!=='airportDrop')return;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.needsUpdate=true;}setFrame(e,e.girl.front,false);e.s.position.y=Math.max(0,e.s.position.y-2.65*dt);e.baseY=e.s.position.y;if(e.airChute){e.airChute.visible=true;e.airChute.position.y=0;}if(e.s.position.y<=.001){e.s.position.y=0;e.baseY=0;e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.airDrop=false;e.passive=false;e.shadow.visible=true;e.tilt.position.set(0,0,0);e.tilt.rotation.set(0,0,0);e.crouch=0;e.hid=false;e.hiding=false;if(e.airChute){e.s.remove(e.airChute);e.airChute=null;}setFrame(e,e.girl.front,false);e.state=e.kind==='archer'?'advance':'approach';e.t=0;e.tgt=null;e.tgtT=0;e.cd=.2;e.spotted=false;e.airLanded=true;}}
 
 const STAGES = {

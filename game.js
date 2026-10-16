@@ -12284,6 +12284,7 @@ function resumeGame() {
   state = 'play'; $('pause').style.display = 'none'; unlockAudio(); goFullscreen(); resetTouch(); lock();
 }
 function toTitle() {
+  $('bTrenchAttack').style.display='none';
   state = 'title'; resetGame(); removeSecretary(); removeFluter();
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }

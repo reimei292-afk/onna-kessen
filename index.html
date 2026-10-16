@@ -41,6 +41,7 @@
   #secmenu #secClose{margin-top:10px;width:100%}
   #secmenu .caOnly{display:none} html.plane #secmenu .caOnly{display:block}
   #secmenu .snowOnly{display:none} html.snow #secmenu .snowOnly{display:block}
+  #secmenu .trenchOnly{display:none} html.trench #secmenu .trenchOnly{display:block}
   #secmenu button.back{min-height:52px;font-size:18px;background:rgba(232,217,168,.3);color:#f4ecd6;border:1px solid rgba(232,217,168,.6)}
   #secsay{min-height:2.6em;margin:10px 0 0;font-size:14px;color:#ffe9b8;line-height:1.5}
   #ladhint{position:absolute;left:50%;top:24%;transform:translateX(-50%);padding:7px 16px;border-radius:8px;background:rgba(20,30,20,.62);border:1px solid rgba(255,230,160,.7);color:#ffe9b8;font-size:18px;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
@@ -239,6 +240,7 @@
     <button data-req="report">戦況を報告して<small>味方・敵の数・分隊ごと</small></button>
     <button data-req="plan">作戦を相談<small>攻勢／守勢の切替</small></button>
     <button data-req="shoulder">肩を揉んで<small>しばらく矢の回復が速い</small></button>
+    <button data-req="bodies" class="trenchOnly" style="grid-column:1/3">倒れた兵を本陣へ運んで<small>近くの戦死者を休息所の脇へ運ぶ</small></button>
     <button data-req="fan">扇であおいで<small>ひと休み</small></button>
     <button data-req="arrows">矢を補充して<small>矢が満タンに</small></button>
     <button data-req="follow">一緒に来て<small>弓で援護しながら同行</small></button>

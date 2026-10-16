@@ -89,6 +89,45 @@ jobs:
               if (errors.length) throw new Error('Browser console/page errors: ' + errors.join(' | '));
               await page.locator('#game').screenshot({ path: '/tmp/airport-control-tower.png' });
               console.log('AIRPORT_BROWSER_TEST_PASS');
+
+              // Regression check for the new trench stage: 100 troops each, held in the trench until the assault button is pressed.
+              await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+              await page.waitForFunction(() => window.__game && typeof window.__game.startGame === 'function', null, { timeout: 60000 });
+              await page.locator('#stagesel button[data-st="trench"]').click();
+              await page.locator('#startBtn').click();
+              await page.waitForFunction(() => window.__game.stage === 'trench' && window.__game.state === 'play', null, { timeout: 60000 });
+              const trenchSetup = await page.evaluate(() => {
+                const G = window.__game, T = G.TRENCH, button = document.querySelector('#bTrenchAttack');
+                return {
+                  stage: G.stage, active: T.on, blue: T.blue.length, orange: T.orange.length,
+                  liveBlue: T.blue.filter(G.isUp).length, liveOrange: T.orange.filter(G.isUp).length,
+                  commandVisible: getComputedStyle(button).display !== 'none',
+                  heldInTrench: T.blue.every(e => e.hold && e.passive && Math.abs(e.s.position.z - 38) < 0.02) &&
+                    T.orange.every(e => e.hold && e.passive && Math.abs(e.s.position.z + 38) < 0.02)
+                };
+              });
+              console.log('TRENCH_SETUP ' + JSON.stringify(trenchSetup));
+              if (trenchSetup.stage !== 'trench' || !trenchSetup.active ||
+                  trenchSetup.blue !== 100 || trenchSetup.orange !== 100 ||
+                  trenchSetup.liveBlue !== 100 || trenchSetup.liveOrange !== 100 ||
+                  !trenchSetup.commandVisible || !trenchSetup.heldInTrench) {
+                throw new Error('Trench setup failed: ' + JSON.stringify(trenchSetup));
+              }
+              await page.locator('#bTrenchAttack').click();
+              await page.waitForFunction(() => window.__game.TRENCH.started, null, { timeout: 10000 });
+              const charge = await page.evaluate(() => {
+                const T = window.__game.TRENCH;
+                return {
+                  started: T.started,
+                  commandHidden: getComputedStyle(document.querySelector('#bTrenchAttack')).display === 'none',
+                  blueOutsideTrench: T.blue.filter(e => e.s.position.z < 35.4 && !e.passive).length
+                };
+              });
+              console.log('TRENCH_CHARGE ' + JSON.stringify(charge));
+              if (!charge.started || !charge.commandHidden || charge.blueOutsideTrench < 95) {
+                throw new Error('Trench charge failed: ' + JSON.stringify(charge));
+              }
+              console.log('TRENCH_BROWSER_TEST_PASS');
             } finally {
               await browser.close();
             }

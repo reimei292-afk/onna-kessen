@@ -7546,8 +7546,11 @@ function airportCrewFaceAll(){
   const p=parent.localToWorld(e.airportSeatLocal.clone());
   e.s.position.copy(p);e.baseY=p.y;e.px=p.x;e.pz=p.z;
   e.s.rotation.y=yaw;e.face=yaw;
+  // 車体・銃座の内側で乗員の写真メッシュが隠れたり、カリングで消えたりしないよう描画状態を毎フレーム補正。
+  e.s.visible=true;e.tilt.visible=true;e.bb.visible=true;e.bb.frustumCulled=false;
+  if(e.mat){e.mat.transparent=false;e.mat.opacity=1;e.mat.alphaTest=0.35;e.mat.needsUpdate=true;}
   const g=e.girl,role=e.airportRole;
-  let fr=(role==='driver'||role==='pilot')?(g.kneel||g.low||g.front):(g.stab||g.action||g.front);
+  let fr=(role==='driver'||role==='pilot')?(g.front||g.low||g.kneel):(g.front||g.stab||g.action);
   if(!fr||!fr.tex)fr=g.front;
   if(e.fr!==fr)setFrame(e,fr,false);
   e.tilt.rotation.x=role==='gunner'?-.035-(e.airportRecoil||0)*.08:0;

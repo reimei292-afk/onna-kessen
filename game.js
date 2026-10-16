@@ -2633,17 +2633,17 @@ function updatePlaneFx(dt) {
 // ステージごとの光・霧・屋外の物
 const LOOK0 = { fogN: 35, fogF: 200, bg: FOG, hemi: [0xeaf2ff, 0x55603a, 1.6], amb: 0.75, sun: 2.2 };
 function stageLook(name) {
-  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport';
-  AIRPORT.on = ap;
+  const pl = name === 'plane', sn = name === 'snow', mt = name === 'mtn', tf = name === 'twofront', ap = name === 'airport', tr = name === 'trench';
+  AIRPORT.on = ap; TRENCH.on = tr;
   document.documentElement.classList.toggle('snow', sn);
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   ground.visible = !pl && name !== 'beach' && !sn && !mt && !tr; sky.visible = !pl; for (const m of mountains) m.visible = !pl && !mt;
   scene.fog.near = pl ? 200 : sn ? 8 : mt ? 22 : tf ? 48 : LOOK0.fogN; scene.fog.far = pl ? 600 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : tf ? 340 : LOOK0.fogF;
-  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : LOOK0.bg);
-  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : LOOK0.hemi[2];
-  ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : LOOK0.sun;
+  scene.background.setHex(pl ? 0x1a1a1e : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : tr ? 0x9b8c70 : LOOK0.bg);
+  hemiL.color.setHex(pl ? 0xfff2df : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : tr ? 1.08 : LOOK0.hemi[2];
+  ambL.intensity = pl ? 0.95 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : tr ? 0.82 : LOOK0.amb; sun.intensity = pl ? 0.9 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : SUN_DIR0);
 }
 // ====================================================================
@@ -3621,6 +3621,8 @@ function updateGuards() {
 // ====================================================================
 const BH = { TOP: 5, Z1: 24, Z2: 48, SHORE: 0, WATER: -0.15, XW: 50, MG_R: 76, BOAT_GOAL: -4.3 };
 const BEACH = { on: false, boats: [], pbs: [], tracers: [], waveT: 0, king: null, gboat: null, won: false, looks: new Set(), log: [], cars: [], carN: 0, lordCar: null };
+// 塹壕戦：第一波は両軍100人。青組は号令まで塹壕内で待機し、橙組は塹壕とトーチカを守る。
+const TRENCH = { on: false, started: false, blue: [], orange: [], fireT: 0, won: false, shots: 0 };
 // 極寒ステージ：縦に長い峡谷。雪のクレバス、道を塞ぐ川、針状の木片、川の冷気、吹雪、かまくら
 const SNOW = {
   on: false, cold: 0, blizzard: false, riverT: 0, riverOpen: false, riverSaid: false, riverBarrier: null, riverBridge: null,
@@ -7860,6 +7862,7 @@ const STAGES = {
   mtn: { name: '山城の戦い', desc: '味方が二つに分かれ、西の大手と東の搦手を攻める。頭上の数は、医務班や本陣の者も含めた味方と敵の人数（橙組にも救護班がいる）。攻め手は射ちながら破門隊について門へ上がり、門の次は二の丸、その次が本丸。押された峰は峰道で援軍を乞う。' },
   twofront: { name: '王と西園寺の二正面戦', desc: '西に城、東に山城。王は狭間・大手門・櫓・二の丸の門上と伏兵で守り、西園寺は峰の足場と本丸で守る。落とし穴、つぶて、破城槌、針山もそのまま。性格で間合いが変わり、分隊の戦況は王と西園寺の両方で分かる。' },
   airport: { name: '空港の戦い', desc: '管制塔のガラス張りの管制室が本陣。滑走路や格納庫から地上侵入してくる敵を、管制塔守備隊・近衛・秘書課・医務班と共に迎え撃つ。操作卓とモニターが並ぶ管制室で戦況を見極めよ。' },
+  trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと一斉に塹壕を出て敵陣へ突撃する。' },
 };
 function loadStage(name) {
   if (name !== 'beach') player.god = false;
@@ -7875,9 +7878,9 @@ function loadStage(name) {
   road.visible = name === 'plains';
   if (MTN.stones) for (const s of MTN.stones) if (s.m) scene.remove(s.m);
   MTN.stones = []; MTN.on = false;
-  SNOW.on = false; SNOW.blizzard = false; BEACH.on = false;
+  SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else buildPlains();
+  if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -9550,6 +9553,7 @@ function startWave(n) {
 }
 function waveUpdate(dt) {
   if (AIRPORT.on) { airportUpdate(dt); return; }
+  if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
   if (PLANE.intro) { PLANE.introT -= dt; if (PLANE.introT <= 0) planeAmbush(); return; }
   if (wave.inter > 0) { wave.inter -= dt; if (wave.inter <= 0) startWave(wave.n + 1); return; }

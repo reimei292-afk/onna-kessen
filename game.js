@@ -8677,7 +8677,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017zb';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017zc';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -10845,8 +10845,9 @@ function seatPose(e, k) {
   if (sd && g && g.seatdown && k >= 0.5 && !behind) {   // 座ったまま事切れた写真
     const fr = g.seatdown; setFrame(e, fr, sd.mir);
     const h = e.figH * fr.hk, sy = fr.sy != null ? fr.sy : 0.42, hip = e.figH * SEAT_HIP - SEAT_SINK;
-    e.tilt.position.set(0, hip - sy * h, 0);
-    e.tilt.rotation.set(0, yaw + clamp(rel, -1.1, 1.1) - e.s.rotation.y, 0);
+    const ry = yaw + clamp(rel, -1.1, 1.1) - e.s.rotation.y, fwd = 0.26 * e.figH / 1.6;   // 座面の前寄りへ（座席の箱に脚が隠れない）
+    e.tilt.position.set(Math.sin(ry) * fwd, hip - sy * h, Math.cos(ry) * fwd);
+    e.tilt.rotation.set(0, ry, 0);
     placeBelt(e, sy * h, sy * h + 0.31 * e.figH, 0.34 * e.figH / 1.6, sd.mir);
     return;
   }

@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -9245,6 +9245,15 @@ const PERS = {
     lines: { spot: ['みーつけたっ！', 'いっくよー！', 'あ、いたいた！ 勝負〜！'], attack: ['それっ！', 'くらえ〜っ！', 'えーいっ！'], hit: ['わっ、やったなー！', 'あはは、当たっちゃった！', 'もー、ずるい〜！', 'きゃっ！ やったなー！', 'うっ…！ 今のは効いた！', 'いやっ！ 当てられちゃった！', 'きゃっ！', 'いたっ！ もー！', 'あっ…！ やられたかも！', 'ちょ、待って！', 'うそ、当たった…', 'えっ、私？ うそでしょ！'], defeat: ['やられた〜！', 'あちゃ〜、負けちゃった！', 'あー、楽しかった〜！', 'きゃあっ！ やられた〜！', '悔しい〜！ 次は勝つからね！', 'すみません、脱落です！', 'やられたー…！', 'ごめん…先に抜けるね！', 'くやしい〜！', 'おつかれー…私はここまで！'], callR: ['右から来てるよー！'], callL: ['左、回り込まれてる！'], cover: ['援護お願い！'], ammo: ['矢、あと少ししかないよー！'], push: ['いけるいける、押して！'], fall: ['無理無理、下がるー！'], seiran: ['せいらん狙ってー！'], ladder: ['はしご、登ってきてるよ！'], allydown: ['うそでしょ…！', '仇とるからね！', 'えっ、やだ…！'], kill: ['よっしゃ！', 'やったー！', 'おつかれー！'], order_m: ['分隊、前へー！', 'みんな、行くよー！'], order_a: ['撃てー！', 'たけたばに隠れてー！'], lead: ['私が指揮とるね！ ついてきて！'] } },
 };
 const PERS_KEYS = Object.keys(PERS);
+// 分隊どうしの助け合いの掛け声（援護射撃・負傷者の後送・迂回・救援・増援）。収録が無いものは読み上げ
+const SUP_LINES = {
+  好戦的: { support: ['援護に回るよ！ そっちの敵、こっちで引き受けた！', '加勢する！ 押し返すよ！'], carry: ['ほら、肩貸して！ 救護所まで下がるよ！', 'つかまって！ 後ろまで連れてく！'], flank: ['横から回り込むよ、ついてきて！', '脇から一気に崩す！'], relieve: ['隊長がいないなら、こっちが支える！', '今行く！ 持ちこたえて！'], reinf: ['増援に来たよ！ ここから一緒に！', '助っ人到着！ 任せて！'] },
+  慎重: { support: ['援護射撃、入ります。少し下がってください。', 'そちらを援護します。'], carry: ['負傷者を下げます。足元に気をつけて。', '肩につかまってください。救護所へ。'], flank: ['側面に回ります。静かに。', '回り込みます。合図を待って。'], relieve: ['隊長の代わりに、こちらで支えます。', '救援に入ります。陣形を立て直して。'], reinf: ['増援です。こちらの隊に入ります。', '合流しました。指示をください。'] },
+  臆病: { support: ['え、援護します！ がんばって！', 'こ、こっちからも撃ちますから！'], carry: ['だ、大丈夫？ 一緒に下がろう…！', 'つかまって…！ 救護所まで行こう！'], flank: ['よ、横から行くんですね…了解です…！', '回り込みます…置いていかないで…！'], relieve: ['た、助けに来ました…！', 'ひとりにしないから…！'], reinf: ['ぞ、増援です…よろしくお願いします…！', 'こ、こっちに入ります…！'] },
+  冷静: { support: ['援護射撃に入ります。', '隣の隊を援護。そちらへ。'], carry: ['負傷者を後送します。', '肩を。救護所まで下がります。'], flank: ['側面へ回ります。', '迂回します。正面は任せました。'], relieve: ['指揮系統を補います。こちらへ。', '救援に入ります。立て直して。'], reinf: ['増援として合流します。', 'こちらの隊に加わります。'] },
+  陽気: { support: ['援護するよー！ そっちは任せて！', '助けに来たよ、いっしょに押し返そう！'], carry: ['ほら、つかまって！ いったん下がろ！', '救護所まで一緒に行こっ！'], flank: ['横から回っちゃおう！', 'こっそり回り込むね！'], relieve: ['大丈夫、こっちが支えるから！', '今行くね！ もうちょっとがんばって！'], reinf: ['増援だよー！ よろしくね！', '合流！ にぎやかになるよ！'] },
+};
+for (const k of PERS_KEYS) if (SUP_LINES[k]) Object.assign(PERS[k].lines, SUP_LINES[k]);
 // v7：名前の幅を広げる（よくある苗字と名前）。名のある娘（秘書課・固有の娘）はそのまま、一般の兵（同じ写真の二人目も）はこの合わせた中から
 const NEW_NAMES = ['佐藤 美咲', '鈴木 陽菜', '高橋 結衣', '田中 愛美', '伊藤 莉子', '渡辺 彩花', '山本 優奈', '中村 美月', '小林 紗希', '加藤 七海',
   '吉田 真央', '山田 葵', '佐々木 凛', '松本 遥', '井上 千尋', '木村 瑞希', '林 里奈', '清水 明日香', '森 沙織', '池田 菜々子'];
@@ -9363,7 +9372,8 @@ function woundedBrain(e, dt) {
   const m = e.medBy, mp = (MECH.on && e.team === 'blue') ? mechMedCenter() : medPost[e.team];
   if (m && m.state !== 'down' && Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z) < 7) { e.kneel = true; e.woundWait = true; e.faceWant = Math.atan2(m.s.position.x - p.x, m.s.position.z - p.z); e.passive = true; return true; }
   const [hx, hz] = mp || e.home || [p.x, p.z], d = Math.hypot(hx - p.x, hz - p.z);
-  if (d > 4.5) { e.kneel = false; e.woundWait = false; steer(e, hx, hz, e.speed, dt); }
+  const eb = e.escortBy, pulled = eb && isUp(eb) && eb.escort === e && Math.hypot(eb.s.position.x - p.x, eb.s.position.z - p.z) < 2.2;   // 仲間が肩を貸すと少し速く下がれる
+  if (d > 4.5) { e.kneel = false; e.woundWait = false; steer(e, hx, hz, e.speed * (pulled ? 1.5 : 1), dt); }
   else { e.kneel = true; e.woundWait = true; e.passive = true; e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
   return true;
 }
@@ -9619,13 +9629,14 @@ const SQUAD_ATK = {
             orange: [['yari', '槍衆'], ['gate', '大手門守備隊'], ['bailey', '二の丸分隊'], ['ambush', '奥御殿伏兵隊']] },
 };
 const squads = { blue: [], orange: [] };
-const SQ = { callT: 0, tickT: 0, pending: [], log: [] };   // log：最近の掛け声（確認用）
+const SQ = { callT: 0, tickT: 0, pending: [], log: [], ord: [], supT: 3, cmdT: 12 };   // log：最近の掛け声（確認用）
 const sqLog = (k, e) => { SQ.log.push(k + ':' + (e.sq ? e.sq.name : e.team) + ':' + e.prof.name); if (SQ.log.length > 60) SQ.log.shift(); };
 const AMMO_MAX = 24;   // 青組の弓兵の矢（伝令が補給する）。橙組は矢切れなし
 function resetSquads() {
   const D = (CASTLE.atk || FORT.atk) ? SQUAD_ATK[builtStage] : SQUAD_DEFS[builtStage] || SQUAD_DEFS.plains;
   for (const t of ['blue', 'orange']) squads[t] = D[t].map(([k, name]) => ({ k, name, team: t, members: [], leader: null, lost: 0, joined: 0, cd: {}, needAmmo: false, served: null, archers: /^(tw|roam|seiran|bow|k_gh|k_slit|k_tower|k_gt|k_bow|s_bow)/.test(k) || (/^a\d/.test(k) && builtStage !== 'castle') || (k === 'gate' && builtStage === 'castle') }));
   SQ.callT = 0; SQ.pending.length = 0;
+  nameSquads();
 }
 const sqBy = (t, k) => squads[t].find(s => s.k === k);
 const isUp = m => m && m.state !== 'down' && enemies.includes(m);
@@ -9715,7 +9726,7 @@ function squadOnDeath(e) {
   if (s.leader === e) {   // 隊長が倒れたら、近くの隊員が指揮を引き継ぐ
     const A = sqAlive(s).filter(m => m !== e); let nb = null, nd = 1e9;
     for (const m of A) { const d = Math.hypot(m.s.position.x - e.s.position.x, m.s.position.z - e.s.position.z) + (m.wounded ? 20 : 0); if (d < nd) { nd = d; nb = m; } }
-    s.leader = null; if (nb) SQ.pending.push({ t: time + 1.6, fn: () => { if (isUp(nb) && !isUp(s.leader)) setLeader(s, nb, true); } });
+    s.leader = null; s.needRelief = time; if (nb) SQ.pending.push({ t: time + 1.6, fn: () => { if (isUp(nb) && !isUp(s.leader)) setLeader(s, nb, true); } });
   }
   // 近くの隊員が名前を呼ぶ／「うそでしょ…」「仇とるから！」
   let mate = null, md = 16;
@@ -9731,6 +9742,7 @@ function updateSquads(dt) {
   if (!SQUAD_ON) return;
   SQ.callT -= dt;
   if (PLANE.intro) return;   // 静かな機内（奇襲の前）は掛け声なし
+  squadSupport(dt);
   for (let i = SQ.pending.length - 1; i >= 0; i--) if (time >= SQ.pending[i].t) { const f = SQ.pending[i].fn; SQ.pending.splice(i, 1); f(); }
   if ((SQ.tickT -= dt) > 0) return;
   SQ.tickT = 0.5;
@@ -9767,10 +9779,223 @@ function updateSquads(dt) {
     }
   }
 }
+// ---- 分隊の呼び名と、分隊どうしの助け合い ----
+//   呼び名（紅椿隊・白鷺隊…）は分隊表・頭上の札・照準の名札に出る。役目の名前（近接分隊など）は s.role に残す
+//   助け合い：押されている隣の隊への援護（弓は相手の敵を狙い、近接は駆けつける）／負傷した仲間に肩を貸して救護所へ下げる／
+//   側面への迂回／隊長を失った隊の救援／減った隊への増援。秘書課 西園寺 すみれは侍大将として青組の2〜3隊に采配（前進・堅守・援護・迂回）
+const SQ_NICKS = ['紅椿隊', '白鷺隊', '山吹隊', '藤波隊', '若竹隊', '撫子隊', '桔梗隊', '菖蒲隊', '白百合隊', '牡丹隊', '楓隊', '朝顔隊', '竜胆隊', '萩隊',
+  '鈴蘭隊', '青葉隊', '霞隊', '雲雀隊', '千鳥隊', '翡翠隊', '紫苑隊', '水仙隊', '菫隊', '紅葉隊', '桜花隊', '月見隊', '小百合隊', '朧月隊'];
+const SQ_ORD = { support: '援護', flank: '迂回', relieve: '救援', advance: '前進', hold: '堅守' };
+const SQ_NOORD = /guard|den/;   // 近衛・伝令は命令を受けない
+const sqDisp = s => s.role && s.role !== s.name ? `${s.name}（${s.role}）` : s.name;
+const sqOrd = s => s && s.order && s.order.until > time ? s.order : null;
+const sqLead = s => isUp(s.leader) ? s.leader : sqAlive(s)[0];
+function nameSquads() {   // 面ごとに決まった並び（毎波で名前が変わらない）
+  const pool = SQ_NICKS.slice(); let h = 7;
+  for (const c of String(builtStage) + (CASTLE.atk || FORT.atk ? 'atk' : '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  for (let i = pool.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = h % (i + 1); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  let n = 0;
+  for (const t of ['blue', 'orange']) for (const s of squads[t]) {
+    s.role = s.name; s.name = pool[n++ % pool.length];
+    s.order = null; s.pushCd = 0; s.flankCd = time + 25 + Math.random() * 20; s.reinfCd = 0; s.escCd = 0; s.needRelief = 0; s.cmd = false;
+  }
+  SQ.supT = 3; SQ.cmdT = 12; SQ.cmdHello = false; ojou.cmd = [];
+  if (!SQ.ord) SQ.ord = [];
+}
+function sqOrder(s, type, o = {}) {
+  s.order = Object.assign({ type, until: time + (o.dur || 16), t0: time }, o);
+  for (const m of sqAlive(s)) m.regroup = false;
+  SQ.ord.push({ t: +time.toFixed(1), team: s.team, s: s.name, type, to: o.to ? o.to.name : null, by: o.by || 'auto' });
+  if (SQ.ord.length > 60) SQ.ord.shift();
+}
+const sqMoveOK = () => !PLANE.on;   // 機内は狭いので動きの命令は出さない（掛け声だけ）
+const sqFlankOK = () => !(CASTLE.on || FORT.on || PLANE.on || MTN.on || DUAL.on || BEACH.on);   // 地形の込み入った面では迂回しない
+const sqFree = m => isUp(m) && !m.wounded && !m.perch && !m.lad && !m.onFloor && !m.climb && !m.seated && !m.ramCrew && !m.guard && !m.special && !m.defending && !m.returning && !m.escort && !m.silenced;
+function medPointOf(e) { const mp = (MECH.on && e.team === 'blue') ? mechMedCenter() : medPost[e.team]; return mp || null; }
+// 命令・後送で今フレームの動きが決まるとき true
+function squadOrderMove(e, dt) {
+  if (!SQUAD_ON) return false;
+  if (e.escort) return escortMove(e, dt);
+  const s = e.sq, o = sqOrd(s);
+  if (!o || o.x === undefined || !sqMoveOK() || !sqFree(e) || !['approach', 'advance'].includes(e.state) || (o.y !== undefined && Math.abs(e.baseY - o.y) > 0.6)) return false;
+  const p = e.s.position, arch = e.kind === 'archer';
+  if (arch && (o.type === 'support' || o.type === 'relieve') && isUp(o.foe) && e.tgt !== o.foe && Math.hypot(o.foe.s.position.x - p.x, o.foe.s.position.z - p.z) < 38) { e.tgt = o.foe; e.tgtT = 1.5; }   // 援護射撃：隣の隊に迫る敵を狙う
+  const tp = e.tgt ? tgtPos(e.tgt) : null, td = tp ? Math.hypot(tp.x - p.x, tp.z - p.z) : 1e9;
+  if (td < (arch ? 24 : o.type === 'hold' ? 6 : 7.5)) return false;   // 交戦距離に入ったら各自の判断
+  if (o.done && o.done.has(e)) return false;
+  const i = Math.max(0, s.members.indexOf(e)), a = i * 2.4 + (e.team === 'blue' ? 0 : Math.PI), r = 1.6 + (i % 3) * 1.4;
+  const gx = o.x + Math.cos(a) * r, gz = o.z + Math.sin(a) * r, d = Math.hypot(gx - p.x, gz - p.z);
+  if (o.type === 'hold') {
+    if (d < 4) { if (tp) e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); return !arch; }   // 持ち場で構えて待つ（弓は撃ってよい）
+  } else if (d < (o.type === 'flank' ? 3 : 5)) { (o.done || (o.done = new Set())).add(e); return false; }
+  steer(e, gx, gz, e.speed * (o.type === 'support' || o.type === 'relieve' ? 1.2 : o.type === 'flank' ? 1.15 : 1.05), dt);
+  return true;
+}
+function endEscort(e) { const w = e.escort; if (w && w.escortBy === e) w.escortBy = null; e.escort = null; e.tagKey = ''; }
+function escortMove(e, dt) {   // 負傷した仲間の横（敵の側）に付いて救護所まで下がる
+  const w = e.escort, p = e.s.position;
+  if (!isUp(e) || !isUp(w) || !w.wounded || time > e.escortT || e.wounded || e.perch || e.lad || e.onFloor) { endEscort(e); return false; }
+  const wp = w.s.position, mp = medPointOf(w);
+  if (!mp || Math.hypot(mp[0] - wp.x, mp[1] - wp.z) < 5.5 || w.medBy) { endEscort(e); return false; }
+  for (const o of enemies) if (o.team !== e.team && isUp(o) && !o.special && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 2.6) return false;   // 目の前の敵には応戦
+  const ang = Math.atan2(mp[0] - wp.x, mp[1] - wp.z), sd = e.escSide || 1;
+  const gx = wp.x + Math.cos(ang) * 0.85 * sd, gz = wp.z - Math.sin(ang) * 0.85 * sd, d = Math.hypot(gx - p.x, gz - p.z);
+  if (e.state !== 'approach' && e.state !== 'advance') { e.state = 'approach'; e.t = 0; npcTint(e, 0); }
+  e.cover = null;
+  if (d > 0.3) steer(e, gx, gz, e.speed * (d > 3 ? 1.3 : 0.85), dt);
+  e.faceWant = d > 1.5 ? Math.atan2(gx - p.x, gz - p.z) : ang;
+  return true;
+}
+function squadSupport(dt) {
+  if ((SQ.supT -= dt) > 0) return;
+  SQ.supT = 1;
+  const info = new Map();
+  for (const t of ['blue', 'orange']) for (const s of squads[t]) {
+    const A = sqAlive(s); if (!A.length) { s.order = null; continue; }
+    const sp = squadSpot(s), L = sqLead(s); let fx = 0, fz = 0, fn = 0, near = null, nd = 1e9;
+    for (const o of enemies) {
+      if (o.team === t || !isUp(o) || o.special) continue;
+      const d = Math.hypot(o.s.position.x - sp.x, o.s.position.z - sp.z);
+      if (d < 22) { fx += o.s.position.x; fz += o.s.position.z; fn++; }
+      if (d < nd) { nd = d; near = o; }
+    }
+    info.set(s, { A, sp, L, y: L.baseY, fn, fx: fn ? fx / fn : 0, fz: fn ? fz / fn : 0, near, nd });
+  }
+  // 出ている命令の目標点を更新
+  for (const [s, I] of info) {
+    const o = sqOrd(s); if (!o) { s.order = null; continue; }
+    if (o.type === 'support' || o.type === 'relieve') { const J = info.get(o.to); if (!J) { s.order = null; continue; } o.x = J.sp.x; o.z = J.sp.z; o.y = J.y; o.foe = J.near && J.nd < 26 ? J.near : null; }
+    else if (o.type === 'advance') { if (!I.near) { s.order = null; continue; } const np = I.near.s.position; o.x = I.sp.x + (np.x - I.sp.x) * 0.6; o.z = I.sp.z + (np.z - I.sp.z) * 0.6; o.y = I.y; }
+  }
+  const helper = (s, I, maxD) => {   // いちばん近い、手の空いている同じ組の隊
+    let best = null, bd = maxD;
+    for (const [y, J] of info) {
+      if (y === s || y.team !== s.team || SQ_NOORD.test(y.k) || sqOrd(y) || J.A.length < 2 || J.fn >= J.A.length) continue;
+      if (Math.abs(J.y - I.y) > 0.6 && !y.archers) continue;
+      const d = Math.hypot(J.sp.x - I.sp.x, J.sp.z - I.sp.z); if (d < bd) { bd = d; best = y; }
+    }
+    return best;
+  };
+  const say = (s, m, kind, cd, dly = 0) => SQ.pending.push({ t: time + dly, fn: () => { if (isUp(m)) sqCall(s, m, kind, cd, 1); } });
+  for (const [s, I] of info) {
+    if (SQ_NOORD.test(s.k)) continue;
+    const A = I.A;
+    // 押されている隊 → 隣の隊が援護射撃・駆けつけ
+    if (I.fn >= 3 && I.fn >= A.length * 1.5 && s.pushCd < time) {
+      const y = helper(s, I, 40);
+      if (y) { s.pushCd = time + 22; sqOrder(y, 'support', { to: s, dur: 15 }); say(y, sqLead(y), 'support', 12); say(s, pick(A), 'cover', 14, 1.8); }
+    }
+    // 隊長を失った隊 → 近くの隊が救援
+    if (s.needRelief && time - s.needRelief > 0.8) {
+      const y = helper(s, I, 45); s.needRelief = 0;
+      if (y) { sqOrder(y, 'relieve', { to: s, dur: 14 }); say(y, sqLead(y), 'relieve', 10, 0.4); }
+    }
+    // 減った隊 → 人数に余裕のある隊から1〜2名の増援
+    if (A.length <= 2 && s.joined >= 4 && s.reinfCd < time && I.fn > 0) {
+      let donor = null, dd = 50;
+      for (const [y, J] of info) {
+        if (y === s || y.team !== s.team || SQ_NOORD.test(y.k) || J.A.length < 5) continue;
+        const d = Math.hypot(J.sp.x - I.sp.x, J.sp.z - I.sp.z); if (d < dd) { dd = d; donor = y; }
+      }
+      if (donor) {
+        const pool = info.get(donor).A.filter(m => m !== donor.leader && sqFree(m) && Math.abs(m.baseY - I.y) < 0.6 && (m.kind === 'archer') === !!s.archers || (m !== donor.leader && sqFree(m) && Math.abs(m.baseY - I.y) < 0.6 && !s.archers));
+        const mv = pool.slice(0, Math.min(2, info.get(donor).A.length - 3));
+        for (const m of mv) { donor.members.splice(donor.members.indexOf(m), 1); s.members.push(m); s.joined++; m.sq = s; m.reinfT = time + 14; m.regroup = false; m.tagKey = ''; }
+        if (mv.length) { s.reinfCd = time + 40; say(s, mv[0], 'reinf', 20, 0.3); SQ.ord.push({ t: +time.toFixed(1), team: s.team, s: s.name, type: 'reinf', to: donor.name, by: 'auto', n: mv.length }); }
+      }
+    }
+    // 迂回：数で押せている近接の隊は側面へ回る
+    if (sqFlankOK() && !s.archers && !sqOrd(s) && s.flankCd < time && A.length >= 4 && I.fn >= 2 && I.fn <= A.length && I.nd > 9 && I.nd < 30) {
+      s.flankCd = time + 50; flankOrder(s, I, Math.random() < 0.5 ? 1 : -1, 'auto');
+      say(s, sqLead(s), 'flank', 20);
+    }
+    // 負傷した仲間に肩を貸して救護所へ
+    if (s.escCd < time && I.fn > 0) {
+      const w = A.find(x => x.wounded && !x.woundFight && !x.escortBy && !x.medBy && medPointOf(x) && Math.hypot(medPointOf(x)[0] - x.s.position.x, medPointOf(x)[1] - x.s.position.z) > 10);
+      if (w) {
+        let mate = null, md = 12;
+        for (const m of A) {
+          if (m === w || !sqFree(m) || !['approach', 'advance', 'idle'].includes(m.state) || Math.abs(m.baseY - w.baseY) > 0.5) continue;
+          const d = Math.hypot(m.s.position.x - w.s.position.x, m.s.position.z - w.s.position.z); if (d < md) { md = d; mate = m; }
+        }
+        if (mate) {
+          s.escCd = time + 20; mate.escort = w; mate.escortT = time + 18; mate.escSide = Math.random() < 0.5 ? 1 : -1; w.escortBy = mate; mate.tagKey = '';
+          say(s, mate, 'carry', 15); SQ.ord.push({ t: +time.toFixed(1), team: s.team, s: s.name, type: 'carry', who: mate.prof.name, hurt: w.prof.name, by: 'auto' });
+        }
+      }
+    }
+  }
+  ojouCommand(info);
+}
+function flankOrder(s, I, side, by, dur = 12) {   // 敵の塊の横（side=+1 右、-1 左。組の正面から見て）
+  const fw = s.team === 'blue' ? -1 : 1, rx = -fw;   // 青の正面は -z、右手は +x
+  const cx = I.fn ? I.fx : I.near.s.position.x, cz = I.fn ? I.fz : I.near.s.position.z;
+  sqOrder(s, 'flank', { x: cx + rx * side * 10, z: cz - fw * 2, y: I.y, side, dur, by });
+}
+// 侍大将 西園寺 すみれの采配（青組の2〜3隊）
+const OJOU_ORD = {
+  support: ['{a}、{b}を援護なさい。', '{a}、{b}が押されておりますわ。お助けなさい。', '{a}は{b}の援護に回りなさい。急いで。'],
+  advance: ['{a}、前へお進みなさい。足並みを揃えて。', '{a}、押し上げなさい。今が好機ですわ。', '{a}、前進なさい。わたくしが見ておりますわ。'],
+  hold: ['{a}、その場で持ちこたえなさい。無理はなさらないで。', '{a}、陣を崩さずにお待ちなさい。', '{a}、今は堅く守りなさい。焦りは禁物ですわ。'],
+  flank: ['{a}は{s}から回り込みなさい。{b}は正面を押さえて。', '{a}、{s}手へお回りなさい。{b}はそのまま前を。'],
+  hello: ['{a}、本日はわたくしの采配に従っていただきますわ。', '侍大将として申し付けます。{a}、わたくしに続きなさい。'],
+};
+function ojouOrderSay(kind, rep) {
+  const L = OJOU_ORD[kind], text = L[(Math.random() * L.length) | 0].replace(/\{(\w)\}/g, (_, k) => rep[k] || '');
+  SQ.ojouLast = { t: +time.toFixed(1), kind, text }; SQ.ord.push({ t: +time.toFixed(1), team: 'blue', type: 'ojou_' + kind, text, by: 'ojou' });
+  const e = ojou.e; if (!e) return;
+  Talk.as(e, () => {
+    Voice.say(text, e.prof, 1); subtitle(text);
+    const el = $('subtitle'); if (el) el.textContent = `西園寺すみれ「${text}」`;
+  });
+}
+function ojouCommand(info) {
+  const e = ojou.e;
+  if (!e || !isUp(e) || !SQUAD_ON || PLANE.on) return;
+  let C = (ojou.cmd || []).filter(s => info.get(s));
+  if (C.length < 2) {   // 麾下の隊を選ぶ（二正面では西園寺の山城の隊から）
+    let cand = squads.blue.filter(s => !SQ_NOORD.test(s.k) && info.get(s) && info.get(s).A.length >= 1);
+    if (DUAL.on) { const sc = cand.filter(s => /^s_/.test(s.k)); if (sc.length >= 2) cand = sc; }
+    cand.sort((a, b) => info.get(b).A.length - info.get(a).A.length);
+    for (const s of squads.blue) s.cmd = false;
+    C = cand.slice(0, 3); for (const s of C) s.cmd = true; ojou.cmd = C;
+    if (C.length < 2) return;
+    if (!SQ.cmdHello) { SQ.cmdHello = true; SQ.cmdT = 9; ojouOrderSay('hello', { a: C.map(s => s.name).join('、') }); popup(`侍大将 西園寺すみれ：${C.map(s => s.name).join('・')}を指揮`); return; }
+  }
+  if ((SQ.cmdT -= 1) > 0) return;
+  SQ.cmdT = 15 + Math.random() * 8;
+  const I = s => info.get(s), names = L => L.map(s => s.name).join('、');
+  const engaged = C.filter(s => I(s).fn > 0), foesNear = new Set();
+  for (const s of C) for (const o of enemies) if (o.team !== 'blue' && isUp(o) && !o.special && Math.hypot(o.s.position.x - I(s).sp.x, o.s.position.z - I(s).sp.z) < 26) foesNear.add(o);
+  const own = C.reduce((a, s) => a + I(s).A.length, 0), anyFoe = C.some(s => I(s).near);
+  if (!anyFoe) return;
+  const pushed = C.filter(s => I(s).fn >= 3 && I(s).fn >= I(s).A.length * 1.3).sort((a, b) => I(b).fn - I(a).fn)[0];
+  const mv = sqMoveOK(), dur = 18;
+  if (pushed) {
+    const H = C.filter(s => s !== pushed && I(s).A.length >= 1 && I(s).fn < I(s).A.length * 1.3);
+    if (H.length) {
+      if (mv) for (const s of H) sqOrder(s, 'support', { to: pushed, dur, by: 'ojou' });
+      pushed.pushCd = time + 20; ojouOrderSay('support', { a: names(H), b: pushed.name }); return;
+    }
+  }
+  const melee = C.filter(s => !s.archers && I(s).A.length >= 3 && I(s).near && I(s).nd < 32 && I(s).nd > 8);
+  if (mv && sqFlankOK() && own >= foesNear.size * 1.3 && melee.length && C.length >= 2 && Math.random() < 0.55) {
+    const f = melee[0], side = Math.random() < 0.5 ? 1 : -1, rest = C.filter(s => s !== f);
+    flankOrder(f, I(f), side, 'ojou', dur); f.flankCd = time + 40;
+    for (const s of rest) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
+    ojouOrderSay('flank', { a: f.name, b: names(rest), s: side > 0 ? '右' : '左' }); return;
+  }
+  if (foesNear.size > own * 1.2 && engaged.length) {
+    if (mv) for (const s of C) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
+    ojouOrderSay('hold', { a: names(C) }); return;
+  }
+  if (mv) for (const s of C) { const np = I(s).near.s.position; sqOrder(s, 'advance', { x: I(s).sp.x + (np.x - I(s).sp.x) * 0.6, z: I(s).sp.z + (np.z - I(s).sp.z) * 0.6, y: I(s).y, dur: 16, by: 'ojou' }); }
+  ojouOrderSay('advance', { a: names(C) });
+}
 // 分隊の一覧（秘書の戦況報告・一時停止メニュー）
 function squadRows(t) {
-  const rows = squads[t].map(s => ({ name: s.name, n: sqAlive(s).length, lost: s.lost, lead: isUp(s.leader) ? s.leader.prof.name : '' }));
-  const sp = (name, list) => rows.push({ name, n: list.filter(isUp).length, lost: null, lead: '' });
+  const rows = squads[t].map(s => ({ name: sqDisp(s), role: s.role || s.name, n: sqAlive(s).length, lost: s.lost, lead: isUp(s.leader) ? s.leader.prof.name : '' }));
+  const sp = (name, list) => rows.push({ name, role: name, n: list.filter(isUp).length, lost: null, lead: '' });
   if (t === 'blue') { sp('伝令', runners.map(R => R.e)); sp('秘書課', [sec.e, sec2.e, ojou.e, ...aides.map(a => a.e)]); }
   sp('医務班', medics[t].map(m => m.e));
   return rows;
@@ -9783,8 +10008,8 @@ function squadTable(t, withLead) {
 function squadTableDual(t, withLead) {
   const rows = squadRows(t);
   const groups = t === 'blue'
-    ? [['王の城', r => r.name.startsWith('王')], ['西園寺の山城', r => r.name.startsWith('西園寺')], ['本陣', r => !r.name.startsWith('王') && !r.name.startsWith('西園寺')]]
-    : [['城攻め', r => r.name.startsWith('城')], ['山攻め', r => r.name.startsWith('山')], ['その他', r => !r.name.startsWith('城') && !r.name.startsWith('山')]];
+    ? [['王の城', r => r.role.startsWith('王')], ['西園寺の山城', r => r.role.startsWith('西園寺')], ['本陣', r => !r.role.startsWith('王') && !r.role.startsWith('西園寺')]]
+    : [['城攻め', r => r.role.startsWith('城')], ['山攻め', r => r.role.startsWith('山')], ['その他', r => !r.role.startsWith('城') && !r.role.startsWith('山')]];
   const tm = t === 'blue' ? '<b style="color:#7cc0ff">青組</b>' : '<b style="color:#ffa040">橙組</b>';
   let html = '<div>' + tm;
   for (const [title, pred] of groups) {
@@ -9851,7 +10076,8 @@ const TAG_R = 20, TAG_MAX = 14;
 function tagLabel(e) {
   const p = (e.prof.name || '').split(' '), nm = p.length >= 2 ? p.slice(0, -2).concat(p.slice(-2).join('')).join(' ') : e.prof.name;
   if (e.seated && PLANE.intro) return nm;   // 奇襲の前：乗客として名前だけ
-  const pre = e.sq ? e.sq.name + (e.sq.leader === e ? '長' : '') : (e.runner || e.saiRunner) ? '伝令' : e.medic ? '医務班' : '';
+  const o = e.sq && sqOrd(e.sq), mk = e.escort ? '【後送】' : e.reinfT > time ? '【増援】' : o ? '【' + SQ_ORD[o.type] + '】' : '';
+  const pre = e.ojou ? '侍大将' : e.sq ? e.sq.name + (e.sq.leader === e ? '長' : '') + mk : (e.runner || e.saiRunner) ? '伝令' : e.medic ? '医務班' : '';
   return (pre ? pre + ' ' : '') + nm;
 }
 function makeTag(e, text) {
@@ -9871,7 +10097,7 @@ function updateTags() {
     if (e.tag) e.tag.visible = false;
     if (e.state === 'down') continue;
     const d = Math.hypot(e.s.position.x - camera.position.x, e.s.position.z - camera.position.z);
-    if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic)) tagNear.push([d, e]);
+    if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic || e.ojou)) tagNear.push([d, e]);
   }
   tagNear.sort((a, b) => a[0] - b[0]);
   for (let i = 0; i < Math.min(TAG_MAX, tagNear.length); i++) {
@@ -12077,6 +12303,7 @@ function updateEnemies(dt) {
     if (e.noClimbT > 0) e.noClimbT -= dt;
     if (!e.lad && e.onFloor) maybeDescend(e);
     if (e.lad) npcLadder(e, dt);
+    else if (squadOrderMove(e, dt)) { /* 分隊の命令（援護・迂回・救援・前進・堅守）／負傷者の後送 */ }
     else if (squadRegroup(e, dt)) { /* 分隊：隊長のまわりへ寄る */ }
     else if (!e.tgt) {
       // 敵がいない：青組はプレイヤーの近くに集まる
@@ -12679,7 +12906,7 @@ function updateTargetInfo(dt) {
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
     const tm = disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
-    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${t.sq.name}${t.sq.leader === t ? '・隊長' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.ojou || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
+    const html = (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
     el.style.opacity = Math.min(1, targetHold * 3);

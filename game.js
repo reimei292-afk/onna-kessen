@@ -330,33 +330,67 @@ const VoicePack = {
   },
   // 読み込みは同時 6 本まで（数百の mp3 を一度に取りに行くと、スマホでは失敗して無音になることがある）。失敗は一度だけやり直す
   load(fn, urgent) {
-    if (fn in this.buf || this.loading[fn]) return;
+    if (fn in this.buf) return;
+    if (this.loading[fn]) {   // 先読みの列に並んでいる：急ぎなら列の先頭へ
+      if (urgent) { const i = this.q.indexOf(fn); if (i > 0) { this.q.splice(i, 1); this.q.unshift(fn); } }
+      return;
+    }
     this.loading[fn] = true;
     if (urgent) this.q.unshift(fn); else this.q.push(fn);
     this.pump();
   },
   pump() {
-    while (this.inflight < 6 && this.q.length) {
-      const fn = this.q.shift(); this.inflight++;
+    while (this.inflight < 8 && this.q.length) {
+      const fn = this.q.shift(); this.inflight++; if (this.pq) this.pq--;
       const get = () => fetch('assets/voices/' + fn).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
         .then(ab => new Promise((res, rej) => Sfx.ctx.decodeAudioData(ab, res, rej)));
       get().catch(() => new Promise(r => setTimeout(r, 1500)).then(get))
-        .then(b => { this.buf[fn] = b; }, () => { this.buf[fn] = null; this.stats.failed++; })
+        .then(b => { this.buf[fn] = b; this.flush(fn); }, () => { this.buf[fn] = null; this.stats.failed++; this.flush(fn); })
         .finally(() => { this.inflight--; this.pump(); });
     }
+  },
+  // 読み込み待ちの台詞：1.5 秒以内に届けば鳴らす。届かなければ読み上げ（fb）に切り替える
+  wait: [],
+  defer(fn, dist, prio, rate, fb) {
+    this.wait.push({ fn, dist, prio, rate, fb, owner: Talk.cur, t: performance.now() }); this.stats.deferred = (this.stats.deferred || 0) + 1;
+    if (!this.waitT) this.waitT = setInterval(() => this.flush(null), 250);
+  },
+  flush(fn) {
+    const now = performance.now();
+    for (let i = this.wait.length - 1; i >= 0; i--) {
+      const w = this.wait[i], b = this.buf[w.fn], late = now - w.t > 1500;
+      if (b === undefined && !late) continue;
+      this.wait.splice(i, 1);
+      if (b && !late) { if (w.owner && w.owner.silenced && w.owner.state === 'down' && w.prio < 2) continue; Talk.as(w.owner, () => this.play(w.fn, w.dist, w.prio, w.rate)); this.stats.late = (this.stats.late || 0) + 1; }
+      else if (w.fb && w.fb.text) { Talk.as(w.owner, () => Voice.say(w.fb.text, w.fb.prof, w.prio)); this.stats.tts = (this.stats.tts || 0) + 1; }
+    }
+    if (!this.wait.length && this.waitT) { clearInterval(this.waitT); this.waitT = 0; }
+  },
+  // 戦場にいる娘の性格の戦闘の台詞を先に読み込む
+  pri: new Set(),
+  prioritize(pers) {
+    if (!this.ok || !this.man || !this.man[pers] || this.pri.has(pers) || !this.q.length) return;
+    this.pri.add(pers);
+    const want = new Set();
+    for (const c of ['hit', 'defeat', 'attack', 'spot', 'kill', 'allydown', 'cover', 'push', 'fall', 'order_m', 'order_a', 'lead']) for (const l of this.man[pers][c] || []) want.add(l.files[Math.min(1, l.files.length - 1)]);   // まず言い方1通りだけ
+    const a = [], b = null; for (const f of this.q) if (want.has(f)) a.push(f);
+    const pf = Math.min(this.pq || 0, this.q.length);   // すでに優先した分の後ろへ
+    const head = this.q.slice(0, pf).filter(f => !want.has(f)), tail = this.q.slice(pf).filter(f => !want.has(f));
+    this.q = head.concat(a, tail); this.pq = head.length + a.length; void b;
   },
   preload() {
     if (!this.ok) return;
     for (const k in this.man) for (const c in this.man[k]) { if (c.startsWith('call_')) continue; for (const l of this.man[k][c]) for (const f of l.files) this.load(f); }   // 名前呼び（call_）はその娘が出たときに読む
     this.load('cheer_kill_1_1.mp3');   // 陽気な撃破の「やったー」
+    this.pri.clear(); this.pq = 0; for (const e of enemies) if (e.prof && e.prof.pers) this.prioritize(e.prof.pers);
   },
   // true = 収録音声で処理した（再生した・混雑で省略した）／false = フォールバックが必要
-  play(fn, dist, prio, rate = 1) {
+  play(fn, dist, prio, rate = 1, fb = null) {
     if (!this.ok || !fn) return false;
     const b = this.buf[fn];
     if (b === null) return false;
     this.stats.req++;
-    if (b === undefined) { this.load(fn, true); return prio < 2; }
+    if (b === undefined) { this.load(fn, true); if (prio < 2 || fb) { this.defer(fn, dist, prio, rate, fb); return true; } return false; }
     const now = performance.now(), conv = !!Talk.cur && (menuOpen || prio >= 1) && dist < 12;
     const k = clamp(1 - dist / 60, 0.12, 1);
     if (prio < 2 && !conv) {
@@ -373,12 +407,14 @@ const VoicePack = {
     src.start(); this.stats.played++;
     return true;
   },
-  say(pers, kind, i, vv, dist, prio) {
+  say(pers, kind, i, vv, dist, prio, fb = null) {
     const L = this.man && this.man[pers] && this.man[pers][kind];
     const ent = L && L[i];
     if (!ent) return false;
     // 言い方の揺れ（3通り）から毎回選ぶ。声の個性は再生速度の個体差（vv）で付ける
-    return this.play(ent.files[(Math.random() * ent.files.length) | 0], dist, prio, VV_RATE[vv] || 1);
+    let fn = ent.files[(Math.random() * ent.files.length) | 0];
+    if (!this.buf[fn]) { const ok = ent.files.find(f => this.buf[f]); if (ok) fn = ok; else if (ent.files.length > 1) fn = ent.files[1]; }   // 読み込み済みの言い方を使う（無ければ先に読む1通り）
+    return this.play(fn, dist, prio, VV_RATE[vv] || 1, fb);
   },
   extra(kind, i) {
     const L = this.man && this.man._extra && this.man._extra[kind];
@@ -8641,7 +8677,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -9319,7 +9355,7 @@ function npcSay0(e, kind, prio) {
   if (kind === 'kill' && e.prof && e.prof.pers === '陽気' && VoicePack.buf && VoicePack.buf['cheer_kill_1_1.mp3']) {
     if (VoicePack.play('cheer_kill_1_1.mp3', d, Math.max(prio, 1), 1)) return;
   }
-  if (VoicePack.say(e.prof.pers, kind, i, e.prof.vv, d, prio)) return;
+  if (VoicePack.say(e.prof.pers, kind, i, e.prof.vv, d, prio, { text: lines[i], prof: e.prof })) return;
   Voice.say(lines[i], e.prof, prio);
 }
 
@@ -9474,6 +9510,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (opt.aide) Object.assign(prof, { name: opt.aide.name, pers: opt.aide.pers, cm: opt.aide.cm, vv: opt.aide.vv });
   if (opt.ojou) Object.assign(prof, { name: ojou.name, pers: '冷静', cm: 158, vv: 0 });
   const P = PERS[prof.pers];
+  VoicePack.prioritize(prof.pers);
   if (captain) prof.name = '組頭 ' + prof.name;
   const figH = prof.cm / 100;
   const mat = spriteMat(g.front.tex), mats = [mat];

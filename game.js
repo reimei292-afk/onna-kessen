@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -8701,6 +8701,13 @@ const EXTRA_GIRLS = {
   girl23: { type: 'mob', anyRole: true, prof: { name: '桐谷 理紗', pers: '冷静', cm: 160, vv: 0, pitch: 0.9 } },     // 眼鏡・冷静で知的
   girl24: { type: 'mob', anyRole: true, prof: { name: '日比野 夏海', pers: '陽気', cm: 165, vv: 2, pitch: 1.45 } },  // ごく短い髪・日焼け・元気
   girl25: { type: 'mob', anyRole: true, prof: { name: '雨宮 小夜', pers: '臆病', cm: 157, vv: 1, pitch: 1.2 } },     // 横の三つ編み・物静か
+  // v6：新しい兵の娘 6人（正面・横・斜め・後ろの写真。両軍の通常の兵として全ステージに出る）
+  girl26: { type: 'mob', anyRole: true, prof: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1, pitch: 1.15 } },  // 夜会巻き・腰に手・自信家
+  girl27: { type: 'mob', anyRole: true, prof: { name: '小鳥遊 ここな', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
+  girl28: { type: 'mob', anyRole: true, prof: { name: '朝倉 ひなた', pers: '陽気', cm: 158, vv: 2, pitch: 1.45 } },  // 両手ピース・ポニーテール・元気いっぱい
+  girl29: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
+  girl30: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
+  girl31: { type: 'mob', anyRole: true, prof: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0, pitch: 0.95 } },    // 片手ピース・ポニーテール・落ち着いた長身
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {
@@ -9100,6 +9107,7 @@ const Mo = MOTION ? (() => {
     },
     // 倒れた体の接地影（関節ごとの柔らかい影を1枚の形にまとめる）。e.s の座標（体の向き＝fallYaw）で作る
     contactAO(e) {
+      if (!Number.isFinite(e.s.rotation.y)) e.s.rotation.y = Number.isFinite(e.fallYaw) ? e.fallYaw : 0;
       if (!isFinite(e.fallYaw)) e.fallYaw = e.s.rotation.y;
       const P = e.mo.pose, h = e.figH, ry = e.fallYaw - e.s.rotation.y, cr = Math.cos(ry), sr = Math.sin(ry), pts = [['hips', 0.17, 0.8], ['chest', 0.16, 0.85], ['head', 0.1, 0.7], ['lKnee', 0.075, 0.55], ['rKnee', 0.075, 0.55],
         ['lAnkle', 0.06, 0.45], ['rAnkle', 0.06, 0.45], ['lEl', 0.06, 0.4], ['rEl', 0.06, 0.4], ['lSh', 0.08, 0.5], ['rSh', 0.08, 0.5]];
@@ -11655,6 +11663,8 @@ function animateNpc(e, dt, lean) {
   if (e.passive) face = e.faceWant;
   else if (e.tgt && (!moving || e.state === 'backoff')) { const tp = tgtPos(e.tgt); face = Math.atan2(tp.x - p.x, tp.z - p.z); }
   else if (sv > 0.35) face = Math.atan2(vx, vz);
+  if (!Number.isFinite(e.s.rotation.y)) e.s.rotation.y = Number.isFinite(face) ? face : 0;   // 向きが未設定（faceWant 無しの passive 等）でも NaN にしない（NaN だと板が消え、倒れた後の接地影も壊れる）
+  if (!Number.isFinite(face)) face = e.s.rotation.y;
   e.face = face;
   e.s.rotation.y += angDiff(e.s.rotation.y, face) * Math.min(1, dt * 6);
   // ---- 見え方の選択：カメラと娘の向きの角度で 正面／横／後ろ（境目は少し粘る） ----

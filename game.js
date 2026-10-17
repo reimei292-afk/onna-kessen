@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -8885,6 +8885,36 @@ const Mo = MOTION ? (() => {
       C[key] = { loop: 0, dur: src.dur || 1, n: src.n, f: src.f instanceof Float32Array ? src.f : new Float32Array(src.f) };
     }
   }
+  // ユーザー提供の Mixamo の倒れる動き（lib/death_fbx.js）：関節位置と曲線だけ。モデルは表示しない
+  const FX = window.DEATH_FBX && window.DEATH_FBX.f && window.DEATH_FBX.n > 8 && !/[?&]fbxdeath=0/.test(location.search) ? window.DEATH_FBX : null;
+  if (FX) { C.deathFbx = { loop: 0, dur: FX.dur, n: FX.n, f: new Float32Array(FX.f) }; FX.cv = {}; for (const k in FX.curves) FX.cv[k] = Float32Array.from(FX.curves[k]); }
+  const fxAt = (k, u) => { const a = FX.cv[k], x = clamp(u, 0, 1) * (a.length - 1), i = Math.floor(x), j = Math.min(a.length - 1, i + 1); return a[i] + (a[j] - a[i]) * (x - i); };
+  // FBX の曲線で写真の板を倒す：前後の傾き th・横の傾き roll（倒れる向きの座標）、腰の沈み→写真の縦の縮み、足の位置（よろめきの踏み替え）、脚の跳ね上げ→小さな弾み
+  function fallSpriteFbx(e, D, bounce, H, r, ry) {
+    const th = clamp(D.th, -0.15, 1.5), rl = clamp(D.roll, -0.6, 0.6);
+    const ax = Math.sin(rl), ay0 = Math.cos(th) * Math.cos(rl), az = Math.sin(th) * Math.cos(rl);
+    const cr = Math.cos(ry), sr = Math.sin(ry);
+    let ux = ax * cr + az * sr, uy = ay0, uz = -ax * sr + az * cr;
+    const ul = Math.hypot(ux, uy, uz); ux /= ul; uy /= ul; uz /= ul;
+    e.fallTh = th;
+    const p = e.s.position, wx = camera.position.x - p.x, wy = camera.position.y - (p.y + 0.4), wz = camera.position.z - p.z;
+    let cx = wx * Math.cos(r) - wz * Math.sin(r), cy = wy, cz = wx * Math.sin(r) + wz * Math.cos(r);
+    const d = cx * ux + cy * uy + cz * uz; cx -= d * ux; cy -= d * uy; cz -= d * uz;
+    let cl = Math.hypot(cx, cy, cz); if (cl < 1e-3) { cx = 0; cy = 1; cz = 0; cl = 1; }
+    cx /= cl; cy /= cl; cz /= cl;
+    const xx = uy * cz - uz * cy, xy = uz * cx - ux * cz, xz = ux * cy - uy * cx;
+    _fm.set(xx, ux, cx, 0, xy, uy, cy, 0, xz, uz, cz, 0, 0, 0, 0, 1);
+    e.tilt.quaternion.setFromRotationMatrix(_fm);
+    if (e.fallSX0 == null) { e.fallSX0 = e.bb.scale.x; e.fallSY0 = e.bb.scale.y; }
+    const sinkK = clamp((D.hip0 - D.hipY) / Math.max(0.1, D.hip0 - 0.15), 0, 1);   // 膝が抜けて腰が落ちた量
+    e.bb.scale.x = e.fallSX0; e.bb.scale.y = e.fallSY0 * (1 - 0.22 * sinkK * Math.max(0, Math.cos(th)));
+    const lx = (D.px * cr + D.pz * sr) * H, lz = (-D.px * sr + D.pz * cr) * H;
+    const w = Math.abs(e.bb.scale.x), h = Math.abs(e.bb.scale.y), bx = e.bb.position.x;
+    let minY = 0;
+    for (const qx of [bx - w / 2, bx + w / 2]) for (const qy of [0, h]) minY = Math.min(minY, xy * qx + uy * qy);
+    const kick = Math.max(0, D.kick - 0.1) * 0.05 * H;   // 倒れた瞬間に脚が跳ね上がる分の小さな弾み
+    e.tilt.position.set(lx, -minY + 0.01 + bounce + kick, lz);
+  }
   const GAITS = [C.walk, C.jog, C.run];
   // 速さによる前傾（度）：小走り・走りは計測値（待機姿勢との差 約6°/12°）を写真向けに控えめに、歩きはほぼ直立
   const LEAN_T = [1.5, 4.7, 8.5].map(d => d * Math.PI / 180);
@@ -9056,11 +9086,13 @@ const Mo = MOTION ? (() => {
     death(e, u) {
       const mo = e.mo, P = mo.pose;
       if (!isFinite(e.fallYaw)) e.fallYaw = e.s.rotation.y;
-      const clip = (e.fallBack ? C.deathBack : C.deathFwd) || C.deathFwd || C.deathBack || C.death;
+      const clip = FX ? C.deathFbx : (e.fallBack ? C.deathBack : C.deathFwd) || C.deathFwd || C.deathBack || C.death;
       sample(clip, u, P, 1, false);
       if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.fallYaw, e.figH); }
       const hx = P[I.hips], hy = P[I.hips + 1], hz = P[I.hips + 2];
       const th = Math.atan2(P[I.neck + 2] - hz, P[I.neck + 1] - hy);
+      if (FX && e.fallMir) { for (let j = 0; j < N3; j += 3) P[j] = -P[j]; if (mo.slot >= 0) { const p = e.s.position; write(mo.slot, P, p.x, p.y, p.z, e.fallYaw, e.figH); } }   // 左右を鏡写しにした倒れ方
+      if (FX) return { hx, hy, hz, th: fxAt('th', u), hr: clip.f[I.hips + 1], fbx: true, roll: fxAt('roll', u), hipY: fxAt('hipY', u), hip0: FX.cv.hipY[0], px: fxAt('px', u), pz: fxAt('pz', u), kick: fxAt('kick', u) };
       return { hx, hy, hz, th, hr: clip.f[I.hips + 1] };
     },
     // 倒れる写真：体の軸（腰→首）を人形と同じに傾け、板はできるだけカメラへ向ける（横から見れば画面の中で倒れ、
@@ -9068,6 +9100,7 @@ const Mo = MOTION ? (() => {
     fallSprite(e, D, bounce) {
       // 足を地面に置いたまま（写真は決して地面の下に入らない）：膝が抜ける間は写真を少し縦に縮め、上体が倒れるにつれて足元を支点に倒す
       const H = e.figH, r = e.s.rotation.y, ry = e.fallYaw - r;
+      if (D.fbx) return fallSpriteFbx(e, D, bounce, H, r, ry);
       // 写真は膝を曲げられないので、膝が抜けて腰が落ちる分も「足元を支点に傾く」角度に足し、いったん傾いたら起き上がらない（単調）
       const want = clamp(Math.max(D.th, 0), 0, 1.4);
       e.fallTh = (e.fallTh || 0) * 0.72 + want * 0.28;
@@ -9094,6 +9127,7 @@ const Mo = MOTION ? (() => {
       for (const qx of [bx - w / 2, bx + w / 2]) for (const qy of [0, h]) minY = Math.min(minY, xy * qx + uy * qy);
       e.tilt.position.set(lx, -minY + 0.01 + bounce, lz);
     },
+    get fbx() { return FX; },
     // 倒れ終わりの写真を 0.3 秒かけて薄くし、横たわった写真（down）へつなぐ
     ghost(e) {
       if (!e.fr) return;
@@ -9855,11 +9889,13 @@ function startLying(e) {
   if (MOTION && e.mo) Mo.ghost(e);
   // 体の向き（足→頭＝fallYaw）に e.s を回し、刺さった矢を胴のあたりに残す
   e.s.rotation.y = e.fallYaw; e.tilt.rotation.y = 0;
+  const FD = MOTION && e.mo && e.mo.D && e.mo.D.fbx ? e.mo.D : null;   // FBX：倒れ終わりの体の向き（横の傾き）と足の位置に合わせて横たわる
+  if (FD && !e.lieTilt) e.s.rotation.y = e.fallYaw + clamp(FD.roll, -0.6, 0.6);
   if (e.lieTilt) { e.s.rotation.order = 'YXZ'; e.s.rotation.x = -e.lieTilt; }   // 機内：頭の側が座席・肘掛けに乗る（または通路へ落ちる）
   e.s.updateMatrixWorld(true);
   for (const a of e.stuck) e.s.attach(a);
   e.lying = { t: 0 };
-  e.tilt.rotation.set(0, 0, 0); e.tilt.position.set(0, -0.04, e.figH * 0.5);
+  e.tilt.rotation.set(0, 0, 0); e.tilt.position.set(FD ? FD.px * e.figH : 0, -0.04, e.figH * (0.5 + (FD ? Math.max(0, FD.pz) * 0.5 : 0)));
   setFrame(e, fr, false); e.bb.position.x = 0;
   e.mat.transparent = true; e.mat.needsUpdate = true;
   // 地面に置く写真（真上から見たとき用）
@@ -9867,7 +9903,7 @@ function startLying(e) {
   const L = e.figH, H = clamp(e.figH * fr.hk, 0.45, 0.55);
   const dc = new THREE.Mesh(new THREE.PlaneGeometry(L, H), dm);
   dc.rotation.order = 'YXZ'; dc.rotation.set(-Math.PI / 2, Math.PI / 2, 0);   // 写真の左（頭）を体の頭の側へ
-  dc.position.set(0, 0.025, e.figH * 0.5); e.s.add(dc); e.decal = dc; e.mats.push(dm);
+  dc.position.set(e.tilt.position.x, 0.025, e.tilt.position.z); e.s.add(dc); e.decal = dc; e.mats.push(dm);
   if (e.seg) { dc.renderOrder = 2 + e.seg.layer; e.bb.renderOrder = 2 + e.seg.layer; dm.polygonOffsetFactor = -3 - e.seg.layer; }   // 重なった体：上の体を後から描く（ちらつかない）
   e.shadow.material = lieShadowMat; e.shadow.visible = true; e.shadow.position.set(0, 0.015, e.figH * 0.5); e.shadow.scale.set(0.6, 1, e.figH * 1.1);
   if (MOTION && e.mo) {   // 厚み：人形の形の凸凹した接地影＋太陽の影。写真は沈めず、地面の写真も少し浮かせる
@@ -9896,7 +9932,8 @@ function updateBodies(dt) {
     if (b.lean) { updateLean(b, 0); continue; }
     if (b.slump) { b.tilt.rotation.y = Math.atan2(camera.position.x - b.s.position.x, camera.position.z - b.s.position.z) - b.s.rotation.y; continue; }
     if (!ly) {
-      if (b.genericCorpse) {
+      if (MOTION && b.mo && b.mo.D && b.mo.D.fbx && b.state === 'down') Mo.fallSprite(b, b.mo.D, 0);   // FBX の倒れ終わりの姿のまま
+      else if (b.genericCorpse) {
         // 汎用遺体は倒れた姿勢を維持し、視点に合わせて胴体だけ少し向きを補正する。
         b.tilt.rotation.x = Math.PI * 0.43;
         b.tilt.rotation.y = Math.atan2(camera.position.x - b.s.position.x, camera.position.z - b.s.position.z) - b.s.rotation.y;
@@ -10413,6 +10450,12 @@ function killEnemy(e, byPlayer, from) {
   // 倒れる向き：攻撃してきた側から離れる方向
   const fx = from ? e.s.position.x - from.x : Math.sin(e.s.rotation.y), fz = from ? e.s.position.z - from.z : Math.cos(e.s.rotation.y);
   e.fallYaw = Math.atan2(fx, fz) + rand(-0.35, 0.35);
+  if (MOTION && Mo.fbx && Number.isFinite(e.s.rotation.y)) {   // FBX の倒れる向き（顔の向きから見た角度 rel、左右はランダムに鏡写し）が「攻撃から離れる向き」に近ければそれを使う
+    const away = Math.atan2(fx, fz), rel = Mo.fbx.rel, cand = [e.s.rotation.y + rel, e.s.rotation.y - rel];
+    const best = cand.reduce((a, b) => Math.abs(angDiff(a, away)) <= Math.abs(angDiff(b, away)) ? a : b);
+    if (Math.abs(angDiff(best, away)) < 1.25) e.fallYaw = best + rand(-0.12, 0.12);
+    e.fallMir = best === cand[1];
+  }
   if (PLANE.on) planeFall(e);
   if (e.driver && e.seated && !(e.seated && e.seated.kei)) { e.slump = { side: -0.6, fwd: 0.42 }; e.seated = null; e.face = CAR.yaw; }   // 運転手：ハンドルに突っ伏す
   else if (e.seated && e.seated.kei) {   // 浜の軽自動車：席に残したまま。そばで降ろすまで車と一緒
@@ -10433,7 +10476,7 @@ function killEnemy(e, byPlayer, from) {
   SITU.down(e);
   e.silenced = true;
   if (!e.quietDeath) kiaLabel(e.s.position, e.baseY + e.figH);
-  if (!e.frozen) spillBlood(e.s.position.x, e.baseY, e.s.position.z, rand(0.7, 1));
+  if (!e.frozen && !(MOTION && Mo.fbx)) spillBlood(e.s.position.x, e.baseY, e.s.position.z, rand(0.7, 1));   // FBX の倒れ方：血・傷は出さない
   if (e.team === 'orange') {
     const r = Math.random();
     if (r < 0.38) addPickup('arrow', e.s.position);
@@ -11951,14 +11994,15 @@ function updateEnemies(dt) {
         if (e.fluteMesh) e.fluteMesh.visible = false;
       }
       if (MOTION) {   // 膝が抜けて沈み、腰を支点に倒れる。中割りの写真を順に出す
-        const T = e.fallT2 || (e.fallT2 = rand(1.25, 1.45)), u = Math.min(1, e.t / T), D = Mo.death(e, u), H = e.figH;
+        const FXD = Mo.fbx, T = e.fallT2 || (e.fallT2 = FXD ? FXD.dur * rand(0.94, 1.04) : rand(1.25, 1.45)), u = Math.min(1, e.t / T), D = Mo.death(e, u), H = e.figH;
+        if (D.fbx && e.fallMir) { D.roll = -D.roll; D.px = -D.px; }
         e.mo.D = D;
         Mo.fallSprite(e, D, u >= 1 ? Math.sin(Math.min(1, (e.t - T) / 0.22) * Math.PI) * 0.015 : 0);   // 立った写真の大きさのまま倒す（横たわる絵に差し替えると一瞬巨大になる）
         const ry = e.fallYaw - e.s.rotation.y;
         const k = Math.min(1, u * 1.4);
         e.shadow.scale.set(0.75 + k * 0.3, 1, 0.6 + k * 0.6 * H); e.shadow.position.set(Math.sin(ry) * D.hz * H * 0.8, 0.02, Math.cos(ry) * D.hz * H * 0.8);
-        if (!e.thud && u >= 0.84) { e.thud = true; Sfx.impactBody(p.clone().setY(e.baseY + 0.2)); Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z)); puff(p.clone().setY(e.baseY + 0.2).addScaledVector(new V3(Math.sin(e.fallYaw), 0, Math.cos(e.fallYaw)), e.figH * 0.5), 0xc8b48a, 5, 0.8, 1.5, 0.8); }
-        if (e.t >= T + 0.25) toBodies(e);
+        if (!e.thud && u >= (Mo.fbx ? (Mo.fbx.events.impact || 1.8) / Mo.fbx.dur - 0.02 : 0.84)) { e.thud = true; Sfx.impactBody(p.clone().setY(e.baseY + 0.2)); Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z)); puff(p.clone().setY(e.baseY + 0.2).addScaledVector(new V3(Math.sin(e.fallYaw), 0, Math.cos(e.fallYaw)), e.figH * 0.5), 0xc8b48a, 5, 0.8, 1.5, 0.8); }
+        if (e.t >= T + (Mo.fbx ? 0.1 : 0.25)) toBodies(e);
         continue;
       }
       const T = e.fallT || 0.55, k = Math.min(1, e.t / T);

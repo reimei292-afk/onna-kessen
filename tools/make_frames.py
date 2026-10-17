@@ -15,7 +15,7 @@ A = os.path.join(ROOT, 'assets'); OUT = os.path.join(A, 'frames')
 FORCE = '--force' in sys.argv
 ONLY = None
 if '--only' in sys.argv: ONLY = set(sys.argv[sys.argv.index('--only') + 1].split(','))
-KINDS = ['front', 'kneel', 'down', 'front_diag', 'back_diag', 'top', 'low', 'side', 'back', 'walk', 'bow', 'stab', 'action', 'flute']
+KINDS = ['front', 'kneel', 'down', 'front_diag', 'back_diag', 'top', 'low', 'side', 'back', 'walk', 'bow', 'stab', 'action', 'flute', 'slump']
 KH = {'kneel': 0.7, 'side': 1.0, 'back': 1.0, 'walk': 0.985, 'bow': 1.0, 'stab': 0.93, 'flute': 1.0}
 MAXH = 900
 _session = None
@@ -93,6 +93,7 @@ def main():
             kind = k if k != 'action' else ('bow' if gid.startswith('archer') else 'stab')
             sc = ref * KH.get(kind, 1.0) / max(1, body)
             if k == 'down': sc = ref / max(1, im.width)   # 横たわった写真：頭から足までの長さ＝立ったときの身長
+            if k == 'slump': sc = ref * 0.9 / max(1, im.height)   # 手すりに崩れた写真：大きさはゲーム側で手すりの高さに合わせる
             w, h = max(1, round(im.width * sc)), max(1, round(im.height * sc))
             f = 1.0
             if h > MAXH: f = MAXH / h; w, h = max(1, round(w * f)), MAXH
@@ -107,11 +108,14 @@ def main():
             if d is None:
                 if k in ('side', 'kneel', 'front_diag', 'back_diag'): d = 1
                 elif k == 'down': d = -1   # 頭が左
+                elif k == 'slump': d = 1   # 左に脚、右へ上体が手すりの向こうに垂れる
                 elif k in ('back', 'walk', 'top', 'low'): d = 0
                 else:
                     t2 = head_top(a); hx = mean_x(a, t2, t2 + int(h * 0.1)); bb = a.getbbox() or (0, 0, w, h)
                     d = 1 if (bb[2] - hx) > (hx - bb[0]) else -1
             meta[gid][k] = {'hk': round(h / (ref * f), 4), 'aspect': round(w / h, 4), 'ax': round(ax, 4), 'dir': int(d), 'file': f'assets/frames/{gid}_{k}.png'}
+            if k == 'slump':   # 手すりの上端の位置（写真の下からの高さ比 ry・左からの位置比 rx）。manifest の slump_ry / slump_rx で上書き
+                meta[gid][k]['ry'] = float(fr.get('slump_ry', 0.55)); meta[gid][k]['rx'] = float(fr.get('slump_rx', 0.45))
             print(gid, k, (w, h), 'dir', d, 'ax', round(ax, 3), 'hk', meta[gid][k]['hk'])
     json.dump(meta, open(metaf, 'w'), ensure_ascii=False, indent=1)
     # file:// 用の埋め込み（webp、高さ 512 まで）

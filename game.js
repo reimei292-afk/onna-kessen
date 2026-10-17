@@ -2115,7 +2115,7 @@ function seiran(x, z) {
   const add = (x0, x1, y0, y1, z0, z1, mat, solid) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
     m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); grp.add(m);
-    if (solid) lb.push({ l: { x0, x1, z0, z1, y0, y1 }, w: { x0, x1, z0, z1, y0, y1 } });
+    if (solid) lb.push({ l: { x0, x1, z0, z1, y0, y1 }, w: { x0, x1, z0, z1, y0, y1, slumpSpot: y1 - y0 >= 0.75 && y1 - y0 <= 1.3 } });   // 井闌の胸壁：手すりに崩れる場所
     return m;
   };
   // 台車と車輪
@@ -2857,9 +2857,9 @@ function buildCastle() {
   B.stone.add(-4.8, -2.6, 0, 1.0, -0.6, 0.6, false, 0.5); B.stone.add(2.6, 4.8, 0, 1.0, -0.6, 0.6, false, 0.5);
   B.dark.add(-4.8, 4.8, FY - 0.25, FY, -0.95, 1.75);                     // 櫓の床梁
   floors.push({ x0: -4.6, x1: 4.6, z0: -0.9, z1: 1.7, y: FY });
-  B.plaster.add(-4.8, 4.8, FY, FY + 1.0, -0.95, -0.8, true); boxes[boxes.length - 1].rail = true;   // 前の胸壁（弓兵が上半身を出す）
+  B.plaster.add(-4.8, 4.8, FY, FY + 1.0, -0.95, -0.8, true); boxes[boxes.length - 1].rail = boxes[boxes.length - 1].slumpSpot = true;   // 前の胸壁（弓兵が上半身を出す）
   B.plaster.add(-4.8, -4.6, FY, FY + 2.2, -0.95, 1.75, true); B.plaster.add(4.6, 4.8, FY, FY + 2.2, -0.95, 1.75, true);
-  B.dark.add(-3.4, 3.4, FY + 0.85, FY + 0.95, 1.65, 1.75, true); boxes[boxes.length - 1].y0 = FY; boxes[boxes.length - 1].rail = true;   // 後ろの手すり（左右の梯子口を空ける）
+  B.dark.add(-3.4, 3.4, FY + 0.85, FY + 0.95, 1.65, 1.75, true); boxes[boxes.length - 1].y0 = FY; boxes[boxes.length - 1].rail = boxes[boxes.length - 1].slumpSpot = true;   // 後ろの手すり（左右の梯子口を空ける）
   for (const x of [-4.7, 4.7]) for (const z of [-0.85, 1.65]) B.dark.add(x - 0.1, x + 0.1, FY, FY + 2.3, z - 0.1, z + 0.1);
   hipRoof(-6.0, 6.0, -2.0, 2.8, FY + 2.3, 1.7, M.tile);
   B.tile.add(-6.0, 6.0, FY + 2.2, FY + 2.32, -2.0, 2.8);
@@ -2896,9 +2896,9 @@ function buildCastle() {
   B.dark.add(-6.2, 6.2, GY - 0.25, GY, CS.IZ - 0.95, CS.IZ + 1.45);
   floors.push({ x0: -6.0, x1: 6.0, z0: CS.IZ - 0.9, z1: CS.IZ + 1.4, y: GY, gt: true });
   CASTLE.gtFloor = floors[floors.length - 1];
-  B.plaster.add(-4.7, 4.7, GY, GY + 0.9, CS.IZ - 0.95, CS.IZ - 0.8, true); boxes[boxes.length - 1].rail = true;   // 前の胸壁（しゃがめば隠れ、立てば上半身が出る）
+  B.plaster.add(-4.7, 4.7, GY, GY + 0.9, CS.IZ - 0.95, CS.IZ - 0.8, true); boxes[boxes.length - 1].rail = boxes[boxes.length - 1].slumpSpot = true;   // 前の胸壁（しゃがめば隠れ、立てば上半身が出る）
   for (const s of [-1, 1]) B.plaster.add(s > 0 ? 6.0 : -6.2, s > 0 ? 6.2 : -6.0, GY, GY + 1.0, CS.IZ - 0.2, CS.IZ + 1.45, true);   // 左右の板壁（前の角は梯子口）
-  B.dark.add(-3.6, 3.6, GY + 0.85, GY + 0.95, CS.IZ + 1.35, CS.IZ + 1.45, true); boxes[boxes.length - 1].y0 = GY; boxes[boxes.length - 1].rail = true;   // 後ろの手すり
+  B.dark.add(-3.6, 3.6, GY + 0.85, GY + 0.95, CS.IZ + 1.35, CS.IZ + 1.45, true); boxes[boxes.length - 1].y0 = GY; boxes[boxes.length - 1].rail = boxes[boxes.length - 1].slumpSpot = true;   // 後ろの手すり
   for (const x of [-6.1, 6.1]) for (const z of [CS.IZ - 0.85, CS.IZ + 1.35]) B.dark.add(x - 0.1, x + 0.1, GY, GY + 2.3, z - 0.1, z + 0.1);
   hipRoof(-7.2, 7.2, CS.IZ - 2.0, CS.IZ + 2.5, GY + 2.3, 1.5, M.tile); B.tile.add(-7.2, 7.2, GY + 2.2, GY + 2.32, CS.IZ - 2.0, CS.IZ + 2.5);
   ladder(4.8, CS.IZ + 1.45, CS.IZ + 2.35, GY); ladder(-4.8, CS.IZ + 1.45, CS.IZ + 2.35, GY);   // 内側（守り手が上る）
@@ -8677,6 +8677,7 @@ function loadFrames(done) {
   for (const [gid, k, m] of jobs) {
     const ok = t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       const fr = { tex: t, aspect: m.aspect || t.image.width / t.image.height, hk: m.hk || 1, ax: m.ax == null ? 0.5 : m.ax, dir: m.dir || 0 };
+      if (m.ry != null) fr.ry = m.ry; if (m.rx != null) fr.rx = m.rx;   // slump：手すりの位置（写真の下からの高さ・左からの位置の比率）
       if (m.cyc) { fr.cyc = m.cyc; m.cyc.frs[m.i] = fr; } else GIRLS[gid][k] = fr;
       framesLoaded++; fin(); };
     const emb = m.cyc ? m.emb : data[gid + '_' + k];
@@ -9918,7 +9919,7 @@ const LEAN_P = (() => { const v = parseFloat(new URLSearchParams(location.search
 const LEAN_HIP_U = 0.40, LEAN_KNEE_U = 0.70;   // 横たわった写真の、腰（帯）・膝の位置（頭＝0、足先＝1）
 const _lm = new THREE.Matrix4(), _lv = new V3(), _lc = new V3(), _lx = new V3();
 function findLean(e) {
-  if (PLANE.on || e.lad || e.climb || e.seated || e.pit || e.ramCrew || !e.girl.down) return null;
+  if (PLANE.on || e.lad || e.climb || e.seated || e.pit || e.ramCrew || !(e.girl.down || e.girl.slump)) return null;
   const p = e.s.position, y = e.baseY; let best = null, bd = 0.6;
   for (const b of boxes) {
     if (b.noLean || b.y1 <= b.y0 || b.y0 > y + 0.3 || b.y1 < y + 0.7) continue;
@@ -9935,9 +9936,18 @@ function findLean(e) {
 }
 // 倒れた瞬間に呼ぶ：寄りかかるなら姿勢を決めて true
 function tryLean(e) {
-  if (Math.random() >= LEAN_P) return false;
-  const L = findLean(e); if (!L) return false;
+  const L = findLean(e), pr = e.perch;
+  // 狭間（壁の穴）で射っていた娘：穴の下の壁に向かって崩れる（slump の写真があるときだけ）
+  if (e.girl.slump && pr && pr.slit && !e.seated && trySlumpSlit(e, pr, L)) return true;
+  if (!L) return false;
   const f = e.s.rotation.y, fx = Math.sin(f), fz = Math.cos(f), fd = -(fx * L.nx + fz * L.nz);   // 正：壁の方を向いている
+  // v9：門上の胸壁・櫃の胸壁・井闌の手すり（slumpSpot）では、slump の写真がある娘は手すりに前のめりに崩れる（確率 SLUMP_P）
+  const spot = L.b.slumpSpot || (pr && (pr.gt || pr.gh || pr.seiran));
+  if (e.girl.slump && L.rh >= 0.7 && L.rh <= 1.35 && fd > -0.3 && (spot ? Math.random() < SLUMP_P : (fd > 0.2 && L.thick <= 0.36 && Math.random() < LEAN_P * 0.5))) {
+    e.lean = { kind: 'slump', L, rh: L.rh, t: 0, p0: e.s.position.clone(), F: new V3(-L.nx, 0, -L.nz), W: 0 };
+    buildSlump(e); return true;
+  }
+  if (!e.girl.down || Math.random() >= LEAN_P) return false;
   const W = e.figH * e.girl.down.hk * e.girl.down.aspect;
   const hipY = Math.min(L.rh - 0.1, (1 - LEAN_HIP_U) * W * 0.92);
   const railOK = L.rh <= 1.3 && L.rh >= 0.75 && L.thick <= 0.36 && Math.hypot(0.14, L.rh + 0.05 - hipY) < (LEAN_HIP_U - 0.12) * W;
@@ -10001,7 +10011,53 @@ function buildLeanPose(e) {
   ln.cur = {}; for (const k in pts) ln.cur[k] = pts[k].clone();
   ln.hd = e.figH * fr.hk;   // 板の幅（横たわった写真の高さ）
 }
+// ---- v9：手すり・窓枠に前のめりに崩れる（slump）。写真 assets/frames/<id>_slump.png（frames の slump）
+//   写真の約束：横から見た姿。左に脚（手すりの手前に立つ側）、右へ上体・腕・頭が手すりの向こうに垂れる。背景は透明。
+//   手すりの上端は写真の下から ry（既定 0.55）、左右は左から rx（既定 0.45）の位置。手すりの高さに合わせて大きさを決める
+const SLUMP_P = (() => { const v = parseFloat(new URLSearchParams(location.search).get('slump')); return isFinite(v) ? clamp(v, 0, 1) : 0.75; })();
+function trySlumpSlit(e, pr, W) {
+  if (Math.random() >= SLUMP_P) return false;
+  // 狭間の壁：壁が見つかればその面、無ければ射っていた向きを法線にする。穴の下枠（約 1.15m）に上体を預ける
+  const f = e.s.rotation.y, nx = W ? W.nx : -Math.sin(f), nz = W ? W.nz : -Math.cos(f);
+  const L = { b: W ? W.b : null, nx, nz, ox: W ? W.ox : e.s.position.x - nx * 0.35, oz: W ? W.oz : e.s.position.z - nz * 0.35, rh: 1.15, thick: 0.3, slit: true };
+  e.lean = { kind: 'slump', L, rh: 1.15, t: 0, p0: e.s.position.clone(), F: new V3(-nx, 0, -nz), W: 0 };
+  buildSlump(e); return true;
+}
+function buildSlump(e) {
+  const ln = e.lean, fr = e.girl.slump;
+  ln.ry = fr.ry || 0.55; ln.rx = fr.rx == null ? 0.45 : fr.rx;
+  ln.h = clamp(ln.rh / ln.ry, e.figH * 0.8, e.figH * 1.35);   // 写真の高さ（手すりの高さに合わせる）
+  e.s.rotation.set(0, 0, 0); e.tilt.visible = true; e.tilt.rotation.set(0, 0, 0); e.crouch = 0;
+  setFrame(e, e.girl.front, false);   // 倒れ始めは立ち姿のまま
+}
+function updateSlump(e, dt) {
+  const ln = e.lean, L = ln.L; ln.t += dt;
+  const off = _lv.copy(e.s.position).sub(ln.p0);   // 動く井闌の上：一緒に動く
+  const ax = L.ox + off.x, az = L.oz + off.z;     // 手すりの手前の端（脚と上体の境）
+  const k = Math.min(1, ln.t / 0.45);
+  e.s.rotation.set(0, 0, 0);
+  const camYaw = Math.atan2(camera.position.x - ax, camera.position.z - az);
+  e.tilt.position.set(ax - e.s.position.x, 0, az - e.s.position.z);
+  e.tilt.rotation.set(0, camYaw, 0);
+  if (k < 1) {   // 前へ傾きながら手すりへ（0.45 秒）。その後 slump の写真に切り替える
+    if (e.fr !== e.girl.front) setFrame(e, e.girl.front, false);
+    const lean = k * k * 0.18; e.tilt.position.x += -L.nx * lean; e.tilt.position.z += -L.nz * lean;   // 手すりの方へ少し寄る
+  } else {
+    const fr = e.girl.slump;
+    // 画面上で脚が手前側（法線の向き）に来るよう左右を決める：写真は「左に脚」
+    const rx = Math.cos(camYaw), rz = -Math.sin(camYaw);   // カメラから見た右（ビルボードの +x）
+    const mirror = (L.nx * rx + L.nz * rz) > 0;              // 法線が画面の右 → 脚を右へ（反転）
+    if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); }
+    const h = ln.h, w = h * fr.aspect, sg = mirror ? -1 : 1;
+    e.bb.scale.set(w * sg, h, 1);
+    e.bb.position.x = (0.5 - ln.rx) * w * sg;   // 手すりの位置を立ち位置に
+    if (!ln.thud) { ln.thud = true; const pp = new V3(ax, e.baseY + off.y + ln.rh, az); Sfx.impactBody(pp); Sfx.thudAt(Math.hypot(pp.x - player.pos.x, pp.z - player.pos.z)); }
+  }
+  e.shadow.material = lieShadowMat; e.shadow.visible = true;
+  e.shadow.position.set(e.tilt.position.x + L.nx * 0.3, 0.015, e.tilt.position.z + L.nz * 0.3); e.shadow.scale.set(0.55, 1, 0.55);
+}
 function updateLean(e, dt) {
+  if (e.lean.kind === 'slump') return updateSlump(e, dt);
   const ln = e.lean; ln.t += dt;
   const k = Math.min(1, ln.t / 0.65), q = k < 1 ? 1 - Math.pow(1 - k, 3) : 1;
   const off = _lv.copy(e.s.position).sub(ln.p0);   // 動く井闌の上：一緒に動く
@@ -10843,6 +10899,7 @@ window.__ojouDbg = () => { const e = ojou.e, g = GIRLS[OJOU_ID]; if (!e || !g) r
   const p = e.s.position, cy = Math.atan2(camera.position.x - p.x, camera.position.z - p.z), c = +Math.cos(angDiff(e.s.rotation.y, cy)).toFixed(2), el = +Math.atan2(camera.position.y - (e.baseY + e.figH * 0.6), Math.hypot(camera.position.x - p.x, camera.position.z - p.z)).toFixed(2);
   return { key, c, el, moving: e.vs > 0.35, view: e.view, view2: e.view2, mode: ojou.mode, x: e.s.position.x, z: e.s.position.z, y: e.baseY, figH: e.figH, real: { front_diag: real('front_diag'), back_diag: real('back_diag'), top: real('top'), low: real('low'), cycle: !!(g.cycles && g.cycles.walk_side) } }; };
 window.__ojou = ojou;
+if (TEST) window.__GIRLS = GIRLS;
 function spawnOjou() {
   removeOjou();
   if (!hq || !GIRLS[OJOU_ID]) return;

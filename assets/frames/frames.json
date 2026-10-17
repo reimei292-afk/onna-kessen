@@ -113,6 +113,15 @@
    "ax": 0.4812,
    "dir": 0,
    "file": "assets/frames/mob01_low.png"
+  },
+  "slump": {
+   "hk": 0.8612,
+   "aspect": 1.2253,
+   "ax": 0.5,
+   "dir": 1,
+   "file": "assets/frames/mob01_slump.png",
+   "ry": 0.793,
+   "rx": 0.595
   }
  },
  "mob02": {
@@ -185,6 +194,15 @@
    "ax": 0.4914,
    "dir": 0,
    "file": "assets/frames/mob02_low.png"
+  },
+  "slump": {
+   "hk": 0.8644,
+   "aspect": 0.865,
+   "ax": 0.5,
+   "dir": 1,
+   "file": "assets/frames/mob02_slump.png",
+   "ry": 0.734,
+   "rx": 0.42
   }
  },
  "mob03": {
@@ -273,6 +291,15 @@
    "ax": 0.5,
    "dir": -1,
    "file": "assets/frames/mob04_down.png"
+  },
+  "slump": {
+   "hk": 0.8583,
+   "aspect": 1.3028,
+   "ax": 0.5,
+   "dir": 1,
+   "file": "assets/frames/mob04_slump.png",
+   "ry": 0.749,
+   "rx": 0.597
   }
  },
  "mob05": {
@@ -317,6 +344,15 @@
    "ax": 0.5,
    "dir": -1,
    "file": "assets/frames/mob05_down.png"
+  },
+  "slump": {
+   "hk": 0.9414,
+   "aspect": 0.8973,
+   "ax": 0.5,
+   "dir": 1,
+   "file": "assets/frames/mob05_slump.png",
+   "ry": 0.779,
+   "rx": 0.514
   }
  },
  "mob06": {

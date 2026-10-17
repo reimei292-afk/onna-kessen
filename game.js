@@ -10026,7 +10026,9 @@ function trySlumpSlit(e, pr, W) {
 function buildSlump(e) {
   const ln = e.lean, fr = e.girl.slump;
   ln.ry = fr.ry || 0.55; ln.rx = fr.rx == null ? 0.45 : fr.rx;
-  ln.h = clamp(ln.rh / ln.ry, e.figH * 0.8, e.figH * 1.35);   // 写真の高さ（手すりの高さに合わせる）
+  const hn = e.figH * (fr.hk || 0.9), hr = ln.rh / ln.ry;
+  ln.h = clamp(hn, hr * 0.95, hr * 1.15);   // 写真の高さ：本来の大きさに近づけ、手すりの高さとの差は足元を少し沈めて合わせる
+  ln.dy = ln.rh - ln.ry * ln.h;
   e.s.rotation.set(0, 0, 0); e.tilt.visible = true; e.tilt.rotation.set(0, 0, 0); e.crouch = 0;
   setFrame(e, e.girl.front, false);   // 倒れ始めは立ち姿のまま
 }
@@ -10051,6 +10053,7 @@ function updateSlump(e, dt) {
     const h = ln.h, w = h * fr.aspect, sg = mirror ? -1 : 1;
     e.bb.scale.set(w * sg, h, 1);
     e.bb.position.x = (0.5 - ln.rx) * w * sg;   // 手すりの位置を立ち位置に
+    e.bb.position.y = ln.dy || 0;   // 写真の手すりの線を実際の手すりの高さに
     if (!ln.thud) { ln.thud = true; const pp = new V3(ax, e.baseY + off.y + ln.rh, az); Sfx.impactBody(pp); Sfx.thudAt(Math.hypot(pp.x - player.pos.x, pp.z - player.pos.z)); }
   }
   e.shadow.material = lieShadowMat; e.shadow.visible = true;

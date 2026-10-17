@@ -435,7 +435,7 @@ const SITU = {
     if (BEACH.on) cats.push('boatfire', 'landing'); if (SNOW.on) cats.push('cold'); if (PLANE.on) cats.push('cabin');
     for (const c of cats) { const C = this.man[c]; if (C) for (const r in C) for (const l of C[r]) VoicePack.load(l.files[0], true); }
   },
-  ok(e) { return e && e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.silenced && !e.role && !e.secretary && !e.sec2 && !e.ojou
+  ok(e) { return e && e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.silenced && !e.role && !e.secretary && !e.sec2 && !e.ojou && !e.fumi
     && !(e.hurtAt && time - e.hurtAt < 4) && !Talk.speaking(e) && !(e.situAt && time - e.situAt < 18); },
   say(e, cat, force) {
     const C = this.man && this.man[cat], L = C && C[SITU_ROM[e.prof.pers]];
@@ -1321,7 +1321,7 @@ function mechFixJob(e, dt) {
   if (!C || (!C.lame && !C.wrecked)) {
     if ((e.fixScan = (e.fixScan || 0) - dt) > 0) return !!e.fixCar;
     e.fixScan = 0.35;
-    let bd = (e.secretary || e.aide || e.ojou || e.sec2) ? 70 : 42, best = null;
+    let bd = (e.secretary || e.aide || e.ojou || e.sec2 || e.fumi) ? 70 : 42, best = null;
     for (const O of mechVehicles()) {
       if (O.side !== 'blue' || (!O.lame && !O.wrecked)) continue;
       const d = Math.hypot(e.s.position.x - O.x, e.s.position.z - O.z);
@@ -1352,7 +1352,7 @@ function mechWin() {
 }
 function mechClimb(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.perch || e.guard || e.baseY > 2) return false;
-  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.driver) return false;
+  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.fumi || e.driver) return false;
   const F = mechFort();
   if (!F || (F.gate && F.gate.open) || e.s.position.z < F.z + 1) return false;
   const C = MECH.trucks.find(t => t.docked && t.ladBase);
@@ -1374,7 +1374,7 @@ function mechClimb(e, dt) {
 }
 function mechPress(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.guard || e.perch) return false;
-  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.driver) return false;
+  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.fumi || e.driver) return false;
   const F = mechFort(); if (!F) return false;
   let foe = null, bd = 1e9;
   for (const o of enemies) {
@@ -1565,7 +1565,7 @@ function mechSiegeJob(e, dt) {
 }
 function mechMarch(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.guard || e.perch || e.baseY > 1.2) return false;
-  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.driver) return false;
+  if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.fumi || e.driver) return false;
   for (const o of enemies) if (o.team === 'orange' && isUp(o) && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < (mechShy(e) ? 12 : 16)) return false;
   for (const C of mechVehicles()) {
     if (C.wrecked || C.lame || C.side !== 'blue' || C.seats.every(Boolean)) continue;
@@ -2579,7 +2579,7 @@ function floorPlane(z0, z1, mat, rep) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(4.2, z1 - z0), mat); m.rotation.x = -Math.PI / 2; m.position.set(0, 0.002, (z0 + z1) / 2); stageRoot.add(m);
   if (rep && mat.map) { mat.map.wrapS = mat.map.wrapT = THREE.RepeatWrapping; mat.map.repeat.set(rep[0], rep[1]); }
 }
-const PLANE_HQ = { sec: [0.05, 17.3], sec2: [-0.55, 16.5], ojou: [0.95, 16.8], sec3: [-0.35, 14.3], sec4: [0.95, 14.5], fluter: [-1.05, 13.45], run0: [-0.6, 12.6], run1: [0.6, 12.6], dish: [0.05, 18.75] };
+const PLANE_HQ = { sec: [0.05, 17.3], sec2: [-0.55, 16.5], ojou: [0.95, 16.8], fumi: [-1.15, 15.45], sec3: [-0.35, 14.3], sec4: [0.95, 14.5], fluter: [-1.05, 13.45], run0: [-0.6, 12.6], run1: [0.6, 12.6], dish: [0.05, 18.75] };
 const PLANE_MED = { blue: [[-1.25, 0.1], [1.25, 0.1], [-1.25, -0.7], [1.25, -0.7]], orange: [[0, 0], [1.1, 0.2], [-1.1, 0.2], [0, -1.1]] };
 function hqSpot(key, dx, dz) { return builtStage === 'plane' && PLANE_HQ[key] ? PLANE_HQ[key] : [hq.sx + dx, hq.sz + dz]; }
 function buildPlane() {
@@ -2753,7 +2753,7 @@ function planeIntro() {
 function planeAmbush() {
   if (!PLANE.intro) return;
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 1.6; player.seated = false;
-  { const g = menuOpen ? menuGirl() : null; if (menuOpen) closeSecMenu(false); for (const o of [g, sec.caWho, sec.e, sec2.e, ojou.e]) if (o && Talk.speaking(o)) Talk.hush(o); sec.caWho = null; }   // 奇襲：話の途中でも打ち切る
+  { const g = menuOpen ? menuGirl() : null; if (menuOpen) closeSecMenu(false); for (const o of [g, sec.caWho, sec.e, sec2.e, ojou.e, fumi.e]) if (o && Talk.speaking(o)) Talk.hush(o); sec.caWho = null; }   // 奇襲：話の途中でも打ち切る
   for (const e of enemies) if (e.seated) e.standAt = time + (e.team === 'orange' ? rand(0, 0.55) : rand(0.5, 2.0));
   wave.spawnT = 0.4;   // 後方ギャレーからも
   showBanner('奇襲！', '乗客に紛れた橙組が襲いかかる！ 青組の乗客も席を立って迎え撃つ');
@@ -4608,7 +4608,7 @@ function carHint() {
 
 // ---- 浜の軽自動車：1台4人まで。あふれた兵は車のすぐ後ろを歩き、竹束を銃弾よけにする。トーチカの横で降りる。人はひかない ----
 function keiEligible(e) {
-  return !!(e && e.team === 'blue' && !e.special && !e.medic && !e.guard && !e.secretary && !e.aide && !e.runner && !e.fluter && !e.ojou && !e.driver && !e.hold);
+  return !!(e && e.team === 'blue' && !e.special && !e.medic && !e.guard && !e.secretary && !e.aide && !e.runner && !e.fluter && !e.ojou && !e.fumi && !e.driver && !e.hold);
 }
 function keiCount(C) { return C.seats.filter(Boolean).length; }
 function keiW(C, lx, lz) { const c = Math.cos(C.yaw), s = Math.sin(C.yaw); return [C.x + lx * c + lz * s, C.z - lx * s + lz * c]; }
@@ -4962,10 +4962,11 @@ function beachHqJob(e) {
   if (e.secretary && sec.mode !== 'hq') return false;
   if (e.sec2 && sec2.mode !== 'hq') return false;
   if (e.ojou && ojou.mode !== 'hq') return false;
+  if (e.fumi && fumi.mode !== 'hq') return false;
   if (e.aide && e.aide.follow) return false;
   if (e.runner && e.runner.job) return false;
   if (e.medic) return false;
-  return !!(e.secretary || e.sec2 || e.ojou || e.aide || e.fluter || e.runner);
+  return !!(e.secretary || e.sec2 || e.ojou || e.fumi || e.aide || e.fluter || e.runner);
 }
 function beachHqPoint(e) {
   let car = null;
@@ -5245,7 +5246,7 @@ function beachReset() {
 }
 function beachSeatStaff() {
   const K = BEACH.king, G = BEACH.gboat;
-  const staff = [sec.e, sec2.e, ojou.e, fluter.e, ...medics.blue.map(m => m.e), ...aides.map(A => A.e), ...runners.map(R => R.e)];
+  const staff = [sec.e, sec2.e, ojou.e, fumi.e, fluter.e, ...medics.blue.map(m => m.e), ...aides.map(A => A.e), ...runners.map(R => R.e)];
   if (K && !K.beached) for (const e of staff) if (e && isUp(e) && !e.boat) { beachStaffSeat(e); if (!e.seated) { const [wx, wz] = boatWorld(K, rand(-0.5, 0.5), rand(1, 3.5)); e.s.position.set(wx, K.floor.y, wz); e.boat = K; K.crew.push(e); } }
   if (G && !G.beached) for (const e of GUARD.list || []) if (e && isUp(e) && !e.boat) { const free = G.seats.findIndex(x => !x); if (free >= 0) boardBoat(e, G, free); }
 }
@@ -7225,14 +7226,14 @@ function dualMarchRelief(e, dt) {
   const g = dualGoto(e), p = e.s.position;
   const arrived = (!e.missionPath || !e.missionPath.length) && g && Math.hypot(p.x - g[0], p.z - g[1]) < 5.5;
   if (!arrived && g) {
-    if (dualFoeNear(e, e.kind === 'archer' ? 6 : 3.2) && !e.medic && !e.runner && !e.saiRunner && !e.secretary && !e.sec2 && !e.ojou && !e.aide && !e.fluter && !e.guard && !e.saiGuard && !e.special) return false;
+    if (dualFoeNear(e, e.kind === 'archer' ? 6 : 3.2) && !e.medic && !e.runner && !e.saiRunner && !e.secretary && !e.sec2 && !e.ojou && !e.fumi && !e.aide && !e.fluter && !e.guard && !e.saiGuard && !e.special) return false;
     steer(e, g[0], g[1], e.speed * 1.35, dt);
     e.state = 'approach'; e.tgt = null;
     return true;
   }
   if (arrived || !g) {
     if (e.medic || e.runner || e.saiRunner) { e.tgt = null; e.state = 'idle'; return true; }
-    if (e.ojou || e.aide || e.secretary || e.sec2 || e.saiGuard || e.guard || e.fluter) { dualReliefFight(e, dt); return true; }
+    if (e.ojou || e.fumi || e.aide || e.secretary || e.sec2 || e.saiGuard || e.guard || e.fluter) { dualReliefFight(e, dt); return true; }
     return false;
   }
   return false;
@@ -7293,7 +7294,7 @@ function dualBrain(e, dt) {
     }
     if (e === DUAL.shira && near <= 4.2) return false;
   }
-  if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.aide || e.saiRunner) return false;
+  if (e.special || e.medic || e.guard || e.secretary || e.ojou || e.fumi || e.aide || e.saiRunner) return false;
   if (e.perch) return false;
   if (e.hiddenAmb) return false;
   if (e.ramCrew && e.missionFront === 'king' && CASTLE.ram) {
@@ -8010,7 +8011,7 @@ function trenchStartBattle() {
   showBanner('塹壕戦・第一波','味方100人／敵100人。号令まで塹壕内で待機せよ。');
 }
 function trenchSupportEnsure(){
-  const hqStaff=[sec.e,sec2.e,ojou.e,fluter.e,...aides.map(a=>a.e),...runners.map(r=>r.e)];
+  const hqStaff=[sec.e,sec2.e,ojou.e,fumi.e,fluter.e,...aides.map(a=>a.e),...runners.map(r=>r.e)];
   const all=[...hqStaff,...medics.blue.map(m=>m.e),...medics.orange.map(m=>m.e)].filter(Boolean);
   for(const e of all){
     if(!isUp(e))continue;
@@ -8677,7 +8678,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017zc';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017zd';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -8744,6 +8745,8 @@ const EXTRA_GIRLS = {
   girl29: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
   girl30: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
   girl31: { type: 'mob', anyRole: true, prof: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0, pitch: 0.95 } },    // 片手ピース・ポニーテール・落ち着いた長身
+  // v9：新しい兵の娘（ティアラ・黒いショルダーバッグ・小柄で人なつこい）
+  girl32: { type: 'mob', anyRole: true, prof: { name: '椎名 みのり', pers: '陽気', cm: 153, vv: 2, pitch: 1.4 } },
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {
@@ -9304,7 +9307,7 @@ function namedSets() {
   const full = new Set(), surn = new Set();
   const add = nm => { if (!nm) return; const p = nm.replace(/^(秘書課|笛役|組頭)\s+/, '').split(' '); if (p.length < 2) return; full.add(p.join('')); surn.add(p[0]); };
   for (const k in GIRLS) if (GIRLS[k].prof) add(GIRLS[k].prof.name);
-  for (const o of [sec, sec2, ojou, fluter, ...aides]) add(o.name);
+  for (const o of [sec, sec2, ojou, fumi, fluter, ...aides]) add(o.name);
   return NAMED = { full, surn };
 }
 let usedNames = new Set();
@@ -9333,6 +9336,11 @@ function npcSay(e, kind, prio = 0, chance = 1) {
 }
 function npcSay0(e, kind, prio) {
   const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  if (e.fumi || e.wasFumi) {
+    const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['fumi_' + kind];
+    if (L && L.length) { const j = (Math.random() * L.length) | 0; if (!VoicePack.play(L[j].files[0], d, prio)) Voice.say(L[j].text, { pitch: 1.05, rate: 0.9 }, prio); }
+    return;
+  }
   if (e.ojou || e.wasOjou) {
     const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra['ojou_' + kind];
     if (L && L.length) { const j = (Math.random() * L.length) | 0; if (!VoicePack.play(L[j].files[0], d, prio)) Voice.say(L[j].text, { pitch: 0.95, rate: 0.88 }, prio); }
@@ -9470,7 +9478,7 @@ function updateProps(e, fr, mirror, sgn) {
 }
 // ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----
 function secThreat(e) {
-  const p = e.s.position, fol = (e.sec2 && sec2.mode !== 'hq') || (e.ojou && ojou.mode === 'follow') || (e.aide && e.aide.follow) || (e.secretary && sec.mode !== 'hq');
+  const p = e.s.position, fol = (e.sec2 && sec2.mode !== 'hq') || (e.ojou && ojou.mode === 'follow') || (e.fumi && fumi.mode === 'follow') || (e.aide && e.aide.follow) || (e.secretary && sec.mode !== 'hq');
   const R = fol ? 9 : 6.5;
   if (e.defending && e.defending.state !== 'down' && enemies.includes(e.defending) && Math.hypot(e.defending.s.position.x - p.x, e.defending.s.position.z - p.z) < R + 3) return e.defending;
   let best = null, bd = R;
@@ -9509,6 +9517,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (opt.medic) Object.assign(prof, { name: opt.medName, pers: opt.role === 'nurse' ? '陽気' : '冷静', cm: opt.role === 'nurse' ? 157 : 163, vv: opt.role === 'nurse' ? 2 : 1 });
   if (opt.aide) Object.assign(prof, { name: opt.aide.name, pers: opt.aide.pers, cm: opt.aide.cm, vv: opt.aide.vv });
   if (opt.ojou) Object.assign(prof, { name: ojou.name, pers: '冷静', cm: 158, vv: 0 });
+  if (opt.fumi) Object.assign(prof, { name: fumi.name, pers: '冷静', cm: 157, vv: 1 });
   const P = PERS[prof.pers];
   VoicePack.prioritize(prof.pers);
   if (captain) prof.name = '組頭 ' + prof.name;
@@ -9519,7 +9528,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const shadow = new THREE.Mesh(shadowGeo, shadowMat); shadow.scale.set(0.75, 1, 0.6); shadow.position.y = 0.02; s.add(shadow);
   const baseY = opt.y || 0;
   s.position.set(x, baseY, z); s.rotation.y = team === 'orange' ? 0 : Math.PI; scene.add(s);
-  const hpMax = opt.secretary ? 8 : opt.fluter || opt.medic ? 5 : opt.runner ? 4 : opt.sec2 || opt.aide || opt.ojou ? 6 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
+  const hpMax = opt.secretary ? 8 : opt.fluter || opt.medic ? 5 : opt.runner ? 4 : opt.sec2 || opt.aide || opt.ojou || opt.fumi ? 6 : Math.max(2, Math.round((3 + Math.floor((n - 1) / 3)) * (captain ? 2.5 : 1)) - (kind === 'archer' ? 1 : 0));
   const bg = new THREE.Sprite(barBgMat); bg.scale.set(0.8, 0.08, 1); bg.visible = false; bg.renderOrder = 4; scene.add(bg);
   const fg = new THREE.Sprite(new THREE.SpriteMaterial({ color: team === 'blue' ? 0x5ab0ff : (captain ? 0xffd040 : 0xffa040), depthWrite: false }));
   fg.scale.set(0.76, 0.05, 1); fg.visible = false; fg.renderOrder = 5; scene.add(fg);
@@ -9554,6 +9563,11 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
     e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
     const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
   }
+  if (opt.fumi) {   // 記録係の秘書（綾瀬 文乃）：青組の腕章とほんのり青
+    e.fumi = true; e.special = true; e.speed = 3.7; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
+    e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
+    const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
+  }
   if (opt.aide) {   // 三人目・四人目の秘書（本陣で気配り）：青組の腕章とほんのり青
     e.aide = opt.aide; e.special = true; e.speed = 3.6; s.rotation.y = e.face = Math.PI; e.home = opt.aide.home; e.state = 'idle';
     e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
@@ -9570,7 +9584,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
       const fl = makeFlute(); fl.position.set(-0.17 * figH * 0.6, figH * 0.885, 0.06); fl.rotation.z = 0.12; tilt.add(fl); e.fluteMesh = fl;
     }
   }
-  if (opt.secretary || opt.sec2 || opt.ojou || opt.aide) armSecretary(e);
+  if (opt.secretary || opt.sec2 || opt.ojou || opt.fumi || opt.aide) armSecretary(e);
   e.screen = kind === 'mob' && !e.special && Math.random() < SCREEN.rate;   // 守り役（約半数）
   e.climber = kind === 'archer' && team === ATK() && Math.random() < 0.25;
   e.raider = kind === 'mob' && team === ATK() && !e.special && Math.random() < 0.35;   // 梯子攻め役（約1/3）：砦の中に入ると櫓・足場の弓兵を狙って梯子を上る   // 砦の中で梯子を上る弓兵（約1/4）
@@ -10099,7 +10113,7 @@ function ojouCommand(info) {
 function squadRows(t) {
   const rows = squads[t].map(s => ({ name: sqDisp(s), role: s.role || s.name, n: sqAlive(s).length, lost: s.lost, lead: isUp(s.leader) ? s.leader.prof.name : '' }));
   const sp = (name, list) => rows.push({ name, role: name, n: list.filter(isUp).length, lost: null, lead: '' });
-  if (t === 'blue') { sp('伝令', runners.map(R => R.e)); sp('秘書課', [sec.e, sec2.e, ojou.e, ...aides.map(a => a.e)]); }
+  if (t === 'blue') { sp('伝令', runners.map(R => R.e)); sp('秘書課', [sec.e, sec2.e, ojou.e, fumi.e, ...aides.map(a => a.e)]); }
   sp('医務班', medics[t].map(m => m.e));
   return rows;
 }
@@ -10492,6 +10506,7 @@ function startWave(n) {
   if (AIRPORT.on) { airportStartWave(n); return; }
   if (BEACH.on && !BEACH.king) beachKingBoats();
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
+  if (fumi.dead || (!fumi.e && hq)) { const was = fumi.dead; spawnFumi(); if (n > 1 && was) popup(fumi.name + 'が本陣に戻りました'); }
   if (ojou.dead || (!ojou.e && hq)) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }
   if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
   for (const t of ['blue', 'orange']) { let was = false; for (const m of medics[t]) if (m.dead || !m.e) { was = was || m.dead; spawnMedic(t, m); } if (n > 1 && was && t === 'blue') popup('救護班が持ち場に戻りました'); }
@@ -10771,6 +10786,7 @@ function killEnemy(e, byPlayer, from) {
   if (e.medBy) { const m = e.medBy; e.medBy = null; if (m.patient === e) endTreat(m); }
   if (e.medic) { const m = medics[e.team][e.slot]; if (m && m.e === e) { m.dead = true; m.e = null; } endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; const rn = e.role === 'surgeon' ? '外科医' : '看護師'; if (!e.quietDeath) popup(e.team === 'blue' ? rn + 'に戦死判定…（次の波で持ち場に戻ります）' : '橙組の' + rn + 'に戦死判定'); }
   if (e.ojou) { ojou.dead = true; ojou.e = null; ojou.mode = 'dead'; e.ojou = false; e.wasOjou = true; if (menuOpen && menuWho === 'ojou') closeSecMenu(false); if (!e.quietDeath) popup('秘書課 西園寺 すみれに戦死判定…次の波で本陣に戻ります'); }
+  if (e.fumi) { fumi.dead = true; fumi.e = null; fumi.mode = 'dead'; e.fumi = false; e.wasFumi = true; if (menuOpen && menuWho === 'fumi') closeSecMenu(false); if (!e.quietDeath) popup(fumi.name + 'に戦死判定…次の波で本陣に戻ります'); }
   if (e.aide) { const A = e.aide; if (A.e === e) { A.e = null; A.dead = true; } e.wasAide = A; e.aide = null; if (e.band) e.band.visible = false; if (!e.quietDeath) popup(A.name + 'に戦死判定…次の波で本陣に戻ります'); }
   if (e.runner) { const R = e.runner; if (R.e === e) { R.e = null; R.dead = true; if (R.job && R.job.s.served === e) R.job.s.served = null; R.job = null; } e.runner = null; e.wasRunner = true; if (e.band) e.band.visible = false; if (!e.quietDeath) popup('伝令に戦死判定…次の波で本陣に戻ります'); }
   if (e.tag) e.tag.visible = false;
@@ -10798,6 +10814,7 @@ function killEnemy(e, byPlayer, from) {
   if (e.beachBundle) { e.beachBundle.bearer = null; e.beachBundle = null; }
   e.bg.visible = e.fg.visible = e.mk.visible = false; if (e.wmk) e.wmk.visible = false; e.wounded = false; e.kneel = false;
   e.fallT = rand(0.5, 0.62);
+  if (e.team === 'blue') REC.blueDown++; else if (e.team === 'orange') REC.orangeDown++;
   if (byPlayer) {
     if (e.team === 'orange') player.kills++;
     else { player.allyKills++; popup('味方撃破…！'); }
@@ -11394,6 +11411,69 @@ const OJOU_REQ = {
   },
   praise() { secReply('ojou_praise'); },
 };
+
+// ---- 記録係の秘書（秘書課 綾瀬 文乃、穏やかで物静か）：クリーム色の小さな手帳に戦の記録を書き留めている。
+//      お茶・戦況報告・「戦の記録を読んで」（開戦からの時間・殿の撃破・両軍の戦死判定・救護で起き上がった数を読み上げる）・一緒に来て（後ろで記録を取りながらついて歩く。戦わない）・本陣に戻って・ねぎらう
+const FUMI_ID = 'fumi';
+const fumi = { e: null, dead: false, mode: 'hq', name: '秘書課 綾瀬 文乃', stayHQ: false, auto: false };
+const REC = { t0: 0, blueDown: 0, orangeDown: 0, healed: 0, reset() { this.t0 = time; this.blueDown = this.orangeDown = this.healed = 0; } };
+window.__fumi = fumi; window.__REC = REC;
+function spawnFumi() {
+  removeFumi();
+  if (!hq || !GIRLS[FUMI_ID]) return;
+  const fp = hqSpot('fumi', -0.3, -3.3), e = spawnEnemy(fp[0], fp[1], 'mob', false, 'blue', { fumi: true, girl: FUMI_ID });
+  fumi.e = e; fumi.dead = false; fumi.mode = 'hq';
+}
+function removeFumi() {
+  const e = fumi.e; fumi.e = null;
+  if (e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); }
+}
+function fumiBrain(e, dt) {
+  const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.kneel = false;
+  const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z, dp = Math.hypot(dpx, dpz);
+  if (fumi.mode === 'follow') {   // 殿の真後ろ少し右：記録を取りながら静かについて歩く
+    const fx = player.pos.x - Math.sin(player.yaw) * -3.0 + Math.cos(player.yaw) * 0.7, fz = player.pos.z - Math.cos(player.yaw) * -3.0 - Math.sin(player.yaw) * 0.7;
+    const d = Math.hypot(fx - p.x, fz - p.z);
+    if (d > 0.8) { const rt = routeTo(p, fx, fz); steer(e, rt[0], rt[1], d > 6 ? e.speed * 1.35 : e.speed * 0.9, dt); e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
+    else e.faceWant = Math.atan2(dpx, dpz);
+    return;
+  }
+  const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
+  if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? 1 : 0.6), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
+  else e.faceWant = dp < 8 ? Math.atan2(dpx, dpz) : Math.PI;
+  if (fumi.mode === 'returning' && d < 1.2) { fumi.mode = 'hq'; fumiSay('fumi_back', 0); }
+}
+function fumiSay(cat, i = null) {
+  if (!fumi.e || fumi.e.state === 'down') return;
+  Talk.as(fumi.e, () => { const save = menuWho; menuWho = 'fumi'; try { secReply0(cat, i); } finally { menuWho = save; } });
+}
+function recordText() {
+  const el = Math.max(0, time - REC.t0), m = Math.floor(el / 60), ss = Math.floor(el % 60);
+  return { lines: [`開戦から ${m}分${ss}秒`, `第${waveName(Math.max(1, wave.n))}波`, `殿の撃破 ${player.kills}名`, `敵の戦死判定 ${REC.orangeDown}名`, `味方の戦死判定 ${REC.blueDown}名`, `救護で起き上がった者 ${REC.healed}名`],
+    speech: `開戦から${m}分${ss}秒。ただいま第${Math.max(1, wave.n)}波です。殿の撃破は${player.kills}名、敵の戦死判定は${REC.orangeDown}名、味方は${REC.blueDown}名。救護で起き上がった者は${REC.healed}名です。` };
+}
+const FUMI_REQ = {
+  ca() { caBit(); },
+  tea() { SEC_REQ.tea(); },
+  report() { SEC_REQ.report(); },
+  record() {   // 戦の記録：前置きと結びは収録音声、数字は画面に（手帳の写し）
+    const R = recordText(), X = VoicePack.man && VoicePack.man._extra, nOf = c => (X && X[c] ? X[c].length : 1);
+    const i0 = (Math.random() * nOf('fumi_record')) | 0, i1 = (Math.random() * nOf('fumi_record_end')) | 0;
+    const text = (secLine('fumi_record', i0) || '記録を読み上げますね。') + R.speech + (secLine('fumi_record_end', i1) || '');
+    Talk.as(fumi.e, () => { $('secsay').textContent = `「${text}」`; secSay([['fumi_record', i0], ['fumi_record_end', i1]], text); });
+    showBanner('戦の記録（綾瀬 文乃の手帳）', R.lines.join('　／　'));
+  },
+  follow() {
+    if (fumi.mode === 'follow') { secReply('fumi_follow_already', 0); return; }
+    fumi.stayHQ = false; fumi.mode = 'follow'; fumi.auto = false; secReply('fumi_follow'); closeSecMenu(false);
+  },
+  home() {
+    fumi.stayHQ = true; fumi.auto = false;
+    if (fumi.mode !== 'follow') { secReply('fumi_already_hq', 0); return; }
+    fumi.mode = 'returning'; secReply('fumi_return', 0); closeSecMenu(false);
+  },
+  praise() { secReply('fumi_praise'); },
+};
 // ---- 医療係（両軍の本陣に一人ずつ。非戦闘員だが戦死判定は受ける）：倒れた味方へ駆け寄り、膝をついて手当て ----
 // 手当ては膝をつく姿・白い布・声だけ（傷などの表現は一切なし）。倒れて間もない娘ほど復帰しやすい
 // ---- 救護班（両軍とも外科医2人＋看護師2人）。外科医は矢を抜いて手当てし起こす（少し助けやすい）。看護師は外科医の手伝い・包帯・声かけ、
@@ -11490,6 +11570,7 @@ function endTreat(e) {
   e.patient = null; e.kneel = false; e.medPhase = null; e.assisting = false;
 }
 function healPatient(b) {   // 手当て完了：体力を戻して戦列へ
+  if (b && b.team === 'blue') REC.healed++;
   b.hp = Math.max(b.hp, Math.ceil(b.hpMax * 0.85));
   for (const a of b.stuck) a.parent && a.parent.remove(a);
   b.stuck = []; b.medBy = null; b.assistBy = null; b.retreated = false;
@@ -11587,7 +11668,7 @@ function medicBrain(e, dt) {
 //   「本陣に戻って」と言われた秘書は追わない。本陣には外科医1・看護師1が必ず残る。
 const FOLLOW = { out: false, outT: 0, inT: 0, says: [] };
 const FOLLOW_TEXT = {
-  sec: ['お待ちください、殿！', '殿、お一人では危のうございます！'], ojou: ['お待ちになって、王様！', '王様、お一人では危のうございますわ！'], sec2: ['あっ、待ってくださーい！', '危ないですよ、殿！'],
+  sec: ['お待ちください、殿！', '殿、お一人では危のうございます！'], ojou: ['お待ちになって、王様！', '王様、お一人では危のうございますわ！'], fumi: ['殿、お待ちください。記録係もお供します。', 'お一人では危ないです、殿。'], sec2: ['あっ、待ってくださーい！', '危ないですよ、殿！'],
   sec3: ['お待ちください、殿！ お怪我をされては…！'], sec4: ['危ないですよ！ 私もお供します！'],
   surgeon: ['殿、お待ちを！ 救護班もお供します。'], nurse: ['危ないですよ、殿！ 待ってください！'],
 };
@@ -11606,6 +11687,7 @@ function followers() {
   if (sec.e && !sec.stayHQ) L.push({ kind: 'sec', e: sec.e });
   if (sec2.e && !sec2.stayHQ) L.push({ kind: 'sec2', e: sec2.e });
   if (ojou.e && !ojou.stayHQ) L.push({ kind: 'ojou', e: ojou.e });
+  if (fumi.e && !fumi.stayHQ) L.push({ kind: 'fumi', e: fumi.e });
   for (const A of aides) if (A.e) L.push({ kind: A.id, e: A.e, A });
   for (const i of [1, 3]) { const m = medics.blue[i]; if (m && m.e) L.push({ kind: m.role, e: m.e, m }); }
   return L;
@@ -11635,6 +11717,7 @@ function updateFollow(dt) {
         if (f.kind === 'sec') { if (sec.mode === 'hq') { sec.esc = sec.e; sec.e.returning = false; sec.mode = 'escort'; sec.auto = true; sec.e.state = 'advance'; sec.e.t = 0; } else continue; }
         else if (f.kind === 'sec2') { if (sec2.mode === 'hq') { sec2.mode = 'follow'; } else continue; }
         else if (f.kind === 'ojou') { if (ojou.mode === 'hq') { ojou.mode = 'follow'; ojou.auto = true; } else continue; }
+        else if (f.kind === 'fumi') { if (fumi.mode === 'hq') { fumi.mode = 'follow'; fumi.auto = true; } else continue; }
         else if (f.A) { f.A.follow = true; f.A.fi = 1 + k; }
         else if (f.m) { f.e.follow = true; f.e.fi = 2 + k; }
         if (FOLLOW.says.length < 3) FOLLOW.says.push({ t: 0.2 + FOLLOW.says.length * 1.6, e: f.e, kind: f.kind });
@@ -11651,6 +11734,8 @@ function updateFollow(dt) {
       if (sec2.mode === 'follow') sec2.mode = 'returning';
       if (ojou.auto && ojou.mode === 'follow') ojou.mode = 'returning';
       ojou.auto = false;
+      if (fumi.auto && fumi.mode === 'follow') fumi.mode = 'returning';
+      fumi.auto = false;
       for (const A of aides) A.follow = false;
       for (const m of medics.blue) if (m.e) m.e.follow = false;
     }
@@ -11724,15 +11809,16 @@ function secSay(parts, text) {
   Voice.say(text, { pitch: 1.05, rate: 0.95 }, 1);
 }
 const secLine = (cat, i) => { const L = VoicePack.man && VoicePack.man._extra && VoicePack.man._extra[cat]; return L ? L[i].text : ''; };
-const menuGirl = () => menuWho === 'sec2' ? sec2.e : menuWho === 'ojou' ? ojou.e : sec.e;
+const menuGirl = () => menuWho === 'sec2' ? sec2.e : menuWho === 'ojou' ? ojou.e : menuWho === 'fumi' ? fumi.e : sec.e;
 function secCat(cat) {   // 二人目の秘書と話しているときは sec2_ の台詞（あれば）。お嬢さま秘書は ojou_
   const X = VoicePack.man && VoicePack.man._extra;
   if (menuWho === 'ojou' && cat.startsWith('sec_')) { const c3 = 'ojou_' + cat.slice(4); if (!X || X[c3]) return c3; }
+  if (menuWho === 'fumi' && cat.startsWith('sec_')) { const c4 = 'fumi_' + cat.slice(4); if (!X || X[c4]) return c4; }
   if (menuWho === 'sec2' && cat.startsWith('sec_')) { const c2 = 'sec2_' + cat.slice(4); if (!X || X[c2]) return c2; }
   return cat;
 }
 function secReply(cat, i = null) {
-  const c = secCat(cat), who = /^ojou_/.test(c) ? ojou.e : /^sec2_/.test(c) || (menuOpen && menuWho === 'sec2') ? sec2.e : sec.e || sec.esc;
+  const c = secCat(cat), who = /^ojou_/.test(c) ? ojou.e : /^fumi_/.test(c) ? fumi.e : /^sec2_/.test(c) || (menuOpen && menuWho === 'sec2') ? sec2.e : sec.e || sec.esc;
   if (who && who.state === 'down') return;   // 戦死判定を受けた娘はもう話さない
   return Talk.as(who, () => secReply0(cat, i));
 }
@@ -11752,10 +11838,10 @@ const SEC_REQ = {
   report() {
     const aReal = livingHead('blue'), eReal = livingHead('orange') + Math.max(0, wave.toSpawn), w = clamp(wave.n, 1, 20);
     const a = Math.min(30, aReal), e = Math.min(30, eReal);
-    const oj = menuWho === 'ojou';
-    const text = oj ? `王様、ご報告いたしますわ。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波です。`;
+    const oj = menuWho === 'ojou', fu = menuWho === 'fumi';
+    const text = fu ? `殿、手帳の写しです。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波です。` : oj ? `王様、ご報告いたしますわ。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波ですわ。` : `ご報告いたします。味方は${aReal}名、敵は${eReal}名。ただいま、第${w}波です。`;
     $('secsay').textContent = `「${text}」`;
-    const s2 = menuWho === 'sec2' ? 'sec2_' : oj ? 'ojou_' : '';
+    const s2 = menuWho === 'sec2' ? 'sec2_' : oj ? 'ojou_' : fu ? 'fumi_' : '';
     secSay([[s2 ? s2 + 'report' : 'sec_report', 0], [s2 + 'num_ally', a], [s2 + 'num_enemy', e], [s2 + 'num_wave', w - 1]], text);
     showSquadReport();   // 分隊ごとの残りの人数を画面に
   },
@@ -11809,12 +11895,13 @@ const SEC_REQ = {
       if (e.state === 'down' || e.state === 'seppuku' || e.team !== 'blue' || e.guard) continue;
       const q = e.s.position;
       const inBox = q.x > hx0 && q.x < hx1 && q.z > hz0 && q.z < hz1;
-      const staff = e.secretary || e.sec2 || e.ojou || e.aide || e.fluter || e.runner || e.medic;
+      const staff = e.secretary || e.sec2 || e.ojou || e.fumi || e.aide || e.fluter || e.runner || e.medic;
       const near = Math.hypot(q.x - hq.sx, q.z - hq.sz) < 11;
       if (!(inBox || (staff && near))) continue;
       if (e.secretary && sec.mode !== 'hq' && !inBox) continue;
       if (e.sec2 && sec2.mode !== 'hq' && !inBox) continue;
       if (e.ojou && ojou.mode !== 'hq' && !inBox) continue;
+      if (e.fumi && fumi.mode !== 'hq' && !inBox) continue;
       if (e.aide && e.aide.follow && !inBox) continue;
       e.state = 'seppuku'; e.t = 0; e.kneel = true; e.tgt = null; e.quietDeath = true; e.passive = true; n++;
       if (e !== talker && said < 2) { e.sepSay = 0.55 + said * 1.05; said++; }
@@ -11830,14 +11917,14 @@ const SEC_REQ = {
   },
 };
 // ---- 機内のみ：「CAさんみたいなことしてよ」（殿の無茶振り）。秘書ごとに性格で反応が変わる（照れながらの機内放送／飲み物／安全の案内の身ぶり／やんわり断る）
-const CA_GESTURE = { sec: '（腰の前でシートベルトを締める身ぶりをしてみせる）', sec2: '（両手をそろえて、前方と後方の非常口を指し示す）', ojou: '（酸素マスクを口元に当てる身ぶりを、優雅にしてみせる）' };
+const CA_GESTURE = { sec: '（腰の前でシートベルトを締める身ぶりをしてみせる）', sec2: '（両手をそろえて、前方と後方の非常口を指し示す）', ojou: '（酸素マスクを口元に当てる身ぶりを、優雅にしてみせる）', fumi: '（手帳を胸に抱え、前方と後方の非常口を丁寧に指し示す）' };
 const caCD = { t: 0 };
 function caBit() {
   if (!PLANE.on) return;
   const who = menuWho, g = menuGirl(); if (!g) return;
-  const pre = who === 'sec2' ? 'sec2_' : who === 'ojou' ? 'ojou_' : 'sec_';
+  const pre = who === 'sec2' ? 'sec2_' : who === 'ojou' ? 'ojou_' : who === 'fumi' ? 'fumi_' : 'sec_';
   const r = Math.random();
-  const kind = who === 'ojou' ? (r < 0.4 ? 'announce' : r < 0.75 ? 'drink' : 'demo')
+  const kind = who === 'ojou' || who === 'fumi' ? (r < 0.4 ? 'announce' : r < 0.75 ? 'drink' : 'demo')
     : (r < 0.3 ? 'announce' : r < 0.6 ? 'drink' : r < 0.85 ? 'demo' : 'refuse');
   const X = VoicePack.man && VoicePack.man._extra, nOf = c => (X && X[c] ? X[c].length : 1);
   const seq = [];
@@ -12006,13 +12093,14 @@ function showSub(id) {
   $('secmain').style.display = id || menuWho !== 'sec' ? 'none' : 'grid';
   $('sec2main').style.display = id || menuWho !== 'sec2' ? 'none' : 'grid';
   $('ojoumain').style.display = id || menuWho !== 'ojou' ? 'none' : 'grid';
+  $('fumimain').style.display = id || menuWho !== 'fumi' ? 'none' : 'grid';
   $('secClose').style.display = id ? 'none' : 'block';
 }
 function openSecMenu() {
   if (menuOpen || state !== 'play') return;
   menuOpen = true; player.drawing = false; player.charge = 0;
   menuWho = talkWho || 'sec';
-  $('secName').textContent = menuWho === 'sec2' ? sec2.name : menuWho === 'ojou' ? ojou.name : sec.name;
+  $('secName').textContent = menuWho === 'sec2' ? sec2.name : menuWho === 'ojou' ? ojou.name : menuWho === 'fumi' ? fumi.name : sec.name;
   $('secmenu').style.display = 'flex'; showSub(null);
   if (document.exitPointerLock && locked()) document.exitPointerLock();
   secReply('sec_greet');
@@ -12041,7 +12129,7 @@ function updateHQ(dt) {
   updateSec2(dt); updateOjou(dt);
   // 話しかけられる相手：そばにいる秘書（二人いれば近いほう）
   let best = null, bd = 3;
-  for (const [who, se] of [['sec', sec.e], ['sec2', sec2.e], ['ojou', ojou.e]]) {
+  for (const [who, se] of [['sec', sec.e], ['sec2', sec2.e], ['ojou', ojou.e], ['fumi', fumi.e]]) {
     if (!se || se.state === 'down' || se.polishT > 0 || Math.abs(player.pos.y - se.baseY) > 0.8) continue;
     const d = Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z);
     if (d < bd) { bd = d; best = who; }
@@ -12423,6 +12511,7 @@ function updateEnemies(dt) {
     else if (e.knife === false && e.kind === 'archer' && !e.hold && npcKnifeFetch(e, dt)) { /* 投げた懐刀を拾いに行く */ }
     else if (e.sec2 && !e.hold && !e.defending) { e.passive = true; sec2Brain(e, dt); }
     else if (e.ojou && !e.hold && !e.defending) { e.passive = true; ojouBrain(e, dt); }
+    else if (e.fumi && !e.hold && !e.defending) { e.passive = true; fumiBrain(e, dt); }
     else if (e.medic && !e.hold) medicBrain(e, dt);
     else if (e.runner && !e.hold) runnerBrain(e, dt);
     else if (e.guard && !e.hold && e.state !== 'charge' && e.state !== 'windup' && e.state !== 'recover' && guardBrain(e, dt)) { /* 近衛：殿のまわりの輪 */ }
@@ -13380,6 +13469,7 @@ function resetGame() {
   for (const k in towers) towers[k].paint = towers[k].press = 0;
   removeFluter(); fluter.dead = false;
   removeOjou(); ojou.dead = false; ojou.mode = 'hq'; ojou.stayHQ = false; ojou.auto = false; ojou.careT = 20;
+  removeFumi(); fumi.dead = false; fumi.mode = 'hq'; fumi.stayHQ = false; fumi.auto = false;
   removeSec2(); sec2.dead = false; sec2.mode = 'hq'; player.speedT = 0; menuWho = 'sec'; talkWho = null;
   for (const t of ['blue', 'orange']) for (const m of medics[t]) { removeMedic(m); m.dead = false; }
   for (const R of runners) { removeRunner(R); R.dead = false; R.job = null; }
@@ -13424,6 +13514,7 @@ function resetGame() {
   smokeReset(); knifeReset();
 }
 function startGame() {
+  REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
@@ -13433,7 +13524,7 @@ function startGame() {
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
   if (builtStage !== 'trench' && builtStage !== 'island') {
-    spawnSecretary(); spawnSec2(); spawnOjou();
+    spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi();
     for (const t of ['blue','orange']) for (const m of medics[t]) spawnMedic(t,m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
@@ -13448,7 +13539,7 @@ function startGame() {
   else if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
   else if (builtStage === 'trench') {
     trenchStartBattle();
-    spawnSecretary(); spawnSec2(); spawnOjou();
+    spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi();
     for (const t of ['blue','orange']) for (const m of medics[t]) spawnMedic(t,m);
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
@@ -13777,6 +13868,7 @@ function secAct(fn) {
   const sub = ['secremarks', 'secmeals', 'secdrinks'].some(k => $(k).style.display === 'grid');
   if (menuOpen && !sub) closeSecMenu(false);
 }
+for (const b of document.querySelectorAll('#secmenu [data-req4]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => FUMI_REQ[b.dataset.req4]()); });
 for (const b of document.querySelectorAll('#secmenu [data-req3]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => OJOU_REQ[b.dataset.req3]()); });
 for (const b of document.querySelectorAll('#secmenu [data-req2]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC2_REQ[b.dataset.req2]()); });
 for (const b of document.querySelectorAll('#secmenu [data-req]')) b.addEventListener('click', ev => { ev.stopPropagation(); secAct(() => SEC_REQ[b.dataset.req]()); });
@@ -13799,5 +13891,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

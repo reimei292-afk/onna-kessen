@@ -1323,6 +1323,15 @@
    "ax": 0.4816,
    "dir": 0,
    "file": "assets/frames/girl26_back.png"
+  },
+  "seatdown": {
+   "hk": 0.7028,
+   "aspect": 0.6933,
+   "ax": 0.6581,
+   "dir": 0,
+   "sy": 0.3837,
+   "sx": 0.6581,
+   "file": "assets/frames/girl26_seatdown.png"
   }
  },
  "girl27": {
@@ -1354,6 +1363,15 @@
    "ax": 0.4836,
    "dir": 0,
    "file": "assets/frames/girl27_back.png"
+  },
+  "seatdown": {
+   "hk": 0.7234,
+   "aspect": 0.7581,
+   "ax": 0.3366,
+   "dir": 0,
+   "sy": 0.4012,
+   "sx": 0.3366,
+   "file": "assets/frames/girl27_seatdown.png"
   }
  },
  "girl28": {
@@ -1385,6 +1403,15 @@
    "ax": 0.4822,
    "dir": 0,
    "file": "assets/frames/girl28_back.png"
+  },
+  "seatdown": {
+   "hk": 0.6949,
+   "aspect": 0.7405,
+   "ax": 0.6554,
+   "dir": 0,
+   "sy": 0.3768,
+   "sx": 0.6554,
+   "file": "assets/frames/girl28_seatdown.png"
   }
  },
  "girl29": {
@@ -1416,6 +1443,15 @@
    "ax": 0.4857,
    "dir": 0,
    "file": "assets/frames/girl29_back.png"
+  },
+  "seatdown": {
+   "hk": 0.7027,
+   "aspect": 0.7955,
+   "ax": 0.666,
+   "dir": 0,
+   "sy": 0.3836,
+   "sx": 0.666,
+   "file": "assets/frames/girl29_seatdown.png"
   }
  },
  "girl30": {
@@ -1447,6 +1483,15 @@
    "ax": 0.4818,
    "dir": 0,
    "file": "assets/frames/girl30_back.png"
+  },
+  "seatdown": {
+   "hk": 0.7272,
+   "aspect": 0.7058,
+   "ax": 0.3429,
+   "dir": 0,
+   "sy": 0.4043,
+   "sx": 0.3429,
+   "file": "assets/frames/girl30_seatdown.png"
   }
  },
  "girl31": {
@@ -1478,6 +1523,15 @@
    "ax": 0.48,
    "dir": 0,
    "file": "assets/frames/girl31_back.png"
+  },
+  "seatdown": {
+   "hk": 0.7181,
+   "aspect": 0.7233,
+   "ax": 0.7045,
+   "dir": 0,
+   "sy": 0.3968,
+   "sx": 0.7045,
+   "file": "assets/frames/girl31_seatdown.png"
   }
  }
 }

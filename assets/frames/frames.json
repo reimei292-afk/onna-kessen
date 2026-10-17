@@ -559,6 +559,13 @@
    "ax": 0.4125,
    "dir": 0,
    "file": "assets/frames/archer07_walk.png"
+  },
+  "down": {
+   "hk": 0.2532,
+   "aspect": 3.9487,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer07_down.png"
   }
  },
  "medic": {
@@ -790,6 +797,13 @@
    "ax": 0.3841,
    "dir": 1,
    "file": "assets/frames/arch01_bow.png"
+  },
+  "down": {
+   "hk": 0.3051,
+   "aspect": 3.2781,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer01_down.png"
   }
  },
  "arch02": {
@@ -807,6 +821,13 @@
    "ax": 0.4706,
    "dir": -1,
    "file": "assets/frames/arch02_bow.png"
+  },
+  "down": {
+   "hk": 0.3093,
+   "aspect": 3.233,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer02_down.png"
   }
  },
  "arch03": {
@@ -824,6 +845,13 @@
    "ax": 0.373,
    "dir": 1,
    "file": "assets/frames/arch03_bow.png"
+  },
+  "down": {
+   "hk": 0.2883,
+   "aspect": 3.4686,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer03_down.png"
   }
  },
  "arch04": {
@@ -841,6 +869,13 @@
    "ax": 0.403,
    "dir": 1,
    "file": "assets/frames/arch04_bow.png"
+  },
+  "down": {
+   "hk": 0.3166,
+   "aspect": 3.1585,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer04_down.png"
   }
  },
  "arch05": {
@@ -858,6 +893,13 @@
    "ax": 0.4283,
    "dir": 1,
    "file": "assets/frames/arch05_bow.png"
+  },
+  "down": {
+   "hk": 0.3512,
+   "aspect": 2.8477,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer05_down.png"
   }
  },
  "arch06": {
@@ -875,6 +917,13 @@
    "ax": 0.5109,
    "dir": 1,
    "file": "assets/frames/arch06_bow.png"
+  },
+  "down": {
+   "hk": 0.3333,
+   "aspect": 3.0,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer06_down.png"
   }
  },
  "surgeon": {
@@ -1162,6 +1211,87 @@
    "ax": 0.5,
    "dir": -1,
    "file": "assets/frames/girl25_down.png"
+  }
+ },
+ "archer01": {
+  "down": {
+   "hk": 0.3051,
+   "aspect": 3.2781,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer01_down.png"
+  }
+ },
+ "archer02": {
+  "down": {
+   "hk": 0.3093,
+   "aspect": 3.233,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer02_down.png"
+  }
+ },
+ "archer03": {
+  "down": {
+   "hk": 0.2883,
+   "aspect": 3.4686,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer03_down.png"
+  }
+ },
+ "archer04": {
+  "down": {
+   "hk": 0.3166,
+   "aspect": 3.1585,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer04_down.png"
+  }
+ },
+ "archer05": {
+  "down": {
+   "hk": 0.3512,
+   "aspect": 2.8477,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer05_down.png"
+  }
+ },
+ "archer06": {
+  "down": {
+   "hk": 0.3333,
+   "aspect": 3.0,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer06_down.png"
+  }
+ },
+ "archer08": {
+  "down": {
+   "hk": 0.2466,
+   "aspect": 4.0556,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer08_down.png"
+  }
+ },
+ "archer09": {
+  "down": {
+   "hk": 0.2031,
+   "aspect": 4.9231,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer09_down.png"
+  }
+ },
+ "archer10": {
+  "down": {
+   "hk": 0.2462,
+   "aspect": 4.0616,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/archer10_down.png"
   }
  }
 }

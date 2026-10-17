@@ -8641,6 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
+const ASSET_V = '20261017q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -8662,6 +8663,7 @@ function loadFrames(done) {
     for (const gid in GIRLS) { const g = GIRLS[gid]; if (!g.front) { delete GIRLS[gid]; continue; }
       if (g.cycles) for (const k in g.cycles) { const C = g.cycles[k]; if (C.seq.some(i => !C.frs[i])) delete g.cycles[k]; }   // 読めなかった絵があれば使わない
       g.cycle = g.cycles && g.cycles.walk_side || null;
+      if (g.type === 'archer' && !g.bow && !(g.side && g.back)) g.bowOnly = true;   // 弓を引く立ち姿（assets/archerNN.png）だけの弓兵：弓兵として出す（倒れたら archerNN_down）
       if (g.bowOnly) {   // 弓を引く写真しか無い娘：どの見え方もその写真（横は向きに合わせて反転）。倒れたあとは写真のまま横たわる
         const b = g.bow || g.front; g.bow = b; g.front = b; g.side = g.side || b; g.walk = g.walk || b;
       }
@@ -8682,7 +8684,7 @@ function loadFrames(done) {
       framesLoaded++; fin(); };
     const emb = m.cyc ? m.emb : data[gid + '_' + k];
     const fb = () => emb ? loader.load(emb, ok, undefined, () => fin()) : fin();
-    if (useFiles) loader.load(m.file + '?v=' + (m.hk || 1), ok, undefined, fb); else fb();
+    if (useFiles) loader.load(m.file + '?v=' + ASSET_V + '_' + (m.hk || 1), ok, undefined, fb); else fb();
   }
 }
 // 追加の娘（frames/manifest.json）：役割と固定のプロフィール（名前・性格・身長・声の高さ vv 0 低〜2 高）
@@ -8730,13 +8732,17 @@ function fallImages(e) {
   if (g.down) seq.push(g.down);
   g.fallSeq = seq; return seq;
 }
-function pickGirl(kind) {
+function pickGirl(kind, perch) {
   const all = Object.values(GIRLS).filter(g => g.id !== SEC_ID && g.id !== SEC2_ID && g.id !== FLUTE_ID && g.id !== MEDIC_ID && (g.type === 'mob' || g.type === 'archer'));
   // 弓兵：弓を引く写真（bow）のある娘、または横・後ろがそろった弓兵の写真。近接兵：侍女（mob）
   let fit = all.filter(g => kind === 'archer' ? (g.bow || g.anyRole || (g.type === 'archer' && g.side && g.back)) : g.type === 'mob');
   if (!fit.length) fit = all.filter(g => kind === 'archer' ? g.type === 'archer' : g.stab);
   const pool = fit.length ? fit : (all.length ? all : Object.values(GIRLS));
   const inUse = new Set(enemies.map(e => e.girl && e.girl.id));
+  // 手すり・胸壁・狭間の持ち場：slump の写真がある娘を半分の確率で優先（倒れたとき手すりに崩れる姿が見える）
+  if (perch && (perch.gt || perch.gh || perch.seiran || perch.slit || perch.tower) && Math.random() < 0.5) {
+    const sl = pool.filter(g => g.slump && !inUse.has(g.id)); if (sl.length) return pick(sl);
+  }
   const fresh = pool.filter(g => !inUse.has(g.id));
   return (fresh.length ? pick(fresh) : pick(pool)) || null;
 }
@@ -9403,7 +9409,7 @@ const aliveOf = team => enemies.filter(e => e.team === team && e.state !== 'down
 const livingHead = team => enemies.filter(e => e.team === team && e.state !== 'down').length;
 // team: 'orange'（敵・橙組） / 'blue'（味方・青組）
 function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
-  const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind);
+  const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind, opt.perch);
   if (!g) return null;
   const spr = g.spr;                                    // 照準パネルの顔写真
   const prof = makeProfile(), n = wave.n;
@@ -9942,16 +9948,18 @@ function tryLean(e) {
   if (!L) return false;
   const f = e.s.rotation.y, fx = Math.sin(f), fz = Math.cos(f), fd = -(fx * L.nx + fz * L.nz);   // 正：壁の方を向いている
   // v9：門上の胸壁・櫃の胸壁・井闌の手すり（slumpSpot）では、slump の写真がある娘は手すりに前のめりに崩れる（確率 SLUMP_P）
-  const spot = L.b.slumpSpot || (pr && (pr.gt || pr.gh || pr.seiran));
+  const spot = L.b.slumpSpot || (pr && (pr.gt || pr.gh || pr.seiran || pr.tower));
   if (e.girl.slump && L.rh >= 0.7 && L.rh <= 1.35 && fd > -0.3 && (spot ? Math.random() < SLUMP_P : (fd > 0.2 && L.thick <= 0.36 && Math.random() < LEAN_P * 0.5))) {
     e.lean = { kind: 'slump', L, rh: L.rh, t: 0, p0: e.s.position.clone(), F: new V3(-L.nx, 0, -L.nz), W: 0 };
     buildSlump(e); return true;
   }
-  if (!e.girl.down || Math.random() >= LEAN_P) return false;
+  // slump の写真が無い娘：手すりの持ち場では、横たわった写真を手すりに折り曲げて掛ける（drape）を優先
+  const spotDrape = spot && L.rh >= 0.7 && L.rh <= 1.35 && fd > -0.3;
+  if (!e.girl.down || (!spotDrape && Math.random() >= LEAN_P)) return false;
   const W = e.figH * e.girl.down.hk * e.girl.down.aspect;
   const hipY = Math.min(L.rh - 0.1, (1 - LEAN_HIP_U) * W * 0.92);
   const railOK = L.rh <= 1.3 && L.rh >= 0.75 && L.thick <= 0.36 && Math.hypot(0.14, L.rh + 0.05 - hipY) < (LEAN_HIP_U - 0.12) * W;
-  let kind = fd > 0.2 && railOK ? 'drape' : fd > 0.35 ? 'kneel' : fd < -0.2 ? 'sit' : (Math.random() < 0.6 ? 'sit' : 'kneel');
+  let kind = (fd > 0.2 || spotDrape) && railOK ? 'drape' : fd > 0.35 ? 'kneel' : fd < -0.2 ? 'sit' : (Math.random() < 0.6 ? 'sit' : 'kneel');
   if (kind === 'kneel' && L.rh < 1.0) kind = 'sit';   // 低い胸壁には膝をついてもたれない
   e.lean = { kind, L, t: 0, side: Math.random() < 0.5 ? -1 : 1, view: null, p0: e.s.position.clone(), W };
   buildLeanPose(e);
@@ -10014,7 +10022,7 @@ function buildLeanPose(e) {
 // ---- v9：手すり・窓枠に前のめりに崩れる（slump）。写真 assets/frames/<id>_slump.png（frames の slump）
 //   写真の約束：横から見た姿。左に脚（手すりの手前に立つ側）、右へ上体・腕・頭が手すりの向こうに垂れる。背景は透明。
 //   手すりの上端は写真の下から ry（既定 0.55）、左右は左から rx（既定 0.45）の位置。手すりの高さに合わせて大きさを決める
-const SLUMP_P = (() => { const v = parseFloat(new URLSearchParams(location.search).get('slump')); return isFinite(v) ? clamp(v, 0, 1) : 0.75; })();
+const SLUMP_P = (() => { const v = parseFloat(new URLSearchParams(location.search).get('slump')); return isFinite(v) ? clamp(v, 0, 1) : 0.95; })();
 function trySlumpSlit(e, pr, W) {
   if (Math.random() >= SLUMP_P) return false;
   // 狭間の壁：壁が見つかればその面、無ければ射っていた向きを法線にする。穴の下枠（約 1.15m）に上体を預ける

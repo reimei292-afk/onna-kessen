@@ -1007,7 +1007,7 @@ function vehDumpBodies(C) {
     if (!o || o === 'P' || isUp(o)) continue;
     const [wx, wz] = world((s % 2 ? 1 : -1) * 2.2, -1.7);
     C.seats[s] = null;
-    o.keiDead = null; o.slump = null; o.seated = null;
+    o.keiDead = null; o.slump = null; o.seated = null; endSeatDown(o);
     o.baseY = C.kind ? 0 : groundH(wx, wz);
     o.s.position.set(wx, o.baseY, wz);
     if (o.tilt) { o.tilt.rotation.x = Math.PI / 2; o.tilt.position.y = 0.02; }
@@ -2419,7 +2419,7 @@ function segSegD(a, b) {
 // 倒れ方（機内）：席で倒れた娘は座ったまま崩れる。列の間では座面の上に横たわり、通路では通路に沿って（ときに肘掛け越しに座席へ）倒れ、先に倒れた娘の上に重なる
 function planeFall(e) {
   const p = e.s.position, H = e.figH, ax = Math.abs(p.x);
-  if (e.seated) { e.slump = { side: Math.random() < 0.5 ? -1 : 1, fwd: rand(0.12, 0.28) }; e.seated = null; return; }
+  if (e.seated) { e.slump = { side: Math.random() < 0.5 ? -1 : 1, fwd: -rand(0.06, 0.14) }; e.seated = null; return; }   // 背もたれへ沈む
   const cell = plCellAt(p.x, p.z), zn = plZone(p.z);
   let yaw = e.fallYaw, tiltA = 0, land = 0;
   if (cell && cell.eco) {
@@ -8677,7 +8677,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017za';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -8715,7 +8715,7 @@ function loadFrames(done) {
   for (const [gid, k, m] of jobs) {
     const ok = t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       const fr = { tex: t, aspect: m.aspect || t.image.width / t.image.height, hk: m.hk || 1, ax: m.ax == null ? 0.5 : m.ax, dir: m.dir || 0 };
-      if (m.ry != null) fr.ry = m.ry; if (m.rx != null) fr.rx = m.rx;   // slump：手すりの位置（写真の下からの高さ・左からの位置の比率）
+      if (m.ry != null) fr.ry = m.ry; if (m.rx != null) fr.rx = m.rx; if (m.sy != null) fr.sy = m.sy; if (m.sx != null) fr.sx = m.sx;   // seatdown：腰（座面）の位置   // slump：手すりの位置（写真の下からの高さ・左からの位置の比率）
       if (m.cyc) { fr.cyc = m.cyc; m.cyc.frs[m.i] = fr; } else GIRLS[gid][k] = fr;
       framesLoaded++; fin(); };
     const emb = m.cyc ? m.emb : data[gid + '_' + k];
@@ -10259,7 +10259,7 @@ function updateBodies(dt) {
     }
     const ly = b.lying;
     if (b.lean) { updateLean(b, 0); continue; }
-    if (b.slump) { b.tilt.rotation.y = Math.atan2(camera.position.x - b.s.position.x, camera.position.z - b.s.position.z) - b.s.rotation.y; continue; }
+    if (b.slump) { seatPose(b, 1); continue; }
     if (!ly) {
       if (MOTION && b.mo && b.mo.D && b.mo.D.fbx && b.state === 'down') Mo.fallSprite(b, b.mo.D, 0);   // FBX の倒れ終わりの姿のまま
       else if (b.genericCorpse) {
@@ -10785,12 +10785,14 @@ function killEnemy(e, byPlayer, from) {
     if (Math.abs(angDiff(best, away)) < 1.25) e.fallYaw = best + rand(-0.12, 0.12);
     e.fallMir = best === cand[1];
   }
+  const seatCtx = seatCtxOf(e), seatYaw = e.s.rotation.y;
   if (PLANE.on) planeFall(e);
   if (e.driver && e.seated && !(e.seated && e.seated.kei)) { e.slump = { side: -0.6, fwd: 0.42 }; e.seated = null; e.face = CAR.yaw; }   // 運転手：ハンドルに突っ伏す
   else if (e.seated && e.seated.kei) {   // 浜の軽自動車：席に残したまま。そばで降ろすまで車と一緒
-    const C = e.seated.kei; e.slump = { side: ((e.keiSlot || 0) % 2 ? 1 : -1) * 0.45, fwd: 0.28 }; e.keiDead = C; e.face = C.yaw; e.seated = null; e.keiGo = null;
+    const C = e.seated.kei; e.slump = { side: ((e.keiSlot || 0) % 2 ? 1 : -1), fwd: -rand(0.05, 0.12) }; e.keiDead = C; e.face = C.yaw; e.seated = null; e.keiGo = null;
   }
   else if (BEACH.on && e.boat && (e.seated || inBoat(e.boat, e.s.position.x, e.s.position.z, 0.2))) boatFall(e);   // 舟の中で崩れる（海には落ちない）
+  if (e.slump && seatCtx) startSeatDown(e, seatCtx, seatYaw);
   if (e.keiGo) e.keiGo = null;
   if (e.keiTail) { e.keiTail = null; e.crouch = 0; }
   if (e.beachBundle) { e.beachBundle.bearer = null; e.beachBundle = null; }
@@ -10811,6 +10813,52 @@ function killEnemy(e, byPlayer, from) {
     if (r < 0.38) addPickup('arrow', e.s.position);
     else if (r < 0.38 + (player.hp < 60 ? 0.18 : 0.08)) addPickup('food', e.s.position);
   }
+}
+
+// ---- 席で事切れた娘（seatdown）：座ったまま背もたれへ沈み、頭が横へ傾き、腕は膝・脇へ垂れる。血は出さない
+//   写真 assets/frames/<id>_seatdown.png（tools/add_seatdown.py）があればそれに切り替え、腰（sy・sx）を座面に合わせる。無ければ立ち姿を沈めて傾ける
+//   車（殿の車・軽自動車・トラック）ではシートベルトを描く
+const SEAT_HIP = 0.53, _sdV = new THREE.Vector3();   // 立ち姿の腰の高さ（身長比）
+function seatCtxOf(e) { const S = e.seated; if (!S) return null; return S.boat ? 'boat' : S.seat ? 'plane' : S.kei ? (S.kei.kind === 'cata' ? 'cata' : 'kei') : S.car ? 'car' : 'seat'; }
+const beltMat = new THREE.MeshBasicMaterial({ color: 0x1e2024, side: THREE.DoubleSide });
+const beltGeo = new THREE.PlaneGeometry(1, 1);
+function startSeatDown(e, ctx, yaw) {
+  e.seatDown = { ctx, yaw, mir: Math.random() < 0.5, ty0: e.tilt.position.y, belt: ctx === 'car' || ctx === 'kei' };
+  if (e.seatDown.belt && !e.belt) {
+    const a = new THREE.Mesh(beltGeo, beltMat), b = new THREE.Mesh(beltGeo, beltMat);
+    a.renderOrder = b.renderOrder = 3; e.belt = [a, b]; e.tilt.add(a); e.tilt.add(b);
+  }
+}
+function endSeatDown(e) { if (e.belt) { for (const m of e.belt) if (m.parent) m.parent.remove(m); e.belt = null; } e.seatDown = null; }
+function placeBelt(e, hipY, shY, w, mir) {   // 肩から反対の腰へ斜めの帯、腰に横の帯（写真の前にわずかに浮かせる）
+  if (!e.belt) return;
+  const sg = mir ? -1 : 1, x0 = 0.11 * sg * e.figH / 1.6, x1 = -0.12 * sg * e.figH / 1.6, z = 0.02;
+  const [a, b] = e.belt, dx = x1 - x0, dy = hipY - shY, L = Math.hypot(dx, dy);
+  a.position.set((x0 + x1) / 2, (shY + hipY) / 2, z); a.scale.set(0.045, L, 1); a.rotation.set(0, 0, Math.atan2(-dx, dy));
+  b.position.set(0, hipY + 0.02, z); b.scale.set(w, 0.04, 1); b.rotation.set(0, 0, 0);
+}
+function seatPose(e, k) {
+  const q = 1 - (1 - k) * (1 - k), sl = e.slump || { side: 1, fwd: 0 }, sd = e.seatDown, g = e.girl, p = e.s.position;
+  const cam = Math.atan2(camera.position.x - p.x, camera.position.z - p.z);
+  const yaw = sd ? (e.keiDead && e.keiDead.yaw != null ? e.keiDead.yaw : sd.yaw) : e.s.rotation.y;
+  const rel = angDiff(cam, yaw), behind = Math.abs(rel) > 2.0;
+  if (sd && g && g.seatdown && k >= 0.5 && !behind) {   // 座ったまま事切れた写真
+    const fr = g.seatdown; setFrame(e, fr, sd.mir);
+    const h = e.figH * fr.hk, sy = fr.sy != null ? fr.sy : 0.42, hip = e.figH * SEAT_HIP - SEAT_SINK;
+    e.tilt.position.set(0, hip - sy * h, 0);
+    e.tilt.rotation.set(0, yaw + clamp(rel, -1.1, 1.1) - e.s.rotation.y, 0);
+    placeBelt(e, sy * h, sy * h + 0.31 * e.figH, 0.34 * e.figH / 1.6, sd.mir);
+    return;
+  }
+  if (sd && g && g.seatdown && e.fr === g.seatdown) { setFrame(e, g.front, false); }   // 後ろから：立ち姿を沈めたまま（背もたれの陰）
+  // 写真が無いとき：立ち姿を沈めたまま、頭と上体を横へ傾け、背もたれへ少し沈む
+  e.tilt.rotation.x = q * sl.fwd; e.tilt.rotation.z = q * (sd ? 0.24 : 0.34) * sl.side;
+  e.tilt.rotation.y = cam - e.s.rotation.y;
+  if (sd) {   // 腰を支点に傾ける（足元を支点にすると上体が席の外へ出る）
+    const hy = e.figH * SEAT_HIP; _sdV.set(0, hy, 0).applyEuler(e.tilt.rotation);
+    e.tilt.position.set(-_sdV.x, sd.ty0 - 0.05 * q * e.figH / 1.6 + hy - _sdV.y, -_sdV.z);
+  }
+  if (e.belt) placeBelt(e, e.figH * SEAT_HIP, e.figH * 0.82, 0.34 * e.figH / 1.6, false);
 }
 function toBodies(e) {
   enemies.splice(enemies.indexOf(e), 1);
@@ -12300,9 +12348,8 @@ function updateEnemies(dt) {
         continue;
       }
       if (e.slump) {   // 機内：席に座ったまま崩れる（横へ傾き、少し前へうなだれる）
-        const k = Math.min(1, e.t / 0.7), q = 1 - (1 - k) * (1 - k);
-        p.y = e.baseY; e.tilt.rotation.x = q * e.slump.fwd; e.tilt.rotation.z = q * 0.34 * e.slump.side;
-        e.tilt.rotation.y = Math.atan2(camera.position.x - p.x, camera.position.z - p.z) - e.s.rotation.y;
+        const k = Math.min(1, e.t / 0.7);
+        p.y = e.baseY; seatPose(e, k);
         if (!e.thud && k >= 1) { e.thud = true; Sfx.thudAt(Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + 8); }
         if (e.t >= 0.95) toBodies(e);
         continue;
@@ -13689,6 +13736,7 @@ function frame(now) {
   if (AIRPORT.on) airportCrewFaceAll();
   if (PLANE.on) updatePlaneFx(state === 'play' ? dt : state === 'title' ? dt : 0);
   if (MOTION) { updateSunShadow((now - (frame.prev || now)) / 1000); frame.prev = now; Mo.flush(); }
+  if (window.__camOverride) window.__camOverride(camera);   // テスト用（見え方の確認）
   renderer.render(scene, camera);
   drawWeapon();
 }
@@ -13750,5 +13798,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

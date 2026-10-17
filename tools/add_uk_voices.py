@@ -11,13 +11,15 @@ import edge_tts
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 D = os.path.join(ROOT, 'assets', 'voices', 'uk')
 FORCE = '--force' in sys.argv
+WHO = set(next((a.split('=', 1)[1].split(',') for a in sys.argv if a.startswith('--who=')), []))   # --who=uk03,uk05：その話し手だけ作り直す
+# en-GB の女性の声は edge-tts では Sonia / Libby / Maisie の 3 つだけ（Abbi・Bella・Hollie・Olivia などは 2026-10 時点で音声が返らない）
 # 声：(voice, 話速%, 高さHz)
 VOICES = {
   'uk01': ('en-GB-LibbyNeural', 6, 3),     # Imogen Hartley：明るく負けず嫌い
   'uk02': ('en-GB-SoniaNeural', -6, -10),  # Harriet Pemberton：低く落ち着いた貴族
-  'uk03': ('en-GB-MaisieNeural', 2, -2),   # Rosie Whitmore：やわらかく少し慌てがち
+  'uk03': ('en-IE-EmilyNeural', 0, 2),     # Rosie Whitmore：やわらかく少し慌てがち（アイルランド英語の声で他の娘と分ける）
   'uk04': ('en-GB-SoniaNeural', 4, -3),    # Beatrice Thorne：歯切れよく皮肉屋
-  'uk05': ('en-GB-LibbyNeural', 2, -6),    # Molly Fairbairn：温かく面倒見がいい
+  'uk05': ('en-IE-EmilyNeural', 2, -5),    # Molly Fairbairn：温かく面倒見がいい（同上・低め）
   'uk06': ('en-GB-SoniaNeural', -10, 0),   # Eleanor Ashcombe：ゆっくり端正な使者
   'uk07': ('en-GB-LibbyNeural', -10, -2),  # Clara Bennett：夢見がちで静か
   'uk08': ('en-GB-LibbyNeural', -2, -12),  # Scarlett Hayward：低めで自信家
@@ -142,14 +144,16 @@ for k, v in L.items():
     if v['en'] is None: v['en'] = ''
 async def one(sem, key, v):
     path = os.path.join(D, key + '.mp3')
-    if not FORCE and os.path.exists(path) and os.path.getsize(path) > 800: return
+    if not (FORCE or v['who'] in WHO) and os.path.exists(path) and os.path.getsize(path) > 800: return
     voice, rate, pitch = VOICES[v['who']]
     text = v['en'] or v['ja']
     if '_defeat_' in key: rate += 4   # 倒れる声は少しだけ速く・短く
     async with sem:
         for a in range(4):
             try:
-                await edge_tts.Communicate(text, voice, rate=f'{rate:+d}%', pitch=f'{pitch:+d}Hz').save(path); return
+                tmp = path + '.part'; await edge_tts.Communicate(text, voice, rate=f'{rate:+d}%', pitch=f'{pitch:+d}Hz').save(tmp)
+                if os.path.getsize(tmp) < 800: raise RuntimeError('empty audio')
+                os.replace(tmp, path); return
             except Exception as ex:
                 await asyncio.sleep(1.5 * (a + 1))
         print('FAILED', key, text)

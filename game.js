@@ -2780,7 +2780,7 @@ function stageLook(name) {
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   const uk = name === 'ukMeet'; UK.on = uk; document.documentElement.classList.toggle('ukmeet', uk); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
-  ground.visible = !pl && !uk && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr; for (const m of mountains) m.visible = !pl && !mt && !nr;
+  ground.visible = !pl && !uk && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.background.setHex(uk ? 0xa9c3d6 : pl ? 0x1a1a1e : nr ? 0x071020 : sn ? 0xc5d6e6 : mt ? 0x9bb7c9 : ap ? 0x9ab9d2 : isl ? 0x93b9c7 : tr ? 0x9b8c70 : LOOK0.bg);
   hemiL.color.setHex(pl ? 0xfff2df : nr ? 0x53698e : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : isl ? 0xe3f2e7 : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(pl ? 0x6a5a4a : nr ? 0x151b26 : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : isl ? 0x4d5e35 : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = pl ? 1.25 : nr ? 0.38 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : isl ? 1.45 : tr ? 1.08 : LOOK0.hemi[2];
@@ -8818,6 +8818,7 @@ function ukShipShift(dx) {   // 船を前へ（帆を上げて去る）：船・
 }
 const ukInRect = (f, x, z, m) => x > f.x0 - m && x < f.x1 + m && z > f.z0 - m && z < f.z1 + m;
 function ukOnShip() { return UK.shipFloors.concat(UK.stairFloors).some(f => ukInRect(f, player.pos.x, player.pos.z, 0.15) && Math.abs(player.pos.y - f.y) < 0.6); }
+function ukOnDeck() { const P = player.pos; return P.y > 2.6 && UK.shipFloors.some(f => ukInRect(f, P.x, P.z, 0) && Math.abs(P.y - f.y) < 0.12); }
 function ukOnBoat(B) { return ukInRect(B.floor, player.pos.x, player.pos.z, 0.15) && Math.abs(player.pos.y - B.floor.y) < 0.7; }
 // 殿の足元：甲板・舟・段の上だけを歩ける（海へは落ちない）。高い段へは 0.42m までしか上がれない
 let ukLastOk = null;
@@ -8870,6 +8871,8 @@ function ukSpeak(key) {
   if (e) { e.ukTalkT = time + (L.dur || 3) + 0.6; }
   const P = UK_PROF[L.who];
   const nm = P ? `${P.name}<small>${P.en}・${P.role}</small>` : (UK_WHO_NAME[L.who] || '');
+  const pic = e ? portraitOf(e.spr || (e.girl && e.girl.spr)) : '', pe = $('ukdlgPic');   // 話している本人の顔（殿は出さない）
+  if (pe) { if (pic) { pe.src = pic; pe.style.display = 'block'; pe.dataset.who = L.who; } else { pe.removeAttribute('src'); pe.style.display = 'none'; pe.dataset.who = ''; } }
   $('ukdlgName').innerHTML = nm; $('ukdlgEn').textContent = L.en || ''; $('ukdlgJa').textContent = L.en ? L.ja : '「' + L.ja + '」';
   $('ukdlg').classList.toggle('jp', !L.en); $('ukdlg').style.display = 'block'; $('ukdlgChoices').innerHTML = ''; $('ukdlgHint').style.display = 'block';
   UK.log.push(key);
@@ -8941,10 +8944,20 @@ function ukGirlTalk(e) {
   ukDlg([{ say: id + '_intro' }, menu()]);
 }
 function ukTalkNear() {
-  if (UK.dlg || state !== 'play') return null;
-  let best = null, bd = 2.7;
-  for (const e of UK.girls.concat(UK.jp)) { if (!isUp(e) || Math.abs(player.pos.y - e.baseY) > 1) continue; const d = Math.hypot(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); if (d < bd) { bd = d; best = e; } }
-  return best;
+  if (UK.dlg || state !== 'play' || UK.phase === 'leaving' || UK.phase === 'end') return null;
+  // 照準（視線）にいちばん近い娘：3.2m 以内・視線から 40° 以内。だれも視線上にいなければ、1.4m 以内のいちばん近い娘
+  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+  let best = null, bs = 1e9, near = null, nd = 1.4;
+  for (const e of UK.girls.concat(UK.jp)) {
+    if (!isUp(e) || Math.abs(player.pos.y - e.baseY) > 1) continue;
+    const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz);
+    if (d < nd) { nd = d; near = e; }
+    if (d > 3.2 || d < 0.05) continue;
+    const ang = Math.acos(clamp((dx * fx + dz * fz) / d, -1, 1));
+    if (ang > 0.7) continue;
+    const sc = ang * 2.5 + d * 0.25; if (sc < bs) { bs = sc; best = e; }
+  }
+  return best || near;
 }
 function ukUse() {
   if (!UK.on) return false;
@@ -9045,18 +9058,23 @@ function updateUk(dt) {
     const go = () => ukDlg([{ say: 'invite_uk06' }, { say: 'king_board' }, { fn: () => popup('舷梯（右手の梯子段）を上れ') }]);
     if (UK.dlg) UK.dlg.q.push({ fn: go }); else go();
   }
-  if (UK.phase === 'moored' && !UK.dlg && UK.by.uk06 && player.pos.y > 2.6) {
+  if (UK.phase === 'moored' && !UK.dlg && UK.by.uk06 && ukOnDeck()) {   // 甲板に立ってから（舷梯の上ではまだ始めない）
     const e = UK.by.uk06; if (Math.hypot(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z) < 3.6) ukParley();
   }
   if (UK.phase === 'after' && !UK.dlg && ukOnBoat(UK.king)) {
     UK.phase = 'leaving'; UK.goal = 'ライオネス号が帆を上げる…';
     for (const f of UK.stairFloors) { f.y = -50; }   // 舷梯を引き上げる
-    ukDlg([{ wait: 2.0 }, { say: 'king_end' }, { say: 'sumi_end' }, { wait: 2.5 }], () => { UK.phase = 'end'; UK.endT = 1.5; });
+    ukDlg([{ wait: 2.0 }, { say: 'king_end' }, { say: 'sumi_end' }, { wait: 2.5 }], () => { UK.phase = 'end'; UK.endT = 6; });   // 船が遠ざかるのを見せてから幕（6 秒以上、船が 45m 先へ出るまで）
   }
-  if (UK.phase === 'leaving' || UK.phase === 'end') { UK.shipV = Math.min(2.2, UK.shipV + dt * 0.25); ukShipShift(UK.shipV * dt); }
-  if (UK.phase === 'end' && (UK.endT -= dt) <= 0) ukEnding();
+  if (UK.phase === 'leaving' || UK.phase === 'end') { UK.shipV = Math.min(4.5, UK.shipV + dt * 0.5); ukShipShift(UK.shipV * dt); }
+  if (UK.phase === 'end' && UK.ship) {   // 幕の前：去っていく船の方へゆっくり目を向ける
+    const tx = UK.ship.position.x - 4, dx = tx - player.pos.x, dz = 0 - player.pos.z, want = Math.atan2(-dx, -dz);
+    let da = want - player.yaw; da = Math.atan2(Math.sin(da), Math.cos(da)); player.yaw += da * Math.min(1, dt * 1.2); player.pitch += (0.12 - player.pitch) * Math.min(1, dt * 1.2);
+  }
+  if (UK.phase === 'end' && (UK.endT -= dt) <= 0 && (UK.ship.position.x > 45 || UK.endT < -12)) ukEnding();
   ukDlgTick(dt);
   UK.near = ukTalkNear();
+  for (const e of UK.girls.concat(UK.jp)) { const d = Math.hypot(e.s.position.x - camera.position.x, e.s.position.z - camera.position.z); e.s.visible = !(d < 0.85 && Math.abs(camera.position.y - e.baseY - 1.2) < 1.2); }   // カメラに触れるほど近い娘は消す
   document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
 }
 if (TEST) window.__uk = { UK, ukUse: () => ukUse(), ukPick: i => ukPick(i), ukParley: () => ukParley(), ukDlgSkip: () => ukDlgSkip(), boatWorld: (B, x, z) => boatWorld(B, x, z) };
@@ -9274,7 +9292,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017zf';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017zg';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -10813,7 +10831,7 @@ function runnerBrain(e, dt) {
   }
 }
 // ---- 頭上の小さな名札（分隊名＋名前）。近くの娘だけ（最大 14 人） ----
-const TAG_R = 20, TAG_MAX = 14;
+const TAG_R = 20, TAG_MAX = 14, UK_TAG_R = 11;
 function tagLabel(e) {
   const p = (e.prof.name || '').split(' '), nm = p.length >= 2 ? p.slice(0, -2).concat(p.slice(-2).join('')).join(' ') : e.prof.name;
   if (e.seated && PLANE.intro) return nm;   // 奇襲の前：乗客として名前だけ
@@ -10842,12 +10860,13 @@ function updateTags() {
     if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic || e.ojou || e.ukTag)) tagNear.push([d, e]);
   }
   tagNear.sort((a, b) => a[0] - b[0]);
+  if (UK.on) { const n = tagNear.findIndex(t => t[0] > UK_TAG_R); if (n >= 0) tagNear.length = n; if (tagNear.length > 4) tagNear.length = 4; }   // 英国淑女編：近い 4 人だけ（遠くの名札は重なるので出さない）
   for (let i = 0; i < Math.min(TAG_MAX, tagNear.length); i++) {
     const e = tagNear[i][1], txt = tagLabel(e);
     if (e.tagKey !== txt) { makeTag(e, txt); e.tagKey = txt; }
     const top = e.baseY + e.figH * (1 - 0.38 * e.crouch);
     e.tag.position.set(e.s.position.x, top + (e.hp < e.hpMax ? 0.68 : 0.55), e.s.position.z);
-    e.tag.visible = true; e.tag.material.opacity = clamp((TAG_R - tagNear[i][0]) / 5, 0, 1);
+    e.tag.visible = true; e.tag.material.opacity = UK.on ? clamp((UK_TAG_R - tagNear[i][0]) / 4, 0, 1) : clamp((TAG_R - tagNear[i][0]) / 5, 0, 1);
   }
 }
 // ---- 倒れた娘：横たわった写真（down）を地面に沿った低いビルボードで。上から見ると地面の写真へ切り替わる ----

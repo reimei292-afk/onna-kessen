@@ -1749,6 +1749,13 @@
    "ax": 0.485,
    "dir": 0,
    "file": "assets/frames/uk01_back.png"
+  },
+  "down": {
+   "hk": 0.2133,
+   "aspect": 4.1645,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk01_down.png"
   }
  },
  "uk02": {
@@ -1780,6 +1787,13 @@
    "ax": 0.4883,
    "dir": 0,
    "file": "assets/frames/uk02_back.png"
+  },
+  "down": {
+   "hk": 0.2145,
+   "aspect": 4.3724,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk02_down.png"
   }
  },
  "uk03": {
@@ -1811,6 +1825,13 @@
    "ax": 0.4849,
    "dir": 0,
    "file": "assets/frames/uk03_back.png"
+  },
+  "down": {
+   "hk": 0.2208,
+   "aspect": 4.3129,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk03_down.png"
   }
  },
  "uk04": {
@@ -1842,6 +1863,13 @@
    "ax": 0.494,
    "dir": 0,
    "file": "assets/frames/uk04_back.png"
+  },
+  "down": {
+   "hk": 0.2073,
+   "aspect": 4.1307,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk04_down.png"
   }
  },
  "uk05": {
@@ -1873,6 +1901,13 @@
    "ax": 0.4883,
    "dir": 0,
    "file": "assets/frames/uk05_back.png"
+  },
+  "down": {
+   "hk": 0.2413,
+   "aspect": 3.7515,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk05_down.png"
   }
  },
  "uk06": {
@@ -1904,6 +1939,13 @@
    "ax": 0.4904,
    "dir": 0,
    "file": "assets/frames/uk06_back.png"
+  },
+  "down": {
+   "hk": 0.2129,
+   "aspect": 4.6963,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk06_down.png"
   }
  },
  "uk07": {
@@ -1935,6 +1977,13 @@
    "ax": 0.4821,
    "dir": 0,
    "file": "assets/frames/uk07_back.png"
+  },
+  "down": {
+   "hk": 0.2031,
+   "aspect": 4.2617,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk07_down.png"
   }
  },
  "uk08": {
@@ -1966,6 +2015,13 @@
    "ax": 0.4909,
    "dir": 0,
    "file": "assets/frames/uk08_back.png"
+  },
+  "down": {
+   "hk": 0.1972,
+   "aspect": 4.3425,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk08_down.png"
   }
  },
  "uk09": {
@@ -1997,6 +2053,13 @@
    "ax": 0.4879,
    "dir": 0,
    "file": "assets/frames/uk09_back.png"
+  },
+  "down": {
+   "hk": 0.1959,
+   "aspect": 4.22,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk09_down.png"
   }
  },
  "uk10": {
@@ -2028,6 +2091,13 @@
    "ax": 0.4897,
    "dir": 0,
    "file": "assets/frames/uk10_back.png"
+  },
+  "down": {
+   "hk": 0.2085,
+   "aspect": 4.3061,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk10_down.png"
   }
  }
 }

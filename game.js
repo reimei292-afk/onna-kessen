@@ -257,7 +257,14 @@ const Voice = {
     this.voice = vs.find(v => fem.test(v.name)) || vs[0] || null;
   },
   say(text, prof, prio = 0) {
-    if (!this.ok || !text) return;
+    if (!text) return;
+    if (VoicePack.ok && VoicePack.byText) {   // 収録済みのニューラル音声があればそちらを使う（機械的な合成音声にしない）
+      const f = VoicePack.byText(text);
+      if (f) { const e = Talk.cur, d = e && e.s ? Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) : 0;
+        const vv = prof && prof.vv != null ? prof.vv : 1, fn = f[Math.min(f.length - 1, f.length > 1 ? vv : 0)];
+        if (VoicePack.play(fn, d, Math.max(1, prio), f.length > 1 ? 1 : (VV_RATE[vv] || 1))) return; }
+    }
+    if (!this.ok) return;
     const now = performance.now();
     if ((speechSynthesis.speaking || speechSynthesis.pending) && this.since && now - this.since > 9000) { speechSynthesis.cancel(); this.prio = 0; this.since = 0; }   // Chrome で発話が止まったまま「話し中」になる不具合の回避
     const busy = speechSynthesis.speaking || speechSynthesis.pending;
@@ -377,6 +384,102 @@ const VoicePack = {
     const L = this.man && this.man._extra && this.man._extra[kind];
     return !!(L && L[i]) && this.play(L[i].files[0], 0, 1);
   },
+};
+
+// ---- 状況台詞（v9）：青組の娘が戦況に合わせて短く話す（assets/voices/voices_situ.js、tools/make_voices_situ.py）
+//   ・声の同時再生上限（VoicePack.MAXV）と低優先の間隔を守り、さらに全体 4.5 秒・同じ種類 16 秒・同じ娘 18 秒の間隔
+//   ・撃たれた娘は黙る（被弾から 4 秒・会話を打ち切られた娘・倒れた娘は話さない）
+const SITU_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer' };
+const SITU = {
+  man: window.VOICE_SITU || null, t: 0, last: -99, catAt: {}, downAt: -99, downWho: null, log: [], said: 0,
+  reset() { this.t = 1.5; this.last = -99; this.catAt = {}; this.downAt = -99; this.downWho = null; this.log = []; this.said = 0; },
+  preload() {
+    if (!VoicePack.ok || !this.man) return;
+    const cats = ['spot', 'cover', 'lowarrow', 'allydown', 'wounded', 'win', 'lose', 'king', 'ladder', 'gate', 'st_' + builtStage];
+    if (BEACH.on) cats.push('boatfire', 'landing'); if (SNOW.on) cats.push('cold'); if (PLANE.on) cats.push('cabin');
+    for (const c of cats) { const C = this.man[c]; if (C) for (const r in C) for (const l of C[r]) VoicePack.load(l.files[0], true); }
+  },
+  ok(e) { return e && e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.silenced && !e.role && !e.secretary && !e.sec2 && !e.ojou
+    && !(e.hurtAt && time - e.hurtAt < 4) && !Talk.speaking(e) && !(e.situAt && time - e.situAt < 18); },
+  say(e, cat, force) {
+    const C = this.man && this.man[cat], L = C && C[SITU_ROM[e.prof.pers]];
+    if (!L || !L.length || !VoicePack.ok) return false;
+    if (!force && (time - this.last < 4.5 || (this.catAt[cat] && time - this.catAt[cat] < 16))) return false;
+    if (!force && VoicePack.active.length >= VoicePack.MAXV - 1) return false;   // 声が混んでいるときは黙る
+    const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+    if (d > 40) return false;
+    const it = L[(Math.random() * L.length) | 0];
+    if (VoicePack.buf[it.files[0]] === undefined) { VoicePack.load(it.files[0], true); return false; }
+    let ok = false;
+    Talk.as(e, () => {
+      ok = VoicePack.play(it.files[0], d, force ? 2 : 0, VV_RATE[e.prof.vv] || 1);
+      if (ok && d < 14 && !menuOpen && state === 'play') { subtitle(it.text); const el = $('subtitle'); if (el) el.textContent = e.prof.name.replace(/^組頭 /, '') + '「' + it.text + '」'; }
+    });
+    if (!ok) return false;
+    this.last = time; this.catAt[cat] = time; e.situAt = time; this.said++;
+    this.log.push(cat + ':' + e.prof.name + ':' + it.text); if (this.log.length > 60) this.log.shift();
+    return true;
+  },
+  down(e) { if (e && e.team === 'blue') { this.downAt = time; this.downWho = e; } },
+  // 今の状況に合う台詞の種類（重要なものから）
+  cats(e) {
+    const x = e.s.position.x, z = e.s.position.z, out = [];
+    const dP = Math.hypot(x - player.pos.x, z - player.pos.z);
+    if (time - this.downAt < 4 && this.downWho && this.downWho !== e && Math.hypot(x - this.downWho.s.position.x, z - this.downWho.s.position.z) < 18) out.push('allydown');
+    if (e.wounded && !e.situWound) out.push('wounded');
+    if (BEACH.on && e.boat) out.push(e.boat.beached ? 'landing' : 'boatfire');
+    if (e.ammo !== undefined && e.ammo > 0 && e.ammo <= 5) out.push('lowarrow');
+    if (ladders.some(L => x > L.x0 - 1.5 && x < L.x1 + 1.5 && z > Math.min(L.z0, L.z1) - 1.5 && z < Math.max(L.z0, L.z1) + 1.5)) out.push('ladder');
+    if ((MECH.on && MECH.gate && Math.abs(z - MECH.gateZ) < 14 && Math.abs(x) < 16) || (CASTLE.on && CASTLE.gateHP > 0 && CASTLE.gate && CASTLE.gate.position && Math.hypot(x - CASTLE.gate.position.x, z - CASTLE.gate.position.z) < 14)) out.push('gate');
+    if (PLANE.on && !PLANE.intro) out.push('cabin');
+    if (SNOW.on && Math.random() < 0.4) out.push('cold');
+    if (e.state === 'hide' || e.state === 'tocover') out.push('cover');
+    if (enemies.some(o => o.team === 'orange' && isUp(o) && Math.hypot(o.s.position.x - x, o.s.position.z - z) < 30)) { if (!e.situSpot) out.push('spot'); }
+    if (dP < 5) out.push('king');
+    out.push('st_' + builtStage);
+    return out;
+  },
+  tick(dt) {
+    if (!this.man || state !== 'play' || PLANE.intro && Math.random() < 0.9) return;
+    if ((this.t -= dt) > 0) return; this.t = 1.2 + Math.random() * 0.8;
+    if (time - this.last < 4.5) return;
+    const cand = enemies.filter(e => this.ok(e) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 32);
+    if (!cand.length) return;
+    // 近い娘ほど選ばれやすい
+    cand.sort((a, b) => Math.hypot(a.s.position.x - player.pos.x, a.s.position.z - player.pos.z) - Math.hypot(b.s.position.x - player.pos.x, b.s.position.z - player.pos.z));
+    const e = cand[Math.min(cand.length - 1, (Math.random() * Math.random() * cand.length) | 0)];
+    for (const c of this.cats(e)) {
+      if (c.startsWith('st_') && Math.random() > 0.35) break;   // 場面の台詞はたまに
+      if (c === 'king' && Math.random() > 0.4) continue;
+      if (this.say(e, c)) { if (c === 'wounded') e.situWound = true; if (c === 'spot') e.situSpot = true; break; }
+    }
+  },
+  // 勝敗：近くに残っている娘がひと言
+  end(win) {
+    const cand = enemies.filter(e => e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.role && !e.silenced);
+    if (!cand.length) return;
+    cand.sort((a, b) => Math.hypot(a.s.position.x - player.pos.x, a.s.position.z - player.pos.z) - Math.hypot(b.s.position.x - player.pos.x, b.s.position.z - player.pos.z));
+    this.say(cand[0], win ? 'win' : 'lose', true);
+  },
+};
+window.__situ = SITU;
+SITU.dbg = () => ({ ok: VoicePack.ok, tx: !!VoicePack.byText('はしご車に石！'), bufs: Object.values(VoicePack.buf).filter(Boolean).length, q: VoicePack.q.length, t: +time.toFixed(1), ctx: Sfx.ctx ? Sfx.ctx.state : 'none', stats: Object.assign({}, VoicePack.stats), blue: enemies.filter(e => SITU.ok(e)).length, cats: (() => { const e = enemies.find(o => SITU.ok(o)); return e ? SITU.cats(e) : null; })() });
+// 字幕から台詞の収録音声を引く（端末の音声合成より先に使う）
+VoicePack.text = window.VOICE_TEXT || {};
+VoicePack.byText = function (text) {
+  const t = this.text[text]; if (t) return t.files;
+  if (!this.idx) { this.idx = {}; const m = this.man || {}; for (const k in m) for (const c in m[k]) for (const l of m[k][c]) if (!this.idx[l.text]) this.idx[l.text] = l.files; }
+  return this.idx[text] || null;
+};
+{ const pre = VoicePack.preload; VoicePack.preload = function () { pre.call(this); if (this.ok) for (const k in this.text) for (const f of this.text[k].files) this.load(f, true); }; }
+// 台詞をいくつか続けて流す（二正面戦の口上など）
+VoicePack.seq = function (texts) {
+  if (!this.ok) return false;
+  const fs = texts.map(t => this.byText(t)).filter(Boolean).map(f => f[0]);
+  if (!fs.length) return false;
+  let t0 = 0;
+  for (const f of fs) { setTimeout(() => { if (this.buf[f]) this.play(f, 0, 2, 1); else this.load(f, true); }, t0 * 1000); t0 += ((this.buf[f] && this.buf[f].duration) || 3) + 0.25; }
+  return true;
 };
 
 // ====================================================================
@@ -6639,6 +6742,7 @@ function updateMountain(dt) {
 const DUAL_COX = -62, DUAL_MOX = 78;
 const DUAL = { on: false, build: false, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
 function dualVoice(text) {
+  { const ls = [...String(text).matchAll(/[「『]([^」』]+)[」』]/g)].map(m => m[1].trim()).filter(Boolean); if (ls.length && VoicePack.seq(ls)) return; }
   // 日本語音声は端末・ブラウザー内蔵の音声合成を使用。利用できない環境では字幕のみ。
   if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
   const lines = [...String(text).matchAll(/[「『]([^」』]+)[」』]/g)].map(m => m[1].replace(/^[^：:]{1,12}[：:]/, '').trim()).filter(Boolean);
@@ -10150,6 +10254,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (e.seated && e.standAt == null && !(e.seated.boat && !e.seated.boat.beached) && !e.seated.car) e.standAt = time + rand(0.1, 0.4);   // 舟の上・車の中では座ったまま
   // 話している最中の娘が撃たれた：会話を打ち切る（メニューを閉じ、声と字幕を止める。短い悲鳴だけ）
   const partner = menuOpen && menuGirl() === e;
+  e.hurtAt = time;   // 撃たれた娘はしばらく状況台詞を言わない
   e.wasTalking = partner || Talk.speaking(e);
   if (e.wasTalking) { if (partner) closeSecMenu(false); Talk.hush(e); }
   e.hp -= dmg; e.flash = TRENCH.on ? 0 : 0.12; if (TRENCH.on) npcGlow(e,0,0,0); else npcGlow(e,0.9,0.9,0.9); // 塹壕戦では被弾時の白い発光を完全に消す
@@ -10250,6 +10355,7 @@ function killEnemy(e, byPlayer, from) {
   }
   if (e.wasTalking) { Talk.hush(e); e.silenced = true; }
   else if (!e.quietDeath) npcSay(e, 'defeat', 2);
+  SITU.down(e);
   e.silenced = true;
   if (!e.quietDeath) kiaLabel(e.s.position, e.baseY + e.figH);
   if (!e.frozen) spillBlood(e.s.position.x, e.baseY, e.s.position.z, rand(0.7, 1));
@@ -12825,6 +12931,7 @@ function startGame() {
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
+  SITU.reset(); SITU.preload();
   state = 'play'; lock();
   if (builtStage === 'island') { islandStart(); }
   else if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
@@ -12854,6 +12961,7 @@ function toTitle() {
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }
 function gameOver(win) {
+  if (state === 'play') try { SITU.end(win); } catch (_) {}
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
   { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
@@ -13102,7 +13210,7 @@ function frame(now) {
   updateParticles(state === 'pause' || state === 'over' ? 0 : dt);
   drawScreenPaint(state === 'play' ? dt : 0);
   { const playing = state === 'play', combat = playing && !(wave.inter > 0) && !PLANE.intro;
-    Sfx.ambience(dt, playing, combat); Sfx.flute(!playing ? false : fluter.e && fluter.e.state !== 'down' ? fluter.e.s.position.clone().setY(1.5) : null, combat); AudioGuard.tick(dt); }
+    Sfx.ambience(dt, playing, combat); Sfx.flute(!playing ? false : fluter.e && fluter.e.state !== 'down' ? fluter.e.s.position.clone().setY(1.5) : null, combat); AudioGuard.tick(dt); SITU.tick(dt); }
   if (sec.fanT > 0 && state === 'play') {   // 扇の風（画面の端に流れる線）
     paintG.strokeStyle = `rgba(255,255,255,${Math.min(0.35, sec.fanT * 0.15)})`; paintG.lineWidth = 2;
     for (let i = 0; i < 7; i++) { const y = innerHeight * (0.2 + i * 0.1) + Math.sin(time * 3 + i) * 10, x = ((time * 400 + i * 180) % (innerWidth + 300)) - 150;

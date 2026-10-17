@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017u';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -9970,7 +9970,7 @@ function ojouGuardTick() {   // 1秒ごと：彼女への脅威と護衛の割�
   }
   ojou.thr.sort((a, b) => a[0] - b[0]);
   const G = [];
-  for (const s of ojou.cmd) for (const m of sqAlive(s)) if (m.ojouGuard) { if (sqFree(m) && m.kind !== 'archer') G.push(m); else m.ojouGuard = false; }
+  for (const s of ojou.cmd) for (const m of sqAlive(s)) if (m.ojouGuard) { const gd = Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z); if (sqFree(m) && m.kind !== 'archer' && (gd < 12 || (m.ojouFarT = (m.ojouFarT || 0) + 1) < 6)) { if (gd < 12) m.ojouFarT = 0; G.push(m); } else { m.ojouGuard = false; m.ojouFarT = 0; } }
   if (G.length < 2) {
     const C = [];
     for (const s of ojou.cmd) for (const m of sqAlive(s)) if (!m.ojouGuard && m !== s.leader && m.kind !== 'archer' && sqFree(m) && Math.abs(m.baseY - E.baseY) < 0.6) C.push([Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z), m]);
@@ -12320,6 +12320,7 @@ function updateEnemies(dt) {
     else if (BEACH.on && e.keiGo && e.team !== 'orange' && keiWalkBrain(e, dt)) { /* 浜：軽自動車まで歩いて乗る */ }
     else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
     else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
+    else if (MECH.on && e.ojouGuard && ojou.field && !e.lad && ojouProtect(e, dt) === true) { /* 行軍中も侍大将の護衛は側を離れない */ }
     else if (MECH.on && mechYield(e, dt)) { /* 車の前からはどく */ }
     else if (MECH.on && e.team === 'blue' && mechTakeCata(e, dt)) { /* 立ち尽くすなら投石車を奪う */ }
     else if (MECH.on && mechFixJob(e, dt)) { /* 破れたタイヤへ。秘書も直す */ }

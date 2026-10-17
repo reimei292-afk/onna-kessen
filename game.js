@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017u';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -9816,6 +9816,7 @@ function medPointOf(e) { const mp = (MECH.on && e.team === 'blue') ? mechMedCent
 function squadOrderMove(e, dt) {
   if (!SQUAD_ON) return false;
   if (e.escort) return escortMove(e, dt);
+  if (e.sq && e.sq.cmd && ojou.field) { const r = ojouProtect(e, dt); if (r !== null) return r; }
   const s = e.sq, o = sqOrd(s);
   if (!o || o.x === undefined || !sqMoveOK() || !sqFree(e) || !['approach', 'advance'].includes(e.state) || (o.y !== undefined && Math.abs(e.baseY - o.y) > 0.6)) return false;
   const p = e.s.position, arch = e.kind === 'archer';
@@ -9926,11 +9927,79 @@ function squadSupport(dt) {
     }
   }
   ojouCommand(info);
+  ojouGuardTick();
 }
 function flankOrder(s, I, side, by, dur = 12) {   // 敵の塊の横（side=+1 右、-1 左。組の正面から見て）
   const fw = s.team === 'blue' ? -1 : 1, rx = -fw;   // 青の正面は -z、右手は +x
   const cx = I.fn ? I.fx : I.near.s.position.x, cz = I.fn ? I.fz : I.near.s.position.z;
   sqOrder(s, 'flank', { x: cx + rx * side * 10, z: cz - fw * 2, y: I.y, side, dur, by });
+}
+
+// ---- 侍大将の出陣：城・持ち場を守る面（二正面・城/砦の守り・浜・機内・行軍）以外では、麾下の隊と一緒に前線へ出る ----
+//   （平原の行軍＝車と進む面でも前へ）麾下の近接から二人が側に付く護衛、弓は彼女を狙う・近づく敵を優先、ほかの近接は近づく敵を迎え撃つ
+function ojouFieldOK() {
+  if (!SQUAD_ON || state !== 'play' || ojou.mode !== 'hq' || DUAL.on || PLANE.on || BEACH.on) return false;
+  if (CASTLE.on && !CASTLE.atk) return false;
+  if (builtStage === 'fort' && !FORT.atk) return false;
+  return (ojou.cmd || []).some(s => sqAlive(s).length >= 2);
+}
+function ojouFieldBrain(e, dt) {
+  const p = e.s.position; let x = 0, z = 0, n = 0;
+  for (const s of ojou.cmd || []) for (const m of sqAlive(s)) if (!m.wounded && !m.perch && Math.abs(m.baseY - e.baseY) < 0.8) { x += m.s.position.x; z += m.s.position.z; n++; }
+  if (n < 2) return false;
+  if (!e.ojouArmor) { e.ojouArmor = true; e.hpMax += 6; e.hp += 6; }   // 侍大将の具足（少しだけ打たれ強い）
+  x /= n; z /= n;
+  const [hx, hz] = e.home, bd = Math.hypot(hx - x, hz - z) || 1;
+  let tx = x + (hx - x) / bd * 2.5, tz = z + (hz - z) / bd * 2.5;   // 隊の真ん中のすぐ後ろ（前線に立つが先頭には出ない）
+  let nf = null, nd = 1e9;
+  for (const o of enemies) { if (o.team === e.team || !isUp(o) || o.special) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < nd) { nd = d; nf = o; } }
+  if (nf && nd < 5) { const fx = p.x - nf.s.position.x, fz = p.z - nf.s.position.z, f = Math.hypot(fx, fz) || 1; tx = p.x + fx / f * 4 + (x - p.x) * 0.3; tz = p.z + fz / f * 4 + (z - p.z) * 0.3; }   // 近すぎる敵からは身を引く
+  const d = Math.hypot(tx - p.x, tz - p.z);
+  if (d > 1.2) steer(e, tx, tz, e.speed * (nd < 5 ? 1.25 : d > 8 ? 1.15 : 0.85), dt);
+  e.faceWant = nf && nd < 25 ? Math.atan2(nf.s.position.x - p.x, nf.s.position.z - p.z) : Math.atan2(tx - p.x, tz - p.z);
+  return true;
+}
+function ojouGuardTick() {   // 1秒ごと：彼女への脅威と護衛の割り当て
+  const E = ojou.e; ojou.thr = [];
+  if (!ojou.field || !isUp(E)) { for (const s of ojou.cmd || []) for (const m of s.members) m.ojouGuard = false; return; }
+  const p = E.s.position;
+  for (const o of enemies) {
+    if (o.team === E.team || !isUp(o) || o.special) continue;
+    const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z);
+    if (o.tgt === E || d < 13) ojou.thr.push([d, o]);
+  }
+  ojou.thr.sort((a, b) => a[0] - b[0]);
+  const G = [];
+  for (const s of ojou.cmd) for (const m of sqAlive(s)) if (m.ojouGuard) { if (sqFree(m) && m.kind !== 'archer') G.push(m); else m.ojouGuard = false; }
+  if (G.length < 2) {
+    const C = [];
+    for (const s of ojou.cmd) for (const m of sqAlive(s)) if (!m.ojouGuard && m !== s.leader && m.kind !== 'archer' && sqFree(m) && Math.abs(m.baseY - E.baseY) < 0.6) C.push([Math.hypot(m.s.position.x - p.x, m.s.position.z - p.z), m]);
+    C.sort((a, b) => a[0] - b[0]);
+    for (const [, m] of C.slice(0, 2 - G.length)) { m.ojouGuard = true; m.regroup = false; G.push(m); }
+  }
+  G.forEach((m, i) => { m.ojouSlot = i; });
+}
+// 麾下の隊員の守り。null＝関係なし（ふだんの動き）、true＝今フレームの動きはこれ、false＝交戦は各自で
+function ojouProtect(e, dt) {
+  const E = ojou.e; if (!isUp(E) || !sqFree(e)) return null;
+  const busy = !['approach', 'advance', 'idle'].includes(e.state);
+  const p = e.s.position, q = E.s.position, T = ojou.thr || [];
+  const thr = T.find(([, o]) => isUp(o));
+  if (e.ojouGuard) {
+    if (thr && thr[0] < 8) { const o = thr[1]; if (e.tgt !== o) { e.tgt = o; e.tgtT = 0.8; } return false; }   // 近づく敵に立ちはだかる
+    if (busy) return false;
+    const side = e.ojouSlot ? -1 : 1;
+    const a = (E.home ? Math.atan2(q.x - E.home[0], q.z - E.home[1]) : Math.PI) + side * 0.9;   // 進む向きの左右斜め前
+    const gx = q.x + Math.sin(a) * 1.9, gz = q.z + Math.cos(a) * 1.9, d = Math.hypot(gx - p.x, gz - p.z);
+    if (d > 0.6) steer(e, gx, gz, e.speed * (d > 5 ? 1.35 : 1), dt);
+    else if (e.tgt) { const tp = tgtPos(e.tgt); e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); }
+    return true;
+  }
+  if (!thr) return null;
+  const o = thr[1];
+  if (e.kind === 'archer') { if (e.tgt !== o && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 36) { e.tgt = o; e.tgtT = 1.2; } return null; }   // 弓：彼女を狙う敵から
+  if (thr[0] < 11 && e.tgt !== o && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 22) { e.tgt = o; e.tgtT = 1.0; }   // 近接：迎え撃つ
+  return null;
 }
 // 侍大将 西園寺 すみれの采配（青組の2〜3隊）
 const OJOU_ORD = {
@@ -9943,11 +10012,7 @@ const OJOU_ORD = {
 function ojouOrderSay(kind, rep) {
   const L = OJOU_ORD[kind], text = L[(Math.random() * L.length) | 0].replace(/\{(\w)\}/g, (_, k) => rep[k] || '');
   SQ.ojouLast = { t: +time.toFixed(1), kind, text }; SQ.ord.push({ t: +time.toFixed(1), team: 'blue', type: 'ojou_' + kind, text, by: 'ojou' });
-  const e = ojou.e; if (!e) return;
-  Talk.as(e, () => {
-    Voice.say(text, e.prof, 1); subtitle(text);
-    const el = $('subtitle'); if (el) el.textContent = `西園寺すみれ「${text}」`;
-  });
+  // 采配は字幕・声に出さない（記録だけ。隊の動きと頭上の札で分かる）
 }
 function ojouCommand(info) {
   const e = ojou.e;
@@ -9960,7 +10025,7 @@ function ojouCommand(info) {
     for (const s of squads.blue) s.cmd = false;
     C = cand.slice(0, 3); for (const s of C) s.cmd = true; ojou.cmd = C;
     if (C.length < 2) return;
-    if (!SQ.cmdHello) { SQ.cmdHello = true; SQ.cmdT = 9; ojouOrderSay('hello', { a: C.map(s => s.name).join('、') }); popup(`侍大将 西園寺すみれ：${C.map(s => s.name).join('・')}を指揮`); return; }
+    if (!SQ.cmdHello) { SQ.cmdHello = true; SQ.cmdT = 9; ojouOrderSay('hello', { a: C.map(s => s.name).join('、') }); return; }
   }
   if ((SQ.cmdT -= 1) > 0) return;
   SQ.cmdT = 15 + Math.random() * 8;
@@ -9982,10 +10047,10 @@ function ojouCommand(info) {
   if (mv && sqFlankOK() && own >= foesNear.size * 1.3 && melee.length && C.length >= 2 && Math.random() < 0.55) {
     const f = melee[0], side = Math.random() < 0.5 ? 1 : -1, rest = C.filter(s => s !== f);
     flankOrder(f, I(f), side, 'ojou', dur); f.flankCd = time + 40;
-    for (const s of rest) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
+    if (!ojou.field) for (const s of rest) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
     ojouOrderSay('flank', { a: f.name, b: names(rest), s: side > 0 ? '右' : '左' }); return;
   }
-  if (foesNear.size > own * 1.2 && engaged.length) {
+  if (foesNear.size > own * 1.2 && engaged.length && !ojou.field) {
     if (mv) for (const s of C) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
     ojouOrderSay('hold', { a: names(C) }); return;
   }
@@ -11200,6 +11265,7 @@ function removeOjou() {
 }
 function ojouBrain(e, dt) {
   const p = e.s.position; e.t += dt; e.tgt = null; e.state = 'idle'; e.kneel = false;
+  ojou.field = ojouFieldOK();
   const dpx = player.pos.x - p.x, dpz = player.pos.z - p.z, dp = Math.hypot(dpx, dpz);
   if (ojou.mode === 'follow') {   // 王様の右斜め後ろ
     const fx = player.pos.x + Math.sin(player.yaw) * 2.6 + Math.cos(player.yaw) * 1.8, fz = player.pos.z + Math.cos(player.yaw) * 2.6 - Math.sin(player.yaw) * 1.8;
@@ -11208,6 +11274,7 @@ function ojouBrain(e, dt) {
     else e.faceWant = Math.atan2(dpx, dpz);
     return;
   }
+  if (ojou.field && ojouFieldBrain(e, dt)) return;
   const [hx, hz] = e.home, d = Math.hypot(hx - p.x, hz - p.z);
   if (d > 0.5) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed * (d > 6 ? 1 : 0.6), dt); e.faceWant = Math.atan2(hx - p.x, hz - p.z); }
   else e.faceWant = dp < 8 ? Math.atan2(dpx, dpz) : Math.PI;

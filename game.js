@@ -9489,6 +9489,13 @@ function uk2PikeTick(dt) {
     if (near || P.z > 11.6 || P.t > 75) { P.st = 'charge'; uk2Bark('h_charge', true); for (const e of K) uk2FreeUnit(e); }
   }
 }
+// HUD：波の代わりに局面名、残敵（上陸した兵＋舟の兵＋まだ出ていない短艇の兵。船に残る砲術長らは数えない）と味方
+function uk2PhaseLabel() { const ph = UK2.phase; return ph === 'land' ? '上陸' : (ph === 'charge' || ph === 'retreat' || ph === 'after' || ph === 'end') ? '斬り込み' : '砲撃'; }
+function uk2Counts() {
+  let foe = 0; for (const e of enemies) if (e.uk2 && !e.uk2Aboard && e.state !== 'down') foe++;
+  for (const w in UK2_WAVES) if (!UK2.launched || !UK2.launched[w]) for (const D of UK2_WAVES[w]) foe += D.n;
+  return { foe, ally: livingHead('blue') };
+}
 function uk2FreeUnit(e) { if (e.uk2Free) return; e.uk2Free = true; e.passive = false; e.crouch = 0; e.state = 'approach'; e.t = 0; e.tgt = null; e.tgtT = 0; }
 function uk2Contact(e, r) { const p = e.s.position; if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < r) return true; return enemies.some(o => o.team === 'blue' && isUp(o) && !o.special && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < r); }
 function uk2Brain(e, dt) {
@@ -9973,7 +9980,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017zi';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017zj';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -14473,7 +14480,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', UK2.on ? '英国淑女編 第二幕「砲火」' : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -14486,7 +14493,7 @@ function updateHud(dt) {
   const islandSurvivors = enemies.filter(e=>e.islandRoster&&e.state!=='down').length+1;
   setText('remain', ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
   if (UK.on) setText('remain', UK.goal || '');
-  if (UK2.on) setText('remain', UK2.goal || '');
+  if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);

@@ -10836,6 +10836,13 @@ function updateSec2(dt) {
 //      褒められると控えめに、上品にかわす。戦死判定を受けると次の波で本陣に戻る。
 const OJOU_ID = 'ojou';
 const ojou = { e: null, dead: false, mode: 'hq', name: '秘書課 西園寺 すみれ', stayHQ: false, careT: 20 };
+window.__ojouDbg = () => { const e = ojou.e, g = GIRLS[OJOU_ID]; if (!e || !g) return null;
+  const real = k => !!(g[k] && g[k].tex && g[k].tex.image && !(g[k].tex.image instanceof HTMLCanvasElement));
+  let key = Object.keys(g).find(k => g[k] === e.fr && g[k] && g[k].tex) || null;
+  if (!key && g.cycle) { const i = g.cycle.frs.indexOf(e.fr); if (i >= 0) key = g.cycle.key + '_' + i; }
+  const p = e.s.position, cy = Math.atan2(camera.position.x - p.x, camera.position.z - p.z), c = +Math.cos(angDiff(e.s.rotation.y, cy)).toFixed(2), el = +Math.atan2(camera.position.y - (e.baseY + e.figH * 0.6), Math.hypot(camera.position.x - p.x, camera.position.z - p.z)).toFixed(2);
+  return { key, c, el, moving: e.vs > 0.35, view: e.view, view2: e.view2, mode: ojou.mode, x: e.s.position.x, z: e.s.position.z, y: e.baseY, figH: e.figH, real: { front_diag: real('front_diag'), back_diag: real('back_diag'), top: real('top'), low: real('low'), cycle: !!(g.cycles && g.cycles.walk_side) } }; };
+window.__ojou = ojou;
 function spawnOjou() {
   removeOjou();
   if (!hq || !GIRLS[OJOU_ID]) return;
@@ -13146,6 +13153,7 @@ function updatePlayer(dt) {
   const sh = player.shake * 0.25;
   camera.position.set(player.pos.x, player.pos.y + CFG.eyeH - (player.seated ? 0.48 : 0) + (player.onGround ? Math.abs(Math.sin(player.bob)) * 0.05 : 0), player.pos.z);
   camera.rotation.set(player.pitch + rand(-sh, sh) * 0.3, player.yaw + rand(-sh, sh) * 0.3, 0);
+  if (TEST && typeof window.__camPre === 'function') try { window.__camPre(camera); } catch (_) {}   // テスト撮影用：見え方の選択の前にカメラを置く
   const fov = 75 - (player.drawing ? player.charge * 18 : 0);
   if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 10); camera.updateProjectionMatrix(); }
 }
@@ -13176,6 +13184,7 @@ let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000) * (window.__slowmo || 1); last = now;   // __slowmo：テスト撮影用のスロー
+  if (TEST && window.__tick) try { window.__tick(dt); } catch (_) {}   // テスト撮影用：毎フレームの位置・向きの固定
   if (state === 'play') {
     time += dt;
     if (TEST) testBot(dt);

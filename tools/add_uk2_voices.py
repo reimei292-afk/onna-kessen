@@ -12,7 +12,7 @@ T = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(T, '..'); D 
 FORCE = '--force' in sys.argv
 NANAMI, KEITA = 'ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'
 PERS = {'aggr': (8, 2), 'caut': (-4, -3), 'timid': (6, 8), 'calm': (-6, -7), 'cheer': (6, 6)}
-STYLE = {'king': (KEITA, -6, -2), 'ojou': (NANAMI, -14, -2), 'sumi': (NANAMI, -6, -8), 'nurse': (NANAMI, -4, 8)}
+STYLE = {'king': (KEITA, -6, -2), 'ojou': (NANAMI, -14, -2), 'sumi': (NANAMI, -6, -8), 'nurse': (NANAMI, -4, 8), 'med': (NANAMI, -12, -14)}
 # 英国の娘の声は add_uk_voices.py から
 src = open(os.path.join(T, 'add_uk_voices.py'), encoding='utf-8').read()
 ns = {}; exec(src[src.index('VOICES = {'):src.index('}', src.index('VOICES = {')) + 1], ns); UKV = ns['VOICES']
@@ -80,6 +80,9 @@ add('sumi_win', 'sumi', '', '…殿。船は沖に錨を下ろしました。夜
 add('sai_win', 'ojou', '', '皆、よく持ちこたえましたわ。倒れた者は、救護班のもとへ。')
 for i, t in enumerate(['動かないで。すぐ手当てしますからね。', '竹束の陰で手当てします。少しだけ我慢して。', '大丈夫、そばにいます。頭は低くね。']): add(f'med_start_{i}', 'nurse', '', t)
 for i, t in enumerate(['よく頑張りましたね。でも頭は低くですよ。', 'もう大丈夫。砲の音がしたら伏せてくださいね。']): add(f'med_ok_{i}', 'nurse', '', t)
+# 砲撃・破片向けの手当ての言葉（第二幕では「矢を抜きます」の代わり。傷や血の描写なし）
+for i, t in enumerate(['しっかりしてください、手当てします。', '爆風に当てられたのね。動かないで、すぐ手当てします。', '大丈夫、耳は聞こえますか？ ゆっくり息をして。']): add(f'med_aid_n_{i}', 'nurse', '', t)
+for i, t in enumerate(['しっかりしてください、手当てします。', '爆風で倒れたのですね。今、診ますから動かないで。', '落ち着いて。頭を低くしたまま、手当てを受けてください。']): add(f'med_aid_d_{i}', 'med', '', t)
 # 英国の娘
 E = [('uk10', 'c_fire', 'Battery — fire!', '砲列、撃て！'),
      ('uk10', 'c_shift', 'Shift your aim to the town edge. Keep well clear of our own people!', '狙いを町の端へ。味方からは十分に離して！'),

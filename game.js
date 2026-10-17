@@ -9485,8 +9485,8 @@ function uk2PikeTick(dt) {
   if (P.st === 'march') {
     P.z += 0.7 * dt;
     if (!P.closeSaid && K.length < 13) { P.closeSaid = true; uk2Bark('h_close'); }
-    const near = enemies.some(o => o.team === 'blue' && isUp(o) && !o.special && Math.hypot(o.s.position.x - P.x, o.s.position.z - P.z) < 4.5);
-    if (near || P.z > 10.5 || P.t > 40) { P.st = 'charge'; uk2Bark('h_charge', true); for (const e of K) uk2FreeUnit(e); }
+    const near = K.filter(e => !e.uk2Row).some(e => uk2Contact(e, 2.0));   // 方陣は前列が組み合うまで崩さない
+    if (near || P.z > 11.6 || P.t > 75) { P.st = 'charge'; uk2Bark('h_charge', true); for (const e of K) uk2FreeUnit(e); }
   }
 }
 function uk2FreeUnit(e) { if (e.uk2Free) return; e.uk2Free = true; e.passive = false; e.crouch = 0; e.state = 'approach'; e.t = 0; e.tgt = null; e.tgtT = 0; }
@@ -9525,7 +9525,7 @@ function uk2Brain(e, dt) {
   }
   if (e.uk2 === 'pike') {
     const P = UK2.pk; if (!P || P.st === 'charge') { uk2FreeUnit(e); return false; }
-    if (uk2Contact(e, 3.2)) { uk2FreeUnit(e); return false; }
+    if (uk2Contact(e, 1.6)) { uk2FreeUnit(e); return false; }   // 組み合った者だけ離れる
     const sx = P.x + (e.uk2File - (P.files - 1) / 2) * 1.0, sz = P.z - e.uk2Row * 1.05, d = Math.hypot(sx - p.x, sz - p.z);
     e.passive = true; e.tgt = null;
     if (d > 0.3) { steer(e, sx, sz, e.speed * (P.st === 'march' ? 0.4 : d > 3 ? 1.1 : 0.6), dt); e.state = 'approach'; } else e.state = 'idle';
@@ -9535,8 +9535,13 @@ function uk2Brain(e, dt) {
   return false;
 }
 function uk2BlueBrain(e, dt) {
-  if (e.medic || e.secretary || e.sec2 || e.fumi || e.sysop || e.aide || e.runner || e.ukRower || e.guard || e.seated) return false;
   const shelling = UK2.phase === 'open' || UK2.phase === 'bomb', p = e.s.position;
+  if (e.guard && !e.seated && isUp(e)) {   // 近衛：砲撃の間は殿の近くの竹束・土塁の陰に伏せる（殿について開けた所へ出ない）
+    if (shelling) return uk2TakeCover(e, dt, true);
+    if (e.uk2Slot) { e.uk2Slot.who = null; e.uk2Slot = null; e.crouch = 0; e.passive = false; }
+    return false;
+  }
+  if (e.medic || e.secretary || e.sec2 || e.fumi || e.sysop || e.aide || e.runner || e.ukRower || e.guard || e.seated) return false;
   if (shelling) return uk2TakeCover(e, dt);
   if (e.uk2Slot) { e.uk2Slot.who = null; e.uk2Slot = null; e.crouch = 0; }
   if (e.ojou || !e.uk2Blue) return false;
@@ -9544,6 +9549,7 @@ function uk2BlueBrain(e, dt) {
   if (UK2.phase === 'land' || UK2.phase === 'charge') {
     let dn = 1e9; for (const o of UK2.eng) if (isUp(o) && !o.seated && !o.uk2Back) dn = Math.min(dn, Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z));
     if (dn < (e.kind === 'archer' ? 48 : UK2.phase === 'charge' ? 30 : 14) || (e.hurtAt && time - e.hurtAt < 3)) return false;
+    if (e.sq && e.sq.cmd && sqOrd(e.sq) && sqOrd(e.sq).by === 'ojou') { e.passive = false; return false; }   // 侍大将の采配（前進・堅守・援護・迂回）にそのまま従う（采配は声・字幕に出さない）
     const [hx, hz] = e.uk2Line, d = Math.hypot(hx - p.x, hz - p.z);
     e.passive = true; e.tgt = null;
     if (d > 0.6) { const rt = routeTo(p, hx, hz); steer(e, rt[0], rt[1], e.speed, dt); e.state = 'approach'; } else e.state = 'idle';
@@ -9551,9 +9557,15 @@ function uk2BlueBrain(e, dt) {
   }
   return false;
 }
-function uk2TakeCover(e, dt) {
+function uk2TakeCover(e, dt, nearKing) {
   const p = e.s.position;
   let s = e.uk2Slot;
+  if (s && nearKing && (s.k === 'house' || Math.hypot(s.x - player.pos.x, s.z - player.pos.z) > 13)) { s.who = null; e.uk2Slot = s = null; }   // 殿が動いたら近くの陰へ移る
+  if (nearKing && !s) {
+    let best = null, bd = 1e9;
+    for (const q of UK2.slots) { if ((q.who && q.who !== e && isUp(q.who)) || q.k === 'house') continue; const d = Math.hypot(q.x - player.pos.x, q.z - player.pos.z) + Math.hypot(q.x - p.x, q.z - p.z) * 0.15; if (d < bd) { bd = d; best = q; } }
+    if (!best) return false; best.who = e; e.uk2Slot = s = best;
+  }
   if (!s) {
     let best = null, bd = 1e9;
     for (const q of UK2.slots) { if (q.who) continue; let d = Math.hypot(q.x - p.x, q.z - p.z); if (e.ojou && q.k !== 'house') d += 20; else if (e.kind === 'archer' ? q.k === 'row2' : q.k === 'row1') d += 6; if (d < bd) { bd = d; best = q; } }
@@ -9748,7 +9760,7 @@ function uk2Ending() {
   if (document.exitPointerLock) document.exitPointerLock();
   $('over').style.display = 'flex';
 }
-if (TEST) window.__uk2 = { UK2, fire: (k, n) => uk2Fire(k || 'bomb', n || 4), launch: w => uk2Launch(w), retreat: () => uk2Retreat(), skip: () => ukDlgSkip(), order: () => uk2Order() };
+if (TEST) window.__uk2 = { UK2, fire: (k, n) => uk2Fire(k || 'bomb', n || 4), launch: w => uk2Launch(w), retreat: () => uk2Retreat(), skip: () => ukDlgSkip(), order: () => uk2Order(), SQ: () => SQ, ojou: () => ojou, medSay: (e, k) => medSay0(e, k) };
 
 function loadStage(name) {
   if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
@@ -9961,7 +9973,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017zh';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017zi';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12907,6 +12919,10 @@ function medSay0(e, key, quiet) {
   const X = VoicePack.man && VoicePack.man._extra;
   const L = X && ((e.role === 'nurse' && X['nurse_' + key]) || X['med_' + key]);
   const txt = NURSE_TEXT[key];
+  if (UK2.on && key === 'arrow') {   // 第二幕：矢ではなく砲撃・破片の手当ての言葉（傷や血の描写なし）
+    const U = ukL('med_aid_' + (e.role === 'nurse' ? 'n' : 'd') + '_' + ((Math.random() * 3) | 0)); if (!U) return;
+    if (d < 16 && !menuOpen) subtitle(U.ja); if (!VoicePack.play(U.file, d, 1)) Voice.say(U.ja, { pitch: e.role === 'nurse' ? 1.2 : 0.95, rate: e.role === 'nurse' ? 1.0 : 0.9 }, 1); return;
+  }
   if (UK2.on && e.role === 'nurse' && (key === 'start' || key === 'ok') && Math.random() < 0.75) { const U = ukL('med_' + key + '_' + ((Math.random() * (key === 'start' ? 3 : 2)) | 0)); if (U) { if (d < 16 && !menuOpen) subtitle(U.ja); if (VoicePack.play(U.file, d, 1)) return; } }   // 第二幕の手当ての言葉
   const near = d - (quiet ? 6 : 0) < 16 && !menuOpen;   // 近くの救護班の言葉は字幕でも見せる（御臨終です・矢を抜きます など）
   if (!L || !L.length) { if (txt) { const t = pick(txt); if (near) subtitle(t); if (e.role === 'nurse') Voice.say(t, { pitch: 1.2, rate: 1.0 }, 1); } return; }

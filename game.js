@@ -8641,7 +8641,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261017v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261017w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -9827,9 +9827,10 @@ function squadOrderMove(e, dt) {
   const i = Math.max(0, s.members.indexOf(e)), a = i * 2.4 + (e.team === 'blue' ? 0 : Math.PI), r = 1.6 + (i % 3) * 1.4;
   const gx = o.x + Math.cos(a) * r, gz = o.z + Math.sin(a) * r, d = Math.hypot(gx - p.x, gz - p.z);
   if (o.type === 'hold') {
-    if (d < 4) { if (tp) e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); return !arch; }   // 持ち場で構えて待つ（弓は撃ってよい）
+    if (d < 4) { if (tp) e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.ordT = time; return !arch; }   // 持ち場で構えて待つ（弓は撃ってよい）
   } else if (d < (o.type === 'flank' ? 3 : 5)) { (o.done || (o.done = new Set())).add(e); return false; }
   steer(e, gx, gz, e.speed * (o.type === 'support' || o.type === 'relieve' ? 1.2 : o.type === 'flank' ? 1.15 : 1.05), dt);
+  e.ordT = time;   // 命令に従って動いた時刻（確認用）
   return true;
 }
 function endEscort(e) { const w = e.escort; if (w && w.escortBy === e) w.escortBy = null; e.escort = null; e.tagKey = ''; }
@@ -10047,10 +10048,10 @@ function ojouCommand(info) {
   if (mv && sqFlankOK() && own >= foesNear.size * 1.3 && melee.length && C.length >= 2 && Math.random() < 0.55) {
     const f = melee[0], side = Math.random() < 0.5 ? 1 : -1, rest = C.filter(s => s !== f);
     flankOrder(f, I(f), side, 'ojou', dur); f.flankCd = time + 40;
-    if (!ojou.field) for (const s of rest) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
+    for (const s of rest) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
     ojouOrderSay('flank', { a: f.name, b: names(rest), s: side > 0 ? '右' : '左' }); return;
   }
-  if (foesNear.size > own * 1.2 && engaged.length && !ojou.field) {
+  if (foesNear.size > own * 1.2 && engaged.length) {
     if (mv) for (const s of C) sqOrder(s, 'hold', { x: I(s).sp.x, z: I(s).sp.z, y: I(s).y, dur: 14, by: 'ojou' });
     ojouOrderSay('hold', { a: names(C) }); return;
   }
@@ -12321,6 +12322,7 @@ function updateEnemies(dt) {
     else if (BEACH.on && e.team === 'orange' && keiOrangeBrain(e, dt)) { /* 橙組：止まった軽自動車を奪って浜へ */ }
     else if (BEACH.on && beachHqBrain(e, dt)) { /* 本陣は止まらず前へ */ }
     else if (MECH.on && e.ojouGuard && ojou.field && !e.lad && ojouProtect(e, dt) === true) { /* 行軍中も侍大将の護衛は側を離れない */ }
+    else if (MECH.on && !e.lad && e.sq && e.sq.cmd && sqOrd(e.sq) && sqOrd(e.sq).by === 'ojou' && squadOrderMove(e, dt)) { /* 行軍中も侍大将の采配（前進・堅守・援護・迂回）に従う */ }
     else if (MECH.on && mechYield(e, dt)) { /* 車の前からはどく */ }
     else if (MECH.on && e.team === 'blue' && mechTakeCata(e, dt)) { /* 立ち尽くすなら投石車を奪う */ }
     else if (MECH.on && mechFixJob(e, dt)) { /* 破れたタイヤへ。秘書も直す */ }

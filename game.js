@@ -10951,7 +10951,7 @@ function u4SpawnBlue() {
       const off = [(c - (cols - 1) / 2) * spX, 1.2 + r * 2.0];
       const e = spawnEnemy(start[0] + off[0], start[1] + off[1], kind, s === 0, 'blue', { yari, set: {} });
       if (!e) continue;
-      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = Math.PI; e.hp = e.hpMax = e.hpMax + 3; G.units.push(e);
+      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = Math.PI; e.hp = e.hpMax = e.hpMax + 5; G.units.push(e);
       if (s === 0 && k === 'K') { G.lead = e; e.ukTag = '組頭 ' + e.prof.name; }
     }
     UK4.groups[k] = G; return G;
@@ -11307,7 +11307,7 @@ function updateUk4(dt) {
       const tot = UK4.engN0 || 1, up = UK4.eng.filter(e => !e.uk4Safe && isUp(e)).length;
       if (G.length <= 2) uk4Yield('guard');
       else if ((!El || !isUp(El)) && (!Ha || !isUp(Ha)) && G.length <= 4) uk4Yield('named');
-      else if (UK4.honT > 150) uk4Yield('time');
+      else if (UK4.honT > 100) uk4Yield('time');
       else if (up <= tot * 0.15) uk4Yield('casualties');
     } else if (fighting && UK4.eng.filter(e => !e.uk4Safe && isUp(e)).length <= (UK4.engN0 || 1) * 0.12) uk4Yield('casualties');
   }

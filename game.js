@@ -11032,6 +11032,7 @@ function u4BlueBrain(e, dt) {
     const inn = u4InCamp(p.x, p.z);
     if (UK4.v5 && e.uk5Con && e.hp < e.hpMax * 0.6 && !(e.uk5Cheer > time)) { if (!e.uk5WavT) { e.uk5WavT = time + 4; UK4.stats.waver = (UK4.stats.waver || 0) + 1; } if (time < e.uk5WavT) { steer(e, p.x, p.z - 6, e.speed, dt); e.state = 'approach'; e.passive = true; e.tgt = null; return true; } }   // 徴兵：傷を負うと一度崩れて下がる
     if (!UK4.v5 && e.kind === 'archer' && !inn && p.z < U4.PZ + 16 && p.z > U4.PZ + 6) return false;
+    if (UK4.v5) { let t = null, bd = 1e9; for (const o of UK4.eng) { if (!isUp(o) || o.uk4Safe || !enemies.includes(o)) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; t = o; } } if (t && bd < 60) { e.passive = false; e.tgt = null; steer(e, t.s.position.x, t.s.position.z, e.speed, dt); e.state = 'approach'; e.crouch = 0; return true; } }   // 第五幕：最寄りの英国の兵へ（家の陰で睨み合わない）
     const tx = !UK4.v5 && e.kind === 'archer' && !inn ? clamp(p.x, -20, 20) : U4.PAV[0] + (e.uk4Off ? e.uk4Off[0] * 0.4 : 0), tz = !UK4.v5 && e.kind === 'archer' && !inn ? U4.PZ + 12 : U4.PAV[1] + 6;
     const rt = u4Route(p, tx, tz); e.passive = false; e.tgt = null; steer(e, rt[0], rt[1], e.speed, dt); e.state = 'approach'; e.crouch = 0; return true;
   }
@@ -11055,7 +11056,7 @@ function u4EngBrain(e, dt) {
     else { e.state = 'idle'; e.faceWant = u4Calm() && !e.uk4Safe ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : e.uk4Face; }
     return true;
   }
-  if (e.uk4Free && UK4.v5 && !u4FoeNear(e, 25, 'blue')) { let t = null, bd = 1e9; for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || !o.uk4G) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; t = o; } } const tx = t ? t.s.position.x : U5.SQ[0], tz = t ? t.s.position.z : U5.SQ[1]; e.passive = false; e.tgt = null; steer(e, tx, tz, e.speed, dt); e.state = 'approach'; return true; }   // 第五幕：近くに敵がいなければ最寄りの侍女へ（25m 内は本体の斬り合い）   // 第五幕：英国の援軍は広場へ押し出す
+  if (e.uk4Free && UK4.v5 && !u4FoeNear(e, 8, 'blue')) { let t = null, bd = 1e9; for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || !o.uk4G) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; t = o; } } const tx = t ? t.s.position.x : U5.SQ[0], tz = t ? t.s.position.z : U5.SQ[1]; e.passive = false; e.tgt = null; steer(e, tx, tz, e.speed, dt); e.state = 'approach'; return true; }   // 第五幕：近くに敵がいなければ最寄りの侍女へ（25m 内は本体の斬り合い）   // 第五幕：英国の援軍は広場へ押し出す
   if (e.uk4Free) {
     if (e.uk4Guard) {   // 護衛は天幕から離れない
       const [hx, hz] = e.uk4Post; if (Math.hypot(hx - p.x, hz - p.z) > 11 && !u4FoeNear(e, 4, 'blue')) { steer(e, hx, hz, e.speed, dt); e.state = 'approach'; e.passive = true; e.tgt = null; return true; }
@@ -11517,10 +11518,10 @@ function u5Swords(cx, cz, n, lead, pool, w, extra) {
 function u5Wave() {   // 内陸の街道から援軍（民兵・正規兵）
   const w = ++UK4.waveN, z0 = U5.NORTH; UK4.waveAt[w] = time; UK4.log.push('wave:' + w);
   const before = UK4.eng.length;
-  if (w === 1) { u5Line('W1', 0, z0, 5, 'uk01', ['uk05', 'uk03'], 1); u5Swords(-14, z0 + 3, 8, 'uk03', ['uk05', 'uk07', 'uk01'], 1); u5Swords(14, z0 + 3, 4, 'uk05', ['uk08', 'uk03'], 1); }
-  if (w === 2) { u5Line('W2', 0, z0, 5, 'uk06', ['uk08', 'uk01', 'uk05'], 2); u5Square('P2', -12, z0 + 2, 'uk02', ['uk07', 'uk02'], 2); u5Swords(14, z0 + 3, 6, 'uk04', ['uk08', 'uk01'], 2);
+  if (w === 1) { u5Line('W1', 0, z0, 6, 'uk01', ['uk05', 'uk03'], 1); u5Swords(-14, z0 + 3, 10, 'uk03', ['uk05', 'uk07', 'uk01'], 1); u5Swords(14, z0 + 3, 4, 'uk05', ['uk08', 'uk03'], 1); }
+  if (w === 2) { u5Line('W2', 0, z0, 6, 'uk06', ['uk08', 'uk01', 'uk05'], 2); u5Square('P2', -12, z0 + 2, 'uk02', ['uk07', 'uk02'], 2); u5Swords(14, z0 + 3, 8, 'uk04', ['uk08', 'uk01'], 2);
     const A = u4SpawnEng('uk09', 'sword', 4, z0 + 6, true, { face: Math.PI }); if (A) { A.uk5Med = true; A.uk4Safe = true; A.uk5W = 2; A.ukTag = '衛生係 アリス・ムアクロフト'; } }
-  if (w === 3) { u5Line('W3', 0, z0, 6, 'uk08', ['uk07', 'uk05', 'uk01'], 3); u5Square('P3', 12, z0 + 2, 'uk07', ['uk02', 'uk05'], 3); u5Swords(-14, z0 + 3, 8, 'uk04', ['uk03', 'uk08', 'uk01'], 3, 'uk10'); }
+  if (w === 3) { u5Line('W3', 0, z0, 7, 'uk08', ['uk07', 'uk05', 'uk01'], 3); u5Square('P3', 12, z0 + 2, 'uk07', ['uk02', 'uk05'], 3); u5Swords(-14, z0 + 3, 11, 'uk04', ['uk03', 'uk08', 'uk01'], 3, 'uk10'); }
   // 援軍は町の北の端まで進んでから戦う（持ち場を町の北へ）
   for (const e of UK4.eng.slice(before)) { if (e.uk5Med) continue; e.uk4Slot = [e.uk4Slot[0], e.uk4Slot[1] - (z0 - 50)]; }
   for (const L of UK4.lines) if (L.w === w) L.units.forEach(e => { e.uk4Slot[1] = 50 + e.uk4Rank * 1.35; });
@@ -11535,7 +11536,7 @@ function u5SpawnBlue() {
       const kind = s % 4 === 1 ? 'archer' : 'mob', yari = kind === 'mob' && s % 4 === 3 ? 1 : -1, c = s % cols, r = Math.floor(s / cols);
       const off = [(c - (cols - 1) / 2) * 2.4, -(1.2 + r * 2.0)];
       const e = spawnEnemy(start[0] + off[0], start[1] + off[1], kind, s === 0 && !!lead, 'blue', { yari, set: {} }); if (!e) continue;
-      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = 0; e.hp = e.hpMax = e.hpMax + 5; G.units.push(e);
+      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = 0; e.hp = e.hpMax = e.hpMax + 4; G.units.push(e);
       if (s % 3 === 2) { e.uk5Con = true; e.speed *= 0.88; e.ukTag = '徴兵 ' + e.prof.name; }   // 徴兵：士気が低い
       if (s === 0 && lead) { G.lead = e; e.ukTag = lead; e.uk5Con = false; }
     }

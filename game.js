@@ -11055,6 +11055,7 @@ function u4EngBrain(e, dt) {
     else { e.state = 'idle'; e.faceWant = u4Calm() && !e.uk4Safe ? Math.atan2(player.pos.x - p.x, player.pos.z - p.z) : e.uk4Face; }
     return true;
   }
+  if (e.uk4Free && UK4.v5 && !u4FoeNear(e, 13, 'blue')) { const t = U5.SQ; e.passive = false; e.tgt = null; steer(e, t[0] + (e.uk4Post[0] % 6), t[1] + 4, e.speed, dt); e.state = 'approach'; return true; }   // 第五幕：英国の援軍は広場へ押し出す
   if (e.uk4Free) {
     if (e.uk4Guard) {   // 護衛は天幕から離れない
       const [hx, hz] = e.uk4Post; if (Math.hypot(hx - p.x, hz - p.z) > 11 && !u4FoeNear(e, 4, 'blue')) { steer(e, hx, hz, e.speed, dt); e.state = 'approach'; e.passive = true; e.tgt = null; return true; }

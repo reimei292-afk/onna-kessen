@@ -12339,7 +12339,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17234,7 +17234,7 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (state !== 'play') return;
   if (UK.on) {   // 英国淑女編：E で話す・送る、1〜4 で選ぶ
-    if (UK.choice && /^Digit[1-4]$/.test(e.code)) { ukPick(+e.code.slice(5) - 1); return; }
+    if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPick(+e.code.slice(5) - 1); return; }
     if (e.code === 'KeyE' || (UK.dlg && (e.code === 'Enter'))) { ukUse(); return; }
     if (/^Digit/.test(e.code)) return;
   }
@@ -17268,7 +17268,21 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on) setWeapon(player.weapon ^ 1); }, { passive: true });
+addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on && !UK.choice) setWeapon(player.weapon ^ 1); }, { passive: true });
+// ---- 選択肢メニューのキー操作（全ステージ共通）：↑↓／W・S で選び、Enter・E で決定。長いメニューは枠の中でスクロール ----
+const MenuNav = { i: -1, box: null };
+function menuNavBox() { if (UK.choice) return $('ukdlgChoices'); if (menuOpen) return $('secmenu'); return null; }
+function menuNavBtns(box) { return [...box.querySelectorAll('button')].filter(b => b.offsetParent !== null && !b.disabled); }
+function menuNavSet(box, i) { const bs = menuNavBtns(box); if (!bs.length) return; MenuNav.i = (i + bs.length) % bs.length; MenuNav.box = box; bs.forEach((b, k) => b.classList.toggle('kbsel', k === MenuNav.i)); bs[MenuNav.i].scrollIntoView({ block: 'nearest' }); }
+addEventListener('keydown', e => {
+  const box = menuNavBox(); if (!box) { MenuNav.i = -1; MenuNav.box = null; return; }
+  if (MenuNav.box !== box || !box.querySelector('button.kbsel')) MenuNav.i = -1;
+  const up = e.code === 'ArrowUp' || e.code === 'KeyW', dn = e.code === 'ArrowDown' || e.code === 'KeyS';
+  if (up || dn) { e.preventDefault(); e.stopImmediatePropagation(); keys[e.code] = false; menuNavSet(box, MenuNav.i < 0 ? (dn ? 0 : -1) : MenuNav.i + (dn ? 1 : -1)); return; }
+  if ((e.code === 'Enter' || e.code === 'KeyE' || e.code === 'Space') && MenuNav.i >= 0) { const b = menuNavBtns(box)[MenuNav.i]; if (b) { e.preventDefault(); e.stopImmediatePropagation(); MenuNav.i = -1; b.classList.remove('kbsel'); b.click(); } }
+}, true);
+addEventListener('wheel', e => { if (UK.choice || menuOpen) e.stopImmediatePropagation(); }, { capture: true, passive: true });
+
 function primaryDown() {
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }

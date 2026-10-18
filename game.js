@@ -11482,9 +11482,10 @@ function buildUkLanding() {
 function u5SpawnEnglish() {
   UK4.eng = []; UK4.by = {}; UK4.fillI = 0; UK4.lines = []; UK4.pk = []; UK4.waveN = 0; UK4.waveAt = []; UK4.breached = true;
   // 町の守備隊（第 0 波）：入り口の土塁のマスケット、広場の長槍、剣の者
-  u5Line('G1', 0, 4.5, 10, 'uk08', ['uk05', 'uk07', 'uk01'], 0);
+  u5Line('G1', 0, 4.5, 12, 'uk08', ['uk05', 'uk07', 'uk01'], 0); u5Line('G2', -20, 13, 6, null, ['uk01', 'uk05'], 0); u5Line('G3', 20, 13, 6, null, ['uk07', 'uk03'], 0);
   u5Square('P0', 0, 15, 'uk07', ['uk02', 'uk05'], 0);
-  u5Swords(0, 28, 8, 'uk04', ['uk08', 'uk01', 'uk05'], 0);
+  u5Swords(0, 28, 14, 'uk04', ['uk08', 'uk01', 'uk05'], 0);
+  for (const e of UK4.eng) { e.hp = e.hpMax = e.hpMax + 1; }   // 本土：守る側は粘る
   // 砲台：砲術士官シャーロット（uk10）と砲手
   UK4.guns.forEach((G, gi) => { for (let c = 0; c < 2; c++) { const named = gi === 1 && c === 0 ? 'uk10' : null; const e = u4SpawnEng(named || ['uk03', 'uk05', 'uk01'][gi], 'gun', G.x + (c ? 1.1 : -1.1), G.z + 0.8, !!named, { face: G.face }); if (e) { e.uk4Gun = G; G.crew.push(e); e.uk5W = 0; } } });
   UK4.engN0 = UK4.eng.length;
@@ -11516,7 +11517,7 @@ function u5Wave() {   // 内陸の街道から援軍（民兵・正規兵）
     const A = u4SpawnEng('uk09', 'sword', 4, z0 + 6, true, { face: Math.PI }); if (A) { A.uk5Med = true; A.uk4Safe = true; A.uk5W = 2; A.ukTag = '衛生係 アリス・ムアクロフト'; } }
   if (w === 3) { u5Line('W3', 0, z0, 9, 'uk08', ['uk07', 'uk05', 'uk01'], 3); u5Square('P3', 12, z0 + 2, 'uk07', ['uk02', 'uk05'], 3); u5Swords(-14, z0 + 3, 14, 'uk04', ['uk03', 'uk08', 'uk01'], 3, 'uk10'); }
   // 援軍は町の北の端まで進んでから戦う（持ち場を町の北へ）
-  for (const e of UK4.eng.slice(before)) { if (e.uk5Med) continue; e.uk4Slot = [e.uk4Slot[0], e.uk4Slot[1] - (z0 - 50)]; }
+  for (const e of UK4.eng.slice(before)) { if (e.uk5Med) continue; e.hp = e.hpMax = e.hpMax + 1; e.uk4Slot = [e.uk4Slot[0], e.uk4Slot[1] - (z0 - 50)]; }
   for (const L of UK4.lines) if (L.w === w) L.units.forEach(e => { e.uk4Slot[1] = 50 + e.uk4Rank * 1.35; });
   showBanner(`英国の援軍 第${w}波`, w === 1 ? '民兵と正規兵が街道を下ってくる' : w === 2 ? 'エレノアの正規兵とハリエットの長槍' : 'ベアトリスとスカーレット——最後の援軍');
   uk4Bark(w === 2 ? 'e_report' : 'm_ready', true);
@@ -11529,7 +11530,7 @@ function u5SpawnBlue() {
       const kind = s % 4 === 1 ? 'archer' : 'mob', yari = kind === 'mob' && s % 4 === 3 ? 1 : -1, c = s % cols, r = Math.floor(s / cols);
       const off = [(c - (cols - 1) / 2) * 2.4, -(1.2 + r * 2.0)];
       const e = spawnEnemy(start[0] + off[0], start[1] + off[1], kind, s === 0 && !!lead, 'blue', { yari, set: {} }); if (!e) continue;
-      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = 0; e.hp = e.hpMax = e.hpMax + 4; G.units.push(e);
+      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = 0; e.hp = e.hpMax = e.hpMax + 3; G.units.push(e);
       if (s % 3 === 2) { e.uk5Con = true; e.speed *= 0.88; e.ukTag = '徴兵 ' + e.prof.name; }   // 徴兵：士気が低い
       if (s === 0 && lead) { G.lead = e; e.ukTag = lead; e.uk5Con = false; }
     }
@@ -11578,15 +11579,15 @@ function u5Tick(dt) {   // 第五幕の進行（UK4 の update から呼ぶ）
   for (const G of UK4.guns) u4GunTick(G, dt);
   const B = u4BlueUp(), engUp = UK4.eng.filter(e => isUp(e) && !e.uk4Safe && enemies.includes(e));
   // 援軍：持ち場に着いて 20 秒（または斉射 3 回）で全員が広場へ押し出す
-  for (const e of engUp) if (e.uk5W > 0 && !e.uk4Free && time - UK4.waveAt[e.uk5W] > (e.uk4Line ? 40 : 26)) u4Free(e);
+  for (const e of engUp) if (e.uk5W > 0 && !e.uk4Free && time - UK4.waveAt[e.uk5W] > (e.uk4Line ? 26 : 13)) u4Free(e);
   if (UK4.phase === 'advance') {
     const g0 = engUp.filter(e => e.uk5W === 0 && !e.uk4Gun).length, onSq = B.filter(o => Math.hypot(o.s.position.x - U5.SQ[0], o.s.position.z - U5.SQ[1]) < 11).length;
     if (UK4.t > 20 && !UK4.said.a_steady) uk4Bark('m_bayo');
-    if (g0 <= 6 || onSq >= 8) { uk4SetPhase('hold'); ukDlg([{ say: 'n5_hold' }], null); UK4.q.push({ at: time + 5, fn: () => u5Wave() }); for (const k in UK4.groups) { const G = UK4.groups[k]; G.st = 'assault'; for (const e of G.units) if (isUp(e)) u4FreeBlue(e); } }
+    if (g0 <= 8 || (onSq >= 8 && g0 <= 18) || UK4.t > 110) { uk4SetPhase('hold'); ukDlg([{ say: 'n5_hold' }], null); UK4.q.push({ at: time + 5, fn: () => u5Wave() }); for (const k in UK4.groups) { const G = UK4.groups[k]; G.st = 'assault'; for (const e of G.units) if (isUp(e)) u4FreeBlue(e); } }
   }
   if (UK4.phase === 'hold' && UK4.waveN > 0) {
     const cur = engUp.filter(e => e.uk5W === UK4.waveN).length, since = time - UK4.waveAt[UK4.waveN];
-    if (UK4.waveN < 3 && ((since > 25 && cur <= 6) || since > 70)) u5Wave();
+    if (UK4.waveN < 3 && ((since > 22 && cur <= 8) || since > 50)) u5Wave();
     if (UK4.waveN >= 3 && engUp.length <= 3 && since > 15) u5End(true);
   }
   if (B.length + (state === 'play' ? 1 : 0) <= 3 && UK4.t > 20) u5End(false);

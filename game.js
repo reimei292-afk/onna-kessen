@@ -9222,22 +9222,42 @@ function uk2Who(who) {
   if (who === 'nurse') return medAlive('blue', 'nurse')[0] || null;
   return UK2.by[who] || null;
 }
-function uk2Gun(e) {   // マスケット銃（銃身と台尻）
-  if (!UK2.gunG) { const L = uk2Mats().L; UK2.gunG = { barrel: new THREE.CylinderGeometry(0.014, 0.018, 1.2, 6), stock: new THREE.BoxGeometry(0.05, 0.1, 0.52), lock: new THREE.BoxGeometry(0.035, 0.05, 0.1), mI: L(0x2b2b2e), mW: L(0x5e3c22), mB: L(0x9a7a3a) }; }
-  const G = UK2.gunG, g = new THREE.Group();
-  const b = new THREE.Mesh(G.barrel, G.mI); b.rotation.x = Math.PI / 2; b.position.z = 0.5; g.add(b);
-  const s = new THREE.Mesh(G.stock, G.mW); s.position.set(0, -0.03, -0.14); g.add(s);
-  const l = new THREE.Mesh(G.lock, G.mB); l.position.set(0.03, 0.0, 0.1); g.add(l);
-  g.position.set(-0.16 * e.figH / 1.6, 0.6 * e.figH, 0.1); g.rotation.x = -1.25; e.s.add(g); e.uk2Gun = g; e.uk2GA = -1.25;
+function uk2Gun(e) {   // マスケット銃（銃身・台木・銃床・火打ち石の錠前・槊杖）に銃剣を着けて持つ
+  if (!UK2.gunG) { const L = c => new THREE.MeshLambertMaterial({ color: c });
+    UK2.gunG = { barrel: new THREE.CylinderGeometry(0.017, 0.021, 1.12, 8), fore: new THREE.BoxGeometry(0.045, 0.05, 0.86), butt: new THREE.BoxGeometry(0.05, 0.13, 0.36), wrist: new THREE.BoxGeometry(0.045, 0.07, 0.16),
+      lock: new THREE.BoxGeometry(0.03, 0.05, 0.12), rod: new THREE.CylinderGeometry(0.005, 0.005, 0.9, 4), sock: new THREE.CylinderGeometry(0.024, 0.024, 0.08, 8), blade: new THREE.ConeGeometry(0.018, 0.42, 3),
+      mI: L(0x6a6d72), mW: L(0x7a4a26), mB: L(0xb08a3e), mS: L(0xdfe3e8) }; }
+  const G = UK2.gunG, g = new THREE.Group(), add = (geo, m, x, y, z, rx) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); if (rx) o.rotation.x = rx; g.add(o); return o; };
+  add(G.barrel, G.mI, 0, 0.012, 0.56, Math.PI / 2);   // 銃身（銃口が +z）
+  add(G.fore, G.mW, 0, -0.018, 0.4);                  // 台木
+  add(G.wrist, G.mW, 0, -0.04, -0.1);
+  add(G.butt, G.mW, 0, -0.075, -0.33);                // 銃床
+  add(G.lock, G.mB, 0.035, 0.0, 0.02);                // 錠前（真鍮）
+  add(G.rod, G.mI, 0, -0.045, 0.52, Math.PI / 2);     // 槊杖
+  add(G.sock, G.mS, 0.0, 0.012, 1.1, Math.PI / 2);    // 銃剣の受け筒
+  const bl = add(G.blade, G.mS, 0.0, 0.035, 1.34, Math.PI / 2); bl.scale.set(1, 1, 0.55);   // 銃剣（細い三角の刃）
+  g.position.set(-0.16 * e.figH / 1.6, 0.6 * e.figH, 0.12); g.rotation.x = -1.25; g.rotation.z = 0.32; e.s.add(g); e.uk2Gun = g; e.uk2GA = -1.25; e.uk2GP = 0; e.uk2GZ = 0.32;
+  e.bayo = true;   // 近くの敵には銃剣で突く（槍に近い間合い）
 }
-function uk2GunPose(e, aim, dt) {
+function uk2GunPose(e, aim, dt, free) {   // 担え銃（行進）／構え（斉射）／銃剣を腰だめに（白兵）
   const g = e.uk2Gun; if (!g) return;
   g.visible = e.state !== 'down';
-  const want = aim ? -0.03 : -1.25, k = Math.min(1, dt * (aim ? 7 : 4));
-  e.uk2GA += (want - e.uk2GA) * k; g.rotation.x = e.uk2GA;
-  const u = clamp((e.uk2GA + 1.25) / 1.22, 0, 1);
-  g.position.set((-0.16 + 0.12 * u) * e.figH / 1.6, (0.6 + 0.22 * u) * e.figH * (1 - 0.3 * (e.crouch || 0)), 0.1 + 0.05 * u);
+  if (!g.visible) return;
+  const near = free && e.tgt && (e.tgt.isPlayer || isUp(e.tgt)) && Math.hypot(tgtPos(e.tgt).x - e.s.position.x, tgtPos(e.tgt).z - e.s.position.z) < 6;
+  const melee = free && (near || e.state === 'windup' || e.state === 'recover');
+  let want = -1.25, push = 0, zr = 0.32, hy = 0.6, hx = -0.16;
+  if (aim) { want = -0.03; zr = 0; hy = 0.82; hx = -0.04; }
+  else if (melee) { want = -0.1; zr = 0; hy = 0.6; hx = -0.1;
+    if (e.state === 'windup') push = -0.3 * Math.min(1, e.t / BAYO.windup);
+    else if (e.state === 'recover') push = e.t < 0.16 ? 0.5 : 0.5 * Math.max(0, 1 - (e.t - 0.16) / 0.45); }
+  const k = Math.min(1, dt * (e.state === 'recover' && e.t < 0.16 ? 30 : aim ? 7 : 6));
+  e.uk2GA += (want - e.uk2GA) * k; e.uk2GP += (push - e.uk2GP) * k; e.uk2GZ += (zr - e.uk2GZ) * k;
+  g.rotation.x = e.uk2GA; g.rotation.z = e.uk2GZ;
+  const cr = 1 - 0.3 * (e.crouch || 0);
+  e.uk2GY = (e.uk2GY == null ? hy : e.uk2GY + (hy - e.uk2GY) * k); e.uk2GX = (e.uk2GX == null ? hx : e.uk2GX + (hx - e.uk2GX) * k);
+  g.position.set(e.uk2GX * e.figH / 1.6, e.uk2GY * e.figH * cr, 0.12 + e.uk2GP);
 }
+const BAYO = { reach: 2.15, windup: 0.55, recover: 0.7, inside: 1.0, parry: 0.22 };   // 銃剣：槍より少し短く、構えは早い
 function uk2SpawnEng(id, role, x, z, y, named) {
   const G = UK_PROF[id]; if (!GIRLS[id]) return null;
   const e = spawnEnemy(x, z, 'mob', false, 'orange', { girl: id, y, yari: role === 'pike' ? 1 : -1, set: { ukId: id, uk2: role } });
@@ -9246,7 +9266,7 @@ function uk2SpawnEng(id, role, x, z, y, named) {
   Object.assign(e.prof, { name: nm, pers: G.pers, cm: G.cm, vv: G.vv }); e.P = PERS[G.pers]; e.figH = G.cm / 100;
   e.ukInfo = named ? Object.assign({}, G) : { role: R[0], en: R[1], age: 19 + (UK2.fillI % 6), cm: G.cm, desc: '英国・ライオネス号の乗組員。' + R[2] };
   if (named) e.uk2Named = true;
-  e.hp = e.hpMax = role === 'sword' ? 3 : 2; e.dmg = 9;
+  e.hp = e.hpMax = role === 'pike' ? 4 : role === 'sword' || role === 'musket' ? 3 : 2; e.dmg = 9;   // 銃剣のマスケット兵は少し粘る（長槍の方陣よりは脆い）
   if (role === 'musket') uk2Gun(e);
   if (role === 'pike' && e.spear) e.spear.scale.z = 1.65;   // 長槍（約 4.8m）
   if (role === 'sword') e.speed *= 1.12;
@@ -9475,7 +9495,7 @@ function uk2MusTick(dt) {
   const S = F.st;
   if (S === 'form') { if (F.t > 9 || (ready > 0.8 && F.t > 3)) { F.st = 'ready'; F.t = 0; uk2Bark(F.first ? 's_first' : 's_ready'); F.first = false; } }
   else if (S === 'ready') { if (F.t > 2.2) { F.st = 'present'; F.rank = 0; F.t = 0; uk2Bark('s_present'); } }
-  else if (S === 'present') { if (F.t > 1.6) { F.st = 'fired'; F.t = 0; uk2Bark('s_fire', true); for (const e of M) if (e.uk2Rank === F.rank) UK2.shots.push({ m: e, at: time + rand(0, 0.3) }); } }
+  else if (S === 'present') { if (F.t > 1.6) { F.st = 'fired'; F.t = 0; uk2Bark('s_fire', true); for (const e of M) if (e.uk2Rank === F.rank && !e.uk2Fall) UK2.shots.push({ m: e, at: time + rand(0, 0.3) }); } }
   else if (S === 'fired') { if (F.t > 1.6) { if (F.rank === 0) { F.rank = 1; F.st = 'present'; F.t = -1.4; uk2Bark('s_second'); } else { F.st = 'reload'; F.t = 0; uk2Bark('s_reload'); } } }
   else if (S === 'reload') { if (F.t > 7.5) { const near = enemies.some(o => o.team === 'blue' && isUp(o) && Math.abs(o.s.position.x - F.x) < 14 && o.s.position.z - F.z < 9); if (F.z < 5 && !near) { F.st = 'advance'; F.t = 0; F.adv = 0; uk2Bark('s_advance'); } else { F.st = 'ready'; F.t = 0; uk2Bark('s_ready'); } } }
   else if (S === 'advance') { const v = 0.75 * dt; F.z += v; F.adv += v; if (F.adv >= 5 || F.z >= 6) { F.st = 'form'; F.t = 1; } }
@@ -9515,7 +9535,7 @@ function uk2Brain(e, dt) {
     uk2GunPose(e, false, dt);
     return true;
   }
-  if (e.uk2 === 'musket') uk2GunPose(e, !e.uk2Free && ((UK2.mus && UK2.mus.st === 'present' && UK2.mus.t > 0 && e.uk2Rank === UK2.mus.rank) || time - (e.uk2FireT || -9) < 0.6), dt);
+  if (e.uk2 === 'musket') uk2GunPose(e, !e.uk2Free && ((UK2.mus && UK2.mus.st === 'present' && UK2.mus.t > 0 && e.uk2Rank === UK2.mus.rank) || time - (e.uk2FireT || -9) < 0.6), dt, !!e.uk2Free);
   if (e.uk2Free) return false;
   if (e.uk2 === 'sword') { if (time >= (e.uk2FreeAt || 0)) { uk2FreeUnit(e); return false; } e.passive = true; e.state = 'idle'; e.faceWant = 0; return true; }
   if (e.uk2 === 'drum') {   // 鼓手：戦列の後ろ
@@ -9526,7 +9546,17 @@ function uk2Brain(e, dt) {
   }
   if (e.uk2 === 'musket') {
     const F = UK2.mus; if (!F) { uk2FreeUnit(e); return false; }
-    if (uk2Contact(e, 2.6)) { uk2FreeUnit(e); return false; }
+    if (e.uk2Fall) {   // 斬り込まれた：長槍の方陣の後ろへ下がる
+      const [fx, fz] = e.uk2Fall, d = Math.hypot(fx - p.x, fz - p.z); e.passive = true; e.tgt = null;
+      if (d < 0.8 || time > e.uk2FallT || uk2Contact(e, 1.3)) { e.uk2Fall = null; uk2FreeUnit(e); return false; }
+      steer(e, fx, fz, e.speed * 1.25, dt); e.state = 'approach'; return true;
+    }
+    if (uk2Contact(e, 2.6)) {
+      const P = UK2.pk, K = P && P.st !== 'charge' ? uk2Line('pike') : [];
+      if (K.length >= 5 && !e.uk2Fell) { const rows = Math.max(...K.map(o => o.uk2Row || 0)) + 1, sd = p.x < P.x ? -1 : 1, fx = P.x + sd * rand(0, P.files * 0.5), fz = P.z - rows * 1.05 - rand(1.5, 3);   // 方陣の後ろ（こちら側の端寄り）
+        if (Math.hypot(fx - p.x, fz - p.z) < 30) { e.uk2Fell = true; e.uk2Fall = [fx, fz]; e.uk2FallT = time + 9; UK2.stats.fallBack = (UK2.stats.fallBack || 0) + 1; return true; } }
+      uk2FreeUnit(e); return false;
+    }
     const [sx, sz] = uk2MusSlot(F, e), d = Math.hypot(sx - p.x, sz - p.z);
     e.passive = true; e.tgt = null;
     if (d > 0.3) { steer(e, sx, sz, e.speed * (F.st === 'advance' ? 0.42 : d > 3 ? 1.1 : 0.6), dt); e.state = 'approach'; } else e.state = 'idle';
@@ -9991,7 +10021,7 @@ function u3SpawnEng(id, role, x, z, lv, named, opt = {}) {
   const R = U3_ROLE[role] || U3_ROLE.sword, nm = named ? G.name : U3_FILL[(UK3.fillI++) % U3_FILL.length];
   Object.assign(e.prof, { name: nm, pers: G.pers, cm: G.cm, vv: G.vv }); e.P = PERS[G.pers]; e.figH = G.cm / 100;
   e.ukInfo = named ? Object.assign({}, G) : { role: R[0], en: R[1], age: 19 + (UK3.fillI % 6), cm: G.cm, desc: '英国・ライオネス号の乗組員。' + R[2] };
-  e.hp = e.hpMax = role === 'sword' ? 3 : 2; e.dmg = 9; e.baseY = y; e.s.position.y = y; e.footOk = [x, z]; e.onFloor = null; e.sq = null;
+  e.hp = e.hpMax = role === 'pike' ? 4 : role === 'sword' || role === 'musket' ? 3 : 2; e.dmg = 9;   // 銃剣のマスケット兵は少し粘る（長槍の方陣よりは脆い） e.baseY = y; e.s.position.y = y; e.footOk = [x, z]; e.onFloor = null; e.sq = null;
   e.uk3Post = [x, z, lv]; e.uk3Face = opt.face != null ? opt.face : 0; e.s.rotation.y = e.face = e.faceWant = e.uk3Face;
   e.uk3Watch = !!opt.watch; e.uk3Res = !!opt.res;
   if (role === 'musket') { uk2Gun(e); e.uk3Slot = opt.slot; }
@@ -10208,7 +10238,7 @@ function u3FlagRun(e, dt) {   // 軍艦旗を下ろしに行く
 function u3Wake(e, delay) { if (!e.uk3Sleep || e.uk3WakeAt) return; e.uk3WakeAt = time + delay; }
 function u3EngBrain(e, dt) {
   const p = e.s.position;
-  if (e.uk2Gun) uk2GunPose(e, !e.uk3Free && ((UK3.mus && UK3.mus.st === 'present') || time - (e.uk2FireT || -9) < 0.6), dt);
+  if (e.uk2Gun) uk2GunPose(e, !e.uk3Free && ((UK3.mus && UK3.mus.st === 'present') || time - (e.uk2FireT || -9) < 0.6), dt, !!e.uk3Free);
   if (e.uk3Safe) {   // エレノア：後甲板で指揮。退くときは船尾から短艇へ
     e.passive = true; e.tgt = null; e.knock.set(0, 0, 0);
     if (e.uk3Back) return u3Back(e, dt);
@@ -10230,7 +10260,7 @@ function u3EngBrain(e, dt) {
     return true;
   }
   if (e.uk3Free) { e.passive = false; e.crouch = 0; return u3Chase(e, dt); }
-  const near = u3NearFoe(e, 1.9, false);
+  const near = u3NearFoe(e, e.uk3 === 'musket' ? 2.5 : 1.9, false);   // マスケット兵は 2.5m で銃剣に切り替える
   if (near && UK3.phase !== 'approach' && UK3.phase !== 'open') { u3Free(e); return false; }
   // 見張り：灯りを振って海を見る
   if (e.uk3 === 'look') {
@@ -10929,7 +10959,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12987,6 +13017,13 @@ function waveUpdate(dt) {
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (e.state === 'down' || UK.on || (UK3.on && (e.uk3Safe || e.uk3Sumi))) return;   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
+  if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
+    const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
+    if (fp) { const a = Math.atan2(fp.x - e.s.position.x, fp.z - e.s.position.z), f = e.face != null ? e.face : e.s.rotation.y; front = Math.abs(Math.atan2(Math.sin(a - f), Math.cos(a - f))) < 1.3; }
+    if (front) { e.parryN = (e.parryN || 0) + 1; e.uk2GP = -0.15; const hp0 = e.s.position.clone(); hp0.y = e.baseY + e.figH * 0.62; puff(hp0, 0xf0f0e8, 3, 0.05, 2.4, 0.12);
+      if (byPlayer || Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 10) Sfx.clash();
+      return; }
+  }
   if (PLANE.intro) planeAmbush();   // 静かな機内で攻撃すれば、その場で奇襲が始まる
   if (e.hiddenAmb) castleSpring(e.hiddenAmb, by && by !== 'player' ? by : null);   // 伏兵が見つかった
   if (TEST) { const D = window.__dmgT || (window.__dmgT = {}); D[e.team] = (D[e.team] || 0) + dmg; }
@@ -15068,7 +15105,7 @@ function updateEnemies(dt) {
           else if (e.state === 'approach' && e.screen && dist > SCREEN.guardR && screenHold(e, tx, tz, dt)) { /* 弓兵の前に立って待つ */ }
           else if (e.state === 'approach' && e.yari && yariApproach(e, dt, dist, nx, nz, tx, tz)) { /* 槍：突撃／懐から下がる */ }
           else if (e.state === 'approach') {
-            if (dist > (e.yari ? YARI.reach : MELEE_RANGE) - 0.35) {
+            if (dist > (e.yari ? YARI.reach : e.bayo ? BAYO.reach : MELEE_RANGE) - 0.35) {
               const side = Math.sin(time * 0.7 + e.ph) * (P.cautious ? 0.6 : 0.35) * e.strafe * Math.min(1, dist / 6);
               steer(e, p.x + (nx - nz * side) * 3, p.z + (nz + nx * side) * 3, e.speed, dt);
             } else if (e.cd <= 0) {
@@ -15087,7 +15124,7 @@ function updateEnemies(dt) {
         } else if (e.state === 'charge') { yariCharge(e, dt);
         } else if (e.state === 'windup') {
           // 構え：少し引いてから…（槍は長く構える）
-          const T = e.yari ? YARI.windup : P === PERS.好戦的 ? 0.4 : 0.5, k = e.t / T;
+          const T = e.yari ? YARI.windup : e.bayo ? BAYO.windup : P === PERS.好戦的 ? 0.4 : 0.5, k = e.t / T;
           tint(k);
           p.x -= nx * 0.6 * dt; p.z -= nz * 0.6 * dt;
           if (e.t >= T) {
@@ -15095,9 +15132,10 @@ function updateEnemies(dt) {
             e.state = 'recover'; e.t = 0; e.cd = rand(P.atkCd[0], P.atkCd[1]); npcTint(e, 0);
             p.x += nx * 0.45; p.z += nz * 0.45;
             const d2 = Math.hypot(tx - p.x, tz - p.z);
-            const miss = e.yari && d2 < YARI.inside && Math.random() < 0.55;   // 槍：懐に入られると突きが外れやすい
-            if (e.yari) e.cd += 0.5;
-            if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : MELEE_RANGE) && elevD(e) < 1.2) {
+            const miss = (e.yari && d2 < YARI.inside && Math.random() < 0.55) || (e.bayo && d2 < BAYO.inside && Math.random() < 0.35);   // 槍：懐に入られると突きが外れやすい
+            if (e.yari) e.cd += 0.5; else if (e.bayo) e.cd += 0.45;
+            if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : e.bayo ? BAYO.reach + 0.4 : MELEE_RANGE) && elevD(e) < 1.2) {
+              if (e.bayo) e.bayoHits = (e.bayoHits || 0) + 1;
               if (e.tgt.isPlayer) hurtPlayer(e.dmg);
               else {
                 const tp2 = e.tgt.s.position;
@@ -15106,7 +15144,7 @@ function updateEnemies(dt) {
             }
           }
         } else if (e.state === 'recover') {
-          if (e.t > (e.yari ? YARI.recover : 0.35)) e.state = 'approach';   // 槍は引き戻しが遅い
+          if (e.t > (e.yari ? YARI.recover : e.bayo ? BAYO.recover : 0.35)) e.state = 'approach';   // 槍は引き戻しが遅い
         } else e.state = 'approach';
       }
     }

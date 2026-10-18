@@ -8878,7 +8878,7 @@ function ukSpeak(key) {
   const e = ukWho(L.who), d = e ? Math.min(14, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
   let ok = false;
   if (L.file) Talk.as(e, () => { ok = VoicePack.play(L.file, d, 1.95, 1); });   // 1.95：まだ届いていなければ少し待って鳴らす
-  if (!ok && L.file && 'speechSynthesis' in window && !(typeof FR2 !== 'undefined' && FR2 && FR2.on)) {   // 第二幕は合成音声に落とさない（字幕だけ）
+  if (!ok && L.file && 'speechSynthesis' in window) {   // mp3 が無ければブラウザの合成音声（第二幕以降はこれで足りる）
     try { const jaLine = L.lang === 'ja' || !L.en; const u = new SpeechSynthesisUtterance(jaLine ? (L.ja || L.en) : (L.en || L.ja)); u.lang = L.lang === 'fr' ? 'fr-FR' : jaLine ? 'ja-JP' : 'en-GB'; if (L.who === 'king') u.pitch = 0.7; speechSynthesis.speak(u); } catch (_) {}
   }
   if (e) { e.ukTalkT = time + (L.dur || 3) + 0.6; }
@@ -12364,7 +12364,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -13927,14 +13927,29 @@ function tagLabel(e) {
   return (pre ? pre + ' ' : '') + nm;
 }
 function makeTag(e, text) {
-  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 64;
-  const g = cv.getContext('2d'); g.font = 'bold 30px "Hiragino Mincho ProN","Yu Mincho",serif';
-  const w = Math.min(500, g.measureText(text).width + 28);
-  g.fillStyle = 'rgba(10,12,18,.55)'; g.beginPath(); g.roundRect ? g.roundRect(256 - w / 2, 8, w, 48, 12) : g.rect(256 - w / 2, 8, w, 48); g.fill();
-  g.fillStyle = e.team === 'blue' ? '#dcefff' : '#ffe6c8'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 256, 33);
+  const font = 'bold 30px "Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif';
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font = font;
+  let lines = [text];
+  if (probe.measureText(text).width > 430 && text.indexOf('（') > 0) {
+    const i = text.indexOf('（');
+    lines = [text.slice(0, i), text.slice(i + 1).replace(/）$/, '')];
+  }
+  const tw = Math.max.apply(null, lines.map(t => Math.ceil(probe.measureText(t).width)));
+  const W = Math.max(160, tw + 36);
+  const H = lines.length === 1 ? 64 : 92;
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.font = font;
+  g.fillStyle = 'rgba(10,12,18,.55)'; g.beginPath();
+  if (g.roundRect) g.roundRect(4, 6, W - 8, H - 12, 12); else g.rect(4, 6, W - 8, H - 12);
+  g.fill();
+  g.fillStyle = e.team === 'blue' ? '#dcefff' : '#ffe6c8'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  if (lines.length === 1) g.fillText(lines[0], W / 2, H / 2 + 1);
+  else { g.fillText(lines[0], W / 2, 30); g.font = 'bold 24px "Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif'; g.fillText(lines[1], W / 2, 64); }
   const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-  if (!e.tag) { e.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, sizeAttenuation: false })); e.tag.renderOrder = 6; e.tag.scale.set(0.46, 0.0575, 1); scene.add(e.tag); e.extra.push(e.tag); }
-  else { e.tag.material.map.dispose(); e.tag.material.map = tex; e.tag.material.needsUpdate = true; }
+  const sx = 0.46 * (W / 512), sy = 0.0575 * (H / 64);
+  if (!e.tag) { e.tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, sizeAttenuation: false })); e.tag.renderOrder = 6; e.tag.scale.set(sx, sy, 1); scene.add(e.tag); e.extra.push(e.tag); }
+  else { e.tag.material.map.dispose(); e.tag.material.map = tex; e.tag.material.needsUpdate = true; e.tag.scale.set(sx, sy, 1); }
 }
 const tagNear = [];
 function updateTags() {
@@ -18551,7 +18566,11 @@ function fr2Bark(key) {
   if (e && e.state === 'down') return false;
   FR2.said[key] = time;
   const d = e ? Math.min(36, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 6;
-  if (L.file) Talk.as(e, () => { if (!VoicePack.play(L.file, d, 1.95, 1)) { /* 字幕は出す。合成音声には落とさない */ } });
+  if (L.file) Talk.as(e, () => {
+    if (!VoicePack.play(L.file, d, 1.95, 1) && 'speechSynthesis' in window && L.who !== 'king') {
+      try { const jaLine = L.lang === 'ja' || !L.en; const u = new SpeechSynthesisUtterance(jaLine ? (L.ja || L.en) : (L.en || L.ja)); u.lang = L.lang === 'fr' ? 'fr-FR' : jaLine ? 'ja-JP' : 'en-GB'; speechSynthesis.speak(u); } catch (_) {}
+    }
+  });
   const P = (typeof FR_PROF !== 'undefined' && FR_PROF[L.who]) || FR2.card[L.who];
   const nm = P ? String(P.name).split('・')[0] : (FR2_WHO[L.who] || '');
   const el = $('subtitle'); if (el) el.textContent = L.en ? (nm + '「' + L.en + '」　' + L.ja) : (nm + '「' + L.ja + '」');

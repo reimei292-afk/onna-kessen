@@ -49,14 +49,14 @@
 - 赤毛/オーバーンは色がキャミソールやパンツに滲みやすい → 「white camisole stays pure white」と明記し、出来を確認。
 - 生成後 rembg で切り抜き → make_frames.py。
 
-## フランス人形編（第一幕を公開。第二幕はコードのみ・メニューから外して保留）
+## フランス人形編（第一幕・第二幕をメニュー公開）
 ユーザー承認済みの架空フランス人女性10人。全員同じ衣装（銀ティアラ・白レースキャミソール・細い黒ベルト＋四角い銀バックル・黒テーパードパンツ（各脚に折り目1本）・黒パンプス）。
 - ステージ `frDeclare`（メニュー「フランス人形編 第一幕 宣戦」）。英国降伏のあと、共和国のコルベットが王の港へ来て「侍女たちの解放」を突きつける。戦いは無い。岸と甲板を歩き、E で話し、1〜3 で選ぶ。岸の奥の幟で幕が閉じる。
 - 選択は localStorage のキー `onnaFrAct1`（`refuse` / `ask` / `peace`）。次の幕が読む。
 - フランスの娘はフランス語＋日本語字幕、エレノアは英語＋日本語字幕、侍女は日本語。殿の台詞は字幕のみ（声なし・顔なし）。
-- 声は `assets/voices/fr/*.mp3` と `assets/voices/voices_fr.js`。人間の声（女性のみ）。edge-tts は使わない。
+- 声は第一幕のみ収録済み（`assets/voices/fr/*.mp3`）。**第二幕以降は人間の声を新規収録しない。** mp3 が無ければブラウザの合成音声（`speechSynthesis`）で読む。字幕は残す。殿の台詞は字幕のみ。
+- 第二幕「上陸」はメニューに戻してある（`frLand`）。台本は `assets/voices/voices_fr2.js`。mp3 は無くてよい。第一幕の選択 `onnaFrAct1` を読む。
 - 立ち絵は `assets/frames/frNN_*.png` と `assets/frames/frames_fr.js`（`frames.js` のあとに読む）。`tools/make_fr_frames.py` で再生成。`make_frames.py` は回さない。
-- 次は第二幕「上陸」。港の防衛のコード（`frLand` / `tools/fr_act2_body.js`）はあるが、声の mp3 が未収録なので **メニューからは外してある**。再開するときは `index.html` に第二幕のボタンと `voices_fr2.js` を戻し、`assets/voices/fr2/*.mp3` を女性の声で置いてから公開する。第一幕の選択 `onnaFrAct1` を読む。
 
 画像は `assets/fr_candidates/` にあり（作業コピーは `/workspace/fr10/`）。
 - `frNN.jpg` 正面 / `frNN_front_diag.jpg` 斜め前(3/4) / `frNN_side.jpg` 側面（右向き） / `frNN_back.jpg` 背面 / `frNN_down.jpg` 倒れ（仰向け・頭が左・目を閉じた安らかな顔・血/傷なし）

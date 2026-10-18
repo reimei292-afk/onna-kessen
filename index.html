@@ -20,13 +20,13 @@
   #game{z-index:0}
   #wcanvas,#paint{pointer-events:none}
   #target{position:absolute;left:50%;top:calc(50% + 34px);transform:translateX(-50%);text-align:center;opacity:0;
-    background:rgba(0,0,0,.45);padding:5px 14px 7px;border-radius:3px;border:1px solid rgba(255,160,60,.6);min-width:150px;text-shadow:0 1px 2px #000}
-  #target b{display:block;font-size:17px;letter-spacing:.08em}
+    background:rgba(0,0,0,.45);padding:5px 14px 7px;border-radius:3px;border:1px solid rgba(255,160,60,.6);min-width:150px;max-width:min(460px,88vw);text-shadow:0 1px 2px #000}
+  #target b{display:block;font-size:17px;letter-spacing:.04em;line-height:1.35}
   #target span{display:block;font-size:13px;opacity:.9}
   #target i{display:block;height:4px;margin-top:4px;background:#ffb040}
   #target u{display:block;text-decoration:none;font-size:12px;letter-spacing:.15em}
   #target img{display:block;width:56px;height:56px;margin:0 auto 4px;border-radius:50%;border:2px solid rgba(232,217,168,.8);object-fit:cover;background:#ccc}
-  #talk{position:absolute;left:50%;top:calc(50% + 110px);transform:translateX(-50%);padding:6px 16px;background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.6);border-radius:4px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+  #talk{position:absolute;left:50%;top:calc(50% + 110px);transform:translateX(-50%);padding:6px 16px;background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.6);border-radius:4px;font-size:15px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:min(720px,92vw);text-align:center;line-height:1.45}
   #cook{position:fixed;left:50%;top:122px;transform:translateX(-50%);z-index:45;display:none;color:#f4ecd6;font-size:13px;letter-spacing:.1em;text-align:center;text-shadow:0 0 4px #000;pointer-events:none}
   #cook .bar{width:220px;height:6px;margin:4px auto 0;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
   #onigiriRem{display:none;margin-top:6px;pointer-events:auto;font:inherit;font-size:13px;padding:6px 10px;color:#1a1410;background:#e8d9a8;border:0;border-radius:4px;cursor:pointer}
@@ -228,7 +228,7 @@
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button><button data-st="trench">塹壕の戦い</button><button data-st="nightRaid">月影の関所</button><button data-st="island">無人島サバイバル</button><button data-st="ukMeet" class="ukarc">英国淑女編 第一幕 邂逅</button><button data-st="ukHarbor" class="ukarc">英国淑女編 第二幕 砲火</button><button data-st="ukNight" class="ukarc">英国淑女編 第三幕 夜襲</button><button data-st="ukPrincess" class="ukarc">英国淑女編 第四幕 王女</button><button data-st="ukLanding" class="ukarc">英国淑女編 第五幕 本土</button><button data-st="ukParty" class="ukarc">英国淑女編 第七幕 祝勝会</button><button data-st="frDeclare" class="frarc">フランス人形編 第一幕 宣戦</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button><button data-st="trench">塹壕の戦い</button><button data-st="nightRaid">月影の関所</button><button data-st="island">無人島サバイバル</button><button data-st="ukMeet" class="ukarc">英国淑女編 第一幕 邂逅</button><button data-st="ukHarbor" class="ukarc">英国淑女編 第二幕 砲火</button><button data-st="ukNight" class="ukarc">英国淑女編 第三幕 夜襲</button><button data-st="ukPrincess" class="ukarc">英国淑女編 第四幕 王女</button><button data-st="ukLanding" class="ukarc">英国淑女編 第五幕 本土</button><button data-st="ukParty" class="ukarc">英国淑女編 第七幕 祝勝会</button><button data-st="frDeclare" class="frarc">フランス人形編 第一幕 宣戦</button><button data-st="frLand" class="frarc">フランス人形編 第二幕 上陸</button></div>
   <div id="modesel" class="serif" style="display:none"><button data-md="def">守る</button><button data-md="atk">攻める</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
@@ -339,24 +339,25 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="assets/sprites.js?v=20261018n"></script>
-<script src="assets/frames/frames.js?v=20261018n"></script>
-<script src="assets/frames/frames_fr.js?v=20261018n"></script>
-<script src="assets/frames/cycles.js?v=20261018n"></script>
+<script src="assets/sprites.js?v=20261018o"></script>
+<script src="assets/frames/frames.js?v=20261018o"></script>
+<script src="assets/frames/frames_fr.js?v=20261018o"></script>
+<script src="assets/frames/cycles.js?v=20261018o"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261018n"></script>
-<script src="assets/voices/voices_situ.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk2.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk3.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk4.js?v=20261018n"></script>
-<script src="assets/voices/voices_saidown.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk5.js?v=20261018n"></script>
-<script src="assets/voices/voices_uk7.js?v=20261018n"></script>
-<script src="assets/voices/voices_fr.js?v=20261018n"></script>
+<script src="assets/voices/voices.js?v=20261018o"></script>
+<script src="assets/voices/voices_situ.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk2.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk3.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk4.js?v=20261018o"></script>
+<script src="assets/voices/voices_saidown.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk5.js?v=20261018o"></script>
+<script src="assets/voices/voices_uk7.js?v=20261018o"></script>
+<script src="assets/voices/voices_fr.js?v=20261018o"></script>
+<script src="assets/voices/voices_fr2.js?v=20261018o"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261018n"></script>
-<script src="lib/death_fbx.js?v=20261018n"></script>
-<script src="game.js?v=20261018n"></script>
+<script src="lib/death_clips.js?v=20261018o"></script>
+<script src="lib/death_fbx.js?v=20261018o"></script>
+<script src="game.js?v=20261018o"></script>
 </body>
 </html>

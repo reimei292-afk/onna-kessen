@@ -70,6 +70,23 @@ QE_ARA = [("Serving tables teaches humility, my lord. My governess would be deli
           ("I miss London terribly. But a princess goes where her people need her.", 'ロンドンがとても恋しいです。でも王女は、民が必要とする場所へ行くものです。'),
           ("I signed it with a steady hand. I wept afterwards, alone. Both were my duty.", '震えずに署名しました。泣いたのは、そのあと一人きりで。どちらも、わたくしの務めでした。'),
           ("Your handmaidens are fierce in battle and kind at table. I envy you a little.", 'あなたの侍女たちは、戦では猛く、食卓では優しい。少し、うらやましいですわ。')]
+
+# ---- ハトコの三人（白瀬・早瀬・綾瀬。曾祖父母が同じ、祖父の代で姓が分かれた。殿の母方の遠縁。西園寺は父方で別） ----
+QF = ['白瀬と早瀬と綾瀬は、それぞれ親戚関係なんだよね？', 'ハトコ同士で仲いい？仲悪い？', '嫉妬とか憧れとかあるの？', '早瀬は白瀬を慕ってるよね']
+QF_A = {'fumi': ['はい。私たち三人はハトコ同士なんです。曾祖父と曾祖母が同じで、祖父の代でそれぞれ白瀬、早瀬、綾瀬の家に分かれました。普通なら法事で顔を合わせるくらいの間柄ですけど、殿の母方の遠縁ということもあって、少しだけ特別に扱われていますね。',
+                 '悪くはないです。ただ、澄さんが何でも一人で抱え込むので、そこだけはよく言い合いになります。',
+                 '嫉妬はありますよ。ことねは、誰とでもすぐ仲良くなれるので。……内緒ですよ。'],
+        'sumi': ['ええ、ハトコです。曾祖父母が同じで、祖父の代で白瀬、早瀬、綾瀬と姓が分かれました。三人とも、殿の母方の遠縁にあたります。',
+                 '仲は……いいと思いますよ。ことねは手がかかりますし、文乃は口うるさいですけれど。',
+                 '憧れ、と言うなら、文乃の几帳面さには敵いません。嫉妬は……しないように努めています。'],
+        'sec2': ['はい！ ハトコなんです。ひいおじいちゃんとひいおばあちゃんが同じで、おじいちゃんの代から苗字が別々になったんですって。',
+                 'いいです！ 澄お姉さまは優しいし、文乃さんはちょっと怖いけど、すごく頼りになります。',
+                 '澄お姉さまには、ずっと憧れてます。嫉妬は……文乃さんが殿に褒められたとき、ちょっとだけ。']}
+QF_SHY = ('sec2', 'えっ……そ、それは……はい。小さい頃から、澄お姉さまの後ろばかり追いかけてました。')
+QF_SHY2 = ('sumi', '……知っていますよ。でも殿、本人の前でそういうことを言うのは、少し意地悪です。')
+QF_CH = {0: {'fumi': ('sumi', '西園寺様は殿のお父上の側のご縁ですから、私たちとはまた別なんですよ。'), 'sec2': ('sumi', 'ことね、ひいおじいちゃん、ではなく曾祖父です。')},
+         1: {'sumi': ('fumi', '口うるさいのは、誰のせいだと思っているんですか。'), 'sec2': ('fumi', 'ちょっと怖い、は余計です。'), 'fumi': ('sumi', '……抱え込んでいるつもりは、ないのだけれど。')},
+         2: {'sumi': ('sec2', '私も、澄お姉さまに憧れてます！'), 'sec2': ('sumi', 'ことね、殿の前で何を言っているの。'), 'fumi': ('sec2', 'えっ、私ですか!?')}}
 async def one(sem, t, p, v, r, pi):
     if os.path.exists(p) and os.path.getsize(p) > 800: return
     async with sem:
@@ -101,6 +118,10 @@ async def main():
     for n, (g, st) in enumerate(EN.items()):
         out['qea'][g] = [({'en': QE_ARA[i][0], 'ja': QE_ARA[i][1]} if g == 'uk00' else {'en': QE_A[i][n % 3][0], 'ja': QE_A[i][n % 3][1]}) for i in range(len(QE))]
         for i, o in enumerate(out['qea'][g]): o['file'] = job(f'qe_{g}_{i}.mp3', o['en'], st)
+    out['qf'] = QF; out['qfa'] = {}; out['qfch'] = {}
+    for w, arr in QF_A.items(): out['qfa'][w] = [{'text': t, 'file': job(f'qf_{w}_{i}.mp3', t, ST[w])} for i, t in enumerate(arr)]
+    out['qfshy'] = [{'who': w, 'text': t, 'file': job(f'qf_shy{j}.mp3', t, ST[w])} for j, (w, t) in enumerate([QF_SHY, QF_SHY2])]
+    for i, d in QF_CH.items(): out['qfch'][i] = {a: {'who': w, 'text': t, 'file': job(f'qfc{i}_{a}.mp3', t, ST[w])} for a, (w, t) in d.items()}
     await asyncio.gather(*jobs)
     def fix(o):
         if isinstance(o, dict):

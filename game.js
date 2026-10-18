@@ -8903,13 +8903,28 @@ function ukDlgNext() {
   }
 }
 function ukDlgSkip() { const D = UK.dlg; if (!D || UK.choice || !D.cur) return; if (D.cur.say) { const L = ukL(D.cur.say), e = L && ukWho(L.who); if (e) Talk.hush(e); else for (const o of Talk.srcs.slice()) if (!o.owner) try { o.src.stop(); } catch (_) {} } ukDlgNext(); }
+let UK_PAGE = 6; const ukPageSize = () => (UK_PAGE = innerHeight < 520 ? 3 : innerHeight < 700 ? 4 : 6);
 function ukChoiceOn(opts) {
-  UK.choice = true; $('ukdlg').style.display = 'block'; $('ukdlgHint').style.display = 'none';
-  const box = $('ukdlgChoices'); box.innerHTML = '';
-  opts.forEach((o, i) => { const b = document.createElement('button'); b.innerHTML = `<b>${i + 1}</b> ${o.label}${o.sub ? `<small>${o.sub}</small>` : ''}`; b.addEventListener('click', ev => { ev.stopPropagation(); ukPick(i); }); box.appendChild(b); });
-  UK.dlg.opts = opts;
+  UK.choice = true; UK.page = 0; ukPageSize(); $('ukdlg').style.display = 'block'; $('ukdlgHint').style.display = 'none';
+  UK.dlg.opts = opts; ukChoiceRender();
   if (document.exitPointerLock && locked()) document.exitPointerLock();
 }
+// 選択肢はページ送り（1 ページ 6 つ）：▲前へ／▼次へ・ページ番号・閉じる。スクロールに頼らない
+function ukChoiceRender() {
+  const D = UK.dlg, opts = D && D.opts; if (!opts) return;
+  const n = Math.ceil(opts.length / UK_PAGE), pg = UK.page = clamp(UK.page || 0, 0, n - 1), box = $('ukdlgChoices'); box.innerHTML = '';
+  const btn = (html, cls, fn) => { const b = document.createElement('button'); b.innerHTML = html; if (cls) b.className = cls; b.addEventListener('click', ev => { ev.stopPropagation(); fn(); }); return b; };
+  opts.slice(pg * UK_PAGE, pg * UK_PAGE + UK_PAGE).forEach((o, k) => box.appendChild(btn(`<b>${k + 1}</b> ${o.label}${o.sub ? `<small>${o.sub}</small>` : ''}`, '', () => ukPick(pg * UK_PAGE + k))));
+  const ci = opts.findIndex(o => /^(やめておく|閉じる)$/.test(o.label));
+  if (n > 1 || ci >= 0 || UK7.on) {
+    const nav = document.createElement('div'); nav.className = 'uknav';
+    if (n > 1) { nav.appendChild(btn('▲ 前へ', 'pg', () => ukPage(-1))); const s = document.createElement('span'); s.textContent = `${pg + 1} / ${n}`; nav.appendChild(s); nav.appendChild(btn('▼ 次へ', 'pg', () => ukPage(1))); }
+    if (ci >= 0 || UK7.on) nav.appendChild(btn('閉じる', 'pg cl', () => { if (ci >= 0) ukPick(ci); else { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; } }));
+    box.appendChild(nav);
+  }
+}
+function ukPage(d) { const D = UK.dlg; if (!UK.choice || !D || !D.opts) return; const n = Math.ceil(D.opts.length / UK_PAGE); UK.page = ((UK.page || 0) + d + n) % n; ukChoiceRender(); }
+function ukPickKey(k) { if (k < UK_PAGE) ukPick((UK.page || 0) * UK_PAGE + k); }
 function ukChoiceOff() { UK.choice = false; const c = $('ukdlgChoices'); if (c) c.innerHTML = ''; }
 function ukPick(i) {
   const D = UK.dlg; if (!D || !UK.choice || !D.opts || !D.opts[i]) return;
@@ -12339,7 +12354,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17234,7 +17249,7 @@ addEventListener('keydown', e => {
   keys[e.code] = true;
   if (state !== 'play') return;
   if (UK.on) {   // 英国淑女編：E で話す・送る、1〜4 で選ぶ
-    if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPick(+e.code.slice(5) - 1); return; }
+    if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPickKey(+e.code.slice(5) - 1); return; }
     if (e.code === 'KeyE' || (UK.dlg && (e.code === 'Enter'))) { ukUse(); return; }
     if (/^Digit/.test(e.code)) return;
   }
@@ -17242,7 +17257,7 @@ addEventListener('keydown', e => {
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
   if (UK7.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk7Key(); return; }
-  if ((UK4.on || UK7.on) && UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPick(+e.code.slice(5) - 1); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る
+  if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPickKey(+e.code.slice(5) - 1); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
   if (e.code === 'KeyT') onigiriRemark();
@@ -17277,18 +17292,19 @@ function menuNavSet(box, i) { const bs = menuNavBtns(box); if (!bs.length) retur
 addEventListener('keydown', e => {
   const box = menuNavBox(); if (!box) { MenuNav.i = -1; MenuNav.box = null; return; }
   if (MenuNav.box !== box || !box.querySelector('button.kbsel')) MenuNav.i = -1;
+  if (UK.choice && (e.code === 'PageDown' || e.code === 'ArrowRight' || e.code === 'PageUp' || e.code === 'ArrowLeft')) { e.preventDefault(); e.stopImmediatePropagation(); MenuNav.i = -1; ukPage(e.code === 'PageDown' || e.code === 'ArrowRight' ? 1 : -1); return; }
   const up = e.code === 'ArrowUp' || e.code === 'KeyW', dn = e.code === 'ArrowDown' || e.code === 'KeyS';
   if (up || dn) { e.preventDefault(); e.stopImmediatePropagation(); keys[e.code] = false; menuNavSet(box, MenuNav.i < 0 ? (dn ? 0 : -1) : MenuNav.i + (dn ? 1 : -1)); return; }
   if ((e.code === 'Enter' || e.code === 'KeyE' || e.code === 'Space') && MenuNav.i >= 0) { const b = menuNavBtns(box)[MenuNav.i]; if (b) { e.preventDefault(); e.stopImmediatePropagation(); MenuNav.i = -1; b.classList.remove('kbsel'); b.click(); } }
 }, true);
-addEventListener('wheel', e => { if (UK.choice || menuOpen) e.stopImmediatePropagation(); }, { capture: true, passive: true });
+let ukWheelT = 0; addEventListener('wheel', e => { if (UK.choice || menuOpen) e.stopImmediatePropagation(); if (UK.choice && Math.abs(e.deltaY) > 4 && performance.now() - ukWheelT > 280) { ukWheelT = performance.now(); MenuNav.i = -1; ukPage(e.deltaY > 0 ? 1 : -1); } }, { capture: true, passive: true });
 // スマホ：選択肢の枠を指でなぞってスクロール（ページ全体の touch-action:none に左右されないよう自前で動かす）
-{ const box = document.getElementById('ukdlgChoices'); let ly = null, moved = 0;
+{ const box = document.getElementById('ukdlgChoices'); let y0 = null, sw = false;   // スマホ：上下にはらうとページ送り
   if (box) {
-    box.addEventListener('touchstart', e => { ly = e.touches[0].clientY; moved = 0; }, { passive: true });
-    box.addEventListener('touchmove', e => { const y = e.touches[0].clientY; if (ly == null) ly = y; box.scrollTop += ly - y; moved += Math.abs(ly - y); ly = y; e.preventDefault(); e.stopPropagation(); }, { passive: false });
-    box.addEventListener('touchend', () => { ly = null; if (moved > 8) { const st = box.scrollTop; for (const ms of [0, 30, 120, 300]) setTimeout(() => { if (Math.abs(box.scrollTop - st) > 2 && box.children.length) box.scrollTop = st; }, ms); } }, { passive: true });   // 指を離した直後に位置が戻されないように
-    box.addEventListener('click', e => { if (moved > 8) { e.stopPropagation(); e.preventDefault(); } moved = 0; }, true);
+    box.addEventListener('touchstart', e => { y0 = e.touches[0].clientY; sw = false; }, { passive: true });
+    box.addEventListener('touchmove', e => { e.preventDefault(); }, { passive: false });
+    box.addEventListener('touchend', e => { const t = e.changedTouches[0]; if (y0 != null && t && Math.abs(t.clientY - y0) > 45) { sw = true; ukPage(t.clientY < y0 ? 1 : -1); } y0 = null; }, { passive: true });
+    box.addEventListener('click', e => { if (sw) { e.stopPropagation(); e.preventDefault(); sw = false; } }, true);
   } }
 document.addEventListener('pointerlockchange', () => { if (locked() && (UK.choice || menuOpen) && document.exitPointerLock) document.exitPointerLock(); });   // メニューが開いている間はマウスを固定しない
 

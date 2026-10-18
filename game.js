@@ -11756,6 +11756,7 @@ function u7SpawnAll() {
 function uk7Brain(e, dt) {
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0);
   if (e.uk7Gone) { e.s.visible = false; e.state = 'idle'; return true; }
+  if (e.uk7Task === 'stage') { e.s.position.set(e.uk7At.x, e.baseY, e.uk7At.z); e.faceWant = 0; e.state = 'idle'; return true; }
   if (e.uk7At) { e.s.position.x = e.uk7At.x; e.s.position.z = e.uk7At.z; e.state = 'idle'; e.crouch = 0; e.faceWant = e.uk7Seat ? e.uk7Seat.face : e.faceWant; if (e.uk7Look && time < e.uk7Look) e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); return true; }
   const p = e.s.position; if (!e.uk7Task || e.uk7Task !== 'deck') e.baseY = 0;
   if (e.uk7Path && e.uk7Path.length) {
@@ -11870,6 +11871,8 @@ function u7AskFam(e, i) {
 function u7AskMenu(e) {
   const V = window.VOICE_UK7; if (!V) return;
   const opts = V.q.map((q, i) => ({ label: '「' + q + '」', then: [{ fn: () => u7Ask(e, i) }] }));
+  if (e.uk7Con && V.bg) { const B = V.bg[e.id % V.bg.length]; opts.unshift(...V.qb.map((q, j) => ({ label: '「' + q + '」', sub: '徴兵の前は', then: [{ fn: () => { UK7.cur = e; UK_WHO_NAME.g7 = e.ukTag || e.prof.name; UK7.log.push('bg:' + j + ':' + (e.id % V.bg.length)); e.uk7Look = time + 8; ukDlg([u7Line('q7k', { who: 'king', ja: q, dur: 1.8 }), u7Line('q7a', { who: 'g7', ja: B[j].text, file: B[j].file, dur: B[j].dur })], null); } }] }))); }
+  if (!e.uk7Vip && !e.uk7Crew && !e.uk7Deck && V.yp && !UK7.yk && (UK7.phase === 'party' || UK7.phase === 'after')) opts.push({ label: '「' + V.yq + '」', sub: '舞台で余興', then: [{ fn: () => u7Yokyo(e) }] });
   if (e.uk7Vip === 'ojou' && UK7.phase === 'party' && !UK7.midDone) opts.unshift({ label: '「' + V.midq + '」', sub: '中締めの挨拶を頼む', then: [{ fn: () => u7MidStart() }] });
   if (V.qsa && V.qsa[e.uk7Vip]) opts.unshift({ label: '「' + V.qs + '」', sub: 'お酒の話', then: [{ fn: () => { const A = V.qsa[e.uk7Vip]; UK7.cur = e; UK7.log.push('qs:' + e.uk7Vip); ukDlg([u7Line('q7k', { who: 'king', ja: V.qs, dur: 2.6 }), u7Line('q7a', { who: e.uk7Vip, ja: A.text, file: A.file, dur: A.dur })], null); } }] });
   if (V.qf && V.qfa[e.uk7Vip]) opts.unshift(...V.qf.map((q, i) => ({ label: '「' + q + '」', sub: 'ハトコの三人', then: [{ fn: () => u7AskFam(e, i) }] })));   // 白瀬・早瀬・綾瀬（ハトコ同士）
@@ -11921,7 +11924,7 @@ function u7MurTick(dt) {
   const deck = player.pos.z < U7.Z0, ph = UK7.phase;
   const lvl = ph === 'open' ? 0.12 : ph === 'party' ? Math.min(1, 0.3 + UK7.pt / 110 * 0.7) : ph === 'mid' ? 0.35 : ph === 'after' ? Math.max(0.08, 0.85 * (1 - (UK7.gone || 0) / Math.max(1, UK7.crowd0 || 1))) : 0;
   UK7.lvl = lvl;
-  M.g.gain.value += ((deck ? 0.22 : 1) - M.g.gain.value) * Math.min(1, dt * 2);
+  M.g.gain.value += ((deck ? 0.22 : UK7.hush ? 0.3 : 1) - M.g.gain.value) * Math.min(1, dt * 2);
   M.acc += dt * (0.3 + lvl * 4.2);
   const C = Sfx.ctx;
   while (M.acc >= 1) {
@@ -12059,6 +12062,29 @@ function u7LeaveTick(dt) {
     UK7.apprT = rand(22, 35); const V = window.VOICE_UK7, c = (UK7.stay || []).filter(e => e.uk7At && isUp(e) && !e.uk7Appr);
     if (V && V.appr && c.length) { const e = c[(Math.random() * c.length) | 0]; e.uk7Appr = true; if (e.uk7Seat) e.uk7Seat.taken = null; e.uk7At = null; e.uk7Task = 'appr'; const a = player.yaw; e.uk7Path = [[player.pos.x - Math.sin(a) * 1.3, player.pos.z - Math.cos(a) * 1.3]]; UK7.log.push('appr:' + e.prof.name); }
   }
+}
+// ---- 余興：舞台で話す・一発芸・手拍子 → 客席の笑いと歓声 ----
+function u7Clap(n) {   // 拍手（短い雑音を重ねる）
+  const C = Sfx.ctx; if (!C) return; const out = (UK7.mur && UK7.mur.g) || VoicePack.out || C.destination;
+  for (let i = 0; i < n; i++) { const len = (C.sampleRate * 0.05) | 0, b = C.createBuffer(1, len, C.sampleRate), d = b.getChannelData(0); for (let k = 0; k < len; k++) d[k] = (Math.random() * 2 - 1) * Math.pow(1 - k / len, 6);
+    const s = C.createBufferSource(); s.buffer = b; const f = C.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = rand(900, 2200); const g = C.createGain(); g.gain.value = rand(0.05, 0.16); s.connect(f); f.connect(g); g.connect(out); s.start(C.currentTime + Math.random() * 2.2); }
+}
+function u7Cheer() {
+  const V = window.VOICE_UK7; if (!V || !V.cheer) return; u7Clap(70);
+  UK7.girls.filter(e => e.uk7At && !e.uk7Gone && e !== UK7.yk && Math.hypot(e.s.position.x + 12, e.s.position.z + 26) < 18).sort(() => Math.random() - 0.5).slice(0, 4)
+    .forEach((e, i) => setTimeout(() => { if (UK7.on) u7Say(e, i % 2 ? V.cheer[(Math.random() * V.cheer.length) | 0] : V.laugh[(Math.random() * V.laugh.length) | 0], 0); }, 300 + i * 500));
+  UK7.log.push('cheer');
+}
+function u7Yokyo(e) {
+  const V = window.VOICE_UK7; if (!V || !V.yp || UK7.yk) return;
+  UK7.yk = e; UK7.ykN = (UK7.ykN || 0) + 1; const pi = (e.id + UK7.ykN) % V.yp.length, P = V.yp[pi][e.id % 4], ok = V.yok[e.id % 2];
+  const home = e.uk7Seat, T = e.uk7T; UK_WHO_NAME.g7 = e.ukTag || e.prof.name; UK7.cur = e;
+  const walk = () => { e.uk7At = null; e.uk7Task = 'podium'; const p = e.s.position; e.uk7Path = [[p.x + (T ? (p.x - T.x) * 0.6 : 0), p.z + (T ? (p.z - T.z) * 0.6 : 0)], [-7, -22.5], [-12, -26.6]]; };
+  const up = () => { e.uk7Path = null; e.s.position.set(-12, 0.5, -27.2); e.baseY = 0.5; e.uk7Task = 'stage'; e.uk7At = { x: -12, z: -27.2 }; e.uk7Seat = { x: -12, z: -27.2, face: 0 }; UK7.hush = true; };
+  const back = () => { UK7.hush = false; UK7.yk = null; e.baseY = 0; e.s.position.y = 0; e.uk7At = null; e.uk7Seat = home; e.uk7T = T; e.uk7Task = 'back'; e.uk7Path = [[-7, -22.5], [home.x + (T ? (home.x - T.x) * 0.6 : 0), home.z + (T ? (home.z - T.z) * 0.6 : 0)], [home.x, home.z]]; };
+  UK7.log.push('yokyo:' + pi);
+  ukDlg([u7Line('q7k', { who: 'king', ja: V.yq, dur: 2.0 }), u7Line('q7y0', { who: 'g7', ja: ok.text, file: ok.file, dur: ok.dur }), { fn: walk }, { wait: 5.5 }, { fn: up }, { wait: 0.6 },
+    u7Line('q7y1', { who: 'g7', ja: P.text, file: P.file, dur: P.dur }), { fn: pi === 4 ? () => u7Clap(140) : () => {} }, { fn: u7Cheer }, { wait: 2.6 }, { fn: back }], null);
 }
 // ---- 進行 ----
 function uk7Reset() {

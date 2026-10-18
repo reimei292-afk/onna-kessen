@@ -10023,7 +10023,7 @@ function u3SpawnEng(id, role, x, z, lv, named, opt = {}) {
   const R = U3_ROLE[role] || U3_ROLE.sword, nm = named ? G.name : U3_FILL[(UK3.fillI++) % U3_FILL.length];
   Object.assign(e.prof, { name: nm, pers: G.pers, cm: G.cm, vv: G.vv }); e.P = PERS[G.pers]; e.figH = G.cm / 100;
   e.ukInfo = named ? Object.assign({}, G) : { role: R[0], en: R[1], age: 19 + (UK3.fillI % 6), cm: G.cm, desc: '英国・ライオネス号の乗組員。' + R[2] };
-  e.hp = e.hpMax = role === 'pike' ? 4 : role === 'sword' || role === 'musket' ? 3 : 2; e.dmg = 9;   // 銃剣のマスケット兵は少し粘る（長槍の方陣よりは脆い） e.baseY = y; e.s.position.y = y; e.footOk = [x, z]; e.onFloor = null; e.sq = null;
+  e.hp = e.hpMax = role === 'pike' ? 4 : role === 'sword' || role === 'musket' ? 3 : 2; e.dmg = 9; e.baseY = y; e.s.position.y = y; e.footOk = [x, z]; e.onFloor = null; e.sq = null;   // 銃剣のマスケット兵は少し粘る（長槍の方陣よりは脆い）
   e.uk3Post = [x, z, lv]; e.uk3Face = opt.face != null ? opt.face : 0; e.s.rotation.y = e.face = e.faceWant = e.uk3Face;
   e.uk3Watch = !!opt.watch; e.uk3Res = !!opt.res;
   if (role === 'musket') { uk2Gun(e); e.uk3Slot = opt.slot; }

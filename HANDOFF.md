@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261018k`
+- 現在のバージョン: `20261018n`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。
   2. `node --check game.js`
@@ -49,8 +49,15 @@
 - 赤毛/オーバーンは色がキャミソールやパンツに滲みやすい → 「white camisole stays pure white」と明記し、出来を確認。
 - 生成後 rembg で切り抜き → make_frames.py。
 
-## フランス人形編（準備中・未統合）
+## フランス人形編（第一幕を公開。第二幕はコードのみ・メニューから外して保留）
 ユーザー承認済みの架空フランス人女性10人。全員同じ衣装（銀ティアラ・白レースキャミソール・細い黒ベルト＋四角い銀バックル・黒テーパードパンツ（各脚に折り目1本）・黒パンプス）。
+- ステージ `frDeclare`（メニュー「フランス人形編 第一幕 宣戦」）。英国降伏のあと、共和国のコルベットが王の港へ来て「侍女たちの解放」を突きつける。戦いは無い。岸と甲板を歩き、E で話し、1〜3 で選ぶ。岸の奥の幟で幕が閉じる。
+- 選択は localStorage のキー `onnaFrAct1`（`refuse` / `ask` / `peace`）。次の幕が読む。
+- フランスの娘はフランス語＋日本語字幕、エレノアは英語＋日本語字幕、侍女は日本語。殿の台詞は字幕のみ（声なし・顔なし）。
+- 声は `assets/voices/fr/*.mp3` と `assets/voices/voices_fr.js`。人間の声（女性のみ）。edge-tts は使わない。
+- 立ち絵は `assets/frames/frNN_*.png` と `assets/frames/frames_fr.js`（`frames.js` のあとに読む）。`tools/make_fr_frames.py` で再生成。`make_frames.py` は回さない。
+- 次は第二幕「上陸」。港の防衛のコード（`frLand` / `tools/fr_act2_body.js`）はあるが、声の mp3 が未収録なので **メニューからは外してある**。再開するときは `index.html` に第二幕のボタンと `voices_fr2.js` を戻し、`assets/voices/fr2/*.mp3` を女性の声で置いてから公開する。第一幕の選択 `onnaFrAct1` を読む。
+
 画像は `assets/fr_candidates/` にあり（作業コピーは `/workspace/fr10/`）。
 - `frNN.jpg` 正面 / `frNN_front_diag.jpg` 斜め前(3/4) / `frNN_side.jpg` 側面（右向き） / `frNN_back.jpg` 背面 / `frNN_down.jpg` 倒れ（仰向け・頭が左・目を閉じた安らかな顔・血/傷なし）
 - 一覧: `assets/fr_candidates/fr10_views_sheet.jpg`（行=人物、列=front/diag/side/back/down）
@@ -70,17 +77,13 @@
 | 9 | Manon Girard マノン・ジラール | 25 | 162cm | 補給・炊事係の長 | プラチナブロンドのボブ、少しふくよか | おおらかで面倒見が良い、食べるのが好き |
 | 10 | Séverine Dubois セヴリーヌ・デュボワ | 24 | 171cm | 擲弾兵の下士官（軍曹） | 長い黒髪ウェーブ、センター分け | 気が強く負けず嫌い、部下思い |
 
-### 切り抜き〜組み込み手順（組み込みはまだしない）
-1. 各ビューを人物中心でトリミング（例: 立ち絵は中央 x=440..840 の範囲で縦全部、倒れ絵は人物の外接矩形＋余白）。
-2. `rembg`（例 `rembg i in.jpg out.png`、モデル u2net / isnet-general-use）で背景を透過。髪の外周とティアラが欠けていないか確認する。
-3. `tools/make_frames.py` の既存キャラ（例 uk01）と同じ要領で `assets/frames/frNN/` に方向別フレームを作る：front / front_diag / side / back から8方向（左向きは side・diag を左右反転）＋歩行フレーム。
-4. 倒れスプライトは `frNN_down` を切り抜いて、既存の fallen 画像と同じ向き（頭が左）と縮尺に合わせる（`tools/slump_cutout.py` を参照）。血・傷は入れない。
-5. 声は edge-tts の fr-FR 女性声（例 fr-FR-DeniseNeural / fr-FR-EloiseNeural / fr-FR-VivienneMultilingualNeural）。英国娘と同じく字幕は日本語。倒れる時は短い悲鳴のみ。
-6. `game.js` に spawn 定義を追加 → ASSET_V と全 ?v= を上げる → コミット＆push。
+### 切り抜き（済み。組み込みも第一幕まで済み）
+`tools/make_fr_frames.py` が候補写真から透過 PNG を書き、`frames_fr.js` を `FRAME_META` に足す。白い床だまりは消す。白いキャミソールは残す（縁の半透明だけを後から削るとレースが欠ける）。
+声は edge-tts ではなく、接続済みの Voice（女性の声）で `assets/voices/fr/` に置く。殿の行に file は付けない。
 - 画像を作り直すときは、GenerateImage の reference_image_paths に **ストア側コピー**（`/cursor/stores/.../attachments/` のもの、`/workspace/fr10/store_map.txt` に対応表あり）を渡す。/workspace のパスは参照画像として使えない。
 
 ## 既知の問題・保留
-- 第六幕（王宮戦）未作成。
+- 第六幕（王宮戦）未作成。フランス人形編は第一幕「宣戦」を公開済み（v=20261018n）。第二幕「上陸」はメニュー非表示のまま保留（声未収録）。
 - 第三幕 夜襲のステルス調整が甘い。
 - 第七幕の群衆ざわめき音量は実機で要確認（大きすぎ/小さすぎ）。
 - 秘書の命令パネルはページ化していない。

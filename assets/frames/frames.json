@@ -2099,5 +2099,43 @@
    "dir": -1,
    "file": "assets/frames/uk10_down.png"
   }
+ },
+ "uk00": {
+  "front": {
+   "hk": 1.0175,
+   "aspect": 0.5859,
+   "ax": 0.4987,
+   "dir": 0,
+   "file": "assets/frames/uk00_front.png",
+   "ref": 629
+  },
+  "front_diag": {
+   "hk": 1.0207,
+   "aspect": 0.5202,
+   "ax": 0.4877,
+   "dir": -1,
+   "file": "assets/frames/uk00_front_diag.png"
+  },
+  "side": {
+   "hk": 1.0207,
+   "aspect": 0.5016,
+   "ax": 0.4878,
+   "dir": -1,
+   "file": "assets/frames/uk00_side.png"
+  },
+  "back": {
+   "hk": 1.0175,
+   "aspect": 0.5578,
+   "ax": 0.497,
+   "dir": 0,
+   "file": "assets/frames/uk00_back.png"
+  },
+  "down": {
+   "hk": 0.2623,
+   "aspect": 3.8121,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/uk00_down.png"
+  }
  }
 }

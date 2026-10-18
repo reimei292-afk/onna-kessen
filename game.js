@@ -8488,6 +8488,8 @@ function buildNightRaid() {
 const UK = { on: false, phase: 'off', t: 0, boats: [], king: null, girls: [], by: {}, jp: [], jpBy: {}, ship: null, dlg: null, choice: false, talked: new Set(),
   parleyDone: false, goal: '', log: [], sails: [], wflags: [], shipV: 0, shipFloors: [], shipBoxes: [], stairFloors: [], endT: 0, near: null, sea: null, seaSnd: null, ended: false };
 // 英国の娘：名前・身長・性格（PERS の鍵）・年齢・役目・甲板の持ち場（x, z, 甲板）・向き・巡回
+// 王女（第四幕から）。第一幕の甲板には出ないので UK_PROF とは別に持つ
+const UK_PRINCESS = { name: 'アラベラ王女', en: 'Princess Arabella', pers: '冷静', cm: 165, age: 22, vv: 0, role: '英国艦隊の総指揮・王女', roleEn: 'Princess Royal, commander of the fleet', desc: '濃い栗色の巻き毛に王冠と真珠。象牙と金の衣に深紅の綬。物腰は柔らかいが、決して退かない。夜襲の報を聞き、本隊を率いて来た' };
 const UK_PROF = {
   uk01: { name: 'イモジェン・ハートリー', en: 'Imogen Hartley', pers: '陽気', cm: 165, age: 22, vv: 2, role: '短艇隊長', roleEn: 'Coxswain of the longboats', desc: '明るく負けず嫌い。ケンブリッジのボート部で整調を漕いだ。斬り込み艇を率いる', at: [5.0, -1.4, 'w'], face: 1.2, patrol: [[4.6, -1.5], [6.0, -0.5]] },
   uk02: { name: 'ハリエット・ペンバートン', en: 'Harriet Pemberton', pers: '冷静', cm: 172, age: 24, vv: 0, role: '長槍隊長', roleEn: 'Captain of the pike', desc: '誇り高く寡黙な名家の令嬢。馬術で鍛えた落ち着き。王室に三百年仕える家柄', at: [-4.1, 1.5, 'w'], face: 0.5 },
@@ -10959,7 +10961,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018b1';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -11008,6 +11010,7 @@ function loadFrames(done) {
 // 追加の娘（frames/manifest.json）：役割と固定のプロフィール（名前・性格・身長・声の高さ vv 0 低〜2 高）
 const EXTRA_GIRLS = {
   // 英国淑女編の娘（type 'uk'：pickGirl に入らないので他のステージには出ない）
+  uk00: { type: 'uk', prof: { name: 'アラベラ王女', pers: '冷静', cm: 165, vv: 0 } },   // 第四幕から：王女その人
   uk01: { type: 'uk', prof: { name: 'イモジェン・ハートリー', pers: '陽気', cm: 165, vv: 1 } },
   uk02: { type: 'uk', prof: { name: 'ハリエット・ペンバートン', pers: '冷静', cm: 172, vv: 0 } },
   uk03: { type: 'uk', prof: { name: 'ロージー・ホイットモア', pers: '臆病', cm: 158, vv: 2 } },

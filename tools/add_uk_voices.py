@@ -15,6 +15,7 @@ WHO = set(next((a.split('=', 1)[1].split(',') for a in sys.argv if a.startswith(
 # en-GB の女性の声は edge-tts では Sonia / Libby / Maisie の 3 つだけ（Abbi・Bella・Hollie・Olivia などは 2026-10 時点で音声が返らない）
 # 声：(voice, 話速%, 高さHz)
 VOICES = {
+  'uk00': ('en-GB-SoniaNeural', -12, -8),  # Princess Arabella：ゆっくり低めの、威厳ある声
   'uk01': ('en-GB-LibbyNeural', 6, 3),     # Imogen Hartley：明るく負けず嫌い
   'uk02': ('en-GB-SoniaNeural', -6, -10),  # Harriet Pemberton：低く落ち着いた貴族
   'uk03': ('en-IE-EmilyNeural', 0, 2),     # Rosie Whitmore：やわらかく少し慌てがち（アイルランド英語の声で他の娘と分ける）

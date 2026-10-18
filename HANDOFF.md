@@ -50,19 +50,34 @@
 - 生成後 rembg で切り抜き → make_frames.py。
 
 ## フランス人形編（準備中・未統合）
-- 架空のフランス人女性10人（18〜26歳）の正面画像を生成済み（ティアラあり、上記衣装）。保存先（エージェント資産ストア、Readツールで閲覧可）:
-  1 beaad03b6b59cc7ef1e11090fe0b505df1a1f06719f8cdb4b31eac2c0cc0a3d1.jpg
-  2 9a30df28c9e1fcd643ecf7edd68fee798dcb7a335390398472edf2b98cc492e7.jpg
-  3 6c74f47c7cc4254c4024cfa899d7495a173658ad967d46c8e48e56f4e51febb3.jpg
-  4 6d3c7236d6a4db4c65e3a32f6584e3753e7181cfeded4300a6653facdaf2f46f.jpg
-  5 3b31d6a32732cb201ca645b4c4d6b97f53856eb66d948a69b07fc8f90b7c4dc9.jpg
-  6 6abf6c8c88b3519416f394cb93776e1c387173ccc66413386d0ff8c8728a3e98.jpg
-  7 4acc1f800930f65ebb84934ecce0c5321361848e855a9bf1a886a6743eea7a22.jpg
-  8 f493626b06a5ff9a38d2d4a55719a5e137ea6169410751cf0be10c82df10277b.jpg
-  9 1e00dfe4f9b47b3e28b1c947b33245e3e390d9b4a81d8ea7b620b05a651d00a5.jpg
-  10 4cb1b7bf13f8eba131b75ef18d7b479876393d237a12ca41267c44a13d8e8a94.jpg
-  （ディレクトリ: /home/box/agent-data/agents/b440b55d-abf5-490d-b607-628c1eb3ede9/assets/ — ただしShellからは見えなかった。ユーザー承認後、/workspace/fr10/ にコピーしてコンタクトシートを作ること）
-- 次: ユーザーが候補を選ぶ → 側面/背面など8方向を同じ参照で生成 → frames化 → 声（fr-FR 女性声）。
+ユーザー承認済みの架空フランス人女性10人。全員同じ衣装（銀ティアラ・白レースキャミソール・細い黒ベルト＋四角い銀バックル・黒テーパードパンツ（各脚に折り目1本）・黒パンプス）。
+画像は `assets/fr_candidates/` にあり（作業コピーは `/workspace/fr10/`）。
+- `frNN.jpg` 正面 / `frNN_front_diag.jpg` 斜め前(3/4) / `frNN_side.jpg` 側面（右向き） / `frNN_back.jpg` 背面 / `frNN_down.jpg` 倒れ（仰向け・頭が左・目を閉じた安らかな顔・血/傷なし）
+- 一覧: `assets/fr_candidates/fr10_views_sheet.jpg`（行=人物、列=front/diag/side/back/down）
+- 画像は全部 1280x720 の横長で、人物は中央に小さめに写っている。切り抜き前に中央をトリミングすること。
+- fr10_side は生成時に左向きだったので左右反転して右向きにしてある。
+
+| # | 名前 | 年齢 | 身長 | 役職（架空のフランス軍） | 外見 | 性格 |
+|---|---|---|---|---|---|---|
+| 1 | Camille Laurent カミーユ・ローラン | 22 | 168cm | 近衛歩兵の小隊長 | 長い金髪ウェーブ、明るい笑顔 | 社交的で楽天家、仲間を盛り上げる |
+| 2 | Élise Moreau エリーズ・モロー | 24 | 172cm | 参謀副官（伝令の取りまとめ） | ブルネット、低いポニーテール、細身 | 几帳面で冷静、皮肉が上手い |
+| 3 | Margaux Petit マルゴー・プティ | 19 | 160cm | 鼓手・軍楽隊 | オーバーンのショートボブ、前髪 | 好奇心旺盛でおしゃべり、少しドジ |
+| 4 | Inès Benali イネス・ベナリ | 23 | 170cm | 狙撃・選抜射手 | 長い黒髪ストレート、センター分け | 無口でクール、内心は情に厚い |
+| 5 | Juliette Rousseau ジュリエット・ルソー | 21 | 165cm | 衛生兵（生存者のみ治療） | 赤褐色の巻き毛ボリューム | 優しく世話焼き、涙もろい |
+| 6 | Hélène de Valois エレーヌ・ド・ヴァロワ | 26 | 174cm | 胸甲騎兵中隊の指揮官（貴族出身） | アッシュブロンドのまとめ髪、凛とした顔 | 誇り高く厳格、礼節重視 |
+| 7 | Chloé Bernard クロエ・ベルナール | 20 | 166cm | 通訳兼書記（日本語を少し話す） | 長いライトブラウンのストレート、ぱっつん前髪 | 内気で真面目、本好き |
+| 8 | Léa Fontaine レア・フォンテーヌ | 22 | 163cm | 軽騎兵の斥候 | ダークブラウンのピクシーカット、満面の笑み | 快活で向こう見ず、冗談好き |
+| 9 | Manon Girard マノン・ジラール | 25 | 162cm | 補給・炊事係の長 | プラチナブロンドのボブ、少しふくよか | おおらかで面倒見が良い、食べるのが好き |
+| 10 | Séverine Dubois セヴリーヌ・デュボワ | 24 | 171cm | 擲弾兵の下士官（軍曹） | 長い黒髪ウェーブ、センター分け | 気が強く負けず嫌い、部下思い |
+
+### 切り抜き〜組み込み手順（組み込みはまだしない）
+1. 各ビューを人物中心でトリミング（例: 立ち絵は中央 x=440..840 の範囲で縦全部、倒れ絵は人物の外接矩形＋余白）。
+2. `rembg`（例 `rembg i in.jpg out.png`、モデル u2net / isnet-general-use）で背景を透過。髪の外周とティアラが欠けていないか確認する。
+3. `tools/make_frames.py` の既存キャラ（例 uk01）と同じ要領で `assets/frames/frNN/` に方向別フレームを作る：front / front_diag / side / back から8方向（左向きは side・diag を左右反転）＋歩行フレーム。
+4. 倒れスプライトは `frNN_down` を切り抜いて、既存の fallen 画像と同じ向き（頭が左）と縮尺に合わせる（`tools/slump_cutout.py` を参照）。血・傷は入れない。
+5. 声は edge-tts の fr-FR 女性声（例 fr-FR-DeniseNeural / fr-FR-EloiseNeural / fr-FR-VivienneMultilingualNeural）。英国娘と同じく字幕は日本語。倒れる時は短い悲鳴のみ。
+6. `game.js` に spawn 定義を追加 → ASSET_V と全 ?v= を上げる → コミット＆push。
+- 画像を作り直すときは、GenerateImage の reference_image_paths に **ストア側コピー**（`/cursor/stores/.../attachments/` のもの、`/workspace/fr10/store_map.txt` に対応表あり）を渡す。/workspace のパスは参照画像として使えない。
 
 ## 既知の問題・保留
 - 第六幕（王宮戦）未作成。

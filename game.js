@@ -8914,8 +8914,8 @@ function ukChoiceOff() { UK.choice = false; const c = $('ukdlgChoices'); if (c) 
 function ukPick(i) {
   const D = UK.dlg; if (!D || !UK.choice || !D.opts || !D.opts[i]) return;
   const o = D.opts[i]; ukChoiceOff(); D.opts = null; D.q.unshift(...(o.then || [])); UK.log.push('choice:' + o.label);
-  if (state === 'play') lock();
   ukDlgNext();
+  if (state === 'play' && !UK.choice && !menuOpen) lock();   // 次のメニューが開いたら固定しない（ホイール・クリックがメニューに届くように）
 }
 function ukDlgTick(dt) {
   const D = UK.dlg; if (!D || UK.choice || !D.cur) return;
@@ -12339,7 +12339,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17190,7 +17190,7 @@ function setupTouch() {
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
-  document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen, .screen-menu .panel')) e.preventDefault(); }, opt);
+  document.addEventListener('touchmove', e => { if (e.target.closest && !e.target.closest('.screen, .screen-menu .panel, #ukdlgChoices')) e.preventDefault(); }, opt);
   let lastTap = 0;
   document.addEventListener('touchend', e => { const n = Date.now(); if (n - lastTap < 320 && !(e.target.closest && e.target.closest('button'))) e.preventDefault(); lastTap = n; }, opt);
   joyHome();
@@ -17282,6 +17282,15 @@ addEventListener('keydown', e => {
   if ((e.code === 'Enter' || e.code === 'KeyE' || e.code === 'Space') && MenuNav.i >= 0) { const b = menuNavBtns(box)[MenuNav.i]; if (b) { e.preventDefault(); e.stopImmediatePropagation(); MenuNav.i = -1; b.classList.remove('kbsel'); b.click(); } }
 }, true);
 addEventListener('wheel', e => { if (UK.choice || menuOpen) e.stopImmediatePropagation(); }, { capture: true, passive: true });
+// スマホ：選択肢の枠を指でなぞってスクロール（ページ全体の touch-action:none に左右されないよう自前で動かす）
+{ const box = document.getElementById('ukdlgChoices'); let ly = null, moved = 0;
+  if (box) {
+    box.addEventListener('touchstart', e => { ly = e.touches[0].clientY; moved = 0; }, { passive: true });
+    box.addEventListener('touchmove', e => { const y = e.touches[0].clientY; if (ly == null) ly = y; box.scrollTop += ly - y; moved += Math.abs(ly - y); ly = y; e.preventDefault(); e.stopPropagation(); }, { passive: false });
+    box.addEventListener('touchend', () => { ly = null; if (moved > 8) { const st = box.scrollTop; for (const ms of [0, 30, 120, 300]) setTimeout(() => { if (Math.abs(box.scrollTop - st) > 2 && box.children.length) box.scrollTop = st; }, ms); } }, { passive: true });   // 指を離した直後に位置が戻されないように
+    box.addEventListener('click', e => { if (moved > 8) { e.stopPropagation(); e.preventDefault(); } moved = 0; }, true);
+  } }
+document.addEventListener('pointerlockchange', () => { if (locked() && (UK.choice || menuOpen) && document.exitPointerLock) document.exitPointerLock(); });   // メニューが開いている間はマウスを固定しない
 
 function primaryDown() {
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない

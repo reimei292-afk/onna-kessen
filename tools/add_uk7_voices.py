@@ -87,6 +87,27 @@ QF_SHY2 = ('sumi', '……知っていますよ。でも殿、本人の前でそ
 QF_CH = {0: {'fumi': ('sumi', '西園寺様は殿のお父上の側のご縁ですから、私たちとはまた別なんですよ。'), 'sec2': ('sumi', 'ことね、ひいおじいちゃん、ではなく曾祖父です。')},
          1: {'sumi': ('fumi', '口うるさいのは、誰のせいだと思っているんですか。'), 'sec2': ('fumi', 'ちょっと怖い、は余計です。'), 'fumi': ('sumi', '……抱え込んでいるつもりは、ないのだけれど。')},
          2: {'sumi': ('sec2', '私も、澄お姉さまに憧れてます！'), 'sec2': ('sumi', 'ことね、殿の前で何を言っているの。'), 'fumi': ('sec2', 'えっ、私ですか!?')}}
+
+# ---- 歓談のざわめき（笑い・相づち）、お酒の問い、皿を落とす、英語が通じない ----
+LAUGH = ['あはははっ！', 'ふふっ、やだー。', 'えー、ほんとに？', 'すごーい！', 'かんぱーい！', 'あははっ、それ言っちゃう？']
+QS = '女の子だからお酒の消費少ないもんなんかな。'
+QS_A = {'sumi': 'いいえ、殿。給仕の方に聞いたら、樽がもう二つ空いたそうですよ。……侍女を甘く見ないでくださいね。',
+        'sec2': 'そんなことないですよ！ あっちの卓、さっきから日本酒ばっかりです。私はジュースですけど。',
+        'fumi': '帳簿を見る限り、ワインは予定の倍です。少ない、とは言えませんね。',
+        'sec3': 'ふふ、見た目より飲む子、多いんですよ。私は一杯で十分ですけど。',
+        'sec4': '西園寺様、ああ見えてお強いんです。私、二正面のときから、いつもお水を用意してます。'}
+DROP = [('b', 'あっ、ごめんなさい！'), ('d', 'きゃっ……こぼしちゃった！')]
+DROP_R = [('a', '大丈夫？ 怪我してない？'), ('c', 'あーあ。拭くもの、もらってくるね。')]
+CLEAN = [("Don't worry, miss — I'll tidy it up.", '大丈夫ですよ、お嬢さん。片づけますね。'), ("Not to worry. It happens to the best of us.", 'お気になさらず。誰にでもあることです。'), ("Leave it to me, miss. Mind the glass.", 'お任せください。ガラスにお気をつけて。')]
+OFFER = [("Would you care for more tea, miss?", '紅茶のおかわりはいかがですか？', '「紅茶のおかわりいる？」だって。'), ("May I take your plate, miss?", 'お皿をお下げしましょうか？', '「お皿、下げましょうか」だって。'), ("Another glass of juice, perhaps?", 'ジュースをもう一杯いかがですか？', '「ジュース、もう一杯どう？」だって。')]
+EN_R = {'conf': ('b', 'えっと……英語、わかんない……'), 'thx': ('d', 'あ、えっと……サンキュー？'), 'ask': ('a', 'ねえ、今なんて言ったの？'), 'little': ('a', 'イエス、プリーズ……たぶん合ってる？')}
+
+# ---- 中締めの流れ（西園寺に頼む → 殿の野次 → 笑い・白瀬と西園寺のひとこと）と、残る陽気な娘 ----
+MIDQ = 'そろそろ中締めの挨拶したら？'
+MID_EXTRA = {'mid_ok': ('ojou', '承知いたしました。では、わたくしが参りましょう。'),
+             'mid_rs': ('sumi', '殿、聞こえていますよ。……ふふ。'),
+             'mid_ro': ('ojou', '……ゆっくりで、悪うございましたね。')}
+APPROACH = ['殿！ まだお部屋に戻らないんですか？ もう少しお話ししましょうよ！', '殿、今日は楽しかったです！ ……あの、もうちょっとだけ、ここにいてもいいですか？', '最後まで残っちゃいました。殿も、まだ眠くないですよね？']
 async def one(sem, t, p, v, r, pi):
     if os.path.exists(p) and os.path.getsize(p) > 800: return
     async with sem:
@@ -100,7 +121,7 @@ async def main():
     os.makedirs(D, exist_ok=True); sem = asyncio.Semaphore(5); jobs = []; out = {'lines': {}, 'talk': [], 'con': [], 'pairs': [], 'ord': {}, 'conf': {}}
     def job(name, t, st):
         v, r, pi = st; jobs.append(one(sem, t, os.path.join(D, name), v, r, pi)); return 'uk7/' + name
-    for k, (w, t) in LINES.items(): out['lines'][k] = {'who': w, 'ja': t, 'file': job(k + '.mp3', t, ST[w])}
+    for k, (w, t) in LINES.items(): out['lines'][k] = {'who': w, 'ja': t, 'file': job(k + '.mp3', t, (N, -26, -3) if k == 'mid' else ST[w])}
     sty = ['a', 'b', 'c', 'd']
     for i, t in enumerate(TALK): out['talk'].append({'text': t, 'file': job(f't{i}.mp3', t, ST[sty[i % 4]])})
     for i, t in enumerate(CON): out['con'].append({'text': t, 'file': job(f'c{i}.mp3', t, ST['c' if i % 2 else 'a'])})
@@ -122,6 +143,20 @@ async def main():
     for w, arr in QF_A.items(): out['qfa'][w] = [{'text': t, 'file': job(f'qf_{w}_{i}.mp3', t, ST[w])} for i, t in enumerate(arr)]
     out['qfshy'] = [{'who': w, 'text': t, 'file': job(f'qf_shy{j}.mp3', t, ST[w])} for j, (w, t) in enumerate([QF_SHY, QF_SHY2])]
     for i, d in QF_CH.items(): out['qfch'][i] = {a: {'who': w, 'text': t, 'file': job(f'qfc{i}_{a}.mp3', t, ST[w])} for a, (w, t) in d.items()}
+    out['laugh'] = [{'text': t, 'file': job(f'la{i}_{st}.mp3', t, ST[st])} for i, t in enumerate(LAUGH) for st in 'abcd']
+    out['qs'] = QS; out['qsa'] = {w: {'text': t, 'file': job(f'qs_{w}.mp3', t, ST[w])} for w, t in QS_A.items()}
+    out['drop'] = [{'text': t, 'file': job(f'dr{i}.mp3', t, ST[st])} for i, (st, t) in enumerate(DROP)]
+    out['dropr'] = [{'text': t, 'file': job(f'drr{i}.mp3', t, ST[st])} for i, (st, t) in enumerate(DROP_R)]
+    out['clean'] = {}; out['offer'] = {}
+    for n, (g, st) in enumerate(EN.items()):
+        c = CLEAN[n % 3]; o = OFFER[n % 3]
+        out['clean'][g] = {'en': c[0], 'ja': c[1], 'file': job(f'cl_{g}.mp3', c[0], st)}
+        out['offer'][g] = {'en': o[0], 'ja': o[1], 'tr': o[2], 'k': n % 3, 'file': job(f'of_{g}.mp3', o[0], st)}
+    out['trans'] = [{'text': o[2], 'file': job(f'tr{i}.mp3', o[2], ST['c'])} for i, o in enumerate(OFFER)]
+    out['enr'] = {k: {'text': t, 'file': job(f'enr_{k}.mp3', t, ST[st])} for k, (st, t) in EN_R.items()}
+    out['midq'] = MIDQ
+    for k, (w, t) in MID_EXTRA.items(): out['lines'][k] = {'who': w, 'ja': t, 'file': job(k + '.mp3', t, ST[w])}
+    out['appr'] = [{'text': t, 'file': job(f'ap{i}_{st}.mp3', t, ST[st])} for i, t in enumerate(APPROACH) for st in 'bd']
     await asyncio.gather(*jobs)
     def fix(o):
         if isinstance(o, dict):

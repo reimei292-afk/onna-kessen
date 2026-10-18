@@ -11749,14 +11749,14 @@ function u7Spawn(x, z, girl, prof, set) {
   e.passive = true; e.silenced = true; e.sq = null; if (e.mk) e.mk.visible = false; UK7.girls.push(e); return e;
 }
 function u7SpawnAll() {
-  UK7.girls = []; UK7.vip = {}; UK7.crew = []; for (const T of UK7.tables) for (const S of T.seats) S.taken = null;
+  UK7.girls = []; UK7.vip = {}; UK7.crew = []; UK7.bgN = null; for (const T of UK7.tables) for (const S of T.seats) S.taken = null;
   const K = UK7.tables[0], T2 = UK7.tables[1];
   UK7.kingSeat = K.seats[3];   // 殿の席（南向き：入口を見渡す）
   const vip = (key, girl, T, si, pers, cm) => { const e = u7Spawn(T.seats[si].x, T.seats[si].z, GIRLS[girl] ? girl : undefined, { name: UK7_NAME[key], pers, cm, vv: 1 }, { uk7Vip: key }); if (!e) return; e.ukTag = UK7_NAME[key]; u7Seat(e, T.seats[si], T); UK7.vip[key] = e; };
   vip('ojou', OJOU_ID, K, 0, '冷静', 163); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
   vip('fumi', FUMI_ID, T2, 0, '慎重', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
   let n = 0;
-  for (const T of UK7.tables.slice(2)) for (let si = 0; si < 5; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; } }
+  for (const T of UK7.tables.slice(2)) for (let si = 0; si < 5; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; e.uk7Bg = UK7.bgN = ((UK7.bgN == null ? -1 : UK7.bgN) + 1); } }
   for (const [x, z, f] of [[-14, U7.Z0 - 10.9, Math.PI], [-12.8, U7.Z0 - 10.6, -2.4], [11, U7.Z0 - 10.9, Math.PI], [16, U7.Z0 - 10.8, 2.7], [17, U7.Z0 - 9.8, 0.3]]) { const e = u7Spawn(x, z); if (!e) continue; e.uk7Deck = true; e.ukTag = '甲板で夜風に当たる ' + e.prof.name; u7Seat(e, { x, z, face: f, taken: null }, null); }   // 夜の甲板で風に当たる娘
   // 給仕：降伏した英国の娘たち（王女アラベラも）と、船の技術を学ぶ侍女
   const posts = [[-20.5, -10], [-20.5, 2], [-20.5, 14], [-20.5, 24], [20.5, -10], [20.5, 2], [20.5, 14], [20.5, 24], [-4.5, 9], [4.5, -2], [-4.5, -13]];
@@ -11886,7 +11886,7 @@ function u7AskFam(e, i) {
 function u7AskMenu(e) {
   const V = window.VOICE_UK7; if (!V) return;
   const opts = V.q.map((q, i) => ({ label: '「' + q + '」', then: [{ fn: () => u7Ask(e, i) }] }));
-  if (e.uk7Con && V.bg) { const B = V.bg[e.id % V.bg.length]; opts.unshift(...V.qb.map((q, j) => ({ label: '「' + q + '」', sub: '徴兵の前は', then: [{ fn: () => { UK7.cur = e; UK_WHO_NAME.g7 = e.ukTag || e.prof.name; UK7.log.push('bg:' + j + ':' + (e.id % V.bg.length)); e.uk7Look = time + 8; ukDlg([u7Line('q7k', { who: 'king', ja: q, dur: 1.8 }), u7Line('q7a', { who: 'g7', ja: B[j].text, file: B[j].file, dur: B[j].dur })], null); } }] }))); }
+  if (e.uk7Con && (V.bg2 || V.bg)) { const st = 'abcd'[e.id % 4], k = V.bg2 ? (e.uk7Bg != null ? e.uk7Bg : e.id) % V.bg2.length : 0, B = V.bg2 ? V.bg2[k].map(o => o[st]) : V.bg[e.id % V.bg.length]; opts.unshift(...V.qb.map((q, j) => ({ label: '「' + q + '」', sub: '徴兵の前は', then: [{ fn: () => { UK7.cur = e; UK_WHO_NAME.g7 = e.ukTag || e.prof.name; UK7.log.push('bg:' + j + ':' + k); e.uk7Look = time + 8; ukDlg([u7Line('q7k', { who: 'king', ja: q, dur: 1.8 }), u7Line('q7a', { who: 'g7', ja: B[j].text, file: B[j].file, dur: B[j].dur })], null); } }] }))); }
   if (!e.uk7Vip && !e.uk7Crew && !e.uk7Deck && V.yp && !UK7.yk && (UK7.phase === 'party' || UK7.phase === 'after')) opts.push({ label: '「' + V.yq + '」', sub: '舞台で余興', then: [{ fn: () => u7Yokyo(e) }] });
   if (e.uk7Vip === 'ojou' && UK7.phase === 'party' && !UK7.midDone) opts.unshift({ label: '「' + V.midq + '」', sub: '中締めの挨拶を頼む', then: [{ fn: () => u7MidStart() }] });
   if (V.qsa && V.qsa[e.uk7Vip]) opts.unshift({ label: '「' + V.qs + '」', sub: 'お酒の話', then: [{ fn: () => { const A = V.qsa[e.uk7Vip]; UK7.cur = e; UK7.log.push('qs:' + e.uk7Vip); ukDlg([u7Line('q7k', { who: 'king', ja: V.qs, dur: 2.6 }), u7Line('q7a', { who: e.uk7Vip, ja: A.text, file: A.file, dur: A.dur })], null); } }] });

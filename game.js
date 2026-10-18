@@ -476,7 +476,7 @@ const SITU = {
     return out;
   },
   tick(dt) {
-    if (!this.man || state !== 'play' || UK.on || UK2.on || UK3.on || UK4.on || PLANE.intro && Math.random() < 0.9) return;
+    if (!this.man || state !== 'play' || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || PLANE.intro && Math.random() < 0.9) return;
     if ((this.t -= dt) > 0) return; this.t = 1.2 + Math.random() * 0.8;
     if (time - this.last < 4.5) return;
     const cand = enemies.filter(e => this.ok(e) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 32);
@@ -2781,7 +2781,7 @@ function stageLook(name) {
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4, uk3 = name === 'ukNight'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
+  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4, uk3 = name === 'ukNight' || name === 'ukParty'; UK7.on = name === 'ukParty'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.fog.color.setHex(uk3 ? 0x0a1220 : FOG); sun.color.setHex(uk3 ? 0x9fb6e8 : 0xfff0d0);   // 第三幕：夜の霞と月の光
@@ -8377,6 +8377,7 @@ function updateIsland(dt){
 
 const STAGES = {
   ukMeet: { name: '英国淑女編 第一幕「邂逅」', desc: '小早で沖へ。英国のガレオン船ライオネス号が待つ。戦いはまだ無い——甲板の英国の娘たちと言葉を交わし、王女の使者の要求に答えよ（E で話す・1〜4 で選ぶ）。次の幕で、本格的な戦闘が始まる。' },
+  ukParty: { name: '英国淑女編 第七幕「祝勝会」', desc: '英国は降伏した。日本へ帰る客船「瑞鳳丸」の大広間で祝勝会。円卓を回って侍女たちと話し、英国の給仕を呼んで注文しよう。中締めのあとは、心に決めた娘を夜の甲板へ。戦いは無い。' },
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
@@ -8866,8 +8867,8 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
-function ukWho(who) { if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
+const ukL = k => (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+function ukWho(who) { if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
@@ -11563,9 +11564,9 @@ function u5MedBrain(e, dt) {   // アリス：生きている英国の負傷者�
   if (best && (e.uk5HealT = (e.uk5HealT || 0) + dt) > 4) { e.uk5HealT = 0; best.hp = Math.min(best.hpMax, best.hp + 1); UK4.stats.heal = (UK4.stats.heal || 0) + 1; e.faceWant = Math.atan2(best.s.position.x - p.x, best.s.position.z - p.z); }
   return true;
 }
+function u5NearCon() { let best = null, bd = 3.2; for (const e of enemies) { if (!e.uk5Con || !isUp(e) || e.team !== 'blue') continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd) { bd = d; best = e; } } return best; }
 function u5ConTalk() {   // 徴兵の娘に声をかける：殿は字幕だけ、娘は声で答える
-  let best = null, bd = 3.2;
-  for (const e of enemies) { if (!e.uk5Con || !isUp(e) || e.team !== 'blue') continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd) { bd = d; best = e; } }
+  const best = u5NearCon();
   if (!best) return false;
   if (time - (UK4.conT || -99) < 4) return true; UK4.conT = time;
   const i = (Math.random() * UK5_CON.length) | 0, [k, a] = UK5_CON[i];
@@ -11624,6 +11625,291 @@ function uk5Start() {
   ukDlg([{ wait: 1.2 }, { say: 'n5_1' }, { say: 'n5_2' }, { say: 'n5_3' }, { say: 'n5_go' }], () => { if (UK4.phase === 'open') uk4SetPhase('advance'); });
 }
 
+// =====================================================================
+//  英国淑女編 第七幕「祝勝会」(?stage=ukParty)
+//   英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間で祝勝会。円卓 20 卓（殿の卓は入口から最も遠い中央）。
+//   給仕は降伏した英国の娘たち（王女アラベラも給仕）と、船の技術を学ぶ侍女たち。戦いは無い（武器は鞘に収めたまま）。
+//   開会の挨拶（白瀬）→ 歓談（E：話す／英国の給仕を呼んで注文）→ 中締め（西園寺）→ 夜の甲板で想いを告げる → 「英国淑女編 完」
+// =====================================================================
+const UK7 = { on: false, phase: 'off', t: 0, pt: 0, girls: [], vip: {}, crew: [], tables: [], log: [], amb: 6, walkT: 3, dishes: [], conf: null, ended: false };
+const U7 = { KING: [0, -19], T2: [7.5, -16.5], X: 25, Z0: -31, Z1: 33, BUF: 22.6 };
+const UK7_NAME = { sumi: '秘書課 白瀬 澄', ojou: '秘書課 西園寺 すみれ', sec2: '秘書課 早瀬 ことね', sec3: '秘書課 桜井 ゆかり', sec4: '秘書課 宮下 千尋', fumi: '秘書課 綾瀬 文乃', shizuka: '久遠 静香', reika: '白石 麗華', kujo: '外科医 九条 紗英', sysop: 'システム担当 霧島 怜' };
+const UK7_ORD_JA = { food: '殿、お食事です。ローストビーフ、料理長からの心づくしです。', drink: '殿、お飲み物です。無事の帰国に。', sweet: '殿、甘いものを。スティッキー・トフィー・プディング——なかなかのものですよ。' };
+const UK7_ORD_JA_ARA = { food: '殿、お食事です。わたくしが自ら運びました——提督たちには内緒に。', drink: '殿、お飲み物です。指揮をとるより、給仕のほうが穏やかですね。', sweet: '殿、プディングを。英国では、これの無い祝いの席はありませんの。' };
+const UK7_FIX = {
+  n7_1: { who: 'narr', narr: true, ja: '英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間——今夜は、祝勝会。', dur: 4.6 },
+  k_toast: { who: 'king', ja: '皆、よく戦ってくれた。倒れた者たちにも、この杯を。……乾杯！', dur: 3.6 },
+  n7_mid: { who: 'narr', narr: true, ja: '宴はたけなわ。窓の外には、夜の海が静かに広がっている。', dur: 3.4 },
+  n7_after: { who: 'narr', narr: true, ja: '中締めのあとも、灯りは消えない。——心に決めた娘がいるなら、夜の甲板へ誘うのもいい。', dur: 4.8 },
+  k_c1: { who: 'king', ja: '……少し、外の風に当たらないか。', dur: 2.4 },
+  k_c2: { who: 'king', ja: 'ずっと言えずにいた。……お前のことが好きだ。', dur: 3.0 },
+  n7_end: { who: 'narr', narr: true, ja: '瑞鳳丸は、夜の海を日本へ向かう。長い戦いは、終わった。', dur: 4.0 },
+};
+Object.assign(UK_WHO_NAME, UK7_NAME);
+const uk7L = k => { if (UK7_FIX[k]) return UK7_FIX[k]; const V = window.VOICE_UK7; if (!V) return null; if (V.lines[k]) return V.lines[k]; if (k === 'conf' && UK7.conf) return UK7.conf.L; return null; };
+function uk7Who(who) { if (who === 'king' || who === 'narr') return null; if (who === 'g7') return UK7.cur || null; if (/^uk\d\d$/.test(who)) return UK7.crew.find(e => e.uk7Crew === who) || null; return UK7.vip[who] || (UK7.conf && UK7.conf.who === who ? UK7.conf.e : null) || null; }
+function u7Mats() {
+  if (UK7.M) return UK7.M;
+  const L = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o));
+  const carpet = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#6e1420'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(214,170,80,.55)'; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(w / 2, h / 2, 12 + i * 16, 0, 6.3); g.stroke(); } g.fillStyle = 'rgba(214,170,80,.5)'; for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) { g.beginPath(); g.arc(x, y, 10, 0, 6.3); g.fill(); } }, 24);
+  const panel = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#e8dcc0'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b89a5c'; g.lineWidth = 4; g.strokeRect(10, 14, w - 20, h - 28); });
+  if (carpet.repeat) carpet.repeat.set(24, 30);
+  UK7.M = { carpet: L(0xffffff, { map: carpet }), wall: L(0xffffff, { map: panel }), ceil: L(0xd9cdb2), cloth: L(0xf4f1ea), chair: L(0x7a1c24), gold: L(0xd4ad52, { emissive: 0x3a2a08 }), glow: new THREE.MeshBasicMaterial({ color: 0xfff1c8 }),
+    win: new THREE.MeshBasicMaterial({ color: 0x0c1830 }), frame: L(0x3b2a1c), wood: L(0x5a3a22), buf: L(0xf2efe6), deck: L(0x8b6a48), rail: L(0xd8d4c8), sea: new THREE.MeshBasicMaterial({ color: 0x050b18 }), dishA: L(0xb5763c), dishB: L(0xf0e2b0), glass: L(0x9fc6e8, { transparent: true, opacity: 0.6 }) };
+  return UK7.M;
+}
+function u7Box(w, h, d, m, x, y, z, solid) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.receiveShadow = true; stageRoot.add(o); if (solid) boxes.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: y + h / 2 }); return o; }
+function u7Table(x, z, king) {
+  const M = u7Mats(), T = { x, z, seats: [], king, dish: 0 };
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.06, 24), M.cloth); top.position.set(x, 0.76, z); stageRoot.add(top);
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.07, 1.12, 0.72, 24, 1, true), M.cloth); skirt.position.set(x, 0.38, z); stageRoot.add(skirt);
+  const cand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8), M.gold); cand.position.set(x, 0.94, z); stageRoot.add(cand);
+  if (king) { const fl = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshLambertMaterial({ color: 0xd04050 })); fl.position.set(x + 0.3, 0.88, z); stageRoot.add(fl); }
+  colliders.push({ x, z, r: 1.15 });
+  for (let i = 0; i < 6; i++) {   // 6 脚（殿の卓は 1 脚が殿の席）
+    const a = i / 6 * Math.PI * 2 + (king ? 0 : 0.3), sx = x + Math.sin(a) * 1.55, sz = z + Math.cos(a) * 1.55;
+    const ch = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.46), M.chair); ch.position.set(sx, 0.46, sz); ch.rotation.y = a; stageRoot.add(ch);
+    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.95, 0.06), M.chair); bk.position.set(x + Math.sin(a) * 1.8, 0.62, z + Math.cos(a) * 1.78); bk.rotation.y = a; stageRoot.add(bk);
+    T.seats.push({ x: sx, z: sz, face: a + Math.PI, taken: null });
+  }
+  UK7.tables.push(T); return T;
+}
+function u7Chandelier(x, z) {
+  const M = u7Mats(), g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.05, 6, 24), M.gold); ring.rotation.x = Math.PI / 2; g.add(ring);
+  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.7, 0.04, 6, 18), M.gold); ring2.rotation.x = Math.PI / 2; ring2.position.y = -0.5; g.add(ring2);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * 6.283, b = new THREE.Mesh(UK7.bulbG || (UK7.bulbG = new THREE.SphereGeometry(0.09, 8, 6)), M.glow); b.position.set(Math.sin(a) * 1.3, 0.1, Math.cos(a) * 1.3); g.add(b); }
+  const drop = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.2, 12), new THREE.MeshLambertMaterial({ color: 0xf6efe0, emissive: 0x6a5a38, transparent: true, opacity: 0.85 })); drop.position.y = -0.9; drop.rotation.x = Math.PI; g.add(drop);
+  const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.2, 6), M.gold); rod.position.y = 0.7; g.add(rod);
+  g.position.set(x, 5.6, z); stageRoot.add(g);
+}
+function buildUkParty() {
+  const M = u7Mats(); UK7.tables = []; UK7.dishes = [];
+  const W = U7.X, Z0 = U7.Z0, Z1 = U7.Z1, H = 7;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, Z1 - Z0), M.carpet); fl.rotation.x = -Math.PI / 2; fl.position.set(0, 0.01, (Z0 + Z1) / 2); fl.receiveShadow = true; stageRoot.add(fl);
+  const ce = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, Z1 - Z0), M.ceil); ce.rotation.x = Math.PI / 2; ce.position.set(0, H, (Z0 + Z1) / 2); stageRoot.add(ce);
+  // 壁（北の壁の中央に甲板への扉）と窓（夜の海）
+  u7Box(W - 2.2, H, 0.3, M.wall, -(W + 2.2) / 2, H / 2, Z0, true); u7Box(W - 2.2, H, 0.3, M.wall, (W + 2.2) / 2, H / 2, Z0, true); u7Box(4.4, H - 2.8, 0.3, M.wall, 0, H - (H - 2.8) / 2, Z0, false);
+  u7Box(W * 2, H, 0.3, M.wall, 0, H / 2, Z1, true);
+  for (const sx of [-1, 1]) u7Box(0.3, H, Z1 - Z0, M.wall, sx * W, H / 2, (Z0 + Z1) / 2, true);
+  for (const sx of [-1, 1]) for (let z = Z0 + 6; z < Z1 - 4; z += 7) { const w = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.6), M.win); w.position.set(sx * (W - 0.17), 3.3, z); w.rotation.y = -sx * Math.PI / 2; stageRoot.add(w); u7Box(0.12, 2.8, 3.4, M.frame, sx * (W - 0.2), 3.3, z, false).material = M.frame; }
+  for (let x = -W + 5; x < W - 3; x += 7) { if (Math.abs(x) < 4) continue; const w = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.6), M.win); w.position.set(x, 3.3, Z0 + 0.17); stageRoot.add(w); }
+  // 入口（南）の扉
+  u7Box(4, 3.2, 0.1, M.wood, 0, 1.6, Z1 - 0.2, false);
+  // 舞台と演台（殿の卓の後ろ）
+  u7Box(10, 0.5, 3.2, M.wood, 0, 0.25, -27.6, true); u7Box(0.9, 1.15, 0.6, M.wood, -3.5, 1.08, -27.4, false);
+  // シャンデリアと灯り
+  for (const [x, z] of [[-12, -16], [12, -16], [0, -19], [-12, 2], [12, 2], [0, 8], [-12, 20], [12, 20]]) u7Chandelier(x, z);
+  for (const [x, z] of [[0, -16], [-12, 6], [12, 6], [0, 22]]) { const l = new THREE.PointLight(0xffe0b0, 0.9, 34, 1.4); l.position.set(x, 5.2, z); stageRoot.add(l); }
+  stageRoot.add(new THREE.AmbientLight(0xfff0dc, 0.55));
+  // 立食の台（東西の壁沿い）
+  for (const sx of [-1, 1]) for (const z of [-10, 2, 14, 24]) { u7Box(1.1, 0.9, 7, M.buf, sx * (U7.BUF + 0.9), 0.45, z, true); for (let k = -2; k <= 2; k++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.28, 0.12, 14), k % 2 ? M.dishA : M.dishB); d.position.set(sx * (U7.BUF + 0.9), 0.96, z + k * 1.3); stageRoot.add(d); } }
+  // 円卓 20：殿の卓（中央・入口から最も遠い）、隣の卓、ほか 18
+  u7Table(U7.KING[0], U7.KING[1], true); u7Table(U7.T2[0], U7.T2[1], false);
+  for (const z of [-8, 3, 14]) for (const x of [-18, -9, 0, 9, 18]) u7Table(x, z, false);
+  for (const x of [-9, 0, 9]) u7Table(x, 24, false);
+  // 夜の甲板（北の扉の外）
+  const dk = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, 12), M.deck); dk.rotation.x = -Math.PI / 2; dk.position.set(0, 0.01, Z0 - 6); stageRoot.add(dk);
+  u7Box(W * 2, 1.0, 0.1, M.rail, 0, 0.5, Z0 - 11.8, true);
+  for (const sx of [-1, 1]) u7Box(0.3, 1.0, 12, M.rail, sx * W, 0.5, Z0 - 6, true);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), M.sea); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -6, -900); stageRoot.add(sea);
+  const moon = new THREE.Mesh(new THREE.CircleGeometry(6, 24), new THREE.MeshBasicMaterial({ color: 0xf2ecd6 })); moon.position.set(-60, 40, -300); stageRoot.add(moon);
+  hq = null;
+}
+// ---- 人：殿の卓・隣の卓・円卓の侍女・給仕（英国の娘と船の技術を学ぶ侍女） ----
+function u7Seat(e, S, T) { S.taken = e; e.uk7Seat = S; e.uk7T = T; e.seated = { x: S.x, z: S.z }; e.s.position.set(S.x, -0.42, S.z); e.baseY = -0.42; e.face = e.faceWant = S.face; e.s.rotation.y = S.face; e.crouch = 0; e.state = 'idle'; e.passive = true; }
+function u7Spawn(x, z, girl, prof, set) {
+  const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: Object.assign({ state: 'idle', silenced: true, uk7: true }, set || {}) }); if (!e) return null;
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
+  e.passive = true; e.silenced = true; e.sq = null; if (e.mk) e.mk.visible = false; UK7.girls.push(e); return e;
+}
+function u7SpawnAll() {
+  UK7.girls = []; UK7.vip = {}; UK7.crew = []; for (const T of UK7.tables) for (const S of T.seats) S.taken = null;
+  const K = UK7.tables[0], T2 = UK7.tables[1];
+  UK7.kingSeat = K.seats[3];   // 殿の席（南向き：入口を見渡す）
+  const vip = (key, girl, T, si, pers, cm) => { const e = u7Spawn(T.seats[si].x, T.seats[si].z, GIRLS[girl] ? girl : undefined, { name: UK7_NAME[key], pers, cm, vv: 1 }, { uk7Vip: key }); if (!e) return; e.ukTag = UK7_NAME[key]; u7Seat(e, T.seats[si], T); UK7.vip[key] = e; };
+  vip('ojou', OJOU_ID, K, 0, '冷静', 163); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
+  vip('fumi', FUMI_ID, T2, 0, '慎重', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
+  let n = 0;
+  for (const T of UK7.tables.slice(2)) for (let si = 0; si < 5; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; } }
+  // 給仕：降伏した英国の娘たち（王女アラベラも）と、船の技術を学ぶ侍女
+  const posts = [[-20.5, -10], [-20.5, 2], [-20.5, 14], [-20.5, 24], [20.5, -10], [20.5, 2], [20.5, 14], [20.5, 24], [-4.5, 9], [4.5, -2], [-4.5, -13]];
+  ['uk01', 'uk02', 'uk03', 'uk04', 'uk05', 'uk06', 'uk07', 'uk08', 'uk09', 'uk10', 'uk00'].forEach((id, i) => {
+    const G = id === 'uk00' ? UK_PRINCESS : UK_PROF[id]; if (!G || !GIRLS[id]) return; const [x, z] = id === 'uk00' ? [3.2, -14.5] : posts[i];
+    const e = u7Spawn(x, z, id, { name: G.name, pers: G.pers, cm: G.cm, vv: G.vv }, { uk7Crew: id }); if (!e) return;
+    e.ukTag = (id === 'uk00' ? '給仕 ' : '船の給仕 ') + G.name; e.uk7Post = [x, z]; e.uk7Wp = [x, z + (i % 2 ? 4 : -4)]; e.speed = 1.1; UK7.crew.push(e);
+  });
+  for (const [x, z] of [[-3, 30], [3, 30], [-21, 30], [21, 30]]) { const e = u7Spawn(x, z, undefined, null, { uk7Crew: 'jp' }); if (e) { e.ukTag = '船員（侍女） ' + e.prof.name; e.uk7Post = [x, z]; e.uk7Wp = [x, z]; } }
+}
+// ---- 動き：立食の台へ行って戻る侍女、給仕、注文 ----
+function uk7Brain(e, dt) {
+  e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0);
+  if (e.seated) { e.s.position.x = e.seated.x; e.s.position.z = e.seated.z; e.state = 'idle'; e.faceWant = e.uk7Seat ? e.uk7Seat.face : e.faceWant; if (e.uk7Look && time < e.uk7Look) e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); return true; }
+  const p = e.s.position; if (!e.uk7Task || e.uk7Task !== 'deck') e.baseY = 0;
+  if (e.uk7Path && e.uk7Path.length) {
+    const [tx, tz] = e.uk7Path[0], d = Math.hypot(tx - p.x, tz - p.z);
+    if (d > 0.35) { steer(e, tx, tz, e.uk7Task === 'serve' ? 2.0 : e.uk7Task === 'return' ? 1.4 : 1.0, dt); e.state = 'approach'; return true; }
+    e.uk7Path.shift(); if (e.uk7Path.length) return true;
+    if (e.uk7Task === 'buffet') { e.uk7Task = 'eat'; e.uk7Wait = time + rand(3, 6); e.faceWant = p.x > 0 ? Math.PI / 2 : -Math.PI / 2; }
+    else if (e.uk7Task === 'back') { u7Seat(e, e.uk7Seat, e.uk7T); e.uk7Task = null; }
+    else if (e.uk7Task === 'serve') u7Serve(e);
+    else if (e.uk7Task === 'return') e.uk7Task = null;
+    return true;
+  }
+  if (e.uk7Task === 'eat' && time > e.uk7Wait) { const S = e.uk7Seat, ax = S.x + (S.x > p.x ? -0.5 : 0.5); e.uk7Task = 'back'; e.uk7Path = [[Math.sign(p.x) * 20.6, p.z], [Math.sign(p.x) * 20.6, S.z], [S.x + (S.x - e.uk7T.x) * 0.5, S.z + (S.z - e.uk7T.z) * 0.5], [S.x, S.z]]; return true; }
+  e.state = 'idle';
+  if (e.uk7Crew && !e.uk7Task && e.uk7Wp && (e.uk7WT = (e.uk7WT || 0) - dt) < 0) { e.uk7WT = rand(6, 12); const a = e.uk7Post, b = e.uk7Wp, at = Math.hypot(p.x - a[0], p.z - a[1]) < 1 ? b : a; e.uk7Path = [at.slice()]; e.uk7Task = 'return'; }
+  return true;
+}
+function u7WalkTick(dt) {
+  if ((UK7.walkT -= dt) > 0) return; UK7.walkT = rand(3, 6);
+  if (UK7.girls.filter(e => e.uk7Task === 'buffet' || e.uk7Task === 'eat' || e.uk7Task === 'back').length >= 7) return;
+  const c = UK7.girls.filter(e => e.seated && !e.uk7Vip && e.uk7Seat); if (!c.length) return;
+  const e = c[(Math.random() * c.length) | 0], S = e.uk7Seat, T = e.uk7T, sx = S.x >= 0 ? 1 : -1;
+  e.seated = null; e.crouch = 0; e.baseY = 0; e.s.position.y = 0; S.taken = null; e.uk7Task = 'buffet';
+  const bz = clamp(S.z + rand(-2, 2), -12, 26);
+  e.uk7Path = [[S.x + (S.x - T.x) * 0.6, S.z + (S.z - T.z) * 0.6], [sx * 20.6, S.z + (S.z - T.z) * 0.6], [sx * 21.4, bz]];
+}
+function u7Order(kind) {
+  let c = UK7.crew.filter(e => e.uk7Crew !== 'jp' && !e.uk7Task && isUp(e)); if (!c.length) c = UK7.crew.filter(e => e.uk7Crew !== 'jp' && isUp(e)); if (!c.length) return;
+  const near = c.slice().sort((a, b) => Math.hypot(a.s.position.x - player.pos.x, a.s.position.z - player.pos.z) - Math.hypot(b.s.position.x - player.pos.x, b.s.position.z - player.pos.z));
+  const e = UK7.callE && c.includes(UK7.callE) ? UK7.callE : (Math.random() < 0.3 && c.find(o => o.uk7Crew === 'uk00')) || near[0];
+  const K = UK7.tables[0], S = UK7.kingSeat, sx = S.x + 0.9, sz = S.z + 0.6;
+  e.uk7Task = 'serve'; e.uk7Kind = kind; e.uk7Path = [[e.s.position.x, -12.5], [sx, -12.5], [sx, sz]]; UK7.log.push('order:' + kind + ':' + e.uk7Crew);
+  popup(`${e.prof.name} が${kind === 'food' ? '料理' : kind === 'drink' ? '飲み物' : 'デザート'}を運んできます`);
+}
+function u7Serve(e) {
+  const V = window.VOICE_UK7, L = V && V.ord[e.uk7Crew] && V.ord[e.uk7Crew][e.uk7Kind], ja = (e.uk7Crew === 'uk00' ? UK7_ORD_JA_ARA : UK7_ORD_JA)[e.uk7Kind];
+  e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z);
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  if (L) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
+  const nm = e.prof.name.split('・')[0]; subtitle(ja); const el = $('subtitle'); if (el) el.textContent = L ? `${nm}「${L.en}」　${ja}` : `${nm}「${ja}」`;
+  // 殿の卓に皿（または杯）を置く
+  const M = u7Mats(), K = UK7.tables[0], S = UK7.kingSeat, a = Math.atan2(S.x - K.x, S.z - K.z) + (K.dish++ % 3 - 1) * 0.35, px = K.x + Math.sin(a) * 0.62, pz = K.z + Math.cos(a) * 0.62;
+  const m = e.uk7Kind === 'drink' ? new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.18, 10), M.glass) : new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.05, 14), e.uk7Kind === 'sweet' ? M.dishB : M.dishA);
+  m.position.set(px, e.uk7Kind === 'drink' ? 0.88 : 0.82, pz); stageRoot.add(m); UK7.dishes.push(m); if (UK7.dishes.length > 8) stageRoot.remove(UK7.dishes.shift());
+  UK7.log.push('served:' + e.uk7Crew + ':' + e.uk7Kind); UK7.served = (UK7.served || 0) + 1;
+  e.uk7Task = 'return'; e.uk7Path = [[e.s.position.x, -12.5], [e.uk7Post[0], -12.5], e.uk7Post.slice()];
+}
+// ---- 声：歓談・立ち聞き・話しかけ ----
+function u7Say(e, it, near) {
+  if (!it || !e) return 0; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  Talk.as(e, () => VoicePack.play(it.file, d, 1.95, 1)); e.uk7Look = time + 3;
+  if (d < (near || 11) && !UK.dlg) { subtitle(it.text); const el = $('subtitle'); if (el) el.textContent = e.prof.name.replace(/^徴兵 /, '') + '「' + it.text + '」'; }
+  UK7.log.push('say:' + e.prof.name + ':' + it.text.slice(0, 10)); return (it.dur || 3);
+}
+function u7Ambient(dt) {
+  if ((UK7.amb -= dt) > 0 || UK.dlg || UK7.phase === 'confess') return; UK7.amb = rand(8, 13);
+  const V = window.VOICE_UK7; if (!V) return;
+  const near = UK7.girls.filter(e => e.seated && !e.uk7Vip && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 14);
+  if (!near.length) return;
+  const a = near[(Math.random() * near.length) | 0];
+  if (Math.random() < 0.5) { const b = UK7.girls.find(o => o !== a && o.seated && o.uk7T === a.uk7T); const P = V.pairs[(Math.random() * V.pairs.length) | 0];
+    if (b && P) { const t = u7Say(a, P[0]); setTimeout(() => { if (state === 'play' && UK7.on) u7Say(b, P[1]); }, (t + 0.5) * 1000); UK7.amb += t; return; } }
+  u7Say(a, a.uk7Con ? V.con[(Math.random() * V.con.length) | 0] : V.talk[(Math.random() * V.talk.length) | 0]);
+}
+function uk7Key() {
+  if (UK.dlg && !UK.choice) { ukDlgSkip(); return true; }
+  if (UK.dlg || UK7.phase === 'confess' || UK7.phase === 'end') return true;
+  const V = window.VOICE_UK7, P = player.pos, dist = e => Math.hypot(e.s.position.x - P.x, e.s.position.z - P.z);
+  let best = null, bd = 2.6; for (const e of UK7.girls) { const d = dist(e); if (d < bd && isUp(e)) { bd = d; best = e; } }
+  const atSeat = Math.hypot(P.x - UK7.kingSeat.x, P.z - UK7.kingSeat.z) < 2.2;
+  if (best && best.uk7Crew && best.uk7Crew !== 'jp') { u7CrewMenu(best); return true; }
+  if (best && best.uk7Vip && UK7.phase === 'after' && !atSeat) { uk7Key2(best); return true; }
+  if (atSeat && (!best || (best.uk7Vip && best.uk7T === UK7.tables[0]))) { u7SeatMenu(best); return true; }
+  if (best && V) { best.uk7Look = time + 4; if (best.uk7Crew === 'jp') { u7Say(best, V.talk[11], 14); return true; } u7AskMenu(best); return true; }
+  if (atSeat) { UK7.callE = null; u7OrderMenu(); return true; }
+  popup('近くに誰もいない'); return true;
+}
+function u7Near() { let best = null, bd = 2.6; for (const e of UK7.girls) { const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd && isUp(e)) { bd = d; best = e; } } return best; }
+function u7AtSeat() { return UK7.kingSeat && Math.hypot(player.pos.x - UK7.kingSeat.x, player.pos.z - UK7.kingSeat.z) < 2.2; }
+// 殿の問い（字幕だけ）→ 娘が声で答える。白瀬たちが近くにいれば口をはさむ（諫める）
+function u7Line(key, o) { UK7_FIX[key] = o; return { say: key }; }
+function u7Ans(e, i) {
+  const V = window.VOICE_UK7; if (!V) return null;
+  if (e.uk7Vip && V.qvip[e.uk7Vip]) return V.qvip[e.uk7Vip][i];
+  if (e.uk7Con) return V.qc[i];
+  return V.qv[i][e.id % 2];
+}
+function u7Ask(e, i) {
+  const V = window.VOICE_UK7, A = u7Ans(e, i); if (!A) return;
+  UK7.cur = e; const who = e.uk7Vip || 'g7'; if (!e.uk7Vip) UK_WHO_NAME.g7 = e.ukTag || e.prof.name;
+  const steps = [u7Line('q7k', { who: 'king', ja: V.q[i], dur: 2.2 }), u7Line('q7a', { who, ja: A.text, file: A.file, dur: A.dur })];
+  const C = V.chime[i], ce = C && UK7.vip[C.who];
+  if (C && ce && ce !== e && isUp(ce) && Math.hypot(ce.s.position.x - player.pos.x, ce.s.position.z - player.pos.z) < 13) steps.push(u7Line('q7c', { who: C.who, ja: C.text, file: C.file, dur: C.dur }));
+  UK7.log.push('ask:' + i + ':' + (e.uk7Vip || (e.uk7Con ? 'con' : 'vol')) + (steps.length > 2 ? ':chime' : ''));
+  e.uk7Look = time + 12; ukDlg(steps, null);
+}
+function u7AskMenu(e) {
+  const V = window.VOICE_UK7; if (!V) return;
+  const opts = V.q.map((q, i) => ({ label: '「' + q + '」', then: [{ fn: () => u7Ask(e, i) }] }));
+  opts.push({ label: '世間話', sub: '宴の話', then: [{ fn: () => u7Say(e, e.uk7Con ? V.con[(Math.random() * V.con.length) | 0] : V.talk[(Math.random() * V.talk.length) | 0], 14) }] });
+  u7Menu(opts);
+}
+function u7SeatMenu(e) {
+  const o = [{ label: '英国の給仕を呼ぶ', sub: '料理・飲み物・デザート', then: [{ fn: () => { UK7.callE = null; u7OrderMenu(); } }] }];
+  if (e) o.unshift({ label: (UK7_NAME[e.uk7Vip] || e.prof.name) + 'と話す', then: [{ fn: () => UK7.phase === 'after' ? uk7Key2(e) : u7AskMenu(e) }] });
+  u7Menu(o);
+}
+function uk7Key2(e) { u7Menu([{ label: '夜の甲板に誘う', sub: UK7_NAME[e.uk7Vip] + 'に想いを告げる', then: [{ fn: () => u7Confess(e) }] }, { label: '話を聞く', then: [{ fn: () => u7AskMenu(e) }] }, { label: 'やめておく', then: [] }]); }
+function u7CrewMenu(e) {
+  const V = window.VOICE_UK7; const A = V && V.qea[e.uk7Crew];
+  const opts = [{ label: '注文する', sub: '料理・飲み物・デザート', then: [{ fn: () => { UK7.callE = e; u7OrderMenu(); } }] }];
+  if (A) V.qe.forEach((q, i) => opts.push({ label: '「' + q + '」', then: [{ fn: () => { e.uk7Look = time + 10; e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); UK7.log.push('askE:' + e.uk7Crew + ':' + i); ukDlg([u7Line('q7k', { who: 'king', ja: q, dur: 2.0 }), u7Line('q7e', { who: e.uk7Crew, en: A[i].en, ja: A[i].ja, file: A[i].file, dur: A[i].dur })], null); } }] }));
+  u7Menu(opts);
+}
+function u7Menu(opts) { for (const k of ['ukdlgName', 'ukdlgEn', 'ukdlgJa']) if ($(k)) $(k).textContent = ''; const pe = $('ukdlgPic'); if (pe) pe.style.display = 'none'; ukDlg([{ choice: opts }], null); }
+function u7OrderMenu() { u7Menu([{ label: '料理', sub: 'ローストビーフ', then: [{ fn: () => u7Order('food') }] }, { label: '飲み物', sub: '帰国を祝う一杯', then: [{ fn: () => u7Order('drink') }] }, { label: 'デザート', sub: 'プディング', then: [{ fn: () => u7Order('sweet') }] }]); }
+function u7Confess(e) {
+  const key = e.uk7Vip, V = window.VOICE_UK7, C = V && V.conf[key]; UK7.phase = 'confess'; UK7.log.push('confess:' + key);
+  UK7.conf = { e, who: key, kind: C ? C.kind : 'ask', L: { who: key, ja: C ? C.text : '……少し、考えさせてください。', file: C && C.file, dur: C && C.dur } };
+  // 夜の甲板へ
+  e.seated = null; e.crouch = 0; e.baseY = 0; if (e.uk7Seat) e.uk7Seat.taken = null; e.uk7Seat = null; e.uk7Path = null; e.uk7Task = 'deck';
+  player.pos.set(0, 0, U7.Z0 - 7.5); player.yaw = Math.atan2(-1.2, 1.7); player.pitch = 0;
+  e.s.position.set(1.2, 0, U7.Z0 - 9.2); e.s.position.y = 0; e.face = e.faceWant = Math.atan2(player.pos.x - 1.2, player.pos.z - (U7.Z0 - 9.2)); e.s.rotation.y = e.face;
+  ukDlg([{ wait: 1.0 }, { say: 'k_c1' }, { say: 'k_c2' }, { say: 'conf' }, { wait: 1.2 }, { say: 'n7_end' }], () => { UK7.phase = 'end'; UK7.pt = 0; });
+}
+// ---- 進行 ----
+function uk7Reset() {
+  Object.assign(UK7, { phase: 'open', t: 0, pt: 0, log: [], amb: 8, walkT: 4, conf: null, ended: false, served: 0, callE: null, midDone: false });
+  for (const m of UK7.dishes) stageRoot.remove(m); UK7.dishes = [];
+  UK.dlg = null; ukChoiceOff(); if ($('ukdlg')) $('ukdlg').style.display = 'none';
+  const S = UK7.tables.length ? UK7.tables[0].seats[3] : { x: 0, z: -17.5 };
+  player.pos.set(S.x, 0, S.z + 0.4); player.yaw = 0; player.pitch = -0.05; player.drawing = false;
+}
+function uk7Start() {
+  u7SpawnAll();
+  const S = UK7.kingSeat; player.pos.set(S.x, 0, S.z + 0.5); player.yaw = 0; player.pitch = -0.08;
+  if (VoicePack.ok && window.VOICE_UK7) { const V = VOICE_UK7; const ld = o => { if (o && o.file) VoicePack.load(o.file, false); }; for (const k in V.lines) VoicePack.load(V.lines[k].file, true); V.talk.forEach(ld); V.con.forEach(ld); V.pairs.forEach(p => p.forEach(ld)); for (const g in V.ord) for (const k in V.ord[g]) ld(V.ord[g][k]); for (const k in V.conf) ld(V.conf[k]); }
+  showBanner('英国淑女編 第七幕「祝勝会」', '日本へ帰る客船「瑞鳳丸」の大広間');
+  ukDlg([{ wait: 1.2 }, { say: 'n7_1' }, { say: 'open' }, { say: 'k_toast' }], () => { UK7.phase = 'party'; UK7.pt = 0; UK7.log.push('phase:party'); });
+}
+function uk7PhaseLabel() { return UK7.phase === 'after' || UK7.phase === 'confess' || UK7.phase === 'end' ? '祝勝会　中締めのあと' : '祝勝会'; }
+function uk7Goal() { return UK7.phase === 'party' ? 'E：侍女と話す／英国の給仕を呼んで注文（殿の席でも E）' : UK7.phase === 'after' ? 'E：心に決めた娘（殿の卓・隣の卓）に声をかける' : ''; }
+function updateUk7(dt) {
+  if (!UK7.on) return;
+  scene.background.setHex(0x0a0f1c); if (scene.fog) { scene.fog.color.setHex(0x0a0f1c); scene.fog.near = 60; scene.fog.far = 400; }
+  player.drawing = false;
+  UK7.t += dt; UK7.pt += dt;
+  player.pos.x = clamp(player.pos.x, -U7.X + 0.6, U7.X - 0.6); player.pos.z = clamp(player.pos.z, U7.Z0 - 11.2, U7.Z1 - 0.6);
+  if (UK7.phase === 'party' || UK7.phase === 'after') { u7WalkTick(dt); u7Ambient(dt); }
+  if (UK7.phase === 'party' && UK7.pt > 150 && !UK.dlg && !UK7.midDone) { UK7.midDone = true; ukDlg([{ say: 'n7_mid' }, { say: 'mid' }, { say: 'n7_after' }], () => { UK7.phase = 'after'; UK7.pt = 0; UK7.log.push('phase:after'); }); }
+  if (UK7.phase === 'end' && UK7.pt > 1.0) uk7Ending();
+  ukDlgTick(dt);
+  document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
+}
+function uk7Ending() {
+  if (UK7.ended) return; UK7.ended = true;
+  state = 'over'; $('banner').style.opacity = 0; bannerTimer = 0; if ($('ukdlg')) $('ukdlg').style.display = 'none';
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'), C = UK7.conf;
+  if (h1) h1.textContent = '英国淑女編 完'; if (h2) h2.textContent = '第七幕「祝勝会」';
+  const nm = C ? UK7_NAME[C.who] : '', ans = C ? (C.kind === 'yes' ? 'はにかみながら、うなずいた' : C.kind === 'no' ? 'やさしく、首を横に振った' : '「少し、時間をください」と答えた') : '';
+  $('result').innerHTML = `日本へ帰る客船「瑞鳳丸」の大広間で、侍女たちと英国の娘たちが同じ灯りの下に集った。` + (C ? `<br>夜の甲板で、殿は想いを告げた——${nm}は${ans}。` : '') + `<br><span style="opacity:.8">長い戦いは終わった。ご覧いただき、ありがとうございました。</span>`;
+  if (document.exitPointerLock) document.exitPointerLock();
+  $('over').style.display = 'flex';
+}
+if (TEST) window.__uk7 = { UK7, skip: () => ukDlgSkip(), pick: i => ukPick(i), order: k => u7Order(k), key: () => uk7Key(), mid: () => { UK7.pt = 999; }, confess: k => u7Confess(UK7.vip[k]) };
+
 function loadStage(name) {
   if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
   AIRPORT.on=false;AIRPORT.towerGuards=[];AIRPORT.fieldAllies=[];AIRPORT.drops=[];AIRPORT.gun=null;AIRPORT.tracer=null;
@@ -11640,7 +11926,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -11835,7 +12121,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -13768,7 +14054,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on) return;
+  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on) return;
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -13893,7 +14179,7 @@ function waveUpdate(dt) {
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
-  if (e.state === 'down' || UK.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange')))) return;   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
+  if (e.state === 'down' || UK.on || UK7.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange')))) return;   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
     const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
@@ -15435,8 +15721,10 @@ function updateHQ(dt) {
   }
   if (!menuOpen) talkWho = best;
   sec.near = !!best;
-  if (!UK.on) { $('talk').style.opacity = sec.near && !menuOpen ? 1 : 0;
-  document.documentElement.classList.toggle('cantalk', sec.near && !menuOpen); }
+  if (!UK.on) { const tw = !sec.near && !menuOpen && !UK.dlg ? (UK7.on ? u7Near() : UK4.v5 ? u5NearCon() : null) : null, tk = $('talk');
+  tk.textContent = tw ? `${tw.ukTag || tw.prof.name} と話す（E / 頼むボタン）` : UK7.on && !UK.dlg && u7AtSeat() ? '英国の給仕を呼ぶ（E / 頼むボタン）' : '秘書課の侍女に頼む（E / 頼むボタン）';
+  const show = (sec.near || tw || (UK7.on && !UK.dlg && u7AtSeat())) && !menuOpen; tk.style.opacity = show ? 1 : 0;
+  document.documentElement.classList.toggle('cantalk', !!show); }
   if (menuOpen) {
     const se = menuGirl();
     if (!se || se.state === 'down' || Math.hypot(player.pos.x - se.s.position.x, player.pos.z - se.s.position.z) > 3.4) closeSecMenu(false);
@@ -15789,6 +16077,7 @@ function updateEnemies(dt) {
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
     else if (UK2.on && uk2Brain(e, dt)) { /* 第二幕：砲撃の間は陰へ・戦列と方陣・退却・船の上 */ }
+    else if (UK7.on && uk7Brain(e, dt)) { /* 第七幕：祝勝会（戦いは無い） */ }
     else if (UK4.on && uk4Brain(e, dt)) { /* 第四幕：竹束から竹束へ・戦列と方陣・護衛 */ }
     else if (UK3.on && uk3Brain(e, dt)) { /* 第三幕：乗り移り・甲板の持ち場・采配・退却 */ }
     else if (e.carCall && carCallBrain(e, dt)) { /* 運転を代わりに行く */ }
@@ -16372,7 +16661,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -16385,6 +16674,7 @@ function updateHud(dt) {
   const islandSurvivors = enemies.filter(e=>e.islandRoster&&e.state!=='down').length+1;
   setText('remain', ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
   if (UK.on) setText('remain', UK.goal || '');
+  if (UK7.on) setText('remain', uk7Goal());   // 第七幕：数は出さない
   if (UK4.on) { const c = uk4Counts(), g = uk4Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第四幕：同じ「残敵・味方」
   if (UK3.on) { const c = uk3Counts(), g = uk3Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第三幕：同じ「残敵・味方」
   if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
@@ -16491,7 +16781,7 @@ function drawWeapon() {
   const W = innerWidth, H = innerHeight;
   wg.clearRect(0, 0, W, H);
   if (state !== 'play' && state !== 'pause') return;
-  if (UK.on) return;   // 英国淑女編の会見：弓は構えない
+  if (UK.on || UK7.on) return;   // 英国淑女編の会見・祝勝会：弓は構えない
   const sw = player.switchT > 0 ? Math.sin(player.switchT / 0.3 * Math.PI) : 0;
   const bobX = Math.cos(player.bob) * H * 0.012, bobY = Math.abs(Math.sin(player.bob)) * H * 0.015 + sw * H * 0.35;
   // 弓の引き具合の照準リング
@@ -16677,7 +16967,7 @@ function setupTouch() {
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
-  tapBtn('bTalk', () => { if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on) { uk4Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
+  tapBtn('bTalk', () => { if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
@@ -16731,7 +17021,9 @@ addEventListener('keydown', e => {
   }
   if (UK2.on && UK.dlg && (e.code === 'KeyE' || e.code === 'Enter')) { ukDlgSkip(); return; }
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
-  if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る
+  if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
+  if (UK7.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk7Key(); return; }
+  if ((UK4.on || UK7.on) && UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPick(+e.code.slice(5) - 1); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
   if (e.code === 'KeyT') onigiriRemark();
@@ -16757,8 +17049,9 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on) setWeapon(player.weapon ^ 1); }, { passive: true });
+addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on) setWeapon(player.weapon ^ 1); }, { passive: true });
 function primaryDown() {
+  if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }
   if (CAR.riding && carOn()) { carCommand(); return; }
   if (player.switchT > 0.15) return;
@@ -16830,7 +17123,8 @@ function resetGame() {
   else if (builtStage === 'ukMeet') ukReset();   // 英国淑女編：殿の小早
   else if (builtStage === 'ukHarbor') uk2Reset();   // 英国淑女編 第二幕：町の通り
   else if (builtStage === 'ukNight') uk3Reset();
-  else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
+  else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();
+  else if (builtStage === 'ukParty') uk7Reset();   // 第七幕：殿の席   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
@@ -16842,7 +17136,7 @@ function resetGame() {
 function startGame() {
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -16850,13 +17144,13 @@ function startGame() {
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
   if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
-  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight') {
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -16864,6 +17158,7 @@ function startGame() {
   state = 'play'; lock();
   if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕
+  else if (builtStage === 'ukParty') uk7Start();   // 第七幕：祝勝会
   else if (builtStage === 'ukLanding') uk5Start();   // 第五幕：上陸→港の防衛（援軍三波）
   else if (builtStage === 'ukPrincess') uk4Start();   // 第四幕：語り→二手の選択→前進→柵の攻防→本陣→王女との対話
   else if (builtStage === 'ukNight') uk3Start();   // 第三幕：語り→接近→乗り移り→甲板戦→退く英国の船   // 第二幕：語り→砲撃→上陸→斬り込み（波は使わない）
@@ -17117,7 +17412,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (UK.on) updateUk(dt); if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (UK.on) updateUk(dt); if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud();
@@ -17125,6 +17420,7 @@ function frame(now) {
   } else if (state === 'title') {
     time += dt;
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
+    else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }
     else if (builtStage === 'ukPrincess') { if (UK4.on) updateUk4(0); camera.position.set(58 + Math.sin(time * 0.04) * 12, 14, 70); camera.lookAt(0, 2, 10); }   // 第四幕：浜の陣と沖の艦隊
     else if (builtStage === 'ukNight') { if (UK3.on) updateUk3(0); camera.position.set(30 + Math.sin(time * 0.04) * 10, 9, 46); camera.lookAt(0, 4, 0); }   // 第三幕：闇の海から錨泊の船を望む
@@ -17163,7 +17459,7 @@ function frame(now) {
   if (document.body.classList.contains('playing') !== (state === 'play')) document.body.classList.toggle('playing', state === 'play');
   if (document.documentElement.classList.contains('dagger') !== (player.weapon === 1 && !!player.knife)) document.documentElement.classList.toggle('dagger', player.weapon === 1 && !!player.knife);
   if (MOBILE) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
-  if (UK.seaSnd && !UK.on && !UK2.on && !UK3.on && !UK4.on) ukSeaSound(dt);
+  if (UK.seaSnd && !UK.on && !UK2.on && !UK3.on && !UK4.on && !UK7.on) ukSeaSound(dt);
   sky.position.copy(camera.position);
   if (AIRPORT.on) airportCrewFaceAll();
   if (PLANE.on) updatePlaneFx(state === 'play' ? dt : state === 'title' ? dt : 0);

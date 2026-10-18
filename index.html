@@ -58,6 +58,7 @@
   #bFix{display:none;position:fixed;z-index:32;left:calc(50% - 168px);bottom:calc(24px + var(--sab));width:84px;height:84px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,90,40,.72);color:#fff;align-items:center;justify-content:center;flex-direction:column;font-size:18px;pointer-events:auto;cursor:pointer;font-family:inherit}
   html.canfix #bFix{display:flex}
   #bFix small{font-size:10px;opacity:.85}
+  html.uk7 #weapons,html.uk7 #arrows{display:none!important}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
   #stagesel{margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
   #stagesel button{font:inherit;font-size:18px;letter-spacing:.2em;padding:8px 22px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
@@ -225,7 +226,7 @@
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
-  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button><button data-st="trench">塹壕の戦い</button><button data-st="nightRaid">月影の関所</button><button data-st="island">無人島サバイバル</button><button data-st="ukMeet" class="ukarc">英国淑女編 第一幕 邂逅</button><button data-st="ukHarbor" class="ukarc">英国淑女編 第二幕 砲火</button><button data-st="ukNight" class="ukarc">英国淑女編 第三幕 夜襲</button><button data-st="ukPrincess" class="ukarc">英国淑女編 第四幕 王女</button><button data-st="ukLanding" class="ukarc">英国淑女編 第五幕 本土</button></div>
+  <div id="stagesel" class="serif"><button data-st="plains">平原の戦い</button><button data-st="twofront">二正面戦</button><button data-st="fort">櫃の戦い</button><button data-st="plane">機内の戦い</button><button data-st="castle">城の戦い</button><button data-st="beach">浜の戦い</button><button data-st="snow">極寒の戦い</button><button data-st="mtn">山城の戦い</button><button data-st="airport">空港の戦い</button><button data-st="trench">塹壕の戦い</button><button data-st="nightRaid">月影の関所</button><button data-st="island">無人島サバイバル</button><button data-st="ukMeet" class="ukarc">英国淑女編 第一幕 邂逅</button><button data-st="ukHarbor" class="ukarc">英国淑女編 第二幕 砲火</button><button data-st="ukNight" class="ukarc">英国淑女編 第三幕 夜襲</button><button data-st="ukPrincess" class="ukarc">英国淑女編 第四幕 王女</button><button data-st="ukLanding" class="ukarc">英国淑女編 第五幕 本土</button><button data-st="ukParty" class="ukarc">英国淑女編 第七幕 祝勝会</button></div>
   <div id="modesel" class="serif" style="display:none"><button data-md="def">守る</button><button data-md="atk">攻める</button></div>
   <p id="stagedesc"></p>
   <button class="btn serif" id="startBtn">開始</button>
@@ -336,21 +337,22 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="assets/sprites.js?v=20261018e"></script>
-<script src="assets/frames/frames.js?v=20261018e"></script>
-<script src="assets/frames/cycles.js?v=20261018e"></script>
+<script src="assets/sprites.js?v=20261018f"></script>
+<script src="assets/frames/frames.js?v=20261018f"></script>
+<script src="assets/frames/cycles.js?v=20261018f"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261018e"></script>
-<script src="assets/voices/voices_situ.js?v=20261018e"></script>
-<script src="assets/voices/voices_uk.js?v=20261018e"></script>
-<script src="assets/voices/voices_uk2.js?v=20261018e"></script>
-<script src="assets/voices/voices_uk3.js?v=20261018e"></script>
-<script src="assets/voices/voices_uk4.js?v=20261018e"></script>
-<script src="assets/voices/voices_saidown.js?v=20261018e"></script>
-<script src="assets/voices/voices_uk5.js?v=20261018e"></script>
+<script src="assets/voices/voices.js?v=20261018f"></script>
+<script src="assets/voices/voices_situ.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk2.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk3.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk4.js?v=20261018f"></script>
+<script src="assets/voices/voices_saidown.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk5.js?v=20261018f"></script>
+<script src="assets/voices/voices_uk7.js?v=20261018f"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261018e"></script>
-<script src="lib/death_fbx.js?v=20261018e"></script>
-<script src="game.js?v=20261018e"></script>
+<script src="lib/death_clips.js?v=20261018f"></script>
+<script src="lib/death_fbx.js?v=20261018f"></script>
+<script src="game.js?v=20261018f"></script>
 </body>
 </html>

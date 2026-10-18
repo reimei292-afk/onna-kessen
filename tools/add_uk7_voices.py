@@ -163,6 +163,17 @@ BG2 = [('NTT東日本で、法人営業をしていました。', '慶應義塾�
  ('グラフィックデザイナーでした。', '武蔵野美術大学で、デザインを学びました。'),
  ('農家です。実家の田んぼを手伝ってました。', '北海道大学の農学部でした。'),
  ('大学院生でした。論文、途中のままなんです。', 'お茶の水女子大学の大学院で、物理をやってました。')]
+
+# ---- 殿もハトコ（殿の母が三人の父のいとこ）と、結婚の話（受ける・時間をもらう・断る。強いられない） ----
+QK = ['俺の母が、白瀬・早瀬・綾瀬の父のいとこなんだよな。だから、俺もお前たちとはハトコなんだよな。', '細いとは言え血がつながってるけど、結婚したいし、子供も生んでほしい。']
+QK_A = {'sumi': ['ええ、そうなります。殿のお母様が、私たちの父のいとこですから……殿も、私たちのハトコです。改めて言われると、少し不思議ですね。',
+                 '殿……祝いの席で、そのようなことを急に。お気持ちは、きちんと受け止めます。けれど、お返事は、日本に戻って落ち着いてからにさせてください。'],
+        'sec2': ['えっ、そうなんですか!? じゃあ私、殿とも親戚……！ ど、どうしよう、なんだか緊張してきました。',
+                 'け、結婚!? あの、その……う、嬉しいです。嬉しいんですけど……ちょっとだけ、考える時間をくださいっ！'],
+        'fumi': ['家系図の上では、そうですね。四人そろってハトコです。普段は殿と家臣ですけれど。',
+                 '正直に申し上げます。遠い縁とはいえ親戚同士ですし、私は秘書として殿をお支えするほうが性に合っています。……お気持ちだけ、ありがたくいただきます。']}
+QK_CH = {0: {'sumi': ('ojou', 'わたくしは殿のお父上の側の縁ですから、その輪には入りませんね。'), 'sec2': ('ojou', 'わたくしは殿のお父上の側の縁ですから、その輪には入りませんね。'), 'fumi': ('ojou', 'わたくしは殿のお父上の側の縁ですから、その輪には入りませんね。')},
+         1: {'sec2': ('sumi', 'ことね、落ち着いて。……殿も、少しお酒が過ぎますよ。'), 'sumi': ('fumi', '澄さん、顔が赤いですよ。'), 'fumi': ('sec2', '文乃さん、はっきり言うなあ……。')}}
 async def one(sem, t, p, v, r, pi):
     if os.path.exists(p) and os.path.getsize(p) > 800: return
     async with sem:
@@ -217,6 +228,8 @@ async def main():
     out['yp'] = [[{'text': t, 'file': job(f'yp{i}_{st}.mp3', t, ST[st])} for st in 'abcd'] for i, t in enumerate(YP)]
     out['cheer'] = [{'text': t, 'file': job(f'ch_{i}_{st}.mp3', t, ST[st])} for i, t in enumerate(CHEER) for st in 'abcd']
     out['bg2'] = [[{st: {'text': t, 'file': job(f'b2_{i}_{j}_{st}.mp3', t, ST[st])} for st in 'abcd'} for j, t in enumerate(pair)] for i, pair in enumerate(BG2)]
+    out['qk'] = QK; out['qka'] = {w: [{'text': t, 'file': job(f'qk_{w}_{i}.mp3', t, ST[w])} for i, t in enumerate(a)] for w, a in QK_A.items()}
+    out['qkch'] = {i: {a: {'who': w, 'text': t, 'file': job(f'qkc{i}_{a}.mp3', t, ST[w])} for a, (w, t) in d.items()} for i, d in QK_CH.items()}
     await asyncio.gather(*jobs)
     def fix(o):
         if isinstance(o, dict):

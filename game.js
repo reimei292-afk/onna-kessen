@@ -11890,6 +11890,11 @@ function u7AskMenu(e) {
   if (!e.uk7Vip && !e.uk7Crew && !e.uk7Deck && V.yp && !UK7.yk && (UK7.phase === 'party' || UK7.phase === 'after')) opts.push({ label: '「' + V.yq + '」', sub: '舞台で余興', then: [{ fn: () => u7Yokyo(e) }] });
   if (e.uk7Vip === 'ojou' && UK7.phase === 'party' && !UK7.midDone) opts.unshift({ label: '「' + V.midq + '」', sub: '中締めの挨拶を頼む', then: [{ fn: () => u7MidStart() }] });
   if (V.qsa && V.qsa[e.uk7Vip]) opts.unshift({ label: '「' + V.qs + '」', sub: 'お酒の話', then: [{ fn: () => { const A = V.qsa[e.uk7Vip]; UK7.cur = e; UK7.log.push('qs:' + e.uk7Vip); ukDlg([u7Line('q7k', { who: 'king', ja: V.qs, dur: 2.6 }), u7Line('q7a', { who: e.uk7Vip, ja: A.text, file: A.file, dur: A.dur })], null); } }] });
+  if (V.qk && V.qka[e.uk7Vip]) { const ks = UK7.kinAsk ? [0, 1] : [0]; opts.unshift(...ks.map(i => ({ label: '「' + V.qk[i] + '」', sub: i ? '想いを打ち明ける' : '殿もハトコ', then: [{ fn: () => {
+    const me = e.uk7Vip, A = V.qka[me][i], C = V.qkch[i] && V.qkch[i][me], ce = C && UK7.vip[C.who]; if (i === 0) UK7.kinAsk = true; UK7.cur = e; e.uk7Look = time + 14;
+    const st = [u7Line('q7k', { who: 'king', ja: V.qk[i], dur: i ? 3.6 : 4.2 }), u7Line('q7a', { who: me, ja: A.text, file: A.file, dur: A.dur })];
+    if (C && ce && isUp(ce) && Math.hypot(ce.s.position.x - player.pos.x, ce.s.position.z - player.pos.z) < 14) st.push(u7Line('q7c', { who: C.who, ja: C.text, file: C.file, dur: C.dur }));
+    UK7.log.push('kin:' + i + ':' + me); ukDlg(st, null); } }] }))); }
   if (V.qf && V.qfa[e.uk7Vip]) opts.unshift(...V.qf.map((q, i) => ({ label: '「' + q + '」', sub: 'ハトコの三人', then: [{ fn: () => u7AskFam(e, i) }] })));   // 白瀬・早瀬・綾瀬（ハトコ同士）
   opts.push({ label: '世間話', sub: '宴の話', then: [{ fn: () => u7Say(e, e.uk7Con ? V.con[(Math.random() * V.con.length) | 0] : V.talk[(Math.random() * V.talk.length) | 0], 14) }] });
   u7Menu(opts);
@@ -12354,7 +12359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

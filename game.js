@@ -2781,7 +2781,7 @@ function stageLook(name) {
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess', uk2 = name === 'ukHarbor' || uk4, uk3 = name === 'ukNight'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
+  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4, uk3 = name === 'ukNight'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.fog.color.setHex(uk3 ? 0x0a1220 : FOG); sun.color.setHex(uk3 ? 0x9fb6e8 : 0xfff0d0);   // 第三幕：夜の霞と月の光
@@ -8377,6 +8377,7 @@ function updateIsland(dt){
 
 const STAGES = {
   ukMeet: { name: '英国淑女編 第一幕「邂逅」', desc: '小早で沖へ。英国のガレオン船ライオネス号が待つ。戦いはまだ無い——甲板の英国の娘たちと言葉を交わし、王女の使者の要求に答えよ（E で話す・1〜4 で選ぶ）。次の幕で、本格的な戦闘が始まる。' },
+  ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
@@ -8865,7 +8866,7 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+const ukL = k => (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
 function ukWho(who) { if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
@@ -10847,6 +10848,7 @@ function u4Pavilion(x, z) {   // 王女の天幕（紅白の縞・金の縁・�
   UK4.flag = { m: flag, g: fg, p0: fg.attributes.position.array.slice() }; colliders.push({ x: x + 5, z, r: 0.3 });
 }
 function buildUkPrincess() {
+  if (typeof U4_A4 !== 'undefined') Object.assign(U4, U4_A4); UK4.v5 = false;
   const M = uk2Mats(), UM = ukMats(), BM = beachMats(), S = U4.SHORE; u4Mats();
   UK4.guns = []; UK4.tents = []; UK4.ships = [];
   UK2.bld = []; UK2.flashes = []; UK2.scorch = []; UK2.ships = []; UK2.sails = []; UK2.wflags = []; UK2.stats = { shells: 0, fragHits: 0, musket: 0, musketHits: 0 };
@@ -11028,8 +11030,9 @@ function u4BlueBrain(e, dt) {
     if (!e.uk4G) return false;
     const foe = u4FoeNear(e, e.kind === 'archer' ? 26 : 13, 'orange'); if (foe) return false;
     const inn = u4InCamp(p.x, p.z);
-    if (e.kind === 'archer' && !inn && p.z < U4.PZ + 16 && p.z > U4.PZ + 6) return false;
-    const tx = e.kind === 'archer' && !inn ? clamp(p.x, -20, 20) : U4.PAV[0] + (e.uk4Off ? e.uk4Off[0] * 0.4 : 0), tz = e.kind === 'archer' && !inn ? U4.PZ + 12 : U4.PAV[1] + 6;
+    if (UK4.v5 && e.uk5Con && e.hp < e.hpMax * 0.6 && !(e.uk5Cheer > time)) { if (!e.uk5WavT) { e.uk5WavT = time + 4; UK4.stats.waver = (UK4.stats.waver || 0) + 1; } if (time < e.uk5WavT) { steer(e, p.x, p.z - 6, e.speed, dt); e.state = 'approach'; e.passive = true; e.tgt = null; return true; } }   // 徴兵：傷を負うと一度崩れて下がる
+    if (!UK4.v5 && e.kind === 'archer' && !inn && p.z < U4.PZ + 16 && p.z > U4.PZ + 6) return false;
+    const tx = !UK4.v5 && e.kind === 'archer' && !inn ? clamp(p.x, -20, 20) : U4.PAV[0] + (e.uk4Off ? e.uk4Off[0] * 0.4 : 0), tz = !UK4.v5 && e.kind === 'archer' && !inn ? U4.PZ + 12 : U4.PAV[1] + 6;
     const rt = u4Route(p, tx, tz); e.passive = false; e.tgt = null; steer(e, rt[0], rt[1], e.speed, dt); e.state = 'approach'; e.crouch = 0; return true;
   }
   if (!e.uk4G) return false;
@@ -11038,11 +11041,12 @@ function u4BlueBrain(e, dt) {
   e.passive = true; e.tgt = null;
   const [sx, sz] = u4Slot(G, e), d = Math.hypot(sx - p.x, sz - p.z), duck = (e.uk2Duck || 0) > time;
   if (d > 0.6) { const rt = u4Route(p, sx, sz); steer(e, rt[0], rt[1], e.speed * (G.st === 'move' ? (duck ? 0.8 : 1.1) : 0.7), dt); e.state = 'approach'; e.crouch += ((duck ? 0.5 : 0.1) - (e.crouch || 0)) * Math.min(1, dt * 5); }
-  else { e.state = 'idle'; e.faceWant = Math.PI + (G.k === 'K' ? Math.atan2(U4.PX - p.x, 10 - p.z) - Math.PI : 0); e.crouch += ((G.st === 'hold' || duck ? 0.9 : 0.3) - (e.crouch || 0)) * Math.min(1, dt * 5); }
+  else { e.state = 'idle'; e.faceWant = UK4.v5 ? 0 : Math.PI + (G.k === 'K' ? Math.atan2(U4.PX - p.x, 10 - p.z) - Math.PI : 0); e.crouch += ((G.st === 'hold' || duck ? 0.9 : 0.3) - (e.crouch || 0)) * Math.min(1, dt * 5); }
   return true;
 }
 function u4EngBrain(e, dt) {
   const p = e.s.position;
+  if (e.uk5Med) return u5MedBrain(e, dt);
   if (e.uk2Gun) uk2GunPose(e, !e.uk4Free && !!e.uk4Line && ((e.uk4Line.st === 'present' && e.uk4Line.t > 0 && e.uk4Rank === e.uk4Line.rank) || time - (e.uk2FireT || -9) < 0.6), dt, !!e.uk4Free);
   if (e.uk4Safe || u4Calm() || UK4.phase === 'open') {   // 王女／降伏のあと／始まる前
     e.passive = true; e.tgt = null; e.knock.set(0, 0, 0);
@@ -11121,8 +11125,8 @@ function u4GunTick(G, dt) {
   const crew = G.crew.filter(e => isUp(e) && !e.uk4Free);
   if (!crew.length || UK4.phase !== 'advance') return;   // 柵に取りつかれたら撃たない（味方を巻き込む）
   if ((G.cd -= dt) > 0) return;
-  const C = enemies.filter(o => o.team === 'blue' && isUp(o) && !o.seated && !o.medic && !u4InCamp(o.s.position.x, o.s.position.z) && o.s.position.z > U4.PZ + 14).map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 14 && c[0] < 85);
-  if (state === 'play' && !u4InCamp(player.pos.x, player.pos.z) && player.pos.z > U4.PZ + 14) { const d = Math.hypot(player.pos.x - G.x, player.pos.z - G.z); if (d > 14 && d < 85) C.push([d, PLAYER_T]); }
+  const C = enemies.filter(o => o.team === 'blue' && isUp(o) && !o.seated && !o.medic && (UK4.v5 ? o.s.position.z < 16 : !u4InCamp(o.s.position.x, o.s.position.z) && o.s.position.z > U4.PZ + 14)).map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 14 && c[0] < 85);
+  if (state === 'play' && (UK4.v5 ? player.pos.z < 16 : !u4InCamp(player.pos.x, player.pos.z) && player.pos.z > U4.PZ + 14)) { const d = Math.hypot(player.pos.x - G.x, player.pos.z - G.z); if (d > 14 && d < 85) C.push([d, PLAYER_T]); }
   if (!C.length) { G.cd = 2; return; }
   G.cd = rand(10, 13);
   const [d, t] = C[(Math.random() * C.length) | 0], tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z;
@@ -11213,23 +11217,24 @@ function uk4Situ(dt) {
   if (!cand.length) return;
   const e = cand[(Math.random() * cand.length) | 0], p = e.s.position, cats = [];
   if (time - (UK4.downAt || -99) < 4 && UK4.downWho && UK4.downWho !== e && UK4.downWho.team === 'blue') cats.push('allydown');
-  if (UK4.phase === 'advance' && UK4.t < 40 && !UK4.catAt.fleet) cats.push('fleet');
+  if (!UK4.v5 && UK4.phase === 'advance' && UK4.t < 40 && !UK4.catAt.fleet) cats.push('fleet');
   if (time - (UK4.lastVolley || -99) < 3) cats.push('musket');
   if (time - (UK4.lastBurst || -99) < 3) cats.push('cannon');
-  if (UK4.phase === 'advance' && p.z < 62) cats.push('fence');
+  if (!UK4.v5 && UK4.phase === 'advance' && p.z < 62) cats.push('fence');
   if (UK4.pk.some(P => !P.free && P.units.some(o => isUp(o) && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 14))) cats.push('pike');
   if (UK4.phase === 'honjin') cats.push('tent');
   if (UK4.phase === 'fence' && !u4InCamp(p.x, p.z)) cats.push('charge');
-  if (UK4.phase === 'advance') cats.push(Math.random() < 0.5 ? 'fleet' : 'fence');
+  if (UK4.phase === 'advance') cats.push(UK4.v5 ? 'charge' : Math.random() < 0.5 ? 'fleet' : 'fence');
   for (const c of cats) if (uk4JpSay(e, c)) break;
 }
 // ---- 進行 ----
-function uk4PhaseLabel() { const ph = UK4.phase; return ph === 'fence' ? '柵の攻防' : (ph === 'honjin' || ph === 'yield' || ph === 'talk' || ph === 'end') ? '本陣' : '前進'; }
+function uk4PhaseLabel() { const ph = UK4.phase; if (UK4.v5) return ph === 'hold' || (ph === 'end' && UK4.waveN) ? `港の防衛　援軍 ${UK4.waveN}/3` : '上陸'; return ph === 'fence' ? '柵の攻防' : (ph === 'honjin' || ph === 'yield' || ph === 'talk' || ph === 'end') ? '本陣' : '前進'; }
 function uk4Counts() {
   let foe = 0; for (const e of UK4.eng) if (!e.uk4Safe && e.state !== 'down' && enemies.includes(e)) foe++;
   return { foe, ally: livingHead('blue') };
 }
 function uk4Goal() {
+  if (UK4.v5) return UK4.phase === 'advance' ? '砲台の輪から離れ、港町の広場を押さえよ（徴兵の娘の近くで E：声をかける）' : UK4.phase === 'hold' ? '広場を守り、英国の援軍を退けよ' : '';
   if (UK4.phase === 'open') return '';
   if (UK4.phase === 'advance') return UK4.join === 'K' ? '東へ回り、脇の口から陣へ（竹束の陰を進め）' : '竹束を盾に柵の口へ（砲撃の輪から離れろ）';
   if (UK4.phase === 'fence') return '柵の口を破れ';
@@ -11242,6 +11247,7 @@ function uk4Reset() {
     downAt: -99, downWho: null, lastVolley: -99, lastBurst: -99, breached: false, ended: false, endQ: false, sai: null, esc: [], sumi: null, arabella: null, act5: null, saidGun: false, saidCounter: false, join: 'F', honT: 0, winWhy: null, goal: '' });
   for (const G of UK4.guns) { G.crew = []; G.cd = rand(2, 5); G.fired = 0; G.g.rotation.y = 0; }
   UK.dlg = null; ukChoiceOff(); if ($('ukdlg')) $('ukdlg').style.display = 'none';
+  if (UK4.v5) { player.pos.set(5, 0, -10.5); player.yaw = Math.PI; player.pitch = -0.03; Object.assign(UK4, { waveN: 0, waveAt: [], v5win: null, conT: -99 }); return; }
   player.pos.set(U4.STARTF[0] + 2.5, 0, U4.STARTF[1] + 5); player.yaw = 0; player.pitch = -0.03;
 }
 function uk4Start() {
@@ -11278,7 +11284,8 @@ function updateUk4(dt) {
   player.pos.x = clamp(player.pos.x, -90, 90); player.pos.z = Math.min(player.pos.z, 125);
   if (UK4.phase !== 'open') UK4.t += dt;
   UK4.pt += dt;
-  const fighting = UK4.phase === 'advance' || UK4.phase === 'fence' || UK4.phase === 'honjin';
+  if (UK4.v5) { scene.background.setHex(0xb3bac2); scene.fog.color.setHex(0xb3bac2); u5Tick(dt); }   // 第五幕：曇り空の英国南岸
+  const fighting = !UK4.v5 && (UK4.phase === 'advance' || UK4.phase === 'fence' || UK4.phase === 'honjin');
   if (fighting) {
     for (const k in UK4.groups) u4GroupTick(UK4.groups[k], dt);
     for (const L of UK4.lines) if (L.st !== 'free') u4MusTick(L, dt);
@@ -11314,7 +11321,7 @@ function updateUk4(dt) {
   if (UK4.phase === 'yield' && UK4.pt > 3.2 && !UK4.talkQ) {
     UK4.talkQ = true; uk4SetPhase('talk'); uk4Talk();
   }
-  if (UK4.phase === 'end' && UK4.pt > 1.2) uk4Ending();
+  if (UK4.phase === 'end' && UK4.pt > 1.2 && !UK4.v5) uk4Ending();
   ukDlgTick(dt);
   uk4Situ(dt);
   document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
@@ -11368,9 +11375,245 @@ function uk4CanTarget(e, t) {
 }
 function uk4Key() {
   if (UK.dlg && !UK.choice) { ukDlgSkip(); return true; }
+  if (UK4.v5) { u5ConTalk(); return true; }
   return true;
 }
 if (TEST) window.__uk4 = { UK4, U4, skip: () => ukDlgSkip(), pick: i => ukPick(i), yieldNow: w => uk4Yield(w || 'test'), phase: p => uk4SetPhase(p), inCamp: (x, z) => u4InCamp(x, z), route: (x, z, tx, tz) => u4Route({ x, z }, tx, tz) };
+
+// =====================================================================
+//  英国淑女編 第五幕「本土」(?stage=ukLanding) — 第四幕の仕組み（UK4）をそのまま使い、UK4.v5 で切り替える
+//   和睦の条件は屈辱的だった。殿は拒み、英国の本土へ逆襲する。ライオネス号に倣って造った洋式の船 4 隻。
+//   ① 上陸：沿岸砲台の破裂弾（直撃なし）の中を浜から港町へ。西園寺・桜井・宮下の三隊（采配は声に出さない）
+//   ② 港の防衛：内陸から英国の援軍が三波（民兵・正規兵：銃剣のマスケット・長槍・剣）。補給は無い
+//   徴兵の娘は士気が低い（遅い・崩れやすい）。近くで E を押すと殿が声をかける（殿は字幕のみ、娘は声で答える）
+// =====================================================================
+const U4_A4 = JSON.parse(JSON.stringify(U4));
+const U5 = { SQ: [0, 24], NORTH: 96, BAT: [44, 8], GUNS: [[38, 6], [44, 9], [50, 12]] };
+const UK5_NARR = {
+  n5_1: { who: 'narr', narr: true, ja: '王女アラベラを通じて届いた和睦の条件は、屈辱的なものだった。殿はそれを退け、英国の本土へ逆襲すると決めた。', dur: 5.2 },
+  n5_2: { who: 'narr', narr: true, ja: '倒れた者の穴は、募兵と徴兵で埋めた。ライオネス号に倣って造った洋式の船 4 隻——殿の旗艦と、西園寺・桜井・宮下の船。', dur: 5.4 },
+  n5_3: { who: 'narr', narr: true, ja: '英国南岸の港町。岬の砲台が浜を見下ろし、内陸からは援軍が来る。ここには補給も、退く船も無い。', dur: 5.0 },
+  n5_go: { who: 'king', ja: '上陸する。港を取り、援軍を退けよ。', dur: 2.6 },
+  n5_hold: { who: 'narr', narr: true, ja: '港を押さえた。だが、内陸の街道に英国の援軍の旗が見える——。', dur: 3.6 },
+  n5_win: { who: 'narr', narr: true, ja: '三度の援軍を退け、港町は殿の手に落ちた。英国の本土に、初めて殿の旗が立つ。', dur: 4.6 },
+};
+const UK5_CON = [
+  ['淡色系コーデしてたのにね', '……はい。今はこの羽織だけです。でも、帰ったらまた着ます。だから、ちゃんと帰ります。'],
+  ['スーツ、本当は着たくない？', '正直、まだ慣れません。……でも、着た以上は、皆と同じように戦います。'],
+  ['ただの女子大生だったのに戦地だね', 'ゼミの発表より、ずっと怖いです。……それでも、ここまで来ましたから。'],
+  ['元OLさん、頑張って', 'はい。……締め切りより、逃げられないですね。やれるだけ、やります。'],
+];
+function u5House(x, z, w, d, h) {   // 英国の港町の家（白い壁・スレートの切妻）
+  const M = UK4.M5 || (UK4.M5 = { wall: new THREE.MeshLambertMaterial({ color: 0x9a948a }), wall2: new THREE.MeshLambertMaterial({ color: 0x8e5a44 }), roof: new THREE.MeshLambertMaterial({ color: 0x4b4d56 }), win: new THREE.MeshBasicMaterial({ color: 0x2b3038 }) });
+  const g = new THREE.Group(), wl = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), Math.random() < 0.6 ? M.wall : M.wall2); wl.position.y = h / 2; g.add(wl);
+  if (!UK4.roofG) { UK4.roofG = new THREE.CylinderGeometry(1, 1, 1, 3); UK4.roofG.rotateY(Math.PI / 2); UK4.roofG.rotateZ(Math.PI / 2); }
+  const rf = new THREE.Mesh(UK4.roofG, M.roof); rf.scale.set(w + 0.3, 1.0, (d / 2 + 0.25) / 0.866); rf.position.y = h + 0.5; g.add(rf);
+  const ch = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.6, 0.6), M.wall2); ch.position.set(w * 0.3, h + 1.4, 0); g.add(ch);
+  for (let i = -1; i <= 1; i += 2) { const wn = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), M.win); wn.position.set(i * w * 0.25, h * 0.6, -d / 2 - 0.01); wn.rotation.y = Math.PI; g.add(wn); }
+  g.position.set(x, 0, z); g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); stageRoot.add(g);
+  const B = { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, h: h + 1.6 };
+  UK2.bld.push(B); boxes.push({ x0: B.x0, x1: B.x1, z0: B.z0, z1: B.z1, y0: 0, y1: B.h });
+  const r = Math.min(w, d) / 2, n = Math.max(1, Math.ceil(Math.max(w, d) / r) - 1);
+  for (let i = 0; i <= n; i++) { const k = n ? i / n : 0.5; colliders.push(w >= d ? { x: B.x0 + r + (w - 2 * r) * k, z, r: r * 1.05 } : { x, z: B.z0 + r + (d - 2 * r) * k, r: r * 1.05 }); }
+}
+function u5Crate(x, z) {   // 岸壁の木箱と樽（遮蔽）
+  const M = UK4.M5c || (UK4.M5c = { crate: new THREE.MeshLambertMaterial({ color: 0x8a6a44 }), barrel: new THREE.MeshLambertMaterial({ color: 0x6e4c2e }) });
+  const a = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 1.1), M.crate); a.position.set(x - 0.35, 0.5, z); a.rotation.y = rand(-0.3, 0.3); a.castShadow = true; stageRoot.add(a);
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.05, 10), M.barrel); b.position.set(x + 0.55, 0.52, z + rand(-0.2, 0.2)); b.castShadow = true; stageRoot.add(b);
+  covers.push({ x, z, y: 0, r: 0.95, type: 'bundle', h: 1.1, breakable: false, hp: 999, earth: true }); colliders.push({ x, z, r: 0.85 });
+}
+function u5Scenery() {   // 英国南岸：白い崖・緑の丘・石の教会・石の砲台・石畳の岸壁・木の桟橋・生け垣・ユニオン旗
+  const L = c => new THREE.MeshLambertMaterial({ color: c }), chalk = L(0xe9e6dc), turf = L(0x5f7f45), stone = L(0x8d8a84), stoneD = L(0x6c6a66), cob = L(0x7b7872), wood = L(0x6b4f33), hedge = L(0x3f5a2e);
+  for (const sx of [-1, 1]) for (let k = 0; k < 6; k++) {   // 白い崖
+    const x = sx * (70 + k * 26), h = 18 + rand(-3, 6), c = new THREE.Mesh(new THREE.BoxGeometry(28, h, 40), chalk); c.position.set(x, h / 2 - 0.5, -6 + k * 3); c.rotation.y = rand(-0.08, 0.08); stageRoot.add(c);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(28.4, 1.2, 40.4), turf); t.position.set(x, h - 0.2, -6 + k * 3); t.rotation.y = c.rotation.y; stageRoot.add(t);
+    boxes.push({ x0: x - 14, x1: x + 14, z0: -26 + k * 3, z1: 14 + k * 3, y0: 0, y1: h });
+  }
+  const quay = new THREE.Mesh(new THREE.PlaneGeometry(70, 7), cob); quay.rotation.x = -Math.PI / 2; quay.position.set(0, 0.02, -1); quay.receiveShadow = true; stageRoot.add(quay);   // 石畳の岸壁
+  const street = new THREE.Mesh(new THREE.PlaneGeometry(7, 52), cob); street.rotation.x = -Math.PI / 2; street.position.set(0, 0.025, 26); stageRoot.add(street);
+  for (const px of [-14, 14]) { const pier = new THREE.Mesh(new THREE.BoxGeometry(3, 0.3, 16), wood); pier.position.set(px, 0.3, -12); stageRoot.add(pier); for (let z = -19; z <= -5; z += 3.5) for (const dx of [-1.3, 1.3]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 2.4, 6), wood); p.position.set(px + dx, -0.6, z); stageRoot.add(p); } }
+  // 石の教会と尖塔
+  const nave = new THREE.Mesh(new THREE.BoxGeometry(7, 6, 13), stone); nave.position.set(-24, 3, 58); stageRoot.add(nave);
+  const tw = new THREE.Mesh(new THREE.BoxGeometry(4, 12, 4), stoneD); tw.position.set(-24, 6, 50); stageRoot.add(tw);
+  const sp = new THREE.Mesh(new THREE.ConeGeometry(2.6, 9, 4), L(0x55575c)); sp.position.set(-24, 16.5, 50); sp.rotation.y = Math.PI / 4; stageRoot.add(sp);
+  boxes.push({ x0: -27.5, x1: -20.5, z0: 48, z1: 64.5, y0: 0, y1: 12 }); UK2.bld.push({ x0: -27.5, x1: -20.5, z0: 48, z1: 64.5, h: 12 });
+  // 岬の石の砲台（胸壁と円塔）
+  for (const [x, z, w, d] of [[44, 15.5, 22, 1.2], [33.4, 9, 1.2, 14], [54.6, 9, 1.2, 14]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 1.6, d), stone); m.position.set(x, 0.8, z); stageRoot.add(m); boxes.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: 1.6 }); }
+  const keep = new THREE.Mesh(new THREE.CylinderGeometry(3.4, 3.8, 7, 16), stoneD); keep.position.set(44, 3.5, 21); stageRoot.add(keep); colliders.push({ x: 44, z: 21, r: 3.8 });
+  const uj = canvasTex(192, 96, (g, w, h) => { g.fillStyle = '#1f3a8a'; g.fillRect(0, 0, w, h); g.strokeStyle = '#fff'; g.lineWidth = 18; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, h); g.moveTo(w, 0); g.lineTo(0, h); g.stroke(); g.strokeStyle = '#c8202a'; g.lineWidth = 6; g.stroke(); g.fillStyle = '#fff'; g.fillRect(w / 2 - 16, 0, 32, h); g.fillRect(0, h / 2 - 16, w, 32); g.fillStyle = '#c8202a'; g.fillRect(w / 2 - 9, 0, 18, h); g.fillRect(0, h / 2 - 9, w, 18); });
+  for (const [x, z, y] of [[44, 21, 7], [-24, 50, 21], [0, 46, 4.5]]) { const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 5, 6), wood); pole.position.set(x, y + 2.5, z); stageRoot.add(pole); const f = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.2), new THREE.MeshLambertMaterial({ map: uj, side: THREE.DoubleSide })); f.position.set(x + 1.2, y + 4.3, z); stageRoot.add(f); }
+  // 生け垣と畑（町の北の丘）
+  for (let k = 0; k < 7; k++) { const z = 62 + k * 12; for (const sx of [-1, 1]) { const hg = new THREE.Mesh(new THREE.BoxGeometry(40, 1.3, 1.1), hedge); hg.position.set(sx * 30, 0.65, z); stageRoot.add(hg); } }
+  for (let z = 56; z < 100; z += 9) for (const sx of [-1, 1]) { const hg = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.3, 7), hedge); hg.position.set(sx * 9, 0.65, z); stageRoot.add(hg); }
+}
+function u4Coast() {
+  const M = uk2Mats(), UM = ukMats(), BM = beachMats(), S = U4.SHORE;
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(1800, 800), UM.sea); sea.rotation.x = -Math.PI / 2; sea.position.set(0, BH.WATER, S - 8 - 400); sea.receiveShadow = true; stageRoot.add(sea);
+  const shallow = new THREE.Mesh(new THREE.PlaneGeometry(1800, 8), BM.sea); shallow.rotation.x = -Math.PI / 2; shallow.position.set(0, BH.WATER + 0.02, S - 4); shallow.renderOrder = 1; stageRoot.add(shallow);
+  const foam = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1.4), BM.foam); foam.rotation.x = -Math.PI / 2; foam.position.set(0, BH.WATER + 0.05, S - 0.4); foam.renderOrder = 2; stageRoot.add(foam);
+  const sand = new THREE.Mesh(new THREE.PlaneGeometry(1800, 150), M.sand); sand.rotation.x = -Math.PI / 2; sand.position.set(0, 0, S + 75); sand.receiveShadow = true; stageRoot.add(sand);
+  boxes.push({ x0: -400, x1: 400, z0: S - 6, z1: S - 1.2, y0: 0, y1: 3, uk4: true });
+  return M;
+}
+function buildUkLanding() {
+  Object.assign(U4, U4_A4, { PX: -1, PZ: 1e4, PAV: [U5.SQ[0], U5.SQ[1] - 6], ARA: [0, 200], SHORE: -14 });
+  UK4.v5 = true; u4Mats();
+  UK4.guns = []; UK4.tents = []; UK4.ships = [];
+  UK2.bld = []; UK2.flashes = []; UK2.scorch = []; UK2.ships = []; UK2.sails = []; UK2.wflags = []; UK2.stats = { shells: 0, fragHits: 0, musket: 0, musketHits: 0 };
+  const M = u4Coast();
+  const grass = new THREE.Mesh(new THREE.PlaneGeometry(1800, 300), M.grass); grass.rotation.x = -Math.PI / 2; grass.position.set(0, 0.004, 60 + 150); grass.receiveShadow = true; stageRoot.add(grass);
+  for (const [x, z, sx, sy, sz, m] of [[-200, 260, 170, 50, 70, 'hill'], [40, 300, 230, 70, 80, 'hill'], [260, 250, 160, 55, 70, 'hill'], [70, 30, 26, 9, 40, 'hill2']]) { const h = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 10), M[m]); h.scale.set(sx, sy, sz); h.position.set(x, -sy * 0.25, z); stageRoot.add(h); }
+  // 沖：殿の洋式の船 4 隻（ライオネス号に倣った船）
+  uk2Ship(-30, -70, 1.0, '旗艦 黎明号', 0.1); uk2Ship(30, -82, 0.95, '菫号（西園寺）', -0.08); uk2Ship(-90, -95, 0.95, '桜号（桜井）', 0.2); uk2Ship(90, -100, 0.95, '楓号（宮下）', -0.2);
+  UK4.ships = UK2.ships.slice();
+  // 港町：大通り（x=0）と横町、広場（U5.SQ）
+  for (const z of [8, 18, 34, 44]) for (const x of [-30, -20, -10, 10, 20, 30]) { if (Math.abs(x) === 10 && (z === 18 || z === 34)) continue; u5House(x + rand(-0.6, 0.6), z + rand(-0.6, 0.6), rand(6, 7.5), rand(5, 6.5), rand(3.2, 4.4)); }
+  for (const x of [-42, 42]) for (const z of [24, 40]) u5House(x, z, 6, 6, 3.6);
+  // 岸壁の木箱・樽（浜の遮蔽）と英国の土塁（町の入り口）
+  for (let x = -26; x <= 26.01; x += 4) if (Math.abs(x) > 3) u5Crate(x + rand(-0.5, 0.5), -3 + rand(-0.5, 0.5));
+  u5Scenery();
+  uk2Earth(-8, -3, 1.2); uk2Earth(3, 8, 1.2);
+  // 岬の砲台
+  for (const [x, z] of U5.GUNS) { const G = u4Cannon(x, z, Math.PI + 0.5); G.v5 = true; }
+  uk2Earth(34, 54, 1.0);
+  for (const [x, z] of [[-40, -8], [-34, -8]]) nobori(x, z, '#1d2f6b', '#f1ece0', '殿');
+  buildHQ(-48, -36, -12, -2, -42, -7);   // 殿の本陣（浜の西）：秘書課・笛役・システム担当・伝令
+}
+function u5SpawnEnglish() {
+  UK4.eng = []; UK4.by = {}; UK4.fillI = 0; UK4.lines = []; UK4.pk = []; UK4.waveN = 0; UK4.waveAt = []; UK4.breached = true;
+  // 町の守備隊（第 0 波）：入り口の土塁のマスケット、広場の長槍、剣の者
+  u5Line('G1', 0, 4.5, 10, 'uk08', ['uk05', 'uk07', 'uk01'], 0);
+  u5Square('P0', 0, 15, 'uk07', ['uk02', 'uk05'], 0);
+  u5Swords(0, 28, 8, 'uk04', ['uk08', 'uk01', 'uk05'], 0);
+  // 砲台：砲術士官シャーロット（uk10）と砲手
+  UK4.guns.forEach((G, gi) => { for (let c = 0; c < 2; c++) { const named = gi === 1 && c === 0 ? 'uk10' : null; const e = u4SpawnEng(named || ['uk03', 'uk05', 'uk01'][gi], 'gun', G.x + (c ? 1.1 : -1.1), G.z + 0.8, !!named, { face: G.face }); if (e) { e.uk4Gun = G; G.crew.push(e); e.uk5W = 0; } } });
+  UK4.engN0 = UK4.eng.length;
+}
+function u5Line(k, cx, cz, files, lead, pool, w) {
+  const face = Math.PI, L = { k, face, units: [], st: 'idle', t: 0, rank: 0, pikeK: 'P' + w, lead, vol: 0, w };
+  for (let r = 0; r < 2; r++) for (let f = 0; f < files; f++) {
+    const x = cx + (f - (files - 1) / 2) * 1.05, z = cz + r * 1.35, named = r === 0 && f === 0 && lead;
+    const e = u4SpawnEng(named ? lead : pool[(f + r) % pool.length], 'musket', x, z, !!named, { face }); if (!e) continue;
+    e.uk4Line = L; e.uk4Rank = r; e.uk4Slot = [x, z]; e.uk5W = w; L.units.push(e);
+  }
+  UK4.lines.push(L); return L;
+}
+function u5Square(k, cx, cz, lead, pool, w) {
+  const face = Math.PI, P = { k, face, cx, cz, units: [], free: false };
+  for (let r = 0; r < 3; r++) for (let f = 0; f < 4; f++) { const x = cx + (f - 1.5) * 1.05, z = cz + r * 1.05, named = r === 0 && f === 1 && lead;
+    const e = u4SpawnEng(named ? lead : pool[(f + r) % pool.length], 'pike', x, z, !!named, { face }); if (!e) continue; e.uk4Sq = P; e.uk4Slot = [x, z]; e.uk5W = w; P.units.push(e); }
+  UK4.pk.push(P); return P;
+}
+function u5Swords(cx, cz, n, lead, pool, w, extra) {
+  for (let i = 0; i < n; i++) { const named = i === 0 ? lead : extra && i === 3 ? extra : null, x = cx + (i % 6 - 2.5) * 1.5, z = cz + Math.floor(i / 6) * 1.5;
+    const e = u4SpawnEng(named || pool[i % pool.length], 'sword', x, z, !!named, { face: Math.PI }); if (e) { e.uk5W = w; e.uk4Slot = [x, z]; } }
+}
+function u5Wave() {   // 内陸の街道から援軍（民兵・正規兵）
+  const w = ++UK4.waveN, z0 = U5.NORTH; UK4.waveAt[w] = time; UK4.log.push('wave:' + w);
+  const before = UK4.eng.length;
+  if (w === 1) { u5Line('W1', 0, z0, 7, 'uk01', ['uk05', 'uk03'], 1); u5Swords(-14, z0 + 3, 12, 'uk03', ['uk05', 'uk07', 'uk01'], 1); u5Swords(14, z0 + 3, 6, 'uk05', ['uk08', 'uk03'], 1); }
+  if (w === 2) { u5Line('W2', 0, z0, 8, 'uk06', ['uk08', 'uk01', 'uk05'], 2); u5Square('P2', -12, z0 + 2, 'uk02', ['uk07', 'uk02'], 2); u5Swords(14, z0 + 3, 10, 'uk04', ['uk08', 'uk01'], 2);
+    const A = u4SpawnEng('uk09', 'sword', 4, z0 + 6, true, { face: Math.PI }); if (A) { A.uk5Med = true; A.uk4Safe = true; A.uk5W = 2; A.ukTag = '衛生係 アリス・ムアクロフト'; } }
+  if (w === 3) { u5Line('W3', 0, z0, 9, 'uk08', ['uk07', 'uk05', 'uk01'], 3); u5Square('P3', 12, z0 + 2, 'uk07', ['uk02', 'uk05'], 3); u5Swords(-14, z0 + 3, 14, 'uk04', ['uk03', 'uk08', 'uk01'], 3, 'uk10'); }
+  // 援軍は町の北の端まで進んでから戦う（持ち場を町の北へ）
+  for (const e of UK4.eng.slice(before)) { if (e.uk5Med) continue; e.uk4Slot = [e.uk4Slot[0], e.uk4Slot[1] - (z0 - 50)]; }
+  for (const L of UK4.lines) if (L.w === w) L.units.forEach(e => { e.uk4Slot[1] = 50 + e.uk4Rank * 1.35; });
+  showBanner(`英国の援軍 第${w}波`, w === 1 ? '民兵と正規兵が街道を下ってくる' : w === 2 ? 'エレノアの正規兵とハリエットの長槍' : 'ベアトリスとスカーレット——最後の援軍');
+  uk4Bark(w === 2 ? 'e_report' : 'm_ready', true);
+}
+function u5SpawnBlue() {
+  UK4.groups = {};
+  const mk = (k, wps, start, n, cols, lead) => {
+    const G = { k, wps, i: -1, st: 'wait', t: 0, holdT: 0, units: [], start, lead: null };
+    for (let s = 0; s < n; s++) {
+      const kind = s % 4 === 1 ? 'archer' : 'mob', yari = kind === 'mob' && s % 4 === 3 ? 1 : -1, c = s % cols, r = Math.floor(s / cols);
+      const off = [(c - (cols - 1) / 2) * 2.4, -(1.2 + r * 2.0)];
+      const e = spawnEnemy(start[0] + off[0], start[1] + off[1], kind, s === 0 && !!lead, 'blue', { yari, set: {} }); if (!e) continue;
+      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = 0; e.hp = e.hpMax = e.hpMax + 4; G.units.push(e);
+      if (s % 3 === 2) { e.uk5Con = true; e.speed *= 0.88; e.ukTag = '徴兵 ' + e.prof.name; }   // 徴兵：士気が低い
+      if (s === 0 && lead) { G.lead = e; e.ukTag = lead; e.uk5Con = false; }
+    }
+    UK4.groups[k] = G; return G;
+  };
+  const F = mk('F', [[0, -3.5], [0, 2], [0, 12], [0, 22]], [0, -8], 30, 10, null);
+  mk('W', [[-18, -3.5], [-15, 12], [-15, 26], [-6, 30]], [-18, -8], 28, 9, '艦長 桜井');
+  mk('E', [[22, -3.5], [30, 0], [38, 2], [44, 4]], [22, -8], 26, 8, '艦長 宮下');
+  const sp = (x, z, girl, set, prof) => { const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: Object.assign({ state: 'idle' }, set) }); if (!e) return null; if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; e.figH = (prof.cm || 160) / 100; } e.sq = null; e.s.rotation.y = e.face = e.faceWant = 0; return e; };
+  UK4.sai = sp(0, -6.5, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk4Sai: true, uk4G: 'F' }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 163, vv: 1 });
+  if (UK4.sai) { UK4.sai.hp = UK4.sai.hpMax = 6; UK4.sai.ukTag = '侍大将 西園寺 すみれ'; UK4.sai.uk4Off = [0, 2.2]; F.units.push(UK4.sai); F.lead = UK4.sai; }
+  UK4.esc = [sp(-1.4, -7, undefined, { uk4Esc: true, uk4G: 'F' }), sp(1.4, -7, undefined, { uk4Esc: true, uk4G: 'F' })].filter(Boolean);
+  UK4.esc.forEach((e, i) => { e.hp = e.hpMax = e.hpMax + 2; e.ukTag = '護衛 ' + e.prof.name; e.uk4Off = [i ? 1.5 : -1.5, 1.3]; F.units.push(e); });
+  UK4.sumi = sec.e && isUp(sec.e) ? sec.e : null;
+  buildMedPost(-30, -9, 'blue');
+  for (const m of medics.blue) spawnMedic('blue', m);
+  UK4.blueN0 = livingHead('blue');
+}
+function u5MedBrain(e, dt) {   // アリス：生きている英国の負傷者だけを手当てする（戦わない・狙われない）
+  const p = e.s.position; e.passive = true; e.tgt = null;
+  let best = null, bd = 25; for (const o of UK4.eng) { if (o === e || !isUp(o) || o.hp >= o.hpMax || o.uk4Safe) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } }
+  if (best && bd > 1.1) { steer(e, best.s.position.x, best.s.position.z, e.speed * 0.9, dt); e.state = 'approach'; return true; }
+  e.state = 'idle';
+  if (best && (e.uk5HealT = (e.uk5HealT || 0) + dt) > 4) { e.uk5HealT = 0; best.hp = Math.min(best.hpMax, best.hp + 1); UK4.stats.heal = (UK4.stats.heal || 0) + 1; e.faceWant = Math.atan2(best.s.position.x - p.x, best.s.position.z - p.z); }
+  return true;
+}
+function u5ConTalk() {   // 徴兵の娘に声をかける：殿は字幕だけ、娘は声で答える
+  let best = null, bd = 3.2;
+  for (const e of enemies) { if (!e.uk5Con || !isUp(e) || e.team !== 'blue') continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd) { bd = d; best = e; } }
+  if (!best) return false;
+  if (time - (UK4.conT || -99) < 4) return true; UK4.conT = time;
+  const i = (Math.random() * UK5_CON.length) | 0, [k, a] = UK5_CON[i];
+  subtitle(k); const el = $('subtitle'); if (el) el.textContent = '殿「' + k + '」';
+  best.uk5Cheer = time + 12; best.faceWant = Math.atan2(player.pos.x - best.s.position.x, player.pos.z - best.s.position.z);
+  const V = window.VOICE_UK5, rom = SITU_ROM[best.prof && best.prof.pers] || 'calm', it = V && V.con && V.con[rom] && V.con[rom][i];
+  UK4.log.push('con:' + i + ':' + (best.prof && best.prof.name));
+  setTimeout(() => { if (!isUp(best)) return; const d = Math.hypot(best.s.position.x - player.pos.x, best.s.position.z - player.pos.z);
+    if (it) Talk.as(best, () => VoicePack.play(it.file, d, 1.95, 1)); subtitle(a); const el2 = $('subtitle'); if (el2) el2.textContent = best.prof.name + '「' + a + '」'; }, 2300);
+  return true;
+}
+function u5Tick(dt) {   // 第五幕の進行（UK4 の update から呼ぶ）
+  const fighting = UK4.phase === 'advance' || UK4.phase === 'hold';
+  if (!fighting) return;
+  for (const k in UK4.groups) u4GroupTick(UK4.groups[k], dt);
+  for (const L of UK4.lines) if (L.st !== 'free') u4MusTick(L, dt);
+  for (const G of UK4.guns) u4GunTick(G, dt);
+  const B = u4BlueUp(), engUp = UK4.eng.filter(e => isUp(e) && !e.uk4Safe && enemies.includes(e));
+  // 援軍：持ち場に着いて 20 秒（または斉射 3 回）で全員が広場へ押し出す
+  for (const e of engUp) if (e.uk5W > 0 && !e.uk4Free && time - UK4.waveAt[e.uk5W] > (e.uk4Line ? 40 : 26)) u4Free(e);
+  if (UK4.phase === 'advance') {
+    const g0 = engUp.filter(e => e.uk5W === 0 && !e.uk4Gun).length, onSq = B.filter(o => Math.hypot(o.s.position.x - U5.SQ[0], o.s.position.z - U5.SQ[1]) < 11).length;
+    if (UK4.t > 20 && !UK4.said.a_steady) uk4Bark('m_bayo');
+    if (g0 <= 6 || onSq >= 8) { uk4SetPhase('hold'); ukDlg([{ say: 'n5_hold' }], null); UK4.q.push({ at: time + 5, fn: () => u5Wave() }); for (const k in UK4.groups) { const G = UK4.groups[k]; G.st = 'assault'; for (const e of G.units) if (isUp(e)) u4FreeBlue(e); } }
+  }
+  if (UK4.phase === 'hold' && UK4.waveN > 0) {
+    const cur = engUp.filter(e => e.uk5W === UK4.waveN).length, since = time - UK4.waveAt[UK4.waveN];
+    if (UK4.waveN < 3 && ((since > 25 && cur <= 6) || since > 70)) u5Wave();
+    if (UK4.waveN >= 3 && engUp.length <= 3 && since > 15) u5End(true);
+  }
+  if (B.length + (state === 'play' ? 1 : 0) <= 3 && UK4.t > 20) u5End(false);
+}
+function u5End(win) {
+  if (UK4.phase === 'end') return; UK4.v5win = win; uk4SetPhase('end'); UK4.log.push(win ? 'win' : 'lose');
+  for (const S of UK4.shells) stageRoot.remove(S.ring); UK4.shells = []; UK4.shots = [];
+  if (win) ukDlg([{ say: 'n5_win' }, { fn: () => uk4SayNear('win', true) }, { wait: 2.4 }], () => { UK4.pt = 2; uk5Ending(); }); else uk5Ending();
+}
+function uk5Ending() {
+  if (UK4.ended) return; UK4.ended = true;
+  try { SITU.end(!!UK4.v5win); } catch (_) {}
+  state = 'over'; player.drawing = false; $('banner').style.opacity = 0; bannerTimer = 0; if ($('ukdlg')) $('ukdlg').style.display = 'none';
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'), win = UK4.v5win;
+  if (h1) h1.textContent = win ? '第五幕「本土」 完' : '港を守りきれなかった'; if (h2) h2.textContent = win ? '英国淑女編 ― 英国南岸の港町を落とした' : '英国淑女編 第五幕「本土」';
+  const bl = bodies.filter(b => b.team === 'blue').length, ol = bodies.filter(b => b.team === 'orange').length;
+  $('result').innerHTML = (win ? '砲台の破裂弾をくぐって上陸し、港町を押さえ、三度の援軍を退けた。' : '補給の無い浜で、英国の援軍に押し返された。') + `<br>倒れた者　味方 <b>${bl}</b>　／　英国 <b>${ol}</b>　／　殿の撃破 <b>${player.kills}</b>　／　援軍 ${UK4.waveN} 波` + (win ? '<br><b>次回 第六幕</b><br><span style="opacity:.8">港町の鐘が鳴る——ロンドンへ続く街道の先で、王女アラベラが待っている</span>' : '');
+  if (document.exitPointerLock) document.exitPointerLock();
+  $('over').style.display = 'flex';
+}
+function uk5Start() {
+  u5SpawnEnglish(); u5SpawnBlue();
+  if (VoicePack.ok) { const V = window.VOICE_UK4; if (V) { for (const k in V.lines) VoicePack.load(V.lines[k].file, false); for (const c in V.jp) for (const r in V.jp[c]) for (const l of V.jp[c][r]) VoicePack.load(l.file, false); }
+    const V5 = window.VOICE_UK5; if (V5) for (const r in V5.con) for (const l of V5.con[r]) VoicePack.load(l.file, false); }
+  showBanner('英国淑女編 第五幕「本土」', '英国南岸の港町——');
+  ukDlg([{ wait: 1.2 }, { say: 'n5_1' }, { say: 'n5_2' }, { say: 'n5_3' }, { say: 'n5_go' }], () => { if (UK4.phase === 'open') uk4SetPhase('advance'); });
+}
 
 function loadStage(name) {
   if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
@@ -11388,7 +11631,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -11583,7 +11826,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261018c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261018d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -16578,7 +16821,7 @@ function resetGame() {
   else if (builtStage === 'ukMeet') ukReset();   // 英国淑女編：殿の小早
   else if (builtStage === 'ukHarbor') uk2Reset();   // 英国淑女編 第二幕：町の通り
   else if (builtStage === 'ukNight') uk3Reset();
-  else if (builtStage === 'ukPrincess') uk4Reset();   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
+  else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
@@ -16590,21 +16833,21 @@ function resetGame() {
 function startGame() {
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
-  if (builtStage === 'ukPrincess') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
+  if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -16612,6 +16855,7 @@ function startGame() {
   state = 'play'; lock();
   if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕
+  else if (builtStage === 'ukLanding') uk5Start();   // 第五幕：上陸→港の防衛（援軍三波）
   else if (builtStage === 'ukPrincess') uk4Start();   // 第四幕：語り→二手の選択→前進→柵の攻防→本陣→王女との対話
   else if (builtStage === 'ukNight') uk3Start();   // 第三幕：語り→接近→乗り移り→甲板戦→退く英国の船   // 第二幕：語り→砲撃→上陸→斬り込み（波は使わない）
   else if (builtStage === 'island') { islandStart(); }
@@ -16872,6 +17116,7 @@ function frame(now) {
   } else if (state === 'title') {
     time += dt;
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
+    else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }
     else if (builtStage === 'ukPrincess') { if (UK4.on) updateUk4(0); camera.position.set(58 + Math.sin(time * 0.04) * 12, 14, 70); camera.lookAt(0, 2, 10); }   // 第四幕：浜の陣と沖の艦隊
     else if (builtStage === 'ukNight') { if (UK3.on) updateUk3(0); camera.position.set(30 + Math.sin(time * 0.04) * 10, 9, 46); camera.lookAt(0, 4, 0); }   // 第三幕：闇の海から錨泊の船を望む
     else if (builtStage === 'ukHarbor') { if (UK2.on) updateUk2(0); camera.position.set(Math.sin(time * 0.05) * 22, 10, 44); camera.lookAt(0, 3, -50); }   // 第二幕：町から沖の船を望む

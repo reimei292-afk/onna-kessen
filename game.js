@@ -10877,6 +10877,7 @@ function buildUkPrincess() {
   for (const [px, pz] of U4.KPTS) { const a = Math.atan2(0 - px, 10 - pz), nx = Math.sin(a), nz = Math.cos(a); for (let k = -3; k <= 3; k++) bamboobundle(px + nx * 1.8 + nz * k * 2.0, pz + nz * 1.8 - nx * k * 2.0, -a + Math.PI, { hp: 5 }); }
   // 侍女の陣の幟
   for (const [x, z] of [[-6, 108], [6, 108], [64, 97], [56, 97]]) nobori(x, z, '#1d2f6b', '#f1ece0', '殿');
+  buildHQ(-21, -9, 106, 118, -15, 112);   // 殿の本陣（秘書課の娘たち）
 }
 // ---- 人：英国（王女の陣）と侍女たち ----
 function u4SpawnEng(id, role, x, z, named, opt = {}) {
@@ -10950,7 +10951,7 @@ function u4SpawnBlue() {
       const off = [(c - (cols - 1) / 2) * spX, 1.2 + r * 2.0];
       const e = spawnEnemy(start[0] + off[0], start[1] + off[1], kind, s === 0, 'blue', { yari, set: {} });
       if (!e) continue;
-      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = Math.PI; e.hp = e.hpMax = e.hpMax + 2; G.units.push(e);
+      e.sq = null; e.uk4G = k; e.uk4Off = off; e.s.rotation.y = e.face = e.faceWant = Math.PI; e.hp = e.hpMax = e.hpMax + 3; G.units.push(e);
       if (s === 0 && k === 'K') { G.lead = e; e.ukTag = '組頭 ' + e.prof.name; }
     }
     UK4.groups[k] = G; return G;
@@ -10963,8 +10964,8 @@ function u4SpawnBlue() {
   if (UK4.sai) { UK4.sai.hp = UK4.sai.hpMax = 6; UK4.sai.ukTag = '侍大将 西園寺 すみれ'; UK4.sai.uk4Off = [0, -2.2]; F.units.push(UK4.sai); F.lead = UK4.sai; }
   UK4.esc = [sp(-1.4, U4.STARTF[1] - 1, undefined, { uk4Esc: true, uk4G: 'F' }), sp(1.4, U4.STARTF[1] - 1, undefined, { uk4Esc: true, uk4G: 'F' })].filter(Boolean);
   UK4.esc.forEach((e, i) => { e.hp = e.hpMax = e.hpMax + 2; e.ukTag = '護衛 ' + e.prof.name; e.uk4Off = [i ? 1.5 : -1.5, -1.3]; F.units.push(e); });
-  UK4.sumi = sp(4, U4.STARTF[1] + 3, GIRLS[SEC_ID] ? SEC_ID : undefined, { uk4Sumi: true, special: true }, { name: '秘書課 白瀬 澄', pers: '冷静', cm: 160, vv: 1 });
-  if (UK4.sumi) UK4.sumi.ukTag = '秘書課 白瀬 澄';
+  UK4.sumi = sec.e && isUp(sec.e) ? sec.e : sp(4, U4.STARTF[1] + 3, GIRLS[SEC_ID] ? SEC_ID : undefined, { uk4Sumi: true, special: true }, { name: '秘書課 白瀬 澄', pers: '冷静', cm: 160, vv: 1 });
+  if (UK4.sumi && UK4.sumi.uk4Sumi) UK4.sumi.ukTag = '秘書課 白瀬 澄';
   // 救護班（侍女の陣の後ろ）
   buildMedPost(-4, U4.STARTF[1] + 6, 'blue');
   for (const m of medics.blue) spawnMedic('blue', m);
@@ -11015,7 +11016,7 @@ function uk4Brain(e, dt) {
 const u4Calm = () => UK4.phase === 'yield' || UK4.phase === 'talk' || UK4.phase === 'end';
 function u4BlueBrain(e, dt) {
   const p = e.s.position;
-  if (e.medic) return false;
+  if (e.medic || e.secretary || e.sec2 || e.fumi || e.sysop) return false;   // 秘書課：いつもの振る舞い（お供・おにぎり など）
   if (e.uk4Sumi) { e.passive = true; e.tgt = null; e.state = 'idle'; return true; }
   if (UK4.phase === 'open' || u4Calm()) {   // 語り・降伏のあと：構えを解いて立つ
     e.passive = true; e.tgt = null; e.knock.set(0, 0, 0); e.crouch = 0;
@@ -11123,7 +11124,7 @@ function u4GunTick(G, dt) {
   const C = enemies.filter(o => o.team === 'blue' && isUp(o) && !o.seated && !o.medic && !u4InCamp(o.s.position.x, o.s.position.z) && o.s.position.z > U4.PZ + 14).map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 14 && c[0] < 85);
   if (state === 'play' && !u4InCamp(player.pos.x, player.pos.z) && player.pos.z > U4.PZ + 14) { const d = Math.hypot(player.pos.x - G.x, player.pos.z - G.z); if (d > 14 && d < 85) C.push([d, PLAYER_T]); }
   if (!C.length) { G.cd = 2; return; }
-  G.cd = rand(7, 9.5);
+  G.cd = rand(10, 13);
   const [d, t] = C[(Math.random() * C.length) | 0], tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z;
   // 外す：手前に 3.5〜6m、脇に ±2.5m。そこにも人がいれば、もう少し手前へ
   let ux = (G.x - tx) / d, uz = (G.z - tz) / d, sh = rand(3.5, 6), px = tx + ux * sh + uz * rand(-2.5, 2.5), pz = tz + uz * sh - ux * rand(-2.5, 2.5);
@@ -13732,6 +13733,7 @@ function killEnemy(e, byPlayer, from) {
   if (e.sec2) { sec2.dead = true; sec2.e = null; sec2.mode = 'dead'; e.sec2 = false; e.wasSec2 = true; e.kneel = false; if (menuOpen && menuWho === 'sec2') closeSecMenu(false); if (!e.quietDeath) popup('秘書課の侍女（二人目）に戦死判定…次の波で本陣に戻ります'); }
   if (e.medBy) { const m = e.medBy; e.medBy = null; if (m.patient === e) endTreat(m); }
   if (e.medic) { const m = medics[e.team][e.slot]; if (m && m.e === e) { m.dead = true; m.e = null; } endTreat(e); e.kneel = false; if (e.band) e.band.visible = false; const rn = e.role === 'surgeon' ? '外科医' : '看護師'; if (!e.quietDeath) popup(e.team === 'blue' ? rn + 'に戦死判定…（次の波で持ち場に戻ります）' : '橙組の' + rn + 'に戦死判定'); }
+  if (e.ojou || e.uk3Sai || e.uk4Sai) saiDownReact(e);   // 西園寺が倒れた：殿・白瀬・早瀬の言葉（全ステージ）
   if (e.ojou) { ojou.dead = true; ojou.e = null; ojou.mode = 'dead'; e.ojou = false; e.wasOjou = true; if (menuOpen && menuWho === 'ojou') closeSecMenu(false); if (!e.quietDeath) popup('秘書課 西園寺 すみれに戦死判定…次の波で本陣に戻ります'); }
   if (e.sysop) { sysop.dead = true; sysop.e = null; e.sysop = false; e.wasSysop = true; if (menuOpen && menuWho === 'sysop') closeSecMenu(false); if (!e.quietDeath) popup(sysop.name + 'に戦死判定…次の波で本陣に戻ります'); }
   if (e.fumi) { fumi.dead = true; fumi.e = null; fumi.mode = 'dead'; e.fumi = false; e.wasFumi = true; if (menuOpen && menuWho === 'fumi') closeSecMenu(false); if (!e.quietDeath) popup(fumi.name + 'に戦死判定…次の波で本陣に戻ります'); }
@@ -14300,6 +14302,23 @@ function updateSec2(dt) {
 //      お茶・戦況報告・「一緒に来て」（優雅について歩く。戦わない）・「本陣に戻って」。本陣で王様の体力が減っていれば先回りしてお茶（+20、50秒に一度）。
 //      褒められると控えめに、上品にかわす。戦死判定を受けると次の波で本陣に戻る。
 const OJOU_ID = 'ojou';
+// 西園寺（殿の父方の遠縁・侍大将）が倒れたとき：殿（字幕のみ・顔は出さない）→白瀬（母方の遠縁）→早瀬（白瀬の遠縁）の短い言葉
+function saiDownPreload() { const V = window.VOICE_SAIDOWN; if (!V || !VoicePack.ok) return; for (const m in V) for (const w in V[m]) for (const l of V[m][w]) VoicePack.load(l.file, false); }
+function saiDownReact(e) {
+  const V = window.VOICE_SAIDOWN; if (!V || (saiDownReact.t && time - saiDownReact.t < 30)) return; saiDownReact.t = time;
+  const M = V[UK2.on || UK3.on || UK4.on ? 'r' : 'm'], pk = a => a && a.length ? a[(Math.random() * a.length) | 0] : null;
+  const sumiE = (UK4.on && UK4.sumi) || (UK3.on && UK3.sumi) || sec.e, seq = [['殿', pk(M.king), null]];
+  if (sumiE && isUp(sumiE)) seq.push(['白瀬', pk(M.sumi), sumiE]);
+  if (sec2.e && isUp(sec2.e)) seq.push(['早瀬', pk(M.sec2), sec2.e]);
+  let at = 1.4; const tok = saiDownReact.t;
+  for (const [nm, L, ent] of seq) {
+    if (!L) continue;
+    setTimeout(() => { if (state !== 'play' || saiDownReact.t !== tok) return; if (ent && !isUp(ent)) return;
+      const d = ent ? Math.min(30, Math.hypot(ent.s.position.x - player.pos.x, ent.s.position.z - player.pos.z)) : 0;
+      Talk.as(ent, () => VoicePack.play(L.file, d, 1.95, 1)); subtitle(L.text); const el = $('subtitle'); if (el) el.textContent = nm + '「' + L.text + '」'; }, at * 1000);
+    at += (L.dur || 3) + 0.8;
+  }
+}
 const ojou = { e: null, dead: false, mode: 'hq', name: '秘書課 西園寺 すみれ', stayHQ: false, careT: 20 };
 window.__ojouDbg = () => { const e = ojou.e, g = GIRLS[OJOU_ID]; if (!e || !g) return null;
   const real = k => !!(g[k] && g[k].tex && g[k].tex.image && !(g[k].tex.image instanceof HTMLCanvasElement));
@@ -16578,7 +16597,8 @@ function startGame() {
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
-  if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess') {
+  if (builtStage === 'ukPrincess') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
@@ -16588,7 +16608,7 @@ function startGame() {
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
-  SITU.reset(); SITU.preload();
+  SITU.reset(); SITU.preload(); saiDownPreload();
   state = 'play'; lock();
   if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕

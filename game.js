@@ -8377,7 +8377,7 @@ function updateIsland(dt){
 
 const STAGES = {
   ukMeet: { name: '英国淑女編 第一幕「邂逅」', desc: '小早で沖へ。英国のガレオン船ライオネス号が待つ。戦いはまだ無い——甲板の英国の娘たちと言葉を交わし、王女の使者の要求に答えよ（E で話す・1〜4 で選ぶ）。次の幕で、本格的な戦闘が始まる。' },
-  ukParty: { name: '英国淑女編 第七幕「祝勝会」', desc: '英国は降伏した。日本へ帰る客船「瑞鳳丸」の大広間で祝勝会。円卓を回って侍女たちと話し、英国の給仕を呼んで注文しよう。中締めのあとは、心に決めた娘を夜の甲板へ。戦いは無い。' },
+  ukParty: { name: '英国淑女編 第七幕「祝勝会」', desc: '英国は降伏した。日本へ帰る客船「瑞鳳丸」の大広間で祝勝会。立食の卓を回って侍女たちと話し、英国の給仕を呼んで注文しよう。中締めのあとは、心に決めた娘を夜の甲板へ。戦いは無い。' },
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
@@ -11659,19 +11659,14 @@ function u7Mats() {
   return UK7.M;
 }
 function u7Box(w, h, d, m, x, y, z, solid) { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.receiveShadow = true; stageRoot.add(o); if (solid) boxes.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: y + h / 2 }); return o; }
-function u7Table(x, z, king) {
-  const M = u7Mats(), T = { x, z, seats: [], king, dish: 0 };
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(1.05, 1.05, 0.06, 24), M.cloth); top.position.set(x, 0.76, z); stageRoot.add(top);
-  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(1.07, 1.12, 0.72, 24, 1, true), M.cloth); skirt.position.set(x, 0.38, z); stageRoot.add(skirt);
-  const cand = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8), M.gold); cand.position.set(x, 0.94, z); stageRoot.add(cand);
-  if (king) { const fl = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshLambertMaterial({ color: 0xd04050 })); fl.position.set(x + 0.3, 0.88, z); stageRoot.add(fl); }
-  colliders.push({ x, z, r: 1.15 });
-  for (let i = 0; i < 6; i++) {   // 6 脚（殿の卓は 1 脚が殿の席）
-    const a = i / 6 * Math.PI * 2 + (king ? 0 : 0.3), sx = x + Math.sin(a) * 1.55, sz = z + Math.cos(a) * 1.55;
-    const ch = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 0.46), M.chair); ch.position.set(sx, 0.46, sz); ch.rotation.y = a; stageRoot.add(ch);
-    const bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.06), M.chair); bk.position.set(x + Math.sin(a) * 1.8, 0.58, z + Math.cos(a) * 1.78); bk.rotation.y = a; stageRoot.add(bk);
-    T.seats.push({ x: sx, z: sz, face: a + Math.PI, taken: null });
-  }
+function u7Table(x, z, king) {   // 立食：背の高い丸テーブル（椅子は無い）。まわりに 6 か所の立ち位置
+  const M = u7Mats(), T = { x, z, seats: [], king, dish: 0 }, R = king ? 0.72 : 0.58;
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.05, 24), M.cloth); top.position.set(x, 1.05, z); stageRoot.add(top);
+  const skirt = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.02, R + 0.12, 1.02, 24, 1, true), M.cloth); skirt.position.set(x, 0.53, z); stageRoot.add(skirt);
+  const cand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), M.gold); cand.position.set(x, 1.2, z); stageRoot.add(cand);
+  if (king) { const fl = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshLambertMaterial({ color: 0xd04050 })); fl.position.set(x + 0.28, 1.16, z); stageRoot.add(fl); }
+  colliders.push({ x, z, r: R + 0.12 });
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + (king ? 0 : 0.3), rr = R + 0.5 + (i % 2) * 0.08; T.seats.push({ x: x + Math.sin(a) * rr, z: z + Math.cos(a) * rr, face: a + Math.PI, taken: null }); }
   UK7.tables.push(T); return T;
 }
 function u7Chandelier(x, z) {
@@ -11728,7 +11723,7 @@ function buildUkParty() {
   hq = null;
 }
 // ---- 人：殿の卓・隣の卓・円卓の侍女・給仕（英国の娘と船の技術を学ぶ侍女） ----
-function u7Seat(e, S, T) { S.taken = e; e.uk7Seat = S; e.uk7T = T; e.seated = { x: S.x, z: S.z }; e.s.position.set(S.x, 0, S.z); e.baseY = 0; e.face = e.faceWant = S.face; e.s.rotation.y = S.face; e.crouch = 0; e.state = 'idle'; e.passive = true; }
+function u7Seat(e, S, T) { S.taken = e; e.uk7Seat = S; e.uk7T = T; e.uk7At = { x: S.x, z: S.z }; e.seated = null; e.s.position.set(S.x, 0, S.z); e.baseY = 0; e.face = e.faceWant = S.face + rand(-0.35, 0.35); e.s.rotation.y = e.face; e.crouch = 0; e.state = 'idle'; e.passive = true; }
 function u7Spawn(x, z, girl, prof, set) {
   const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: Object.assign({ state: 'idle', silenced: true, uk7: true }, set || {}) }); if (!e) return null;
   if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
@@ -11755,7 +11750,7 @@ function u7SpawnAll() {
 // ---- 動き：立食の台へ行って戻る侍女、給仕、注文 ----
 function uk7Brain(e, dt) {
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0);
-  if (e.seated) { e.s.position.x = e.seated.x; e.s.position.z = e.seated.z; e.state = 'idle'; e.faceWant = e.uk7Seat ? e.uk7Seat.face : e.faceWant; if (e.uk7Look && time < e.uk7Look) e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); return true; }
+  if (e.uk7At) { e.s.position.x = e.uk7At.x; e.s.position.z = e.uk7At.z; e.state = 'idle'; e.crouch = 0; e.faceWant = e.uk7Seat ? e.uk7Seat.face : e.faceWant; if (e.uk7Look && time < e.uk7Look) e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); return true; }
   const p = e.s.position; if (!e.uk7Task || e.uk7Task !== 'deck') e.baseY = 0;
   if (e.uk7Path && e.uk7Path.length) {
     const [tx, tz] = e.uk7Path[0], d = Math.hypot(tx - p.x, tz - p.z);
@@ -11775,9 +11770,9 @@ function uk7Brain(e, dt) {
 function u7WalkTick(dt) {
   if ((UK7.walkT -= dt) > 0) return; UK7.walkT = rand(3, 6);
   if (UK7.girls.filter(e => e.uk7Task === 'buffet' || e.uk7Task === 'eat' || e.uk7Task === 'back').length >= 7) return;
-  const c = UK7.girls.filter(e => e.seated && !e.uk7Vip && e.uk7Seat); if (!c.length) return;
+  const c = UK7.girls.filter(e => e.uk7At && !e.uk7Vip && e.uk7Seat); if (!c.length) return;
   const e = c[(Math.random() * c.length) | 0], S = e.uk7Seat, T = e.uk7T, sx = S.x >= 0 ? 1 : -1;
-  e.seated = null; e.crouch = 0; e.baseY = 0; e.s.position.y = 0; S.taken = null; e.uk7Task = 'buffet';
+  e.uk7At = null; S.taken = null; e.uk7Task = 'buffet';
   const bz = clamp(S.z + rand(-2, 2), -12, 26);
   e.uk7Path = [[S.x + (S.x - T.x) * 0.6, S.z + (S.z - T.z) * 0.6], [sx * 20.6, S.z + (S.z - T.z) * 0.6], [sx * 21.4, bz]];
 }
@@ -11785,7 +11780,7 @@ function u7Order(kind) {
   let c = UK7.crew.filter(e => e.uk7Crew !== 'jp' && !e.uk7Task && isUp(e)); if (!c.length) c = UK7.crew.filter(e => e.uk7Crew !== 'jp' && isUp(e)); if (!c.length) return;
   const near = c.slice().sort((a, b) => Math.hypot(a.s.position.x - player.pos.x, a.s.position.z - player.pos.z) - Math.hypot(b.s.position.x - player.pos.x, b.s.position.z - player.pos.z));
   const e = UK7.callE && c.includes(UK7.callE) ? UK7.callE : (Math.random() < 0.3 && c.find(o => o.uk7Crew === 'uk00')) || near[0];
-  const K = UK7.tables[0], S = UK7.kingSeat, sx = S.x + 0.9, sz = S.z + 0.6;
+  const K = UK7.tables[0], S = UK7.kingSeat, sx = S.x + 0.8, sz = S.z - 0.3;
   e.uk7Task = 'serve'; e.uk7Kind = kind; e.uk7Path = [[e.s.position.x, -12.5], [sx, -12.5], [sx, sz]]; UK7.log.push('order:' + kind + ':' + e.uk7Crew);
   popup(`${e.prof.name} が${kind === 'food' ? '料理' : kind === 'drink' ? '飲み物' : 'デザート'}を運んできます`);
 }
@@ -11796,9 +11791,9 @@ function u7Serve(e) {
   if (L) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
   const nm = e.prof.name.split('・')[0]; subtitle(ja); const el = $('subtitle'); if (el) el.textContent = L ? `${nm}「${L.en}」　${ja}` : `${nm}「${ja}」`;
   // 殿の卓に皿（または杯）を置く
-  const M = u7Mats(), K = UK7.tables[0], S = UK7.kingSeat, a = Math.atan2(S.x - K.x, S.z - K.z) + (K.dish++ % 3 - 1) * 0.35, px = K.x + Math.sin(a) * 0.62, pz = K.z + Math.cos(a) * 0.62;
+  const M = u7Mats(), K = UK7.tables[0], S = UK7.kingSeat, a = Math.atan2(S.x - K.x, S.z - K.z) + (K.dish++ % 3 - 1) * 0.45, px = K.x + Math.sin(a) * 0.45, pz = K.z + Math.cos(a) * 0.45;
   const m = e.uk7Kind === 'drink' ? new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.18, 10), M.glass) : new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.17, 0.05, 14), e.uk7Kind === 'sweet' ? M.dishB : M.dishA);
-  m.position.set(px, e.uk7Kind === 'drink' ? 0.88 : 0.82, pz); stageRoot.add(m); UK7.dishes.push(m); if (UK7.dishes.length > 8) stageRoot.remove(UK7.dishes.shift());
+  m.position.set(px, e.uk7Kind === 'drink' ? 1.17 : 1.1, pz); stageRoot.add(m); UK7.dishes.push(m); if (UK7.dishes.length > 8) stageRoot.remove(UK7.dishes.shift());
   UK7.log.push('served:' + e.uk7Crew + ':' + e.uk7Kind); UK7.served = (UK7.served || 0) + 1;
   e.uk7Task = 'return'; e.uk7Path = [[e.s.position.x, -12.5], [e.uk7Post[0], -12.5], e.uk7Post.slice()];
 }
@@ -11812,10 +11807,10 @@ function u7Say(e, it, near) {
 function u7Ambient(dt) {
   if ((UK7.amb -= dt) > 0 || UK.dlg || UK7.phase === 'confess') return; UK7.amb = rand(8, 13);
   const V = window.VOICE_UK7; if (!V) return;
-  const near = UK7.girls.filter(e => e.seated && !e.uk7Vip && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 14);
+  const near = UK7.girls.filter(e => e.uk7At && !e.uk7Vip && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 14);
   if (!near.length) return;
   const a = near[(Math.random() * near.length) | 0];
-  if (Math.random() < 0.5) { const b = UK7.girls.find(o => o !== a && o.seated && o.uk7T === a.uk7T); const P = V.pairs[(Math.random() * V.pairs.length) | 0];
+  if (Math.random() < 0.5) { const b = UK7.girls.find(o => o !== a && o.uk7At && o.uk7T === a.uk7T); const P = V.pairs[(Math.random() * V.pairs.length) | 0];
     if (b && P) { const t = u7Say(a, P[0]); setTimeout(() => { if (state === 'play' && UK7.on) u7Say(b, P[1]); }, (t + 0.5) * 1000); UK7.amb += t; return; } }
   u7Say(a, a.uk7Con ? V.con[(Math.random() * V.con.length) | 0] : V.talk[(Math.random() * V.talk.length) | 0]);
 }
@@ -11877,15 +11872,15 @@ function u7CrewMenu(e) {
   if (A) V.qe.forEach((q, i) => opts.push({ label: '「' + q + '」', then: [{ fn: () => { e.uk7Look = time + 10; e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); UK7.log.push('askE:' + e.uk7Crew + ':' + i); ukDlg([u7Line('q7k', { who: 'king', ja: q, dur: 2.0 }), u7Line('q7e', { who: e.uk7Crew, en: A[i].en, ja: A[i].ja, file: A[i].file, dur: A[i].dur })], null); } }] }));
   u7Menu(opts);
 }
-function u7Menu(opts) { for (const k of ['ukdlgName', 'ukdlgEn', 'ukdlgJa']) if ($(k)) $(k).textContent = ''; const pe = $('ukdlgPic'); if (pe) pe.style.display = 'none'; ukDlg([{ choice: opts }], null); }
+function u7Menu(opts) { for (const k of ['ukdlgName', 'ukdlgEn', 'ukdlgJa']) if ($(k)) $(k).textContent = ''; const pe = $('ukdlgPic'); if (pe) pe.style.display = 'none'; if (!opts.some(o => o.label === 'やめておく')) opts.push({ label: 'やめておく', then: [] }); ukDlg([{ choice: opts }], null); }
 function u7OrderMenu() { u7Menu([{ label: '料理', sub: 'ローストビーフ', then: [{ fn: () => u7Order('food') }] }, { label: '飲み物', sub: '帰国を祝う一杯', then: [{ fn: () => u7Order('drink') }] }, { label: 'デザート', sub: 'プディング', then: [{ fn: () => u7Order('sweet') }] }]); }
 function u7Confess(e) {
   const key = e.uk7Vip, V = window.VOICE_UK7, C = V && V.conf[key]; UK7.phase = 'confess'; UK7.log.push('confess:' + key);
   UK7.conf = { e, who: key, kind: C ? C.kind : 'ask', L: { who: key, ja: C ? C.text : '……少し、考えさせてください。', file: C && C.file, dur: C && C.dur } };
   // 夜の甲板へ
-  e.seated = null; e.crouch = 0; e.baseY = 0; if (e.uk7Seat) e.uk7Seat.taken = null; e.uk7Seat = null; e.uk7Path = null; e.uk7Task = 'deck';
+  e.uk7At = null; if (e.uk7Seat) e.uk7Seat.taken = null; e.uk7Seat = null; e.uk7Path = null; e.uk7Task = 'deck';
   player.pos.set(0, 0, U7.Z0 - 7.5); player.yaw = Math.atan2(-1.2, 1.7); player.pitch = 0;
-  e.s.position.set(1.2, 0, U7.Z0 - 9.2); e.s.position.y = 0; e.face = e.faceWant = Math.atan2(player.pos.x - 1.2, player.pos.z - (U7.Z0 - 9.2)); e.s.rotation.y = e.face;
+  e.s.position.set(1.2, 0, U7.Z0 - 9.2); e.s.position.y = 0; e.uk7At = null; e.face = e.faceWant = Math.atan2(player.pos.x - 1.2, player.pos.z - (U7.Z0 - 9.2)); e.s.rotation.y = e.face;
   ukDlg([{ wait: 1.0 }, { say: 'k_c1' }, { say: 'k_c2' }, { say: 'conf' }, { wait: 1.2 }, { say: 'n7_end' }], () => { UK7.phase = 'end'; UK7.pt = 0; });
 }
 // ---- 進行 ----
@@ -11927,7 +11922,7 @@ function uk7Ending() {
   if (document.exitPointerLock) document.exitPointerLock();
   $('over').style.display = 'flex';
 }
-if (TEST) window.__uk7 = { UK7, dlg: () => !!UK.dlg, skip: () => ukDlgSkip(), pick: i => ukPick(i), order: k => u7Order(k), key: () => uk7Key(), mid: () => { UK7.pt = 999; }, confess: k => u7Confess(UK7.vip[k]) };
+if (TEST) window.__uk7 = { UK7, dlg: () => !!UK.dlg, cancel: () => { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; }, skip: () => ukDlgSkip(), pick: i => ukPick(i), order: k => u7Order(k), key: () => uk7Key(), mid: () => { UK7.pt = 999; }, confess: k => u7Confess(UK7.vip[k]) };
 
 function loadStage(name) {
   if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
@@ -16760,14 +16755,15 @@ function pickTarget() {
   return null;
 }
 function updateTargetInfo(dt) {
-  const e = sec.near || menuOpen ? null : pickTarget();
+  const e = sec.near || menuOpen || (UK7.on && UK.dlg) ? null : pickTarget();
+  if (UK7.on && UK.dlg) targetHold = 0;
   if (e) { targetShown = e; targetHold = 0.6; }
   else targetHold -= dt;
   const el = $('target');
   if (targetShown && targetHold > 0) {
     const t = targetShown, dead = t.state === 'down';
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
-    const tm = disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
+    const tm = UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
     const html = t.ukInfo ? ukTargetHtml(t, pic) : (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);

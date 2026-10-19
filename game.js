@@ -12359,7 +12359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261019a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261019b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12443,6 +12443,11 @@ const EXTRA_GIRLS = {
   // v10：新しい兵の娘（22歳前後）
   girl33: { type: 'mob', anyRole: true, prof: { name: '春日 ひかり', pers: '陽気', cm: 158, vv: 2, pitch: 1.4 } },    // 低いポニーテール・スマートウォッチ。明るく人なつこい。大学（スポーツ科学）卒、学生時代はテニスサークル
   girl34: { type: 'mob', anyRole: true, prof: { name: '一条 千景', pers: '冷静', cm: 160, vv: 1, pitch: 1.05 } },    // 栗色の肩までの髪・耳飾り。しとやかで品がある。茶道を少したしなむ
+  // v11：既存の侍女と顔・髪型が被らない4人（17〜25歳。ティアラ・白レースのキャミ・黒ベルト・黒テーパード・黒パンプス）
+  girl35: { type: 'mob', anyRole: true, prof: { name: '神崎 真白', pers: '冷静', cm: 168, vv: 0, pitch: 0.9 } },   // 24歳。黒髪の低いシニヨン、前髪なし、無表情
+  girl36: { type: 'mob', anyRole: true, prof: { name: '黒田 紗良', pers: '臆病', cm: 155, vv: 2, pitch: 1.35 } }, // 19歳。灰茶のハーフアップ、そばかす、小柄
+  girl37: { type: 'mob', anyRole: true, prof: { name: '村瀬 碧', pers: '好戦的', cm: 164, vv: 1, pitch: 1.05 } },  // 22歳。左こめかみに白い筋の入った顎までの黒髪
+  girl38: { type: 'mob', anyRole: true, prof: { name: '高梨 ゆず', pers: '陽気', cm: 161, vv: 2, pitch: 1.4 } },   // 20歳。蜂蜜色のロング、センター分け、左目の下にほくろ
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {

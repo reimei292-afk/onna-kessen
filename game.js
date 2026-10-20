@@ -12359,7 +12359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261020b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261020c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12448,7 +12448,7 @@ const EXTRA_GIRLS = {
   girl37: { type: 'mob', anyRole: true, prof: { name: '村瀬 碧', pers: '好戦的', cm: 164, vv: 1, pitch: 1.05 } },  // 22歳。顎までの黒髪（白い筋はなし）
   girl39: { type: 'mob', anyRole: true, prof: { name: '谷口 のぞみ', pers: '臆病', cm: 156, vv: 2, pitch: 1.2 } },  // 19歳。茶髪のぱっつんボブ、ややふくよか
   girl40: { type: 'mob', anyRole: true, prof: { name: '青葉 みお', pers: '陽気', cm: 160, vv: 1, pitch: 1.15 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
-  girl41: { type: 'mob', anyRole: true, prof: { name: '藤崎 ほのか', pers: '温和', cm: 158, vv: 0, pitch: 1.1 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
+  girl41: { type: 'mob', anyRole: true, prof: { name: '藤崎 ほのか', pers: '陽気', cm: 158, vv: 0, pitch: 1.1 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {
@@ -13232,7 +13232,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (opt.fumi) Object.assign(prof, { name: fumi.name, pers: '冷静', cm: 157, vv: 1 });
   if (opt.sysop) Object.assign(prof, { name: sysop.name, pers: '冷静', cm: 162, vv: 0 });
   if (opt.medic && opt.medCm) Object.assign(prof, { cm: opt.medCm, pers: opt.medPers || prof.pers });
-  const P = PERS[prof.pers];
+  const P = PERS[prof.pers] || PERS['冷静'];
   VoicePack.prioritize(prof.pers);
   if (captain) prof.name = '組頭 ' + prof.name;
   const figH = prof.cm / 100;

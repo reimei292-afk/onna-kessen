@@ -2411,5 +2411,43 @@
    "dir": -1,
    "file": "assets/frames/girl42_down.png"
   }
+ },
+ "girl43": {
+  "front": {
+   "hk": 1.0207,
+   "aspect": 0.2562,
+   "ax": 0.4917,
+   "dir": 0,
+   "file": "assets/frames/girl43_front.png",
+   "ref": 627
+  },
+  "side": {
+   "hk": 1.0064,
+   "aspect": 0.1569,
+   "ax": 0.5333,
+   "dir": -1,
+   "file": "assets/frames/girl43_side.png"
+  },
+  "back": {
+   "hk": 1.008,
+   "aspect": 0.2532,
+   "ax": 0.4874,
+   "dir": 0,
+   "file": "assets/frames/girl43_back.png"
+  },
+  "front_diag": {
+   "hk": 1.0207,
+   "aspect": 0.2109,
+   "ax": 0.4828,
+   "dir": -1,
+   "file": "assets/frames/girl43_front_diag.png"
+  },
+  "down": {
+   "hk": 0.3014,
+   "aspect": 3.3175,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/frames/girl43_down.png"
+  }
  }
 }

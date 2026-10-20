@@ -12359,7 +12359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261020d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261020e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12450,6 +12450,7 @@ const EXTRA_GIRLS = {
   girl40: { type: 'mob', anyRole: true, prof: { name: '青葉 みお', pers: '陽気', cm: 160, vv: 1, pitch: 1.15 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
   girl41: { type: 'mob', anyRole: true, prof: { name: '藤崎 ほのか', pers: '陽気', cm: 158, vv: 0, pitch: 1.1 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
   girl42: { type: 'mob', anyRole: true, prof: { name: '田中 あおい', pers: '陽気', cm: 160, vv: 1, pitch: 1.2 } },  // 普通の兵。黒髪は前髪だけ残して耳の後ろで束ねる。白のキャミソール、銀のティアラは正面だけ
+  girl43: { type: 'mob', anyRole: true, prof: { name: '遠藤 加那', pers: '冷静', cm: 163, vv: 1, pitch: 1.0 } },  // 普通の侍女。短い黒髪で耳が出る。白キャミ、細い黒革ベルト。銀のティアラは後ろ以外
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {

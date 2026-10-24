@@ -8382,7 +8382,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
-  frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と、味方になった英国勢が船で打って出る。双方の破裂弾が飛び交う砲撃戦。敵の乗組員を半数まで減らせば艦隊は退く。殿の船の大宮には E で話しかけられる。' },
+  frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
@@ -9922,9 +9922,10 @@ function buildFrSea() {
   }
   FRS.guns = [];
   for (let x = -14; x <= 14; x += 4) { const g = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.9, 10), M.L(0x2a2a2a)); g.rotation.x = Math.PI / 2; g.position.set(x, 0.75, D.z0 - 0.7); stageRoot.add(g); FRS.guns.push(new V3(x, 0.8, D.z0 - 1.6)); }
-  nobori(14.5, 3.6, '#1a2744', '#f4efe2', '殿'); nobori(-15.5, 3.6, '#1a2744', '#f4efe2', '殿');
+  nobori(15.8, -3.9, '#1a2744', '#f4efe2', '殿'); nobori(-15.5, 3.6, '#1a2744', '#f4efe2', '殿');
   buildHQ(6.5, 16.4, -4.6, 4.6, 11, 2.6);
   buildMedPost(-12.5, 2.4, 'blue');
+  buildFrsCabin();
   // ---- 味方の船（殿の船の左右に 3 隻）と共和国艦隊 4 隻：甲板は y=0 の平らな板（乗り移れる）。安い箱だけで作る ----
   FRS.ally = []; FRS.fr = []; FRS.allyS = [{ x: 0, z: 0, king: true, side: 'ally', name: '殿の船' }]; FRS.frS = [];
   const names = { ally: ['西園寺の船「疾風丸」', '英国艦 ライオネス号', '英国艦 アルビオン号'], fr: ['共和国艦 マリアンヌ号', '共和国艦 リベルテ号', '共和国旗艦 ラ・ジロンド号', '共和国艦 エガリテ号'] };
@@ -9981,6 +9982,57 @@ function frsClamp(p, own) {   // own：この四角に限る（殿が接舷前�
     const cx = clamp(p.x, r[0], r[1]), cz = clamp(p.z, r[2], r[3]), d = (cx - p.x) ** 2 + (cz - p.z) ** 2; if (d < bd) { bd = d; best = [cx, cz]; }
   }
   if (best) { p.x = best[0]; p.z = best[1]; }
+}
+// ---- 殿の船の上部構造：甲板（1 階）から階段で 2 階の殿の船室へ。窓から海が見え、ソファ・低い卓・敷物・お茶と飲み物の棚・本棚 ----
+let FRS_CAB_MAT = null;
+function buildFrsCabin() {
+  const M = FRS_CAB_MAT || (FRS_CAB_MAT = { wood: new THREE.MeshLambertMaterial({ color: 0x6b4a30 }), woodL: new THREE.MeshLambertMaterial({ color: 0xa47b52 }), wall: new THREE.MeshLambertMaterial({ color: 0xe8dcc4 }), roof: new THREE.MeshLambertMaterial({ color: 0x3b2a1e }),
+    glass: new THREE.MeshBasicMaterial({ color: 0xcfe9f5, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false }), sofa: new THREE.MeshLambertMaterial({ color: 0x2f4a6b }), cush: new THREE.MeshLambertMaterial({ color: 0xd9c08a }),
+    rug: new THREE.MeshLambertMaterial({ color: 0x8a2f2a }), rugB: new THREE.MeshLambertMaterial({ color: 0xd8b878 }), cup: new THREE.MeshLambertMaterial({ color: 0xf4f1ea }), tea: new THREE.MeshLambertMaterial({ color: 0x7a5236 }),
+    bottle: new THREE.MeshLambertMaterial({ color: 0x2f5a3a }), wine: new THREE.MeshLambertMaterial({ color: 0x5a1f2a }), lamp: new THREE.MeshBasicMaterial({ color: 0xffd9a0 }),
+    books: [0x7a2a24, 0x2a4a6a, 0x3a5a2a, 0x6a5a2a, 0x4a2a5a].map(c => new THREE.MeshLambertMaterial({ color: c })) });
+  const Y = 2.8, X0 = 9.6, X1 = 16.0, Z0 = 0.4, Z1 = 4.4, H = 2.5;
+  const bx = (x0, x1, y0, y1, z0, z1, m, solid) => { const o = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); o.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); stageRoot.add(o); if (solid) boxes.push({ x0, x1, y0, y1, z0, z1, mesh: o }); return o; };
+  // 柱と床（下は本陣のまま使える）
+  for (const [x, z] of [[X0, Z0], [X1, Z0], [X0, Z1], [X1, Z1]]) { bx(x - 0.12, x + 0.12, 0, Y, z - 0.12, z + 0.12, M.wood); colliders.push({ x, z, r: 0.2 }); }
+  bx(X0 - 0.8, X1, Y - 0.16, Y, Z0, Z1 + 0.2, M.woodL); floors.push({ x0: X0, x1: X1, z0: Z0 + 0.15, z1: Z1 - 0.15, y: Y });
+  // 階段（艫側から登る）と踊り場
+  const S0 = 4.8, S1 = X0 - 0.8, n = 10;
+  for (let i = 0; i < n; i++) { const a = S0 + (S1 - S0) * i / n, b = S0 + (S1 - S0) * (i + 1) / n, y = Y * (i + 1) / n; bx(a, b + 0.02, y - 0.14, y, 3.7, 4.6, M.woodL); floors.push({ x0: a, x1: b + 0.05, z0: 3.7, z1: 4.6, y }); }
+  bx(S0, S1, 0.9 * Y / 2 + 0.6, 0.9 * Y / 2 + 0.66, 3.66, 3.7, M.wood);   // 手すり
+  floors.push({ x0: S1, x1: X0, z0: 3.4, z1: 4.6, y: Y });
+  // 壁：西に扉口、南北に大きな窓（海が見える）
+  bx(X0, X0 + 0.15, Y, Y + H, Z0, 3.3, M.wall, true); bx(X0, X0 + 0.15, Y + 2.1, Y + H, 3.3, Z1, M.wall);
+  bx(X1 - 0.15, X1, Y, Y + H, Z0, Z1, M.wall, true);
+  for (const [za, zb] of [[Z0, Z0 + 0.15], [Z1 - 0.15, Z1]]) {
+    bx(X0, X1, Y, Y + 0.95, za, zb, M.wall, true); bx(X0, X1, Y + 2.05, Y + H, za, zb, M.wall);
+    for (let x = X0; x <= X1 + 0.01; x += (X1 - X0) / 4) bx(x - 0.08, x + 0.08, Y + 0.95, Y + 2.05, za, zb, M.wood, true);
+    const gl = new THREE.Mesh(new THREE.PlaneGeometry(X1 - X0, 1.1), M.glass); gl.position.set((X0 + X1) / 2, Y + 1.5, (za + zb) / 2); stageRoot.add(gl);
+  }
+  bx(X0 - 0.3, X1 + 0.3, Y + H, Y + H + 0.18, Z0 - 0.3, Z1 + 0.3, M.roof);   // 屋根
+  // 敷物
+  bx(10.9, 14.7, Y + 0.002, Y + 0.02, 1.3, 3.5, M.rugB); bx(11.1, 14.5, Y + 0.004, Y + 0.025, 1.5, 3.3, M.rug);
+  // ソファ（北の窓の下）
+  bx(11.0, 14.4, Y, Y + 0.42, 3.55, 4.2, M.sofa, true); bx(11.0, 14.4, Y + 0.42, Y + 0.95, 4.02, 4.25, M.sofa); bx(10.8, 11.0, Y, Y + 0.68, 3.55, 4.25, M.sofa); bx(14.4, 14.6, Y, Y + 0.68, 3.55, 4.25, M.sofa);
+  for (const x of [11.7, 12.7, 13.7]) bx(x - 0.35, x + 0.35, Y + 0.42, Y + 0.56, 3.6, 4.0, M.cush);
+  // 一人掛け（窓辺）
+  bx(15.0, 15.7, Y, Y + 0.42, 1.6, 2.4, M.sofa, true); bx(15.55, 15.75, Y + 0.42, Y + 0.95, 1.6, 2.4, M.sofa);
+  // 低い卓と茶器
+  bx(11.8, 13.6, Y + 0.36, Y + 0.42, 2.0, 2.9, M.woodL, true); for (const [x, z] of [[11.9, 2.1], [13.5, 2.1], [11.9, 2.8], [13.5, 2.8]]) bx(x - 0.04, x + 0.04, Y, Y + 0.36, z - 0.04, z + 0.04, M.wood);
+  const pot = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), M.tea); pot.scale.y = 0.85; pot.position.set(12.5, Y + 0.51, 2.45); stageRoot.add(pot);
+  for (const [x, z] of [[12.85, 2.3], [12.95, 2.6], [12.2, 2.65]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 10), M.cup); c.position.set(x, Y + 0.46, z); stageRoot.add(c); }
+  // お茶と飲み物の棚（南西の角）
+  bx(9.8, 10.9, Y, Y + 0.9, 0.6, 1.1, M.wood, true); bx(9.8, 10.9, Y + 0.9, Y + 0.94, 0.6, 1.1, M.woodL);
+  const kettle = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), M.tea); kettle.position.set(10.05, Y + 1.05, 0.85); stageRoot.add(kettle);
+  for (const [x, m, h] of [[10.35, M.bottle, 0.32], [10.5, M.wine, 0.3], [10.65, M.bottle, 0.26]]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.045, h, 8), m); b.position.set(x, Y + 0.94 + h / 2, 0.8); stageRoot.add(b); }
+  for (const x of [10.3, 10.5, 10.7]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.07, 8), M.cup); c.position.set(x, Y + 0.975, 1.0); stageRoot.add(c); }
+  // 本棚（東の壁）
+  bx(15.45, 15.85, Y, Y + 1.9, 2.8, 4.1, M.wood, true);
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 6; k++) bx(15.47, 15.8, Y + 0.12 + r * 0.45, Y + 0.12 + r * 0.45 + rand(0.26, 0.36), 2.9 + k * 0.19, 2.9 + k * 0.19 + 0.15, M.books[(r * 3 + k) % 5]);
+  // 灯り（吊り行灯）
+  const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), M.lamp); lamp.position.set(12.7, Y + 2.05, 2.4); stageRoot.add(lamp);
+  bx(12.69, 12.71, Y + 2.2, Y + H, 2.39, 2.41, M.wood);
+  FRS.cabin = { x0: X0, x1: X1, z0: Z0, z1: Z1, y: Y };
 }
 function frsPinUnit(e, x, z, y, face, extra) {
   e.frsUnit = true; e.frsPin = true; e.frsFace = face; e.home = [x, z]; e.baseY = y; e.s.position.set(x, y, z); e.s.rotation.y = e.face = e.faceWant = face; e.passive = true; e.state = 'idle'; e.mk.visible = false; e.sq = null;
@@ -12796,7 +12848,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

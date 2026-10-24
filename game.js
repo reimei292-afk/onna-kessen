@@ -9913,8 +9913,9 @@ function buildFrSea() {
   const bow = new THREE.Mesh(new THREE.CylinderGeometry(0.1, (D.z1 - D.z0 + 1) / 2, 6, 3), hullM); bow.rotation.z = -Math.PI / 2; bow.position.set(D.x1 + 3.4, -1.0, 0); bow.scale.z = 0.9; stageRoot.add(bow);
   const dk = new THREE.Mesh(new THREE.BoxGeometry(D.x1 - D.x0 + 0.8, 0.06, D.z1 - D.z0 + 0.8), deckM); dk.position.set(0, -0.03, 0); dk.receiveShadow = true; stageRoot.add(dk);
   const rail = (x0, x1, z0, z1) => { const r = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.25, x1 - x0), 1.0, Math.max(0.25, z1 - z0)), railM); r.position.set((x0 + x1) / 2, 0.5, (z0 + z1) / 2); r.castShadow = true; stageRoot.add(r); boxes.push({ x0, x1, z0, z1, y0: 0, y1: 1.0 }); };
-  rail(D.x0 - 0.4, D.x1 + 0.4, D.z0 - 0.4, D.z0 - 0.1); rail(D.x0 - 0.4, D.x1 + 0.4, D.z1 + 0.1, D.z1 + 0.4); rail(D.x0 - 0.4, D.x0 - 0.1, D.z0, D.z1); rail(D.x1 + 0.1, D.x1 + 0.4, D.z0, D.z1);
-  for (let x = D.x0; x <= D.x1; x += 0.9) { colliders.push({ x, z: D.z0 - 0.3, r: 0.45 }); colliders.push({ x, z: D.z1 + 0.3, r: 0.45 }); }
+  { const r = new THREE.Mesh(new THREE.BoxGeometry(D.x1 - D.x0 + 0.8, 0.35, 0.3), railM); r.position.set(0, 0.18, D.z0 - 0.25); stageRoot.add(r); }   // 敵側は低い舷縁（乗り移れる）
+  rail(D.x0 - 0.4, D.x1 + 0.4, D.z1 + 0.1, D.z1 + 0.4); rail(D.x0 - 0.4, D.x0 - 0.1, D.z0, D.z1); rail(D.x1 + 0.1, D.x1 + 0.4, D.z0, D.z1);
+  for (let x = D.x0; x <= D.x1; x += 0.9) { colliders.push({ x, z: D.z1 + 0.3, r: 0.45 }); }
   for (const x of [-7, 5]) {
     const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 19, 10), railM); mast.position.set(x, 9.5, 0); mast.castShadow = true; stageRoot.add(mast); colliders.push({ x, z: 0, r: 0.4 });
     for (const [y, w, h] of [[6.5, 9, 5], [12.5, 7, 4]]) { const s = new THREE.Mesh(new THREE.PlaneGeometry(w, h, 4, 4), M.L(0xece6d4, { side: THREE.DoubleSide })); s.position.set(x + 0.4, y, 0); s.rotation.y = Math.PI / 2; stageRoot.add(s); }
@@ -9924,69 +9925,185 @@ function buildFrSea() {
   nobori(14.5, 3.6, '#1a2744', '#f4efe2', '殿'); nobori(-15.5, 3.6, '#1a2744', '#f4efe2', '殿');
   buildHQ(6.5, 16.4, -4.6, 4.6, 11, 2.6);
   buildMedPost(-12.5, 2.4, 'blue');
-  // 味方の船：西園寺の船（左）と英国艦（右）。敵：共和国艦隊 3 隻
-  const a1 = uk2Ship(-52, 6, 0.85, '西園寺の船「疾風丸」', Math.PI); frsFlag(a1, 'jp'); a1.side = 'jp';
-  const a2 = uk2Ship(54, 8, 0.95, '英国艦 ライオネス号', Math.PI); frsFlag(a2, 'uk'); a2.side = 'uk';
-  FRS.ally = [a1, a2];
-  const f1 = uk2Ship(-46, -98, 1.0, '共和国艦 マリアンヌ号', 0.06), f2 = uk2Ship(4, -108, 1.2, '共和国旗艦 ラ・ジロンド号', 0), f3 = uk2Ship(52, -96, 1.0, '共和国艦 リベルテ号', -0.06);
-  FRS.fr = [f1, f2, f3]; for (const s of FRS.fr) { frsFlag(s, 'fr'); s.side = 'fr'; }
-  for (const S of UK2.sails) { S.sail.scale.y = 1; S.sail.visible = true; S.furl.visible = false; }
-  FRS.ships = FRS.ally.concat(FRS.fr); for (const sh of FRS.ships) sh.S.position.y = FRS_W;
+  // ---- 味方の船（殿の船の左右に 3 隻）と共和国艦隊 4 隻：甲板は y=0 の平らな板（乗り移れる）。安い箱だけで作る ----
+  FRS.ally = []; FRS.fr = []; FRS.allyS = [{ x: 0, z: 0, king: true, side: 'ally', name: '殿の船' }]; FRS.frS = [];
+  const names = { ally: ['西園寺の船「疾風丸」', '英国艦 ライオネス号', '英国艦 アルビオン号'], fr: ['共和国艦 マリアンヌ号', '共和国艦 リベルテ号', '共和国旗艦 ラ・ジロンド号', '共和国艦 エガリテ号'] };
+  let ai = 0, fi = 0;
+  for (const x of FRS_X) {
+    if (x !== 0) { const sh = frsDeckShip(x, 0, 'ally', names.ally[ai++]); FRS.ally.push(sh); FRS.allyS.push(sh); }
+    const f = frsDeckShip(x, FRS_ZF0, 'fr', names.fr[fi++]); if (x === 0) f.flagship = true; FRS.fr.push(f); FRS.frS.push(f);
+  }
+  FRS.ships = FRS.ally.concat(FRS.fr);
+}
+const FRS_N = (() => { const q = parseInt(new URLSearchParams(location.search).get('frsn'), 10); if (q > 0) return Math.min(300, q); const mob = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent); return mob ? 120 : 200; })();   // 一軍の人数（スマホは 120）
+const FRS_X = [-78, -39, 0, 39], FRS_ZF0 = -62, FRS_ZF1 = -10.0, FRS_HX = 16.4, FRS_HZ = 4.6, FRS_APPROACH = 175;   // 船の並び・共和国艦の初め／接舷の位置・甲板の半分の大きさ・撃ち合いの長さ（秒）
+let FRS_MAT = null;
+function frsDeckShip(x, z, side, name) {
+  const M = FRS_MAT || (FRS_MAT = (() => {
+    const flag = (draw) => { const c = document.createElement('canvas'); c.width = 96; c.height = 64; draw(c.getContext('2d')); const t = new THREE.CanvasTexture(c); return new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide }); };
+    return { hull: new THREE.MeshLambertMaterial({ color: 0x4a3424 }), hullF: new THREE.MeshLambertMaterial({ color: 0x2d3446 }), deck: new THREE.MeshLambertMaterial({ color: 0x9a7a52 }), rail: new THREE.MeshLambertMaterial({ color: 0x5a4030 }),
+      sail: new THREE.MeshLambertMaterial({ color: 0xece6d4, side: THREE.DoubleSide }), gun: new THREE.MeshLambertMaterial({ color: 0x2a2a2a }),
+      fr: flag(g => { g.fillStyle = '#1f3a93'; g.fillRect(0, 0, 32, 64); g.fillStyle = '#f4f1ea'; g.fillRect(32, 0, 32, 64); g.fillStyle = '#c8202f'; g.fillRect(64, 0, 32, 64); }),
+      uk: flag(g => { g.fillStyle = '#1a2d6b'; g.fillRect(0, 0, 96, 64); g.strokeStyle = '#fff'; g.lineWidth = 12; g.beginPath(); g.moveTo(0, 0); g.lineTo(96, 64); g.moveTo(96, 0); g.lineTo(0, 64); g.stroke(); g.strokeStyle = '#c8202f'; g.lineWidth = 5; g.stroke(); g.fillStyle = '#fff'; g.fillRect(38, 0, 20, 64); g.fillRect(0, 22, 96, 20); g.fillStyle = '#c8202f'; g.fillRect(42, 0, 12, 64); g.fillRect(0, 26, 96, 12); }),
+      jp: flag(g => { g.fillStyle = '#1a2744'; g.fillRect(0, 0, 96, 64); g.fillStyle = '#f4efe2'; g.font = 'bold 44px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('殿', 48, 34); }) };
+  })());
+  const g = new THREE.Group(); g.position.set(x, 0, z); stageRoot.add(g);
+  const L = FRS_HX * 2 + 0.8, Wd = FRS_HZ * 2 + 0.8;
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(L + 0.4, 3.4, Wd + 0.4), side === 'fr' ? M.hullF : M.hull); hull.position.y = -1.75; g.add(hull);
+  const dk = new THREE.Mesh(new THREE.BoxGeometry(L, 0.06, Wd), M.deck); dk.position.y = -0.03; g.add(dk);
+  const fz = side === 'fr' ? 1 : -1;   // 敵に向く舷
+  for (const s of [-1, 1]) { if (s === fz) continue; const r = new THREE.Mesh(new THREE.BoxGeometry(L, 0.9, 0.25), M.rail); r.position.set(0, 0.45, s * (Wd / 2)); g.add(r); }   // 敵側の舷縁は低い（乗り移る）
+  const rl = new THREE.Mesh(new THREE.BoxGeometry(L, 0.35, 0.2), M.rail); rl.position.set(0, 0.18, fz * (Wd / 2)); g.add(rl);
+  for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.9, Wd), M.rail); r.position.set(s * L / 2, 0.45, 0); g.add(r); }
+  for (const mx of [-7, 5]) {
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 19, 8), M.rail); mast.position.set(mx, 9.5, 0); g.add(mast);
+    for (const [y, w, h] of [[6.5, 9, 5], [12.5, 7, 4]]) { const s = new THREE.Mesh(new THREE.PlaneGeometry(w, h), M.sail); s.position.set(mx + 0.4, y, 0); s.rotation.y = Math.PI / 2; g.add(s); }
+  }
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.6), side === 'fr' ? M.fr : /英国/.test(name) ? M.uk : M.jp); fl.position.set(-FRS_HX + 1, 6.2, 0); g.add(fl);
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 6.5, 6), M.rail); pole.position.set(-FRS_HX - 0.25, 3.3, 0); g.add(pole); fl.position.x = -FRS_HX + 0.95;
+  for (let gx = -14; gx <= 14; gx += 4) { const gn = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.9, 8), M.gun); gn.rotation.x = Math.PI / 2; gn.position.set(gx, 0.6, fz * (FRS_HZ + 0.2)); g.add(gn); }
+  return { g, x, z, side, name, king: false };
+}
+// 歩ける甲板（接舷の前は各船の上だけ。接舷したら向かい合う二隻と渡り板がひと続き）
+function frsRects() {
+  if (FRS.rectsK === FRS.board + ':' + FRS.frZ) return FRS.rects;
+  const R = [], z1 = FRS.frZ;
+  for (const x of FRS_X) {
+    if (FRS.board) R.push([x - FRS_HX, x + FRS_HX, z1 - FRS_HZ, FRS_HZ]);
+    else { R.push([x - FRS_HX, x + FRS_HX, -FRS_HZ, FRS_HZ]); R.push([x - FRS_HX, x + FRS_HX, z1 - FRS_HZ, z1 + FRS_HZ]); }
+  }
+  FRS.rectsK = FRS.board + ':' + FRS.frZ; return (FRS.rects = R);
+}
+function frsClamp(p, own) {   // own：この四角に限る（殿が接舷前に自分の船から出ない）
+  const R = own ? [own] : frsRects(); let best = null, bd = 1e9;
+  for (const r of R) {
+    if (p.x >= r[0] && p.x <= r[1] && p.z >= r[2] && p.z <= r[3]) return;
+    const cx = clamp(p.x, r[0], r[1]), cz = clamp(p.z, r[2], r[3]), d = (cx - p.x) ** 2 + (cz - p.z) ** 2; if (d < bd) { bd = d; best = [cx, cz]; }
+  }
+  if (best) { p.x = best[0]; p.z = best[1]; }
 }
 function frsPinUnit(e, x, z, y, face, extra) {
-  e.frsPin = [x, z, y]; e.frsFace = face; e.home = [x, z]; e.baseY = y; e.s.position.set(x, y, z); e.s.rotation.y = e.face = face; e.passive = true; e.state = 'idle'; e.mk.visible = false; e.sq = null;
+  e.frsUnit = true; e.frsPin = true; e.frsFace = face; e.home = [x, z]; e.baseY = y; e.s.position.set(x, y, z); e.s.rotation.y = e.face = e.faceWant = face; e.passive = true; e.state = 'idle'; e.mk.visible = false; e.sq = null;
+  e.frsT = rand(0, 0.8); e.frsLoad = rand(1, 6);
   if (extra) Object.assign(e, extra);
   return e;
 }
+// 乗組員：一軍 FRS_N 人。味方は英国 6 割・日本の駐屯 4 割（英国の港を守る戦い）。共和国は衛生兵を日本の約 2 倍の割合で
 function frsSpawnCrew() {
   FRS.crew = []; FRS.frCrew = []; FRS.frMed = []; FRS.omiya = null; FRS.maid = null;
-  // 殿の船の砲員（侍女）
-  for (let i = 0; i < 14; i++) {
-    const x = -15 + i * 2.2 + rand(-0.3, 0.3), z = FRS.deck.z0 + 0.9 + (i % 2) * 0.8;
-    const e = spawnEnemy(x, z, i % 4 === 3 ? 'archer' : 'mob', false, 'blue', { yari: -1, set: { special: true } }); if (!e) continue;
-    frsPinUnit(e, x, z, 0, Math.PI, { frsKing: true }); FRS.crew.push(e);
-  }
+  const N = FRS_N, per = Math.ceil(N / 4);
+  const nJp = Math.round(N * 0.4), jpQ = [Math.round(nJp * 0.35), Math.round(nJp * 0.35)]; jpQ.push(Math.round((nJp - jpQ[0] - jpQ[1]) / 2)); jpQ.push(nJp - jpQ[0] - jpQ[1] - jpQ[2]);   // 殿の船・疾風丸に多め
+  const slots = (sh, n, xs0, xs1) => { const cols = Math.max(1, Math.ceil(n / 5)), out = []; for (let i = 0; i < n; i++) { const c = i % cols, r = Math.floor(i / cols); out.push([sh.x + xs0 + (cols > 1 ? c * (xs1 - xs0) / (cols - 1) : 0) + rand(-0.25, 0.25), sh.z - 3.6 + r * 1.8 + rand(-0.2, 0.2)]); } return out; };
+  const order = [FRS.allyS[0]].concat(FRS.allyS.slice(1));   // 殿の船・疾風丸・ライオネス・アルビオン
+  let ukI = 0;
+  order.forEach((sh, si) => {
+    const king = !!sh.king, n = per - (king ? 1 : 0), nj = Math.min(n, jpQ[si]);
+    const P = slots(sh, n, king ? -15.4 : -15.4, king ? 5.2 : 15.4);
+    for (let i = 0; i < n; i++) {
+      const jp = i < nj, id = jp ? undefined : 'uk' + String(1 + (ukI++ % 10)).padStart(2, '0');
+      const e = spawnEnemy(P[i][0], P[i][1], 'mob', false, 'blue', { girl: id && GIRLS[id] ? id : undefined, yari: jp && Math.random() < 0.25 ? 1 : -1, set: { special: true } }); if (!e) continue;
+      if (id && EXTRA_GIRLS[id]) e.figH = EXTRA_GIRLS[id].prof.cm / 100;
+      e.hp = e.hpMax = 3; e.dmg = 8;
+      frsPinUnit(e, e.s.position.x, e.s.position.z, 0, Math.PI, { frsShip: sh, frsKing: king, frsUk: !jp }); FRS.crew.push(e);
+    }
+  });
   FRS.maid = FRS.crew[9] || FRS.crew[0] || null;
-  // 大宮：殿の側
   if (GIRLS.omiya) {
     const e = spawnEnemy(9.2, -1.6, 'mob', false, 'blue', { girl: 'omiya', yari: -1, set: { special: true } });
-    if (e) { Object.assign(e.prof, { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 }); e.figH = 1.47; frsPinUnit(e, 9.2, -1.6, 0, Math.PI * 0.85, { frsOmiya: true, ukTag: '大宮' }); e.hp = e.hpMax = 6; FRS.omiya = e; }
+    if (e) { Object.assign(e.prof, { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 }); e.figH = 1.47; frsPinUnit(e, 9.2, -1.6, 0, Math.PI * 0.85, { frsOmiya: true, frsShip: FRS.allyS[0], ukTag: '大宮' }); e.hp = e.hpMax = 6; FRS.omiya = e; }
   }
-  // 味方の船の乗組員（遠景）：西園寺の船は侍女、英国艦は英国娘
-  for (const sh of FRS.ally) for (let i = 0; i < 8; i++) {
-    const P = frsPt(sh, rand(-8, 7), UKS.WD, rand(-2, 2.4));
-    const id = sh.side === 'uk' ? 'uk' + String(1 + (i % 10)).padStart(2, '0') : undefined;
-    const e = spawnEnemy(P.x, P.z, 'mob', false, 'blue', { girl: id && GIRLS[id] ? id : undefined, y: P.y, yari: -1, set: { special: true } }); if (!e) continue;
-    if (id && EXTRA_GIRLS[id]) e.figH = EXTRA_GIRLS[id].prof.cm / 100;
-    frsPinUnit(e, P.x, P.z, P.y, Math.PI + sh.ry, { frsShip: sh }); FRS.crew.push(e);
-  }
-  // 共和国の乗組員と衛生兵（衛生兵は各艦に日本の約 2 倍）
-  const nMed = Math.max(4, Math.min(8, 2 * ((medics && medics.blue) ? medics.blue.length : 2)));
+  // 共和国：各艦に乗組員と衛生兵（衛生兵は日本の救護班の割合の約 2 倍）
+  const jpMedRate = Math.max(0.04, ((medics && medics.blue) ? medics.blue.length : 3) / Math.max(1, per)), nMed = Math.max(3, Math.round(per * Math.min(0.2, jpMedRate * 2)));
   let gi = 0;
-  for (const sh of FRS.fr) {
-    for (let i = 0; i < 10; i++) {
-      const lx = -9 + i * 1.9 + rand(-0.3, 0.3), lz = rand(-1.6, 2.4), P = frsPt(sh, lx, UKS.WD, lz), id = 'fr' + String(1 + (gi++ % 10)).padStart(2, '0');
-      if (id === 'fr05') { gi++; }
-      const e = spawnEnemy(P.x, P.z, 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, y: P.y, yari: -1, set: { special: true } }); if (!e) continue;
+  for (const sh of FRS.frS) {
+    const nc = per - nMed, P = slots(sh, nc, -15.4, 13.0);
+    for (let i = 0; i < nc; i++) {
+      let id = 'fr' + String(1 + (gi++ % 10)).padStart(2, '0'); if (id === 'fr05') id = 'fr' + String(1 + (gi++ % 10)).padStart(2, '0');
+      const e = spawnEnemy(P[i][0], P[i][1], 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, yari: Math.random() < 0.3 ? 1 : -1, set: { special: true } }); if (!e) continue;
       if (EXTRA_GIRLS[id]) e.figH = EXTRA_GIRLS[id].prof.cm / 100;
-      frsPinUnit(e, P.x, P.z, P.y, sh.ry, { frsShip: sh }); FRS.frCrew.push(e);
+      e.hp = e.hpMax = 3; e.dmg = 8;
+      frsPinUnit(e, e.s.position.x, e.s.position.z, 0, 0, { frsShip: sh, frsMusket: Math.random() < 0.15 }); FRS.frCrew.push(e);
     }
     for (let i = 0; i < nMed; i++) {
-      const P = frsPt(sh, UKS.XS + 4 + (i % 4) * 1.2, UKS.WD, -1.8 + Math.floor(i / 4) * 1.2), id = ['fr05', 'fr09', 'fr07', 'fr03'][i % 4];
-      const e = spawnEnemy(P.x, P.z, 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, y: P.y, yari: -1, set: { special: true } }); if (!e) continue;
-      Object.assign(e.prof, { name: (i === 0 && sh === FRS.fr[1] ? 'ジュリエット・ルソー' : '共和国の衛生兵 ' + ['ポーリーヌ', 'ジョゼフィーヌ', 'オルタンス', 'リュシー', 'ベルト', 'シモーヌ', 'ナタリー', 'アデル'][i % 8]) });
+      const id = ['fr05', 'fr09', 'fr07', 'fr03'][i % 4], x = sh.x + 14.2 + (i % 2) * 1.0, z = sh.z - 2.4 + Math.floor(i / 2) * 1.0;
+      const e = spawnEnemy(x, z, 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1, set: { special: true } }); if (!e) continue;
+      Object.assign(e.prof, { name: (i === 0 && sh.flagship ? 'ジュリエット・ルソー' : '共和国の衛生兵 ' + ['ポーリーヌ', 'ジョゼフィーヌ', 'オルタンス', 'リュシー', 'ベルト', 'シモーヌ', 'ナタリー', 'アデル'][i % 8]) });
       if (EXTRA_GIRLS[id]) e.figH = EXTRA_GIRLS[id].prof.cm / 100;
-      frsPinUnit(e, P.x, P.z, P.y, sh.ry, { frsShip: sh, frsMedic: true, frsHome: [P.x, P.z], ukTag: '共和国の衛生兵' }); FRS.frMed.push(e);
+      e.hp = e.hpMax = 3;
+      frsPinUnit(e, x, z, 0, 0, { frsShip: sh, frsMedic: true, ukTag: '共和国の衛生兵' }); FRS.frMed.push(e);
     }
   }
+  for (const e of FRS.crew.concat(FRS.frCrew, FRS.frMed)) e.shadow.visible = false;
   FRS.frTotal = FRS.frCrew.length || 1;
 }
+// 持ち場（撃ち合いの間）と白兵戦。重い汎用の頭脳は通さない（400 人でも軽く）
 function frsBrain(e, dt) {
-  if (!e.frsPin) return false;
-  const p = e.s.position;
-  p.x = e.frsPin[0]; p.z = e.frsPin[1]; e.baseY = e.frsPin[2]; e.tgt = null; e.state = 'idle'; e.passive = true; e.knock.set(0, 0, 0);
-  e.faceWant = e.frsFace;
-  return true;
+  if (!e.frsUnit) return false;
+  e.knock.set(0, 0, 0); e.passive = true; e.cd -= dt; e.t += dt;
+  if (e.frsMedic) { e.tgt = null; e.state = 'idle'; return true; }   // 衛生兵は frsMedTick が動かす
+  if (!FRS.board || e.wounded) { e.moving = false; e.tgt = null; e.state = 'idle'; e.faceWant = e.frsFace; return true; }
+  frsMelee(e, dt); return true;
+}
+function frsGridBuild() {
+  const G = FRS.grid || (FRS.grid = new Map()); for (const a of G.values()) a.length = 0;
+  FRS.live = { blue: [], orange: [] };
+  for (const e of enemies) {
+    if (!isUp(e) || e.medic) continue;
+    FRS.live[e.team] && FRS.live[e.team].push(e);
+    const k = (Math.floor(e.s.position.x / 4) + 500) * 2000 + Math.floor(e.s.position.z / 4) + 500; let a = G.get(k); if (!a) G.set(k, a = []); a.push(e);
+  }
+}
+function frsNear(e, R, foe) {
+  const p = e.s.position, cx = Math.floor(p.x / 4), cz = Math.floor(p.z / 4), r = Math.ceil(R / 4); let best = null, bd = R;
+  for (let ix = cx - r; ix <= cx + r; ix++) for (let iz = cz - r; iz <= cz + r; iz++) {
+    const a = FRS.grid.get((ix + 500) * 2000 + iz + 500); if (!a) continue;
+    for (const o of a) { if (o === e || (foe ? o.team === e.team : o.team !== e.team)) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } }
+  }
+  return best;
+}
+function frsMelee(e, dt) {
+  const p = e.s.position, dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z), far = dP > 40;
+  e.shadow.visible = dP < 22;
+  if (FRS.phase !== 'battle') {   // 決着：共和国は自分の船へ引き上げ、味方は追わない
+    e.tgt = null; e.state = 'idle'; e.moving = false;
+    if (e.team === 'orange' && !e.frsAboard) { const tz = FRS.frZ - 1.5, d = Math.abs(tz - p.z); if (d > 0.4) { p.z += Math.sign(tz - p.z) * Math.min(d, e.speed * 1.2 * dt); e.moving = true; e.faceWant = Math.PI; frsClamp(p); } if (p.z < FRS.frZ + FRS_HZ - 0.6) e.frsAboard = true; }
+    return;
+  }
+  if ((e.frsT -= dt) <= 0) {   // 考える間隔：遠い者ほど間引く
+    e.frsT = far ? rand(1.2, 1.9) : rand(0.45, 0.8);
+    let t = frsNear(e, e.frsOmiya ? 7 : 14, true);
+    if (!t && !e.frsOmiya) { const L = FRS.live[e.team === 'blue' ? 'orange' : 'blue']; let bd = 1e9; for (let k = 0; k < 24 && L.length; k++) { const o = L[(Math.random() * L.length) | 0], d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; t = o; } } }
+    if (e.team === 'orange' && !inHQ() && state === 'play' && dP < 10 && (!t || dP < Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z))) t = PLAYER_T;
+    e.tgt = t;
+    const m = frsNear(e, 0.6, false);   // 押し合い：重ならない
+    if (m) { const dx = p.x - m.s.position.x, dz = p.z - m.s.position.z, d = Math.hypot(dx, dz) || 0.01; p.x += dx / d * 0.18; p.z += dz / d * 0.18; }
+  }
+  const t = e.tgt;
+  e.moving = false;
+  if (e.frsOmiya && (!t || (!t.isPlayer && !isUp(t)))) {   // 大宮：敵が近くにいなければ殿のそば
+    const fx = player.pos.x + Math.cos(player.yaw) * 1.5, fz = player.pos.z - Math.sin(player.yaw) * 1.5, d = Math.hypot(fx - p.x, fz - p.z);
+    if (d > 1.0) { const k = Math.min(d, e.speed * (d > 6 ? 1.5 : 1) * dt) / d; p.x += (fx - p.x) * k; p.z += (fz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(fx - p.x, fz - p.z); }
+    frsClamp(p); e.state = 'idle'; return;
+  }
+  if (!t || (!t.isPlayer && !isUp(t))) { e.tgt = null; e.state = 'idle'; return; }
+  const tp = tgtPos(t), dx = tp.x - p.x, dz = tp.z - p.z, dist = Math.hypot(dx, dz) || 0.01;
+  e.faceWant = Math.atan2(dx, dz);
+  if (e.frsMusket && dist > 3 && dist < 20 && (e.frsLoad -= dt) <= 0) { frsMusketShot(e, t, dist); return; }
+  if (dist > 0.95) { const k = Math.min(dist - 0.9, e.speed * dt) / dist; p.x += dx * k; p.z += dz * k; e.moving = true; e.state = 'approach'; frsClamp(p); return; }
+  e.state = 'idle';
+  if (e.cd <= 0) {
+    e.cd = rand(1.3, 2.2); e.lungeT = 0.25;
+    if (t.isPlayer) { if (!player.god) { hurtPlayer(Math.round(rand(3, 6))); } }
+    else if (Math.random() < 0.3) damageEnemy(t, 1, p, false, null, null);
+    if (!far && FRS.clankT <= 0) { FRS.clankT = 0.12; const o = Sfx.at(p, 40, 1.0); if (o) Sfx.noiseBurst(0.06, 'bandpass', 3800, 2600, 0.25, 5, 0, o); }
+  }
+}
+function frsMusketShot(e, t, dist) {   // マスケット：命中は約 1 割
+  e.frsLoad = rand(10, 15);
+  const p = e.s.position, dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+  if (dP < 45 && FRS.fxBudget > 0) { FRS.fxBudget -= 3; const m = new V3(p.x + Math.sin(e.face) * 0.6, p.y + 1.3, p.z + Math.cos(e.face) * 0.6); puff(m, 0xe9e6de, 3, 0.5, 1.2, 1.4); uk2Flash(m, 1.2, 0.08); }
+  if (dP < 50) { const o = Sfx.at(p, 160, 1.2); if (o) Sfx.noiseBurst(0.25, 'lowpass', 2200, 300, 0.6, 1, 0, o); }
+  if (Math.random() < 0.1) { if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(9); popup('銃弾がかすめた！'); } } else damageEnemy(t, 2, p, false, null, null); }
 }
 function ukSpeakFrs(k) { if (!UK.dlg) { const L = frsLine(k); if (L && L.file) VoicePack.play(L.file, 4, 1.95, 1); if (L) showSub(L); } }
 function showSub(L) { const t = (UK_WHO_NAME[L.who] ? UK_WHO_NAME[L.who].replace(/<[^>]+>/g, ' ') + '：' : '') + (L.en ? L.en + ' ／ ' : '') + L.ja; popup(t); popupTimer = Math.max(popupTimer, Math.min(5, (L.dur || 2.5))); }
@@ -10000,22 +10117,25 @@ function frsNearMissPt(tx, ty, tz, minD) {   // 人から minD 以上離れた�
   return [tx + minD + 1.5, ty, tz + minD];
 }
 function frsMuzzle(sh) {
-  if (sh === 'king') { const g = FRS.guns[(Math.random() * FRS.guns.length) | 0]; puff(g, 0xe9e6de, 8, 1.8, 1.6, 3.5); puff(g, 0xffcf80, 3, 0.8, 3, 0.12); uk2Flash(g, 3.5, 0.12); const o = Sfx.at(g, 300, 1.4); if (o) { Sfx.noiseBurst(1.2, 'lowpass', 600, 40, 1.0, 0.7, 0, o); Sfx.tone('sine', 55, 24, 1.0, 0.8, 0, o); } return g.clone(); }
-  uk2CannonFx(sh); return frsPt(sh, rand(-8, 8), 2.3, 6.4);
+  if (sh === 'king') { const g = FRS.guns[(Math.random() * FRS.guns.length) | 0]; frsPuff(g, 0xe9e6de, 8, 1.8, 1.6, 3.5); frsPuff(g, 0xffcf80, 3, 0.8, 3, 0.12); uk2Flash(g, 3.5, 0.12); const o = Sfx.at(g, 300, 1.4); if (o) { Sfx.noiseBurst(1.2, 'lowpass', 600, 40, 1.0, 0.7, 0, o); Sfx.tone('sine', 55, 24, 1.0, 0.8, 0, o); } return g.clone(); }
+  const fz = sh.side === 'fr' ? 1 : -1, g = new V3(sh.x + rand(-13, 13), 0.7, sh.g.position.z + fz * (FRS_HZ + 1.3));
+  frsPuff(g, 0xe9e6de, 6, 1.8, 1.6, 3.0); uk2Flash(g, 3.5, 0.12);
+  const o = Sfx.at(g, 300, 1.4); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 600, 40, 0.9, 0.7, 0, o); Sfx.tone('sine', 55, 24, 0.9, 0.7, 0, o); }
+  return g;
 }
 function frsFire(side) {
   const healthy = FRS.crew.filter(e => e.frsKing && isUp(e)).length;
   if (side === 'jp') {
     const tg = FRS.frCrew.filter(isUp); if (!tg.length) return;
-    const n = 2 + Math.floor(healthy / 4) + FRS.ally.length * 2;   // 味方の二隻も一隻二門ずつ
+    const n = Math.min(9, 2 + Math.floor(healthy / 10) + FRS.ally.length * 2);   // 味方の二隻も一隻二門ずつ
     for (let i = 0; i < n; i++) {
-      const T = tg[(Math.random() * tg.length) | 0], tp = T.s.position, src = i < 2 + Math.floor(healthy / 4) ? 'king' : FRS.ally[i % FRS.ally.length];
+      const T = tg[(Math.random() * tg.length) | 0], tp = T.s.position, src = i < 3 ? 'king' : FRS.ally[i % FRS.ally.length];
       const water = Math.random() < 0.3, P = water ? [tp.x + rand(-10, 10), -2.3, tp.z + rand(7, 12) * (Math.random() < 0.5 ? -1 : 1)] : frsNearMissPt(tp.x, tp.y + rand(0.6, 3.2), tp.z, 2.7);
       FRS.shells.push({ x: P[0], y: P[1], z: P[2], water, t: -i * rand(0.2, 0.4), T: rand(1.6, 2.1), src, side: 'jp', fired: false });
     }
   } else {
     const live = FRS.frCrew.filter(isUp).length; if (!live) return;
-    const n = 1 + Math.floor(live / 8);   // 普通の破裂弾だけになったので数を少し控えめに
+    const n = Math.min(8, 1 + Math.floor(live / 28));   // 普通の破裂弾だけになったので数を少し控えめに
     const tg = enemies.filter(o => isUp(o) && o.team === 'blue' && (o.frsPin || o.s.position.y < 0.5));
     for (let i = 0; i < n; i++) {
       const src = FRS.fr[(Math.random() * FRS.fr.length) | 0];
@@ -10031,17 +10151,17 @@ function frsFire(side) {
 function frsBurst(S) {
   const P = new V3(S.x, S.y, S.z), dP = Math.hypot(S.x - player.pos.x, S.z - player.pos.z);
   uk2Flash(P, S.water ? 3 : 5, 0.14);
-  if (S.water) { puff(P, 0xe8f2f6, 22, 1.2, 9, 1.6); puff(P.clone().setY(S.y + 2), 0xd6e6ee, 14, 1.6, 5, 2.2); }   // 水柱
-  else { puff(P, 0xfff0c0, 5, 0.6, 7, 0.12); puff(P, 0x3a3631, 12, 1.4, 2.2, 3.0); puff(P, 0x7d776c, 9, 1.0, 3.6, 2.2); puff(P, 0x1e1e1e, 22, 0.05, 15, 0.45); }
+  if (S.water) { frsPuff(P, 0xe8f2f6, 22, 1.2, 9, 1.6); frsPuff(P.clone().setY(S.y + 2), 0xd6e6ee, 14, 1.6, 5, 2.2); }   // 水柱
+  else { frsPuff(P, 0xfff0c0, 5, 0.6, 7, 0.12); frsPuff(P, 0x3a3631, 12, 1.4, 2.2, 3.0); frsPuff(P, 0x7d776c, 9, 1.0, 3.6, 2.2); frsPuff(P, 0x1e1e1e, 22, 0.05, 15, 0.45); }
   const o = Sfx.at(P, 320, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); }
   if (dP < 26) player.shake = Math.max(player.shake, clamp(0.5 - dP * 0.018, 0.05, 0.45));
   const R = S.water ? 5 : 8;
-  const hit = (tx, ty, tz) => { const d = Math.hypot(tx - S.x, tz - S.z, (ty - S.y) * 0.5); if (d > R) return 0; const k = 1 - d / R; return Math.random() < 0.12 + 0.6 * k * k ? k : 0; };
-  const team = S.side === 'jp' ? 'orange' : 'blue';
-  for (const e of enemies.slice()) {
+  const hit = (tx, ty, tz) => { const d = Math.hypot(tx - S.x, tz - S.z, (ty - S.y) * 0.5); if (d > R) return 0; const k = 1 - d / R; return Math.random() < 0.07 + 0.45 * k * k ? k : 0; };
+  const team = S.side === 'jp' ? 'orange' : 'blue'; let nh = 0;
+  for (const e of (FRS.live ? FRS.live[team] : enemies).slice()) {
     if (!isUp(e) || e.team !== team || e.seated) continue;
     const k = hit(e.s.position.x, e.baseY || 0, e.s.position.z);
-    if (k > 0) damageEnemy(e, k > 0.7 ? 3 : k > 0.4 ? 2 : 1, P, false, null, null);
+    if (k > 0 && nh++ < 3) damageEnemy(e, k > 0.7 ? 3 : k > 0.4 ? 2 : 1, P, false, null, null);
   }
   if (team === 'blue' && state === 'play' && !player.god) { const k = hit(player.pos.x, player.pos.y, player.pos.z); if (k > 0) { hurtPlayer(Math.round(6 + 26 * k)); popup('破片を受けた！'); } }
   if (S.side === 'jp' && !S.water && Math.random() < 0.15) ukSpeakFrs('b_hit');
@@ -10055,31 +10175,6 @@ function frsShellTick(dt) {
   }
   FRS.shells = FRS.shells.filter(S => !S.done);
   for (const F of UK2.flashes) { if (F.t >= F.life) { F.s.visible = false; continue; } F.t += dt; const k = F.t / F.life; F.s.scale.setScalar(F.size * (0.6 + k)); F.s.material.opacity = Math.max(0, 1 - k); }
-}
-// ---- 共和国の衛生兵：生きている者だけを手当て。亡くなった者には「御臨終です」 ----
-function frsMedTick(dt) {
-  for (const m of FRS.frMed) {
-    if (!isUp(m)) continue;
-    const p = m.frsPin;
-    if (!m.frsJob || !isUp(m.frsJob) && !m.frsJob.frsDeadSeen || (isUp(m.frsJob) && m.frsJob.hp >= m.frsJob.hpMax)) {
-      m.frsJob = null;
-      let best = null, bd = 1e9;
-      for (const e of FRS.frCrew) {
-        if (e.frsShip !== m.frsShip || FRS.frMed.some(o => o !== m && o.frsJob === e)) continue;
-        const wounded = isUp(e) && e.hp < e.hpMax, dead = !isUp(e) && !e.frsDeadSeen;
-        if (!wounded && !dead) continue;
-        const d = Math.hypot(e.frsPin[0] - p[0], e.frsPin[1] - p[1]) + (dead ? 6 : 0); if (d < bd) { bd = d; best = e; }
-      }
-      m.frsJob = best; m.frsWork = 0;
-    }
-    const J = m.frsJob, tx = J ? J.frsPin[0] + 0.55 : m.frsHome[0], tz = J ? J.frsPin[1] + 0.3 : m.frsHome[1], d = Math.hypot(tx - p[0], tz - p[1]);
-    if (d > 0.25) { const sp = 3.2 * dt / d; p[0] += (tx - p[0]) * Math.min(1, sp); p[1] += (tz - p[1]) * Math.min(1, sp); m.frsFace = Math.atan2(tx - p[0], tz - p[1]); m.walkT = (m.walkT || 0) + dt; }   // 素早く駆けつける
-    else if (J) {
-      m.frsWork += dt; m.frsFace = Math.atan2(J.frsPin[0] - p[0], J.frsPin[1] - p[1]);
-      if (!isUp(J)) { if (m.frsWork > 1.2) { J.frsDeadSeen = true; m.frsJob = null; if (Math.hypot(p[0] - player.pos.x, p[1] - player.pos.z) < 60 || Math.random() < 0.12) ukSpeakFrs('fr_dead'); } }
-      else if (m.frsWork > 2.4) { J.hp = J.hpMax; if (J.wounded) setWounded(J, false); m.frsJob = null; if (Math.random() < 0.08) ukSpeakFrs(Math.random() < 0.5 ? 'fr_heal' : 'fr_heal2'); }
-    }
-  }
 }
 // ---- 大宮と話す ----
 function frsNearOmiya() { const e = FRS.omiya; return e && isUp(e) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 3.2 && Math.abs(player.pos.y) < 1.5; }
@@ -10106,11 +10201,52 @@ function frsTalkHud() {
   const tk = $('talk'); if (!tk) return;
   if (frsNearOmiya() && !UK.dlg) { tk.textContent = '大宮 と話す（E / 話すボタン）'; tk.style.opacity = 1; document.documentElement.classList.add('cantalk'); }
 }
+function frsMedTick(dt) {   // 共和国の衛生兵：生きている負傷者へ素早く駆け寄って治す。亡くなった者には「御臨終です」
+  for (const m of FRS.frMed) {
+    if (!isUp(m) || m.frsAboard) continue;
+    const p = m.s.position; m.moving = false;
+    const done = J => !J || !J.s.parent || (!isUp(J) ? !!J.frsDeadSeen : J.hp >= J.hpMax);
+    if (done(m.frsJob)) m.frsJob = null;
+    if (!m.frsJob && (m.frsScanT = (m.frsScanT || 0) - dt) <= 0) {
+      m.frsScanT = rand(0.5, 0.9); let best = null, bd = FRS.board ? 30 : 1e9;
+      for (const e of FRS.frCrew) {
+        if ((!FRS.board && e.frsShip !== m.frsShip) || (e.frsMedBy && e.frsMedBy !== m && isUp(e.frsMedBy) && e.frsMedBy.frsJob === e)) continue;
+        const wounded = isUp(e) && e.hp < e.hpMax, dead = !isUp(e) && !e.frsDeadSeen;
+        if (!wounded && !dead) continue;
+        const d = Math.hypot(e.s.position.x - p.x, e.s.position.z - p.z) + (dead ? 6 : 0); if (d < bd) { bd = d; best = e; }
+      }
+      if (best) best.frsMedBy = m; m.frsJob = best; m.frsWork = 0;
+    }
+    const J = m.frsJob, tx = J ? J.s.position.x + 0.55 : FRS.board ? p.x : m.home[0], tz = J ? J.s.position.z + 0.3 : FRS.board ? p.z : m.home[1], d = Math.hypot(tx - p.x, tz - p.z);
+    if (d > 0.3) { const k = Math.min(d, 3.4 * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; m.faceWant = Math.atan2(tx - p.x, tz - p.z); m.moving = true; if (FRS.board) frsClamp(p); }
+    else if (J) {
+      m.frsWork += dt; m.faceWant = Math.atan2(J.s.position.x - p.x, J.s.position.z - p.z);
+      if (!isUp(J)) { if (m.frsWork > 1.2) { J.frsDeadSeen = true; m.frsJob = null; if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 30 || Math.random() < 0.05) ukSpeakFrs('fr_dead'); } }
+      else if (m.frsWork > 2.4) { J.hp = J.hpMax; if (J.wounded) setWounded(J, false); m.frsJob = null; if (Math.random() < 0.06) ukSpeakFrs(Math.random() < 0.5 ? 'fr_heal' : 'fr_heal2'); }
+    }
+  }
+}
+function frsPuff(pos, c, n, size, speed, life) {   // 煙・水柱の数に上限（スマホでも重くならない）
+  const d = Math.hypot(pos.x - player.pos.x, pos.z - player.pos.z); if (d > 90) n = Math.ceil(n * 0.4);
+  if (FRS.fxBudget <= 0) n = Math.min(n, 2); FRS.fxBudget -= n; puff(pos, c, n, size, speed, life);
+}
+function frsBoard() {   // 接舷：鉤縄と渡り板。全員が持ち場を離れて斬り込む
+  FRS.board = true; FRS.rectsK = null; FRS.shells.length = 0; FRS.planks = FRS.planks || [];
+  for (const x of FRS_X) for (const dx of [-11, -4, 3, 10]) { const pl = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.8), FRS_MAT.deck); pl.position.set(x + dx, 0.05, -5.0); stageRoot.add(pl); FRS.planks.push(pl); }
+  for (const e of FRS.crew.concat(FRS.frCrew, FRS.omiya ? [FRS.omiya] : [])) { e.frsPin = false; e.frsT = rand(0, 1.4); if (isUp(e)) { const k = e.hp / e.hpMax, H = e.frsOmiya ? 14 : 8; e.hpMax = H; e.hp = Math.max(1, Math.round(H * k)); } }   // 白兵戦は少し粘る（数分続くように）
+  showBanner('白兵戦', '鉤縄と渡り板――斬り込め！'); bannerTimer = 3.5; ukSpeakFrs('b_omiya1');
+}
 function frsCounts() { return { foe: FRS.frCrew.filter(isUp).length, ally: FRS.crew.filter(isUp).length + (FRS.omiya && isUp(FRS.omiya) ? 1 : 0) }; }
-function frsPhaseLabel() { return FRS.phase === 'win' ? 'フランス人形編 第一幕「海戦」 勝利' : 'フランス人形編 第一幕「海戦」'; }
+function frsPhaseLabel() {
+  if (FRS.phase === 'win') return 'フランス人形編 第一幕「海戦」 勝利';
+  if (FRS.phase === 'battle' && !FRS.board) { const s = Math.max(0, Math.ceil(FRS_APPROACH - FRS.bt)); return `砲撃戦 ― 接舷まで ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+  return FRS.board ? '白兵戦 ― 旗艦ラ・ジロンド号を奪え' : 'フランス人形編 第一幕「海戦」';
+}
 function frsReset() {
-  FRS.on = true; FRS.phase = 'open'; FRS.t = 0; FRS.ended = false; FRS.said = {}; FRS.shells = []; FRS.fireT = 9; FRS.frFireT = 7; FRS.endT = 0; FRS.win = false;
-
+  FRS.on = true; FRS.phase = 'open'; FRS.t = 0; FRS.bt = 0; FRS.ended = false; FRS.said = {}; FRS.shells = []; FRS.fireT = 9; FRS.frFireT = 7; FRS.endT = 0; FRS.win = false;
+  FRS.board = false; FRS.frZ = FRS_ZF0; FRS.rectsK = null; FRS.fxBudget = 200; FRS.clankT = 0; FRS.flagHold = 0; FRS.flagT = 0; FRS.barkT = 14; FRS.live = null; CFG.maxBodies = 280;
+  for (const s of FRS.frS || []) { s.z = FRS_ZF0; s.g.position.z = FRS_ZF0; }
+  for (const pl of FRS.planks || []) stageRoot.remove(pl); FRS.planks = [];
   player.pos.set(12.5, 0, 0.5); player.yaw = Math.PI * 0.5 + 0.35;
   UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
 }
@@ -10119,28 +10255,46 @@ function frsStart() {
   showBanner('フランス人形編 第一幕', '海戦 ― 英国の港の沖'); bannerTimer = 5;
   ukDlg([{ wait: 2.2 }, { say: 'o_sumi' }, { say: 'o_uk06' }, { say: 'o_omiya' }, { say: 'o_fr06' }, { fn: () => { FRS.phase = 'battle'; FRS.frFireT = 1.5; FRS.fireT = 3.5; } }, { say: 'o_uk10' }]);
 }
+function frsMoveFr(dz) { FRS.frZ += dz; for (const s of FRS.frS) { s.z = FRS.frZ; s.g.position.z = FRS.frZ; } }
 function updateFrs(dt) {
   if (!FRS.on) return;
-  FRS.t += dt;
+  const t0 = performance.now();
+  FRS.t += dt; FRS.clankT -= dt; FRS.fxBudget = Math.min(240, FRS.fxBudget + dt * 140);
   ukDlgTick(dt);
-  const D = FRS.deck; player.pos.x = clamp(player.pos.x, D.x0 + 0.3, D.x1 + 0.2); player.pos.z = clamp(player.pos.z, D.z0 + 0.3, D.z1 - 0.3); if (player.pos.y < 0) player.pos.y = 0;
+  const KR = [FRS.deck.x0 + 0.3, FRS.deck.x1 + 0.2, FRS.deck.z0 + 0.3, FRS.deck.z1 - 0.3];
+  frsClamp(player.pos, FRS.board ? null : KR); if (player.pos.y < 0) player.pos.y = 0;
+  frsGridBuild();
   frsShellTick(dt); frsMedTick(dt);
-  if (state !== 'play') return;
-  if (FRS.phase === 'battle') {
-    FRS.fireT -= dt; FRS.frFireT -= dt;
-    if (FRS.fireT <= 0) { FRS.fireT = rand(6, 8); frsFire('jp'); }
-    if (FRS.frFireT <= 0) { FRS.frFireT = rand(6.5, 8.5); frsFire('fr'); }
-    for (const s of FRS.fr) if (s.z < -72) { const dz = dt * 0.35; s.z += dz; s.S.position.z += dz; for (const e of FRS.frCrew.concat(FRS.frMed)) if (e.frsShip === s) { e.frsPin[1] += dz; if (e.frsHome) e.frsHome[1] += dz; } }   // 共和国艦隊がじわじわ迫る
-    FRS.barkT -= dt; if (FRS.barkT <= 0 && !UK.dlg) { FRS.barkT = rand(16, 24); if (FRS.omiya && isUp(FRS.omiya)) ukSpeakFrs(['b_omiya1', 'b_omiya2', 'b_omiya3', 'b_omiya4', 'b_omiya5'][(Math.random() * 5) | 0]); }
-    if (FRS.omiya && !isUp(FRS.omiya) && !FRS.said.omDown) { FRS.said.omDown = true; ukSpeakFrs(Math.random() < 0.5 ? 'om_down' : 'om_down2'); }
-    const c = frsCounts(), kingCrew = FRS.crew.filter(e => e.frsKing && isUp(e)).length;
-    if (c.foe <= Math.ceil(FRS.frTotal * 0.5)) { FRS.phase = 'win'; FRS.win = true; FRS.endT = 0; ukSpeakFrs('b_ship'); }
-    else if (kingCrew === 0) { FRS.phase = 'lose'; FRS.endT = 0; ukSpeakFrs('lose'); }
-  } else if (FRS.phase === 'win') {
-    FRS.endT += dt; for (const s of FRS.fr) { const dz = -dt * 3; s.z += dz; s.S.position.z += dz; for (const e of FRS.frCrew.concat(FRS.frMed)) if (e.frsShip === s) { e.frsPin[1] += dz; if (e.frsHome) e.frsHome[1] += dz; } }   // 退く
-    if (FRS.endT > 4 && !FRS.said.win) { FRS.said.win = true; if (FRS.omiya && isUp(FRS.omiya)) ukSpeakFrs('win'); }
-    if (FRS.endT > 10 && !FRS.ended) { FRS.ended = true; gameOver(true); }
-  } else if (FRS.phase === 'lose') { FRS.endT += dt; if (FRS.endT > 5 && !FRS.ended) { FRS.ended = true; gameOver(false); } }
+  for (const e of enemies) if (!e.frsUnit && isUp(e) && e.baseY < 0.5) frsClamp(e.s.position, FRS.board ? null : KR);   // 秘書課・救護班も甲板の上
+  if (state === 'play') {
+    if (FRS.phase === 'battle') {
+      if (!FRS.board) {
+        FRS.bt += dt; FRS.fireT -= dt; FRS.frFireT -= dt;
+        if (FRS.fireT <= 0) { FRS.fireT = rand(6, 8); frsFire('jp'); }
+        if (FRS.frFireT <= 0) { FRS.frFireT = rand(6.5, 8.5); frsFire('fr'); }
+        const k = Math.min(1, FRS.bt / FRS_APPROACH), nz = FRS_ZF0 + (FRS_ZF1 - FRS_ZF0) * k, dz = nz - FRS.frZ;   // 共和国艦隊がじわじわ寄せてくる
+        if (dz) { frsMoveFr(dz); for (const e of FRS.frCrew.concat(FRS.frMed)) { e.s.position.z += dz; if (e.home) e.home[1] += dz; } }
+        if (FRS.bt > FRS_APPROACH - 25 && !FRS.said.close) { FRS.said.close = true; popup('共和国艦が迫る！ 接舷に備えよ——乗り込んでくるぞ'); popupTimer = 3.5; ukSpeakFrs('b_omiya3'); }
+        if (k >= 1) frsBoard();
+      }
+      FRS.barkT -= dt; if (FRS.barkT <= 0 && !UK.dlg) { FRS.barkT = rand(16, 24); if (FRS.omiya && isUp(FRS.omiya)) ukSpeakFrs(['b_omiya1', 'b_omiya2', 'b_omiya3', 'b_omiya4', 'b_omiya5'][(Math.random() * 5) | 0]); }
+      if (FRS.omiya && !isUp(FRS.omiya) && !FRS.said.omDown) { FRS.said.omDown = true; ukSpeakFrs(Math.random() < 0.5 ? 'om_down' : 'om_down2'); }
+      let flag = false;
+      if (FRS.board && (FRS.flagT -= dt) <= 0) {   // 旗艦（殿の船の向かい）を制圧：敵が一人もおらず味方が 3 人以上、5 秒
+        FRS.flagT = 1; const r = [-FRS_HX, FRS_HX, FRS.frZ - FRS_HZ, FRS.frZ + FRS_HZ - 0.4], inR = o => { const q = o.s.position; return q.x > r[0] && q.x < r[1] && q.z > r[2] && q.z < r[3]; };
+        FRS.flagHold = !FRS.live.orange.some(inR) && FRS.live.blue.filter(inR).length >= 3 ? FRS.flagHold + 1 : 0; flag = FRS.flagHold >= 5;
+      }
+      const c = frsCounts(), kingCrew = FRS.crew.filter(e => e.frsKing && isUp(e)).length;
+      if (c.foe <= Math.ceil(FRS.frTotal * 0.5) || flag) { FRS.phase = 'win'; FRS.win = true; FRS.endT = 0; popup(flag ? '旗艦ラ・ジロンド号を制圧！ 共和国艦隊が退く' : '共和国の乗組員が半数を割った！ 艦隊が退く'); popupTimer = 4; ukSpeakFrs('b_ship'); }
+      else if (kingCrew === 0) { FRS.phase = 'lose'; FRS.endT = 0; ukSpeakFrs('lose'); }
+    } else if (FRS.phase === 'win') {
+      FRS.endT += dt;
+      if (FRS.endT > 5) { const dz = -dt * 2.5; frsMoveFr(dz); for (const e of FRS.frCrew.concat(FRS.frMed)) if (isUp(e) && (e.frsAboard || (e.frsMedic && e.s.position.z < FRS.frZ + FRS_HZ))) { e.s.position.z += dz; if (e.frsMedic) { e.frsAboard = true; e.frsJob = null; e.home = [e.s.position.x, e.s.position.z]; } } }   // 退く
+      if (FRS.endT > 4 && !FRS.said.win) { FRS.said.win = true; if (FRS.omiya && isUp(FRS.omiya)) ukSpeakFrs('win'); }
+      if (FRS.endT > 12 && !FRS.ended) { FRS.ended = true; gameOver(true); }
+    } else if (FRS.phase === 'lose') { FRS.endT += dt; if (FRS.endT > 5 && !FRS.ended) { FRS.ended = true; gameOver(false); } }
+  }
+  FRS.perfU = (FRS.perfU || 0) * 0.95 + (performance.now() - t0) * 0.05;
 }
 if (TEST) window.__frs = { FRS, frsFire, frsTalkOmiya };
 
@@ -12642,7 +12796,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17987,7 +18141,7 @@ function frame(now) {
     if (TEST) testBot(dt);
     stepBudget = 3;
     if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
-    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); updateEnemies(dt); if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
+    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();
     updateTags();

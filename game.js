@@ -16598,7 +16598,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22127,7 +22127,8 @@ if (STAGE_Q && STAGES[STAGE_Q]) stageName = STAGE_Q;
 if (!STAGES[stageName]) stageName = 'plains';
 function selectStage(name) {
   stageName = name; try { localStorage.setItem('onna_stage', name); } catch (e) {}
-  for (const b of document.querySelectorAll('#stagesel button, #lifesel button')) b.classList.toggle('on', b.dataset.st === name);
+  for (const b of document.querySelectorAll('#stagesel button[data-st], #lifesel button')) b.classList.toggle('on', b.dataset.st === name);
+  stageCardShow(name);
   const ms = MODE_STAGES.includes(name), md = stageModes[name] || 'def';
   $('modesel').style.display = ms ? 'flex' : 'none';
   for (const b of document.querySelectorAll('#modesel button')) b.classList.toggle('on', b.dataset.md === md);
@@ -22139,7 +22140,38 @@ const STAGE_ATK_DESC = {
   castle: '【攻める】青組（殿の側）が城を攻める。破門隊の丸太で大手門を破り、二の丸で中門の門櫓・狭間の弓と撃ち合い、毒煙玉の投げ手が守りを崩す。奥御殿の伏兵・落とし穴を越えて、橙組の本陣（いちばん奥の間）を奪えば勝ち。殿の本陣は門の外の陣幕。',
 };
 for (const b of document.querySelectorAll('#modesel button')) b.addEventListener('click', () => { stageModes[stageName] = b.dataset.md; try { localStorage.setItem('onna_modes', JSON.stringify(stageModes)); } catch (e) {} selectStage(stageName); });
-for (const b of document.querySelectorAll('#stagesel button, #lifesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
+for (const b of document.querySelectorAll('#stagesel button[data-st], #lifesel button')) b.addEventListener('click', ev => { if (stageDragAt && performance.now() - stageDragAt < 250) { ev.preventDefault(); return; } selectStage(b.dataset.st); });
+// 戦場選択：編ごとの横一列。指でなぞる・ホイール・ドラッグ・◀▶で横に送る
+let stageDragAt = 0;
+function stageArrUpd(tr) { const r = tr.parentNode; if (!r) return; const max = tr.scrollWidth - tr.clientWidth - 2; for (const a of r.querySelectorAll('.sarr')) { a.disabled = a.dataset.dir < 0 ? tr.scrollLeft <= 2 : tr.scrollLeft >= max; a.style.visibility = max <= 0 ? 'hidden' : ''; } }
+function stageCardShow(name) {
+  const b = document.querySelector('#stagesel button[data-st="' + name + '"]'); if (!b) return; const tr = b.parentNode;
+  const l = b.offsetLeft - tr.offsetLeft, r = l + b.offsetWidth;
+  if (l < tr.scrollLeft) tr.scrollLeft = l - 4; else if (r > tr.scrollLeft + tr.clientWidth) tr.scrollLeft = r - tr.clientWidth + 4;
+  stageArrUpd(tr);
+}
+for (const tr of document.querySelectorAll('#stagesel .strack')) {
+  tr.addEventListener('scroll', () => stageArrUpd(tr), { passive: true });
+  tr.addEventListener('wheel', ev => {
+    const d = Math.abs(ev.deltaX) > Math.abs(ev.deltaY) ? ev.deltaX : ev.deltaY; if (!d || tr.scrollWidth <= tr.clientWidth) return;
+    ev.preventDefault(); tr.scrollLeft += d * (ev.deltaMode === 1 ? 32 : 1);
+  }, { passive: false });
+  let dn = null;
+  tr.addEventListener('pointerdown', ev => { if (ev.pointerType !== 'mouse' || ev.button !== 0) return; dn = { x: ev.clientX, sl: tr.scrollLeft, mv: false }; });
+  tr.addEventListener('pointermove', ev => { if (!dn) return; const dx = ev.clientX - dn.x; if (!dn.mv && Math.abs(dx) > 6) { dn.mv = true; tr.classList.add('drag'); } if (dn.mv) tr.scrollLeft = dn.sl - dx; });
+  const up = () => { if (dn && dn.mv) { stageDragAt = performance.now(); tr.classList.remove('drag'); } dn = null; };
+  tr.addEventListener('pointerup', up); tr.addEventListener('pointerleave', up); tr.addEventListener('pointercancel', up);
+  tr.addEventListener('dragstart', ev => ev.preventDefault());
+}
+for (const a of document.querySelectorAll('#stagesel .sarr')) a.addEventListener('click', () => { const tr = a.parentNode.querySelector('.strack'); tr.scrollBy({ left: a.dataset.dir * tr.clientWidth * 0.8, behavior: 'smooth' }); });
+for (const t of document.querySelectorAll('#stagesel .stabs button')) t.addEventListener('click', () => {
+  const r = document.querySelector('#stagesel .srow[data-cat="' + t.dataset.tab + '"]'); if (!r) return;
+  r.scrollIntoView({ block: 'nearest' }); const tr = r.querySelector('.strack'); const on = tr.querySelector('button.on'); if (!on) tr.scrollLeft = 0;
+  r.classList.add('flash'); setTimeout(() => r.classList.remove('flash'), 600);
+});
+if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(es => { for (const x of es) stageArrUpd(x.target); }); for (const tr of document.querySelectorAll('#stagesel .strack')) ro.observe(tr); }
+addEventListener('resize', () => { for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr); });
+for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr);
 selectStage(stageName);
 // 用件を選んだらメニューを閉じて、その様子を画面で見せる（返事は字幕）。小メニュー（ご飯・感想）を開くだけのときは開いたまま
 function secAct(fn) {

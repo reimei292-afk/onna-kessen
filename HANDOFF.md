@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261024r`
+- 現在のバージョン: `20261024s`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。
   2. `node --check game.js`
@@ -248,7 +248,7 @@
 - 本気の戦の声（USD / CAMP / UK2〜7 / FRS）：warSay・warChat。名前付きは wn_<who>_<kind>、無名は w_<rom><vv>_<kind>。倒れる時は短い声だけ。「戦死判定」表示は戦では出さない。声は tools/add_usd_voices.py（tools/voice_profiles.py の表から固定の声）。
 - クレジット：CREDITS.md、assets/yj_tex/CREDITS.md。
 
-## 20261024r：第二幕（usTown）の手直し
+## 20261024s：第二幕（usTown）の手直し
 - **人の並び**: 大宮は宮殿（第三の場）から。町＝綾瀬と町の守り・英国の娘・殿と秘書／城＝西園寺と城の者＋町の生き残り／宮殿＝大宮・近衛・侍女＋生き残り／山城・総構え＝生き残り＋その段の兵（徴募）。`campSurvivors()` が顔・名前ごと記録し `campSurvSpawn()` で呼び戻す。`campHas(k)` で名のある娘を条件付きに。
 - **大将は討ち死にしない**: `e.campProt`（綾瀬・西園寺・大宮）。`damageEnemy` で hp を 1.5 に止め `campProtFall`→14秒 殿の後ろへ（`campProtBrain`）。`campProtOn` が偽になるのは総構え ODW.zone>=2 だけ。
 - **寄せ手はどの段もアメリカ勢**: `campUs()` で英語名（`usName`）・`usVox`・`USD_W` の銃。`yariSay/runSay` は第二幕の orange を黙らせ、`npcSay0` は英語の悲鳴。号令は `usOrder`（u_fire/u_adv/u_cov/u_bayo/u_chg/u_lad/u_dem/u_gun/u_haul/u_breach/u_clear/u_rel、声は tools/add_usd_voices.py）。
@@ -256,3 +256,9 @@
 - **数と描画**: 平城 PC 守り100／寄せ手130（3波）、スマホ 44／48。`staticMerge(stageRoot, keep)`＋`mergeLocal`（竹束）で城の静的メッシュ 940→172。
 - 単独の「山城の守り」（CAMP.solo）は日本の寄せ手のまま（`campUsBrainJp`）。
 - 試験: /tmp/camptest.js ＋ /tmp/audit.js（寄せ手全員の名前・顔・声・武器を出し、日本の型・弓・槍・刀を数える `CAMP.aud`）。
+
+## 20261024s：戦場選択の画面を編ごとの横一列に
+- #stagesel は 基本／英国淑女編／フランス人形編／アメリカ西部編 の .srow（横に流れる .strack）。基本の先頭が平原。宮殿の日常は #lifesel のまま。
+- 横送り：指でなぞる・ホイール（縦も横に変換）・Shift+ホイール・マウスでつかんで引く・◀▶（タッチ端末では隠す）。scroll-snap。上のタブで列へ跳ぶ（高さ520px以下では隠す）。
+- ステージのボタンは button[data-st]（◀▶とタブは data-st なし。selectStage の対象を [data-st] に絞った）。選ぶと列の中でその札まで送る（stageCardShow）。
+- 高さ420px以下ではタイトル下の説明文を隠し、開始ボタンを近づける。PC幅900px以上では操作説明を二段組み。

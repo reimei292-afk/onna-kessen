@@ -11265,7 +11265,7 @@ function casGoal(e) {
     if (!C.stormGo) return { pt: [e.musX, -44], hold: true, sp: 0.9 };
     const viaCause = (x, z) => (p.z < -9.4 && Math.abs(p.x) > 2.4) ? [clamp(p.x, -2, 2), -10] : [x, z];
     if (C.charge && C.charge.t > 0) return { pt: viaCause(clamp(p.x, -2.4, 2.4), -8.5), hold: true, sp: 1.25 };   // 導火線：離れて伏せる
-    if (e.usSap) return { pt: viaCause(e.lane * 1.5, -1.2), sp: 1.25 };
+    if (e.usSap) return !C.ladN && time - C.stormGo < 22 ? { pt: viaCause(e.lane * 1.5, -4.4), hold: true, sp: 1.2 } : { pt: viaCause(e.lane * 1.5, -1.2), sp: 1.25 };   // 梯子が先、爆薬はその後
     if (e.usLadMan) { const L = e.usLadMan; if (L.up) { e.usLadMan = null; e.usLadUse = L; } else return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.6 : -2.6), sp: 1.2 }; }
     if (e.usLadUse && e.usLadUse.up) { const L = e.usLadUse; return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.7 : -2.6), sp: 1.2 }; }
     return { pt: viaCause(clamp(e.musX * 0.4, -2.4, 2.4), -2.8), hold: true, sp: 1.2 };

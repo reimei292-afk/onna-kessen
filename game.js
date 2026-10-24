@@ -8397,6 +8397,8 @@ const STAGES = {
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
   palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。' },
+  usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
+  yamajiro: { name: '山城の守り', desc: '戦国の山城（月山富田城・七尾城・八王子城・竹田城の縄張りに倣う）。坂の下から寄せてくる敵を、三の丸→二の丸→本丸の曲輪で一つずつ食い止める。切岸・堀切・竪堀・枡形虎口。赤い杭の所で E：丸太・岩を転がす／吊り橋を切り落とす／太鼓で控えを呼ぶ。霧が時々立ちこめる。水の手を取られると手当てが遅くなる。' },
   usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
@@ -8885,8 +8887,8 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (PAL.on && palL(k)) || (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
-function ukWho(who) { if (PAL.on) return palWho(who); if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
+const ukL = k => (CAMP.on && usdLine(k)) || (PAL.on && palL(k)) || (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+function ukWho(who) { if (CAMP.on) return who === 'king' ? null : campWho(who); if (PAL.on) return palWho(who); if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
@@ -8898,7 +8900,7 @@ function ukSpeak(key) {
   }
   if (e) { e.ukTalkT = time + (L.dur || 3) + 0.6; }
   const P = UK_PROF[L.who] || (L.who === 'uk00' ? UK_PRINCESS : null);
-  const nm = P ? `${P.name}<small>${P.en}・${P.role}</small>` : (UK_WHO_NAME[L.who] || '');
+  const nm = P ? `${P.name}<small>${P.en}・${P.role}</small>` : (UK_WHO_NAME[L.who] || (CAMP.on && CAMP_NAME[L.who]) || '');
   const pic = e ? portraitOf(e.spr || (e.girl && e.girl.spr)) : '', pe = $('ukdlgPic');   // 話している本人の顔（殿は出さない）
   if (pe) { if (pic) { pe.src = pic; pe.style.display = 'block'; pe.dataset.who = L.who; } else { pe.removeAttribute('src'); pe.style.display = 'none'; pe.dataset.who = ''; } }
   $('ukdlgJa').style.fontSize = L.small ? '0.7em' : ''; $('ukdlgJa').style.opacity = L.small ? '0.75' : '';
@@ -10540,6 +10542,7 @@ function usdSpawn() {
 function usdBrain(e, dt) {
   if (e.usdHide) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false; e.s.visible = false; return true; }
   if (e.usdDuel) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; return true; }
+  if (USD.phase === 'battle' && e === USD.omiya && !e.cmdr) { e.cmdr = 'omiya'; e.home = e.home || [e.s.position.x, e.s.position.z]; e.cmdrDir = [0, -1]; }   // 大将は前に出ない（cmdrBrain）
   if (!e.usdUnit || e.usdFree) return false;
   e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
   const p = e.s.position;
@@ -10632,21 +10635,21 @@ function usdBundleTick(B, dt) {
 }
 // ---- 破裂弾の大砲（日本側）：直撃はさせず手前・脇で破裂。破片は岩・竹束の陰で止まる ----
 function usdGunTick(G, dt) {
-  const crew = G.crew.filter(isUp); if (!crew.length || USD.phase !== 'battle') return;
+  const crew = G.crew.filter(isUp); if (!crew.length || (CAMP.on ? CAMP.frozen : USD.phase !== 'battle')) return;
   if ((G.cd -= dt) > 0) return;
-  const C = USD.live.orange.map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 15 && c[0] < 120 && !USD.live.blue.some(b => Math.hypot(b.s.position.x - c[1].s.position.x, b.s.position.z - c[1].s.position.z) < 7) && Math.hypot(player.pos.x - c[1].s.position.x, player.pos.z - c[1].s.position.z) > 8);
+  const C = (CAMP.on ? CAMP.live : USD.live).orange.map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 15 && c[0] < 120 && !(CAMP.on ? CAMP.live : USD.live).blue.some(b => Math.hypot(b.s.position.x - c[1].s.position.x, b.s.position.z - c[1].s.position.z) < 7) && Math.hypot(player.pos.x - c[1].s.position.x, player.pos.z - c[1].s.position.z) > 8);
   if (!C.length) { G.cd = 2; return; }
   G.cd = rand(10, 13);
   const [d, t] = C[(Math.random() * C.length) | 0], tx = t.s.position.x, tz = t.s.position.z;
   let ux = (G.x - tx) / d, uz = (G.z - tz) / d, sh = rand(2.5, 5), px = tx + ux * sh + uz * rand(-2.5, 2.5), pz = tz + uz * sh - ux * rand(-2.5, 2.5);
-  for (let k = 0; k < 4; k++) { if (!USD.live.orange.some(o => Math.hypot(o.s.position.x - px, o.s.position.z - pz) < 2.2)) break; px += ux * 1.6; pz += uz * 1.6; }
+  for (let k = 0; k < 4; k++) { if (!(CAMP.on ? CAMP.live : USD.live).orange.some(o => Math.hypot(o.s.position.x - px, o.s.position.z - pz) < 2.2)) break; px += ux * 1.6; pz += uz * 1.6; }
   G.g.rotation.y = Math.atan2(tx - G.x, tz - G.z);
   const air = Math.random() < 0.6, ring = new THREE.Mesh(UK2.ringG || (UK2.ringG = new THREE.RingGeometry(0.8, 1.1, 32)), uk2Mats().ring.clone()); ring.rotation.x = -Math.PI / 2; ring.position.set(px, 0.05, pz); ring.renderOrder = 3; stageRoot.add(ring);
   USD.shells.push({ x: px, z: pz, y: air ? rand(2.4, 3.6) : 0.25, air, t: 0, T: 1.2 + d / 75, ring, whist: false });
   const mz = new V3(G.x + Math.sin(G.g.rotation.y) * 1.7, 0.95, G.z + Math.cos(G.g.rotation.y) * 1.7), dP = Math.hypot(mz.x - player.pos.x, mz.z - player.pos.z);
   puff(mz, 0xe9e6de, 10, 1.6, 1.8, 4.5); puff(mz, 0xffcf80, 3, 0.8, 3, 0.12); uk2Flash(mz, 3.5, 0.12);
   const o = Sfx.at(mz, 520, 1.5); if (o) { const dl = dP / 340; Sfx.noiseBurst(1.4, 'lowpass', 600, 40, 0.95, 0.7, dl, o); Sfx.tone('sine', 56, 24, 1.1, 0.8, dl, o); }
-  USD.stats.guns = (USD.stats.guns || 0) + 1; if (!USD.said.b_cannon) usdBark('b_cannon', 0, true); else usdBark('b_cannon', 45);
+  USD.stats.guns = (USD.stats.guns || 0) + 1; if (!CAMP.on) { if (!USD.said.b_cannon) usdBark('b_cannon', 0, true); else usdBark('b_cannon', 45); }
   for (const c of crew) c.faceWant = G.g.rotation.y;
 }
 function usdBurst(S) {
@@ -10656,7 +10659,7 @@ function usdBurst(S) {
   const o = Sfx.at(P, 320, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); Sfx.noiseBurst(0.18, 'bandpass', 3000, 900, 0.5, 1, 0, o); }
   if (dP < 26) player.shake = Math.max(player.shake, clamp(0.5 - dP * 0.018, 0.05, 0.45));
   const R = S.air ? 9 : 7.5; let nh = 0;
-  for (const e of USD.live.orange.slice()) {
+  for (const e of (CAMP.on ? CAMP.live : USD.live).orange.slice()) {
     if (!isUp(e)) continue; const d = Math.hypot(e.s.position.x - S.x, e.s.position.z - S.z); if (d > R) continue;
     if (usdBlocked(S.x, S.z, e.s.position.x, e.s.position.z)) continue;   // 岩・竹束の陰は破片が届かない
     const k = 1 - d / R; if (Math.random() < 0.15 + 0.6 * k * k && nh++ < 4) { USD.stats.frag = (USD.stats.frag || 0) + 1; damageEnemy(e, k > 0.75 ? 3 : k > 0.4 ? 2 : 1, P, false, null, null); }
@@ -10847,6 +10850,1051 @@ function updateUsd(dt) {
   } else if (USD.phase === 'lose') { USD.endT += dt; if (USD.endT > (USD.kingShot ? 3 : 5) && !USD.ended) { USD.ended = true; if (USD.kingShot) player.hp = 0; gameOver(false); } }
 }
 if (TEST) window.__usd = { USD, usdDraw, usdChoose, usdDuelSetup, usdBattle, pick: i => ukPick(i), skip: () => ukDlgSkip() };
+
+// ====================================================================
+//  アメリカ西部編 第二幕「城下町・平城・宮殿・山城」（?stage=usTown）と、単独の「山城の守り」（?stage=yamajiro）
+//   一続きのステージ。段（CAMP.ph）ごとに中身を作り直し、前の段の形・質感は捨てる（campDispose）。
+//   ① 城下町（usTown）：綾瀬が指揮。落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾。4〜6 分で破られる
+//   ② 平城（castle を守りで流用）：西園寺と氷室・一条。堀と土橋。守り切れば勝ち、落ちれば抜け道へ
+//   ③ 宮殿（usPal）：抜け道の出口から来る。大宮と近衛・侍女・秘書課。大階段が最後の線
+//   ④ 山城（yamajiro）：曲輪を一つずつ。落石・丸太・吊り橋・逆茂木・太鼓の援軍・霧・水の手
+//   負け：殿が倒れたとき（①〜③）。④の本丸が落ちれば、殿は自ら幕を引く（何も見せない：字幕と暗転だけ）。
+//   結果の画面は最後に一度だけ（どこまで持ちこたえたか）。名のある大将は前に出ず、隊の後ろで采配する（cmdrBrain）。
+// ====================================================================
+const CAMP = { on: false, run: false, solo: false, ph: 0, t: 0, said: {}, by: {}, log: [], sum: {}, kills: 0, frozen: false, switching: false, ended: false, live: { blue: [], orange: [] }, waves: [], surv: {} };
+const CAMP_N = USD_N;
+const CAMP_OWN = ['usTown', 'usPal', 'yamajiro'];
+const TERR = { fn: null };   // 地面の高さ（山城の斜面・宮殿の大階段）。null なら平ら
+function campWho(who) { if (who === 'sumi') return CAMP.by.sumi || sec.e; if (who === 'sec2') return sec2.e; return CAMP.by[who] || (who === 'fumi' ? fumi.e : who === 'ojou' ? ojou.e : null); }
+function campBark(k, gap, force) {
+  const L = usdLine(k); if (!L || !CAMP.on || (UK.dlg && !force)) return false;
+  if (!force && CAMP.said[k] && time - CAMP.said[k] < (gap || 10)) return false;
+  const e = campWho(L.who); if (e && !isUp(e) && L.who !== 'sumi') return false;
+  CAMP.said[k] = time;
+  const d = e ? Math.min(/^us/.test(L.who) ? 30 : 10, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
+  if (L.file) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
+  const nm = (UK_WHO_NAME[L.who] || CAMP_NAME[L.who] || '').replace(/<small>.*<\/small>/, '').replace(/<[^>]+>/g, '');
+  subtitle(L.en || L.ja); const el = $('subtitle'); if (el) el.textContent = L.en ? `${nm}「${L.en}」　${L.ja}` : `${nm}「${L.ja}」`;
+  return true;
+}
+const CAMP_NAME = { sumi: '白瀬 澄', sec2: '早瀬 ことね', fumi: '綾瀬 文乃', ojou: '西園寺 すみれ', omiya: '大宮 ひなた', shinobu: '氷室 しのぶ', chikage: '一条 千景', hiyori: '小日向 ひより', akari: '夏目 あかり',
+  shizuka: '久遠 静香', reika: '白石 麗華', uk10: 'シャーロット・ケンドール', uk04: 'ベアトリス・ソーン', uk03: '英国の娘', king: '殿' };
+// 殿の字幕（声は出さない）と語り
+function campKing(ja, dur) { subtitle(ja); const el = $('subtitle'); if (el) el.textContent = `殿「${ja}」`; }
+function campNarr(ja) { const el = $('subtitle'); subtitle(ja); if (el) el.textContent = ja; }
+// ---- 暗転（字幕つき）。中身の差し替えは真っ暗なあいだに ----
+function campFadeEl() {
+  let el = $('campFade'); if (el) return el;
+  el = document.createElement('div'); el.id = 'campFade';
+  el.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:60;transition:opacity 1.2s;display:flex;align-items:center;justify-content:center;font:600 26px serif;color:#eee;letter-spacing:.12em;text-align:center;padding:0 8%';
+  document.body.appendChild(el); return el;
+}
+function campFade(text, holdMs, mid, slow) {
+  const el = campFadeEl(); el.style.transition = `opacity ${slow ? 3.2 : 1.2}s`; el.textContent = ''; el.style.opacity = 1;
+  setTimeout(() => { el.textContent = text || ''; if (mid) try { mid(); } catch (err) { console.error(err); } }, slow ? 3300 : 1300);
+  setTimeout(() => { if (!CAMP.keepDark) { el.style.transition = 'opacity 1.2s'; el.style.opacity = 0; setTimeout(() => { el.textContent = ''; }, 1300); } }, (slow ? 3300 : 1300) + (holdMs || 2200));
+}
+function campFadeOff() { const el = $('campFade'); if (el) { el.style.transition = 'none'; el.style.opacity = 0; el.textContent = ''; } CAMP.keepDark = false; }
+// ---- 段の切り替え：今の形・質感をすべて捨ててから次を作る ----
+function campDispose() {
+  const seen = new Set();
+  stageRoot.traverse(o => {
+    if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
+    const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    for (const m of ms) { if (seen.has(m)) continue; seen.add(m); if (m.map && m.map.userData && m.map.userData.yjOwn) m.map.dispose(); m.dispose(); }
+  });
+  for (const c of [...stageRoot.children]) stageRoot.remove(c);
+  if (CAMP.fx) for (const o of CAMP.fx) scene.remove(o); CAMP.fx = [];
+  TERR.fn = null; YJ.on = false;
+}
+function campGo(next) {
+  CAMP.kills += player.kills || 0;
+  CAMP.surv = campSurvivors();
+  CAMP.switching = true; CAMP.frozen = false;
+  campDispose(); builtStage = null; stageName = next;
+  try { startGame(); } finally { CAMP.switching = false; }
+}
+function campSurvivors() {
+  const s = { n: 0, named: [] };
+  for (const e of enemies) if (e.team === 'blue' && isUp(e) && !e.medic && !e.secretary && !e.sec2 && !e.fumi && !e.ojou && !e.sysop && !e.aide && !e.runner) { s.n++; if (e.campKey) s.named.push(e.campKey); }
+  return s;
+}
+// ---- アメリカ勢の兵（どの段でも同じ）：ライフル 6 割・拳銃 4 割。英語の短い声だけ ----
+function campUs(x, z, w) {
+  const id = USD_IDS[(Math.random() * USD_IDS.length) | 0];
+  const e = spawnEnemy(x, z, w === 'colt' ? 'mob' : 'archer', false, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
+  if (!e) return null;
+  if (EXTRA_GIRLS[id] && EXTRA_GIRLS[id].prof) e.figH = EXTRA_GIRLS[id].prof.cm / 100;
+  e.sq = null; e.campUs = true; e.usdW = w; e.ammo = USD_W[w].mag; e.usdCd = rand(0.5, 2.5); e.usdT = rand(0, 1); e.hp = e.hpMax = 3;
+  e.s.rotation.y = e.face = e.faceWant = 0; e.state = 'idle'; e.passive = true; e.wp = 0;
+  CAMP.usAll = (CAMP.usAll || 0) + 1;
+  return e;
+}
+function campUsW() { const r = Math.random(); return r < 0.42 ? 'win' : r < 0.6 ? 'spr' : 'colt'; }
+// 名の無い日本勢・英国勢・名のある娘
+function campJp(x, z, kind, opt) {
+  opt = opt || {};
+  const e = spawnEnemy(x, z, kind, false, 'blue', { girl: opt.girl && GIRLS[opt.girl] ? opt.girl : undefined, yari: opt.yari ? 1 : -1 });
+  if (!e) return null;
+  if (opt.girl && EXTRA_GIRLS[opt.girl] && EXTRA_GIRLS[opt.girl].prof) e.figH = EXTRA_GIRLS[opt.girl].prof.cm / 100;
+  if (opt.prof) { Object.assign(e.prof, opt.prof); e.P = PERS[opt.prof.pers] || e.P; if (opt.prof.cm) e.figH = opt.prof.cm / 100; }
+  e.sq = null; e.campHold = true; e.home = [x, z]; e.passive = true; e.state = 'idle'; e.ammo = 99;
+  e.s.rotation.y = e.face = e.faceWant = Math.PI;
+  if (opt.ukId) { e.ukId = opt.ukId; e.ukTag = opt.tag; }
+  if (opt.roof != null) { e.campRoof = opt.roof; e.baseY = opt.roof; e.s.position.y = opt.roof; }
+  if (opt.tag) e.ukTag = opt.tag;
+  if (opt.key) { e.campKey = opt.key; CAMP.by[opt.key] = e; e.hp = e.hpMax = Math.max(e.hpMax, 8); }
+  if (opt.cmdr) { e.cmdr = opt.cmdr; e.hp = e.hpMax = 10; }
+  return e;
+}
+const CAMP_GIRL = { sumi: () => SEC_ID, fumi: () => FUMI_ID, ojou: () => OJOU_ID, omiya: () => 'omiya', shizuka: () => 'girl31', reika: () => 'girl26', shinobu: () => 'sec6', chikage: () => 'girl34', hiyori: () => 'sec5', akari: () => 'sec7' };
+const CAMP_PROF = { sumi: { name: '白瀬 澄', pers: '冷静', cm: 156, vv: 1 }, fumi: { name: '綾瀬 文乃', pers: '冷静', cm: 160, vv: 1 }, ojou: { name: '西園寺 すみれ', pers: '冷静', cm: 158, vv: 0 }, omiya: { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 },
+  shizuka: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0 }, reika: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1 }, shinobu: { name: '氷室 しのぶ', pers: '冷静', cm: 162, vv: 1 },
+  chikage: { name: '一条 千景', pers: '冷静', cm: 159, vv: 0 }, hiyori: { name: '小日向 ひより', pers: '陽気', cm: 152, vv: 2 }, akari: { name: '夏目 あかり', pers: '陽気', cm: 155, vv: 2 } };
+function campNamed(key, x, z, kind, cmdr) {
+  const g = CAMP_GIRL[key] ? CAMP_GIRL[key]() : undefined;
+  return campJp(x, z, kind || 'mob', { girl: g, prof: CAMP_PROF[key], key, tag: CAMP_PROF[key] ? CAMP_PROF[key].name : key, cmdr: cmdr ? key : null });
+}
+
+// ---- 頭脳 ----
+function campNear(e, list, R) { const p = e.s.position; let best = null, bd = R; for (const o of list) { if (o === e) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } } return best ? [best, bd] : null; }
+function campMist() { return CAMP.mistK || 0; }   // 0〜1：霧の濃さ（見える距離が縮む）
+function campRange(R) { return R * (1 - 0.55 * campMist()); }
+function campBrain(e, dt) {
+  if (!e.campUs && !e.campHold && !e.cmdr && !e.guardOf) return false;
+  if (CAMP.frozen || e.campHide) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false; if (e.campHide) e.s.visible = false; return true; }
+  if (e.cmdr) return cmdrBrain(e, dt);
+  if (e.campUs) return campUsBrain(e, dt);
+  if (e.campRun) return campRunnerBrain(e, dt);
+  if (e.guardOf) { const r = cmdrGuardBrain(e, dt); if (r !== null) return r; }
+  if (e.campHold) return campJpBrain(e, dt);
+  return false;
+}
+// 自由に戦っている者を、近くに敵がいなくなったら持ち場の頭脳へ戻す
+function campRecall(e, dt, list, R) {
+  if (!e.usdFree) return false;
+  if (campNear(e, list, R)) { e.freeT = 0; return true; }
+  if ((e.freeT = (e.freeT || 0) + dt) > 4) { e.usdFree = false; e.freeT = 0; e.passive = true; e.state = 'idle'; return false; }
+  return true;
+}
+function campFree(e) { e.usdFree = true; e.freeT = 0; e.passive = false; e.state = 'approach'; e.t = 0; }
+// アメリカ勢：道順（CAMP.route）に沿って進み、見えた相手を撃つ。近づかれたら白兵
+function campUsBrain(e, dt) {
+  if (e.campFlee) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; campStep(e, [e.s.position.x, e.s.position.z - 30], e.speed, dt); return true; }
+  if (e.usdFree) { if (campRecall(e, dt, CAMP.live.blue, 6)) return false; }
+  e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
+  const p = e.s.position, W = USD_W[e.usdW];
+  if (e.campAlley) return campAlleyBrain(e, dt);
+  if ((e.usdT -= dt) <= 0) {
+    e.usdT = rand(0.45, 0.9);
+    const R = campRange(e.usdW === 'colt' ? 40 : 60);
+    const n = campNear(e, CAMP.live.blue, R); let t = n ? n[0] : null, td = n ? n[1] : 1e9;
+    const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+    if (state === 'play' && !inHQ() && dP < R && (dP < td * 0.8 || Math.random() < 0.1)) { t = PLAYER_T; td = dP; }
+    e.tgt2 = t; e.tgtD = td;
+    if (n && n[1] < 2.3) { campFree(e); return false; }
+  }
+  let t = e.tgt2; if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = t = null; e.usdT = 0; }
+  const adv = campAdvance(e);
+  const sp = e.speed * (e.usdW === 'colt' ? 0.95 : 0.75) * (CAMP.ph === 1 && !CAMP.breach && p.z > CAMP.stallZ ? 0 : 1);
+  if (t) {
+    const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z);
+    const want = e.usdW === 'colt' ? 14 : 34;
+    if (d > want && e.usdRel == null && sp > 0) { campStep(e, adv, sp, dt); }
+    else e.faceWant = Math.atan2(tx - p.x, tz - p.z);
+  } else if (sp > 0) campStep(e, adv, sp, dt);
+  if (e.usdRel != null) { if ((e.usdRel -= dt) <= 0) { e.usdRel = null; e.ammo = W.mag; } return true; }
+  if ((e.usdCd -= dt) > 0 || !t || CAMP.solo) { if (CAMP.solo && t && (e.usdCd -= 0) <= 0 && e.kind === 'archer') { const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z; if (Math.hypot(tx - p.x, tz - p.z) < campRange(42)) { enemyShoot(e, t); e.usdCd = rand(3.5, 5); } } return true; }
+  const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z;
+  if (Math.hypot(tx - p.x, tz - p.z) > campRange(W.range)) return true;
+  usdShot(e, t); e.usdCd = rand(W.iv[0], W.iv[1]) * (CAMP.ph === 4 ? 1.25 : 1);
+  if (e.ammo <= 0) { e.usdRel = rand(W.rel[0], W.rel[1]); e.usdCd = 0; }
+  return true;
+}
+// 次に向かう点（段ごとの道順）。落とし穴を見抜いた者は穴を避ける
+function campAdvance(e) {
+  const R = CAMP.route || [[0, 0]], p = e.s.position;
+  let i = e.wp || 0;
+  while (i < R.length - 1 && Math.hypot(R[i][0] - p.x, R[i][1] - p.z) < 2.6) i++;
+  if (i < R.length - 1 && R[i][1] < p.z - 1 && CAMP.ph !== 3) i++;   // もう通り過ぎた点は飛ばす
+  e.wp = i;
+  let [tx, tz] = R[i];
+  if (e.lane == null) e.lane = rand(-1, 1);
+  tx += e.lane * (R[i][2] || 1.5);
+  if (CAMP.ph === 1 && e.pitWise) for (const P of TOWN.pits) if (!P.used && P.z > p.z && P.z - p.z < 5 && Math.abs(P.x - p.x) < 1.8) tx = P.x + (p.x >= P.x ? 2.3 : -2.3);
+  return [tx, tz];
+}
+function campStep(e, tg, sp, dt) {
+  const p = e.s.position, d = Math.hypot(tg[0] - p.x, tg[1] - p.z); if (d < 0.2) return;
+  steer(e, tg[0], tg[1], sp, dt); e.moving = true; e.faceWant = Math.atan2(tg[0] - p.x, tg[1] - p.z);
+}
+// 日本勢：持ち場で弓を射る／近づいた敵だけ斬る。屋根の弓組は動かない
+function campJpBrain(e, dt) {
+  const p = e.s.position;
+  if (e.usdFree) { if (campRecall(e, dt, CAMP.live.orange, 8)) return false; }
+  e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
+  if (e.campRoof != null) { e.baseY = e.campRoof; p.x = e.home[0]; p.z = e.home[1]; }
+  else {
+    const h = e.home, d = Math.hypot(h[0] - p.x, h[1] - p.z);
+    if (d > 0.35) { steer(e, h[0], h[1], e.speed * (d > 5 ? 1.2 : 0.8), dt); e.moving = true; e.faceWant = Math.atan2(h[0] - p.x, h[1] - p.z); }
+  }
+  const above = e.baseY > 2;
+  const n = campNear(e, CAMP.live.orange, campRange(above ? 58 : 46));
+  if (n) e.faceWant = Math.atan2(n[0].s.position.x - p.x, n[0].s.position.z - p.z); else if (e.campFace != null) e.faceWant = e.campFace;
+  if (n && e.campRoof == null && n[1] < (e.kind === 'archer' ? 3 : e.yari ? 5.5 : 6.5)) { campFree(e); return false; }
+  if (e.kind === 'archer' && n && (e.shotT = (e.shotT == null ? rand(0, 3) : e.shotT) - dt) <= 0) {
+    e.shotT = rand(3.0, 4.4) * (above ? 0.85 : 1);
+    const t = n[0]; e.face = e.faceWant; e.s.rotation.y = e.face; e.ammo = 99;
+    enemyShoot(e, t);
+    if (above && Math.random() < 0.12 && isUp(t)) damageEnemy(t, 1, e.s.position.clone().setY(e.baseY + 1.4), false, { arrow: true }, e);   // 上からの矢は少し当たりやすい
+  }
+  return true;
+}
+// ---- 名のある大将：前に出ない。隊の真ん中より後ろ、敵との間に味方を置く。物陰から弓、号令、近づかれたら退く ----
+function cmdrBrain(e, dt) {
+  if (state !== 'play') return false;
+  const p = e.s.position, foes = CAMP.on ? CAMP.live.orange : enemies.filter(o => o.team !== e.team && isUp(o) && !o.special);
+  let nf = null, nd = 1e9; for (const o of foes) { const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < nd) { nd = d; nf = o; } }
+  // 追い詰められた（2m 以内、または 3m 以内に二人以上）ときだけ白兵
+  const close = nf ? foes.filter(o => Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 3).length : 0;
+  if (nf && (nd < 1.8 || close >= 2) && (e.cmdrBack || 0) > 1.2) { e.passive = false; if (e.state === 'idle') { e.state = 'approach'; e.t = 0; } return false; }
+  e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
+  let cx = 0, cz = 0, n = 0;
+  for (const o of (CAMP.on ? CAMP.live.blue : enemies)) { if (o === e || o.team !== e.team || !isUp(o) || o.medic || o.cmdr) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < 24) { cx += o.s.position.x; cz += o.s.position.z; n++; } }
+  const home = e.home || [p.x, p.z];
+  if (n) { cx /= n; cz /= n; } else { cx = home[0]; cz = home[1]; }
+  let dx = 0, dz = -1; if (nf) { dx = nf.s.position.x - cx; dz = nf.s.position.z - cz; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L; } else if (e.cmdrDir) { dx = e.cmdrDir[0]; dz = e.cmdrDir[1]; }
+  let tx = cx - dx * 7, tz = cz - dz * 7;   // 隊の真ん中から 7m 後ろ
+  if (!nf || nd > 50) { tx = (tx + home[0]) / 2; tz = (tz + home[1]) / 2; }
+  if (nf && nd < 9) { const fx = p.x - nf.s.position.x, fz = p.z - nf.s.position.z, f = Math.hypot(fx, fz) || 1; tx = p.x + fx / f * 5; tz = p.z + fz / f * 5; e.cmdrBack = (e.cmdrBack || 0) + dt; }   // 近づかれたら退く
+  else e.cmdrBack = 0;
+  if (CAMP.clampFn) [tx, tz] = CAMP.clampFn(tx, tz);
+  const d = Math.hypot(tx - p.x, tz - p.z);
+  if (d > 0.8) { steer(e, tx, tz, e.speed * (nd < 9 ? 1.3 : 0.9), dt); e.moving = true; }
+  e.faceWant = nf && nd < 60 ? Math.atan2(nf.s.position.x - p.x, nf.s.position.z - p.z) : Math.atan2(-dx, -dz) + Math.PI;
+  // 弓（後ろから・物陰から）
+  if (nf && nd < campRange(44) && nd > 6 && (e.cmdrShot = (e.cmdrShot == null ? 2 : e.cmdrShot) - dt) <= 0) { e.cmdrShot = rand(3.2, 4.5); e.face = e.faceWant; e.s.rotation.y = e.face; e.ammo = 99; enemyShoot(e, nf); }
+  // 号令（短い声）
+  if (nf && nd < 55 && (e.cmdrSay = (e.cmdrSay == null ? rand(4, 9) : e.cmdrSay) - dt) <= 0) {
+    e.cmdrSay = rand(13, 21); cmdrShout(e, e.cmdr);
+  }
+  cmdrGuardsTick(e, dt);
+  return true;
+}
+// 護衛：大将ごとに 2〜3 人。敵の側に立ち、大将に寄る敵だけ斬る
+function cmdrGuardsTick(e, dt) {
+  if (!CAMP.on) return;
+  if ((e.gT = (e.gT || 0) - dt) > 0) return; e.gT = 1.5;
+  e.guards = (e.guards || []).filter(g => isUp(g) && g.guardOf === e);
+  const want = USD_MOB ? 2 : 3; if (e.guards.length >= want) return;
+  const p = e.s.position, C = [];
+  for (const o of (CAMP.on ? CAMP.live.blue : enemies)) if (o !== e && o.team === e.team && isUp(o) && o.kind !== 'archer' && !o.cmdr && !o.guardOf && !o.medic && !o.campKey && !o.secretary && !o.sec2 && !o.fumi && !o.ojou && o.campRoof == null && (o.campHold || !CAMP.on)) C.push([Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z), o]);
+  C.sort((a, b) => a[0] - b[0]);
+  for (const [d, o] of C) { if (e.guards.length >= want || d > 30) break; o.guardOf = e; o.gi = e.guards.length; e.guards.push(o); }
+}
+function cmdrGuardBrain(g, dt) {
+  const c = g.guardOf; if (!isUp(c)) { g.guardOf = null; return null; }
+  const cp = c.s.position, p = g.s.position, foes = CAMP.on ? CAMP.live.orange : enemies.filter(o => o.team !== g.team && isUp(o));
+  const thr = campNear(c, foes, 6);
+  if (thr) { g.passive = false; g.tgt = thr[0]; if (g.state === 'idle') { g.state = 'approach'; g.t = 0; } return false; }
+  g.knock.set(0, 0, 0); g.passive = true; g.state = 'idle'; g.tgt = null; g.moving = false;
+  const n = campNear(c, foes, 80); let dx = 0, dz = -1; if (n) { dx = n[0].s.position.x - cp.x; dz = n[0].s.position.z - cp.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L; }
+  const a = [-0.9, 0.9, 0][g.gi || 0], tx = cp.x + (dx * Math.cos(a) - dz * Math.sin(a)) * 2.2, tz = cp.z + (dz * Math.cos(a) + dx * Math.sin(a)) * 2.2;
+  const d = Math.hypot(tx - p.x, tz - p.z); if (d > 0.5) { steer(g, tx, tz, g.speed * (d > 4 ? 1.3 : 0.9), dt); g.moving = true; }
+  g.faceWant = Math.atan2(dx, dz);
+  return true;
+}
+
+// 号令の声（大将ごとの三つの短い言葉）。他のステージの西園寺も使う
+function cmdrShout(e, who) {
+  const L = usdLine('o_' + who + '_' + 'abc'[(Math.random() * 3) | 0]); if (!L || !L.file || UK.dlg) return;
+  const p = e.s.position, dp = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (dp >= 60) return;
+  Talk.as(e, () => VoicePack.play(L.file, Math.min(dp, 18), 1.2, 1));
+  if (dp < 30) { subtitle(L.ja); const el = $('subtitle'); if (el) el.textContent = `${e.prof.name}「${L.ja}」`; }
+}
+
+// ---- 形の束ね（同じ質感の箱・板を一つの形にまとめて描く回数を減らす）。質感は写真（ambientCG, CC0） ----
+const YJT = {};
+function yjTex(name) {
+  let t = YJT[name];
+  if (!t) { t = new THREE.TextureLoader().load('assets/yj_tex/' + name + (USD_MOB ? '_m' : '') + '.jpg?v=' + ASSET_V); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = USD_MOB ? 1 : 4; YJT[name] = t; }
+  return t;
+}
+function yjMat(name, col, opt) { const m = new THREE.MeshLambertMaterial(Object.assign({ map: yjTex(name), color: col == null ? 0xffffff : col }, opt || {})); return m; }
+function geoBatch() {
+  const G = {};
+  const get = k => G[k] || (G[k] = { P: [], N: [], U: [], I: [], v: 0 });
+  const B = {
+    quad(k, a, b, c, d, tile) {
+      const g = get(k), t = tile || 2;
+      const e1 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], e2 = [d[0] - a[0], d[1] - a[1], d[2] - a[2]];
+      let n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]]; const L = Math.hypot(...n) || 1; n = n.map(v => v / L);
+      const L1 = Math.hypot(...e1) || 1, u = e1.map(v => v / L1), w = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0]];
+      for (const q of [a, b, c, d]) { g.P.push(q[0], q[1], q[2]); g.N.push(n[0], n[1], n[2]); g.U.push((q[0] * u[0] + q[1] * u[1] + q[2] * u[2]) / t, (q[0] * w[0] + q[1] * w[1] + q[2] * w[2]) / t); }
+      g.I.push(g.v, g.v + 1, g.v + 2, g.v, g.v + 2, g.v + 3); g.v += 4;
+    },
+    box(k, x0, x1, y0, y1, z0, z1, tile, noBottom) {
+      B.quad(k, [x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], tile);
+      B.quad(k, [x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], tile);
+      B.quad(k, [x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], tile);
+      if (!noBottom) B.quad(k, [x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1], tile);
+      B.quad(k, [x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], tile);
+      B.quad(k, [x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], tile);
+    },
+    // 回した箱（中心・大きさ・向き）
+    obox(k, cx, cy, cz, sx, sy, sz, ry, tile) {
+      const c = Math.cos(ry), s = Math.sin(ry), P = (x, y, z) => [cx + x * c + z * s, cy + y, cz - x * s + z * c];
+      const X = sx / 2, Y = sy / 2, Z = sz / 2;
+      const v = [P(-X, -Y, -Z), P(X, -Y, -Z), P(X, -Y, Z), P(-X, -Y, Z), P(-X, Y, -Z), P(X, Y, -Z), P(X, Y, Z), P(-X, Y, Z)];
+      B.quad(k, v[2], v[1], v[5], v[6], tile); B.quad(k, v[0], v[3], v[7], v[4], tile); B.quad(k, v[7], v[6], v[5], v[4], tile);
+      B.quad(k, v[3], v[2], v[6], v[7], tile); B.quad(k, v[1], v[0], v[4], v[5], tile);
+    },
+    // 切妻屋根：棟が x 方向（ax=0）か z 方向（ax=1）。軒の出 ov
+    roof(k, x0, x1, z0, z1, y, h, ov, ax, tile, gk) {
+      ov = ov == null ? 0.6 : ov;
+      if (!ax) { const zm = (z0 + z1) / 2, a = x0 - ov, b = x1 + ov, c = z0 - ov, d = z1 + ov;
+        B.quad(k, [a, y, c], [a, y + h, zm], [b, y + h, zm], [b, y, c], tile); B.quad(k, [b, y, d], [b, y + h, zm], [a, y + h, zm], [a, y, d], tile);
+        if (gk) { B.quad(gk, [x0, y, z0], [x0, y, z1], [x0, y + h * 0.92, zm], [x0, y + h * 0.92, zm], tile); B.quad(gk, [x1, y, z1], [x1, y, z0], [x1, y + h * 0.92, zm], [x1, y + h * 0.92, zm], tile); } }
+      else { const xm = (x0 + x1) / 2, a = z0 - ov, b = z1 + ov, c = x0 - ov, d = x1 + ov;
+        B.quad(k, [c, y, b], [xm, y + h, b], [xm, y + h, a], [c, y, a], tile); B.quad(k, [d, y, a], [xm, y + h, a], [xm, y + h, b], [d, y, b], tile);
+        if (gk) { B.quad(gk, [x1, y, z0], [x0, y, z0], [xm, y + h * 0.92, z0], [xm, y + h * 0.92, z0], tile); B.quad(gk, [x0, y, z1], [x1, y, z1], [xm, y + h * 0.92, z1], [xm, y + h * 0.92, z1], tile); } }
+    },
+    flush(mats, root) {
+      const out = [];
+      for (const k in G) {
+        const g = G[k]; if (!g.v || !mats[k]) continue;
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(g.P, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(g.N, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.U, 2));
+        geo.setIndex(g.v > 65000 ? new THREE.Uint32BufferAttribute(g.I, 1) : new THREE.Uint16BufferAttribute(g.I, 1)); geo.computeBoundingSphere();
+        const m = new THREE.Mesh(geo, mats[k]); m.castShadow = !USD_MOB; m.receiveShadow = true; (root || stageRoot).add(m); out.push(m);
+      }
+      return out;
+    },
+  };
+  return B;
+}
+// 杉・松（インスタンス：幹と葉の二つだけ描く）
+function campTrees(list, opt) {
+  if (!list.length) return;
+  opt = opt || {};
+  const trunkG = new THREE.CylinderGeometry(0.16, 0.3, 1, 7); trunkG.translate(0, 0.5, 0);
+  const leafG = new THREE.ConeGeometry(1, 1, 8, 1); leafG.translate(0, 0.5, 0);
+  const tM = yjMat('bark', 0xb8a898), lM = new THREE.MeshLambertMaterial({ color: opt.leaf || 0x2f4a2c });
+  const n = list.length, tr = new THREE.InstancedMesh(trunkG, tM, n), lf = new THREE.InstancedMesh(leafG, lM, n * 2);
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s = new THREE.Vector3(), v = new THREE.Vector3(), c = new THREE.Color();
+  list.forEach(([x, y, z, h], i) => {
+    q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand(0, 6.28));
+    m4.compose(v.set(x, y - 0.3, z), q, s.set(1 + h * 0.03, h * 0.75, 1 + h * 0.03)); tr.setMatrixAt(i, m4);
+    const r = h * rand(0.17, 0.22);
+    m4.compose(v.set(x, y + h * 0.3, z), q, s.set(r * 1.25, h * 0.5, r * 1.25)); lf.setMatrixAt(i * 2, m4);
+    m4.compose(v.set(x, y + h * 0.55, z), q, s.set(r * 0.85, h * 0.45, r * 0.85)); lf.setMatrixAt(i * 2 + 1, m4);
+    c.setHSL(0.3 + rand(-0.03, 0.03), 0.3, rand(0.17, 0.26)); lf.setColorAt(i * 2, c); lf.setColorAt(i * 2 + 1, c);
+  });
+  tr.castShadow = lf.castShadow = !USD_MOB; stageRoot.add(tr); stageRoot.add(lf);
+}
+// 日本の城（遠景・宮殿）：石垣の台と、白壁・黒瓦の層を重ねる
+function campCastleKeep(B, x, z, s) {
+  B.box('stone', x - 14 * s, x + 14 * s, 0, 7 * s, z - 11 * s, z + 11 * s, 3);
+  let w = 11 * s, d = 8.5 * s, y = 7 * s;
+  for (let i = 0; i < 4; i++) {
+    const h = (i === 0 ? 5 : 3.6) * s;
+    B.box('plaster', x - w, x + w, y, y + h, z - d, z + d, 3);
+    B.roof('tile', x - w, x + w, z - d, z + d, y + h, 2.4 * s, 1.6 * s, i % 2, 3, 'plaster');
+    y += h + 1.1 * s; w *= 0.74; d *= 0.74;
+  }
+}
+
+// ==== ① 城下町 ====
+const TOWN = { pits: [], alleys: [], bundles: [], guns: [], roofs: [] };
+const TOWN_Z0 = -150, TOWN_Z1 = -42;
+function campLookDay(fogN, fogF, bg) {
+  ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = true; road.visible = false;
+  scene.background.setHex(bg || 0xb9c8d2); scene.fog.color.setHex(bg || 0xb9c8d2); scene.fog.near = fogN; scene.fog.far = fogF;
+  sun.color.setHex(0xfff0dc); sun.intensity = 1.05; hemiL.color.setHex(0xe8eef2); hemiL.groundColor.setHex(0x5f5a48); hemiL.intensity = 0.95; ambL.intensity = 0.62;
+  SUN_DIR.copy(new V3(0.35, 0.8, 0.3).normalize());
+}
+function campBuildTown() {
+  TOWN.pits = []; TOWN.alleys = []; TOWN.bundles = []; TOWN.guns = []; TOWN.roofs = []; TOWN.decoys = [];
+  campLookDay(70, 420);
+  const mats = { plaster: yjMat('plaster', 0xf2eee6), planks: yjMat('planks', 0x8a7a68), wood: yjMat('wood', 0x9a8670), tile: yjMat('roof', 0x8a8e94), stone: yjMat('rock', 0xc8c4bc), path: yjMat('path', 0xd0c4b0), grass: yjMat('grass', 0xb8c8a0), dirt: yjMat('dirt', 0xc0b4a0) };
+  const B = geoBatch();
+  // 地面：大通り（土）、家並みの裏の土、両側の田と湿地、西の川
+  B.quad('path', [-6, 0.01, TOWN_Z1 + 30], [6, 0.01, TOWN_Z1 + 30], [6, 0.01, TOWN_Z0 - 40], [-6, 0.01, TOWN_Z0 - 40], 4);
+  B.quad('dirt', [-46, 0, TOWN_Z1 + 30], [46, 0, TOWN_Z1 + 30], [46, 0, TOWN_Z0 - 40], [-46, 0, TOWN_Z0 - 40], 6);
+  for (const sd of [-1, 1]) B.quad('grass', sd < 0 ? [-260, -0.01, 300] : [46, -0.01, 300], sd < 0 ? [-46, -0.01, 300] : [260, -0.01, 300], sd < 0 ? [-46, -0.01, -400] : [260, -0.01, -400], sd < 0 ? [-260, -0.01, -400] : [46, -0.01, -400], 8);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(40, 700), new THREE.MeshLambertMaterial({ color: 0x4d6670, transparent: true, opacity: 0.88 })); water.rotation.x = -Math.PI / 2; water.position.set(-70, 0.03, -50); stageRoot.add(water);
+  const paddy = new THREE.MeshLambertMaterial({ color: 0x6f7f6a, transparent: true, opacity: 0.7 });
+  for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(26, 24), paddy); m.rotation.x = -Math.PI / 2; m.position.set(64 + (i % 2) * 28, 0.02, -150 + Math.floor(i / 2) * 30); stageRoot.add(m); }
+  // 町家：大通りの両側。横丁（行き止まり）は東 z=-120、西 z=-95、東 z=-70
+  const alleys = [{ side: 1, z: -120 }, { side: -1, z: -95 }, { side: 1, z: -70 }];
+  const house = (x0, x1, z0, z1, two) => {
+    const h = two ? 5.2 : 3.4;
+    B.box('plaster', x0, x1, 0.9, h, z0, z1, 2.5); B.box('planks', x0 - 0.02, x1 + 0.02, 0, 0.9, z0 - 0.02, z1 + 0.02, 1.5);
+    const ax = Math.abs(x1 - x0) > Math.abs(z1 - z0) ? 0 : 1;
+    B.roof('tile', x0, x1, z0, z1, h, 1.5, 0.7, ax, 2, 'plaster');
+    boxes.push({ x0, x1, z0, z1, y0: 0, y1: h + 1.6 }); return h;
+  };
+  for (const sd of [-1, 1]) {
+    for (let z = TOWN_Z0; z < TOWN_Z1 - 2; z += 7.2) {
+      const A = alleys.find(a => a.side === sd && Math.abs(a.z - (z + 3.4)) < 4.5);
+      if (A) continue;
+      if (Math.abs(z + 3.4 - (-108)) < 2.4 || Math.abs(z + 3.4 - (-82)) < 2.4) continue;   // 裏へ抜ける狭い路地
+      const x0 = sd > 0 ? 6.2 : -13.6, x1 = sd > 0 ? 13.6 : -6.2;
+      house(x0, x1, z + 0.3, z + 6.9, (z / 7.2 | 0) % 3 === 0);
+      // 店先の暖簾と格子（安い板）
+      B.box('wood', sd > 0 ? x0 - 0.12 : x1, sd > 0 ? x0 : x1 + 0.12, 0.2, 2.2, z + 1.2, z + 6.0, 1);
+    }
+  }
+  // 横丁：両側の家と、奥の板塀（行き止まり）。屋根の上に弓組（物干し台）
+  for (const A of alleys) {
+    const sd = A.side, xa = sd > 0 ? 13.6 : -13.6, xb = sd > 0 ? 34 : -34, lo = Math.min(xa, xb), hi = Math.max(xa, xb);
+    house(lo, hi, A.z + 1.9, A.z + 7.5, false); house(lo, hi, A.z - 7.5, A.z - 1.9, false);
+    B.box('planks', sd > 0 ? xb : xb - 0.3, sd > 0 ? xb + 0.3 : xb, 0, 2.6, A.z - 1.9, A.z + 1.9, 1.5); boxes.push({ x0: Math.min(xb, xb + 0.3 * sd), x1: Math.max(xb, xb + 0.3 * sd), z0: A.z - 1.9, z1: A.z + 1.9, y0: 0, y1: 3 });
+    // 横丁の入口は家並みの切れ目：大通り側の家の端を立てる
+    const roofs = [];
+    for (let k = 0; k < 3; k++) { const x = xa + sd * (6 + k * 6); for (const zz of [A.z + 4.6, A.z - 4.6]) { B.box('wood', x - 1.1, x + 1.1, 3.4, 3.55, zz - 1.1, zz + 1.1, 1); roofs.push([x, zz]); } }
+    TOWN.alleys.push({ side: sd, z: A.z, x0: xa, x1: xb, roofs, in: 0, trig: false });
+  }
+  // 寺（北西）と蔵（白壁）
+  B.box('stone', -34, -18, 0, 0.8, -66, -50, 2); B.box('planks', -32, -20, 0.8, 5.5, -64, -52, 2); B.roof('tile', -32, -20, -64, -52, 5.5, 4.2, 2.2, 0, 3, 'planks'); boxes.push({ x0: -34, x1: -18, z0: -66, z1: -50, y0: 0, y1: 9 });
+  for (const [x, z] of [[18, -58], [22, -100], [-22, -132]]) { B.box('plaster', x - 3, x + 3, 0, 5.4, z - 2.5, z + 2.5, 2); B.box('stone', x - 3.05, x + 3.05, 0, 0.9, z - 2.55, z + 2.55, 1.5); B.roof('tile', x - 3, x + 3, z - 2.5, z + 2.5, 5.4, 1.6, 0.5, 0, 2, 'plaster'); boxes.push({ x0: x - 3, x1: x + 3, z0: z - 2.5, z1: z + 2.5, y0: 0, y1: 7 }); }
+  // 平城（北の遠景）：堀・石垣・白壁と櫓門。その奥はるかに宮殿
+  const wz = -18;
+  B.box('stone', -60, -3.5, -1.5, 4.2, wz - 3, wz, 3); B.box('stone', 3.5, 60, -1.5, 4.2, wz - 3, wz, 3);
+  B.box('plaster', -60, -3.5, 4.2, 6.2, wz - 2.6, wz - 0.4, 2); B.box('plaster', 3.5, 60, 4.2, 6.2, wz - 2.6, wz - 0.4, 2);
+  B.box('plaster', -4.5, 4.5, 4.4, 8.4, wz - 3.2, wz + 0.2, 2); B.roof('tile', -5, 5, wz - 3.4, wz + 0.4, 8.4, 2, 1, 0, 2, 'plaster');
+  for (const sd of [-1, 1]) { B.box('plaster', sd * 30 - 3.5, sd * 30 + 3.5, 6.2, 10.4, wz - 4, wz + 1, 2); B.roof('tile', sd * 30 - 3.5, sd * 30 + 3.5, wz - 4, wz + 1, 10.4, 2, 0.9, 0, 2, 'plaster'); }
+  B.box('wood', -3.2, 3.2, 0, 4.2, wz - 1.6, wz - 1.2, 1);
+  const moat = new THREE.Mesh(new THREE.PlaneGeometry(130, 8), new THREE.MeshLambertMaterial({ color: 0x3f5a62 })); moat.rotation.x = -Math.PI / 2; moat.position.set(0, 0.03, wz - 7); stageRoot.add(moat);
+  B.box('path', -3.2, 3.2, 0, 0.05, wz - 11, wz - 3, 2);   // 土橋
+  boxes.push({ x0: -60, x1: 60, z0: wz - 3, z1: wz + 1, y0: 0, y1: 7 });
+  campCastleKeep(B, 0, 260, 1.6);
+  // 竹束（一の線 z=-88・二の線 z=-56）と柵、破裂弾の大砲（大通りの北の端から南へ）
+  for (const [z, xs] of [[-88, [-4, 0, 4]], [-56, [-4.2, -1.4, 1.4, 4.2]]]) for (const x of xs) TOWN.bundles.push(bamboobundle(x, z, 0, { hp: 4 }));
+  for (const z of [-90, -58]) for (const sd of [-1, 1]) { for (let k = 0; k < 4; k++) { const x = sd * (1.2 + k * 1.3); B.box('wood', x - 0.07, x + 0.07, 0, 1.5, z - 0.07, z + 0.07, 1); } B.box('wood', sd > 0 ? 1 : -5.3, sd > 0 ? 5.3 : -1, 1.1, 1.2, z - 0.05, z + 0.05, 1); }
+  for (const x of USD_MOB ? [0] : [-3, 3]) { const G = u4Cannon(x, -46, Math.PI); const k = UK4.guns.indexOf(G); if (k >= 0) UK4.guns.splice(k, 1); G.cd = rand(4, 7); G.crew = []; TOWN.guns.push(G); }
+  // 落とし穴（大通り）：藁をかぶせて隠してある。かかったら藁が崩れるだけ（中は見せない）
+  const strawT = yjTex('bamboo'), straw = new THREE.MeshLambertMaterial({ map: strawT, color: 0xc8b48a });
+  for (const [x, z] of [[-2, -128], [2.4, -122], [-1, -114], [2, -104], [-2.6, -97], [1, -78], [-2, -70], [2.6, -64]]) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 2.0), straw); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.025, z); stageRoot.add(m);
+    TOWN.pits.push({ x, z, m, used: 0, cap: 2 });
+  }
+  B.flush(mats);
+  // 遠くの山（西と北）と松
+  const T = [];
+  for (let i = 0; i < (USD_MOB ? 40 : 110); i++) { const sd = Math.random() < 0.5 ? -1 : 1; T.push([sd * rand(48, 120), 0, rand(-260, 40), rand(8, 15)]); }
+  campTrees(T, { leaf: 0x34502f });
+  buildHQ(-5, 5, -40, -31, 0, -36); buildMedPost(-8, -38, 'blue');
+}
+// 屋根の弓組・横丁・落とし穴・波
+function townPitTick() {
+  for (const P of TOWN.pits) {
+    if (P.used >= P.cap) continue;
+    for (const e of CAMP.live.orange) {
+      if (!e.campUs || e.usdFree && Math.random() < 0.5) continue;
+      const p = e.s.position; if (Math.abs(p.x - P.x) > 1.0 || Math.abs(p.z - P.z) > 1.0) continue;
+      P.used++; CAMP.pitN = (CAMP.pitN || 0) + 1; CAMP.stopped = (CAMP.stopped || 0) + 1;
+      const q = new V3(p.x, 0.4, p.z); puff(q, 0xc9b28a, 16, 0.9, 2.4, 1.4); puff(q, 0x9c8a6a, 8, 0.5, 1.4, 1.0);
+      const o = Sfx.at(q, 120, 1.2); if (o) { Sfx.noiseBurst(0.5, 'lowpass', 900, 80, 0.9, 0.8, 0, o); Sfx.tone('sine', 90, 40, 0.35, 0.6, 0, o); }
+      const L = usdLine('t_cry' + ((Math.random() * 6) | 0)); if (L && L.file) VoicePack.play(L.file, Math.hypot(p.x - player.pos.x, p.z - player.pos.z), 1, 1);
+      if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 70) { popup('落とし穴にかかった！'); popupTimer = 1.6; }
+      const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); CAMP.live.orange.splice(CAMP.live.orange.indexOf(e), 1);
+      P.m.material = P.m.material.clone(); P.m.material.color.setHex(0x6a5a40); P.m.scale.setScalar(0.8);
+      if (CAMP.pitN === 1) campBark(Math.random() < 0.5 ? 't_pit_s' : 't_pit_o', 0, true); else if (CAMP.pitN === 3) campBark('t_pit_us', 0, true);
+      if (CAMP.pitN >= 3) for (const u of CAMP.live.orange) if (u.campUs && u.pitWise == null) u.pitWise = Math.random() < 0.55;
+      if (CAMP.pitN === 5) campBark('t_spot', 0, true);
+      break;
+    }
+  }
+}
+// 横丁へ入る組：奥まで行って行き止まり、屋根から射られて引き返す
+function campAlleyBrain(e, dt) {
+  const A = e.campAlley, p = e.s.position;
+  if (!e.alBack) {
+    const tx = A.side > 0 ? A.x1 - 2 : A.x1 + 2, d = Math.hypot(tx - p.x, A.z - p.z);
+    const tg = Math.abs(p.z - A.z) > 1.2 && Math.abs(p.x) < 7 ? [p.x + A.side * 0.5, A.z] : [tx, A.z + (e.lane || 0) * 1.2];
+    campStep(e, tg, e.speed * 0.95, dt);
+    if (!A.trig && Math.abs(p.x - A.x0) > 6) { A.trig = true; campBark(Math.random() < 0.5 ? 't_alley_uk' : 't_alley_o', 0, true); }
+    if (d < 3) { e.alBack = true; if (!A.dead) { A.dead = true; campBark('t_dead_us', 0, true); } }
+  } else {
+    campStep(e, [A.side * 3, A.z], e.speed * 1.1, dt);
+    if (Math.abs(p.x) < 4.5) { e.campAlley = null; e.alBack = false; }
+  }
+  return true;
+}
+function townSpawnWave(n) {
+  const cap = CAMP_N, alive = CAMP.live.orange.length + (CAMP.queue || 0);
+  const k = Math.max(0, Math.min(n, cap - alive));
+  for (let i = 0; i < k; i++) {
+    const x = rand(-4.5, 4.5), z = -132 - (i % 8) * 0.8 - rand(0, 2) - Math.floor(i / 8) * 0.6;
+    const e = campUs(x, z, campUsW()); if (!e) continue;
+    if (CAMP.pitN >= 3) e.pitWise = Math.random() < 0.55;
+    if (i % 7 === 3 && CAMP.wave <= 4) { const A = TOWN.alleys.filter(a => a.z > z)[(Math.random() * 3) | 0]; if (A) e.campAlley = A; }
+  }
+}
+function townSpawnJp() {
+  const N = CAMP_N, nUk = Math.round(N * 0.17);
+  // 名のある娘：綾瀬（大将・後ろ）、大宮・久遠・白石、英国のシャーロットとベアトリス
+  campNamed('fumi', 0, -50, 'archer', true); CAMP.by.fumi.cmdrDir = [0, -1];
+  campNamed('omiya', 2.5, -60, 'mob'); campNamed('shizuka', -2.5, -60, 'mob', false); campNamed('reika', 3.6, -86, 'mob');
+  const ukIds = ['uk10', 'uk04', 'uk03', 'uk01', 'uk05', 'uk06', 'uk07', 'uk09', 'uk02', 'uk08'];
+  let left = N - 4;
+  // 屋根の弓組（横丁の両側）：英国の娘が多め
+  let u = 0, nRoof = Math.round(N * 0.28);
+  for (const A of TOWN.alleys) for (const [x, z] of A.roofs) {
+    if (left <= 0 || nRoof <= 0) break; nRoof--;
+    const uk = u < nUk && Math.random() < 0.6, id = uk ? ukIds[u % ukIds.length] : undefined;
+    const e = campJp(x, z, 'archer', { girl: uk && GIRLS[id] ? id : undefined, roof: 3.55, ukId: uk ? id : undefined, tag: uk && UK_PROF[id] ? UK_PROF[id].name + '（英国）' : undefined });
+    if (e) { if (uk) { u++; if (id === 'uk10' || id === 'uk04') CAMP.by[id] = e; } e.campFace = A.side > 0 ? -Math.PI / 2 : Math.PI / 2; left--; }
+  }
+  // 竹束の線（弓と槍・刀）と砲員
+  const line = (z, n, xs) => { for (let i = 0; i < n && left > 0; i++, left--) { const kind = i % 3 === 0 ? 'archer' : 'mob', x = xs[i % xs.length] + rand(-0.6, 0.6); const uk = u < nUk && kind === 'archer' && Math.random() < 0.3, id = ukIds[u % ukIds.length]; const e = campJp(x, z + 1.2 + Math.floor(i / xs.length) * 1.4, kind, { yari: kind === 'mob' && i % 3 === 2, girl: uk && GIRLS[id] ? id : undefined, ukId: uk ? id : undefined }); if (uk && e) u++; } };
+  line(-88, Math.round(left * 0.42), [-4.5, -2, 0, 2, 4.5]);
+  for (const G of TOWN.guns) for (let c = 0; c < 2 && left > 0; c++, left--) { const e = campJp(G.x + (c ? 1.1 : -1.1), G.z + 0.8, 'mob'); if (e) { e.usdGun = G; G.crew.push(e); e.campFace = Math.PI; } }
+  line(-56, left, [-5, -3, -1, 1, 3, 5]);
+  if (CAMP.by.uk10) CAMP.by.uk10.ukTag = 'シャーロット・ケンドール（英国）';
+}
+function townStart() {
+  USD.shells = USD.shells || []; CAMP.ph = 1; CAMP.wave = 0; CAMP.waveT = 6; CAMP.bt = 0; CAMP.breach = false; CAMP.stallZ = -62; CAMP.breakT = rand(240, 330); CAMP.pitN = 0;
+  CAMP.route = [[0, -130, 2.4], [0, -100, 2.6], [0, -75, 2.6], [0, -50, 2.4], [0, -36, 2], [0, -26, 1.5]];
+  CAMP.clampFn = (x, z) => [clamp(x, -5, 5), clamp(z, -52, -36)];
+  player.pos.set(0, 0, -44); player.yaw = Math.PI; player.pitch = 0;
+  townSpawnJp();
+  CAMP.jp0 = CAMP.live.blue.length || enemies.filter(e => e.team === 'blue').length;
+  CAMP.frozen = true;
+  showBanner(CAMP.title, '第一の場：城下町'); bannerTimer = 4;
+  ukDlg([{ wait: 0.6 }, { fn: () => campNarr('霧の朝――守りのない入り江に、アメリカ勢は戦わずして上陸した。') }, { wait: 3.6 }, { fn: () => campNarr('宮殿へは、この城下町と平城を抜けるほか道はない') }, { wait: 3.4 },
+    { say: 't_sumi1' }, { say: 't_fumi1' }, { say: 't_uk10' }, { fn: () => { CAMP.frozen = false; CAMP.t0 = CAMP.t; } }, { say: 't_us01' }], () => { CAMP.frozen = false; });
+}
+function townTick(dt) {
+  CAMP.bt += dt;
+  for (const G of TOWN.guns) usdGunTick(G, dt);
+  townPitTick();
+  // 横丁の中の者を数える（屋根の弓組の狙いは近い者から）
+  if ((CAMP.waveT -= dt) <= 0 || (CAMP.wave > 0 && CAMP.live.orange.length < CAMP_N * 0.3 && CAMP.waveT < 30)) {
+    CAMP.wave++; CAMP.waveT = CAMP.breach ? 45 : 52;
+    townSpawnWave(Math.round(CAMP_N * (CAMP.wave === 1 ? 0.55 : CAMP.breach ? 0.6 : 0.35)));
+    if (CAMP.wave === 2) campBark('t_wave_s', 0, true); else if (CAMP.wave === 3) campBark('t_wave_us', 0, true); else if (CAMP.wave === 4) campBark('t_wave2_sh', 0, true);
+  }
+  if (CAMP.bt > 30 && Math.random() < dt / 40) campBark(Math.random() < 0.5 ? 't_reika' : 't_hold_om', 40);
+  const jp = CAMP.live.blue.filter(e => e.campHold || e.cmdr).length;
+  if (!CAMP.breach && (CAMP.bt > CAMP.breakT || jp < (CAMP.jp0 || 1) * 0.32)) {
+    CAMP.breach = true; CAMP.waveT = 2; showBanner('大通りの守りが破られた', '門まで押してくる'); bannerTimer = 3.5;
+    campBark('t_breach_s', 0, true); setTimeout(() => { if (CAMP.on && CAMP.ph === 1) campBark('t_breach_us', 0, true); }, 3500);
+    for (const e of CAMP.live.blue) if (e.campHold && e.home && e.home[1] < -70 && e.campRoof == null) e.home = [e.home[0], -50 + rand(-2, 2)];
+  }
+  const near = CAMP.live.orange.some(e => e.s.position.z > -47);
+  if (CAMP.breach && !CAMP.falling && (near || CAMP.bt > CAMP.breakT + 75)) townFall();
+}
+function townFall() {
+  CAMP.falling = true; CAMP.sum.townT = CAMP.bt;
+  campBark('t_fall_f', 0, true);
+  for (const e of CAMP.live.blue) if (e.campHold || e.cmdr || e.guardOf) { e.home = [rand(-2.5, 2.5), -24]; e.campRoof = null; e.usdFree = false; e.cmdr = null; e.guardOf = null; e.campHold = true; }
+  popup('城へ引けーっ！――殿を先に、門の内へ'); popupTimer = 3;
+  setTimeout(() => {
+    if (!CAMP.on || CAMP.ph !== 1 || state !== 'play') return;
+    CAMP.frozen = true;
+    campFade('「門を閉ざせ！」――平城の大手門が閉じられた', 2600, () => campGo('castle'));
+  }, 4200);
+}
+
+// ==== ② 平城（castle を守りで使う） ====
+function campCastleStart() {
+  CAMP.ph = 2; CAMP.bt = 0; CAMP.fallT = 0; CAMP.winT = 0;
+  // 堀と土橋（大手門の前）
+  const B = geoBatch(), wm = new THREE.MeshLambertMaterial({ color: 0x3f5a62, transparent: true, opacity: 0.9 });
+  for (const [a, b] of [[-46, -3.4], [3.4, 46]]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(b - a, 6), wm); m.rotation.x = -Math.PI / 2; m.position.set((a + b) / 2, 0.035, -6); stageRoot.add(m); }
+  B.box('stone', -46, 46, -0.6, 0.02, -9.2, -8.9, 2); B.box('stone', -46, 46, -0.6, 0.02, -3.1, -2.8, 2);
+  B.box('path', -3.3, 3.3, 0, 0.06, -9, -3, 2);
+  B.flush({ stone: yjMat('rock', 0xbdb8ae), path: yjMat('path', 0xc8bca8) });
+  // 西園寺が城の大将。綾瀬も後ろで采配する
+  for (const [o, k] of [[ojou, 'ojou'], [fumi, 'fumi']]) if (o.e) { o.e.cmdr = k; CAMP.by[k] = o.e; o.e.home = [k === 'ojou' ? 0 : -6, 18]; o.e.cmdrDir = [0, -1]; o.e.hp = o.e.hpMax = Math.max(o.e.hpMax, 10); }
+  campNamed('shinobu', -4, 10, 'mob'); campNamed('chikage', 4, 10, 'archer');
+  for (const k of ['shinobu', 'chikage']) { const e = CAMP.by[k]; if (e) { e.campRun = { pts: [[0, 16], [k === 'shinobu' ? -10 : 10, 3], [0, 2.5]], i: 0, wait: 0 }; } }
+  // 町から引いてきた者（生き残り）を加える
+  if (!CAMP.solo && CAMP.surv) {
+    const n = Math.min(12, CAMP.surv.n || 0);
+    for (let i = 0; i < n; i++) campJp(rand(-14, 14), rand(6, 14), i % 3 === 0 ? 'archer' : 'mob', { yari: i % 3 === 2 });
+    for (const k of CAMP.surv.named || []) if (!CAMP.by[k] && CAMP_GIRL[k]) campNamed(k, rand(-8, 8), rand(8, 14), 'mob');
+  }
+  showBanner('第二の場：平城', '西園寺が城を守る。大手門を破らせるな'); bannerTimer = 4;
+  campFadeOff();
+  ukDlg([{ wait: 0.8 }, { say: 'c_ojou1' }, { say: 'c_shinobu1' }, { say: 'c_chikage1' }], null);
+}
+// 伝令（しのぶ・千景）：本丸と大手門の間を行き来する
+function campRunnerBrain(e, dt) {
+  const R = e.campRun, p = e.s.position;
+  if (campNear(e, CAMP.live.orange, 4)) { e.usdFree = true; return false; }
+  if (e.usdFree) { if (campRecall(e, dt, CAMP.live.orange, 6)) return false; }
+  if (R.wait > 0) { R.wait -= dt; e.moving = false; e.passive = true; e.state = 'idle'; return true; }
+  const t = R.pts[R.i];
+  if (Math.hypot(t[0] - p.x, t[1] - p.z) < 1.2) { R.i = (R.i + 1) % R.pts.length; R.wait = rand(2, 4); if (R.i === 1 && Math.random() < 0.3) campBark(e.campKey === 'shinobu' ? 'c_ladder_sh' : 'c_moat_ck', 30); return true; }
+  e.passive = true; e.state = 'idle'; campStep(e, t, e.speed * 0.9, dt); return true;
+}
+function castleTick(dt) {
+  CAMP.bt += dt;
+  const blue = CAMP.live.blue.filter(e => !e.medic && !e.secretary && !e.sec2 && !e.sysop).length;
+  let inB = 0; for (const e of CAMP.live.orange) if (typeof inCastleBldg === 'function' && inCastleBldg(e.s.position.x, e.s.position.z)) inB++;
+  const lost = (CASTLE.phase >= 2 && inB >= 3) || blue <= 2;
+  CAMP.fallT = lost ? CAMP.fallT + dt : Math.max(0, CAMP.fallT - dt);
+  if (!CAMP.falling && CAMP.fallT > 6) {
+    CAMP.falling = true; CAMP.sum.castle = 'fell'; CAMP.sum.castleT = CAMP.bt;
+    campBark('c_fall_o', 0, true); setTimeout(() => { if (CAMP.on && CAMP.ph === 2) campBark('c_fall_sh', 0, true); }, 2600);
+    setTimeout(() => { if (!CAMP.on || CAMP.ph !== 2 || state !== 'play') return; CAMP.frozen = true; campFade('殿は抜け道を通って宮殿へ――アメリカ勢もその道を見つけた', 2600, () => campGo('usPal')); }, 5200);
+  }
+  const won = (wave.n >= 5 && CAMP.bt > 170 && CAMP.live.orange.length <= 3) || (CAMP.bt > 360 && CASTLE.phase < 2);
+  if (!CAMP.falling && won) campWin('castle', 'c_win_o', '平城を守り抜いた');
+}
+// ==== ③ 宮殿（抜け道の出口から来る） ====
+const PAL2 = { exit: [26, -58] };
+function campBuildPal() {
+  campLookDay(60, 380, 0xc4cdd4);
+  const mats = { plaster: yjMat('plaster', 0xf4f0e8), wood: yjMat('wood', 0x8a6a50), planks: yjMat('planks', 0x9a8068), tile: yjMat('roof2', 0x7c8088), stone: yjMat('rock', 0xc8c2b8), path: yjMat('path', 0xd8ccb8), grass: yjMat('grass', 0xb0c49a) };
+  const B = geoBatch();
+  B.quad('path', [-34, 0.01, -8], [34, 0.01, -8], [34, 0.01, -76], [-34, 0.01, -76], 4);
+  B.quad('grass', [-300, -0.01, 300], [300, -0.01, 300], [300, -0.01, -300], [-300, -0.01, -300], 8);
+  // 中庭の塀
+  for (const [x0, x1, z0, z1] of [[-35, -34, -76, -8], [34, 35, -76, -8], [-35, 35, -77, -76]]) { B.box('plaster', x0, x1, 0, 3.2, z0, z1, 2.5); B.box('tile', x0 - 0.3, x1 + 0.3, 3.2, 3.5, z0 - 0.3, z1 + 0.3, 1); boxes.push({ x0, x1, z0, z1, y0: 0, y1: 4 }); }
+  // 宮殿：石の基壇、白壁、二重の屋根。正面の扉は大きく開いている
+  const W = 24, Z0 = -10, Z1 = 22, H = 7;
+  B.box('stone', -W - 1, W + 1, -0.3, 0.02, Z0 - 1, Z1 + 1, 3);
+  for (const [x0, x1, z0, z1] of [[-W, -5, Z0, Z0 + 0.6], [5, W, Z0, Z0 + 0.6], [-W, -W + 0.6, Z0, Z1], [W - 0.6, W, Z0, Z1], [-W, W, Z1 - 0.6, Z1]]) { B.box('plaster', x0, x1, 0, H, z0, z1, 3); boxes.push({ x0, x1, z0, z1, y0: 0, y1: H }); }
+  B.box('plaster', -5, 5, 4.6, H, Z0, Z0 + 0.6, 3);
+  for (let x = -W + 2; x < W - 1; x += 4) if (Math.abs(x) > 6) B.box('wood', x - 0.25, x + 0.25, 0, H, Z0 - 0.15, Z0 + 0.75, 1);
+  B.box('wood', -W, W, H, H + 0.4, Z0 - 0.4, Z1 + 0.4, 2);
+  B.roof('tile', -W, W, Z0, Z1, H + 0.4, 5, 2.4, 0, 3, 'plaster');
+  B.box('plaster', -12, 12, H + 5.4, H + 9, Z0 + 8, Z1 - 8, 3); B.roof('tile', -12, 12, Z0 + 8, Z1 - 8, H + 9, 3.4, 1.8, 0, 3, 'plaster');
+  // 大広間：板の床、天井、柱、奥に大階段と踊り場
+  B.quad('planks', [-W, 0.03, Z1], [W, 0.03, Z1], [W, 0.03, Z0], [-W, 0.03, Z0], 2);
+  B.quad('wood', [-W, H - 0.05, Z0], [W, H - 0.05, Z0], [W, H - 0.05, Z1], [-W, H - 0.05, Z1], 3);
+  for (const x of [-14, -7, 7, 14]) for (const z of [-2, 6]) { B.box('wood', x - 0.3, x + 0.3, 0, H, z - 0.3, z + 0.3, 1); boxes.push({ x0: x - 0.3, x1: x + 0.3, z0: z - 0.3, z1: z + 0.3, y0: 0, y1: H }); }
+  const S0 = 6, S1 = 13, L1 = 19.5, SH = 3.6, SW = 4.6;
+  for (let i = 0; i < 14; i++) { const z = S0 + (S1 - S0) * i / 14, y = SH * (i + 1) / 14; B.box('planks', -SW, SW, 0, y, z, z + (S1 - S0) / 14 + 0.01, 1.2, true); }
+  B.box('planks', -SW - 6, SW + 6, 0, SH, S1, L1, 2, true);
+  for (const sd of [-1, 1]) { B.box('wood', sd * SW - 0.12, sd * SW + 0.12, 0, SH + 1, S0, L1, 1); }
+  boxes.push({ x0: -SW - 6, x1: -SW - 0.15, z0: S0, z1: S1, y0: 0, y1: SH }); boxes.push({ x0: SW + 0.15, x1: SW + 6, z0: S0, z1: S1, y0: 0, y1: SH });
+  TERR.fn = (x, z) => (Math.abs(x) < SW + 6 && z >= S1 && z < L1 + 0.5) ? SH : (Math.abs(x) < SW && z > S0 && z < S1) ? SH * (z - S0) / (S1 - S0) : 0;
+  PAL2.stairTop = S1; PAL2.SH = SH;
+  // 竹束（中庭の線）、抜け道の出口（石の祠）
+  for (const x of [-6, -2, 2, 6]) bamboobundle(x, -26, 0, { hp: 4 });
+  const [ex, ez] = PAL2.exit; B.box('stone', ex - 2.2, ex + 2.2, 0, 2.4, ez - 2, ez + 2, 1.5); B.box('wood', ex - 1, ex + 1, 0.02, 1.9, ez + 1.99, ez + 2.05, 1); B.roof('tile', ex - 2.4, ex + 2.4, ez - 2.2, ez + 2.2, 2.4, 1.1, 0.4, 0, 2);
+  boxes.push({ x0: ex - 2.2, x1: ex + 2.2, z0: ez - 2, z1: ez + 1.8, y0: 0, y1: 3 });
+  B.flush(mats);
+  const T = []; for (let i = 0; i < (USD_MOB ? 30 : 80); i++) { const a = rand(0, 6.28), r = rand(48, 140); T.push([Math.cos(a) * r, 0, Math.sin(a) * r - 20, rand(7, 13)]); } campTrees(T, { leaf: 0x3a5434 });
+  buildHQ(-22, -15, 13, 20, -18.5, 16.5); buildMedPost(18, 16, 'blue');
+}
+function palStart2() {
+  CAMP.ph = 3; CAMP.bt = 0; CAMP.wave = 0; CAMP.waveT = 8; CAMP.fallT = 0;
+  CAMP.route = [[20, -50, 2], [8, -32, 3], [0, -18, 2.5], [0, -6, 2], [0, 2, 3], [0, 9, 2.5], [0, 16, 2.5]];
+  CAMP.stallZ = null;
+  CAMP.clampFn = (x, z) => [clamp(x, -9, 9), clamp(z, 10, 19)];
+  player.pos.set(0, PAL2.SH, 17); player.yaw = Math.PI; player.pitch = 0;
+  const N = CAMP_N; let left = N - 3;
+  campNamed('omiya', 0, 16.5, 'archer', true); CAMP.by.omiya.cmdrDir = [0, -1];
+  campNamed('hiyori', -6, 16, 'archer'); campNamed('akari', 6, 16, 'mob');
+  if (CAMP.surv) for (const k of CAMP.surv.named || []) if (!CAMP.by[k] && CAMP_GIRL[k] && left > 0) { campNamed(k, rand(-6, 6), rand(2, 6), 'mob'); left--; }
+  const extra = Math.min(12, (CAMP.surv && CAMP.surv.n) || 0);
+  const put = (n, f) => { for (let i = 0; i < n && left > 0; i++, left--) f(i); };
+  put(Math.round(left * 0.36), i => campJp(-7 + (i % 6) * 2.8 + rand(-0.4, 0.4), -24.5 + Math.floor(i / 6) * 1.5, i % 3 === 0 ? 'archer' : 'mob', { yari: i % 3 === 2 }));   // 中庭（近衛）
+  put(Math.round(left * 0.45), i => campJp(-10 + (i % 8) * 2.8, -4 + Math.floor(i / 8) * 2.4, i % 2 ? 'mob' : 'archer', { yari: i % 4 === 1 }));   // 大広間（侍女・近衛）
+  put(left + extra, i => { const e = campJp(-4 + (i % 5) * 2, 14.5 + Math.floor(i / 5) * 1.3, i % 2 ? 'archer' : 'mob', {}); if (e) { e.baseY = PAL2.SH; e.s.position.y = PAL2.SH; } });   // 踊り場（最後の線）
+  for (const e of CAMP.live.blue) if (e.home && e.home[1] > 13) { e.baseY = PAL2.SH; e.s.position.y = PAL2.SH; }
+  showBanner('第三の場：宮殿', '大宮が近衛を率いる。大階段の上を渡すな'); bannerTimer = 4;
+  campFadeOff();
+  ukDlg([{ wait: 0.6 }, { say: 'p_omiya1' }, { say: 'p_sumi1' }, { say: 'p_hiyori' }, { say: 'p_omiya2' }], null);
+}
+function palTick(dt) {
+  CAMP.bt += dt;
+  if ((CAMP.waveT -= dt) <= 0 || (CAMP.wave > 0 && CAMP.wave < 5 && CAMP.live.orange.length < CAMP_N * 0.2 && CAMP.waveT < 34)) {
+    if (CAMP.wave < 5) {
+      CAMP.wave++; CAMP.waveT = 46;
+      const n = Math.min(Math.round(CAMP_N * (CAMP.wave === 1 ? 0.5 : 0.4)), CAMP_N - CAMP.live.orange.length);
+      CAMP.queue = n; CAMP.qT = 0;
+      if (CAMP.wave === 2) campBark('t_wave_us', 20, true);
+    }
+  }
+  // 出口から一人ずつ出てくる
+  if (CAMP.queue > 0 && (CAMP.qT -= dt) <= 0) { CAMP.qT = 0.35; CAMP.queue--; const [ex, ez] = PAL2.exit; const e = campUs(ex + rand(-1.2, 1.2), ez - 2.6 - rand(0, 1.5), campUsW()); if (e) { e.s.rotation.y = e.face = Math.PI * 1.25; puff(new V3(ex, 0.6, ez - 2.2), 0x8a8070, 3, 0.4, 1.0, 0.8); } }
+  let top = 0; for (const e of CAMP.live.orange) if (e.s.position.z > PAL2.stairTop - 0.2 && Math.abs(e.s.position.x) < 11) top++;
+  const blue = CAMP.live.blue.filter(e => e.campHold || e.cmdr).length;
+  const lost = top >= 3 || blue <= 2;
+  CAMP.fallT = lost ? CAMP.fallT + dt : Math.max(0, CAMP.fallT - dt);
+  if (!CAMP.falling && CAMP.fallT > 5) {
+    CAMP.falling = true; CAMP.sum.pal = 'fell'; CAMP.sum.palT = CAMP.bt;
+    campBark('p_fall_om', 0, true); setTimeout(() => { if (CAMP.on && CAMP.ph === 3) campBark('p_fall_s', 0, true); }, 2600);
+    setTimeout(() => { if (!CAMP.on || CAMP.ph !== 3 || state !== 'play') return; CAMP.frozen = true; campFade('王は宮殿を脱し、山城へ落ち延びた', 3000, () => campGo('yamajiro'), true); }, 5200);
+  }
+  if (!CAMP.falling && CAMP.wave >= 5 && !CAMP.queue && CAMP.live.orange.length <= 2) campWin('pal', 'p_win_om', '宮殿を守り抜いた');
+}
+
+// ==== ④ 山城（月山富田城・七尾城・八王子城・竹田城の縄張りに倣う：石の天守は無く、土の曲輪・切岸・堀切・竪堀） ====
+const YJ = { on: false, cut: false, spots: [], abatis: [], logs: [], zones: [], mist: 0, mistT: 80, mistK: 0, waterLost: false, drum: false };
+const YJ_PATH = [[0, -104], [-7, -92], [7, -81], [-6, -70], [0, -65], [0, -57], [0, -40], [-6, -34], [6, -29], [0, -26], [0, -19], [0, -2], [0, 1], [0, 10.5], [0, 20]];
+function yjBase(z) {
+  if (z < -95) return 0;
+  if (z < -60) return (z + 95) / 35 * 10;
+  if (z < -57) return 10 + (z + 60) / 3 * 5;
+  if (z < -38) return 15;
+  if (z < -22) return 15 + (z + 38) / 16 * 7;
+  if (z < -19) return 22 + (z + 22) / 3 * 6;
+  if (z < 1) return 28;
+  if (z < 4.5) return 28 - (z - 1) / 3.5 * 8;
+  if (z < 6) return 20;
+  if (z < 10.5) return 20 + (z - 6) / 4.5 * 12;
+  if (z < 36) return 32;
+  return Math.max(0, 32 - (z - 36) * 1.6);
+}
+const yjSide = (x, z) => (z > -15 && z < -3 && Math.abs(x) > 18) ? 'side' : null;
+function yjH(x, z) {
+  const ax = Math.abs(x);
+  // 側の曲輪：東＝水の手（y24）・西＝控えの曲輪（y25）。二の丸から坂で下りる
+  if (z > -15 && z < -3 && ax > 18 && ax < 34) {
+    const yy = x > 0 ? 24 : 25;
+    if (ax < 24 && z > -10.5 && z < -7.5) return 28 + (yy - 28) * (ax - 18) / 6;
+    if (ax >= 24) return yy;
+  }
+  let h = yjBase(z);
+  // 虎口の坂
+  if (ax < 2.4 && z > -66 && z < -57) h = Math.max(h, yjBase(-66) + (15 - yjBase(-66)) * (z + 66) / 9);
+  if (ax < 2.4 && z > -28 && z < -19) h = Math.max(h, yjBase(-28) + (28 - yjBase(-28)) * (z + 28) / 9);
+  if (ax < 1.6 && z >= 1 && z < 10.5) { if (!YJ.cut && z < 6) h = 28; else if (z >= 6) h = Math.max(h, 28 + (z - 6) / 4.5 * 4); }
+  // 竪堀（斜面を縦に刻む溝）
+  if ((z > -95 && z < -60) || (z > -38 && z < -22)) { const g = Math.max(0, 1 - Math.abs(ax - 9.5) / 1.1); h -= 2.2 * g; }
+  // 尾根の両側は急に落ちる
+  const W = z > -15 && z < -3 ? 18 : z < -60 ? 22 : 19;
+  if (ax > W) h -= Math.pow(ax - W, 1.3) * 1.3;
+  return h;
+}
+const yjInTrench = (x, z) => z > 0.6 && z < 10.6 && Math.abs(x) < 19;
+function yjOnPath(x, z) { for (let i = 0; i < YJ_PATH.length - 1; i++) { const [ax, az] = YJ_PATH[i], [bx, bz] = YJ_PATH[i + 1], dx = bx - ax, dz = bz - az, L = dx * dx + dz * dz || 1, t = clamp(((x - ax) * dx + (z - az) * dz) / L, 0, 1); if (Math.hypot(ax + dx * t - x, az + dz * t - z) < 1.8) return true; } return false; }
+// 足の移動を地形で縛る：急な所（切岸）は登れない。堀切の中は這い上がれるがとても遅い
+function yjMoveOK(x0, z0, x1, z1) {
+  const h0 = yjH(x0, z0), h1 = yjH(x1, z1), d = Math.hypot(x1 - x0, z1 - z0) || 1e-4, s = (h1 - h0) / d;
+  if (Math.abs(x1) > 34 || z1 < -112 || z1 > 37) return 0;
+  if (Math.abs(x1) > 19.5 && !yjSide(x1, z1)) return 0;
+  if (s > 1.25) return yjInTrench(x1, z1) || yjInTrench(x0, z0) ? 0.22 : 0;
+  let k = s > 0.12 ? (yjOnPath(x1, z1) ? 0.85 : 0.62) : 1;
+  for (const A of YJ.abatis) if (A.hp > 0 && Math.hypot(x1 - A.x, z1 - A.z) < A.r) k *= 0.35;
+  return k;
+}
+function yjBuild() {
+  YJ.on = true; YJ.cut = false; YJ.spots = []; YJ.abatis = []; YJ.logs = []; YJ.mist = 0; YJ.mistT = rand(60, 85); YJ.mistK = 0; YJ.waterLost = false; YJ.drum = false; YJ.wT = 0;
+  campLookDay(40, 300, 0xaebcc4);
+  TERR.fn = yjH;
+  // 地形：格子の高さ図。色は頂点の色（土・草・切岸の土）を写真の草に掛ける
+  const NX = USD_MOB ? 70 : 110, NZ = USD_MOB ? 110 : 170, X0 = -70, X1 = 70, Z0 = -130, Z1 = 50;
+  const geo = new THREE.PlaneGeometry(X1 - X0, Z1 - Z0, NX, NZ); geo.rotateX(-Math.PI / 2); geo.translate((X0 + X1) / 2, 0, (Z0 + Z1) / 2);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i);
+    let h = yjH(x, z); if (Math.abs(x) > 34 || z < -112) h = Math.min(h, yjBase(z) - Math.pow(Math.max(0, Math.abs(x) - 22), 1.3) * 1.3); h = Math.max(h, -18 + Math.sin(x * 0.07) * 3);
+    pos.setY(i, h); uv.setXY(i, x / 6, z / 6);
+    const s = Math.hypot(yjH(x + 0.6, z) - yjH(x - 0.6, z), yjH(x, z + 0.6) - yjH(x, z - 0.6)) / 1.2, p = yjOnPath(x, z);
+    const c = s > 1.1 ? [0.62, 0.5, 0.38] : p ? [0.82, 0.72, 0.56] : (Math.abs(x) < 20 && (z > -57 && z < -38 || z > -19 && z < 1 || z > 10.5 && z < 36)) ? [0.85, 0.82, 0.66] : [0.62, 0.7, 0.5];
+    const n = 0.92 + Math.random() * 0.12; col[i * 3] = c[0] * n; col[i * 3 + 1] = c[1] * n; col[i * 3 + 2] = c[2] * n;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals();
+  const tm = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: yjTex('grass'), vertexColors: true })); tm.receiveShadow = true; stageRoot.add(tm);
+  // 曲輪の平らな面に土の写真（大きな板を少し上に）
+  const mats = { dirt: yjMat('dirt', 0xd8ccb8), wood: yjMat('wood', 0x8e7458), planks: yjMat('planks', 0x8e7a64), plaster: yjMat('plaster', 0xe8e2d6), tile: yjMat('roof', 0x7e8288), bark: yjMat('bark', 0xa89a88), rock: yjMat('rock', 0xbab4aa), path: yjMat('path', 0xc8b8a0) };
+  const B = geoBatch();
+  for (const [z0, z1, y] of [[-57, -38, 15], [-19, 0.8, 28], [10.6, 36, 32]]) B.quad('dirt', [-18.5, y + 0.03, z1], [18.5, y + 0.03, z1], [18.5, y + 0.03, z0], [-18.5, y + 0.03, z0], 4);
+  // 土塁と柵（曲輪の前の縁）。木戸は虎口に
+  const fence = (z, y) => { for (let x = -18; x <= 18; x += 1.1) { if (Math.abs(x) < 2.6) continue; B.box('bark', x - 0.07, x + 0.07, y - 0.2, y + 1.7, z - 0.07, z + 0.07, 1); } for (const sd of [-1, 1]) { B.box('wood', sd > 0 ? 2.6 : -18, sd > 0 ? 18 : -2.6, y + 1.2, y + 1.32, z - 0.05, z + 0.05, 1); B.box('wood', sd > 0 ? 2.6 : -18, sd > 0 ? 18 : -2.6, y + 0.5, y + 0.6, z - 0.05, z + 0.05, 1); } };
+  fence(-56.6, 15); fence(-18.6, 28); fence(11, 32);
+  const kido = (z, y) => { for (const sd of [-1, 1]) B.box('wood', sd * 2.6 - 0.18, sd * 2.6 + 0.18, y - 0.3, y + 3.4, z - 0.18, z + 0.18, 1); B.box('wood', -3, 3, y + 3.1, y + 3.45, z - 0.25, z + 0.25, 1); B.roof('planks', -3.1, 3.1, z - 0.6, z + 0.6, y + 3.45, 0.6, 0.2, 0, 1.5); };
+  kido(-56.6, 15); kido(-18.6, 28); kido(11, 32);
+  // 枡形虎口（本丸の入口：土塁を鍵の手に）
+  B.box('dirt', 1.8, 8, 32, 33.6, 11.6, 13, 2); B.box('dirt', -8, -1.8, 32, 33.6, 14.4, 15.8, 2);
+  // 櫓（各曲輪の隅）と本丸の屋形（板葺きの館：石の天守は無い）
+  const yagura = (x, z, y) => { for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B.box('wood', x + a * 1.4 - 0.15, x + a * 1.4 + 0.15, y - 0.2, y + 4.2, z + b * 1.4 - 0.15, z + b * 1.4 + 0.15, 1); B.box('planks', x - 1.7, x + 1.7, y + 4.2, y + 4.4, z - 1.7, z + 1.7, 1.5); B.box('planks', x - 1.7, x + 1.7, y + 4.4, y + 5.3, z - 1.7, z - 1.6, 1.5); B.roof('planks', x - 1.8, x + 1.8, z - 1.8, z + 1.8, y + 6.4, 1.1, 0.3, 0, 1.5); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B.box('wood', x + a * 1.6 - 0.08, x + a * 1.6 + 0.08, y + 4.4, y + 6.4, z + b * 1.6 - 0.08, z + b * 1.6 + 0.08, 1); };
+  yagura(-12, -54, 15); yagura(12, -54, 15); yagura(-12, -16.5, 28); yagura(12, -16.5, 28); yagura(-10, 14, 32);
+  B.box('rock', -9, 9, 32, 32.5, 22, 33, 2); B.box('plaster', -8, 8, 32.5, 36, 23, 32, 2.5); B.box('planks', -8.05, 8.05, 32.5, 33.4, 22.95, 32.05, 1.5);
+  B.roof('planks', -8, 8, 23, 32, 36, 3.2, 1.2, 0, 2, 'plaster'); boxes.push({ x0: -8, x1: 8, z0: 23, z1: 32, y0: 32, y1: 40 });
+  B.box('wood', -8.6, 8.6, 32.5, 32.75, 21.2, 23, 1.5);   // 縁側
+  // 側の曲輪の小屋：水の手（井戸）・控え（太鼓櫓）
+  B.box('rock', 28, 30, 24, 24.8, -10, -8, 1); B.box('wood', 28.8, 29.2, 24.8, 26.5, -9.2, -8.8, 1);
+  B.box('planks', 25, 33, 24, 26.6, -13.5, -11.5, 1.5); B.roof('planks', 25, 33, -13.5, -11.5, 26.6, 1, 0.4, 0, 1.5);
+  yagura(-29, -9, 25);
+  // 吊り橋（堀切の上）
+  const bridge = new THREE.Group(), bm = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.2, 5.4), mats.planks); bm.position.set(0, 27.9, 3.5); bridge.add(bm);
+  for (const sd of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 5.6), mats.wood); r.position.set(sd * 1.5, 28.9, 3.5); bridge.add(r); }
+  stageRoot.add(bridge); YJ.bridge = bridge;
+  // 堀切の底の土と、竪堀の溝の暗い土
+  B.quad('dirt', [-19, 20.05, 6], [19, 20.05, 6], [19, 20.05, 4.5], [-19, 20.05, 4.5], 3);
+  // 逆茂木：尖った枝を束ねて道を塞ぐ（遅くする）
+  for (const [x, z] of [[-3.5, -86], [3.5, -75], [-4, -31], [3, 1.5]]) {
+    const y = yjH(x, z); for (let k = 0; k < 7; k++) B.obox('bark', x + (k - 3) * 0.55, y + 0.5, z, 0.12, 0.12, 2.6, (k % 2 ? 0.6 : -0.6), 1);
+    B.obox('bark', x, y + 0.35, z, 4.2, 0.16, 0.16, 0, 1); YJ.abatis.push({ x, z, r: 2.4, hp: 1 });
+  }
+  // 岩
+  for (let i = 0; i < (USD_MOB ? 30 : 70); i++) { const x = rand(-30, 30), z = rand(-108, 34); if (yjOnPath(x, z) || Math.abs(x) < 3) continue; const y = yjH(x, z), s = rand(0.4, 1.4); B.obox('rock', x, y + s * 0.3, z, s * 1.4, s, s * 1.1, rand(0, 3), 1.5); }
+  B.flush(mats);
+  // 杉と松の森（曲輪の上と道は空ける）
+  const T = [], NT = USD_MOB ? 160 : 420;
+  for (let i = 0, g = 0; i < NT && g < NT * 6; g++) {
+    const x = rand(-66, 66), z = rand(-126, 48), y = yjH(x, z); if (y < -14) continue;
+    const flat = Math.abs(x) < 20 && (z > -58 && z < -37 || z > -20 && z < 1.5 || z > 10 && z < 37);
+    if (flat || yjOnPath(x, z) || (Math.abs(x) < 4 && z > -110) || yjSide(x, z) || (Math.abs(x) > 18 && Math.abs(x) < 35 && z > -16 && z < -2)) continue;
+    if (Math.abs(x) < 16 && z > -100 && Math.random() < 0.55) continue;
+    T.push([x, y, z, rand(10, 19)]); i++;
+  }
+  campTrees(T, { leaf: 0x2c4429 });
+  buildMedPost(-13, 30, 'blue', 32);
+  // 仕掛けの印（丸太・岩・吊り橋・太鼓）
+  const mk = (x, z, label, kind, extra) => { const y = yjH(x, z), m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 6), new THREE.MeshLambertMaterial({ color: 0xc8402a })); m.position.set(x, y + 1.1, z); stageRoot.add(m); const S = Object.assign({ x, z, y, label, kind, n: kind === 'log' || kind === 'rock' ? 3 : 1, cd: 0, mk: m }, extra || {}); YJ.spots.push(S); return S; };
+  mk(-5, -56, '丸太を転がす', 'log', { dirZ: -1 }); mk(5, -56, '岩を落とす', 'rock', { dirZ: -1 });
+  mk(-5, -18.3, '丸太を転がす', 'log', { dirZ: -1 }); mk(5, -18.3, '岩を落とす', 'rock', { dirZ: -1 });
+  mk(2.4, 11.6, '吊り橋を切り落とす', 'bridge'); mk(-6, -6, '太鼓で控えを呼ぶ', 'drum');
+}
+// 霧：時々立ちこめて、両方とも見えにくくなる（弓・銃の届く距離が縮む）
+function yjMistTick(dt) {
+  if (YJ.mist === 0 && (YJ.mistT -= dt) <= 0) { YJ.mist = 1; YJ.mT = 0; if (!CAMP.said.m_mist) campBark('m_mist', 0, true); }
+  if (YJ.mist) { YJ.mT += dt; const t = YJ.mT; YJ.mistK = t < 6 ? t / 6 : t < 26 ? 1 : t < 32 ? 1 - (t - 26) / 6 : 0; if (t >= 32) { YJ.mist = 0; YJ.mistT = rand(70, 100); YJ.mistK = 0; } }
+  CAMP.mistK = YJ.mistK;
+  scene.fog.near = 40 - 32 * YJ.mistK; scene.fog.far = 300 - 235 * YJ.mistK;
+}
+function yjTrigger(S, auto) {
+  if (S.n <= 0 || S.cd > 0) return false;
+  if (S.kind === 'log' || S.kind === 'rock') {
+    S.n--; S.cd = 18;
+    const big = S.kind === 'log', m = big ? new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 4.2, 10), yjMat('bark', 0xa08c78)) : new THREE.Mesh(new THREE.DodecahedronGeometry(0.8, 0), yjMat('rock', 0xb0aaa0));
+    if (big) m.rotation.z = Math.PI / 2;
+    m.position.set(S.x, S.y + 0.6, S.z - 1.5); stageRoot.add(m);
+    YJ.logs.push({ m, x: S.x, z: S.z - 1.5, v: 4, w: big ? 2.3 : 1.2, big, t: 0, hit: new Set() });
+    campBark('m_log', 25, !auto); if (!auto) { popup(big ? '丸太を転がした！' : '岩を落とした！'); popupTimer = 1.4; }
+    const o = Sfx.at(m.position, 90, 1); if (o) Sfx.noiseBurst(1.4, 'lowpass', 400, 120, 0.6, 0.7, 0, o);
+    if (S.n <= 0) S.mk.visible = false;
+    return true;
+  }
+  if (S.kind === 'bridge') {
+    S.n = 0; YJ.cut = true; S.mk.visible = false;
+    const b = YJ.bridge; YJ.fall = { b, t: 0 };
+    campBark('m_bridge', 0, true); popup('吊り橋を切り落とした！'); popupTimer = 1.6;
+    const o = Sfx.at(new V3(0, 28, 3.5), 90, 1); if (o) Sfx.noiseBurst(0.6, 'bandpass', 900, 200, 0.7, 1, 0, o);
+    // 橋の上にいた者は堀切の底へ（落ちても無事：遅れるだけ）
+    for (const e of enemies) if (isUp(e) && Math.abs(e.s.position.x) < 1.6 && e.s.position.z > 1 && e.s.position.z < 6) e.baseY = 20;
+    return true;
+  }
+  if (S.kind === 'drum') {
+    S.n = 0; YJ.drum = true; S.mk.visible = false;
+    campBark('m_drum', 0, true); popup('太鼓――控えの曲輪から援軍！'); popupTimer = 1.6;
+    const o = Sfx.at(new V3(-6, 28, -6), 120, 1); if (o) for (let i = 0; i < 6; i++) Sfx.tone('sine', 70, 50, 0.3, 0.9, i * 0.45, o);
+    const k = CAMP.zone || 0, Z = YJ.zones[Math.min(k, 2)];
+    for (const e of CAMP.live.blue) if (e.yjReserve) { e.yjReserve = false; e.home = [rand(-12, 12), rand(Z.z0 + 2, Z.z1 - 3)]; }
+    return true;
+  }
+  return false;
+}
+function yjLogsTick(dt) {
+  for (let i = YJ.logs.length - 1; i >= 0; i--) {
+    const L = YJ.logs[i]; L.t += dt; L.v = Math.min(14, L.v + dt * 9);
+    const nz = L.z - L.v * dt, y = yjH(L.x, nz);
+    L.z = nz; L.m.position.set(L.x, y + (L.big ? 0.45 : 0.75), L.z); if (L.big) L.m.rotation.x -= L.v * dt / 0.45; else { L.m.rotation.x -= L.v * dt / 0.8; L.m.rotation.y += dt * 2; }
+    if (Math.random() < dt * 8) puff(new V3(L.x, y + 0.2, L.z), 0xa89878, 2, 0.4, 0.8, 0.7);
+    for (const e of CAMP.live.orange) {
+      if (L.hit.has(e)) continue; const p = e.s.position;
+      if (Math.abs(p.x - L.x) < L.w && Math.abs(p.z - L.z) < 1.0 && Math.abs(p.y - y) < 2.5) { L.hit.add(e); CAMP.stopped = (CAMP.stopped || 0) + 1; damageEnemy(e, L.big ? 4 : 3, new V3(0, 0, -1)); if (isUp(e)) e.knock.set(0, 0, -6); }
+    }
+    if (L.z < -108 || L.t > 9 || (y < 0.1 && L.z < -95)) { stageRoot.remove(L.m); L.m.geometry.dispose(); YJ.logs.splice(i, 1); }
+  }
+  if (YJ.fall) { const F = YJ.fall; F.t += dt; F.b.rotation.x = Math.min(1.45, F.t * 1.6); F.b.position.y = -F.t * F.t * 4; if (F.t > 2.2) { F.b.visible = false; YJ.fall = null; } }
+  for (const S of YJ.spots) if (S.cd > 0) S.cd -= dt;
+}
+// 曲輪：三の丸→二の丸→本丸。落ちたら守り手は次へ上がる
+function yjZoneOf(x, z, y) { for (let k = 0; k < 3; k++) { const Z = YJ.zones[k]; if (z > Z.z0 && z < Z.z1 && Math.abs(x) < 20 && y > Z.y - 1.5) return k; } return -1; }
+function yjHomes(k, list) {
+  const Z = YJ.zones[k], fr = Z.front;
+  list.forEach((e, i) => { if (e.cmdr || e.yjReserve || e.yjWater) return; const row = i % 3, col = Math.floor(i / 3); e.home = [clamp(-15 + ((col * 3.1) % 30) + rand(-0.5, 0.5), -17, 17), fr + 1.2 + row * 1.6 + (e.kind === 'archer' ? 1.2 : 0)]; e.usdFree = false; });
+}
+function yjStart() {
+  CAMP.ph = 4; CAMP.bt = 0; CAMP.wave = 0; CAMP.waveT = 10; CAMP.zone = 0; CAMP.zoneT = 0; CAMP.waveMax = 6;
+  YJ.zones = [{ name: '三の丸', z0: -57, z1: -38, y: 15, front: -56 }, { name: '二の丸', z0: -19, z1: 0.8, y: 28, front: -18 }, { name: '本丸', z0: 10.6, z1: 36, y: 32, front: 12 }];
+  CAMP.route = YJ_PATH.map(([x, z]) => [x, z, 1.2]);
+  CAMP.stallZ = null;
+  CAMP.clampFn = (x, z) => { const Z = YJ.zones[Math.min(CAMP.zone + 1, 2)]; return [clamp(x, -16, 16), clamp(z, Z.z0 + 3, Z.z1 - 2)]; };
+  const N = CAMP_N; let left = N - 4;
+  const solo = CAMP.solo;
+  // 名のある娘：西園寺（大将・二の丸）、大宮（三の丸）、白瀬（本丸）。生き残りが居れば加わる
+  campNamed('ojou', 0, -10, 'archer', true); campNamed('omiya', 0, -44, 'archer', true); campNamed('sumi', -3, 26, 'archer');
+  for (const k of ['ojou', 'omiya']) if (CAMP.by[k]) CAMP.by[k].cmdrDir = [0, -1];
+  for (const k of solo ? ['shinobu', 'chikage', 'hiyori'] : (CAMP.surv && CAMP.surv.named) || []) if (!CAMP.by[k] && CAMP_GIRL[k] && left > 0) { campNamed(k, rand(-8, 8), rand(-50, -42), 'mob'); left--; }
+  const extra = solo ? 0 : Math.min(12, (CAMP.surv && CAMP.surv.n) || 0);
+  const tot = left + extra, res = Math.round(tot * 0.12), wat = USD_MOB ? 2 : 3;
+  for (let i = 0; i < tot; i++) {
+    const kind = i % 5 < 2 ? 'archer' : 'mob';
+    let e;
+    if (i < res) { e = campJp(-29 + rand(-3, 3), -9 + rand(-3, 3), kind, {}); if (e) e.yjReserve = true; }
+    else if (i < res + wat) { e = campJp(28 + rand(-2, 2), -7 + rand(-2, 2), 'mob', {}); if (e) e.yjWater = true; }
+    else { const z = i % 4 === 0 ? rand(-14, -4) : rand(-52, -44); e = campJp(rand(-14, 14), z, kind, { yari: kind === 'mob' && i % 3 === 0 }); }
+  }
+  for (const e of CAMP.live.blue) { e.baseY = yjH(e.s.position.x, e.s.position.z); e.s.position.y = e.baseY; }
+  yjHomes(0, CAMP.live.blue.filter(e => e.home && e.home[1] < -30));
+  yjHomes(1, CAMP.live.blue.filter(e => e.home && e.home[1] > -30 && e.home[1] < 2));
+  player.pos.set(0, yjH(0, -48), -48); player.yaw = Math.PI; player.pitch = 0; player.terrOk = null;
+  for (const m of medics.blue) spawnMedic('blue', m);
+  showBanner(solo ? '山城の守り' : '第四の場：山城', '最後の城。曲輪を一つずつ守れ（赤い杭の所で E：丸太・岩・吊り橋・太鼓）'); bannerTimer = 5;
+  campFadeOff();
+  ukDlg([{ wait: 0.6 }, { fn: () => campKing(solo ? '山の城だ。坂と森を味方にしろ' : '…ここが最後の城だ。坂と森を味方にしろ') }, { wait: 2.6 }, { say: 'm_ojou1' }, { say: 'm_omiya1' }], null);
+}
+function yjSpawnWave(n) {
+  for (let i = 0; i < n; i++) {
+    const x = rand(-6, 6), z = -108 - rand(0, 4) - (i % 6);
+    if (CAMP.solo) { const e = spawnEnemy(x, z, i % 3 === 0 ? 'archer' : 'mob', false, 'orange', { yari: i % 3 === 1 ? 1 : -1 }); if (e) { e.sq = null; e.campUs = true; e.campJpFoe = true; e.ammo = 99; e.hp = e.hpMax = 3; e.passive = true; e.state = 'idle'; e.wp = 0; e.s.rotation.y = e.face = e.faceWant = 0; CAMP.usAll = (CAMP.usAll || 0) + 1; } }
+    else campUs(x, z, campUsW());
+  }
+}
+function yjTick(dt) {
+  CAMP.bt += dt;
+  yjMistTick(dt); yjLogsTick(dt);
+  // 波
+  if (CAMP.wave < CAMP.waveMax && ((CAMP.waveT -= dt) <= 0 || (CAMP.wave > 0 && CAMP.live.orange.length < CAMP_N * 0.22 && CAMP.waveT < 36))) {
+    CAMP.wave++; CAMP.waveT = 50;
+    yjSpawnWave(Math.min(Math.round(CAMP_N * (CAMP.wave === 1 ? 0.5 : 0.4)), CAMP_N - CAMP.live.orange.length));
+    showBanner(`第${CAMP.wave}波`, CAMP.wave === CAMP.waveMax ? '最後の寄せ' : '坂の下から寄せてくる'); bannerTimer = 2.4;
+  }
+  // 守り手の自動の仕掛け（殿が使わなくても、時々は守り手が落とす）
+  if ((YJ.autoT = (YJ.autoT || 0) - dt) <= 0) {
+    YJ.autoT = 5;
+    for (const S of YJ.spots) {
+      if ((S.kind === 'log' || S.kind === 'rock') && S.n > 0 && S.cd <= 0 && yjZoneOf(S.x, S.z + 1, S.y + 0.5) >= CAMP.zone) {
+        let c = 0; for (const e of CAMP.live.orange) { const p = e.s.position; if (Math.abs(p.x - S.x) < 4 && p.z < S.z - 3 && p.z > S.z - 26) c++; }
+        if (c >= 4 && Math.random() < 0.35 && Math.hypot(player.pos.x - S.x, player.pos.z - S.z) > 6) yjTrigger(S, true);
+      }
+    }
+    if (!YJ.cut && CAMP.zone >= 2) yjTrigger(YJ.spots.find(s => s.kind === 'bridge'), true);
+    if (!YJ.drum && CAMP.zone >= 1 && CAMP.bt - (CAMP.zoneAt || 0) > 25) yjTrigger(YJ.spots.find(s => s.kind === 'drum'), true);
+  }
+  // 水の手：取られたら回復が遅くなる
+  let wo = 0, wb = 0; for (const e of CAMP.live.orange) if (e.s.position.x > 22 && e.s.position.z > -15 && e.s.position.z < -3) wo++; for (const e of CAMP.live.blue) if (e.s.position.x > 22 && e.s.position.z > -15 && e.s.position.z < -3) wb++;
+  YJ.wT = wo >= 2 && wb === 0 ? YJ.wT + dt : 0;
+  if (!YJ.waterLost && YJ.wT > 6) { YJ.waterLost = true; campBark('m_water', 0, true); popup('水の手を取られた――手当てが遅くなる'); popupTimer = 2; }
+  if ((YJ.regT = (YJ.regT || 0) + dt) > (YJ.waterLost ? 30 : 10)) { YJ.regT = 0; for (const e of CAMP.live.blue) if (e.hp < e.hpMax) e.hp++; player.hp = Math.min(CFG.maxHp, player.hp + (YJ.waterLost ? 1 : 3)); }
+  // 曲輪の取り合い
+  const Z = YJ.zones[CAMP.zone]; let zo = 0, zb = 0;
+  for (const e of CAMP.live.orange) if (yjZoneOf(e.s.position.x, e.s.position.z, e.s.position.y) === CAMP.zone) zo++;
+  for (const e of CAMP.live.blue) if (!e.medic && yjZoneOf(e.s.position.x, e.s.position.z, e.s.position.y) === CAMP.zone) zb++;
+  CAMP.zoneT = zo >= Math.max(3, zb) && zb <= 1 ? CAMP.zoneT + dt : Math.max(0, CAMP.zoneT - dt * 0.5);
+  if (CAMP.zoneT > 5) {
+    CAMP.zoneT = 0; CAMP.sum.zones = (CAMP.sum.zones || 0) + 1;
+    if (CAMP.zone >= 2) { yjLost(); return; }
+    CAMP.zone++; CAMP.zoneAt = CAMP.bt;
+    showBanner(`${Z.name}が落ちた`, `${YJ.zones[CAMP.zone].name}へ上がれ`); bannerTimer = 3; campBark('m_kuruwa', 0, true);
+    yjHomes(CAMP.zone, CAMP.live.blue.filter(e => e.campHold));
+    for (const e of CAMP.live.blue) if (e.cmdr && e.home) e.home = [0, YJ.zones[CAMP.zone].z1 - 4];
+    if (CAMP.zone === 2 && !YJ.cut && Math.hypot(player.pos.x, player.pos.z - 11) > 4) setTimeout(() => { if (CAMP.on && !YJ.cut) yjTrigger(YJ.spots.find(s => s.kind === 'bridge'), true); }, 9000);
+  }
+  if (CAMP.wave >= CAMP.waveMax && CAMP.live.orange.length <= Math.max(2, Math.ceil(CAMP_N * 0.08)) && !CAMP.falling) campWin('yama', 'm_win_s', CAMP.solo ? '山城を守り抜いた' : '山城で敵を退けた');
+}
+function yjLost() {
+  if (CAMP.falling) return; CAMP.falling = true; CAMP.sum.yama = 'fell'; CAMP.sum.yamaT = CAMP.bt;
+  if (CAMP.solo) { CAMP.frozen = true; campFade('本丸が落ちた――落城', 2400, () => campEnd(false, '山城は落ちた'), false); return; }
+  yjEnding();
+}
+// 殿の最期：何も見せない。字幕と涙声と暗転だけ
+function yjEnding() {
+  if (CAMP.ending) return; CAMP.ending = true; CAMP.falling = true; CAMP.frozen = true; CAMP.sum.yama = CAMP.sum.yama || 'fell'; CAMP.sum.seppuku = true;
+  player.drawing = false;
+  ukDlg([{ wait: 0.8 }, { fn: () => campKing('…ここまでか。俺は敵の手にはかからぬ') }, { wait: 3.6 }, { say: 'm_end_s' }, { say: 'm_end_om' }, { say: 'm_end_o' }, { wait: 0.6 },
+    { fn: () => { CAMP.keepDark = true; campFade('王、山城にて自刃', 4200, null, true); } }, { wait: 6.5 }], () => campEnd(false, '王、山城にて自刃'));
+}
+
+// ==== 流れ：始め・段ごとの初期化・毎フレーム・勝ち負け・結果 ====
+function campInit(solo) {
+  Object.assign(CAMP, { on: true, run: true, solo: !!solo, ph: 0, t: 0, said: {}, by: {}, log: [], sum: {}, kills: 0, frozen: false, switching: false, ended: false, ending: false, surv: {}, stopTot: 0, usAll: 0, endText: null, pitN: 0 });
+  CAMP.title = solo ? '山城の守り' : 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城」';
+  CAMP.oldMode = stageModes.castle;
+  campFadeOff();
+}
+function campPhaseReset() {
+  CAMP.by = {}; CAMP.falling = false; CAMP.frozen = false; CAMP.ending = false; CAMP.queue = 0; CAMP.usAll = 0; CAMP.live = { blue: [], orange: [] };
+  CAMP.route = null; CAMP.stallZ = null; CAMP.clampFn = null; CAMP.mistK = 0; CAMP.bt = 0; CAMP.wave = 0; CAMP.breach = false;
+  if (builtStage !== 'castle' && stageName === 'castle') stageModes.castle = 'def';
+}
+function campPhaseEnd() { CAMP.stopTot += Math.max(0, (CAMP.usAll || 0) - CAMP.live.orange.length); CAMP.usAll = 0; }
+// 町と宮殿は秘書課と救護班も（本陣・救護所がある）
+function campSpawnStaff() { spawnSecretary(); spawnSec2(); for (const m of medics.blue) spawnMedic('blue', m); }
+function campStart() {
+  if (builtStage === 'usTown') { campSpawnStaff(); townStart(); }
+  else if (builtStage === 'usPal') { campSpawnStaff(); palStart2(); }
+  else if (builtStage === 'yamajiro') yjStart();
+}
+function campLive() {
+  const B = CAMP.live.blue, O = CAMP.live.orange; B.length = 0; O.length = 0;
+  for (const e of enemies) if (isUp(e) && !e.special && !e.campHide) (e.team === 'blue' ? B : O).push(e);
+}
+function updateCamp(dt) {
+  if (!CAMP.on || state !== 'play') return;
+  CAMP.t += dt; campLive();
+  if (builtStage !== 'castle') ukDlgTick(dt);
+  if (CAMP.frozen) return;
+  if (CAMP.ph === 1) { townTick(dt); usdShellTick(dt); }
+  else if (CAMP.ph === 2) castleTick(dt);
+  else if (CAMP.ph === 3) palTick(dt);
+  else if (CAMP.ph === 4) yjTick(dt);
+  // 仕掛けの印に近いとき（山城）
+  if (YJ.on) { const S = yjSpotNear(); if (S && !UK.dlg && (CAMP.hintT = (CAMP.hintT || 0) - dt) <= 0) { CAMP.hintT = 2.5; popup(`E：${S.label}` + (S.n > 1 ? `（残り${S.n}）` : '')); popupTimer = 1.4; } }
+}
+function yjSpotNear() { if (!YJ.on) return null; for (const S of YJ.spots) if (S.n > 0 && S.cd <= 0 && Math.hypot(player.pos.x - S.x, player.pos.z - S.z) < 2.6) return S; return null; }
+function campKey() {
+  if (UK.dlg) { if (!UK.choice) ukDlgSkip(); return true; }
+  if (CAMP.frozen) return true;
+  const S = yjSpotNear(); if (S) { yjTrigger(S, false); return true; }
+  return false;
+}
+function campWin(key, line, text) {
+  if (CAMP.falling) return; CAMP.falling = true; CAMP.sum[key] = 'won';
+  campBark(line, 0, true); showBanner('勝利', text); bannerTimer = 4;
+  for (const e of CAMP.live.orange) { e.campHide = false; e.passive = true; e.campFlee = true; }
+  setTimeout(() => { if (CAMP.on && !CAMP.ended && state === 'play') campEnd(true, text); }, 4500);
+}
+function campEnd(win, text) {
+  if (CAMP.ended) return;
+  CAMP.endWin = win; CAMP.endText = text;
+  player.deathCold = true; gameOver(win); player.deathCold = false;
+}
+const campMS = s => `${Math.floor((s || 0) / 60)}分${String(Math.floor((s || 0) % 60)).padStart(2, '0')}秒`;
+// gameOver の最後に呼ぶ：段ごとの結果をまとめて出す
+function campResult(win) {
+  if (!CAMP.on || CAMP.ended) return;
+  CAMP.ended = true; campLive(); campPhaseEnd();
+  CAMP.kills += player.kills || 0;
+  const S = CAMP.sum, ph = CAMP.ph;
+  if (ph === 1 && !S.townT) S.townT = CAMP.bt;
+  const text = CAMP.endText || (ph < 4 || CAMP.solo ? '殿が討たれた' : '王、山城にて自刃');
+  const st = (k, n, tk) => S[k] === 'won' ? '<b>守り抜いた</b>' : S[k] === 'fell' ? `落ちた（${campMS(S[tk])}持ちこたえた）` : ph === n ? (win ? '<b>守り抜いた</b>' : '殿が討たれた') : ph > n ? '―' : '（たどり着かず）';
+  let rate;
+  if (win) rate = ph === 2 ? '鉄壁（町と平城で止めた）' : ph === 3 ? '守り抜いた（宮殿で押し返した）' : '守り抜いた（最後の城で退けた）';
+  else if (ph >= 4 || (S.townT || 0) >= 270) rate = '粘り切った';
+  else if (ph >= 2) rate = 'よく守った';
+  else rate = '押し切られた';
+  const rows = CAMP.solo ? [`山城：${st('yama', 4, 'yamaT')}　落ちた曲輪 ${S.zones || 0}／3`] : [
+    `城下町：${campMS(S.townT)}持ちこたえた（落とし穴 ${CAMP.pitN || 0}人）`,
+    `平城：${ph >= 2 ? st('castle', 2, 'castleT') : '（たどり着かず）'}`,
+    `宮殿：${ph >= 3 ? st('pal', 3, 'palT') : '（たどり着かず）'}`,
+    `山城：${ph >= 4 ? st('yama', 4, 'yamaT') + `　落ちた曲輪 ${S.zones || 0}／3` : '（たどり着かず）'}`];
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
+  if (h1) h1.textContent = win ? '勝利' : S.seppuku ? '落城' : '敗北';
+  if (h2) h2.textContent = text + '　―　評価：' + rate;
+  $('result').innerHTML = rows.join('<br>') + `<br>止めたアメリカ勢 <b>${CAMP.stopTot}</b>　／　殿の撃破 <b>${CAMP.kills}</b>　／　戦った時間 ${campMS(CAMP.t)}`;
+  CAMP.on = false; stageModes.castle = CAMP.oldMode || stageModes.castle;
+  stageName = CAMP.solo ? 'yamajiro' : 'usTown'; builtStage = null;
+  const h = $('campHud'); if (h) h.style.display = 'none';
+  setTimeout(campFadeOff, 600);
+}
+function campLabel() {
+  const nm = CAMP.ph === 1 ? '第一の場 城下町' : CAMP.ph === 2 ? '第二の場 平城' : CAMP.ph === 3 ? '第三の場 宮殿' : (CAMP.solo ? '山城の守り' : '第四の場 山城') + (YJ.zones && YJ.zones[CAMP.zone] ? '・' + YJ.zones[CAMP.zone].name : '');
+  return `${CAMP.solo ? '' : 'アメリカ西部編 第二幕　'}${nm}　${campMS(CAMP.bt)}`;
+}
+function campRemain() {
+  const o = CAMP.live.orange.length, b = CAMP.live.blue.filter(e => !e.medic).length;
+  let g = '';
+  if (CAMP.ph === 1) g = CAMP.breach ? '大通りを破られた――門まで退く' : '城下町で食い止めよ';
+  else if (CAMP.ph === 2) g = '大手門と堀を守れ';
+  else if (CAMP.ph === 3) g = '大階段の上を渡すな' + (CAMP.wave ? `（第${CAMP.wave}波／5）` : '');
+  else if (CAMP.ph === 4) g = `第${CAMP.wave || 0}波／${CAMP.waveMax || 6}` + (YJ.mistK > 0.3 ? '　霧' : '') + (YJ.waterLost ? '　水の手を失った' : '');
+  return `${CAMP.solo ? '寄せ手' : 'アメリカ勢'} ${o}　味方 ${b}　${g}`;
+}
 
 function u3Lv(x, z, y) {
   if (y < 1.4) return 'B';
@@ -14641,7 +15689,8 @@ function loadStage(name) {
   if (MTN.stones) for (const s of MTN.stones) if (s.m) scene.remove(s.m);
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
-  stageLook(name);
+  stageLook(name); TERR.fn = null; YJ.on = false;
+  if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else
   if (name === 'palace') buildPalace(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
@@ -15551,6 +16600,7 @@ function npcSay(e, kind, prio = 0, chance = 1) {
   return Talk.as(e, () => npcSay0(e, kind, prio));
 }
 function npcSay0(e, kind, prio) {
+  if (CAMP.on && !CAMP.solo && e.team === 'orange' && !e.ukId) { if (kind === 'defeat' && Math.random() < 0.6) { const L = usdLine('t_cry' + ((Math.random() * 6) | 0)); if (L && L.file) VoicePack.play(L.file, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z), 0.8, 1); } return; }   // アメリカ勢：短い英語の声だけ
   if (e.ukId) { if (UK2.on || UK3.on || UK4.on) uk2EngSay(e, kind); else ukNpcSay(e, kind); return; }
   if (UK3.on && e.team === 'blue' && !e.medic) { uk3NpcSay(e, kind, prio); return; }
   if (UK4.on && e.team === 'blue' && !e.medic && !e.secretary && !e.ojou) { uk4NpcSay(e, kind, prio); return; }   // 第四幕：王女の陣の台詞   // 第三幕：夜襲の台詞（模擬戦の言い回しは使わない）   // 英国の娘：英語の短い声だけ
@@ -15731,6 +16781,7 @@ const aliveOf = team => enemies.filter(e => e.team === team && e.state !== 'down
 const livingHead = team => enemies.filter(e => e.team === team && e.state !== 'down').length;
 // team: 'orange'（敵・橙組） / 'blue'（味方・青組）
 function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
+  if (CAMP.on && !CAMP.solo && team === 'orange' && !opt.girl) { const id = USD_IDS[(Math.random() * USD_IDS.length) | 0]; if (GIRLS[id]) opt = Object.assign({}, opt, { girl: id }); }   // 第二幕：寄せ手はアメリカの娘
   const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind, opt.perch);
   if (!g) return null;
   const spr = g.spr;                                    // 照準パネルの顔写真
@@ -16235,12 +17286,13 @@ function ojouFieldBrain(e, dt) {
   if (!e.ojouArmor) { e.ojouArmor = true; e.hpMax += 6; e.hp += 6; }   // 侍大将の具足（少しだけ打たれ強い）
   x /= n; z /= n;
   const [hx, hz] = e.home, bd = Math.hypot(hx - x, hz - z) || 1;
-  let tx = x + (hx - x) / bd * 2.5, tz = z + (hz - z) / bd * 2.5;   // 隊の真ん中のすぐ後ろ（前線に立つが先頭には出ない）
+  let tx = x + (hx - x) / bd * 7, tz = z + (hz - z) / bd * 7;   // 大将は隊の真ん中から 7m 後ろ（前には出ない）   // 隊の真ん中のすぐ後ろ（前線に立つが先頭には出ない）
   let nf = null, nd = 1e9;
   for (const o of enemies) { if (o.team === e.team || !isUp(o) || o.special) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < nd) { nd = d; nf = o; } }
-  if (nf && nd < 5) { const fx = p.x - nf.s.position.x, fz = p.z - nf.s.position.z, f = Math.hypot(fx, fz) || 1; tx = p.x + fx / f * 4 + (x - p.x) * 0.3; tz = p.z + fz / f * 4 + (z - p.z) * 0.3; }   // 近すぎる敵からは身を引く
+  if (nf && nd < 9) { const fx = p.x - nf.s.position.x, fz = p.z - nf.s.position.z, f = Math.hypot(fx, fz) || 1; tx = p.x + fx / f * 5 + (x - p.x) * 0.3; tz = p.z + fz / f * 5 + (z - p.z) * 0.3; }
+  if (nf && nd < 50 && (e.cmdrSay = (e.cmdrSay == null ? rand(5, 10) : e.cmdrSay) - dt) <= 0) { e.cmdrSay = rand(14, 22); cmdrShout(e, 'ojou'); }   // 号令   // 近すぎる敵からは身を引く
   const d = Math.hypot(tx - p.x, tz - p.z);
-  if (d > 1.2) steer(e, tx, tz, e.speed * (nd < 5 ? 1.25 : d > 8 ? 1.15 : 0.85), dt);
+  if (d > 1.2) steer(e, tx, tz, e.speed * (nd < 9 ? 1.25 : d > 8 ? 1.15 : 0.85), dt);
   e.faceWant = nf && nd < 25 ? Math.atan2(nf.s.position.x - p.x, nf.s.position.z - p.z) : Math.atan2(tx - p.x, tz - p.z);
   return true;
 }
@@ -16812,7 +17864,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on) return;
+  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || (CAMP.on && builtStage !== 'castle')) return;
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -16937,6 +17989,7 @@ function waveUpdate(dt) {
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
+  if (CAMP.on && CAMP.frozen) return;
   if (e.state === 'down' || UK.on || UK7.on || PAL.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
@@ -18835,6 +19888,7 @@ function updateEnemies(dt) {
     e.defending = e.armed && !e.hold && !(e.polishT > 0) && !(e.secretary && sec.mode !== 'hq') ? secThreat(e) : null;   // 護衛中の秘書は通常の戦い方
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
+    else if ((CAMP.on || e.cmdr) && campBrain(e, dt)) { /* 第二幕・大将の采配 */ }
     else if (USD.on && usdBrain(e, dt)) { /* アメリカ西部編：持ち場・竹束・銃 */ }
     else if (FRS.on && frsBrain(e, dt)) { /* フランス人形編 第一幕：持ち場の砲員 */ }
     else if (UK2.on && !FRS.on && uk2Brain(e, dt)) { /* 第二幕：砲撃の間は陰へ・戦列と方陣・退却・船の上 */ }
@@ -19119,6 +20173,13 @@ function updateEnemies(dt) {
         e.footOk = [p.x, p.z];
       }
     }
+    if (TERR.fn && !e.perch && !e.seated && e.state !== 'down' && e.campRoof == null) {   // 第二幕：山城の斜面・宮殿の大階段
+      const o = e.footOk || [p.x, p.z];
+      if (YJ.on) { const k = yjMoveOK(o[0], o[1], p.x, p.z); if (k <= 0) { p.x = o[0]; p.z = o[1]; } else if (k < 1) { p.x = o[0] + (p.x - o[0]) * k; p.z = o[1] + (p.z - o[1]) * k; } }
+      const th = TERR.fn(p.x, p.z);
+      e.baseY = Math.abs(th - e.baseY) < 0.7 ? th : th > e.baseY ? Math.min(th, e.baseY + 5 * dt) : Math.max(th, e.baseY - 9 * dt);
+      e.footOk = [p.x, p.z];
+    }
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) {
       const slipBar = DUAL.on && MTN.bar && ((DUAL.betrayed && (e.saiRunner || e === DUAL.miyashita)) || (e.missionRelief && e.team === 'blue'));
       const slipGate = e.missionRelief && e.team === 'blue' && DUAL.on;
@@ -19155,6 +20216,8 @@ function updateEnemies(dt) {
 function hurtPlayer(dmg) {
   if (player.god && BEACH.on) return;
   if (state !== 'play' || inHQ()) return;
+  if (CAMP.on && (CAMP.frozen || CAMP.ending)) return;
+  if (CAMP.on && CAMP.ph === 4 && !CAMP.solo && player.hp - dmg <= 0) { player.hp = 1; yjEnding(); return; }   // 山城：殿は討たれず、自ら幕を引く（何も見せない）
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
   puff(player.pos.clone().setY(1), 0xb10f25, 7, 0.16, 1.6, 0.3);
   Sfx.hurt();
@@ -19192,6 +20255,7 @@ function fireArrow(charge) {
 }
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 0.5;
 function enemyShoot(e, t) {
+  if (CAMP.on && !CAMP.solo && e.team === 'orange' && !e.campJpFoe) { if (!e.usdW) e.usdW = Math.random() < 0.6 ? 'win' : 'spr'; if (!(e.ammo > 0)) e.ammo = USD_W[e.usdW].mag; usdShot(e, t); return; }   // アメリカ勢は銃
   if (e.ammo !== undefined) e.ammo = Math.max(0, e.ammo - 1);
   const from = e.s.position.clone(); from.y = e.baseY + e.figH * 0.85;
   if (TEST && CASTLE.on && e.perch && (e.perch.gt || (e.perch.slit && e.perch.inner))) { const G = window.__gt || (window.__gt = { out: 0, inn: 0, outK: 0, inK: 0 }); G.shots = (G.shots || 0) + 1; }
@@ -19423,7 +20487,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', PAL.on ? palPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', CAMP.on ? campLabel() : PAL.on ? palPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -19441,6 +20505,7 @@ function updateHud(dt) {
   if (UK4.on) { const c = uk4Counts(), g = uk4Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第四幕：同じ「残敵・味方」
   if (UK3.on) { const c = uk3Counts(), g = uk3Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第三幕：同じ「残敵・味方」
   if (FRS.on) { const c = frsCounts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}`); }
+  if (CAMP.on) setText('remain', campRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
@@ -19787,6 +20852,7 @@ addEventListener('keydown', e => {
   }
   if (FRS.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && frsKey()) return;
   if (USD.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && usdKey()) return;
+  if (CAMP.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && campKey()) return;
   if (UK2.on && UK.dlg && (e.code === 'KeyE' || e.code === 'Enter')) { ukDlgSkip(); return; }
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
@@ -19936,6 +21002,8 @@ function resetGame() {
 function startGame() {
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
+  if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
+  if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
   if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
@@ -19946,19 +21014,21 @@ function startGame() {
   if (builtStage === 'usDuel') { spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); for (const m of medics.blue) spawnMedic('blue', m); for (const A of aides) spawnAide(A); }   // アメリカ西部編：秘書課・救護班・補佐役は本陣に
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
+  else if (CAMP_OWN.includes(builtStage)) { /* 第二幕：段ごとに campStart が置く */ }
   else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'palace') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   SITU.reset(); SITU.preload(); saiDownPreload();
   state = 'play'; lock();
-  if (builtStage === 'usDuel') usdStart();   // アメリカ西部編 第一幕：会見→決闘→総力戦
+  if (CAMP_OWN.includes(builtStage)) campStart();   // 第二幕：城下町・宮殿・山城
+  else if (builtStage === 'usDuel') usdStart();   // アメリカ西部編 第一幕：会見→決闘→総力戦
   else if (builtStage === 'frSea') frsStart();   // フランス人形編 第一幕：いきなり砲撃戦
   else if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕
@@ -19977,7 +21047,7 @@ function startGame() {
     for (const R of runners) spawnRunner(R);
     trenchSupportEnsure();
   }
-  else if (builtStage === 'twofront') startDualMission(); else startWave(1);
+  else if (builtStage === 'twofront') startDualMission(); else { startWave(1); if (CAMP.on && builtStage === 'castle') campCastleStart(); }
 }
 function pauseGame() {
   if (state !== 'play') return;
@@ -19991,6 +21061,7 @@ function resumeGame() {
 }
 function toTitle() {
   $('bTrenchAttack').style.display='none';
+  if (CAMP.on || CAMP.run) { CAMP.on = false; CAMP.run = false; stageModes.castle = CAMP.oldMode || stageModes.castle; if (stageName === 'castle' || stageName === 'usPal') stageName = CAMP.solo ? 'yamajiro' : 'usTown'; campFadeOff(); const h = $('campHud'); if (h) h.style.display = 'none'; }
   state = 'title'; resetGame(); removeSecretary(); removeFluter();
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }
@@ -20001,6 +21072,7 @@ function gameOver(win) {
   { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
+  if (CAMP.on) campResult(win);   // 第二幕：段ごとの結果
   $('over').style.display = 'flex';
 }
 $('startBtn').onclick = startGame;
@@ -20149,7 +21221,9 @@ function updatePlayer(dt) {
   if (BEACH.on) beachPlayerClamp();
   if (UK.on || UK3.on) ukPlayerClamp();   // 英国淑女編：甲板・舟・舷梯の上だけ
   if (BEACH.on && !player.kei) keiPushAll(player.pos, 0.35);
+  if (TERR.fn && YJ.on) { const o = player.terrOk || [player.pos.x, player.pos.z]; if (yjMoveOK(o[0], o[1], player.pos.x, player.pos.z) <= 0) { player.pos.x = o[0]; player.pos.z = o[1]; } player.terrOk = [player.pos.x, player.pos.z]; }
   let gh = floorUnder(player.pos.x, player.pos.z, player.pos.y);
+  if (TERR.fn) { const th = TERR.fn(player.pos.x, player.pos.z); gh = Math.max(gh, th); if (player.onGround && player.vy <= 0 && player.pos.y > th && player.pos.y - th < 0.8) player.pos.y = th; }
   if (PLANE.on) {   // 倒れた娘の上に乗る（なめらかに）・天井に頭をぶつけない
     const ph = bodies.length ? pileAt(player.pos.x, player.pos.z) * 0.8 : 0;
     if (ph > gh && player.pos.y < ph) { player.pos.y += (ph - player.pos.y) * Math.min(1, dt * 10); player.vy = Math.max(0, player.vy); player.onGround = true; }
@@ -20228,7 +21302,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (USD.on) updateUsd(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();

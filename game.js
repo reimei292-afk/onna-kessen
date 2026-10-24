@@ -12839,7 +12839,7 @@ function palLamp(R, lx, lz, y0 = 0.78) {   // 卓上の灯り
 function palBuildFloor(fi) {
   palClearFloor(); const F = PAL_FLOORS[fi], M = palMats(), out = !!F.out; PAL_CW = F.cw || 2.5; palStyleMats(F);
   const Lo = palLayout(F), H = PAL_H, CW = PAL_CW, RW = Lo.rw, L = Lo.L, sm = PAL.sm, st = F.style;
-  PAL.rooms = Lo.rooms; PAL.gaps = Lo.gaps; PAL.L = L; PAL.RW = RW; PAL.out = out;
+  PAL.rooms = Lo.rooms; PAL.gaps = Lo.gaps; PAL.cw = CW; PAL.L = L; PAL.RW = RW; PAL.out = out;
   const court = Lo.gaps.some(g => g.type === '@court');
   ground.visible = false; sky.visible = out || court; for (const m of mountains) m.visible = out; if (typeof road !== 'undefined') road.visible = false;
   // 廊下の床：迎賓は大理石に赤い絨毯の通り道、岩崎邸は寄木、開智学校は板張り

@@ -477,7 +477,7 @@ const SITU = {
     return out;
   },
   tick(dt) {
-    if (!this.man || state !== 'play' || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || PLANE.intro && Math.random() < 0.9) return;
+    if (!this.man || state !== 'play' || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || PAL.on || PLANE.intro && Math.random() < 0.9) return;
     if ((this.t -= dt) > 0) return; this.t = 1.2 + Math.random() * 0.8;
     if (time - this.last < 4.5) return;
     const cand = enemies.filter(e => this.ok(e) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 32);
@@ -2783,7 +2783,7 @@ function stageLook(name) {
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4 || name === 'frSea', uk3 = name === 'ukNight' || name === 'ukParty'; UK7.on = name === 'ukParty'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
-  FRS.on = name === 'frSea'; USD.on = name === 'usDuel';
+  FRS.on = name === 'frSea'; USD.on = name === 'usDuel'; PAL.on = name === 'palace'; if (PAL.on) document.documentElement.classList.add('ukmeet'); document.documentElement.classList.toggle('pal', PAL.on); if (!PAL.on && $('palClock')) $('palClock').style.display = 'none';
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.fog.color.setHex(uk3 ? 0x0a1220 : FOG); sun.color.setHex(uk3 ? 0x9fb6e8 : 0xfff0d0);   // 第三幕：夜の霞と月の光
@@ -8384,6 +8384,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
+  palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。' },
   usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
@@ -8872,8 +8873,8 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
-function ukWho(who) { if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
+const ukL = k => (PAL.on && palL(k)) || (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+function ukWho(who) { if (PAL.on) return palWho(who); if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
@@ -8921,10 +8922,10 @@ function ukChoiceRender() {
   const btn = (html, cls, fn) => { const b = document.createElement('button'); b.innerHTML = html; if (cls) b.className = cls; b.addEventListener('click', ev => { ev.stopPropagation(); fn(); }); return b; };
   opts.slice(pg * UK_PAGE, pg * UK_PAGE + UK_PAGE).forEach((o, k) => box.appendChild(btn(`<b>${k + 1}</b> ${o.label}${o.sub ? `<small>${o.sub}</small>` : ''}`, '', () => ukPick(pg * UK_PAGE + k))));
   const ci = opts.findIndex(o => /^(やめておく|閉じる)$/.test(o.label));
-  if (n > 1 || ci >= 0 || UK7.on) {
+  if (n > 1 || ci >= 0 || UK7.on || PAL.on) {
     const nav = document.createElement('div'); nav.className = 'uknav';
     if (n > 1) { nav.appendChild(btn('▲ 前へ', 'pg', () => ukPage(-1))); const s = document.createElement('span'); s.textContent = `${pg + 1} / ${n}`; nav.appendChild(s); nav.appendChild(btn('▼ 次へ', 'pg', () => ukPage(1))); }
-    if (ci >= 0 || UK7.on) nav.appendChild(btn('閉じる', 'pg cl', () => { if (ci >= 0) ukPick(ci); else { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; } }));
+    if (ci >= 0 || UK7.on || PAL.on) nav.appendChild(btn('閉じる', 'pg cl', () => { if (ci >= 0) ukPick(ci); else { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; } }));
     box.appendChild(nav);
   }
 }
@@ -12613,6 +12614,639 @@ function uk5Start() {
   ukDlg([{ wait: 1.2 }, { say: 'n5_1' }, { say: 'n5_2' }, { say: 'n5_3' }, { say: 'n5_go' }], () => { if (UK4.phase === 'open') uk4SetPhase('advance'); });
 }
 
+// ======================================================================
+//  宮殿の日常（?stage=palace）：戦いの無いモード。殿の宮殿（外は和の城、中は擬洋風）。
+//  侍女はおよそ 300 人（設定）。いまいる階だけを組み立て、時間帯ごとに居場所を入れ替える。
+//  浴場の中は見せない（殿は入れない）。お手洗いは扉と札だけ。バー・ラウンジは大人の雰囲気だけ。
+// ======================================================================
+const PAL = { on: false, floor: 0, min: 9 * 60, slot: 0, girls: [], doors: [], rooms: [], grp: null, myBoxes: [], myCol: [], log: [], banquet: null, greetT: 0, fadeT: 0, busy: false, mats: null };
+const PAL_N = () => USD_MOB ? 13 : 24;   // 一階あたりの人数（スマホ・軽量は 13）
+const PAL_RW = 12, PAL_CW = 2.5, PAL_H = 3.6;   // 部屋の奥行き・廊下の半幅・天井
+// [種類, 名前, 大きさ（10 m 単位）]
+const PAL_FLOORS = [
+  { name: '最上階', sub: '帝王の間・殿の書斎・私室・バルコニー', rooms: [['throne', '帝王の間', 2], ['study', '殿の書斎', 1], ['priv', '殿の私室', 1], ['balcony', 'バルコニー', 1], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '上層階', sub: '側近の私室・秘書室・政務室・財務室・軍務室', rooms: [['ojou_r', '西園寺の私室・執務室', 1], ['ojou_ante', '西園寺の秘書控室', 0.8], ['sumi_r', '白瀬の私室', 0.8], ['omiya_r', '大宮の私室', 0.8], ['fumi_r', '綾瀬の私室', 0.8], ['secr', '秘書室', 1.6], ['seimu', '政務室', 1], ['zaimu', '財務室', 1], ['gunmu', '軍務室', 1], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '中層階', sub: '侍女の大部屋・休憩室・遊びの部屋・お店', rooms: [['dorm', '侍女の大部屋（一）', 2], ['dorm', '侍女の大部屋（二）', 2], ['rest', '休憩室', 1], ['game', 'ボードゲーム室', 1], ['manga', '漫画コーナー', 1], ['av', '視聴覚室', 1], ['book', '書店', 1], ['zakka', '雑貨店', 1], ['beauty', '美容室', 1], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '下層階', sub: 'カフェ・レストラン・バー・ラウンジ・コンビニ・ジム・ダンス', rooms: [['cafe', 'カフェ', 1.2], ['rest_r', 'レストラン', 2], ['bar', 'バー', 1], ['lounge', 'ラウンジ', 1.4], ['conv', 'コンビニ', 1], ['gym', '女性用ジム', 1.4], ['dance', 'ダンスセンター', 1.2], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '浴場別館', sub: '宴会場・大カラオケ部屋・共同浴場・湯上がり処', rooms: [['banquet', '宴会場', 2.4], ['karaoke', '大カラオケ部屋', 1.4], ['bath_e', '共同浴場（女湯）', 1.2], ['yuagari', '湯上がり処', 1.4], ['wc', '女子トイレ（個室 4）', 0.7], ['wc', '女子トイレ（個室 4）', 0.7]] },
+  { name: '地上・地下', sub: '玄関ホール・近衛室・詰所・武器庫・医務室・厨房ほか', rooms: [['hall', '玄関ホール', 1.6], ['guard', '近衛室', 1], ['post', '各隊詰所', 1], ['armory', '武器庫', 1], ['gunnery', '砲術室', 1], ['med', '医務室', 1.2], ['logi', '兵站室', 1], ['kitchen', '厨房', 2], ['costume', '衣装室', 1], ['info', '情報室', 1], ['music', '音楽室', 0.8], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '敷地', sub: '弓道場・体育館・武道館・練習場・テニスコート・サッカー場', out: true, rooms: [['kyudo', '弓道場', 2], ['gymnasium', '体育館', 2], ['budokan', '武道館', 2], ['practice', '練習場', 2, 1], ['tennis', 'テニスコート', 2, 1], ['soccer', 'サッカー場', 3, 1]] },
+];
+// 時間帯（朝・昼・夕・夜）ごとの、部屋の混み具合
+const PAL_W = {
+  throne: [1, 1.2, 1, 0.4], study: [0, 0.4, 0, 0], priv: [0, 0, 0, 0], balcony: [0.6, 0.6, 1.2, 0.4],
+  secr: [1, 2, 1, 0.2], seimu: [0.5, 2, 0.6, 0], zaimu: [0.5, 2, 0.6, 0], gunmu: [0.5, 2, 0.6, 0],
+  dorm: [2, 0.3, 1, 3], rest: [0.5, 1, 2, 1.5], game: [0.2, 0.8, 2, 1.6], manga: [0.3, 1, 1.5, 1.6], av: [0, 0.5, 1.5, 2], book: [0.3, 1, 1, 0.2], zakka: [0.3, 1, 1, 0.2], beauty: [0.3, 1, 1.2, 0.2],
+  cafe: [1.2, 2.2, 0.6, 0], rest_r: [0.6, 1.2, 2.6, 0.6], bar: [0, 0, 0.6, 2.6], lounge: [0, 0.4, 1, 2.6], conv: [1, 1, 1, 1], gym: [2.4, 0.5, 1, 0.3], dance: [0.5, 0.5, 2, 0.6],
+  banquet: [0, 0, 0.4, 0.4], karaoke: [0, 0.3, 1.6, 2.2], bath_e: [0.6, 0.3, 2, 1.6], yuagari: [0.4, 0.4, 2.6, 1.8],
+  hall: [1, 1, 1, 0.4], guard: [1, 1, 1, 1], post: [1, 1, 1, 0.6], armory: [0.5, 1, 0.5, 0], gunnery: [0.3, 1.5, 0.5, 0], med: [0.5, 1, 1, 0.3], logi: [0.5, 1.5, 0.5, 0], kitchen: [3, 2, 3, 0.5], costume: [0.3, 1, 0.6, 0], info: [0.5, 1, 1, 0.5],
+  kyudo: [2, 1, 1, 0], gymnasium: [1, 1, 2, 0], budokan: [2, 1, 1, 0], practice: [2, 1, 1, 0], tennis: [1, 1, 1.5, 0], soccer: [1, 1, 2, 0],
+};
+// 名のある娘：時間帯ごとの居場所（部屋の種類。'walk' は上層階の廊下で書類を運ぶ、null は出てこない）
+const PAL_NAMED = {
+  sumi: { girl: () => SEC_ID, name: '秘書課 白瀬 澄', pers: '冷静', cm: 160, at: ['kitchen', 'secr', 'rest_r', 'secr'] },
+  sec2: { girl: () => SEC2_ID, name: '秘書課 早瀬 ことね', pers: '陽気', cm: 156, at: ['secr', 'manga', 'beauty', 'manga'] },
+  sec3: { girl: () => 'sec3', name: '秘書課 桜井 ゆかり', pers: '冷静', cm: 158, at: ['zaimu', 'zaimu', 'cafe', 'lounge'] },
+  sec4: { girl: () => 'sec4', name: '秘書課 宮下 千尋', pers: '慎重', cm: 161, at: ['seimu', 'seimu', 'rest_r', 'av'] },
+  fumi: { girl: () => FUMI_ID, name: '秘書課 綾瀬 文乃', pers: '慎重', cm: 159, at: ['kyudo', 'secr', 'book', 'fumi_r'] },
+  ojou: { girl: () => OJOU_ID, name: '西園寺 すみれ', pers: '冷静', cm: 163, at: ['budokan', 'ojou_r', 'ojou_r', 'ojou_r'] },
+  omiya: { girl: () => 'omiya', name: '大宮 ひなた', pers: '陽気', cm: 147, at: ['gym', 'tennis', 'yuagari', 'omiya_r'] },
+  shizuka: { girl: () => 'girl31', name: '久遠 静香', pers: '冷静', cm: 167, at: ['budokan', 'av', 'av', 'av'] },
+  reika: { girl: () => 'girl26', name: '白石 麗華', pers: '好戦的', cm: 165, at: ['beauty', 'beauty', 'dance', 'bar'] },
+  kujo: { girl: () => GIRLS.surgeon ? 'surgeon' : MEDIC_ID, name: '外科医 九条 紗英', pers: '冷静', cm: 162, at: ['med', 'med', 'rest_r', 'med'] },
+  sysop: { girl: () => SYSOP_ID, name: '情報室 霧島 怜', pers: '冷静', cm: 161, at: ['info', 'info', 'av', 'info'] },
+  flute: { girl: () => FLUTE_ID, name: '笛役 小鳥遊 ひびき', pers: '陽気', cm: 155, at: ['music', 'music', 'music', 'dorm'] },
+  // 西園寺の秘書（二人）：予定・来客係と、政務室向けの書類・下書き係。控室の机にいて、西園寺が動けばついていく
+  shinobu: { girl: () => 'sec6', name: '西園寺の秘書 氷室 しのぶ', pers: '冷静', cm: 170, at: ['budokan', 'ojou_ante', 'ojou_ante', null], follow: 'ojou' },
+  chikage: { girl: () => 'girl34', name: '西園寺の秘書 一条 千景', pers: '慎重', cm: 160, at: ['ojou_ante', 'ojou_ante', 'ojou_ante', null], follow: 'ojou' },
+  // 側近付き秘書（三人）：白瀬・綾瀬・大宮ら側近を手分けして支える。予定・お使い・部屋から部屋への書類運び
+  hiyori: { girl: () => 'sec5', name: '側近付き秘書 小日向 ひより', pers: '慎重', cm: 152, at: ['secr', 'walk', 'secr', null] },
+  akari: { girl: () => 'sec7', name: '側近付き秘書 夏目 あかり', pers: '陽気', cm: 162, at: ['gym', 'walk', 'yuagari', null] },
+  midori: { girl: () => 'girl37', name: '側近付き秘書 村瀬 碧', pers: '好戦的', cm: 164, at: ['secr', 'secr', 'walk', null] },
+};
+const PAL_TAG = { throne: '侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
+  cafe: 'カフェの侍女', rest_r: '侍女', bar: '侍女', lounge: '侍女', conv: 'コンビニの侍女', gym: '侍女', dance: '侍女', banquet: '侍女', karaoke: '侍女', bath_e: '侍女', yuagari: '侍女', hall: '取次の侍女', guard: '近衛室', post: '詰所の侍女', armory: '武器庫係', gunnery: '砲術室', med: '医務室 看護役', logi: '兵站室', kitchen: '厨房の侍女', costume: '衣装室', info: '情報室', kyudo: '弓の侍女', gymnasium: '侍女', budokan: '武術の侍女', practice: '侍女', tennis: '侍女', soccer: '侍女', walk: '侍女' };
+const PAL_CAT = { throne: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
+  cafe: 'cafe', rest_r: 'cafe', bar: 'bar', lounge: 'bar', conv: 'conv', gym: 'gym', dance: 'gym', banquet: 'bath', karaoke: 'bath', bath_e: 'bath', yuagari: 'bath', kitchen: 'kitchen', guard: 'guard', post: 'guard', armory: 'guard', gunnery: 'guard', med: 'med', hall: 'misc', logi: 'misc', costume: 'misc', info: 'misc', music: 'misc', kyudo: 'sport', gymnasium: 'sport', budokan: 'sport', practice: 'sport', tennis: 'sport', soccer: 'sport' };
+// 殿の台詞（字幕だけ）
+const PAL_FIX = {
+  k_bq: { who: 'king', ja: '今夜は宴会場で遊ぶぞ。侍女たちを集めよ。来なければ切腹じゃ（笑）', dur: 3.4 },
+  k_toast: { who: 'king', ja: '皆、いつもありがとう。今夜はゆっくり楽しんでくれ。乾杯！', dur: 3.0 },
+  k_pong: { who: 'king', ja: '次は余の番じゃな！ 卓球も、フルーツ牛乳も！', dur: 2.6 },
+  k_hi: { who: 'king', ja: '変わりはないか。', dur: 1.6 },
+};
+Object.assign(UK_WHO_NAME, { sec2: '秘書課 早瀬 ことね', sec3: '秘書課 桜井 ゆかり', sec4: '秘書課 宮下 千尋', fumi: '秘書課 綾瀬 文乃', omiya: '大宮 ひなた', kujo: '外科医 九条 紗英', sysop: '情報室 霧島 怜', flute: '笛役 小鳥遊 ひびき',
+  shinobu: '西園寺の秘書 氷室 しのぶ', chikage: '西園寺の秘書 一条 千景', hiyori: '側近付き秘書 小日向 ひより', akari: '側近付き秘書 夏目 あかり', midori: '側近付き秘書 村瀬 碧' });
+function palL(k) { return PAL_FIX[k] || ((window.VOICE_PAL || {}).lines || {})[k] || null; }
+function palWho(who) {
+  if (who === 'king' || who === 'narr') return null;
+  if (/^g\d$/.test(who)) return PAL.cur || null;
+  return PAL.girls.find(e => e.palKey === who) || null;
+}
+function palSlotOf(m) { const h = ((m / 60) % 24 + 24) % 24; return h >= 5 && h < 10 ? 0 : h < 16 && h >= 10 ? 1 : h >= 16 && h < 20 ? 2 : 3; }
+function palHour() { return ((PAL.min / 60) % 24 + 24) % 24; }
+// ---- 材質と組み立ての道具（いまの階だけを PAL.grp に作り、階を移るたびに捨てる） ----
+function palMats() {
+  if (PAL.mats) return PAL.mats;
+  const L = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o)), B = c => new THREE.MeshBasicMaterial({ color: c });
+  const panel = canvasTex(128, 128, (g, w, h) => {   // 擬洋風：腰から下は濃い木の羽目板、上はクリームの漆喰に細い木の枠
+    g.fillStyle = '#efe4cc'; g.fillRect(0, 0, w, h); g.fillStyle = '#5a3a22'; g.fillRect(0, h * 0.62, w, h * 0.38);
+    g.strokeStyle = '#3a2414'; g.lineWidth = 3; g.strokeRect(8, h * 0.66, w - 16, h * 0.3); g.fillStyle = '#7a5434'; g.fillRect(0, h * 0.6, w, 5); g.strokeStyle = '#b89a6c'; g.lineWidth = 2; g.strokeRect(10, 8, w - 20, h * 0.48);
+  });
+  const parq = canvasTex(128, 128, (g, w, h) => { for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { g.fillStyle = ['#8a5e3a', '#7a5232', '#94683f', '#6e4a2c'][(x + y * 3) % 4]; g.fillRect(x * 32, y * 16, 32, 16); g.strokeStyle = 'rgba(40,24,12,.5)'; g.strokeRect(x * 32, y * 16, 32, 16); } });
+  const carpet = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#7a1824'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(220,180,90,.5)'; g.lineWidth = 3; g.strokeRect(6, 6, w - 12, h - 12); g.beginPath(); g.arc(w / 2, h / 2, 26, 0, 6.3); g.stroke(); });
+  const tatami = canvasTex(64, 128, (g, w, h) => { g.fillStyle = '#b9b67a'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(80,80,40,.25)'; for (let y = 0; y < h; y += 3) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.fillStyle = '#2a3a22'; g.fillRect(0, 0, 4, h); g.fillRect(w - 4, 0, 4, h); });
+  const tile = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#e4e6e2'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b8bab4'; g.lineWidth = 2; g.strokeRect(0, 0, 32, 32); g.strokeRect(32, 32, 32, 32); g.strokeRect(32, 0, 32, 32); g.strokeRect(0, 32, 32, 32); });
+  for (const t of [panel, parq, carpet, tatami, tile]) { t.wrapS = t.wrapT = THREE.RepeatWrapping; }
+  PAL.mats = { panel, parq, carpet, tatami, tile,
+    wall: L(0xffffff, { map: panel }), plain: L(0xefe4cc), ceil: L(0xe8dcc4), wood: L(0x6a4428), woodD: L(0x3e2816), woodL: L(0xa47c52), gold: L(0xd4ad52, { emissive: 0x3a2a08 }), glow: B(0xfff1c8), red: L(0x8a1c28), cloth: L(0xf4f1ea),
+    sofa: L(0x6a2a30), sofaB: L(0x2a3a5a), steel: L(0xb8bcc2), dark: L(0x2a2c30), white: L(0xf2f2ee), green: L(0x2f6a3a), court: L(0x3a7a5a), dirt: L(0xb09a74), grass: L(0x5a8a3e), line: B(0xf4f4f0), screen: B(0x2a3a5a), win: B(0xcfe6ff), mirror: L(0xcfe0ea, { emissive: 0x30404a }),
+    noren: L(0x2a3a8a), norenR: L(0xa82a3a), stone: L(0x8a8a86), wallW: L(0xf4f2ea), roof: L(0x2a2e34), plant: L(0x3a7a3a), pot: L(0x8a5a3a), bottle: L(0x7aa0b0, { emissive: 0x203038 }), amber: B(0xffb060), monitor: B(0x3a8ad8), crate: L(0x9a7a4a), shelfM: L(0x7a5434) };
+  const m = PAL.mats; m.floorMats = {};
+  return m;
+}
+function palFloorMat(kind, w, d) {   // 床の模様は部屋の大きさに合わせて繰り返す（材質は都度作り、階を移るときに捨てる）
+  const M = palMats(), t = { parq: M.parq, carpet: M.carpet, tatami: M.tatami, tile: M.tile }[kind];
+  if (!t) return { court: M.court, dirt: M.dirt, grass: M.grass, dark: M.dark }[kind] || M.woodL;
+  const tx = t.clone(); tx.needsUpdate = true; tx.repeat.set(Math.max(1, w / (kind === 'tatami' ? 1 : 2.4)), Math.max(1, d / (kind === 'tatami' ? 2 : 2.4)));
+  const mm = new THREE.MeshLambertMaterial({ map: tx }); mm.userData.palOwn = true; return mm;
+}
+function palAdd(o) { PAL.grp.add(o); return o; }
+function palBox(w, h, d, m, x, y, z, solid) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); o.receiveShadow = true; palAdd(o);
+  if (solid) { const b = { x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, y0: 0, y1: y + h / 2 }; boxes.push(b); PAL.myBoxes.push(b); }
+  return o;
+}
+function palPlane(w, d, m, x, y, z) { const o = new THREE.Mesh(new THREE.PlaneGeometry(w, d), m); o.rotation.x = -Math.PI / 2; o.position.set(x, y, z); o.receiveShadow = true; return palAdd(o); }
+function palCyl(r0, r1, h, m, x, y, z, seg = 14) { const o = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg), m); o.position.set(x, y, z); return palAdd(o); }
+function palSign(text, x, y, z, ry, w = 2.6, col = '#e8c97a', bg = '#2b1d12') {
+  const tx = canvasTex(320, 64, (c, W, H) => { c.fillStyle = bg; c.fillRect(0, 0, W, H); c.strokeStyle = col; c.lineWidth = 3; c.strokeRect(4, 4, W - 8, H - 8); c.fillStyle = col; let f = 34; c.font = `bold ${f}px serif`; while (c.measureText(text).width > W - 24 && f > 14) { f -= 2; c.font = `bold ${f}px serif`; } c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text, W / 2, H / 2 + 1); });
+  const m = new THREE.MeshBasicMaterial({ map: tx }); m.userData.palOwn = true;
+  const o = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.2), m); o.position.set(x, y, z); o.rotation.y = ry; return palAdd(o);
+}
+function palChand(x, z, y = PAL_H - 0.2, s = 0.55) {
+  const M = palMats(), g = new THREE.Group();
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.06, 6, 20), M.gold); ring.rotation.x = Math.PI / 2; g.add(ring);
+  for (let i = 0; i < 8; i++) { const a = i / 8 * 6.283, b = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), M.glow); b.position.set(Math.sin(a) * 1.3, 0.12, Math.cos(a) * 1.3); g.add(b); }
+  const drop = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.0, 10), new THREE.MeshLambertMaterial({ color: 0xf6efe0, emissive: 0x6a5a38, transparent: true, opacity: 0.85 })); drop.position.y = -0.6; drop.rotation.x = Math.PI; drop.material.userData.palOwn = true; g.add(drop);
+  g.scale.setScalar(s); g.position.set(x, y - 0.1, z); palAdd(g);
+}
+function palClearFloor() {
+  if (PAL.grp) {
+    stageRoot.remove(PAL.grp);
+    PAL.grp.traverse(o => { if (o.geometry) o.geometry.dispose(); const m = o.material; if (m && m.userData && m.userData.palOwn) { if (m.map) m.map.dispose(); m.dispose(); } });
+  }
+  for (const b of PAL.myBoxes) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
+  for (const c of PAL.myCol) { const i = colliders.indexOf(c); if (i >= 0) colliders.splice(i, 1); }
+  PAL.myBoxes = []; PAL.myCol = []; PAL.doors = []; PAL.rooms = []; PAL.lights = []; PAL.grp = new THREE.Group(); stageRoot.add(PAL.grp);
+}
+function palCol(x, z, r) { const c = { x, z, r }; colliders.push(c); PAL.myCol.push(c); }
+// ---- 階の組み立て：廊下（z 方向）の両側に部屋、手前（z<0）に階段室とエレベーター ----
+function palLayout(F) {
+  const rw = F.out ? 18 : PAL_RW; let zW = 0, zE = 0; const rooms = [];
+  for (const [type, name, size, open] of F.rooms) {
+    const side = zW <= zE ? -1 : 1, rd = Math.round(10 * size * 10) / 10, z0 = side < 0 ? zW : zE;
+    if (side < 0) zW += rd; else zE += rd;
+    rooms.push({ type, name, open: !!open, side, z0, z1: z0 + rd, zc: z0 + rd / 2, rd, rw, foot: [], spots: [] });
+  }
+  return { rooms, rw, zW, zE, L: Math.max(zW, zE) };
+}
+const palWX = (R, lx) => R.side * (PAL_CW + lx);
+function palFurnBox(R, lx, lz, w, d, h, m, solid = true, y0 = 0) {   // 部屋の中の家具：lx は廊下からの奥行き、lz は部屋の中央からの z
+  const x = palWX(R, lx), z = R.zc + lz, o = palBox(w, h, d, m, x, y0 + h / 2, z, solid && y0 < 1.2);
+  if (y0 < 1.2) R.foot.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2, cx: x, cz: z });
+  return o;
+}
+function palBuildFloor(fi) {
+  palClearFloor(); const F = PAL_FLOORS[fi], M = palMats(), Lo = palLayout(F), H = PAL_H, CW = PAL_CW, RW = Lo.rw, L = Lo.L, out = !!F.out;
+  PAL.rooms = Lo.rooms; PAL.L = L; PAL.RW = RW; PAL.out = out;
+  // 床・天井
+  palPlane(CW * 2, L + 10, out ? M.dirt : palFloorMat('carpet', CW * 2, L + 10), 0, 0.012, (L - 10) / 2);
+  if (!out) { const c = new THREE.Mesh(new THREE.PlaneGeometry((CW + RW) * 2, L + 10), M.ceil); c.rotation.x = Math.PI / 2; c.position.set(0, H, (L - 10) / 2); palAdd(c); }
+  else { palPlane(260, 260, M.grass, 0, 0.004, L / 2); }
+  // 廊下の端の壁と、部屋の無い側の壁
+  if (!out) {
+    palBox((CW + RW) * 2, H, 0.25, M.wall, 0, H / 2, L, true);
+    for (const [side, cur] of [[-1, Lo.zW], [1, Lo.zE]]) if (cur < L) palBox(0.2, H, L - cur, M.wall, side * CW, H / 2, (cur + L) / 2, true);
+    for (const side of [-1, 1]) palBox(0.3, H, L, M.wall, side * (CW + RW), H / 2, L / 2, true);   // 外壁
+  } else {
+    for (const side of [-1, 1]) palBox(0.3, 1.1, L + 10, M.wallW, side * (CW + RW), 0.55, (L - 10) / 2, true);   // 敷地の塀
+    palBox((CW + RW) * 2, 1.1, 0.3, M.wallW, 0, 0.55, L + 0.2, true);
+  }
+  for (const z of out ? [] : [5, 15, 25, 35, 45, 55].filter(z => z < L)) palChand(0, z, H - 0.15, 0.5);
+  // 灯り（スマホは少なめ）
+  const nl = USD_MOB ? 2 : 4; for (let i = 0; i < nl; i++) { const l = new THREE.PointLight(0xffe2b8, out ? 0.4 : 0.85, 26, 1.4); l.position.set(0, H - 0.6, -4 + (L + 4) * (i + 0.5) / nl); palAdd(l); PAL.lights.push(l); }
+  palStairwell(fi, out);
+  for (const R of PAL.rooms) palRoom(R, out);
+  if (out) palCastle();
+  // 部屋の中の立ち位置
+  for (const R of PAL.rooms) palSpots(R);
+  palLook(true);
+}
+function palStairwell(fi, out) {
+  const M = palMats(), H = PAL_H, wm = out ? M.wallW : M.wall;
+  palPlane(12, 10, out ? palFloorMat('tile', 12, 10) : palFloorMat('parq', 12, 10), 0, 0.01, -5);
+  for (const sx of [-1, 1]) palBox(0.3, H, 10, wm, sx * 6, H / 2, -5, true);
+  palBox(12.3, H, 0.3, wm, 0, H / 2, -10, true);
+  for (const sx of [-1, 1]) palBox(PAL.RW, H, 0.25, wm, sx * (PAL_CW + PAL.RW / 2), H / 2, 0, true);   // 階段室・手前の部屋の境（廊下の口は開ける）
+  palBox(PAL_CW * 2, H - 2.8, 0.25, wm, 0, H - (H - 2.8) / 2, 0, false);
+  if (out) { const c = new THREE.Mesh(new THREE.PlaneGeometry(12, 10), M.ceil); c.rotation.x = Math.PI / 2; c.position.set(0, H, -5); palAdd(c); }
+  // 階段（西側）：上り・下り
+  for (let k = 0; k < 8; k++) palBox(2.6, 0.2 + k * 0.2, 0.5, M.woodD, -4.4, 0.1 + k * 0.1, -2.2 - k * 0.5, false);
+  palBox(0.08, 0.08, 4.2, M.woodD, -3.0, 1.1, -4.0, false);
+  const up = fi > 0, dn = fi < PAL_FLOORS.length - 1;
+  palSign((up ? '▲ ' + PAL_FLOORS[fi - 1].name + 'へ' : '最上階') + '　' + (dn ? '▼ ' + PAL_FLOORS[fi + 1].name + 'へ' : ''), -5.8, 2.4, -6.5, Math.PI / 2, 3.4);
+  // エレベーター（東側）
+  palBox(0.15, 2.5, 2.2, M.steel, 5.85, 1.25, -5, false); palBox(0.05, 2.5, 0.04, M.dark, 5.76, 1.25, -5, false);
+  palBox(0.12, 0.3, 0.2, M.dark, 5.8, 1.2, -6.4, false); const lit = palBox(0.06, 0.12, 0.12, M.amber, 5.74, 1.2, -6.4, false);
+  palSign('エレベーター', 5.8, 2.85, -5, -Math.PI / 2, 2.2);
+  palSign(PAL_FLOORS[fi].name + '（' + PAL_FLOORS[fi].sub.split('・')[0] + 'ほか）', 0, 2.95, -9.8, 0, 4.4);
+  PAL.stairs = { x: -4.0, z: -5 }; PAL.elev = { x: 5.0, z: -5 }; PAL.elevLit = lit;
+}
+function palCastle() {   // 敷地から見る宮殿の外観：和の城（石垣・白壁・黒い瓦の屋根を重ねる）
+  const M = palMats(), z0 = -34, roof = (w, d, y, h) => { const r = new THREE.Mesh(new THREE.ConeGeometry(Math.hypot(w, d) / 2 * 1.08, h, 4, 1), M.roof); r.rotation.y = Math.PI / 4; r.scale.set(w / Math.hypot(w, d) * 1.414, 1, d / Math.hypot(w, d) * 1.414); r.position.set(0, y + h / 2, z0 + 12); palAdd(r); };
+  palBox(44, 3, 26, M.stone, 0, 1.5, z0 + 12, false);
+  palBox(36, 6, 20, M.wallW, 0, 6, z0 + 12, false); roof(40, 24, 9, 3);
+  palBox(26, 5, 14, M.wallW, 0, 13.5, z0 + 12, false); roof(30, 18, 16, 3);
+  palBox(16, 4.5, 9, M.wallW, 0, 21, z0 + 12, false); roof(20, 12, 23.2, 4.5);
+  for (const sx of [-1, 1]) { const s = new THREE.Mesh(new THREE.ConeGeometry(0.5, 1.4, 6), M.gold); s.position.set(sx * 7, 28.2, z0 + 12); s.rotation.z = sx * 0.6; palAdd(s); }
+  for (let i = -3; i <= 3; i++) for (const y of [6, 13.5]) palBox(1.6, 1.2, 0.05, M.dark, i * 4.5 * (y > 10 ? 0.7 : 1), y, z0 + 22.03 + (y > 10 ? -3 : 0), false);   // 窓
+  palBox(12.6, 1.4, 10.6, M.roof, 0, PAL_H + 0.7, -5, false);   // 玄関（階段室）の屋根
+}
+function palRoom(R, out) {
+  const M = palMats(), H = PAL_H, CW = PAL_CW, s = R.side, x0 = s * CW, x1 = s * (CW + R.rw), xm = (x0 + x1) / 2, wm = out ? M.wallW : M.wall, wc = R.type === 'wc';
+  const fk = { throne: 'carpet', study: 'carpet', priv: 'carpet', balcony: 'tile', ojou_r: 'carpet', sumi_r: 'carpet', omiya_r: 'carpet', fumi_r: 'carpet', dorm: 'carpet', rest_r: 'carpet', bar: 'parq', lounge: 'carpet', banquet: 'carpet', karaoke: 'carpet', bath_e: 'tile', yuagari: 'tatami', hall: 'carpet', med: 'tile', kitchen: 'tile', conv: 'tile', gym: 'parq', dance: 'parq', kyudo: 'parq', gymnasium: 'parq', budokan: 'tatami', practice: 'dirt', tennis: 'court', soccer: 'grass', wc: 'tile', av: 'carpet' }[R.type] || 'parq';
+  palPlane(R.rw, R.rd, palFloorMat(fk, R.rw, R.rd), xm, 0.01, R.zc);
+  if (R.open) { palRoomFurn(R); palSign(R.name, x0 + s * 0.3, 1.6, R.z0 + 1.2, s < 0 ? Math.PI / 2 : -Math.PI / 2, 2.6); return; }
+  // 廊下側の壁（扉の口つき）・部屋の境の壁・窓
+  const dz = R.zc, g = 0.95;
+  palBox(0.2, H, dz - g - R.z0, wm, x0, H / 2, (R.z0 + dz - g) / 2, true); palBox(0.2, H, R.z1 - dz - g, wm, x0, H / 2, (dz + g + R.z1) / 2, true);
+  palBox(0.2, H - 2.5, g * 2, wm, x0, H - (H - 2.5) / 2, dz, false);
+  palBox(R.rw, H, 0.2, wm, xm, H / 2, R.z1, true);
+  if (out) { palBox(R.rw, 0.2, R.rd, M.roof, xm, H + 0.1, R.zc, false); palBox(R.rw, H, 0.2, wm, xm, H / 2, R.z0, true); palBox(0.3, H, R.rd, wm, x1, H / 2, R.zc, true); }
+  if (!wc) for (let z = R.z0 + 2.5; z < R.z1 - 1.5; z += 4) { const w = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.6), M.win); w.position.set(x1 - s * 0.17, 1.9, z); w.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(w); PAL.winM = M.win; palBox(0.1, 1.8, 2.0, M.woodD, x1 - s * 0.2, 1.9, z, false); }
+  palSign(R.name, x0 + s * -0.13, 2.85, dz, s < 0 ? Math.PI / 2 : -Math.PI / 2, wc ? 2.4 : 2.8, wc ? '#f0f0f0' : '#e8c97a', wc ? '#a8303c' : '#2b1d12');
+  // 扉：お手洗いは閉じたまま（中は見せない）、ほかは殿が近づくと開く
+  if (!out) {
+    const door = palBox(0.08, 2.45, g * 2 - 0.05, wc ? M.wood : M.woodL, x0, 1.23, dz, false), D = { R, mesh: door, x: x0, z: dz, open: 0, wc, s };
+    if (wc) { const b = { x0: x0 - 0.15, x1: x0 + 0.15, z0: dz - g, z1: dz + g, y0: 0, y1: 2.5 }; boxes.push(b); PAL.myBoxes.push(b); }
+    PAL.doors.push(D);
+  }
+  if (!wc) palRoomFurn(R);
+}
+// ---- 部屋ごとの家具（簡単な箱と円柱で） ----
+function palRoomFurn(R) {
+  const M = palMats(), rw = R.rw, rd = R.rd, hd = rd / 2, B = (lx, lz, w, d, h, m, solid, y0) => palFurnBox(R, lx, lz, w, d, h, m, solid, y0);
+  const table = (lx, lz, w = 1.6, d = 1.0, m = M.wood) => { B(lx, lz, w, d, 0.06, m, true, 0.72); B(lx, lz, w * 0.8, d * 0.8, 0.72, M.woodD, true); };
+  const bed = (lx, lz) => { B(lx, lz, 2.0, 0.95, 0.45, M.woodD); B(lx, lz, 1.9, 0.9, 0.12, M.cloth, false, 0.45); B(lx + 0.75, lz, 0.4, 0.6, 0.1, M.white, false, 0.57); };
+  const shelf = (lx, lz, w = 0.5, d = 2.4, m = M.shelfM) => { B(lx, lz, w, d, 2.0, m); for (let k = 0; k < 4; k++) B(lx, lz, w + 0.02, d - 0.1, 0.05, M.woodD, false, 0.4 + k * 0.45); };
+  const sofa = (lx, lz, w = 0.9, d = 2.2, m = M.sofa) => { B(lx, lz, w, d, 0.45, m); };
+  const chair = (lx, lz) => B(lx, lz, 0.45, 0.45, 0.45, M.red, false);
+  const back = rw - 0.6, mid = rw / 2;
+  switch (R.type) {
+    case 'throne': B(back - 1.2, 0, 3.0, 5, 0.35, M.red); B(back - 0.8, 0, 0.9, 1.1, 1.7, M.gold, true, 0.35); for (const z of [-hd + 4, hd - 4]) palChand(palWX(R, mid), R.zc + z, PAL_H - 0.15, 0.7);
+      for (const z of [-3, 3]) for (let k = 0; k < 3; k++) B(2.5 + k * 2.6, z, 0.4, 0.4, 2.6, M.gold, true);   // 柱
+      R.king = [back - 0.8, 0]; break;
+    case 'study': B(back - 1.2, 0, 1.0, 2.2, 0.78, M.woodD); chair(back - 0.3, 0); shelf(mid, -hd + 0.5, 4, 0.5); shelf(mid, hd - 0.5, 4, 0.5); break;
+    case 'priv': B(back - 1.4, -2, 2.4, 2.0, 0.55, M.woodD); B(back - 1.4, -2, 2.3, 1.9, 0.12, M.cloth, false, 0.55); sofa(mid - 1, 2.5, 2.2, 0.9); B(mid, 1.2, 1.0, 0.6, 0.4, M.wood); break;
+    case 'balcony': B(back - 0.2, 0, 0.3, rd - 1, 1.0, M.white); for (const z of [-3, 0, 3]) { palCyl(0.35, 0.3, 0.5, M.pot, palWX(R, back - 1.2), 0.25, R.zc + z); palCyl(0.05, 0.6, 1.3, M.plant, palWX(R, back - 1.2), 1.15, R.zc + z, 8); } table(mid, 0, 1.0, 1.0, M.white); break;
+    case 'ojou_r': case 'sumi_r': case 'omiya_r': case 'fumi_r': bed(back - 1, -hd + 1.4); B(back - 0.5, 1.4, 0.8, 1.6, 0.76, M.wood); shelf(mid, hd - 0.4, 3, 0.4); if (R.type === 'ojou_r') { table(mid - 1, -0.5, 1.2, 2.4); } break;
+    case 'ojou_ante': B(4, -1.6, 1.0, 1.6, 0.76, M.wood); B(4, 1.6, 1.0, 1.6, 0.76, M.wood); shelf(back - 0.3, 0, 0.5, 3); R.desks = [[5.0, -1.6], [5.0, 1.6]]; break;
+    case 'secr': for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j += 2) B(3 + i * 3, j * 2.6, 1.4, 1.0, 0.76, M.wood); shelf(back - 0.3, 0, 0.5, 4); break;
+    case 'seimu': case 'zaimu': case 'gunmu': B(mid, 0, rw - 5, 1.6, 0.76, R.type === 'gunmu' ? M.green : M.woodD); for (let k = 0; k < Math.floor((rw - 5) / 1.3); k++) { chair(3.2 + k * 1.3, -1.2); chair(3.2 + k * 1.3, 1.2); } chair(back - 0.8, 0); shelf(mid, hd - 0.4, 4, 0.4);
+      R.king = [back - 0.8, 0]; break;   // 上座：入口から最も遠い短辺
+    case 'dorm': for (let z = -hd + 1.6; z < hd - 1; z += 2.4) { bed(back - 1.0, z); bed(2.6, z); } B(mid, 0, 1.2, 3, 0.4, M.wood); break;
+    case 'rest': sofa(back - 0.6, 0, 0.9, 3); sofa(mid - 1, -3, 2.4, 0.9, M.sofaB); B(mid - 0.5, 0, 1.2, 1.2, 0.4, M.wood); B(back - 0.3, -hd + 0.8, 0.6, 1.2, 1.6, M.steel); break;
+    case 'game': for (const [x, z] of [[3.5, -2.5], [3.5, 2.5], [8, -2.5], [8, 2.5]]) { table(x, z, 1.1, 1.1); B(x, z, 0.5, 0.5, 0.03, M.white, false, 0.78); } break;
+    case 'manga': for (let k = 0; k < 3; k++) shelf(3 + k * 2.4, -2, 0.5, 4); sofa(back - 0.6, 2.5, 0.9, 3, M.sofaB); break;
+    case 'av': { const sc = new THREE.Mesh(new THREE.PlaneGeometry(rd - 2, 2.2), M.screen); sc.position.set(palWX(R, back - 0.05), 1.9, R.zc); sc.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(sc); for (let k = 0; k < 3; k++) sofa(3 + k * 2.2, 0, 0.8, rd - 4, M.sofaB); } break;
+    case 'book': for (let k = 0; k < 3; k++) shelf(3 + k * 2.6, 0, 0.6, rd - 4); B(1.8, hd - 1.2, 1.0, 1.4, 1.0, M.wood); break;
+    case 'zakka': for (const [x, z] of [[3.5, -2], [3.5, 2], [7.5, -2], [7.5, 2]]) { table(x, z, 1.4, 1.4, M.white); for (let k = 0; k < 4; k++) B(x - 0.4 + (k % 2) * 0.8, z - 0.3 + (k > 1 ? 0.6 : 0), 0.25, 0.25, 0.2, [M.red, M.sofaB, M.gold, M.plant][k], false, 0.78); } shelf(back - 0.3, 0, 0.5, rd - 2); break;
+    case 'beauty': for (let k = -1; k <= 1; k++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 1.3), M.mirror); m.position.set(palWX(R, back - 0.05), 1.5, R.zc + k * 2.4); m.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(m); B(back - 0.9, k * 2.4, 0.6, 0.6, 0.5, M.red); } sofa(2.2, 0, 0.8, 3, M.sofaB); break;
+    case 'cafe': B(back - 0.8, 0, 0.8, rd - 3, 1.0, M.woodD); for (const [x, z] of [[3, -3], [3, 0.5], [3, 4], [6.5, -3], [6.5, 0.5], [6.5, 4]]) { palCyl(0.45, 0.45, 0.05, M.white, palWX(R, x), 0.74, R.zc + z); palCyl(0.06, 0.06, 0.72, M.dark, palWX(R, x), 0.36, R.zc + z, 6); R.foot.push({ x0: palWX(R, x) - 0.45, x1: palWX(R, x) + 0.45, z0: R.zc + z - 0.45, z1: R.zc + z + 0.45, cx: palWX(R, x), cz: R.zc + z }); } break;
+    case 'rest_r': for (let i = 0; i < 3; i++) for (let j = -2; j <= 2; j += 2) table(3 + i * 3, j * 2.6, 1.4, 1.4, M.cloth); B(back - 0.4, 0, 0.6, rd - 4, 1.1, M.woodD); break;
+    case 'bar': B(back - 1.6, 0, 0.7, rd - 3, 1.08, M.woodD); for (let z = -hd + 2; z < hd - 1.5; z += 1.1) palCyl(0.2, 0.18, 0.72, M.red, palWX(R, back - 2.4), 0.36, R.zc + z, 10); for (let z = -hd + 1.5; z < hd - 1; z += 0.4) palCyl(0.05, 0.05, 0.3, M.bottle, palWX(R, back - 0.25), 1.4 + ((z * 7) & 1) * 0.5, R.zc + z, 6); shelf(back - 0.2, 0, 0.3, rd - 2, M.woodD);
+      { const l = new THREE.PointLight(0xffa860, 0.7, 10, 1.6); l.position.set(palWX(R, back - 2), 2.4, R.zc); palAdd(l); } R.dim = true; break;
+    case 'lounge': for (const [x, z] of [[3.2, -4], [3.2, 0], [3.2, 4], [8, -4], [8, 0], [8, 4]]) { sofa(x, z - 0.9, 1.8, 0.7, M.sofaB); B(x, z, 0.9, 0.9, 0.4, M.woodD); } B(back - 0.8, -hd + 1.5, 1.4, 1.6, 1.0, M.dark);   // ピアノ
+      { const l = new THREE.PointLight(0xffb070, 0.6, 12, 1.6); l.position.set(palWX(R, mid), 2.6, R.zc); palAdd(l); } R.dim = true; R.king = [back - 1, 3]; break;
+    case 'conv': for (let k = 0; k < 2; k++) shelf(3.5 + k * 3, 0, 0.8, rd - 4, M.white); B(back - 0.4, 0, 0.7, rd - 2, 2.0, M.mirror); B(1.6, hd - 1.4, 0.8, 2.0, 1.0, M.white); break;
+    case 'gym': for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j++) B(3 + i * 3, j * 3.6, 1.6, 0.7, 1.0, M.dark); B(back - 0.3, 0, 0.1, rd - 2, 1.8, M.mirror, false); break;
+    case 'dance': { const m = new THREE.Mesh(new THREE.PlaneGeometry(rd - 1, 2.4), M.mirror); m.position.set(palWX(R, back - 0.05), 1.5, R.zc); m.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(m); B(back - 0.4, 0, 0.06, rd - 1, 0.06, M.gold, false, 1.0); } break;
+    case 'banquet': { for (const k of [-1, 1]) B(mid - 0.5, k * 3.6, rw - 6, 1.2, 0.72, M.cloth); B(back - 2.3, 0, 1.2, 4.0, 0.72, M.cloth); B(back - 0.3, 0, 0.4, 0.6, 0.9, M.gold); for (let z = -hd + 2.5; z < hd - 2; z += 4) palChand(palWX(R, mid), R.zc + z, PAL_H - 0.15, 0.6);
+      B(2.2, 0, 0.9, 5, 0.9, M.steel); for (let k = -2; k <= 2; k++) palCyl(0.3, 0.3, 0.12, [M.gold, M.white, M.red][(k + 2) % 3], palWX(R, 2.2), 0.96, R.zc + k * 0.9);   // ビュッフェ
+      R.king = [back - 0.4, 0]; } break;   // 上座：いちばん奥の中央
+    case 'karaoke': { const sc = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.2), M.screen); sc.position.set(palWX(R, back - 0.05), 1.8, R.zc); sc.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(sc); sofa(2.2, 0, 0.8, rd - 3, M.sofa); sofa(mid, -hd + 0.7, rw - 5, 0.8, M.sofa); sofa(mid, hd - 0.7, rw - 5, 0.8, M.sofa); B(mid, 0, 2.4, 1.2, 0.4, M.woodD); R.king = [mid, hd - 0.7]; } break;
+    case 'bath_e': { // 脱衣所の手前まで：靴箱と、のれん。のれんの奥は見せない（殿は入れない）
+      for (const k of [-1, 1]) B(2.8, k * (hd - 0.5), 4, 0.5, 1.6, M.wood); const w = rw - 6; palBox(0.25, PAL_H, R.rd, M.wall, palWX(R, 6), PAL_H / 2, R.zc, false);
+      { const b = { x0: Math.min(palWX(R, 5.8), palWX(R, 6.2)), x1: Math.max(palWX(R, 5.8), palWX(R, 6.2)), z0: R.z0, z1: R.z1, y0: 0, y1: PAL_H }; boxes.push(b); PAL.myBoxes.push(b); }
+      for (let k = -1; k <= 1; k++) palBox(0.04, 1.3, 0.75, k ? M.norenR : M.norenR, palWX(R, 5.84), 2.1, R.zc + k * 0.78, false);
+      palSign('女湯', palWX(R, 5.8), 3.1, R.zc, R.side < 0 ? Math.PI / 2 : -Math.PI / 2, 1.4, '#ffffff', '#a82a3a');
+      R.noren = [palWX(R, 5.4), R.zc]; void w; } break;
+    case 'yuagari': B(mid, 0, 2.7, 1.5, 0.76, M.court); B(mid, 0, 0.04, 1.6, 0.16, M.white, false, 0.76); B(back - 0.4, hd - 1.2, 0.7, 1.4, 1.8, M.white); B(back - 0.75, hd - 1.2, 0.02, 1.2, 1.5, M.mirror, false, 0.2);   // 卓球台・冷蔵庫（フルーツ牛乳）
+      for (const k of [-1, 1]) B(2, k * (hd - 1), 3, 0.5, 0.45, M.woodL); R.pong = [palWX(R, mid), R.zc]; R.queue = [palWX(R, mid - 2.2), R.zc - hd + 1.5]; break;
+    case 'hall': for (let k = 0; k < 7; k++) B(back - 1 - k * 0.5, 0, 0.5, 4, 0.18 * (k + 1), M.woodD, k > 3); palChand(palWX(R, mid), R.zc, PAL_H - 0.15, 0.8); B(2.0, hd - 1.3, 0.8, 2.0, 1.0, M.woodD); break;
+    case 'guard': case 'post': for (let k = 0; k < 2; k++) table(4 + k * 4, -1); B(back - 0.3, 0, 0.5, rd - 2, 1.9, M.steel); break;
+    case 'armory': for (let k = 0; k < 3; k++) { B(3 + k * 3, 0, 0.3, rd - 3, 0.4, M.woodD); for (let z = -hd + 2; z < hd - 2; z += 0.35) palCyl(0.02, 0.02, 2.2, M.woodL, palWX(R, 3 + k * 3), 1.3, R.zc + z, 5); } break;
+    case 'gunnery': for (const z of [-2.5, 2.5]) { const b = palCyl(0.18, 0.24, 2.4, M.dark, palWX(R, mid), 0.75, R.zc + z, 10); b.rotation.z = Math.PI / 2; for (const k of [-1, 1]) { const w = palCyl(0.45, 0.45, 0.1, M.woodD, palWX(R, mid - 0.4), 0.45, R.zc + z + k * 0.35, 12); w.rotation.x = Math.PI / 2; } R.foot.push({ x0: palWX(R, mid) - 1.2, x1: palWX(R, mid) + 1.2, z0: R.zc + z - 0.6, z1: R.zc + z + 0.6, cx: palWX(R, mid), cz: R.zc + z }); } shelf(back - 0.3, 0, 0.5, 4); break;
+    case 'med': for (let z = -hd + 1.5; z < hd - 1; z += 2.6) { bed(back - 1.0, z); B(back - 2.2, z + 1.2, 0.05, 1.0, 1.8, M.cloth, false); } B(3, 0, 1.2, 1.6, 0.9, M.white); break;
+    case 'logi': for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j++) B(3 + i * 3, j * 3, 1.2, 1.2, 0.9 + ((i + j) & 1) * 0.6, M.crate); break;
+    case 'kitchen': { B(back - 0.5, 0, 0.9, rd - 2, 0.95, M.steel); for (let z = -hd + 2; z < hd - 1.5; z += 2.2) { B(back - 0.5, z, 0.7, 0.6, 0.04, M.dark, false, 0.95); palCyl(0.24, 0.22, 0.32, M.steel, palWX(R, back - 0.5), 1.15, R.zc + z); } B(back - 0.5, 0, 1.1, rd - 2, 0.5, M.steel, false, 2.6);
+      for (const z of [-4, 0, 4]) B(5, z, 1.2, 2.6, 0.92, M.steel); for (let k = 0; k < 6; k++) { const o = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.1, 3), M.white); o.position.set(palWX(R, 5) + (k % 3 - 1) * 0.18, 1.0, R.zc - 4 + (k > 2 ? 0.2 : -0.2)); palAdd(o); }   // おにぎり
+      R.oni = [palWX(R, 4.2), R.zc - 4]; { const l = new THREE.PointLight(0xfff4e0, 0.6, 14, 1.5); l.position.set(palWX(R, mid), 3, R.zc); palAdd(l); } } break;
+    case 'costume': for (let k = 0; k < 3; k++) { B(3 + k * 3, 0, 0.1, rd - 3, 0.05, M.steel, false, 1.7); for (let z = -hd + 2; z < hd - 2; z += 0.5) B(3 + k * 3, z, 0.5, 0.06, 1.1, [M.red, M.sofaB, M.cloth, M.gold][(k + Math.round(z * 2)) & 3], false, 0.5); R.foot.push({ x0: palWX(R, 3 + k * 3) - 0.3, x1: palWX(R, 3 + k * 3) + 0.3, z0: R.zc - hd + 1.5, z1: R.zc + hd - 1.5, cx: palWX(R, 3 + k * 3), cz: R.zc }); } break;
+    case 'info': for (let i = 0; i < 2; i++) for (let j = -1; j <= 1; j++) { B(3.5 + i * 4, j * 2.8, 1.0, 1.6, 0.76, M.dark); B(3.5 + i * 4 + 0.3, j * 2.8, 0.05, 0.9, 0.55, M.monitor, false, 0.8); } break;
+    case 'music': B(mid + 1, 0, 0.3, 0.3, 1.2, M.dark, false); chair(mid + 2, 0); B(back - 0.8, -hd + 1.2, 1.4, 1.6, 1.0, M.dark); R.flute = [palWX(R, mid + 1.6), R.zc]; break;
+    case 'kyudo': for (let k = -2; k <= 2; k++) { const t = palCyl(0.4, 0.4, 0.05, M.white, palWX(R, back - 0.4), 1.0, R.zc + k * 2.6, 20); t.rotation.z = Math.PI / 2; const c = palCyl(0.15, 0.15, 0.06, M.dark, palWX(R, back - 0.42), 1.0, R.zc + k * 2.6, 14); c.rotation.z = Math.PI / 2; } palPlane(rw - 7, rd - 1, M.dirt, palWX(R, rw - (rw - 7) / 2 - 0.5), 0.02, R.zc); R.lineX = 3; break;
+    case 'gymnasium': for (const k of [-1, 1]) { B(mid, k * (hd - 0.6), 0.1, 0.1, 3.0, M.white); B(mid, k * (hd - 0.8), 1.2, 0.05, 0.8, M.white, false, 2.6); } palPlane(0.1, rd - 2, M.line, palWX(R, mid), 0.02, R.zc); break;
+    case 'budokan': for (let k = -1; k <= 1; k += 2) B(back - 0.3, k * 3, 0.3, 1.4, 1.6, M.woodD); B(back - 0.15, 0, 0.1, 2, 1.2, M.gold, false, 1.4); break;
+    case 'practice': for (let k = 0; k < 4; k++) palCyl(0.15, 0.15, 1.6, M.woodL, palWX(R, 4 + k * 3.5), 0.8, R.zc + (k % 2 ? 3 : -3), 8); break;
+    case 'tennis': palPlane(rw - 4, 0.08, M.line, palWX(R, mid), 0.02, R.zc - rd / 2 + 2); palPlane(rw - 4, 0.08, M.line, palWX(R, mid), 0.02, R.zc + rd / 2 - 2); palPlane(0.08, rd - 4, M.line, palWX(R, 2), 0.02, R.zc); palPlane(0.08, rd - 4, M.line, palWX(R, rw - 2), 0.02, R.zc); B(mid, 0, rw - 3, 0.05, 1.0, M.white, false); R.foot.push({ x0: palWX(R, 1.5) - 0.1, x1: palWX(R, rw - 1.5), z0: R.zc - 0.2, z1: R.zc + 0.2, cx: palWX(R, mid), cz: R.zc }); break;
+    case 'soccer': for (const k of [-1, 1]) { B(mid, k * (hd - 0.5), 4, 0.1, 0.1, M.white, false, 2.2); for (const j of [-1, 1]) B(mid + j * 2, k * (hd - 0.5), 0.1, 0.1, 2.2, M.white, false); } palPlane(rw - 2, 0.1, M.line, palWX(R, mid), 0.02, R.zc); break;
+  }
+}
+// 立ち位置：家具を避けた格子。近くの家具の方を向く（作業・食事・会話の向き）
+function palSpots(R) {
+  if (R.type === 'wc' || R.type === 'priv') return;
+  const S = R.spots, st = R.rw > 14 ? 2.2 : 1.6, xlim = R.type === 'bath_e' ? 5 : R.rw - 0.9;
+  for (let lx = 1.6; lx <= xlim; lx += st) for (let lz = -R.rd / 2 + 1.0; lz <= R.rd / 2 - 1.0; lz += st) {
+    const x = palWX(R, lx), z = R.zc + lz; if (lx < 2.4 && Math.abs(lz) < 1.3) continue;
+    let near = null, nd = 1e9, bad = false;
+    for (const f of R.foot) { const dx = Math.max(f.x0 - x, 0, x - f.x1), dz = Math.max(f.z0 - z, 0, z - f.z1), d = Math.hypot(dx, dz); if (d < 0.45) { bad = true; break; } if (d < nd) { nd = d; near = f; } }
+    if (bad) continue;
+    S.push({ x, z, face: near && nd < 1.6 ? Math.atan2(near.cx - x, near.cz - z) : Math.atan2(palWX(R, R.rw / 2) - x, R.zc - z) + rand(-0.8, 0.8), taken: null });
+  }
+  for (let i = S.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [S[i], S[j]] = [S[j], S[i]]; }
+}
+// ---- 人：時間帯ごとに、いまの階にいる娘だけを出す ----
+const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);
+function palPool() {
+  if (PAL.pool) return PAL.pool; const no = PAL_NOGEN();
+  PAL.pool = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && (g.type === 'mob' || g.type === 'archer') && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; });
+  return PAL.pool;
+}
+function palSpawn(x, z, girl, prof, tag) {
+  const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: { state: 'idle', silenced: true, pal: true } }); if (!e) return null;
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
+  e.passive = true; e.silenced = true; e.sq = null; if (e.mk) e.mk.visible = false; e.palV = PAL.girls.length % 5; e.ukTag = (tag ? tag + ' ' : '') + e.prof.name; e.palAt = { x, z }; e.crouch = 0;
+  PAL.girls.push(e); return e;
+}
+function palClearGirls() {
+  for (const e of PAL.girls) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(e); } catch (_) {} }
+  PAL.girls = []; PAL.cur = null; for (const R of PAL.rooms) for (const S of R.spots) S.taken = null;
+}
+function palRoomOf(type) { return PAL.rooms.find(R => R.type === type) || null; }
+function palFreeSpot(R, pref) {
+  if (!R || !R.spots.length) return null; const fr = R.spots.filter(S => !S.taken); if (!fr.length) return null;
+  if (pref) { fr.sort((a, b) => Math.hypot(a.x - pref[0], a.z - pref[1]) - Math.hypot(b.x - pref[0], b.z - pref[1])); return fr[0]; }
+  return fr[0];
+}
+function palPlace(e, S, R) { S.taken = e; e.palSpot = S; e.palRoom = R; e.palAt = { x: S.x, z: S.z }; e.s.position.set(S.x, 0, S.z); e.face = e.faceWant = S.face; e.s.rotation.y = e.face; }
+function palSpawnFloor() {
+  palClearGirls(); PAL.named = {};
+  const sl = PAL.slot, N = PAL_N(), bq = PAL.banquet === 'open' && PAL.floor === 4;
+  // 名のある娘
+  for (const k in PAL_NAMED) {
+    const D = PAL_NAMED[k]; let at = D.at[sl];
+    if (bq && ['sumi', 'sec2', 'omiya', 'reika', 'sec3', 'fumi', 'hiyori', 'akari'].includes(k)) at = 'banquet';
+    if (!at) continue;
+    let R = at === 'walk' ? (PAL.floor === 1 ? 'walk' : null) : palRoomOf(at); if (!R) continue;
+    if (PAL.banquet === 'called' && k === 'sumi') continue;   // 白瀬は各階へ声をかけに回っている
+    const g = D.girl(); const e = palSpawn(0, 0, GIRLS[g] ? g : undefined, { name: D.name.split(' ').slice(-2).join(' '), pers: D.pers, cm: D.cm, vv: 1 }); if (!e) continue;
+    e.ukTag = D.name; e.palKey = k; PAL.named[k] = e;
+    if (R === 'walk') { palWalker(e); continue; }
+    let S = null;
+    if (D.follow && PAL.named[D.follow] && PAL.named[D.follow].palRoom === R) { const o = PAL.named[D.follow].palAt; S = palFreeSpot(R, [o.x + (k === 'shinobu' ? 1.2 : -1.2), o.z + 0.8]); }
+    else if (R.desks && (k === 'shinobu' || k === 'chikage')) { const d = R.desks[k === 'shinobu' ? 0 : 1]; S = { x: palWX(R, d[0]), z: R.zc + d[1], face: R.side < 0 ? Math.PI / 2 : -Math.PI / 2, taken: null }; }
+    else if (k === 'flute' && R.flute) S = { x: R.flute[0], z: R.flute[1], face: R.side < 0 ? -Math.PI / 2 : Math.PI / 2, taken: null };
+    else if (k === 'sumi' && R.oni) S = { x: R.oni[0], z: R.oni[1], face: R.side < 0 ? -Math.PI / 2 : Math.PI / 2, taken: null };   // 朝：おにぎりを握る
+    else S = palFreeSpot(R);
+    if (!S) { palWalker(e); continue; }
+    palPlace(e, S, R); if (k === 'sumi' && R.oni) e.ukTag = D.name + '（おにぎりを握っています）';
+  }
+  // 名の無い侍女：部屋の混み具合で配る。廊下を行き来する娘も少し
+  const pool = palPool().slice(); for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  let pi = 0; const nextGirl = () => pool.length ? pool[pi++ % pool.length] : undefined;
+  const rest = Math.max(0, N - PAL.girls.length), walkers = bq ? 1 : USD_MOB ? 2 : 3;
+  const W = PAL.rooms.map(R => bq && R.type === 'banquet' ? 12 : (PAL_W[R.type] || [0, 0, 0, 0])[sl] * Math.sqrt(R.spots.length || 0)), tot = W.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < rest; i++) {
+    if (i < walkers || !tot) { const e = palSpawn(0, 0, nextGirl(), null, '侍女'); if (e) palWalker(e); continue; }
+    let r = Math.random() * tot, R = PAL.rooms[0]; for (let j = 0; j < W.length; j++) { r -= W[j]; if (r <= 0) { R = PAL.rooms[j]; break; } }
+    const S = palFreeSpot(R); if (!S) continue;
+    const e = palSpawn(S.x, S.z, nextGirl(), null, PAL_TAG[R.type] || '侍女'); if (!e) continue; palPlace(e, S, R);
+    if (R.type === 'kitchen' && Math.random() < 0.6) e.ukTag = '厨房の調理係 ' + e.prof.name;
+    if (Math.random() < 0.35 && !['kitchen', 'secr', 'seimu', 'zaimu', 'gunmu', 'info', 'med'].includes(R.type)) e.palWander = time + rand(4, 12);
+  }
+  PAL.log.push('spawn:f' + PAL.floor + ':s' + sl + ':n' + PAL.girls.length);
+}
+function palWalker(e) {   // 廊下を行き来する（側近付き秘書は書類を抱えて部屋から部屋へ）
+  const L = PAL.L || 20; e.palWalk = true; e.palRoom = null; const z = rand(2, L - 2), x = rand(-1.2, 1.2);
+  e.s.position.set(x, 0, z); e.palAt = null; e.palTo = [x, rand(1, L - 1)]; e.speed = 1.1;
+}
+function palBrain(e, dt) {
+  e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0); e.baseY = 0;
+  const p = e.s.position, dK = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+  const bow = e.palBowT && time < e.palBowT; e.crouch = bow ? 0.22 : 0;
+  if (e.ukTalkT && time < e.ukTalkT) { e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); e.state = 'idle'; return true; }
+  // 廊下：殿が来たら端へ寄って礼。通り過ぎるまで待つ
+  if (e.palWalk && !PAL.out) {
+    if (dK < 4.5 && Math.abs(p.x) < PAL_CW + 0.3) {
+      const sx = p.x === player.pos.x ? 1 : Math.sign(p.x - player.pos.x), tx = sx * (PAL_CW - 0.5);
+      if (Math.abs(p.x - tx) > 0.15) { p.x += Math.sign(tx - p.x) * Math.min(Math.abs(tx - p.x), 2.4 * dt); e.state = 'approach'; e.faceWant = Math.atan2(tx - p.x, 0.001); }
+      else { e.state = 'idle'; e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); if (!e.palYield) { e.palYield = true; e.palBowT = time + 1.6; PAL.yields = (PAL.yields || 0) + 1; palOmiyaStrict(e); } }
+      return true;
+    }
+    e.palYield = false;
+  }
+  if (e.palTo) {
+    const [tx, tz] = e.palTo, d = Math.hypot(tx - p.x, tz - p.z);
+    if (d > 0.3) { const sp = (e.speed || 1.1) * dt; p.x += (tx - p.x) / d * Math.min(sp, d); p.z += (tz - p.z) / d * Math.min(sp, d); e.faceWant = Math.atan2(tx - p.x, tz - p.z); e.state = 'approach'; return true; }
+    if (e.palWalk) { const L = PAL.L || 20; e.palTo = [rand(-1.3, 1.3), p.z > L / 2 ? rand(1, L * 0.4) : rand(L * 0.6, L - 1)]; e.palPause = time + rand(0.5, 3); }
+    else { e.palTo = null; if (e.palDoorBow) { e.palBowT = time + 1.6; e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); e.palDoorBow = false; e.palBackT = time + 4; } else if (e.palSpot) e.faceWant = e.palSpot.face; }
+  }
+  if (e.palPause && time < e.palPause) { e.state = 'idle'; return true; }
+  if (e.palBackT && time > e.palBackT && e.palSpot) { e.palBackT = 0; e.palTo = [e.palSpot.x, e.palSpot.z]; return true; }
+  if (e.palWander && time > e.palWander && e.palRoom && !e.palTo) {   // 部屋の中で場所を変える（棚を見る・席を移る）
+    const S = palFreeSpot(e.palRoom); if (S) { if (e.palSpot) e.palSpot.taken = null; S.taken = e; e.palSpot = S; e.palTo = [S.x, S.z]; }
+    e.palWander = time + rand(8, 18);
+  }
+  if (bow || dK < 2.2) e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z);
+  e.state = 'idle'; return true;
+}
+// ---- 明るさ：朝・昼・夕・夜。バー・ラウンジの中は暗め ----
+const PAL_LOOK = [
+  { bg: 0xcfe0f0, win: 0xd8ecff, hemi: 1.4, amb: 0.75, sun: 0.9, lamp: 0.6, name: '朝' },
+  { bg: 0xa8d0f4, win: 0xbfe0ff, hemi: 1.6, amb: 0.85, sun: 1.0, lamp: 0.5, name: '昼' },
+  { bg: 0xe8a070, win: 0xf4b078, hemi: 1.1, amb: 0.6, sun: 0.6, lamp: 0.9, name: '夕' },
+  { bg: 0x0a1024, win: 0x101a38, hemi: 0.6, amb: 0.42, sun: 0.1, lamp: 1.15, name: '夜' },
+];
+function palLook(force) {
+  const K = PAL_LOOK[PAL.slot], inDim = PAL.inRoom && PAL.inRoom.dim, f = inDim ? 0.55 : 1;
+  if (scene.background && scene.background.setHex) scene.background.setHex(K.bg);
+  if (scene.fog) { scene.fog.color.setHex(K.bg); scene.fog.near = 80; scene.fog.far = 500; }
+  if (typeof hemiL !== 'undefined' && hemiL) hemiL.intensity = K.hemi * f;
+  if (typeof ambL !== 'undefined' && ambL) ambL.intensity = K.amb * f;
+  if (typeof sun !== 'undefined' && sun) sun.intensity = PAL.out ? K.sun : K.sun * 0.3;
+  for (const l of PAL.lights || []) l.intensity = (PAL.out ? 0.3 : K.lamp) * (inDim ? 0.6 : 1);
+  if (PAL.mats) PAL.mats.win.color.setHex(K.win);
+}
+// ---- 右上の時計と、時間帯の切り替え ----
+function palClockUI() {
+  let el = $('palClock');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'palClock';
+    el.innerHTML = '<div id="palTime">09:00</div><div id="palSlots">' + PAL_LOOK.map((K, i) => `<button data-sl="${i}">${K.name}</button>`).join('') + '</div><div id="palFloorName"></div>';
+    document.body.appendChild(el);
+    for (const b of el.querySelectorAll('button')) { const go = ev => { ev.preventDefault(); ev.stopPropagation(); palSetSlot(+b.dataset.sl); }; b.addEventListener('click', go); b.addEventListener('touchend', go, { passive: false }); }
+  }
+  return el;
+}
+function palSetSlot(i) { PAL.min = [7, 12, 17.5, 21.5][i] * 60; PAL.log.push('slot:' + i); palTick(0, true); }
+function palTick(dt, force) {
+  PAL.min = (PAL.min + dt) % (24 * 60); const sl = palSlotOf(PAL.min);
+  if (sl !== PAL.slot || force) { const ch = sl !== PAL.slot; PAL.slot = sl; if (ch || force) { palSpawnFloor(); palLook(true); if (ch) showBanner(PAL_LOOK[sl].name + 'の宮殿', ['侍女たちは朝の支度。厨房とジムがにぎやか', '各室の仕事とカフェの時間', 'レストランと浴場別館がにぎわう', 'ラウンジ・バー・大部屋のおしゃべり'][sl]); } }
+  const h = Math.floor(palHour()), m = Math.floor(PAL.min % 60), el = palClockUI();
+  el.style.display = 'block'; $('palTime').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  for (const b of el.querySelectorAll('button')) b.classList.toggle('on', +b.dataset.sl === PAL.slot);
+  $('palFloorName').textContent = PAL_FLOORS[PAL.floor].name + (PAL.inRoom ? '・' + PAL.inRoom.name : '');
+}
+// ---- 話す ----
+function palNear() {
+  let best = null, bd = 2.6; const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+  for (const e of PAL.girls) { const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d < 0.01) continue; const dot = (dx * fx + dz * fz) / d, sc = d - dot * 0.8; if (d < 2.6 && dot > -0.2 && sc < bd) { bd = sc; best = e; } }
+  return best;
+}
+function palCatOf(e) {
+  const h = palHour(); if (e.palWalk) return h < 10 && h >= 5 ? 'morning' : h >= 21 || h < 5 ? 'night' : 'office';
+  let c = PAL_CAT[e.palRoom && e.palRoom.type] || 'misc';
+  if (PAL.slot === 3 && Math.random() < 0.3 && c !== 'bar') c = 'night'; else if (PAL.slot === 0 && Math.random() < 0.3) c = 'morning';
+  return c;
+}
+function palLineFor(e) {
+  const V = window.VOICE_PAL || { named: {}, cat: {}, lines: {} };
+  if (e.palKey) { const ls = V.named[e.palKey] || []; if (ls.length) { e.palN = ((e.palN == null ? -1 : e.palN) + 1) % ls.length; return ls[e.palN]; } }
+  if (PAL.doors.some(D => D.wc && Math.hypot(D.x - player.pos.x, D.z - player.pos.z) < 4) && Math.random() < 0.5) return 'wc';
+  const ls = V.cat[palCatOf(e)] || V.cat.misc || []; if (!ls.length) return null;
+  e.palN = ((e.palN == null ? (Math.random() * ls.length) | 0 : e.palN) + 1) % ls.length; return ls[e.palN];
+}
+function palSay(e, k) {   // 名の無い侍女の声は g0〜g4。名札は話している本人
+  const L = palL(k); if (!L) return 0;
+  if (/^g\d$/.test(L.who)) { PAL.cur = e; UK_WHO_NAME[L.who] = e ? e.ukTag : '侍女'; }
+  else if (e && e.palKey === L.who) PAL.cur = e;
+  return 1;
+}
+function palTalk(e) {
+  PAL.log.push('talk:' + (e.palKey || e.palV));
+  e.ukTalkT = time + 4; e.palBowT = time + 0.9;
+  if (e.palKey === 'sumi' && !PAL.banquet) {   // 白瀬に宴会を頼む（殿の冗談は字幕だけ。誰も罰しない）
+    ukDlg([{ fn: () => palSay(e, 'n_sumi_0') }, { choice: [
+      { label: '話す', sub: 'いつもの話', then: [{ fn: () => palSay(e, 'n_sumi_0') }, { say: palLineFor(e) }] },
+      { label: '今夜は宴会場で遊ぶぞ', sub: '侍女たちを集めてもらう', then: [{ say: 'k_bq' }, { fn: () => palSay(e, 'bq_sumi1') }, { say: 'bq_sumi1' }, { say: 'bq_call' }, { fn: palBanquetCall }] },
+      { label: 'やめておく', sub: '', then: [] }] }]);
+    return;
+  }
+  const k = palLineFor(e); if (!k) return; palSay(e, k);
+  ukDlg([{ say: k }]);
+}
+function palBark(e, k) {   // 会話の窓を開けずに、ひとこと（声と字幕）
+  const L = palL(k); if (!L || UK.dlg) return 0; palSay(e, k);
+  if (L.file && e) Talk.as(e, () => VoicePack.play(L.file, Math.min(14, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)), 1.95, 1));
+  $('popup').textContent = (UK_WHO_NAME[L.who] || '') + '「' + L.ja + '」'; popupTimer = Math.max(1.6, (L.dur || 2) * 0.7);
+  if (e) e.ukTalkT = time + (L.dur || 2); PAL.log.push('bark:' + k); return L.dur || 2;
+}
+// ---- 作法：あいさつ・扉・廊下・大宮の指導 ----
+function palGreetTick() {
+  if (time < PAL.greetT || UK.dlg) return;
+  const h = palHour(), kind = h >= 5 && h < 11 ? 'm' : h >= 21 || h < 5 ? 'n' : 'd';
+  for (const e of PAL.girls) {
+    if (e.palGreeted === PAL.slot + ':' + kind) continue;
+    const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d > 3.4) continue;
+    e.palGreeted = PAL.slot + ':' + kind; e.palBowT = time + 1.8;
+    if (e.palKey && e.palKey !== 'omiya') { PAL.greetT = time + 2.5; continue; }   // 名のある娘は会釈だけ（話しかけると話す）
+    palBark(e, `gr_${kind}_${e.palV}`); PAL.greetT = time + 4.5; PAL.greets = (PAL.greets || 0) + 1; return;
+  }
+}
+function palOmiyaStrict(e) {
+  const O = PAL.named.omiya; if (!O || time < (PAL.omiT || 0)) return;
+  if (Math.hypot(O.s.position.x - player.pos.x, O.s.position.z - player.pos.z) > 12) return;
+  PAL.omiT = time + 40; setTimeout(() => { if (PAL.on && state === 'play') palBark(O, 'om_strict'); }, 700);
+}
+function palDoorTick(dt) {
+  for (const D of PAL.doors) {
+    if (D.wc) continue;
+    const d = Math.hypot(player.pos.x - D.x, player.pos.z - D.z), want = d < 3.0 ? 1 : 0;
+    if (want && !D.open && !D.opening) {   // いちばん近くで気づいた娘が扉を開けて礼
+      D.opening = true; let best = null, bd = 9;
+      for (const e of PAL.girls) { if (e.palWalk || e.palKey === 'ojou') continue; const dd = Math.hypot(e.s.position.x - D.x, e.s.position.z - D.z); if (dd < bd) { bd = dd; best = e; } }
+      if (best && time > (PAL.doorT || 0)) { const inR = best.palRoom === D.R, sx = inR ? D.x + D.s * 0.6 : D.x - D.s * 0.6; best.palTo = [sx, D.z + 1.25]; best.palDoorBow = true; PAL.doorT = time + 6; PAL.doorBows = (PAL.doorBows || 0) + 1; setTimeout(() => { if (PAL.on && state === 'play') palBark(best, Math.random() < 0.5 ? 'door' : 'door1'); }, 600); }
+    }
+    if (!want) D.opening = false;
+    D.open += (want - D.open) * Math.min(1, dt * 5); D.mesh.position.z = D.z + D.open * 1.85;
+  }
+}
+// ---- 階段・エレベーター ----
+function palGoFloor(f, how) {
+  if (f < 0 || f >= PAL_FLOORS.length || PAL.busy) return;
+  PAL.busy = true; const fd = $('palFade'); if (fd) fd.style.opacity = 1;
+  setTimeout(() => {
+    if (!PAL.on) return;
+    PAL.floor = f; palBuildFloor(f); palSpawnFloor();
+    if (how === 'elev') { player.pos.set(4.2, 0, -5); player.yaw = Math.PI / 2; }
+    else { player.pos.set(-1.5, 0, -4); player.yaw = Math.PI; }
+    player.pitch = -0.04;
+    showBanner(PAL_FLOORS[f].name, PAL_FLOORS[f].sub); PAL.log.push('floor:' + f + ':' + how);
+    if (how === 'elev') {   // 着いたら、ボタンの前の新人が「お先にどうぞ」。殿が先に降りる
+      const e = palSpawn(5.3, -3.8, palPool()[(Math.random() * palPool().length) | 0], null, '侍女（新人）');
+      if (e) { e.palAt = { x: 5.3, z: -3.8 }; e.palBowT = time + 2.5; e.faceWant = e.face = -Math.PI / 2; e.palElev = true; setTimeout(() => { if (PAL.on) palBark(e, 'ev_out'); }, 700); setTimeout(() => { if (PAL.on && e.s) { e.palWalk = true; e.palTo = [0, 6]; } }, 4500); }
+    }
+    if (fd) fd.style.opacity = 0; PAL.busy = false;
+  }, 450);
+}
+function palElevator() {   // 扉を押さえる娘・新人はボタンの前・殿は奥（上座）
+  const fs = PAL_FLOORS.map((F, i) => i).filter(i => i !== PAL.floor);
+  const near = PAL.girls.filter(e => Math.hypot(e.s.position.x - PAL.elev.x, e.s.position.z - PAL.elev.z) < 10).slice(0, 2);
+  if (!near.length) { const e = palSpawn(5.2, -2.6, palPool()[0], null, '侍女'); if (e) near.push(e); }
+  near.forEach((e, i) => { e.palWalk = false; e.palTo = [5.3, i ? -7.2 : -2.9]; e.palDoorBow = true; });
+  const om = PAL.named.omiya && Math.hypot(PAL.named.omiya.s.position.x - PAL.elev.x, PAL.named.omiya.s.position.z - PAL.elev.z) < 12;
+  PAL.elevUses = (PAL.elevUses || 0) + 1;
+  palSay(near[0], 'ev_hold');
+  ukDlg([{ say: 'ev_hold' }].concat(om ? [{ fn: () => palSay(PAL.named.omiya, 'om_ev') }, { say: 'om_ev' }] : []).concat([{ choice: fs.map(i => ({ label: PAL_FLOORS[i].name, sub: PAL_FLOORS[i].sub, then: [{ fn: () => palGoFloor(i, 'elev') }] })).concat([{ label: 'やめておく', sub: '', then: [] }]) }]));
+}
+function palStairs() {
+  const c = [];
+  if (PAL.floor > 0) c.push({ label: '▲ ' + PAL_FLOORS[PAL.floor - 1].name + 'へ上る', sub: PAL_FLOORS[PAL.floor - 1].sub, then: [{ fn: () => palGoFloor(PAL.floor - 1, 'stairs') }] });
+  if (PAL.floor < PAL_FLOORS.length - 1) c.push({ label: '▼ ' + PAL_FLOORS[PAL.floor + 1].name + 'へ下りる', sub: PAL_FLOORS[PAL.floor + 1].sub, then: [{ fn: () => palGoFloor(PAL.floor + 1, 'stairs') }] });
+  c.push({ label: 'やめておく', sub: '', then: [] }); ukDlg([{ choice: c }]);
+}
+function palSpotHint() {
+  if (UK.dlg) return '';
+  if (Math.hypot(player.pos.x - PAL.stairs.x, player.pos.z - PAL.stairs.z) < 2.4) return '階段で移動する（E / 頼むボタン）';
+  if (Math.hypot(player.pos.x - PAL.elev.x, player.pos.z - PAL.elev.z) < 2.0) return 'エレベーターに乗る（E / 頼むボタン）';
+  const P = palRoomOf('yuagari'); if (P && Math.hypot(player.pos.x - P.pong[0], player.pos.z - P.pong[1]) < 2.4) return '卓球台（E / 頼むボタン）';
+  if (PAL.banquet === 'open' && PAL.inRoom && PAL.inRoom.type === 'banquet' && !PAL.bqSeated) return '上座の席へ（E / 頼むボタン）';
+  return '';
+}
+// ---- 湯上がり処の小ネタ：殿、卓球とフルーツ牛乳に割り込もうとする ----
+function palPong() {
+  const R = palRoomOf('yuagari'); let O = PAL.named.omiya;
+  if (!O) { const e = palSpawn(R.pong[0] + 1.2, R.pong[1] + 1.2, GIRLS.omiya ? 'omiya' : undefined, { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 1 }); if (e) { e.ukTag = '大宮 ひなた'; e.palKey = 'omiya'; PAL.named.omiya = O = e; } }
+  PAL.gags = (PAL.gags || 0) + 1;
+  ukDlg([{ say: 'k_pong' }, { fn: () => palSay(O, 'gag1') }, { say: 'gag1' }, { say: 'gag2' }, { fn: () => { const g = PAL.girls.find(x => x.palRoom === R && !x.palKey); if (g) palSay(g, 'gag3'); } }, { say: 'gag3' }],
+    () => { popup('殿は列の最後尾へ……'); player.pos.set(R.queue[0], 0, R.queue[1]); });
+}
+// ---- 宴会：白瀬が声をかけて回り、夜（19 時から）に宴会場へ集まる ----
+function palBanquetCall() {
+  PAL.banquet = 'called'; PAL.bqT = time; PAL.log.push('banquet:called');
+  const e = PAL.named.sumi; if (e) { e.palWalk = true; e.palRoom = null; e.palTo = [0, PAL.L - 1]; e.speed = 1.6; setTimeout(() => { if (PAL.on && e.s) { e.s.visible = false; } }, 9000); }
+  const h = palHour(); popup(h >= 19 || h < 4 ? '白瀬が各階に声をかけています。まもなく浴場別館の宴会場へ' : '白瀬が各階に声をかけています。夜 19 時から浴場別館の宴会場で宴会');
+}
+function palBanquetTick() {
+  const h = palHour();
+  if (PAL.banquet === 'called' && ((h >= 19 || h < 4) && time - PAL.bqT > 12)) {
+    PAL.banquet = 'open'; PAL.bqSeated = false; showBanner('宴会場に侍女たちが集まりました', '浴場別館・宴会場（階段かエレベーターで）');
+    if (PAL.floor === 4) palSpawnFloor(); else { const g = PAL.girls.slice(0, 3); g.forEach((e, i) => setTimeout(() => { if (PAL.on && e.s && PAL.banquet === 'open') palBark(e, 'bq_r' + (i % 4)); }, 1500 + i * 2600)); }
+  }
+  if (PAL.banquet === 'open' && h >= 23.5) { PAL.banquet = 'done'; const s = PAL.named.sumi; if (s && PAL.floor === 4) palBark(s, 'bq_end'); else popup('宴会はお開きになりました'); }
+  if (PAL.banquet === 'open' && PAL.floor === 4 && PAL.bqSeated && time > (PAL.bqAmb || 0) && !UK.dlg) {   // 宴のざわめき：歓声・カラオケ・料理
+    const ks = ['bq_r0', 'bq_r1', 'bq_r2', 'bq_r3', 'bq_sing', 'bq_kanpai'], k = ks[(Math.random() * ks.length) | 0], L = palL(k);
+    const who = L && L.who === 'omiya' ? PAL.named.omiya : PAL.girls.filter(e => e.palRoom && e.palRoom.type === 'banquet' && !e.palKey)[(Math.random() * 8) | 0];
+    if (who) palBark(who, k); PAL.bqAmb = time + rand(7, 11);
+  }
+}
+function palBanquetSeat() {   // 上座：入口から最も遠い奥の中央。侍女は入口側から順に
+  const R = palRoomOf('banquet'); if (!R) return; PAL.bqSeated = true; PAL.bqAmb = time + 14; PAL.log.push('banquet:seated');
+  player.pos.set(palWX(R, R.king[0] - 0.8), 0, R.zc); player.yaw = R.side < 0 ? -Math.PI / 2 : Math.PI / 2; player.pitch = -0.08;
+  const s = PAL.named.sumi || PAL.girls.find(e => e.palRoom === R), O = PAL.named.omiya;
+  ukDlg([].concat(O ? [{ fn: () => palSay(O, 'om_seat') }, { say: 'om_seat' }] : []).concat([{ fn: () => palSay(s, 'bq_toast') }, { say: 'bq_toast' }, { say: 'k_toast' }, { fn: () => { const g = PAL.girls.find(e => e.palRoom === R && !e.palKey); if (g) palSay(g, 'bq_kanpai'); } }, { say: 'bq_kanpai' }, { fn: () => { const g = PAL.girls.filter(e => e.palRoom === R && !e.palKey)[1]; if (g) palSay(g, 'bq_r0'); } }, { say: 'bq_r0' }]));
+}
+// ---- バー・ラウンジの小さなジャズ（合成音） ----
+function palJazz(dt) {
+  if (!PAL.inRoom || !PAL.inRoom.dim || !Sfx.ctx) return;
+  PAL.jz = (PAL.jz || 0) - dt; if (PAL.jz > 0) return; PAL.jz = 0.42; PAL.jb = ((PAL.jb || 0) + 1) % 16;
+  const bass = [55, 65.4, 73.4, 82.4, 87.3, 82.4, 73.4, 65.4, 58.3, 69.3, 77.8, 87.3, 92.5, 87.3, 77.8, 69.3][PAL.jb];
+  try { Sfx.tone('sine', bass, bass, 0.36, 0.05); if (PAL.jb % 4 === 0) { const r = PAL.jb < 8 ? 220 : 233; for (const m of [1, 1.26, 1.5, 1.78]) Sfx.tone('triangle', r * m, r * m, 0.9, 0.012, 0.02); } if (PAL.jb % 2) Sfx.tone('square', 6000, 5000, 0.03, 0.006); } catch (_) {}
+}
+// ---- 毎フレーム・始まり・やり直し・キー ----
+function palRoomAt(x, z) { for (const R of PAL.rooms) { const a = R.side * PAL_CW, b = R.side * (PAL_CW + R.rw); if (x >= Math.min(a, b) && x <= Math.max(a, b) && z >= R.z0 && z <= R.z1) return R; } return null; }
+function updatePal(dt) {
+  if (!PAL.on) return;
+  player.drawing = false;
+  const RW = PAL.RW || PAL_RW; player.pos.x = clamp(player.pos.x, -(PAL_CW + RW) + 0.4, PAL_CW + RW - 0.4); player.pos.z = clamp(player.pos.z, -9.6, (PAL.L || 20) - 0.4);
+  const R = palRoomAt(player.pos.x, player.pos.z);
+  if (R !== PAL.inRoom) { const dimCh = (R && R.dim) !== (PAL.inRoom && PAL.inRoom.dim); PAL.inRoom = R; if (dimCh) palLook(); if (R) PAL.visited[R.name] = 1;
+    if (R && R.type === 'banquet' && PAL.banquet === 'open' && !PAL.bqSeated && !UK.dlg) palBanquetSeat(); }
+  palTick(dt);
+  palDoorTick(dt); palGreetTick(); palBanquetTick(); palJazz(dt);
+  if (R && R.noren && Math.hypot(player.pos.x - R.noren[0], player.pos.z - R.noren[1]) < 1.6 && time > (PAL.norenT || 0)) { popup('ここから先は女湯。殿は入れません'); PAL.norenT = time + 3; PAL.norenHits = (PAL.norenHits || 0) + 1; }
+  ukDlgTick(dt);
+  document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
+}
+function palKey() {
+  if (UK.dlg) { if (!UK.choice) ukDlgSkip(); return; }
+  if (PAL.busy) return;
+  const e = palNear(); if (e) { palTalk(e); return; }
+  if (Math.hypot(player.pos.x - PAL.stairs.x, player.pos.z - PAL.stairs.z) < 2.4) { palStairs(); return; }
+  if (Math.hypot(player.pos.x - PAL.elev.x, player.pos.z - PAL.elev.z) < 2.0) { palElevator(); return; }
+  const P = palRoomOf('yuagari'); if (P && Math.hypot(player.pos.x - P.pong[0], player.pos.z - P.pong[1]) < 2.4) { palPong(); return; }
+  if (PAL.banquet === 'open' && PAL.inRoom && PAL.inRoom.type === 'banquet' && !PAL.bqSeated) { palBanquetSeat(); return; }
+  popup('近くの侍女に話しかける（E）／階段・エレベーターで移動');
+}
+function buildPalace() { PAL.grp = null; PAL.myBoxes = []; PAL.myCol = []; PAL.floor = 0; palClearFloor(); palBuildFloor(0); hq = null; }
+function palReset() {
+  palClearGirls(); UK.dlg = null; ukChoiceOff(); if ($('ukdlg')) $('ukdlg').style.display = 'none';
+  Object.assign(PAL, { min: 9 * 60, slot: 0, banquet: null, bqSeated: false, greetT: 0, busy: false, log: [], visited: {}, inRoom: null, named: {}, yields: 0, greets: 0, doorBows: 0, elevUses: 0, gags: 0, norenHits: 0 });
+  if (PAL.floor !== 0 || !PAL.rooms.length) { PAL.floor = 0; palBuildFloor(0); }
+  const T = palRoomOf('throne'); if (T) { player.pos.set(palWX(T, T.king[0] - 2.2), 0, T.zc); } else player.pos.set(0, 0, 3);
+  player.yaw = T ? (T.side < 0 ? -Math.PI / 2 : Math.PI / 2) : Math.PI; player.pitch = -0.04; player.drawing = false;
+}
+function palStart() {
+  if (!$('palFade')) { const f = document.createElement('div'); f.id = 'palFade'; document.body.appendChild(f); }
+  palTick(0, true);
+  if (VoicePack.ok && window.VOICE_PAL) { const V = VOICE_PAL.lines; for (const k in V) if (V[k].file && (k.startsWith('gr_') || k.startsWith('door') || k.startsWith('ev_'))) VoicePack.load(V[k].file, true); }
+  showBanner('宮殿の日常', '最上階・帝王の間から。E で侍女と話す／階段・エレベーターで各階へ');
+}
+function palPhaseLabel() { return '宮殿の日常　' + PAL_FLOORS[PAL.floor].name + (PAL.inRoom ? '・' + PAL.inRoom.name : ''); }
+function palGoal() { return PAL.banquet === 'open' ? '宴会：浴場別館の宴会場へ（上座は奥の中央）' : PAL.banquet === 'called' ? '白瀬が侍女たちに声をかけています（夜 19 時から宴会）' : 'E：侍女と話す／階段・エレベーターで階を移る／右上で時間帯を切り替え'; }
+if (TEST) window.__pal = { PAL, go: (f, h) => palGoFloor(f, h || 'stairs'), slot: i => palSetSlot(i), key: () => palKey(), skip: () => ukDlgSkip(), pick: i => ukPick(i), dlg: () => !!UK.dlg, near: () => palNear(), elev: () => palElevator(), pong: () => palPong(), call: () => palBanquetCall(), seat: () => palBanquetSeat() };
 // =====================================================================
 //  英国淑女編 第七幕「祝勝会」(?stage=ukParty)
 //   英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間で祝勝会。円卓 20 卓（殿の卓は入口から最も遠い中央）。
@@ -13137,7 +13771,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'palace') buildPalace(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -13332,7 +13966,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -15306,7 +15940,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on) return;
+  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on) return;
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -15431,7 +16065,7 @@ function waveUpdate(dt) {
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
-  if (e.state === 'down' || UK.on || UK7.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
+  if (e.state === 'down' || UK.on || UK7.on || PAL.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
     const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
@@ -16973,9 +17607,9 @@ function updateHQ(dt) {
   }
   if (!menuOpen) talkWho = best;
   sec.near = !!best;
-  if (!UK.on) { const tw = !sec.near && !menuOpen && !UK.dlg ? (UK7.on ? u7Near() : UK4.v5 ? u5NearCon() : null) : null, tk = $('talk');
-  tk.textContent = tw ? `${tw.ukTag || tw.prof.name} と話す（E / 頼むボタン）` : UK7.on && !UK.dlg && u7AtSeat() ? '英国の給仕を呼ぶ（E / 頼むボタン）' : '秘書課の侍女に頼む（E / 頼むボタン）';
-  const show = (sec.near || tw || (UK7.on && !UK.dlg && u7AtSeat())) && !menuOpen; tk.style.opacity = show ? 1 : 0;
+  if (!UK.on) { const tw = !sec.near && !menuOpen && !UK.dlg ? (UK7.on ? u7Near() : PAL.on ? palNear() : UK4.v5 ? u5NearCon() : null) : null, tk = $('talk'), ph = PAL.on && !tw && !UK.dlg ? palSpotHint() : '';
+  tk.textContent = tw ? `${tw.ukTag || tw.prof.name} と話す（E / 頼むボタン）` : ph ? ph : UK7.on && !UK.dlg && u7AtSeat() ? '英国の給仕を呼ぶ（E / 頼むボタン）' : '秘書課の侍女に頼む（E / 頼むボタン）';
+  const show = (sec.near || tw || ph || (UK7.on && !UK.dlg && u7AtSeat())) && !menuOpen; tk.style.opacity = show ? 1 : 0;
   document.documentElement.classList.toggle('cantalk', !!show); }
   if (menuOpen) {
     const se = menuGirl();
@@ -17331,6 +17965,7 @@ function updateEnemies(dt) {
     else if (USD.on && usdBrain(e, dt)) { /* アメリカ西部編：持ち場・竹束・銃 */ }
     else if (FRS.on && frsBrain(e, dt)) { /* フランス人形編 第一幕：持ち場の砲員 */ }
     else if (UK2.on && !FRS.on && uk2Brain(e, dt)) { /* 第二幕：砲撃の間は陰へ・戦列と方陣・退却・船の上 */ }
+    else if (PAL.on && e.pal && palBrain(e, dt)) { /* 宮殿の日常 */ }
     else if (UK7.on && uk7Brain(e, dt)) { /* 第七幕：祝勝会（戦いは無い） */ }
     else if (UK4.on && uk4Brain(e, dt)) { /* 第四幕：竹束から竹束へ・戦列と方陣・護衛 */ }
     else if (UK3.on && uk3Brain(e, dt)) { /* 第三幕：乗り移り・甲板の持ち場・采配・退却 */ }
@@ -17915,7 +18550,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', PAL.on ? palPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -17928,7 +18563,8 @@ function updateHud(dt) {
   const islandSurvivors = enemies.filter(e=>e.islandRoster&&e.state!=='down').length+1;
   setText('remain', ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
   if (UK.on) setText('remain', UK.goal || '');
-  if (UK7.on) setText('remain', uk7Goal());   // 第七幕：数は出さない
+  if (UK7.on) setText('remain', uk7Goal());
+  if (PAL.on) setText('remain', palGoal());   // 第七幕：数は出さない
   if (UK4.on) { const c = uk4Counts(), g = uk4Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第四幕：同じ「残敵・味方」
   if (UK3.on) { const c = uk3Counts(), g = uk3Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第三幕：同じ「残敵・味方」
   if (FRS.on) { const c = frsCounts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}`); }
@@ -17997,15 +18633,15 @@ function pickTarget() {
   return null;
 }
 function updateTargetInfo(dt) {
-  const e = sec.near || menuOpen || (UK7.on && UK.dlg) ? null : pickTarget();
-  if (UK7.on && UK.dlg) targetHold = 0;
+  const e = sec.near || menuOpen || ((UK7.on || PAL.on) && UK.dlg) ? null : pickTarget();
+  if ((UK7.on || PAL.on) && UK.dlg) targetHold = 0;
   if (e) { targetShown = e; targetHold = 0.6; }
   else targetHold -= dt;
   const el = $('target');
   if (targetShown && targetHold > 0) {
     const t = targetShown, dead = t.state === 'down';
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
-    const tm = UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
+    const tm = PAL.on ? '<u style="color:#e8c97a">宮殿の侍女</u>' : UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
     const html = t.ukInfo ? ukTargetHtml(t, pic) : (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
@@ -18038,7 +18674,7 @@ function drawWeapon() {
   const W = innerWidth, H = innerHeight;
   wg.clearRect(0, 0, W, H);
   if (state !== 'play' && state !== 'pause') return;
-  if (UK.on || UK7.on) return;   // 英国淑女編の会見・祝勝会：弓は構えない
+  if (UK.on || UK7.on || PAL.on) return;   // 英国淑女編の会見・祝勝会・宮殿の日常：弓は構えない
   const sw = player.switchT > 0 ? Math.sin(player.switchT / 0.3 * Math.PI) : 0;
   const bobX = Math.cos(player.bob) * H * 0.012, bobY = Math.abs(Math.sin(player.bob)) * H * 0.015 + sw * H * 0.35;
   // 弓の引き具合の照準リング
@@ -18224,7 +18860,7 @@ function setupTouch() {
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
-  tapBtn('bTalk', () => { if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
+  tapBtn('bTalk', () => { if (PAL.on) { palKey(); return; } if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
@@ -18282,6 +18918,7 @@ addEventListener('keydown', e => {
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
   if (UK7.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk7Key(); return; }
+  if (PAL.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { palKey(); return; }
   if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPickKey(+e.code.slice(5) - 1); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
@@ -18308,7 +18945,7 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on && !UK.choice) setWeapon(player.weapon ^ 1); }, { passive: true });
+addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on && !PAL.on && !UK.choice) setWeapon(player.weapon ^ 1); }, { passive: true });
 // ---- 選択肢メニューのキー操作（全ステージ共通）：↑↓／W・S で選び、Enter・E で決定。長いメニューは枠の中でスクロール ----
 const MenuNav = { i: -1, box: null };
 function menuNavBox() { if (UK.choice) return $('ukdlgChoices'); if (menuOpen) return $('secmenu'); return null; }
@@ -18334,6 +18971,7 @@ let ukWheelT = 0; addEventListener('wheel', e => { if (UK.choice || menuOpen) e.
 document.addEventListener('pointerlockchange', () => { if (locked() && (UK.choice || menuOpen) && document.exitPointerLock) document.exitPointerLock(); });   // メニューが開いている間はマウスを固定しない
 
 function primaryDown() {
+  if (PAL.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('宮殿の中では武器は使いません'); return; }
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }
   if (CAR.riding && carOn()) { carCommand(); return; }
@@ -18410,6 +19048,7 @@ function resetGame() {
   else if (builtStage === 'frSea') frsReset();   // フランス人形編 第一幕：殿の船の甲板
   else if (builtStage === 'ukNight') uk3Reset();
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();
+  else if (builtStage === 'palace') palReset();   // 宮殿の日常：最上階・帝王の間
   else if (builtStage === 'ukParty') uk7Reset();   // 第七幕：殿の席   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
@@ -18422,7 +19061,7 @@ function resetGame() {
 function startGame() {
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -18432,13 +19071,13 @@ function startGame() {
   if (builtStage === 'usDuel') { spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); for (const m of medics.blue) spawnMedic('blue', m); for (const A of aides) spawnAide(A); }   // アメリカ西部編：秘書課・救護班・補佐役は本陣に
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
-  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty') {
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'palace') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -18448,6 +19087,7 @@ function startGame() {
   else if (builtStage === 'frSea') frsStart();   // フランス人形編 第一幕：いきなり砲撃戦
   else if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕
+  else if (builtStage === 'palace') palStart();   // 宮殿の日常
   else if (builtStage === 'ukParty') uk7Start();   // 第七幕：祝勝会
   else if (builtStage === 'ukLanding') uk5Start();   // 第五幕：上陸→港の防衛（援軍三波）
   else if (builtStage === 'ukPrincess') uk4Start();   // 第四幕：語り→二手の選択→前進→柵の攻防→本陣→王女との対話
@@ -18713,7 +19353,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (USD.on) updateUsd(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (USD.on) updateUsd(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();
@@ -18722,6 +19362,7 @@ function frame(now) {
     time += dt;
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
     else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
+    else if (builtStage === 'palace') { camera.position.set(0, 1.7, -8); camera.lookAt(Math.sin(time * 0.1) * 3, 1.5, 20); }
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }
     else if (builtStage === 'ukPrincess') { if (UK4.on) updateUk4(0); camera.position.set(58 + Math.sin(time * 0.04) * 12, 14, 70); camera.lookAt(0, 2, 10); }   // 第四幕：浜の陣と沖の艦隊
     else if (builtStage === 'ukNight') { if (UK3.on) updateUk3(0); camera.position.set(30 + Math.sin(time * 0.04) * 10, 9, 46); camera.lookAt(0, 4, 0); }   // 第三幕：闇の海から錨泊の船を望む
@@ -18786,7 +19427,7 @@ if (STAGE_Q && STAGES[STAGE_Q]) stageName = STAGE_Q;
 if (!STAGES[stageName]) stageName = 'plains';
 function selectStage(name) {
   stageName = name; try { localStorage.setItem('onna_stage', name); } catch (e) {}
-  for (const b of document.querySelectorAll('#stagesel button')) b.classList.toggle('on', b.dataset.st === name);
+  for (const b of document.querySelectorAll('#stagesel button, #lifesel button')) b.classList.toggle('on', b.dataset.st === name);
   const ms = MODE_STAGES.includes(name), md = stageModes[name] || 'def';
   $('modesel').style.display = ms ? 'flex' : 'none';
   for (const b of document.querySelectorAll('#modesel button')) b.classList.toggle('on', b.dataset.md === md);
@@ -18798,7 +19439,7 @@ const STAGE_ATK_DESC = {
   castle: '【攻める】青組（殿の側）が城を攻める。破門隊の丸太で大手門を破り、二の丸で中門の門櫓・狭間の弓と撃ち合い、毒煙玉の投げ手が守りを崩す。奥御殿の伏兵・落とし穴を越えて、橙組の本陣（いちばん奥の間）を奪えば勝ち。殿の本陣は門の外の陣幕。',
 };
 for (const b of document.querySelectorAll('#modesel button')) b.addEventListener('click', () => { stageModes[stageName] = b.dataset.md; try { localStorage.setItem('onna_modes', JSON.stringify(stageModes)); } catch (e) {} selectStage(stageName); });
-for (const b of document.querySelectorAll('#stagesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
+for (const b of document.querySelectorAll('#stagesel button, #lifesel button')) b.addEventListener('click', () => selectStage(b.dataset.st));
 selectStage(stageName);
 // 用件を選んだらメニューを閉じて、その様子を画面で見せる（返事は字幕）。小メニュー（ご飯・感想）を開くだけのときは開いたまま
 function secAct(fn) {

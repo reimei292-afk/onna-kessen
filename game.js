@@ -10588,6 +10588,7 @@ function usdBlocked(ax, az, bx, bz) {
   return null;
 }
 function usdShot(e, t) {
+  campAud(e, 'shot_' + e.usdW);
   const p = e.s.position, tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z), W = e.usdW;
   e.faceWant = e.face = Math.atan2(tx - p.x, tz - p.z); e.s.rotation.y = e.face;
   const mz = new V3(p.x + Math.sin(e.face) * 0.6, (e.baseY || 0) + (e.figH || 1.6) * 0.72, p.z + Math.cos(e.face) * 0.6), dP = Math.hypot(mz.x - player.pos.x, mz.z - player.pos.z);
@@ -10978,7 +10979,7 @@ function usOrder(e, k, gap) {
   const N = { u_fire: 3, u_adv: 3, u_cov: 2, u_gun: 2 }[k], key = N ? k + ((Math.random() * N) | 0) : k;
   const T = CAMP.uoT || (CAMP.uoT = {}); if (time - (T[k] == null ? -99 : T[k]) < (gap == null ? 6 : gap)) return false;
   const L = usdLine(key); if (!e || !L || !L.file) return false;
-  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d > 80) return false;
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d > 130) return false;
   T[k] = time; VoicePack.play(L.file, d, 0.75, 1); const G = CAMP.uoLog || (CAMP.uoLog = {}); G[key] = (G[key] || 0) + 1; return true;
 }
 // 組（6 人）：半分ずつ交互に前へ（残りは膝をついて撃つ）。小銃は組の号令で一斉に撃つ
@@ -11169,7 +11170,7 @@ function staticMerge(root, keep) {
   const groups = new Map();
   root.traverse(o => {
     if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || o.isSprite || skip.has(o) || o.userData.dyn || o.userData.noMerge) return;
-    const m = o.material, g = o.geometry; if (!m || Array.isArray(m) || m.transparent || !g || !g.attributes.position || (g.groups && g.groups.length > 1) || g.morphAttributes && Object.keys(g.morphAttributes).length) return;
+    const m = o.material, g = o.geometry; if (!m || Array.isArray(m) || m.transparent || !g || !g.attributes.position || g.morphAttributes && Object.keys(g.morphAttributes).length) return;
     for (let a = o; a; a = a.parent) if (!a.visible) return;
     const at = ['position', 'normal', 'uv', 'color'].filter(k => g.attributes[k]); if (at.some(k => g.attributes[k].isInterleavedBufferAttribute)) return;
     const sig = m.uuid + '|' + (o.castShadow ? 1 : 0) + (o.receiveShadow ? 1 : 0) + '|' + at.join(',') + '|' + at.map(k => g.attributes[k].itemSize).join(',') + '|' + o.renderOrder;
@@ -11192,8 +11193,24 @@ function staticMerge(root, keep) {
     for (const g of parts) g.dispose();
     root.add(mesh); mesh.updateMatrix(); n0 += list.length; n1++;
   }
+  // 竹束などの「覆い」：群れごとに中身を材質ごとに一つへ（壊れると群れごと消えるので、群れは残す）
+  for (const c of covers) { const g = c.mesh; if (!g || !g.isGroup || g.children.length < 4) continue; const r = mergeLocal(g); n0 += r[0]; n1 += r[1]; }
   CAMP.merged = { from: n0, to: n1 };
   return n0 - n1;
+}
+function mergeLocal(g) {
+  const by = new Map(); let n0 = 0, n1 = 0;
+  for (const o of g.children) { if (!o.isMesh || o.isInstancedMesh || !o.material || Array.isArray(o.material) || o.material.transparent || o.children.length) continue; const at = ['position', 'normal', 'uv'].filter(k => o.geometry.attributes[k]).join(','); const k = o.material.uuid + '|' + at; let L = by.get(k); if (!L) by.set(k, L = []); L.push(o); }
+  for (const [k, L] of by) {
+    if (L.length < 2) continue; const at = k.split('|')[1].split(','), parts = [];
+    for (const o of L) { o.updateMatrix(); const q = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone(); q.applyMatrix4(o.matrix); parts.push(q); }
+    const M = new THREE.BufferGeometry();
+    for (const a of at) { const sz = parts[0].attributes[a].itemSize; let len = 0; for (const q of parts) len += q.attributes[a].count * sz; const arr = new Float32Array(len); let off = 0; for (const q of parts) { arr.set(q.attributes[a].array, off); off += q.attributes[a].count * sz; } M.setAttribute(a, new THREE.BufferAttribute(arr, sz)); }
+    M.computeBoundingSphere();
+    const m = new THREE.Mesh(M, L[0].material); m.castShadow = L[0].castShadow; m.receiveShadow = L[0].receiveShadow;
+    for (const o of L) g.remove(o); for (const q of parts) q.dispose(); g.add(m); n0 += L.length; n1++;
+  }
+  return [n0, n1];
 }
 // ==== ② 平城：アメリカ勢の攻め（野砲で門と塀を叩く → 竹束の陰の散兵線が一斉射撃 → 突撃隊が土橋を駆け、梯子と爆薬 → 曲輪を一つずつ掃討） ====
 const CAS_N = () => USD_MOB ? { def: 44, atk: 48, w1: 34, guns: 2 } : { def: 100, atk: 130, w1: 84, guns: 3 };
@@ -11821,7 +11838,7 @@ function campRunnerBrain(e, dt) {
   if (e.usdFree) { if (campRecall(e, dt, CAMP.live.orange, 6)) return false; }
   if (R.wait > 0) { R.wait -= dt; e.moving = false; e.passive = true; e.state = 'idle'; return true; }
   const t = R.pts[R.i];
-  if (Math.hypot(t[0] - p.x, t[1] - p.z) < 1.2) { R.i = (R.i + 1) % R.pts.length; R.wait = rand(2, 4); if (R.i === 1 && Math.random() < 0.3) campBark(e.campKey === 'shinobu' ? 'c_ladder_sh' : 'c_moat_ck', 30); return true; }
+  if (Math.hypot(t[0] - p.x, t[1] - p.z) < 1.2) { R.i = (R.i + 1) % R.pts.length; R.wait = rand(2, 4); if (R.i === 1 && Math.random() < 0.3) { const C = CAMP.cas; if (e.campKey === 'shinobu' ? (!C || C.ladN) : (!C || C.stormGo)) campBark(e.campKey === 'shinobu' ? 'c_ladder_sh' : 'c_moat_ck', 30); } return true; }
   e.passive = true; e.state = 'idle'; campStep(e, t, e.speed * 0.9, dt); return true;
 }
 function castleTick(dt) {
@@ -11977,7 +11994,7 @@ function yjMoveOK(x0, z0, x1, z1) {
   return k;
 }
 function yjBuild() {
-  YJ.on = true; YJ.cut = false; YJ.spots = []; YJ.abatis = []; YJ.logs = []; YJ.mist = 0; YJ.mistT = rand(60, 85); YJ.mistK = 0; YJ.waterLost = false; YJ.drum = false; YJ.wT = 0;
+  YJ.on = true; YJ.cut = false; YJ.spots = []; YJ.cov = []; YJ.abatis = []; YJ.logs = []; YJ.mist = 0; YJ.mistT = rand(60, 85); YJ.mistK = 0; YJ.waterLost = false; YJ.drum = false; YJ.wT = 0;
   campLookDay(40, 300, 0xaebcc4);
   TERR.fn = yjH; TERR.move = yjMoveOK;
   // 地形：格子の高さ図。色は頂点の色（土・草・切岸の土）を写真の草に掛ける
@@ -12027,7 +12044,7 @@ function yjBuild() {
     B.obox('bark', x, y + 0.35, z, 4.2, 0.16, 0.16, 0, 1); YJ.abatis.push({ x, z, r: 2.4, hp: 1 });
   }
   // 岩
-  for (let i = 0; i < (USD_MOB ? 30 : 70); i++) { const x = rand(-30, 30), z = rand(-108, 34); if (yjOnPath(x, z) || Math.abs(x) < 3) continue; const y = yjH(x, z), s = rand(0.4, 1.4); B.obox('rock', x, y + s * 0.3, z, s * 1.4, s, s * 1.1, rand(0, 3), 1.5); }
+  for (let i = 0; i < (USD_MOB ? 30 : 70); i++) { const x = rand(-30, 30), z = rand(-108, 34); if (yjOnPath(x, z) || Math.abs(x) < 3) continue; const y = yjH(x, z), s = rand(0.4, 1.4); B.obox('rock', x, y + s * 0.3, z, s * 1.4, s, s * 1.1, rand(0, 3), 1.5); if (s > 0.7 && Math.abs(x) < 22) YJ.cov.push([x, z]); }
   B.flush(mats);
   // 杉と松の森（曲輪の上と道は空ける）
   const T = [], NT = USD_MOB ? 160 : 420;
@@ -12039,6 +12056,7 @@ function yjBuild() {
     T.push([x, y, z, rand(10, 19)]); i++;
   }
   campTrees(T, { leaf: 0x2c4429 });
+  for (const [x, , z] of T) if (Math.abs(x) < 22 && z < 34) YJ.cov.push([x, z]);   // 寄せ手が陰に使う木と岩
   buildMedPost(-13, 30, 'blue', 32);
   // 仕掛けの印（丸太・岩・吊り橋・太鼓）
   const mk = (x, z, label, kind, extra) => { const y = yjH(x, z), m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 2.2, 6), new THREE.MeshLambertMaterial({ color: 0xc8402a })); m.position.set(x, y + 1.1, z); stageRoot.add(m); const S = Object.assign({ x, z, y, label, kind, n: kind === 'log' || kind === 'rock' ? 3 : 1, cd: 0, mk: m }, extra || {}); YJ.spots.push(S); return S; };
@@ -20478,6 +20496,7 @@ function archerMelee(e, dt, dist, nx, nz, tx, tz) {
     p.x += nx * 0.38; p.z += nz * 0.38;
     const d2 = Math.hypot(tx - p.x, tz - p.z);
     if (d2 < reach + 0.35) {
+      campAud(e, 'melee');
       if (e.tgt && e.tgt.isPlayer) hurtPlayer(icy ? 14 : (e.dmg || 8));
       else if (e.tgt && e.tgt.state !== 'down') {
         const tp2 = e.tgt.s.position;
@@ -20865,6 +20884,7 @@ function updateEnemies(dt) {
             if (e.yari) e.cd += 0.5; else if (e.bayo) e.cd += 0.45;
             if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : e.bayo ? BAYO.reach + 0.4 : MELEE_RANGE) && elevD(e) < 1.2) {
               if (e.bayo) e.bayoHits = (e.bayoHits || 0) + 1;
+              campAud(e, e.yari ? 'spear' : e.bayo ? 'bayoGeneric' : 'sword');
               if (e.tgt.isPlayer) hurtPlayer(e.dmg);
               else {
                 const tp2 = e.tgt.s.position;
@@ -20979,8 +20999,10 @@ function fireArrow(charge) {
   Sfx.twang(charge);
 }
 const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 0.5;
+// 試験用の記録：第二幕の寄せ手が日本の武器（弓・槍・刀）を使ったら数える
+function campAud(e, k) { if (CAMP.on && !CAMP.solo && e && e.team === 'orange') { const A = CAMP.aud || (CAMP.aud = {}); A[k] = (A[k] || 0) + 1; } }
 function enemyShoot(e, t) {
-  if (CAMP.on && !CAMP.solo && e.team === 'orange' && !e.campJpFoe) { if (!e.usdW) e.usdW = Math.random() < 0.6 ? 'win' : 'spr'; if (!(e.ammo > 0)) e.ammo = USD_W[e.usdW].mag; usdShot(e, t); return; }   // アメリカ勢は銃
+  if (CAMP.on && !CAMP.solo && e.team === 'orange' && !e.campJpFoe) { campAud(e, 'genericShootRedirect'); if (!e.usdW) e.usdW = Math.random() < 0.6 ? 'win' : 'spr'; if (!(e.ammo > 0)) e.ammo = USD_W[e.usdW].mag; usdShot(e, t); return; }   // アメリカ勢は銃
   if (e.ammo !== undefined) e.ammo = Math.max(0, e.ammo - 1);
   const from = e.s.position.clone(); from.y = e.baseY + e.figH * 0.85;
   if (TEST && CASTLE.on && e.perch && (e.perch.gt || (e.perch.slit && e.perch.inner))) { const G = window.__gt || (window.__gt = { out: 0, inn: 0, outK: 0, inK: 0 }); G.shots = (G.shots || 0) + 1; }

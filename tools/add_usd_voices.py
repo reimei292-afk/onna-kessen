@@ -8,7 +8,7 @@ ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N,
       'us01': ('en-US-AvaNeural', 4, 0), 'us19': ('en-US-EmmaNeural', -6, -6), 'us05': ('en-US-JennyNeural', 6, 4), 'us12': ('en-US-AriaNeural', 0, -4),
       'us14': ('en-US-MichelleNeural', 8, 6), 'us06': ('en-US-JennyNeural', 10, 10),
       'ojou': (N, -14, -2), 'uk10': ('en-GB-SoniaNeural', 8, 5), 'uk04': ('en-GB-SoniaNeural', 4, -3), 'uk03': ('en-IE-EmilyNeural', 0, 2),
-      'usA': ('en-US-AriaNeural', 2, 2), 'usB': ('en-US-JennyNeural', -4, -4), 'usC': ('en-US-EmmaNeural', 6, 6)}   # usA〜C：名の無いアメリカ兵の短い叫び
+      'usA': ('en-US-AriaNeural', 2, 2), 'usB': ('en-US-JennyNeural', -4, -4), 'usC': ('en-US-EmmaNeural', 6, 6), 'shinobu': (N, -8, -8), 'chikage': (N, -4, 0), 'hiyori': (N, 2, 12), 'akari': (N, 12, 10)}   # usA〜C：名の無いアメリカ兵の短い叫び
 import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
 override(ST)
 NUM = ['One.', 'Two.', 'Three.', 'Four.', 'Five.', 'Six.', 'Seven.', 'Eight.', 'Nine.', 'Ten!']
@@ -73,6 +73,42 @@ L.update({
  't_fall_uk': ('uk10', 'Fall back to the palace! Go, go!', '宮殿まで退いて！ 早く！'),
  't_cry0': ('usA', 'Ahh—!', 'あっ……！'), 't_cry1': ('usB', 'Whoa—!', 'うわっ……！'), 't_cry2': ('usC', 'Ugh!', 'うっ！'),
  't_cry3': ('usA', 'No—!', 'いや……！'), 't_cry4': ('usB', "I'm hit!", 'やられた！'), 't_cry5': ('usC', 'Oh!', 'あっ！'),
+})
+# ---- 第二幕の続き：平城・宮殿・山城（usTown の二〜四段）と、大将の采配 ----
+L.update({
+ 't_fumi1': ('fumi', '町の守りは私が預かります。殿は、どうか後ろに。'),
+ 't_fall_f': ('fumi', '城へ引けーっ！ 殿を先に、皆、城へ！'),
+ 't_gate_o': ('ojou', '門を閉ざせ！ 閂をかけなさい！'),
+ 'c_ojou1': ('ojou', '殿、ようこそお越しくださいました。戦より書類の方が得意ですけれど、この城は一歩も譲りません。'),
+ 'c_shinobu1': ('shinobu', '矢の束、塀の上へ運びます！'),
+ 'c_chikage1': ('chikage', '伝令、承りました。大手門へ伝えます。'),
+ 'c_ladder_sh': ('shinobu', '梯子です！ 東の塀に梯子がかかりました！'),
+ 'c_moat_ck': ('chikage', '堀の浅いところを渡ってきます！'),
+ 'c_win_o': ('ojou', '……退いていきます。守り切りましたわ、殿。'),
+ 'c_fall_o': ('ojou', '殿、抜け道へ！ 本丸の奥から、宮殿へ抜けられます！'),
+ 'c_fall_sh': ('shinobu', 'こちらです、殿！ 足元にお気をつけて！'),
+ 'p_omiya1': ('omiya', 'はいっ！ 近衛室、全員配置！ そこ、列が乱れてる！ 殿をお守りするのが私たちの仕事でしょう！'),
+ 'p_omiya2': ('omiya', '抜け道から来ます！ 大階段は絶対に渡さないで！'),
+ 'p_sumi1': ('sumi', '殿、こちらへ。最後まで、お側におります。'),
+ 'p_hiyori': ('hiyori', '侍女の皆さん、矢を回してください！'),
+ 'p_win_om': ('omiya', '追い返しました……！ 殿、ご無事ですね。よかった……！'),
+ 'p_fall_om': ('omiya', '殿、ここはもう持ちません！ 山城へお逃げください。私が最後までお供します！'),
+ 'p_fall_s': ('sumi', '殿、お早く。裏の門から、山へ。'),
+ 'm_ojou1': ('ojou', 'ここが最後の城です。殿、私たちがお守りいたします。'),
+ 'm_omiya1': ('omiya', 'はいっ！ 一つ目の曲輪から順に守ります！'),
+ 'm_log': ('sumi', '丸太を落とします！ 道から離れて！'),
+ 'm_bridge': ('omiya', '吊り橋を切りました！'),
+ 'm_drum': ('ojou', '太鼓を！ 西の曲輪から援軍を呼びなさい！'),
+ 'm_mist': ('sumi', '霧が出てきました。……敵も、こちらも見えません。'),
+ 'm_water': ('chikage', '水の手を取られました！ 手当てが遅れます！'),
+ 'm_kuruwa': ('omiya', 'この曲輪はもう無理です！ 上の曲輪へ！'),
+ 'm_win_s': ('sumi', '殿……アメリカ勢が、山を下りていきます。守り抜きました。'),
+ 'm_end_s': ('sumi', '殿……っ、いや……'),
+ 'm_end_om': ('omiya', '殿ぉ……！'),
+ 'm_end_o': ('ojou', '……お供できず、申し訳ございません……'),
+ 'o_ojou_a': ('ojou', '右を固めなさい！'), 'o_ojou_b': ('ojou', '弓隊、放て！'), 'o_ojou_c': ('ojou', '前に出すぎないで！ 列を保ちなさい！'),
+ 'o_fumi_a': ('fumi', '弓隊、放てっ！'), 'o_fumi_b': ('fumi', '左を詰めて！'), 'o_fumi_c': ('fumi', '下がって、組み直して！'),
+ 'o_omiya_a': ('omiya', 'はいっ、弓隊、放て！'), 'o_omiya_b': ('omiya', '右を固めて！'), 'o_omiya_c': ('omiya', '前に出すぎない！'),
 })
 for i in range(10): L['c%d' % (i + 1)] = ('us01', NUM[i], NJA[i])
 async def one(t, p, v, r, pi):

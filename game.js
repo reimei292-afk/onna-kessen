@@ -7,6 +7,7 @@ const PASSIVE = /[?&]passive=1/.test(location.search);  // テスト用：自動
 // スマホ・タブレット（指で操作する端末）。?mobile=1 で強制。画質や敵の数は PC と同じ
 const MOBILE = /[?&]mobile=1/.test(location.search) || (!!window.matchMedia && matchMedia('(pointer: coarse)').matches) ||
   (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && navigator.maxTouchPoints > 0);
+const LITE = MOBILE || /[?&]lite=1/.test(location.search);   // スマホ向けの軽量モード（?lite=1 で PC でも）
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[(Math.random() * arr.length) | 0];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -9936,7 +9937,7 @@ function buildFrSea() {
   }
   FRS.ships = FRS.ally.concat(FRS.fr);
 }
-const FRS_N = (() => { const q = parseInt(new URLSearchParams(location.search).get('frsn'), 10); if (q > 0) return Math.min(300, q); const mob = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent); return mob ? 120 : 200; })();   // 一軍の人数（スマホは 120）
+const FRS_N = (() => { const q = parseInt(new URLSearchParams(location.search).get('frsn'), 10); if (q > 0) return Math.min(300, q); const mob = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent); return (mob || LITE) ? 60 : 200; })();   // 一軍の人数（スマホ・?lite=1 は 60）
 const FRS_X = [-78, -39, 0, 39], FRS_ZF0 = -62, FRS_ZF1 = -10.0, FRS_HX = 16.4, FRS_HZ = 4.6, FRS_APPROACH = 175;   // 船の並び・共和国艦の初め／接舷の位置・甲板の半分の大きさ・撃ち合いの長さ（秒）
 let FRS_MAT = null;
 function frsDeckShip(x, z, side, name) {
@@ -10296,7 +10297,7 @@ function frsPhaseLabel() {
 }
 function frsReset() {
   FRS.on = true; FRS.phase = 'open'; FRS.t = 0; FRS.bt = 0; FRS.ended = false; FRS.said = {}; FRS.shells = []; FRS.fireT = 9; FRS.frFireT = 7; FRS.endT = 0; FRS.win = false;
-  FRS.board = false; FRS.frZ = FRS_ZF0; FRS.rectsK = null; FRS.fxBudget = 200; FRS.clankT = 0; FRS.flagHold = 0; FRS.flagT = 0; FRS.barkT = 14; FRS.live = null; CFG.maxBodies = 280;
+  FRS.board = false; FRS.frZ = FRS_ZF0; FRS.rectsK = null; FRS.fxBudget = 200; FRS.clankT = 0; FRS.flagHold = 0; FRS.flagT = 0; FRS.barkT = 14; FRS.live = null; CFG.maxBodies = LITE ? 80 : 280;
   for (const s of FRS.frS || []) { s.z = FRS_ZF0; s.g.position.z = FRS_ZF0; }
   for (const pl of FRS.planks || []) stageRoot.remove(pl); FRS.planks = [];
   player.pos.set(12.5, 0, 0.5); player.yaw = Math.PI * 0.5 + 0.35;
@@ -10304,6 +10305,7 @@ function frsReset() {
 }
 function frsStart() {
   frsSpawnCrew();
+  setTimeout(() => { try { console.log('[mem]', JSON.stringify(memInfo())); } catch (err) {} }, 3000);   // テクスチャ・ジオメトリの数をコンソールに
   showBanner('フランス人形編 第一幕', '海戦 ― 英国の港の沖'); bannerTimer = 5;
   ukDlg([{ wait: 2.2 }, { say: 'o_sumi' }, { say: 'o_uk06' }, { say: 'o_omiya' }, { say: 'o_fr06' }, { fn: () => { FRS.phase = 'battle'; FRS.frFireT = 1.5; FRS.fireT = 3.5; } }, { say: 'o_uk10' }]);
 }
@@ -12848,7 +12850,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17885,6 +17887,7 @@ function resetGame() {
   for (const q of perches) q.taken = null;
   seiranReset();
   FORT.hold = 0; FORT.won = false; FORT.t = 0; FORT.log = []; for (const k in towers) towers[k].clear = false;
+  CFG.maxBodies = 100;   // frSea だけ多い（frsReset が後で上書き）
   if (builtStage === 'island') { player.pos.set(0,0,68); player.yaw=0; }
   else if (builtStage === 'airport') { player.pos.set(-32, 0, 7.8); player.yaw = Math.PI; }
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
@@ -18162,6 +18165,16 @@ function updatePlayer(dt) {
 }
 
 // ---- テストモード（?test=1）：ポインタロック無しで自動プレイ ----
+// ---- メモリの目安（renderer.info.memory と、場面で使っているテクスチャの推定 MB）。?lite=1 / スマホの調査用 ----
+function memInfo() {
+  const seen = new Set(); let px = 0, mats = new Set();
+  const addT = t => { if (!t || seen.has(t)) return; seen.add(t); const im = t.image; if (im && im.width) px += im.width * im.height * (t.generateMipmaps === false ? 1 : 1.33); };
+  scene.traverse(o => { const m = o.material; if (!m) return; for (const x of Array.isArray(m) ? m : [m]) { mats.add(x); addT(x.map); if (x.uniforms) for (const k in x.uniforms) { const v = x.uniforms[k].value; if (v && v.isTexture) addT(v); } } });
+  let gpx = 0, gn = 0; const gs = new Set(); const addG = f => { if (f && f.tex && !gs.has(f.tex)) { gs.add(f.tex); gn++; const im = f.tex.image; if (im && im.width) gpx += im.width * im.height; } };
+  for (const id in GIRLS) { const g = GIRLS[id]; for (const k in g) { const v = g[k]; if (v && v.tex) addG(v); } if (g.cycles) for (const c in g.cycles) for (const f of g.cycles[c].frs) addG(f); }
+  const r = { textures: renderer.info.memory.textures, geometries: renderer.info.memory.geometries, programs: (renderer.info.programs || []).length, sceneTex: seen.size, sceneTexMB: +(px * 4 / 1048576).toFixed(1), materials: mats.size, girlTex: gn, girlTexDecodedMB: +(gpx * 4 / 1048576).toFixed(1), lite: LITE, pr: renderer.getPixelRatio() };
+  return r;
+}
 let testT = 0;
 function testBot(dt) {
   testT += dt;
@@ -18309,5 +18322,5 @@ loadSprites(() => { buildGirls(); loadFrames(loaded); });
 requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
-window.__game = { get FRS(){return FRS;}, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

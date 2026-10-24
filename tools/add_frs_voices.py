@@ -6,6 +6,9 @@ ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'as
 N = 'ja-JP-NanamiNeural'
 ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'maid': (N, 6, 6), 'crew': (N, 0, 0), 'nurse': (N, 2, 8),
       'uk10': ('en-GB-SoniaNeural', 8, 5), 'uk06': ('en-GB-SoniaNeural', -10, 0), 'fr02': ('fr-FR-DeniseNeural', 0, 0), 'fr06': ('fr-FR-DeniseNeural', -8, -6), 'fr05': ('fr-FR-DeniseNeural', 6, 8)}
+
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(ST)
 L = {
  # 開幕
  'o_sumi': ('sumi', '殿、物見の報せです。フランスの艦隊が、この港へ向かっています。英国の皆さんと、船で迎え撃ちましょう。'),

@@ -6,6 +6,8 @@ import asyncio, json, os, subprocess, edge_tts
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'saidown')
 NANAMI, KEITA = 'ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'
 ST = {'king': (KEITA, -6, -2), 'sumi': (NANAMI, -6, -8), 'sec2': (NANAMI, 4, 14)}
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(ST)
 L = {
  'r': {'king': ['西園寺……。父方の縁に連なる者が、侍大将として先に倒れたか。……その名、決して忘れぬ。', '……すみれ。よく先頭に立ってくれた。あとは、俺が引き受ける。'],
        'sumi': ['西園寺殿……。殿のお血筋の方を、お守りできませんでした。……ですが、まだ戦は終わっていません。', '西園寺殿が……。殿、どうかお気を確かに。私たちがおります。'],

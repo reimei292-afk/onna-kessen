@@ -14,6 +14,8 @@ NANAMI, KEITA = 'ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'
 PERS = {'aggr': (8, 2), 'caut': (-4, -3), 'timid': (6, 8), 'calm': (-6, -7), 'cheer': (6, 6)}
 QUIET = set()
 STYLE = {'king': (KEITA, -6, -2), 'ojou': (NANAMI, -14, -2), 'sumi': (NANAMI, -6, -8), 'nurse': (NANAMI, -4, 8), 'med': (NANAMI, -12, -14)}
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(STYLE)
 src = open(os.path.join(T, 'add_uk_voices.py'), encoding='utf-8').read()
 ns = {}; exec(src[src.index('VOICES = {'):src.index('}', src.index('VOICES = {')) + 1], ns); UKV = ns['VOICES']
 JP = {

@@ -250,7 +250,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) Audi
 // ====================================================================
 // 優先度: 0=見つけた/攻撃/被弾（混んでいたら省略）, 1=号令, 2=戦死判定の台詞（低優先の発話を打ち切って話す）
 const Voice = {
-  voice: null, ok: 'speechSynthesis' in window, prio: 0, lastLow: 0,
+  voice: null, ok: 'speechSynthesis' in window, prio: 0, lastLow: 0, TTS: /[?&]tts=1/.test(location.search),
   pick() {
     if (!this.ok) return;
     const vs = speechSynthesis.getVoices().filter(v => /^ja/i.test(v.lang));
@@ -265,7 +265,8 @@ const Voice = {
         const vv = prof && prof.vv != null ? prof.vv : 1, fn = f[Math.min(f.length - 1, f.length > 1 ? vv : 0)];
         if (VoicePack.play(fn, d, Math.max(1, prio), f.length > 1 ? 1 : (VV_RATE[vv] || 1))) return; }
     }
-    if (!this.ok) return;
+    // 収録音声が無い台詞は字幕だけ（ブラウザ内蔵の機械的な読み上げは使わない。?tts=1 のときだけ確認用に使う）
+    if (!this.ok || !this.TTS) { VoicePack.stats.noVoice = (VoicePack.stats.noVoice || 0) + 1; return; }
     const now = performance.now();
     if ((speechSynthesis.speaking || speechSynthesis.pending) && this.since && now - this.since > 9000) { speechSynthesis.cancel(); this.prio = 0; this.since = 0; }   // Chrome で発話が止まったまま「話し中」になる不具合の回避
     const busy = speechSynthesis.speaking || speechSynthesis.pending;
@@ -336,6 +337,7 @@ const VoicePack = {
       if (urgent) { const i = this.q.indexOf(fn); if (i > 0) { this.q.splice(i, 1); this.q.unshift(fn); } }
       return;
     }
+    if (!urgent && this.lru.size + this.q.length >= this.CAP * 0.9) return;   // キャッシュがいっぱいなら先読みはしない（要るときに読む）
     this.loading[fn] = true;
     if (urgent) this.q.unshift(fn); else this.q.push(fn);
     this.pump();
@@ -346,11 +348,19 @@ const VoicePack = {
       const get = () => fetch('assets/voices/' + fn).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
         .then(ab => new Promise((res, rej) => Sfx.ctx.decodeAudioData(ab, res, rej)));
       get().catch(() => new Promise(r => setTimeout(r, 1500)).then(get))
-        .then(b => { this.buf[fn] = b; this.flush(fn); }, () => { this.buf[fn] = null; this.stats.failed++; this.flush(fn); })
+        .then(b => { this.buf[fn] = b; this.touch(fn); this.flush(fn); }, () => { this.buf[fn] = null; this.stats.failed++; this.flush(fn); })
         .finally(() => { this.inflight--; this.pump(); });
     }
   },
-  // 読み込み待ちの台詞：1.5 秒以内に届けば鳴らす。届かなければ読み上げ（fb）に切り替える
+  // 音声のキャッシュ上限（スマホは 140 本）：古く使っていないものから捨てる（また要るときに読み直す）
+  CAP: (typeof MOBILE !== 'undefined' && MOBILE) || /[?&]lite=1/.test(location.search) ? 140 : 900, lru: new Map(),
+  touch(fn) {
+    this.lru.delete(fn); this.lru.set(fn, 1);
+    if (this.lru.size <= this.CAP) return;
+    const busy = new Set(this.wait.map(w => w.fn));
+    for (const k of this.lru.keys()) { if (this.lru.size <= this.CAP) break; if (busy.has(k)) continue; this.lru.delete(k); delete this.buf[k]; delete this.loading[k]; this.stats.evicted = (this.stats.evicted || 0) + 1; }
+  },
+  // 読み込み待ちの台詞：会話は 4 秒、掛け声は 1.5 秒以内に届けば鳴らす。届かなければ字幕だけ
   wait: [],
   defer(fn, dist, prio, rate, fb) {
     this.wait.push({ fn, dist, prio, rate, fb, owner: Talk.cur, t: performance.now() }); this.stats.deferred = (this.stats.deferred || 0) + 1;
@@ -359,11 +369,11 @@ const VoicePack = {
   flush(fn) {
     const now = performance.now();
     for (let i = this.wait.length - 1; i >= 0; i--) {
-      const w = this.wait[i], b = this.buf[w.fn], late = now - w.t > 1500;
+      const w = this.wait[i], b = this.buf[w.fn], late = now - w.t > (w.prio >= 1 ? 4000 : 1500);   // 会話は 4 秒まで待つ。間に合わなければ字幕だけ
       if (b === undefined && !late) continue;
       this.wait.splice(i, 1);
       if (b && !late) { if (w.owner && w.owner.silenced && w.owner.state === 'down' && w.prio < 2) continue; Talk.as(w.owner, () => this.play(w.fn, w.dist, w.prio, w.rate)); this.stats.late = (this.stats.late || 0) + 1; }
-      else if (w.fb && w.fb.text) { Talk.as(w.owner, () => Voice.say(w.fb.text, w.fb.prof, w.prio)); this.stats.tts = (this.stats.tts || 0) + 1; }
+      else { this.stats.dropped = (this.stats.dropped || 0) + 1; if (w.fb && w.fb.text && Voice.TTS) Talk.as(w.owner, () => Voice.say(w.fb.text, w.fb.prof, w.prio)); }
     }
     if (!this.wait.length && this.waitT) { clearInterval(this.waitT); this.waitT = 0; }
   },
@@ -381,7 +391,8 @@ const VoicePack = {
   },
   preload() {
     if (!this.ok) return;
-    for (const k in this.man) for (const c in this.man[k]) { if (c.startsWith('call_')) continue; for (const l of this.man[k][c]) for (const f of l.files) this.load(f); }   // 名前呼び（call_）はその娘が出たときに読む
+    const lim = this.CAP < 300 ? Math.floor(this.CAP * 0.6) : 1e9; let n = 0;   // スマホは先読みを上限の 6 割まで（残りは要るときに読む）
+    for (const k in this.man) for (const c in this.man[k]) { if (c.startsWith('call_')) continue; if (lim < 1e9 && !/^(hit|defeat|attack|spot|kill|order_m|order_a|lead)$/.test(c)) continue; for (const l of this.man[k][c]) for (const f of (lim < 1e9 ? [l.files[Math.min(1, l.files.length - 1)]] : l.files)) { if (n++ >= lim) break; this.load(f); } }   // 名前呼び（call_）はその娘が出たときに読む
     this.load('cheer_kill_1_1.mp3');   // 陽気な撃破の「やったー」
     this.pri.clear(); this.pq = 0; for (const e of enemies) if (e.prof && e.prof.pers) this.prioritize(e.prof.pers);
   },
@@ -391,7 +402,7 @@ const VoicePack = {
     const b = this.buf[fn];
     if (b === null) return false;
     this.stats.req++;
-    if (b === undefined) { this.load(fn, true); if (prio < 2 || fb) { this.defer(fn, dist, prio, rate, fb); return true; } return false; }
+    if (b === undefined) { this.load(fn, true); this.defer(fn, dist, prio, rate, fb); return true; }   // 届くまで少し待って鳴らす（間に合わなければ字幕だけ）
     const now = performance.now(), conv = !!Talk.cur && (menuOpen || prio >= 1) && dist < 12;
     const k = clamp(1 - dist / 60, 0.12, 1);
     if (prio < 2 && !conv) {
@@ -402,7 +413,8 @@ const VoicePack = {
     AudioGuard.kick();
     const c = Sfx.ctx, src = c.createBufferSource(), g = c.createGain();
     src.buffer = b; g.gain.value = 1.15 * k * k + 0.05;
-    src.playbackRate.value = rate * (1 + (Math.random() * 2 - 1) * 0.03);   // ±3% の揺らぎ
+    src.playbackRate.value = rate;   // 同じ娘は毎回同じ声（揺らぎは付けない）
+    this.touch(fn);
     src.connect(g); g.connect(this.out);
     this.add(src, prio, dist, conv, b.duration / src.playbackRate.value); Talk.track(src);
     src.start(); this.stats.played++;
@@ -412,8 +424,8 @@ const VoicePack = {
     const L = this.man && this.man[pers] && this.man[pers][kind];
     const ent = L && L[i];
     if (!ent) return false;
-    // 言い方の揺れ（3通り）から毎回選ぶ。声の個性は再生速度の個体差（vv）で付ける
-    let fn = ent.files[(Math.random() * ent.files.length) | 0];
+    // 言い方（3通り）は娘ごとに固定（vv）。同じ娘はステージの最後まで同じ声で話す
+    let fn = ent.files[Math.min(ent.files.length - 1, Math.max(0, vv | 0))];
     if (!this.buf[fn]) { const ok = ent.files.find(f => this.buf[f]); if (ok) fn = ok; else if (ent.files.length > 1) fn = ent.files[1]; }   // 読み込み済みの言い方を使う（無ければ先に読む1通り）
     return this.play(fn, dist, prio, VV_RATE[vv] || 1, fb);
   },
@@ -501,7 +513,7 @@ const SITU = {
     this.say(cand[0], win ? 'win' : 'lose', true);
   },
 };
-window.__situ = SITU;
+window.__situ = SITU; window.__vp = VoicePack; window.__voice = Voice;   // 確認用
 SITU.dbg = () => ({ ok: VoicePack.ok, tx: !!VoicePack.byText('はしご車に石！'), bufs: Object.values(VoicePack.buf).filter(Boolean).length, q: VoicePack.q.length, t: +time.toFixed(1), ctx: Sfx.ctx ? Sfx.ctx.state : 'none', stats: Object.assign({}, VoicePack.stats), blue: enemies.filter(e => SITU.ok(e)).length, cats: (() => { const e = enemies.find(o => SITU.ok(o)); return e ? SITU.cats(e) : null; })() });
 // 字幕から台詞の収録音声を引く（端末の音声合成より先に使う）
 VoicePack.text = window.VOICE_TEXT || {};
@@ -510,7 +522,7 @@ VoicePack.byText = function (text) {
   if (!this.idx) { this.idx = {}; const m = this.man || {}; for (const k in m) for (const c in m[k]) for (const l of m[k][c]) if (!this.idx[l.text]) this.idx[l.text] = l.files; }
   return this.idx[text] || null;
 };
-{ const pre = VoicePack.preload; VoicePack.preload = function () { pre.call(this); if (this.ok) for (const k in this.text) for (const f of this.text[k].files) this.load(f, true); }; }
+{ const pre = VoicePack.preload; VoicePack.preload = function () { pre.call(this); if (this.ok && this.CAP >= 300) for (const k in this.text) for (const f of this.text[k].files) this.load(f, true); }; }
 // 台詞をいくつか続けて流す（二正面戦の口上など）
 VoicePack.seq = function (texts) {
   if (!this.ok) return false;
@@ -4367,7 +4379,7 @@ function beachWaveTick(dt) {
 function kingSay(cat) {
   const X = VoicePack.man && VoicePack.man._extra, L = X && X[cat], text = (L && L[0].text) || KING_TEXT[cat] || '';
   subtitle(text); const el = $('subtitle'); if (el) el.textContent = `殿「${text}」`;
-  if (!(L && VoicePack.play(L[0].files[0], 0, 2, 1))) { if (Voice.ok) { const u = new SpeechSynthesisUtterance(text); u.lang = 'ja-JP'; u.pitch = 0.7; u.rate = 0.95; speechSynthesis.speak(u); } }
+  // 殿の台詞は字幕だけ（声は出さない）
   BEACH.log.push('king:' + cat);
 }
 const KING_TEXT = { king_hachi: '蜂の巣にされたみたいだな', king_mg: '…これが機関銃か。恐ろしいな', king_deaddrive: '死者とのドライブかぁ' };
@@ -6787,8 +6799,8 @@ const DUAL_COX = -62, DUAL_MOX = 78;
 const DUAL = { on: false, build: false, kingCleared: false, saionjiCleared: false, spawned: false, betrayed: false, relayStage: 0, eventT: 0, joined: false, arrivalTalk: false, healT: 2, won: false, saionji: null, miyashita: null, shira: null, reinforcements: [] };
 function dualVoice(text) {
   { const ls = [...String(text).matchAll(/[「『]([^」』]+)[」』]/g)].map(m => m[1].trim()).filter(Boolean); if (ls.length && VoicePack.seq(ls)) return; }
-  // 日本語音声は端末・ブラウザー内蔵の音声合成を使用。利用できない環境では字幕のみ。
-  if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+  // 収録音声の無い台詞は字幕のみ（内蔵の読み上げは ?tts=1 のときだけ）
+  if (!Voice.TTS || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
   const lines = [...String(text).matchAll(/[「『]([^」』]+)[」』]/g)].map(m => m[1].replace(/^[^：:]{1,12}[：:]/, '').trim()).filter(Boolean);
   if (!lines.length) return;
   try {
@@ -8880,8 +8892,8 @@ function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
   const e = ukWho(L.who), d = e ? Math.min(14, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
   let ok = false;
-  if (L.file) Talk.as(e, () => { ok = VoicePack.play(L.file, d, 1.95, 1); });   // 1.95：まだ届いていなければ少し待って鳴らす
-  if (!ok && L.file && 'speechSynthesis' in window) {   // file:// で開いたとき：ブラウザの読み上げ（英語は en-GB）
+  if (L.file && L.who !== 'king') Talk.as(e, () => { ok = VoicePack.play(L.file, d, 1.95, 1); });   // 1.95：まだ届いていなければ少し待って鳴らす（殿は字幕だけ）
+  if (!ok && L.file && L.who !== 'king' && Voice.TTS && 'speechSynthesis' in window) {   // file:// で開いたとき：ブラウザの読み上げ（英語は en-GB）
     try { const u = new SpeechSynthesisUtterance(L.en || L.ja); u.lang = L.en ? 'en-GB' : 'ja-JP'; if (L.who === 'king') u.pitch = 0.7; speechSynthesis.speak(u); } catch (_) {}
   }
   if (e) { e.ukTalkT = time + (L.dur || 3) + 0.6; }
@@ -14825,7 +14837,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -19740,7 +19752,7 @@ function unlockAudio() {
   try {
     if (Sfx.ctx) { const b = Sfx.ctx.createBuffer(1, 1, 22050), s = Sfx.ctx.createBufferSource(); s.buffer = b; s.connect(Sfx.ctx.destination); s.start(0); }
   } catch (e) {}
-  if (Voice.ok) {
+  if (Voice.ok && Voice.TTS) {
     try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'ja-JP'; speechSynthesis.speak(u); } catch (e) {}
   }
 }

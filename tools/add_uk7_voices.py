@@ -5,8 +5,11 @@ ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'as
 N = 'ja-JP-NanamiNeural'
 ST = {'sumi': (N, -6, -8), 'ojou': (N, -14, -2), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'sec3': (N, -4, 2), 'sec4': (N, -8, -4), 'reika': (N, 4, 6), 'shizuka': (N, -8, -6), 'kujo': (N, -10, -10), 'sysop': (N, -2, -2),
       'a': (N, 0, 0), 'b': (N, 6, 6), 'c': (N, -6, -6), 'd': (N, 4, 10)}
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(ST)
 EN = {'uk00': ('en-GB-SoniaNeural', -12, -8), 'uk01': ('en-GB-LibbyNeural', 6, 3), 'uk02': ('en-GB-SoniaNeural', -6, -10), 'uk03': ('en-IE-EmilyNeural', 0, 2), 'uk04': ('en-GB-SoniaNeural', 4, -3), 'uk05': ('en-IE-EmilyNeural', 2, -5),
       'uk06': ('en-GB-SoniaNeural', -10, 0), 'uk07': ('en-GB-LibbyNeural', -10, -2), 'uk08': ('en-GB-LibbyNeural', -2, -12), 'uk09': ('en-GB-MaisieNeural', -8, -6), 'uk10': ('en-GB-SoniaNeural', 8, 5)}
+override(EN)
 LINES = {
  'open': ('sumi', '皆さま、お静かに。……英国は降伏し、私たちは日本へ帰ります。倒れた仲間のことを胸に、今夜だけは、心から祝いましょう。殿、乾杯の音頭をお願いいたします。'),
  'mid': ('ojou', '宴もたけなわではございますが、ここで中締めとさせていただきます。皆、よく戦い、よく生き延びました。……残りの航海も、どうか無事に。'),

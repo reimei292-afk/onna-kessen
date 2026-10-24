@@ -7,6 +7,8 @@ N = 'ja-JP-NanamiNeural'
 ST = {'sumi': (N, -6, -8), 'ojou': (N, -14, -2), 'sec2': (N, 4, 14), 'sec3': (N, -4, 2), 'sec4': (N, -8, -4), 'fumi': (N, -2, 4),
       'omiya': (N, 18, 26), 'shizuka': (N, -8, -10), 'reika': (N, 2, 2), 'kujo': (N, -10, -10), 'sysop': (N, -2, -2), 'flute': (N, 0, 10),
       'shinobu': (N, -8, -8), 'chikage': (N, -4, 0), 'hiyori': (N, 2, 16), 'akari': (N, 12, 10), 'midori': (N, 6, -4), 'g0': (N, 4, 6), 'g1': (N, -2, -2), 'g2': (N, 10, 12), 'g3': (N, -6, 4), 'g4': (N, 6, -6)}
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(ST)
 # 名前つきの娘（3 つずつ）
 NAMED = {
  'sumi': ['殿、本日のご予定です。午前は政務室、午後は軍務室の報告。……夜は空けてあります。たまには休んでくださいね。',

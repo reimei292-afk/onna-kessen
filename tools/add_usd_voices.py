@@ -6,7 +6,11 @@ ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'as
 N = 'ja-JP-NanamiNeural'
 ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'maid': (N, 6, 6), 'shizuka': (N, -8, -10), 'reika': (N, 2, 2),
       'us01': ('en-US-AvaNeural', 4, 0), 'us19': ('en-US-EmmaNeural', -6, -6), 'us05': ('en-US-JennyNeural', 6, 4), 'us12': ('en-US-AriaNeural', 0, -4),
-      'us14': ('en-US-MichelleNeural', 8, 6), 'us06': ('en-US-JennyNeural', 10, 10)}
+      'us14': ('en-US-MichelleNeural', 8, 6), 'us06': ('en-US-JennyNeural', 10, 10),
+      'ojou': (N, -14, -2), 'uk10': ('en-GB-SoniaNeural', 8, 5), 'uk04': ('en-GB-SoniaNeural', 4, -3), 'uk03': ('en-IE-EmilyNeural', 0, 2),
+      'usA': ('en-US-AriaNeural', 2, 2), 'usB': ('en-US-JennyNeural', -4, -4), 'usC': ('en-US-EmmaNeural', 6, 6)}   # usA〜C：名の無いアメリカ兵の短い叫び
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(ST)
 NUM = ['One.', 'Two.', 'Three.', 'Four.', 'Five.', 'Six.', 'Seven.', 'Eight.', 'Nine.', 'Ten!']
 NJA = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十！']
 L = {
@@ -44,6 +48,32 @@ L = {
  'win_s': ('sumi', '殿、アメリカ勢が退きます。……この荒野は、私たちのものです。'),
  'lose': ('sumi', '殿、これ以上は……。退きましょう。'),
 }
+# ---- 第二幕「城下町の罠」（usTown）：町の人は前もって避難ずみ。英国の娘は味方（英語＋字幕） ----
+L.update({
+ 't_sumi1': ('sumi', '殿、町の人たちは昨夜のうちに、皆、山の寺へ逃がしました。この通りに残っているのは、私たちだけです。'),
+ 't_ojou1': ('ojou', '大通りには落とし穴を、横丁の奥は行き止まりに。屋根の上には弓組を伏せてあります。ここで足を止めさせましょう。'),
+ 't_uk10': ('uk10', "We'll hold the alleys with you, my lord. After what you did for us, it's the least we can do.", '横丁は私たちも一緒に守ります、殿。あのときの恩を思えば、これくらい当然です。'),
+ 't_us01': ('us01', "Through the town, girls! The palace is just past that gate. Keep moving!", '町を抜けるのよ！ 宮殿はあの門のすぐ先。止まらないで！'),
+ 't_pit_s': ('sumi', 'かかりました！'),
+ 't_pit_o': ('omiya', 'やった、落ちました！'),
+ 't_pit_us': ('us06', 'Watch the ground! There are pits under the straw!', '足元に気をつけて！ 藁の下に穴がある！'),
+ 't_spot': ('sumi', '……落とし穴を見抜かれました。避けて通ってきます。'),
+ 't_alley_o': ('ojou', '横丁に入りました。弓組、放て！'),
+ 't_alley_uk': ('uk04', "They've walked straight in. Loose!", 'まんまと入ってきたわ。放て！'),
+ 't_dead_us': ('us14', "Dead end! It's a trap, back out, back out!", '行き止まり！ 罠よ、下がって、下がって！'),
+ 't_wave_s': ('sumi', '殿、新手が来ます。……まだ増えるようです。'),
+ 't_wave_us': ('us12', 'Second column coming up! Push on!', '第二隊が来たわ！ 押して！'),
+ 't_wave2_sh': ('shizuka', '……数が多すぎる。いつまでもは持ちません。'),
+ 't_reika': ('reika', '来るなら来なさい！ 一歩も通さないわよ！'),
+ 't_hold_om': ('omiya', 'まだ大丈夫です、殿！ 押し返してます！'),
+ 't_breach_s': ('sumi', '大通りの守りが破られました！ 門まで来ます！'),
+ 't_breach_us': ('us01', "We're through! Don't stop now, take the gate!", '抜けたわ！ 止まらないで、門を取るのよ！'),
+ 't_fall_o': ('ojou', '殿、ここは引きましょう！宮殿で迎え撃ちます'),
+ 't_fall_s': ('sumi', '殿、お早く！ 宮殿までお供します。皆、門の内へ！'),
+ 't_fall_uk': ('uk10', 'Fall back to the palace! Go, go!', '宮殿まで退いて！ 早く！'),
+ 't_cry0': ('usA', 'Ahh—!', 'あっ……！'), 't_cry1': ('usB', 'Whoa—!', 'うわっ……！'), 't_cry2': ('usC', 'Ugh!', 'うっ！'),
+ 't_cry3': ('usA', 'No—!', 'いや……！'), 't_cry4': ('usB', "I'm hit!", 'やられた！'), 't_cry5': ('usC', 'Oh!', 'あっ！'),
+})
 for i in range(10): L['c%d' % (i + 1)] = ('us01', NUM[i], NJA[i])
 async def one(t, p, v, r, pi):
     for a in range(4):

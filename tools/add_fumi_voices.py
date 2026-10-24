@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import edge_tts
 D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'voices')
 VOICE = 'ja-JP-NanamiNeural'
-FUMI_STYLE = (-10, 2)   # 話速%, 高さHz：ゆっくり、やわらかく
+FUMI_STYLE = (-10, 2)
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+FUMI_STYLE = style('fumi')   # 話速%, 高さHz：ゆっくり、やわらかく
 FUMI = {
   'fumi_greet': ['お疲れさまです、殿。手帳はいつでも開けますよ。', 'お呼びでしょうか。何なりとどうぞ。', 'おかえりなさいませ。ここは本陣です、少し落ち着いてくださいね。'],
   'fumi_bye': ['いってらっしゃいませ。ご無事のご様子も、きちんと書き留めますね。', 'どうかお気をつけて。'],

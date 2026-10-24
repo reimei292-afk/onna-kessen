@@ -31,6 +31,8 @@ VOICES = {
   'shizuka': ('ja-JP-NanamiNeural', -4, -6),# 久遠 静香（冷静）
   'sumi': ('ja-JP-NanamiNeural', -4, 0),    # 秘書課 白瀬 澄
 }
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+override(VOICES)
 L = {}
 def add(key, who, en, ja=None):
     L[key] = {'who': who, 'en': en, 'ja': ja if ja is not None else en}

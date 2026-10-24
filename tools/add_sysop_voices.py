@@ -7,7 +7,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import edge_tts
 D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'voices')
 VOICE = 'ja-JP-NanamiNeural'
-SYSOP_STYLE = (-4, -6)   # 話速%, 高さHz：落ち着いて、きびきび
+SYSOP_STYLE = (-4, -6)
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
+SYSOP_STYLE = style('sysop')   # 話速%, 高さHz：落ち着いて、きびきび
 SYSOP = {
   'sysop_greet': ['システム担当の霧島です。ご用件をどうぞ。', 'お疲れさまです、殿。仕掛けはすべて点検済みです。'],
   'sysop_bye': ['了解しました。持ち場に戻ります。', 'お気をつけて。合図はいつでも出せます。'],

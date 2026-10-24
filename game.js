@@ -13744,7 +13744,7 @@ function palEventTick() {
   const E = PAL.ev; if (!E || PAL.busy || UK.dlg) return;
   if (E.ph === 'bye' && PAL.floor === 5 && !E.byeGo && PAL.rcG && PAL.rcG.length) {
     E.byeGo = true; const R = palRoomOf('hall'); if (!R) return;
-    player.pos.set(palWX(R, R.rw - 8), 0, R.zc); player.yaw = R.side < 0 ? -Math.PI / 2 : Math.PI / 2; player.pitch = -0.04;
+    player.pos.set(palWX(R, R.rw - 8), 0, R.zc); player.yaw = R.side < 0 ? Math.PI / 2 : -Math.PI / 2; player.pitch = -0.04;
     const rc = PAL.rcG.filter(e => e.s), s = PAL.named.sumi, O = PAL.named.omiya;
     for (const e of rc) e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z);
     ukDlg([{ fn: () => palSay(s, 'nt_gate') }, { say: 'nt_gate' }, { say: 'n_coat' }, { choice: [

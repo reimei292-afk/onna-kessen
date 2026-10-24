@@ -67,6 +67,8 @@
   #modesel button{font:inherit;font-size:16px;letter-spacing:.3em;padding:5px 18px;color:#e8d9a8;background:rgba(0,0,0,.35);border:1px solid rgba(232,217,168,.5);cursor:pointer;border-radius:3px}
   #modesel button.on{background:rgba(232,217,168,.9);color:#1a1410;border-color:#e8d9a8}
   #stagedesc{font-size:13px;opacity:.85;min-height:1.4em;max-width:640px;margin:8px auto 0}
+  /* 縦に収まらないとき、説明文が縮んで文字が「開始」ボタンの上にはみ出し、押せなくなっていた（スマホ横向き＋長い説明の西部編）。縮ませず、画面ごとスクロールさせる */
+  .screen > *{flex-shrink:0} .screen{justify-content:safe center}
   #target em{display:block;font-style:normal;color:#ffe38a;font-size:14px;margin-top:2px;letter-spacing:.2em}
   .serif{font-family:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","MS PMincho",serif}
   #hud{position:absolute;inset:0;pointer-events:none;display:none}
@@ -339,28 +341,28 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="assets/sprites.js?v=20261024i"></script>
-<script src="assets/frames/frames.js?v=20261024i"></script>
-<script src="assets/frames/frames_fr.js?v=20261024i"></script>
-<script src="assets/frames/frames_omiya.js?v=20261024i"></script>
-<script src="assets/frames/frames_us.js?v=20261024i"></script>
-<script src="assets/frames/cycles.js?v=20261024i"></script>
+<script src="assets/sprites.js?v=20261024j"></script>
+<script src="assets/frames/frames.js?v=20261024j"></script>
+<script src="assets/frames/frames_fr.js?v=20261024j"></script>
+<script src="assets/frames/frames_omiya.js?v=20261024j"></script>
+<script src="assets/frames/frames_us.js?v=20261024j"></script>
+<script src="assets/frames/cycles.js?v=20261024j"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261024i"></script>
-<script src="assets/voices/voices_situ.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk2.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk3.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk4.js?v=20261024i"></script>
-<script src="assets/voices/voices_saidown.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk5.js?v=20261024i"></script>
-<script src="assets/voices/voices_uk7.js?v=20261024i"></script>
-<script src="assets/voices/voices_frs.js?v=20261024i"></script>
-<script src="assets/voices/voices_usd.js?v=20261024i"></script>
+<script src="assets/voices/voices.js?v=20261024j"></script>
+<script src="assets/voices/voices_situ.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk2.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk3.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk4.js?v=20261024j"></script>
+<script src="assets/voices/voices_saidown.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk5.js?v=20261024j"></script>
+<script src="assets/voices/voices_uk7.js?v=20261024j"></script>
+<script src="assets/voices/voices_frs.js?v=20261024j"></script>
+<script src="assets/voices/voices_usd.js?v=20261024j"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261024i"></script>
-<script src="lib/death_fbx.js?v=20261024i"></script>
-<script src="game.js?v=20261024i"></script>
+<script src="lib/death_clips.js?v=20261024j"></script>
+<script src="lib/death_fbx.js?v=20261024j"></script>
+<script src="game.js?v=20261024j"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

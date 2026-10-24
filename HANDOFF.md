@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261024i`
+- 現在のバージョン: `20261024j`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。
   2. `node --check game.js`

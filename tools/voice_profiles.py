@@ -26,6 +26,9 @@ PROFILES = {
     'nurse':   (N, -4, 8),     # 看護師
     'med':     (N, -12, -14),  # 救護班
     'king':    (K, -6, -2),    # 殿（ゲームでは字幕だけ）
+    # 総構えの徴募の娘（既にいる侍女。性格の声＋固定の言い方 vv と同じ高さ・話速）
+    'cs01': (N, 4, 2), 'cs02': (N, -4, -3), 'cs03': (N, 8, 9), 'cs04': (N, -6, -6),
+    'cs05': (N, 9, 10), 'cs06': (N, -6, -7), 'cs07': (N, 6, 2), 'cs08': (N, -3, -2),
     # 英国
     'uk00': ('en-GB-SoniaNeural', -12, -8), 'uk01': ('en-GB-LibbyNeural', 6, 3), 'uk02': ('en-GB-SoniaNeural', -6, -10), 'uk03': ('en-IE-EmilyNeural', 0, 2),
     'uk04': ('en-GB-SoniaNeural', 4, -3), 'uk05': ('en-IE-EmilyNeural', 2, -5), 'uk06': ('en-GB-SoniaNeural', -10, 0), 'uk07': ('en-GB-LibbyNeural', -10, -2),

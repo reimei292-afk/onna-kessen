@@ -8,9 +8,11 @@ ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N,
       'us01': ('en-US-AvaNeural', 4, 0), 'us19': ('en-US-EmmaNeural', -6, -6), 'us05': ('en-US-JennyNeural', 6, 4), 'us12': ('en-US-AriaNeural', 0, -4),
       'us14': ('en-US-MichelleNeural', 8, 6), 'us06': ('en-US-JennyNeural', 10, 10),
       'ojou': (N, -14, -2), 'uk10': ('en-GB-SoniaNeural', 8, 5), 'uk04': ('en-GB-SoniaNeural', 4, -3), 'uk03': ('en-IE-EmilyNeural', 0, 2),
-      'usA': ('en-US-AriaNeural', 2, 2), 'usB': ('en-US-JennyNeural', -4, -4), 'usC': ('en-US-EmmaNeural', 6, 6), 'shinobu': (N, -8, -8), 'chikage': (N, -4, 0), 'hiyori': (N, 2, 12), 'akari': (N, 12, 10)}   # usA〜C：名の無いアメリカ兵の短い叫び
+      'usA': ('en-US-AriaNeural', 2, 2), 'usB': ('en-US-JennyNeural', -4, -4), 'usC': ('en-US-EmmaNeural', 6, 6), 'shinobu': (N, -8, -8), 'chikage': (N, -4, 0), 'hiyori': (N, 2, 12), 'akari': (N, 12, 10), 'maid': (N, 6, 6), 'sysop': (N, -4, -6),
+      **{'cs%02d' % i: (N, 0, 0) for i in range(1, 9)}}   # usA〜C：名の無いアメリカ兵の短い叫び
 import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from voice_profiles import override, style  # 全ステージ共通の声の目録
 override(ST)
+ST.update({k: v for k, v in __import__('voice_profiles').PROFILES.items() if k.startswith('cs')})
 NUM = ['One.', 'Two.', 'Three.', 'Four.', 'Five.', 'Six.', 'Seven.', 'Eight.', 'Nine.', 'Ten!']
 NJA = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十！']
 L = {
@@ -55,7 +57,7 @@ L.update({
  't_uk10': ('uk10', "We'll hold the alleys with you, my lord. After what you did for us, it's the least we can do.", '横丁は私たちも一緒に守ります、殿。あのときの恩を思えば、これくらい当然です。'),
  't_us01': ('us01', "Through the town, girls! The palace is just past that gate. Keep moving!", '町を抜けるのよ！ 宮殿はあの門のすぐ先。止まらないで！'),
  't_pit_s': ('sumi', 'かかりました！'),
- 't_pit_o': ('omiya', 'やった、落ちました！'),
+ 't_pit_o': ('omiya', '一人、穴に落ちました！ 次が来ます！'),
  't_pit_us': ('us06', 'Watch the ground! There are pits under the straw!', '足元に気をつけて！ 藁の下に穴がある！'),
  't_spot': ('sumi', '……落とし穴を見抜かれました。避けて通ってきます。'),
  't_alley_o': ('ojou', '横丁に入りました。弓組、放て！'),
@@ -110,6 +112,45 @@ L.update({
  'o_fumi_a': ('fumi', '弓隊、放てっ！'), 'o_fumi_b': ('fumi', '左を詰めて！'), 'o_fumi_c': ('fumi', '下がって、組み直して！'),
  'o_omiya_a': ('omiya', 'はいっ、弓隊、放て！'), 'o_omiya_b': ('omiya', '右を固めて！'), 'o_omiya_c': ('omiya', '前に出すぎない！'),
 })
+# ---- 本物の戦の声（荒野の決闘・第二幕の全段・他の実戦の段）：模擬戦の言い回しは使わない。倒れる時は短く ----
+PERS_STYLE = {'aggr': (6, 2), 'caut': (-4, -3), 'timid': (6, 6), 'calm': (-6, -6), 'cheer': (5, 5)}   # make_voices.py と同じ
+VARIANTS = [(-2, -4), (0, 0), (3, 4)]
+WAR = {'hit': ['うっ…！', 'くっ…！', 'っ…まだ…！'], 'defeat': ['うっ…！', '無念…', '殿…', 'ごめんなさい…', 'まだ…'],
+       'spot': ['来るぞ！', '右から！', '敵、見えました！'], 'attack': ['矢を！', '放て！', 'そこっ！'], 'kill': ['一人、止めました！', '次！', '倒しました！'],
+       'allydown': ['伏せて！', '救護を！', 'しっかり…！'], 'hold': ['持ちこたえて！', '伏せて！', '来るぞ！']}
+for rom, (r0, p0) in PERS_STYLE.items():
+    for vi, (dr, dp) in enumerate(VARIANTS):
+        k = 'wv_%s%d' % (rom, vi); ST[k] = (N, r0 + dr, p0 + dp)
+        for cat, ls in WAR.items():
+            for i, t in enumerate(ls): L['w_%s%d_%s_%d' % (rom, vi, cat, i)] = (k, t)
+WN = {'hit': ['うっ…！', 'くっ…！'], 'spot': ['来るぞ！', '矢を！'], 'allydown': ['伏せて！', '救護を！']}
+WND = {'ojou': ['無念……', '殿……'], 'fumi': ['殿……', 'ごめんなさい……'], 'omiya': ['ごめんなさい……', 'まだ……'], 'sumi': ['無念……', '殿……'], 'sec2': ['うっ……！', 'ごめんなさい……'],
+       'sysop': ['無念……', 'まだ……'], 'shinobu': ['無念……', '殿……'], 'chikage': ['殿……', 'まだ……'], 'hiyori': ['ごめんなさい……', '殿……'], 'akari': ['まだ……', 'ごめんなさい……'],
+       'reika': ['無念……', 'まだ……'], 'shizuka': ['無念……', '殿……'], 'maid': ['ごめんなさい……', '殿……']}
+for who, d in WND.items():
+    for cat, ls in dict(WN, defeat=d).items():
+        for i, t in enumerate(ls): L['wn_%s_%s_%d' % (who, cat, i)] = (who, t)
+L.update({
+ 't_cry6': ('usA', 'Agh!', 'ぐっ！'), 't_cry7': ('usB', "I'm hit!", '撃たれた！'), 't_cry8': ('usC', 'Medic!', '衛生兵！'),
+ # 山城の最後：裏の抜け道
+ 'm_esc_o': ('ojou', '殿、裏の抜け道へ！ ここは私たちが食い止めます！'),
+ 'm_esc_om': ('omiya', '殿、裏の抜け道へ！ 早く！'),
+ # ⑤ 総構えの大城：急ぎの徴募と守り
+ 'z_fumi1': ('fumi', '急ぎの徴募です。町の方々に、規定の服装に着替えてもらっています。'),
+ 'z_cs01': ('cs01', '私たちも、戦うんですか……？'),
+ 'z_cs02': ('cs02', '弓なんて、ほとんど引いたことがありません……'),
+ 'z_cs05': ('cs05', 'こ、怖い……でも、やります。'),
+ 'z_hand': ('sumi', '弓と槍、それに竹束です。一人ずつ受け取って、組頭から離れないで。'),
+ 'z_cs07': ('cs07', '殿をお守りします。'),
+ 'z_cs04': ('cs04', '……はい。殿をお守りします。'),
+ 'z_ojou1': ('ojou', 'ここが総構えの大城です。外の土塁と堀で、町ごと守ります。'),
+ 'z_omiya1': ('omiya', 'はいっ！ 北と東と西の門、どこから来ても止めます！'),
+ 'z_wave': ('ojou', '新手が来ます！ 門を固めなさい！'),
+ 'z_hold': ('fumi', '竹束の陰から射て！ 顔を出しすぎないで！'),
+ 'z_breach1': ('omiya', '総構えを破られました！ 内堀まで退いてください！'),
+ 'z_breach2': ('ojou', '三の丸はもう持ちません。殿、本丸へ！'),
+ 'z_win': ('sumi', '殿……アメリカ勢が、兵を引いていきます。総構えを、守り抜きました。'),
+})
 for i in range(10): L['c%d' % (i + 1)] = ('us01', NUM[i], NJA[i])
 async def one(t, p, v, r, pi):
     for a in range(4):
@@ -120,10 +161,16 @@ def dur(p):
     except Exception: return 3.0
 async def main():
     os.makedirs(D, exist_ok=True); out = {'lines': {}}
-    for k, x in L.items():
+    sem = asyncio.Semaphore(6)
+    async def gen(k, x):
         who, ja = x[0], x[-1]; en = x[1] if len(x) == 3 else None
         v, r, pi = ST[who]; p = os.path.join(D, k + '.mp3')
-        if not os.path.exists(p) or os.path.getsize(p) < 500: await one(en or ja, p, v, r, pi)
+        if not os.path.exists(p) or os.path.getsize(p) < 500:
+            async with sem: await one(en or ja, p, v, r, pi)
+    await asyncio.gather(*[gen(k, x) for k, x in L.items()])
+    for k, x in L.items():
+        who, ja = x[0], x[-1]; en = x[1] if len(x) == 3 else None
+        p = os.path.join(D, k + '.mp3')
         ok = os.path.exists(p) and os.path.getsize(p) > 500
         o = {'who': who, 'ja': ja}
         if ok: o['file'] = 'usd/' + k + '.mp3'; o['dur'] = dur(p)

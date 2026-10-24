@@ -10732,6 +10732,11 @@ function usdDuelTick(dt) {
   }
   if (D.st === 'shot') { D.t2 = (D.t2 || 0) + dt; if (D.t2 > 1.6 && !D.post) { D.post = true; usdAfterDuel(); } }
 }
+function usdDuelCam(cam) {
+  const D = USD.d; if (USD.phase !== 'duel' || !D || D.king || D.st === 'toMid' || (D.st === 'shot' && D.t2 > 1.4)) { USD.camOn = false; return; }
+  const a = USD.duelUs ? USD.duelUs.s.position.z : -1, b = USD.champ ? USD.champ.s.position.z : 1, mz = (a + b) / 2, sp = Math.abs(b - a);
+  cam.position.set(4.2 + sp * 0.55, 1.55, mz + 1.2); cam.lookAt(0, 1.05, mz); USD.camOn = true;
+}
 function usdDraw() {   // 殿の早撃ち
   const D = USD.d; if (!D || !D.king) return;
   if (D.st === 'count') { popup('まだだ！ 十まで待て'); return; }
@@ -15425,7 +15430,7 @@ function waveUpdate(dt) {
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
-  if (e.state === 'down' || UK.on || UK7.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange')))) return;   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
+  if (e.state === 'down' || UK.on || UK7.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
     const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
@@ -18041,7 +18046,7 @@ function drawWeapon() {
     wg.beginPath(); wg.arc(W / 2, H / 2, 22, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * player.charge); wg.stroke();
   }
   { const v = CAR.riding ? 'hidden' : 'visible'; if (wc.style.visibility !== v) wc.style.visibility = v; }   // 助手席では武器の絵を出さない
-  if (CAR.riding) { /* 助手席：武器は膝の上（描かない） */ } else if (player.weapon === 0) drawBow(W, H, bobX, bobY); else if (player.knife !== false) drawDagger(W, H, bobX, bobY);
+  if (CAR.riding || USD.camOn) { /* 助手席：武器は膝の上（描かない）／決闘の横からの眺め */ } else if (player.weapon === 0) drawBow(W, H, bobX, bobY); else if (player.knife !== false) drawDagger(W, H, bobX, bobY);
 }
 function drawBow(W, H, bx, by) {
   const c = player.drawing ? player.charge : 0;
@@ -18660,6 +18665,7 @@ function updatePlayer(dt) {
   const sh = player.shake * 0.25;
   camera.position.set(player.pos.x, player.pos.y + CFG.eyeH - (player.seated ? 0.48 : 0) + (player.onGround ? Math.abs(Math.sin(player.bob)) * 0.05 : 0), player.pos.z);
   camera.rotation.set(player.pitch + rand(-sh, sh) * 0.3, player.yaw + rand(-sh, sh) * 0.3, 0);
+  if (USD.on) usdDuelCam(camera);   // 決闘（殿以外）の間は横から見せる
   if (TEST && typeof window.__camPre === 'function') try { window.__camPre(camera); } catch (_) {}   // テスト撮影用：見え方の選択の前にカメラを置く
   const fov = 75 - (player.drawing ? player.charge * 18 : 0);
   if (Math.abs(camera.fov - fov) > 0.05) { camera.fov += (fov - camera.fov) * Math.min(1, dt * 10); camera.updateProjectionMatrix(); }

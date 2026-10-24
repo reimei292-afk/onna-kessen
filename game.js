@@ -10535,11 +10535,12 @@ function usdBrain(e, dt) {
 function usdNear(e, list, R) { const p = e.s.position; let best = null, bd = R; for (const o of list) { const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } } return best ? [best, bd] : null; }
 function usdUsBrain(e, dt) {
   const p = e.s.position, W = USD_W[e.usdW];
+  if (e.usdBack) { e.faceWant = Math.atan2(e.home[0] - p.x, e.home[1] - p.z); if (usdWalkTo(e, e.home[0], e.home[1], 3.2, dt) || USD.bt > 20) { e.usdBack = false; e.moving = false; } return true; }   // 会見・決闘の場から自陣へ戻る
   if ((e.usdT -= dt) <= 0) {   // 考える間隔
     e.usdT = rand(0.5, 1.0);
     const n = usdNear(e, USD.live.blue, W.range); let t = n ? n[0] : null, td = n ? n[1] : 1e9;
     const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
-    if (state === 'play' && !inHQ() && dP < W.range && (dP < td || Math.random() < 0.2)) { t = PLAYER_T; td = dP; }
+    if (state === 'play' && !inHQ() && dP < W.range && (dP < td * 0.8 || Math.random() < 0.08)) { t = PLAYER_T; td = dP; }
     e.tgt2 = t; e.tgtD = td;
     if (n && n[1] < 2.3) { e.usdFree = true; e.passive = false; e.state = 'approach'; e.t = 0; if (Math.random() < 0.3) usdBark('b_close', 14); return false; }   // 斬り込まれたら白兵戦
   }
@@ -10547,7 +10548,7 @@ function usdUsBrain(e, dt) {
   if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = null; e.usdT = 0; return true; }
   if (e.usdW === 'colt' && t) {   // 拳銃組は 15m まで寄る
     const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z);
-    if (d > 15 && e.usdRel == null) { const k = Math.min(d - 14, e.speed * 0.8 * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(tx - p.x, tz - p.z); }
+    if (d > 15 && e.usdRel == null && (p.z < -12 || d < 32 || USD.bt > 45)) { const k = Math.min(d - 14, e.speed * 0.8 * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(tx - p.x, tz - p.z); }
   } else if (!t) { const h = e.home, d = Math.hypot(h[0] - p.x, h[1] - p.z); if (d > 1) { const k = Math.min(d, e.speed * 0.7 * dt) / d; p.x += (h[0] - p.x) * k; p.z += (h[1] - p.z) * k; e.moving = true; e.faceWant = Math.atan2(h[0] - p.x, h[1] - p.z); } }
   if (e.usdRel != null) { if ((e.usdRel -= dt) <= 0) { e.usdRel = null; e.ammo = W.mag; } return true; }   // 弾込め中
   if ((e.usdCd -= dt) > 0 || !t) return true;
@@ -10578,7 +10579,7 @@ function usdShot(e, t) {
   if (blk) { USD.stats.blocked = (USD.stats.blocked || 0) + 1; const q = new V3(blk.x, 0.9, blk.z); if (blk.type === 'bundle') { Sfx.impactBamboo(q); puff(q, 0xc5d6a4, 3, 0.2, 1.5, 0.4); if (blk.breakable && (blk.hp -= 0.5) <= 0) breakBundle(blk, 'quiet'); } else puff(q, 0xc9a27a, 3, 0.2, 1.4, 0.5); return; }
   if (Math.random() < usdHitP(W, d)) {
     USD.stats.hits = (USD.stats.hits || 0) + 1;
-    if (t.isPlayer) { if (!player.god) { hurtPlayer(Math.round(rand(10, 18))); popup((W === 'colt' ? 'コルト' : W === 'win' ? 'ウィンチェスター' : 'スプリングフィールド') + 'の弾が当たった！'); } }
+    if (t.isPlayer) { if (!player.god) { hurtPlayer(Math.round(rand(5, 9))); popup((W === 'colt' ? 'コルト' : W === 'win' ? 'ウィンチェスター' : 'スプリングフィールド') + 'の弾が当たった！'); } }
     else damageEnemy(t, 2, mz, false, null, e);
   } else { const q = new V3(tx + rand(-1.2, 1.2), 0.1, tz + rand(-1.2, 1.2)); if (dP < 80) puff(q, 0xcdb88e, 3, 0.2, 1.6, 0.5); if (t.isPlayer && d < 60) Sfx.whoosh(new V3(tx, 1.5, tz), rand(0.3, 1.2)); }
 }
@@ -10612,7 +10613,7 @@ function usdBundleTick(B, dt) {
   if (!B.rush && (B.stop || nd < 30)) {
     const foes = USD.live.orange.filter(o => Math.hypot(o.s.position.x - cv.x, o.s.position.z - cv.z) < 45);
     const rel = foes.filter(o => o.usdRel != null).length / Math.max(1, foes.length);
-    if ((B.stop && (rel >= 0.4 || USD.bt - B.stopT > 14)) || nd < 18) { B.rush = true; usdBark('b_rush', 20) || (USD.omiya && isUp(USD.omiya) && usdBark('b_omiya2', 20)); }
+    if ((B.stop && (rel >= 0.4 || USD.bt - B.stopT > 14)) || nd < 24) { B.rush = true; usdBark('b_rush', 20) || (USD.omiya && isUp(USD.omiya) && usdBark('b_omiya2', 20)); }
   }
 }
 // ---- 破裂弾の大砲（日本側）：直撃はさせず手前・脇で破裂。破片は岩・竹束の陰で止まる ----
@@ -10777,8 +10778,8 @@ function usdBattle() {
   const ch = USD.champ, us = USD.duelUs;
   if (ch && isUp(ch)) { ch.usdDuel = false; if (ch.usdStand) { const o = ch.usdStand; o.usdHide = false; o.s.visible = true; const i = enemies.indexOf(ch); if (i >= 0) enemies.splice(i, 1); disposeNpc(ch); USD.stand = null; } else ch.usdFree = true; }
   else if (ch && ch.usdStand) { const o = ch.usdStand; if (USD.champK === 'fumi') { removeFumi(); fumi.dead = true; } else { removeSec2(); sec2.dead = true; } o.usdHide = false; }
-  if (us && isUp(us)) { us.usdDuel = false; us.home = [2, -27]; }
-  if (USD.by.us01) USD.by.us01.home = [0, -27];
+  if (us && isUp(us)) { us.usdDuel = false; us.home = [2, -27]; us.usdBack = true; }
+  if (USD.by.us01 && isUp(USD.by.us01)) { USD.by.us01.home = [0, -27]; USD.by.us01.usdBack = true; }
   for (const e of USD.us) if (isUp(e)) e.usdCd = rand(0.5, 3);
   showBanner('総力戦', '竹束を押し立てて進め！'); bannerTimer = 3.5;
   usdBark('b_start', 0, true); setTimeout(() => { if (USD.on && USD.phase === 'battle') usdBark('b_bundle', 0, true); }, 3800);
@@ -13331,7 +13332,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

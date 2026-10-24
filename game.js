@@ -8382,7 +8382,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
-  frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と、味方になった英国勢が船で打って出る。双方の破裂弾が飛び交う砲撃戦。フランスの特殊弾の霧を吸った侍女は「洗脳中」になり砲を扱えない——救護班が手当てすると治る。敵の乗組員を四分の三まで減らせば艦隊は退く。殿の船の大宮には E で話しかけられる。' },
+  frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と、味方になった英国勢が船で打って出る。双方の破裂弾が飛び交う砲撃戦。フランスの特殊弾の霧を吸った侍女は「洗脳中」になり砲を扱えない——救護班が手当てすると治る。敵の乗組員を半数まで減らせば艦隊は退く。殿の船の大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
   fort: { name: '櫃の戦い', desc: '青組は砦を守る。二基の櫃（やぐら）と壁の足場から射下ろし、門の外の竹束に隠れる橙組を迎え撃つ。梯子で上り下りできる。' },
@@ -9873,8 +9873,8 @@ const u3Half = (x, y) => ukW(x, y + 0.4) - 0.45;
 //   大宮：殿の船に控える。E で話す（ページ式の選択肢）。
 // ====================================================================
 const FRS_SPECIAL = {   // 特殊弾の設定（効果を差し替えるときはここだけ）
-  name: '洗脳弾', cloud: 0xc9c2d6, cloudOpacity: 0.42, radius: 4.6, life: 14, chance: 0.3,
-  status: { label: '洗脳中', labelColor: '#f3e9ff', slow: 0.5, dur: 70, stopsGuns: true, needsTreat: true },
+  name: '洗脳弾', cloud: 0xc9c2d6, cloudOpacity: 0.42, radius: 4.6, life: 14, chance: 0.2,
+  status: { label: '洗脳中', labelColor: '#f3e9ff', slow: 0.5, dur: 40, stopsGuns: true, needsTreat: true },
   warn: 'b_special', popup: '特殊弾の霧！ 吸った侍女は「洗脳中」。救護班が手当てすると治る'
 };
 const FRS = { on: false, phase: 'off', t: 0, ships: [], fr: [], ally: [], crew: [], frCrew: [], frMed: [], shells: [], clouds: [], fireT: 6, frFireT: 4, ended: false,
@@ -10073,7 +10073,7 @@ function frsBurst(S) {
   const o = Sfx.at(P, 320, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); }
   if (dP < 26) player.shake = Math.max(player.shake, clamp(0.5 - dP * 0.018, 0.05, 0.45));
   if (S.sp) {   // 特殊弾：破片は少なく、霧が残る
-    const g = new THREE.Group(), mat = new THREE.SpriteMaterial({ color: FRS_SPECIAL.cloud, transparent: true, opacity: FRS_SPECIAL.cloudOpacity, depthWrite: false });
+    const g = new THREE.Group(), mat = new THREE.SpriteMaterial({ map: puffTex, color: FRS_SPECIAL.cloud, transparent: true, opacity: FRS_SPECIAL.cloudOpacity, depthWrite: false });
     for (let i = 0; i < 9; i++) { const s = new THREE.Sprite(mat); const r = FRS_SPECIAL.radius; s.position.set(rand(-r, r) * 0.7, rand(0.4, 2.0), rand(-r, r) * 0.7); s.scale.setScalar(rand(2.6, 4.2)); g.add(s); }
     g.position.set(S.x, Math.max(0, S.y - 0.4), S.z); stageRoot.add(g); FRS.clouds.push({ g, mat, x: S.x, y: Math.max(0, S.y - 0.4), z: S.z, t: 0, life: FRS_SPECIAL.life, tick: 0 });
     if (!FRS.said.special) { FRS.said.special = true; popup(FRS_SPECIAL.popup); popupTimer = 4; setTimeout(() => { if (FRS.on) ukSpeakFrs(FRS_SPECIAL.warn); }, 900); }
@@ -10189,7 +10189,7 @@ function updateFrs(dt) {
     FRS.barkT -= dt; if (FRS.barkT <= 0 && !UK.dlg) { FRS.barkT = rand(16, 24); if (FRS.omiya && isUp(FRS.omiya)) ukSpeakFrs(['b_omiya1', 'b_omiya2', 'b_omiya3', 'b_omiya4', 'b_omiya5'][(Math.random() * 5) | 0]); }
     if (FRS.omiya && !isUp(FRS.omiya) && !FRS.said.omDown) { FRS.said.omDown = true; ukSpeakFrs(Math.random() < 0.5 ? 'om_down' : 'om_down2'); }
     const c = frsCounts(), kingCrew = FRS.crew.filter(e => e.frsKing && isUp(e)).length;
-    if (c.foe <= Math.ceil(FRS.frTotal * 0.25)) { FRS.phase = 'win'; FRS.win = true; FRS.endT = 0; ukSpeakFrs('b_ship'); }
+    if (c.foe <= Math.ceil(FRS.frTotal * 0.5)) { FRS.phase = 'win'; FRS.win = true; FRS.endT = 0; ukSpeakFrs('b_ship'); }
     else if (kingCrew === 0) { FRS.phase = 'lose'; FRS.endT = 0; ukSpeakFrs('lose'); }
   } else if (FRS.phase === 'win') {
     FRS.endT += dt; for (const s of FRS.fr) { const dz = -dt * 3; s.z += dz; s.S.position.z += dz; for (const e of FRS.frCrew.concat(FRS.frMed)) if (e.frsShip === s) { e.frsPin[1] += dz; if (e.frsHome) e.frsHome[1] += dz; } }   // 退く
@@ -12697,7 +12697,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

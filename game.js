@@ -12630,7 +12630,7 @@ const PAL_FLOORS = [
   { name: '中層階', sub: '侍女の大部屋・休憩室・遊びの部屋・お店', rooms: [['dorm', '侍女の大部屋（一）', 2], ['dorm', '侍女の大部屋（二）', 2], ['rest', '休憩室', 1], ['game', 'ボードゲーム室', 1], ['manga', '漫画コーナー', 1], ['av', '視聴覚室', 1], ['book', '書店', 1], ['zakka', '雑貨店', 1], ['beauty', '美容室', 1], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
   { name: '下層階', sub: 'カフェ・レストラン・バー・ラウンジ・コンビニ・ジム・ダンス', rooms: [['cafe', 'カフェ', 1.2], ['rest_r', 'レストラン', 2], ['bar', 'バー', 1], ['lounge', 'ラウンジ', 1.4], ['conv', 'コンビニ', 1], ['gym', '女性用ジム', 1.4], ['dance', 'ダンスセンター', 1.2], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
   { name: '浴場別館', sub: '宴会場・大カラオケ部屋・共同浴場・湯上がり処', rooms: [['banquet', '宴会場', 2.4], ['karaoke', '大カラオケ部屋', 1.4], ['bath_e', '共同浴場（女湯）', 1.2], ['yuagari', '湯上がり処', 1.4], ['kbath', '殿専用浴室', 0.8], ['wc', '女子トイレ（個室 4）', 0.7], ['wc', '女子トイレ（個室 4）', 0.7]] },
-  { name: '地上・地下', sub: '玄関ホール・近衛室・詰所・武器庫・医務室・厨房ほか', rooms: [['hall', '玄関ホール', 1.6], ['guard', '近衛室', 1], ['post', '各隊詰所', 1], ['armory', '武器庫', 1], ['gunnery', '砲術室', 1], ['med', '医務室', 1.2], ['logi', '兵站室', 1], ['kitchen', '厨房', 2], ['costume', '衣装室', 1], ['info', '情報室', 1], ['music', '音楽室', 0.8], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
+  { name: '地上・地下', sub: '玄関ホール・近衛室・詰所・武器庫・医務室・厨房ほか', rooms: [['hall', '玄関ホール', 1.6], ['guard', '近衛室', 1], ['post', '各隊詰所', 1], ['armory', '武器庫', 1], ['gunnery', '砲術室', 1], ['med', '医務室', 1.2], ['logi', '兵站室', 1], ['dock', '搬入口', 1.4], ['eizen', '営繕室', 1], ['kitchen', '厨房', 2], ['costume', '衣装室', 1], ['info', '情報室', 1], ['music', '音楽室', 0.8], ['wc', '女子トイレ（個室 3）', 0.6], ['wc', '女子トイレ（個室 3）', 0.6]] },
   { name: '敷地', sub: '弓道場・体育館・武道館・練習場・テニスコート・サッカー場', out: true, rooms: [['kyudo', '弓道場', 2], ['gymnasium', '体育館', 2], ['budokan', '武道館', 2], ['practice', '練習場', 2, 1], ['tennis', 'テニスコート', 2, 1], ['soccer', 'サッカー場', 3, 1]] },
 ];
 // 時間帯（朝・昼・夕・夜）ごとの、部屋の混み具合
@@ -12640,7 +12640,7 @@ const PAL_W = {
   dorm: [2, 0.3, 1, 3], rest: [0.5, 1, 2, 1.5], game: [0.2, 0.8, 2, 1.6], manga: [0.3, 1, 1.5, 1.6], av: [0, 0.5, 1.5, 2], book: [0.3, 1, 1, 0.2], zakka: [0.3, 1, 1, 0.2], beauty: [0.3, 1, 1.2, 0.2],
   cafe: [1.2, 2.2, 0.6, 0], rest_r: [0.6, 1.2, 2.6, 0.6], bar: [0, 0, 0.6, 2.6], lounge: [0, 0.4, 1, 2.6], conv: [1, 1, 1, 1], gym: [2.4, 0.5, 1, 0.3], dance: [0.5, 0.5, 2, 0.6],
   banquet: [0, 0, 0.4, 0.4], karaoke: [0, 0.3, 1.6, 2.2], bath_e: [0.6, 0.3, 2, 1.6], yuagari: [0.4, 0.4, 2.6, 1.8],
-  hall: [1, 1, 1, 0.4], guard: [1, 1, 1, 1], post: [1, 1, 1, 0.6], armory: [0.5, 1, 0.5, 0], gunnery: [0.3, 1.5, 0.5, 0], med: [0.5, 1, 1, 0.3], logi: [0.5, 1.5, 0.5, 0], kitchen: [3, 2, 3, 0.5], costume: [0.3, 1, 0.6, 0], info: [0.5, 1, 1, 0.5],
+  hall: [1, 1, 1, 0.4], guard: [1, 1, 1, 1], post: [1, 1, 1, 0.6], armory: [0.5, 1, 0.5, 0], gunnery: [0.3, 1.5, 0.5, 0], med: [0.5, 1, 1, 0.3], logi: [0.5, 1.5, 0.5, 0], dock: [1.4, 0.8, 1.2, 0], eizen: [1.2, 0.8, 1, 0.3], kitchen: [3, 2, 3, 0.5], costume: [0.3, 1, 0.6, 0], info: [0.5, 1, 1, 0.5],
   kyudo: [2, 1, 1, 0], gymnasium: [1, 1, 2, 0], budokan: [2, 1, 1, 0], practice: [2, 1, 1, 0], tennis: [1, 1, 1.5, 0], soccer: [1, 1, 2, 0],
 };
 // 名のある娘：時間帯ごとの居場所（部屋の種類。'walk' は上層階の廊下で書類を運ぶ、null は出てこない）
@@ -12665,9 +12665,9 @@ const PAL_NAMED = {
   akari: { girl: () => 'sec7', name: '側近付き秘書 夏目 あかり', pers: '陽気', cm: 162, at: ['gym', 'walk', 'yuagari', null] },
   midori: { girl: () => 'girl37', name: '側近付き秘書 村瀬 碧', pers: '好戦的', cm: 164, at: ['secr', 'secr', 'walk', null] },
 };
-const PAL_TAG = { throne: '侍女', dining: '給仕の侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
+const PAL_TAG = { dock: '兵站室（搬入）', eizen: '営繕室', throne: '侍女', dining: '給仕の侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
   cafe: 'カフェの侍女', rest_r: '侍女', bar: '侍女', lounge: '侍女', conv: 'コンビニの侍女', gym: '侍女', dance: '侍女', banquet: '侍女', karaoke: '侍女', bath_e: '侍女', yuagari: '侍女', hall: '取次の侍女', guard: '近衛室', post: '詰所の侍女', armory: '武器庫係', gunnery: '砲術室', med: '医務室 看護役', logi: '兵站室', kitchen: '厨房の侍女', costume: '衣装室', info: '情報室', kyudo: '弓の侍女', gymnasium: '侍女', budokan: '武術の侍女', practice: '侍女', tennis: '侍女', soccer: '侍女', walk: '侍女' };
-const PAL_CAT = { throne: 'throne', dining: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
+const PAL_CAT = { dock: 'work', eizen: 'work', throne: 'throne', dining: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
   cafe: 'cafe', rest_r: 'cafe', bar: 'bar', lounge: 'bar', conv: 'conv', gym: 'gym', dance: 'gym', banquet: 'bath', karaoke: 'bath', bath_e: 'bath', yuagari: 'bath', kitchen: 'kitchen', guard: 'guard', post: 'guard', armory: 'guard', gunnery: 'guard', med: 'med', hall: 'misc', logi: 'misc', costume: 'misc', info: 'misc', music: 'misc', kyudo: 'sport', gymnasium: 'sport', budokan: 'sport', practice: 'sport', tennis: 'sport', soccer: 'sport' };
 // 殿の台詞（字幕だけ）
 const PAL_FIX = {
@@ -12788,7 +12788,7 @@ function palBuildFloor(fi) {
   const nl = USD_MOB ? 2 : 4; for (let i = 0; i < nl; i++) { const l = new THREE.PointLight(0xffe2b8, out ? 0.4 : 0.85, 26, 1.4); l.position.set(0, H - 0.6, -4 + (L + 4) * (i + 0.5) / nl); palAdd(l); PAL.lights.push(l); }
   palStairwell(fi, out);
   for (const R of PAL.rooms) palRoom(R, out);
-  palWelfareFurn(); palSwatches();
+  palWelfareFurn(); palSwatches(); palHousekeepingFurn();
   if (out) palCastle();
   // 部屋の中の立ち位置
   for (const R of PAL.rooms) palSpots(R);
@@ -12992,7 +12992,7 @@ function palSpawnFloor() {
     if (R.type === 'kitchen' && Math.random() < 0.6) e.ukTag = '厨房の調理係 ' + e.prof.name;
     if (Math.random() < 0.35 && !['kitchen', 'secr', 'seimu', 'zaimu', 'gunmu', 'info', 'med'].includes(R.type)) e.palWander = time + rand(4, 12);
   }
-  palWelfareSpawn();
+  palWelfareSpawn(); palCleanSpawn();
   PAL.log.push('spawn:f' + PAL.floor + ':s' + sl + ':n' + PAL.girls.length);
 }
 function palWalker(e) {   // 廊下を行き来する（側近付き秘書は書類を抱えて部屋から部屋へ）
@@ -13083,6 +13083,8 @@ function palLineFor(e) {
   const V = window.VOICE_PAL || { named: {}, cat: {}, lines: {} };
   if (e.palLine) return e.palLine;
   if (e.palRoom && e.palRoom.type === 'med' && !e.palKey && Math.random() < 0.35) return 'wf_med';
+  if (e.palRoom && e.palRoom.type === 'dock' && !e.palKey && Math.random() < 0.6) return PAL.slot === 1 ? 'dk_0' : Math.random() < 0.5 ? 'dk_0' : 'dk_1';
+  if (e.palClean && Math.random() < 0.6) return 'cl_wet2';
   if (e.palKey) { const ls = V.named[e.palKey] || []; if (ls.length) { e.palN = ((e.palN == null ? -1 : e.palN) + 1) % ls.length; return ls[e.palN]; } }
   if (PAL.doors.some(D => D.wc && Math.hypot(D.x - player.pos.x, D.z - player.pos.z) < 4) && Math.random() < 0.5) return 'wc';
   const ls = V.cat[palCatOf(e)] || V.cat.misc || []; if (!ls.length) return null;
@@ -13158,7 +13160,7 @@ function palGoFloor(f, how) {
   PAL.busy = true; const fd = $('palFade'); if (fd) fd.style.opacity = 1;
   setTimeout(() => {
     if (!PAL.on) return;
-    PAL.floor = f; palBuildFloor(f); palSpawnFloor();
+    PAL.floor = f; palBuildFloor(f); palSpawnFloor(); palTopCleaned(f);
     if (how === 'elev') { player.pos.set(4.2, 0, -5); player.yaw = Math.PI / 2; }
     else { player.pos.set(-1.5, 0, -4); player.yaw = Math.PI; }
     player.pitch = -0.04;
@@ -13291,6 +13293,8 @@ const PAL_SK = [
   { id: 'd1', rooms: ['dining'], sl: [0, 1, 2] }, { id: 't1', rooms: ['throne'], sl: [0, 1, 2, 3] }, { id: 'h1', rooms: ['hall'], sl: [0, 1, 2, 3] }, { id: 'f1', rooms: ['cafe'], sl: [0, 1, 2] },
   { id: 'r1', rooms: ['rest_r'], sl: [1, 2, 3] }, { id: 'e1', rooms: ['gym', 'tennis', 'yuagari', 'omiya_r'], sl: [0, 1, 2, 3], need: ['omiya'] }, { id: 'b1', rooms: ['yuagari', 'bath_e'], sl: [1, 2, 3] }, { id: 'n1', rooms: ['dorm'], sl: [3, 2] },
   { id: 'u1', rooms: ['costume'], sl: [0, 1, 2, 3], parts: ['a', 'b', 'c', 'd'], cond: () => PAL.pants === 1, after: () => palPantsOrdered() },
+  { id: 'z1', rooms: ['eizen'], sl: [0] }, { id: 'z2', rooms: ['dock'], sl: [0, 1, 2] }, { id: 'z3', rooms: ['dock', 'logi'], sl: [0, 1, 2] }, { id: 'z4', rooms: ['eizen', 'dock', 'kitchen'], sl: [0, 1, 2, 3], need: ['omiya'] },
+  { id: 'z5', rooms: ['kitchen'], sl: [2, 3] }, { id: 'z6', rooms: ['conv'], sl: [0, 1, 2] },
 ];
 function palSontakuTick() {
   if (UK.dlg || time < (PAL.skT || 0) || PAL.busy) return;
@@ -13462,6 +13466,62 @@ function palPantsTick() {   // 殿のパンツの件は、衣装室の忖度会�
   }
 }
 function palPantsOrdered() { if (PAL.pants !== 1) return; PAL.pants = 2; PAL.pantsT = time + (TEST ? 6 : 90); PAL.log.push('pants:ordered'); const R = palRoomOf('costume'); if (R) palSwatches(); }
+// ---- 営繕室（掃除・ごみ・建物の手入れ）／ごみ箱（燃える・燃えない・資源）／搬入口と荷物用エレベーター ----
+function palHkMats() { return PAL.hkM || (PAL.hkM = ['#c0392b', '#2c6fb0', '#3a9a4a', '#f2c40f', '#e9e6dc', '#5a6068', '#9a7b52', '#2a5aa0'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.7 }))); }
+function palBins(x, z, ry, s = 1) {   // 分別ごみ箱 3 つ（赤＝燃える、青＝燃えない、緑＝資源）
+  const M = palHkMats(), c = Math.cos(ry), sn = Math.sin(ry);
+  for (let k = -1; k <= 1; k++) palBox(0.34 * s, 0.62 * s, 0.34 * s, M[k + 1], x + c * k * 0.38 * s, 0.31 * s, z - sn * k * 0.38 * s, false);
+}
+function palWetSign(x, z) { const M = palHkMats(); const o = palBox(0.32, 0.55, 0.04, M[3], x, 0.28, z, false); o.rotation.x = 0.18; const o2 = palBox(0.32, 0.55, 0.04, M[3], x, 0.28, z + 0.16, false); o2.rotation.x = -0.18; return [o, o2]; }
+function palCart(x, z) { const M = palHkMats(); palBox(0.9, 0.5, 0.5, M[5], x, 0.45, z, true); palCyl(0.16, 0.14, 0.3, M[3], x - 0.25, 0.85, z); palCyl(0.02, 0.02, 1.2, M[6], x + 0.3, 0.9, z); }
+function palHousekeepingFurn() {
+  const M = palHkMats(), lite = USD_MOB;
+  palBins(PAL_CW - 0.35, 1.2, Math.PI / 2, 0.9);   // 廊下：階段の脇
+  if ((PAL.L || 20) > 30) palBins(-PAL_CW + 0.35, (PAL.L || 20) - 2, Math.PI / 2, 0.9);
+  palSign('燃える｜燃えない｜資源', PAL_CW - 0.06, 1.25, 1.2, -Math.PI / 2, 1.3, '#f4f1ea', '#33403a');
+  for (const R of PAL.rooms) {
+    if (PAL_CLOSED.includes(R.type) || R.type === 'wc' || R.open) continue;
+    if (!lite || ['kitchen', 'cafe', 'conv', 'secr', 'eizen'].includes(R.type)) palBins(palWX(R, 1.0), R.zc + R.rd / 2 - 0.5, 0, 0.75);
+    if (R.type === 'eizen') {
+      for (let k = 0; k < 3; k++) palCart(palWX(R, 3 + k * 1.4), R.zc - 1.2);
+      palFurnBox(R, R.rw - 0.4, 0, 0.6, R.rd - 2, 2.0, palMats().shelfM); for (let k = 0; k < 8; k++) palFurnBox(R, R.rw - 0.4, -2 + k * 0.5, 0.3, 0.3, 0.3, M[k % 5], false, 0.9 + (k & 1) * 0.5);
+      for (let k = 0; k < 4; k++) palCyl(0.02, 0.02, 1.4, M[6], palWX(R, 6 + k * 0.15), 0.7, R.zc + 2.2);   // モップ
+      palWetSign(palWX(R, 7.5), R.zc + 1.0);
+    }
+    if (R.type === 'dock') {   // 搬入口：軽トラ・木箱・飲み物のケース・反物・矢の束・日用品。荷物用エレベーターは殿のものとは別
+      const W = palMats();
+      palFurnBox(R, R.rw - 2.2, 0, 3.4, 1.5, 1.1, M[4]); palFurnBox(R, R.rw - 2.2, 0, 1.2, 1.4, 0.9, M[4], false, 1.1);   // 軽トラ（白）
+      for (const [lx, lz, h, m] of [[3, -2.2, 0.6, W.crate], [3, -1.4, 1.2, W.crate], [4.2, -2.2, 0.5, M[7]], [4.2, -1.5, 0.5, M[7]], [5.4, -2.2, 0.4, M[4]], [5.4, -1.6, 0.8, W.crate]]) palFurnBox(R, lx, lz, 0.8, 0.6, h, m);
+      for (let k = 0; k < 4; k++) { const o = palCyl(0.14, 0.14, 1.4, [M[0], M[7], M[4], M[3]][k], palWX(R, 6.8), 0.16 + (k > 1 ? 0.28 : 0), R.zc - 2.2 + (k % 2) * 0.3); o.rotation.x = Math.PI / 2; }   // 反物
+      for (let k = 0; k < 3; k++) palCyl(0.09, 0.09, 1.0, M[6], palWX(R, 7.6 + k * 0.25), 0.5, R.zc - 2.1);   // 矢の束
+      palCart(palWX(R, 3.4), R.zc + 1.6); palCart(palWX(R, 5.0), R.zc + 1.6);
+      palFurnBox(R, 1.2, -R.rd / 2 + 0.3, 1.6, 0.2, 2.4, M[5], false);   // 荷物用エレベーターの扉
+      palSign('荷物用エレベーター（業務用）', palWX(R, 1.2), 2.6, R.zc - R.rd / 2 + 0.42, 0, 1.8, '#f4f1ea', '#33403a');
+      palSign('→ 裏門・ごみ集積所（職員専用通路）', palWX(R, R.rw / 2), 2.2, R.zc + R.rd / 2 - 0.06, Math.PI, 2.6, '#f4f1ea', '#33403a');
+    }
+  }
+}
+function palCleanSpawn() {   // 朝：営繕室の娘が廊下をモップがけ。最上階は殿がお留守のあいだに済ませる
+  if (PAL.slot !== 0 || PAL.banquet === 'open' || PAL.floor === 0 || PAL_FLOORS[PAL.floor].out) return;
+  const L = PAL.L || 20;
+  for (let i = 0; i < 2; i++) {
+    const z = L * (0.3 + i * 0.4), x = (i ? -1 : 1) * 1.1, e = palSpawn(x, z, palPool()[(i * 9 + 4) % palPool().length], null, null); if (!e) continue;
+    e.ukTag = '営繕室 ' + e.prof.name; e.palAt = { x, z }; e.palClean = true; e.palRoom = null; e.faceWant = i ? 0 : Math.PI;
+    palWetSign(x + (i ? 0.7 : -0.7), z + 0.8);
+  }
+  PAL.log.push('clean:f' + PAL.floor);
+}
+function palCleanTick() {
+  for (const e of PAL.girls) {
+    if (!e.palClean || !e.s || e.palPD) continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+    if (d < 3.2 && !e.palWetSaid && !UK.dlg) { e.palWetSaid = true; e.palBowT = time + 1.6; e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); palBark(e, Math.random() < 0.6 ? 'cl_wet' : 'cl_wet2'); PAL.log.push('clean:bow'); }
+    else if (d > 4 && !(e.palBowT > time)) e.faceWant = (e.faceWant || 0) + Math.sin(time * 1.3) * 0.01;   // モップを左右に
+  }
+}
+function palTopCleaned(f) {   // 朝、最上階を出て戻ると、お留守のあいだに掃除が済んでいる
+  if (f === 0 && PAL.slot === 0 && PAL.topOut && PAL.topClean !== (PAL.day || 0)) { PAL.topClean = PAL.day || 0; setTimeout(() => popup('（殿がお留守のあいだに、最上階はぴかぴかに掃除されていた）'), 1200); PAL.log.push('clean:top'); }
+  PAL.topOut = f !== 0;
+}
 function palRoomAt(x, z) { for (const R of PAL.rooms) { const a = R.side * PAL_CW, b = R.side * (PAL_CW + R.rw); if (x >= Math.min(a, b) && x <= Math.max(a, b) && z >= R.z0 && z <= R.z1) return R; } return null; }
 function updatePal(dt) {
   if (!PAL.on) return;
@@ -13472,7 +13532,7 @@ function updatePal(dt) {
     if (R && R.type === 'banquet' && PAL.banquet === 'open' && !PAL.bqSeated && !UK.dlg) palBanquetSeat();
     if (R) { palSontakuEnter(R); palWelfareEnter(R); } }
   palTick(dt);
-  palDoorTick(dt); palGreetTick(); palBanquetTick(); palJazz(dt); palSontakuTick(); palPantsTick();
+  palDoorTick(dt); palGreetTick(); palBanquetTick(); palJazz(dt); palSontakuTick(); palPantsTick(); palCleanTick();
   if (R && R.noren && Math.hypot(player.pos.x - R.noren[0], player.pos.z - R.noren[1]) < 1.6 && time > (PAL.norenT || 0)) { popup('ここから先は女湯。殿は入れません'); PAL.norenT = time + 3; PAL.norenHits = (PAL.norenHits || 0) + 1; }
   ukDlgTick(dt);
   document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);

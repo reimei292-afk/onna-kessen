@@ -2783,7 +2783,7 @@ function stageLook(name) {
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4 || name === 'frSea', uk3 = name === 'ukNight' || name === 'ukParty'; UK7.on = name === 'ukParty'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
-  FRS.on = name === 'frSea';
+  FRS.on = name === 'frSea'; USD.on = name === 'usDuel';
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.fog.color.setHex(uk3 ? 0x0a1220 : FOG); sun.color.setHex(uk3 ? 0x9fb6e8 : 0xfff0d0);   // 第三幕：夜の霞と月の光
@@ -2791,6 +2791,7 @@ function stageLook(name) {
   hemiL.color.setHex(uk3 ? 0x6b82b8 : pl ? 0xfff2df : nr ? 0x53698e : sn ? 0xe8f4ff : mt ? 0xe7f0e4 : ap ? 0xddeaff : isl ? 0xe3f2e7 : tr ? 0xe6d9bd : LOOK0.hemi[0]); hemiL.groundColor.setHex(uk3 ? 0x0e1420 : pl ? 0x6a5a4a : nr ? 0x151b26 : sn ? 0x8196aa : mt ? 0x6a6248 : ap ? 0x68756c : isl ? 0x4d5e35 : tr ? 0x5b4c39 : LOOK0.hemi[1]); hemiL.intensity = uk3 ? 0.34 : pl ? 1.25 : nr ? 0.38 : sn ? 1.35 : mt ? 1.15 : ap ? 1.1 : isl ? 1.45 : tr ? 1.08 : LOOK0.hemi[2];
   ambL.intensity = uk3 ? 0.14 : pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = uk3 ? 0.5 : uk || uk2 ? 1.2 : pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
+  if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -8383,6 +8384,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
+  usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
   plains: { name: '平原の戦い', desc: '広い野を軽自動車とはしご車で進み、少し高い砦を落とす。門は閉じていて狭間がある。はしご車を門に付け、はしごでよじ登る。守りは櫓が二つ。投石車がはしご車を狙う。車は奪い合える。弓はタイヤも撃ち、直せる。第2波からは同じ車を使う。' },
@@ -8870,8 +8872,8 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
-function ukWho(who) { if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
+const ukL = k => (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+function ukWho(who) { if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
@@ -10351,6 +10353,480 @@ function updateFrs(dt) {
   FRS.perfU = (FRS.perfU || 0) * 0.95 + (performance.now() - t0) * 0.05;
 }
 if (TEST) window.__frs = { FRS, frsFire, frsTalkOmiya };
+
+// ====================================================================
+//  アメリカ西部編 第一幕「荒野の決闘」（?stage=usDuel）
+//   西部の荒野（メサ・サボテン・転がる草・夕焼け）。アメリカ勢（us01〜us19、us08 は使わない）と日本勢が向き合う。
+//   会見：隊長マギーが一対一の決闘を申し込み、日本側にコルトを貸す。殿が誰を出すか選ぶ（殿自らも可）。
+//   決闘：背中合わせで 1〜10 を数えながら離れ、10 で振り向いて撃つ。殿が出れば早撃ち（入力の速さ＋少しの運）、
+//   ほかは娘ごとの勝率で決まる。倒れた方の負け（短い声だけ・血は出さない）。殿が倒れたら負け。
+//   そのあと総力戦。アメリカの銃はマスケットの 1 割の上限に縛らない（1870 年代の銃）：
+//     ウィンチェスター（レバー式・15 発・1.5〜2 秒に 1 発・撃ち尽くすと弾込め・中距離で約 25%、遠いほど下がる）
+//     スプリングフィールド（単発・6〜8 秒に 1 発・約 30%）
+//     コルト（6 発・速い・15m 以内で約 40%、25m を越えると急に下がる・撃ち尽くすと弾込め）。雨の減点なし。
+//   日本側は弓・刀（懐刀）・槍・竹束と破裂弾の大砲だけ（銃は決闘で借りたコルトのみ、決闘のあと返す）。
+//   勝ち：アメリカ勢が半数を割る。負け：殿が倒れる／日本勢が全滅。スマホは人数だけ減らす。
+// ====================================================================
+const USD = { on: false, phase: 'off', t: 0, bt: 0, us: [], jp: [], by: {}, bundles: [], guns: [], shells: [], tw: [], said: {}, stats: {}, live: { blue: [], orange: [] }, ended: false, endT: 0 };
+const USD_MOB = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || LITE;
+const USD_N = (() => { const q = parseInt(new URLSearchParams(location.search).get('usdn'), 10); if (q > 0) return Math.min(120, q); return USD_MOB ? 32 : 70; })();   // 一軍の人数（スマホ・?lite=1 は 32）
+const USD_IDS = ['us01', 'us02', 'us03', 'us04', 'us05', 'us06', 'us07', 'us09', 'us10', 'us11', 'us12', 'us13', 'us14', 'us15', 'us16', 'us17', 'us18', 'us19'];
+const USD_W = {   // 1870 年代の銃（マスケットの上限には縛らない）
+  win: { name: 'ウィンチェスター', mag: 15, iv: [1.5, 2.0], rel: [8, 11], range: 130 },
+  spr: { name: 'スプリングフィールド', mag: 1, iv: [6, 8], rel: [6, 8], range: 150 },
+  colt: { name: 'コルト', mag: 6, iv: [0.6, 1.0], rel: [6, 8], range: 38 },
+};
+function usdHitP(w, d) {
+  if (w === 'win') return d <= 15 ? 0.3 : d <= 50 ? 0.25 : Math.max(0.04, 0.25 - (d - 50) * 0.0021);
+  if (w === 'spr') return d <= 100 ? 0.3 : Math.max(0.08, 0.3 - (d - 100) * 0.004);
+  if (d <= 15) return 0.4; if (d <= 25) return 0.4 - (d - 15) * 0.02;
+  return Math.max(0.01, 0.2 * Math.exp(-(d - 25) / 5));
+}
+const USD_TXT = {
+  n_card: { who: 'narr', ja: 'アメリカ西部編 第一幕「荒野の決闘」――西部の荒野、日の傾くころ', narr: true, dur: 3.4 },
+  k_pick: { who: 'king', ja: '……誰を行かせるか。', dur: 2 },
+  k_fumi: { who: 'king', ja: '綾瀬、頼めるか。', dur: 2 }, k_omiya: { who: 'king', ja: '大宮、行ってくれ。', dur: 2 }, k_sec2: { who: 'king', ja: '早瀬、お前に任せる。', dur: 2 },
+  k_shizuka: { who: 'king', ja: '久遠、行けるか。', dur: 2 }, k_reika: { who: 'king', ja: '白石、お前の腕を見せてくれ。', dur: 2.2 }, k_maid: { who: 'king', ja: 'そこの侍女、お前が行け。', dur: 2.2 },
+  r_self_k: { who: 'king', ja: '俺が行く。部下を撃たれに行かせるくらいなら、自分で行く。', dur: 3.2 },
+  k_take: { who: 'king', ja: '（コルトを受け取る。ずしりと重い）', dur: 2.4 },
+};
+Object.assign(UK_WHO_NAME, { shizuka: '久遠 静香', reika: '白石 麗華', us01: 'マギー・オコンネル<small>アメリカ勢・隊長</small>', us19: 'ヴィヴィアン・カラス<small>早撃ちの名手</small>',
+  us05: 'イサベル・ベガ', us12: 'エレノア・プライス', us14: 'フィオナ・マクリーン', us06: 'ローザ・マリーノ' });
+function usdLine(k) { return (((window.VOICE_USD || {}).lines || {})[k]) || USD_TXT[k] || null; }
+function usdWho(who) {
+  if (who === 'sumi') return sec.e; if (who === 'sec2') return USD.stand && USD.champK === 'sec2' ? USD.stand : sec2.e; if (who === 'fumi') return USD.stand && USD.champK === 'fumi' ? USD.stand : fumi.e;
+  if (who === 'omiya') return USD.omiya; if (who === 'shizuka') return USD.shizuka; if (who === 'reika') return USD.reika; if (who === 'maid') return USD.maid;
+  if (/^us\d/.test(who)) return USD.by[who] || null; return null;
+}
+function usdBark(k, gap, force) {
+  const L = usdLine(k); if (!L || !USD.on || (UK.dlg && !force)) return false;
+  if (!force && USD.said[k] && time - USD.said[k] < (gap || 10)) return false;
+  const e = usdWho(L.who); if (e && !isUp(e) && L.who !== 'sumi') return false;
+  USD.said[k] = time;
+  const d = e ? Math.min(/^us/.test(L.who) ? 30 : 10, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
+  if (L.file) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
+  const nm = (UK_WHO_NAME[L.who] || '').replace(/<small>.*<\/small>/, '').replace(/<[^>]+>/g, '');
+  subtitle(L.en || L.ja); const el = $('subtitle'); if (el) el.textContent = L.en ? `${nm}「${L.en}」　${L.ja}` : `${nm}「${L.ja}」`;
+  return true;
+}
+function usdVoice(k, d) { const L = usdLine(k); if (L && L.file) VoicePack.play(L.file, d == null ? 4 : d, 1.95, 1); return L; }
+// ---- 荒野 ----
+function usdMat(c, o) { return new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {})); }
+function usdMesa(x, z, r, h, c) {
+  const g = new THREE.Group(), m = usdMat(c), cap = usdMat(0xc77a4e);
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.82, r, h, 9), m); b.position.y = h / 2; b.scale.z = rand(0.45, 0.8); b.rotation.y = rand(0, 3); g.add(b);
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.84, r * 0.84, h * 0.06, 9), cap); t.position.y = h; t.scale.z = b.scale.z; t.rotation.y = b.rotation.y; g.add(t);
+  for (let i = 0; i < 3; i++) { const s = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.25, r * 0.5, h * 0.25, 7), m); const a = rand(0, 6.28); s.position.set(Math.cos(a) * r * 0.9, h * 0.12, Math.sin(a) * r * 0.9 * b.scale.z); g.add(s); }   // 崩れた裾
+  g.position.set(x, 0, z); stageRoot.add(g); return g;
+}
+function usdRock(x, z, s) {
+  const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), usdMat(0x9a6446)); m.scale.set(s * rand(1.1, 1.5), s * rand(0.8, 1.1), s * rand(0.8, 1.1)); m.position.set(x, s * 0.55, z); m.rotation.y = rand(0, 3); m.castShadow = true; stageRoot.add(m);
+  covers.push({ x, z, r: s * 1.15, h: s * 1.4, type: 'rock', mesh: m }); colliders.push({ x, z, r: s * 1.0 });
+}
+function usdCactus(x, z, h) {
+  const M = USD.cacM || (USD.cacM = usdMat(0x4f6e35)), g = new THREE.Group();
+  const t = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, h, 8), M); t.position.y = h / 2; g.add(t);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), M); top.position.y = h; g.add(top);
+  for (const sd of [-1, 1]) if (Math.random() < 0.8) {
+    const y = h * rand(0.35, 0.6), a1 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.6, 7), M); a1.rotation.z = Math.PI / 2; a1.position.set(sd * 0.45, y, 0); g.add(a1);
+    const ah = rand(0.7, 1.2), a2 = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.15, ah, 7), M); a2.position.set(sd * 0.72, y + ah / 2, 0); g.add(a2);
+    const c2 = new THREE.Mesh(new THREE.SphereGeometry(0.14, 7, 5), M); c2.position.set(sd * 0.72, y + ah, 0); g.add(c2);
+  }
+  g.position.set(x, 0, z); g.rotation.y = rand(0, 6.28); g.traverse(o => { if (o.isMesh) o.castShadow = true; }); stageRoot.add(g); colliders.push({ x, z, r: 0.35 });
+}
+function usdTumble() {
+  const M = new THREE.MeshLambertMaterial({ color: 0x8a6a3c, wireframe: true }), g = new THREE.Group();
+  for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(rand(0.38, 0.5), 1), M); m.rotation.set(rand(0, 3), rand(0, 3), rand(0, 3)); g.add(m); }
+  g.position.set(rand(-90, 90), 0.45, rand(-60, 60)); stageRoot.add(g); USD.tw.push({ g, v: rand(2.5, 5), ph: rand(0, 6) });
+}
+function buildUsDuel() {
+  USD.tw = []; USD.bundles = []; USD.guns = []; USD.rocks = [];
+  // 夕焼けの空（上は群青、地平は橙と薄紅）と沈みかけの太陽（西＝アメリカ勢の背）
+  const skyT = canvasTex(8, 256, (g, w, h) => { const G = g.createLinearGradient(0, 0, 0, h); G.addColorStop(0, '#1d2a55'); G.addColorStop(0.38, '#5a4a7a'); G.addColorStop(0.55, '#d0705a'); G.addColorStop(0.68, '#f4a35a'); G.addColorStop(0.75, '#ffd08a'); G.addColorStop(1, '#c98a5a'); g.fillStyle = G; g.fillRect(0, 0, w, h); });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(900, 24, 16), new THREE.MeshBasicMaterial({ map: skyT, side: THREE.BackSide, fog: false, depthWrite: false })); dome.renderOrder = -10; stageRoot.add(dome);
+  const sunM = new THREE.Mesh(new THREE.CircleGeometry(38, 32), new THREE.MeshBasicMaterial({ color: 0xffc070, fog: false })); sunM.position.set(-120, 36, -820); sunM.lookAt(0, 0, 0); stageRoot.add(sunM);
+  const glow = new THREE.Mesh(new THREE.CircleGeometry(110, 32), new THREE.MeshBasicMaterial({ color: 0xffa050, transparent: true, opacity: 0.25, fog: false, depthWrite: false })); glow.position.set(-120, 36, -818); glow.lookAt(0, 0, 0); stageRoot.add(glow);
+  // 砂の地面
+  const sandT = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#c69661'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2600; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(150,104,62,.35)' : 'rgba(226,186,130,.35)'; g.fillRect(Math.random() * w, Math.random() * h, rand(1, 3), rand(1, 3)); } }, true);
+  sandT.wrapS = sandT.wrapT = THREE.RepeatWrapping; sandT.repeat.set(60, 60);
+  const gr = new THREE.Mesh(new THREE.PlaneGeometry(1600, 1600), new THREE.MeshLambertMaterial({ map: sandT, color: 0xffffff })); gr.rotation.x = -Math.PI / 2; gr.receiveShadow = true; stageRoot.add(gr);
+  // 遠くのメサ（台地）とビュート
+  for (let i = 0; i < 16; i++) { const a = -Math.PI * 0.95 + i * (Math.PI * 1.9 / 15) + rand(-0.08, 0.08), R = rand(230, 420); usdMesa(Math.sin(a) * R, -Math.cos(a) * R * (i % 2 ? 1 : 0.8), rand(20, 55), rand(28, 70), [0xa34f33, 0xb35c3a, 0x96472f][i % 3]); }
+  for (let i = 0; i < 5; i++) usdMesa(rand(-140, 140), rand(140, 260), rand(14, 30), rand(18, 40), 0xa85636);
+  // 岩場（物陰）：アメリカ勢の陣の前と、原の中ほど
+  for (let i = 0; i < 9; i++) usdRock(-30 + i * 7.5 + rand(-1.5, 1.5), -35 + rand(-1.5, 1.5), rand(0.9, 1.3));
+  for (let i = 0; i < 7; i++) usdRock(rand(-36, 36), rand(-14, 18), rand(0.8, 1.2));
+  for (let i = 0; i < 26; i++) { let x = rand(-90, 90), z = rand(-80, 80); if (Math.abs(x) < 40 && Math.abs(z) < 50) x += Math.sign(x || 1) * 42; usdCactus(x, z, rand(2.2, 4.2)); }
+  for (let i = 0; i < 10; i++) usdTumble();
+  // 日本の陣：竹束（押し立てて進む動く盾）と破裂弾の大砲、後ろに本陣と救護所
+  const nb = USD_MOB ? 6 : 10;
+  for (let i = 0; i < nb; i++) { const x = (i - (nb - 1) / 2) * 6.2; USD.bundles.push({ cv: bamboobundle(x, 24, 0, { noCol: true, hp: 3 }), x, z: 24, stop: false, units: [], archers: [], volT: rand(1, 3), rush: false }); }
+  const ng = USD_MOB ? 2 : 3;
+  for (let i = 0; i < ng; i++) { const G = u4Cannon((i - (ng - 1) / 2) * 14, 44, Math.PI); const k = UK4.guns.indexOf(G); if (k >= 0) UK4.guns.splice(k, 1); G.cd = rand(4, 7); G.crew = []; USD.guns.push(G); }
+  buildHQ(-6, 6, 52, 64, 0, 58); buildMedPost(-9, 50, 'blue');
+  // アメリカの陣：幌馬車と星条旗の代わりの青い旗
+  const wM = usdMat(0x7a5634), cM = usdMat(0xe8e0cc);
+  for (const [x, z, r] of [[-20, -50, 0.3], [0, -54, -0.1], [22, -50, -0.4]]) {
+    const g = new THREE.Group(); const bd = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 4), wM); bd.position.y = 1.0; g.add(bd);
+    const cv = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 3.8, 12, 1, true, 0, Math.PI), cM); cv.rotation.set(0, 0, 0); cv.rotation.x = Math.PI / 2; cv.rotation.z = Math.PI / 2; cv.position.y = 1.4; g.add(cv);
+    for (const sx of [-0.95, 0.95]) for (const sz of [-1.4, 1.4]) { const w = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.06, 6, 14), wM); w.rotation.y = Math.PI / 2; w.position.set(sx, 0.55, sz); g.add(w); }
+    g.position.set(x, 0, z); g.rotation.y = r; g.traverse(o => { if (o.isMesh) o.castShadow = true; }); stageRoot.add(g); boxes.push({ x0: x - 1.2, x1: x + 1.2, z0: z - 2.2, z1: z + 2.2, y0: 0, y1: 2.2 }); colliders.push({ x, z, r: 1.6 });
+  }
+}
+function usdLook() {
+  ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false; road.visible = false;
+  scene.background.setHex(0xe8a070); scene.fog.color.setHex(0xd99a72); scene.fog.near = 90; scene.fog.far = 760;
+  sun.color.setHex(0xffb878); sun.intensity = 1.05; hemiL.color.setHex(0xffd2a8); hemiL.groundColor.setHex(0x7a5236); hemiL.intensity = 1.05; ambL.intensity = 0.62;
+  SUN_DIR.copy(new V3(-0.15, 0.32, -1).normalize());
+}
+// ---- 兵を出す ----
+function usdSp(x, z, kind, team, girl, prof, yari) {
+  const e = spawnEnemy(x, z, kind, false, team, { girl: girl && GIRLS[girl] ? girl : undefined, yari: yari ? 1 : -1, set: team === 'orange' ? { special: true } : {} });
+  if (!e) return null;
+  if (girl && EXTRA_GIRLS[girl] && EXTRA_GIRLS[girl].prof) { e.figH = EXTRA_GIRLS[girl].prof.cm / 100; }
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
+  e.sq = null; e.usdUnit = true; e.usdJp = team === 'blue'; e.home = [x, z]; e.usdT = rand(0, 1);
+  e.s.rotation.y = e.face = e.faceWant = team === 'blue' ? Math.PI : 0; e.state = 'idle'; e.passive = true;
+  return e;
+}
+function usdSpawn() {
+  USD.us = []; USD.jp = []; USD.by = {};
+  // アメリカ勢：拳銃組は前、ライフル組は岩場の後ろ
+  const N = USD_N, ws = [];
+  for (let i = 0; i < N; i++) ws.push(i % 5 < 2 ? 'win' : i % 5 === 2 ? 'spr' : 'colt');
+  let nf = 0, nb = 0; const nCol = ws.filter(w => w === 'colt').length, nRif = N - nCol;
+  ws.forEach((w, i) => {
+    const id = i === 0 ? 'us01' : i === 1 ? 'us19' : USD_IDS[i % USD_IDS.length], front = w === 'colt';
+    const k = front ? nf++ : nb++, n = front ? nCol : nRif, cols = Math.min(n, front ? 14 : 16), c = k % cols, r = Math.floor(k / cols);
+    const x = i === 0 ? 0 : i === 1 ? 2.2 : (c - (cols - 1) / 2) * (front ? 4.2 : 3.9) + rand(-0.4, 0.4), z = i < 2 ? -27 : front ? -29 - r * 2.2 : -38 - r * 2.4 + rand(-0.4, 0.4);
+    const e = usdSp(x, z, 'mob', 'orange', id, null, false); if (!e) return;
+    e.usdW = i < 2 ? 'colt' : w; e.ammo = USD_W[e.usdW].mag; e.usdCd = rand(0, 2); e.hp = e.hpMax = 3;
+    if (!USD.by[id] || i < 2) USD.by[id] = e; USD.us.push(e);
+  });
+  if (USD.by.us01) USD.by.us01.ukTag = '隊長 マギー・オコンネル'; if (USD.by.us19) USD.by.us19.ukTag = '早撃ちの名手 ヴィヴィアン・カラス';
+  USD.usTotal = USD.us.length || 1;
+  // 日本勢：竹束ごとに弓・刀・槍。名のある娘は殿のそば
+  const per = Math.max(3, Math.round((N - 6 - USD.guns.length * 2) / USD.bundles.length));
+  USD.bundles.forEach((B, bi) => {
+    for (let s = 0; s < per; s++) {
+      const kind = s % 3 === 0 ? 'archer' : 'mob', yari = kind === 'mob' && s % 3 === 2, c = s % 3, r = Math.floor(s / 3);
+      const off = [(c - 1) * 1.5, 1.4 + r * 1.5], e = usdSp(B.x + off[0], B.z + off[1], kind, 'blue', undefined, null, yari); if (!e) continue;
+      e.usdB = B; e.usdOff = off; e.hp = e.hpMax = e.hpMax + 2; B.units.push(e); if (kind === 'archer') B.archers.push(e); USD.jp.push(e);
+    }
+  });
+  USD.guns.forEach(G => { for (let c = 0; c < 2; c++) { const e = usdSp(G.x + (c ? 1.1 : -1.1), G.z + 0.8, 'mob', 'blue', undefined, null, false); if (e) { e.usdGun = G; G.crew.push(e); USD.jp.push(e); } } });
+  const nm = (x, z, girl, prof, tag) => { const e = usdSp(x, z, 'mob', 'blue', girl, prof, false); if (e) { e.hp = e.hpMax = 8; e.ukTag = tag; e.usdNamed = true; USD.jp.push(e); } return e; };
+  USD.omiya = GIRLS.omiya ? nm(2.2, 31, 'omiya', { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 }, '大宮 ひなた') : null;
+  USD.shizuka = nm(-2.4, 31.5, GIRLS.girl31 ? 'girl31' : undefined, { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0 }, '久遠 静香');
+  USD.reika = nm(4.4, 31.5, GIRLS.girl26 ? 'girl26' : undefined, { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1 }, '白石 麗華');
+  USD.maid = nm(-4.4, 31, undefined, null, '侍女'); if (USD.maid) USD.maid.ukTag = '侍女 ' + USD.maid.prof.name;
+  USD.jpTotal = USD.jp.length;
+}
+// ---- 頭脳（重い汎用の頭脳は自由になった者だけ） ----
+function usdBrain(e, dt) {
+  if (e.usdHide) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false; e.s.visible = false; return true; }
+  if (e.usdDuel) { e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; return true; }
+  if (!e.usdUnit || e.usdFree) return false;
+  e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
+  const p = e.s.position;
+  if (USD.phase !== 'battle') { const h = e.home, d = Math.hypot(h[0] - p.x, h[1] - p.z); if (d > 0.3) { const k = Math.min(d, e.speed * dt) / d; p.x += (h[0] - p.x) * k; p.z += (h[1] - p.z) * k; e.moving = true; e.faceWant = Math.atan2(h[0] - p.x, h[1] - p.z); } else e.faceWant = e.usdJp ? Math.PI : 0; return true; }
+  return e.usdJp ? usdJpBrain(e, dt) : usdUsBrain(e, dt);
+}
+function usdNear(e, list, R) { const p = e.s.position; let best = null, bd = R; for (const o of list) { const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } } return best ? [best, bd] : null; }
+function usdUsBrain(e, dt) {
+  const p = e.s.position, W = USD_W[e.usdW];
+  if ((e.usdT -= dt) <= 0) {   // 考える間隔
+    e.usdT = rand(0.5, 1.0);
+    const n = usdNear(e, USD.live.blue, W.range); let t = n ? n[0] : null, td = n ? n[1] : 1e9;
+    const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+    if (state === 'play' && !inHQ() && dP < W.range && (dP < td || Math.random() < 0.2)) { t = PLAYER_T; td = dP; }
+    e.tgt2 = t; e.tgtD = td;
+    if (n && n[1] < 2.3) { e.usdFree = true; e.passive = false; e.state = 'approach'; e.t = 0; if (Math.random() < 0.3) usdBark('b_close', 14); return false; }   // 斬り込まれたら白兵戦
+  }
+  const t = e.tgt2;
+  if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = null; e.usdT = 0; return true; }
+  if (e.usdW === 'colt' && t) {   // 拳銃組は 15m まで寄る
+    const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z);
+    if (d > 15 && e.usdRel == null) { const k = Math.min(d - 14, e.speed * 0.8 * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(tx - p.x, tz - p.z); }
+  } else if (!t) { const h = e.home, d = Math.hypot(h[0] - p.x, h[1] - p.z); if (d > 1) { const k = Math.min(d, e.speed * 0.7 * dt) / d; p.x += (h[0] - p.x) * k; p.z += (h[1] - p.z) * k; e.moving = true; e.faceWant = Math.atan2(h[0] - p.x, h[1] - p.z); } }
+  if (e.usdRel != null) { if ((e.usdRel -= dt) <= 0) { e.usdRel = null; e.ammo = W.mag; } return true; }   // 弾込め中
+  if ((e.usdCd -= dt) > 0 || !t) return true;
+  const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z;
+  if (Math.hypot(tx - p.x, tz - p.z) > W.range) return true;
+  usdShot(e, t); e.usdCd = rand(W.iv[0], W.iv[1]);
+  if (e.ammo <= 0) { e.usdRel = rand(W.rel[0], W.rel[1]); e.usdCd = 0; if (e.usdW !== 'spr' && Math.random() < 0.25) usdBark('b_reload', 12); }
+  return true;
+}
+function usdBlocked(ax, az, bx, bz) {
+  const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6, L = Math.sqrt(L2);
+  for (const c of covers) {
+    const t = ((c.x - ax) * dx + (c.z - az) * dz) / L2, s = t * L; if (s < 0.8 || L - s < 0.35) continue;
+    const px = ax + dx * t - c.x, pz = az + dz * t - c.z; if (px * px + pz * pz > c.r * c.r * 0.9) continue;
+    return c;
+  }
+  return null;
+}
+function usdShot(e, t) {
+  const p = e.s.position, tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z), W = e.usdW;
+  e.faceWant = e.face = Math.atan2(tx - p.x, tz - p.z); e.s.rotation.y = e.face;
+  const mz = new V3(p.x + Math.sin(e.face) * 0.6, (e.baseY || 0) + (e.figH || 1.6) * 0.72, p.z + Math.cos(e.face) * 0.6), dP = Math.hypot(mz.x - player.pos.x, mz.z - player.pos.z);
+  if (dP < 70 || Math.random() < 0.3) { puff(mz, 0xefeee8, W === 'colt' ? 3 : 5, 0.35, 1.0, 1.8); puff(mz, 0xffd27a, 2, 0.12, 2.4, 0.06); }
+  if (dP < 45) uk2Flash(mz, 0.6, 0.05);
+  const o = Sfx.at(mz, 260, 1.25); if (o) { const dl = dP / 340; Sfx.noiseBurst(W === 'colt' ? 0.15 : 0.24, 'lowpass', W === 'colt' ? 3400 : 2600, 220, 0.85, 0.8, dl, o); Sfx.tone('square', W === 'colt' ? 200 : 140, 46, 0.1, 0.2, dl, o); if (W === 'win') Sfx.tone('square', 900, 600, 0.03, 0.05, dl + 0.45, o); }   // ウィンチェスター：レバーの音
+  e.ammo--; USD.stats.shots = (USD.stats.shots || 0) + 1;
+  const blk = usdBlocked(mz.x, mz.z, tx, tz);
+  if (blk) { USD.stats.blocked = (USD.stats.blocked || 0) + 1; const q = new V3(blk.x, 0.9, blk.z); if (blk.type === 'bundle') { Sfx.impactBamboo(q); puff(q, 0xc5d6a4, 3, 0.2, 1.5, 0.4); if (blk.breakable && (blk.hp -= 0.5) <= 0) breakBundle(blk, 'quiet'); } else puff(q, 0xc9a27a, 3, 0.2, 1.4, 0.5); return; }
+  if (Math.random() < usdHitP(W, d)) {
+    USD.stats.hits = (USD.stats.hits || 0) + 1;
+    if (t.isPlayer) { if (!player.god) { hurtPlayer(Math.round(rand(10, 18))); popup((W === 'colt' ? 'コルト' : W === 'win' ? 'ウィンチェスター' : 'スプリングフィールド') + 'の弾が当たった！'); } }
+    else damageEnemy(t, 2, mz, false, null, e);
+  } else { const q = new V3(tx + rand(-1.2, 1.2), 0.1, tz + rand(-1.2, 1.2)); if (dP < 80) puff(q, 0xcdb88e, 3, 0.2, 1.6, 0.5); if (t.isPlayer && d < 60) Sfx.whoosh(new V3(tx, 1.5, tz), rand(0.3, 1.2)); }
+}
+function usdJpBrain(e, dt) {
+  const p = e.s.position;
+  if (e.usdGun) { e.faceWant = e.usdGun.g.rotation.y; const h = e.home, d = Math.hypot(h[0] - p.x, h[1] - p.z); if (d > 0.3) { const k = Math.min(d, e.speed * dt) / d; p.x += (h[0] - p.x) * k; p.z += (h[1] - p.z) * k; e.moving = true; } return true; }
+  const B = e.usdB;
+  if (!B || B.cv.broken || B.rush || USD.bt > 110) { e.usdFree = true; e.passive = false; e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; return false; }
+  const tx = B.cv.x + e.usdOff[0], tz = B.cv.z + e.usdOff[1], d = Math.hypot(tx - p.x, tz - p.z);
+  if (d > 0.25) { const k = Math.min(d, e.speed * 1.1 * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; }
+  e.faceWant = Math.PI;
+  const n = usdNear(e, USD.live.orange, 2.4); if (n) { e.usdFree = true; e.passive = false; e.state = 'approach'; return false; }
+  return true;
+}
+// ---- 竹束：押し立てて進み、25m で止まる。止まったら弓の斉射、弾込めの隙に斬り込む ----
+function usdBundleTick(B, dt) {
+  const cv = B.cv; if (cv.broken) return;
+  const live = B.units.filter(e => isUp(e) && !e.usdFree);
+  if (!live.length) return;
+  let nd = 1e9, near = null; for (const o of USD.live.orange) { const d = Math.hypot(o.s.position.x - cv.x, o.s.position.z - cv.z); if (d < nd) { nd = d; near = o; } }
+  if (!B.stop && !B.rush) {
+    if (nd <= 25 || cv.z < -20) { B.stop = true; B.stopT = USD.bt; }
+    else { const pushers = live.filter(e => Math.hypot(e.s.position.x - cv.x, e.s.position.z - (cv.z + 1.4)) < 3).length; if (pushers) { const v = 1.15 * dt; cv.z -= v; if (near) cv.x += clamp(near.s.position.x - cv.x, -1, 1) * 0.15 * dt; if (cv.mesh) cv.mesh.position.set(cv.x, cv.y || 0, cv.z); } }
+  }
+  // 弓：竹束の陰から山なりの斉射
+  if ((B.volT -= dt) <= 0) {
+    B.volT = rand(5, 6.5);
+    for (const a of B.archers) { if (!isUp(a) || a.usdFree) continue; const n = usdNear(a, USD.live.orange, 60); if (n) { a.faceWant = a.face = Math.atan2(n[0].s.position.x - a.s.position.x, n[0].s.position.z - a.s.position.z); setTimeout(() => { if (isUp(a) && isUp(n[0]) && USD.on) enemyShoot(a, n[0]); }, rand(0, 450)); } }
+  }
+  // 斬り込み：止まってから、近くの敵の 4 割以上が弾込め中、または 25m 以内に寄れたら
+  if (!B.rush && (B.stop || nd < 30)) {
+    const foes = USD.live.orange.filter(o => Math.hypot(o.s.position.x - cv.x, o.s.position.z - cv.z) < 45);
+    const rel = foes.filter(o => o.usdRel != null).length / Math.max(1, foes.length);
+    if ((B.stop && (rel >= 0.4 || USD.bt - B.stopT > 14)) || nd < 18) { B.rush = true; usdBark('b_rush', 20) || (USD.omiya && isUp(USD.omiya) && usdBark('b_omiya2', 20)); }
+  }
+}
+// ---- 破裂弾の大砲（日本側）：直撃はさせず手前・脇で破裂。破片は岩・竹束の陰で止まる ----
+function usdGunTick(G, dt) {
+  const crew = G.crew.filter(isUp); if (!crew.length || USD.phase !== 'battle') return;
+  if ((G.cd -= dt) > 0) return;
+  const C = USD.live.orange.map(o => [Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z), o]).filter(c => c[0] > 15 && c[0] < 120 && !USD.live.blue.some(b => Math.hypot(b.s.position.x - c[1].s.position.x, b.s.position.z - c[1].s.position.z) < 7) && Math.hypot(player.pos.x - c[1].s.position.x, player.pos.z - c[1].s.position.z) > 8);
+  if (!C.length) { G.cd = 2; return; }
+  G.cd = rand(10, 13);
+  const [d, t] = C[(Math.random() * C.length) | 0], tx = t.s.position.x, tz = t.s.position.z;
+  let ux = (G.x - tx) / d, uz = (G.z - tz) / d, sh = rand(2.5, 5), px = tx + ux * sh + uz * rand(-2.5, 2.5), pz = tz + uz * sh - ux * rand(-2.5, 2.5);
+  for (let k = 0; k < 4; k++) { if (!USD.live.orange.some(o => Math.hypot(o.s.position.x - px, o.s.position.z - pz) < 2.2)) break; px += ux * 1.6; pz += uz * 1.6; }
+  G.g.rotation.y = Math.atan2(tx - G.x, tz - G.z);
+  const air = Math.random() < 0.6, ring = new THREE.Mesh(UK2.ringG || (UK2.ringG = new THREE.RingGeometry(0.8, 1.1, 32)), uk2Mats().ring.clone()); ring.rotation.x = -Math.PI / 2; ring.position.set(px, 0.05, pz); ring.renderOrder = 3; stageRoot.add(ring);
+  USD.shells.push({ x: px, z: pz, y: air ? rand(2.4, 3.6) : 0.25, air, t: 0, T: 1.2 + d / 75, ring, whist: false });
+  const mz = new V3(G.x + Math.sin(G.g.rotation.y) * 1.7, 0.95, G.z + Math.cos(G.g.rotation.y) * 1.7), dP = Math.hypot(mz.x - player.pos.x, mz.z - player.pos.z);
+  puff(mz, 0xe9e6de, 10, 1.6, 1.8, 4.5); puff(mz, 0xffcf80, 3, 0.8, 3, 0.12); uk2Flash(mz, 3.5, 0.12);
+  const o = Sfx.at(mz, 520, 1.5); if (o) { const dl = dP / 340; Sfx.noiseBurst(1.4, 'lowpass', 600, 40, 0.95, 0.7, dl, o); Sfx.tone('sine', 56, 24, 1.1, 0.8, dl, o); }
+  USD.stats.guns = (USD.stats.guns || 0) + 1; if (!USD.said.b_cannon) usdBark('b_cannon', 0, true); else usdBark('b_cannon', 45);
+  for (const c of crew) c.faceWant = G.g.rotation.y;
+}
+function usdBurst(S) {
+  const P = new V3(S.x, S.y, S.z), G0 = new V3(S.x, 0.15, S.z), dP = Math.hypot(S.x - player.pos.x, S.z - player.pos.z);
+  uk2Flash(P, S.air ? 5.5 : 4, 0.14); puff(P, 0xfff0c0, 5, 0.6, 7, 0.12); puff(P, 0x3a3631, S.air ? 14 : 10, S.air ? 1.5 : 1.2, 2.2, 3.2); puff(P, 0x7d776c, 9, 1.0, 3.6, 2.2); puff(P, 0x1e1e1e, 22, 0.05, 15, 0.45);
+  if (!S.air || S.y < 3) { puff(G0, 0xcdb88e, 18, 1.0, 5.5, 2.0); puff(G0, 0xb9a57c, 10, 0.25, 8, 1.2); }
+  const o = Sfx.at(P, 320, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); Sfx.noiseBurst(0.18, 'bandpass', 3000, 900, 0.5, 1, 0, o); }
+  if (dP < 26) player.shake = Math.max(player.shake, clamp(0.5 - dP * 0.018, 0.05, 0.45));
+  const R = S.air ? 9 : 7.5; let nh = 0;
+  for (const e of USD.live.orange.slice()) {
+    if (!isUp(e)) continue; const d = Math.hypot(e.s.position.x - S.x, e.s.position.z - S.z); if (d > R) continue;
+    if (usdBlocked(S.x, S.z, e.s.position.x, e.s.position.z)) continue;   // 岩・竹束の陰は破片が届かない
+    const k = 1 - d / R; if (Math.random() < 0.15 + 0.6 * k * k && nh++ < 4) { USD.stats.frag = (USD.stats.frag || 0) + 1; damageEnemy(e, k > 0.75 ? 3 : k > 0.4 ? 2 : 1, P, false, null, null); }
+  }
+  if (Math.random() < 0.5) usdBark('b_shell', 25);
+}
+function usdShellTick(dt) {
+  for (const S of USD.shells) {
+    S.t += dt;
+    if (!S.whist && S.T - S.t < 1.0) { S.whist = true; const o = Sfx.at(new V3(S.x, 2, S.z), 90, 1.0); if (o) { Sfx.tone('sine', 1700, 480, 1.0, 0.07, 0, o); Sfx.noiseBurst(1.0, 'bandpass', 2600, 700, 0.05, 3, 0, o); } }
+    const k = S.t / S.T; S.ring.material.opacity = 0.25 + 0.55 * k; S.ring.scale.setScalar(1.6 - 0.7 * k + Math.sin(time * 14) * 0.05);
+    if (S.t >= S.T) { usdBurst(S); stageRoot.remove(S.ring); S.ring.material.dispose(); S.done = true; }
+  }
+  USD.shells = USD.shells.filter(S => !S.done);
+  for (const F of UK2.flashes) { if (F.t >= F.life) { F.s.visible = false; continue; } F.t += dt; const k = F.t / F.life; F.s.scale.setScalar(F.size * (0.6 + k)); F.s.material.opacity = Math.max(0, 1 - k); }
+}
+// ---- 会見と決闘 ----
+const USD_CHAMP = {   // 勝率（殿以外）
+  fumi: { name: '綾瀬 文乃', p: 0.45 }, omiya: { name: '大宮 ひなた', p: 0.55 }, sec2: { name: '早瀬 ことね', p: 0.3 },
+  shizuka: { name: '久遠 静香', p: 0.65 }, reika: { name: '白石 麗華', p: 0.55 }, maid: { name: '侍女', p: 0.35 },
+};
+function usdParley() {
+  USD.phase = 'parley';
+  const S = k => ({ say: k });
+  const pick = [];
+  const add = (k, label, sub) => pick.push({ label, sub, then: [S('k_' + k), { fn: () => usdChoose(k) }, S('r_' + k), { fn: () => usdDuelSetup() }] });
+  if (fumi.e) add('fumi', '綾瀬 文乃', '秘書課・弓の名手。落ち着いている');
+  if (USD.omiya) add('omiya', '大宮 ひなた', 'テニスとバドミントンで鍛えた反応');
+  if (sec2.e) add('sec2', '早瀬 ことね', '秘書課・気が小さい');
+  if (USD.shizuka) add('shizuka', '久遠 静香', '冷静沈着な長身');
+  if (USD.reika) add('reika', '白石 麗華', '自信家・度胸がある');
+  if (USD.maid) add('maid', '侍女 ' + USD.maid.prof.name, '名もない侍女');
+  pick.push({ label: '殿自ら', sub: '早撃ち：10 で振り向いたら、すぐクリック／タップ／Space', then: [S('r_self_k'), S('r_self'), { fn: () => usdChoose('king') }, S('k_take'), { fn: () => usdDuelSetup() }] });
+  ukDlg([{ wait: 1.5 }, S('o_sumi'), { fn: () => { const L = USD.by.us01; if (L) { L.home = [0, -8]; } } }, { wait: 2.5 }, S('p1'), S('p2'), S('p3'), S('p4'), S('p5'), S('k_pick'), { choice: pick }]);
+}
+function usdChoose(k) {
+  USD.champK = k; USD.log.push('champ:' + k);
+  if (k === 'king') { USD.champ = null; return; }
+  let e = k === 'fumi' ? fumi.e : k === 'sec2' ? sec2.e : USD[k];
+  if (k === 'fumi' || k === 'sec2') {   // 秘書課は本陣の頭脳で動くので、決闘には同じ娘の代役を出し、本人は隠す
+    const o = e, gid = k === 'fumi' ? FUMI_ID : SEC2_ID;
+    const st = usdSp(player.pos.x + 1.5, player.pos.z - 1, 'mob', 'blue', gid, { name: k === 'fumi' ? '秘書課 綾瀬 文乃' : '秘書課 早瀬 ことね', pers: o.prof.pers, cm: o.prof.cm || (o.figH * 100), vv: o.prof.vv }, false);
+    if (st) { st.figH = o.figH; st.ukTag = st.prof.name; st.usdStand = o; o.usdHide = true; USD.stand = st; e = st; }
+  }
+  USD.champ = e;
+}
+function usdDuelSetup() {
+  const us = USD.by.us19 || USD.us.find(isUp); USD.duelUs = us;
+  const D = USD.d = { t: 0, n: 0, st: 'toMid', king: USD.champK === 'king' };
+  if (us) { us.usdDuel = true; }
+  if (USD.champ) USD.champ.usdDuel = true;
+  if (USD.by.us01) USD.by.us01.home = [-6, -4];
+  USD.phase = 'duel'; popup('決闘の場へ――背中合わせに立つ'); popupTimer = 2.5;
+  if (D.king) { player.pos.set(0, 0, 0.45); player.yaw = Math.PI; player.pitch = 0; }
+}
+function usdCountEl() {
+  let el = $('usdCount'); if (el) return el;
+  el = document.createElement('div'); el.id = 'usdCount';
+  el.style.cssText = 'position:fixed;left:50%;top:28%;transform:translate(-50%,-50%);font:700 96px serif;color:#fff3dc;text-shadow:0 0 18px #a0401a,0 3px 6px #000;pointer-events:none;z-index:40;display:none;text-align:center';
+  document.body.appendChild(el); return el;
+}
+function usdWalkTo(e, x, z, sp, dt) { const p = e.s.position, d = Math.hypot(x - p.x, z - p.z); if (d < 0.05) { e.moving = false; return true; } const k = Math.min(d, sp * dt) / d; p.x += (x - p.x) * k; p.z += (z - p.z) * k; e.moving = true; return false; }
+function usdDuelTick(dt) {
+  const D = USD.d; if (!D) return; D.t += dt;
+  const us = USD.duelUs, ch = USD.champ, el = usdCountEl();
+  const jz = D.king ? player.pos.z : ch ? ch.s.position.z : 0;
+  if (D.king && D.st !== 'done') { player.pos.x = 0; if (D.st !== 'draw' && D.st !== 'shot') player.yaw = Math.PI; }
+  if (D.st === 'toMid') {
+    let a = true;
+    if (us) { a = usdWalkTo(us, 0, -0.45, 2.6, dt) && a; us.faceWant = 0; if (us.moving) us.faceWant = Math.atan2(-us.s.position.x, -0.45 - us.s.position.z); }
+    if (ch) { a = usdWalkTo(ch, 0, 0.45, 2.6, dt) && a; if (ch.moving) ch.faceWant = Math.atan2(-ch.s.position.x, 0.45 - ch.s.position.z); }
+    if (a || D.t > 14) { D.st = 'rules'; D.t = 0; if (us) us.faceWant = Math.PI; if (ch) ch.faceWant = 0; ukDlg([{ say: 'd_rules' }], () => { D.st = 'count'; D.t = 0; D.n = 0; }); }
+    return;
+  }
+  if (D.st === 'rules') { if (us) us.faceWant = Math.PI; if (ch) ch.faceWant = 0; return; }
+  if (D.st === 'count') {
+    const step = 1.25;   // 1 つ数えるごとに 1 歩（1.1m）ずつ離れる
+    if (D.t >= step) { D.t -= step; D.n++; el.textContent = D.n; el.style.display = 'block'; el.style.fontSize = D.n === 10 ? '120px' : '96px'; usdVoice('c' + D.n, 3); D.from = [us ? us.s.position.z : 0, jz];
+      if (D.n === 10) { D.st = 'draw'; D.t = 0; D.oppT = D.king ? rand(0.36, 0.7) : rand(0.25, 0.6); if (D.king) { USD.wantDraw = true; el.innerHTML = '10<small style="display:block;font-size:34px">振り向いて撃て！（クリック／タップ／Space）</small>'; } } }
+    if (D.n >= 1 && D.n < 10 && D.t < 0.8) { const v = 1.1 / 0.8 * dt; if (us) { us.s.position.z -= v; us.moving = true; us.faceWant = Math.PI; } if (D.king) player.pos.z += v; else if (ch) { ch.s.position.z += v; ch.moving = true; ch.faceWant = 0; } }
+    else { if (us) us.moving = false; if (ch) ch.moving = false; }
+    return;
+  }
+  if (D.st === 'draw') {
+    if (D.king) { if (D.t >= D.oppT + 0.02) usdDuelEnd(false, D.t); return; }
+    if (D.t > 0.25) { if (us) us.faceWant = us.face = 0; if (ch) ch.faceWant = ch.face = Math.PI; }
+    if (D.t > 0.25 + D.oppT) usdDuelEnd(Math.random() < (USD_CHAMP[USD.champK] || { p: 0.5 }).p, 0);
+  }
+  if (D.st === 'shot') { D.t2 = (D.t2 || 0) + dt; if (D.t2 > 1.6 && !D.post) { D.post = true; usdAfterDuel(); } }
+}
+function usdDraw() {   // 殿の早撃ち
+  const D = USD.d; if (!D || !D.king) return;
+  if (D.st === 'count') { popup('まだだ！ 十まで待て'); return; }
+  if (D.st !== 'draw') return;
+  USD.wantDraw = false; player.yaw = 0;
+  const rt = D.t + rand(0, 0.12); USD.log.push('draw:' + rt.toFixed(2) + '/' + D.oppT.toFixed(2));
+  usdDuelEnd(rt < D.oppT, rt);
+}
+function usdGunFx(from, to) {
+  const mz = from.clone().setY(1.3); puff(mz, 0xefeee8, 4, 0.35, 1.0, 1.8); uk2Flash(mz, 0.7, 0.06);
+  const o = Sfx.at(mz, 260, 1.3); if (o) { Sfx.noiseBurst(0.16, 'lowpass', 3400, 220, 0.9, 0.8, 0, o); Sfx.tone('square', 200, 46, 0.1, 0.22, 0, o); }
+}
+function usdDuelEnd(jpWin, rt) {
+  const D = USD.d; if (!D || D.st === 'shot') return;
+  D.st = 'shot'; D.t2 = 0; USD.wantDraw = false; USD.duelWin = jpWin;
+  const us = USD.duelUs, ch = USD.champ, el = usdCountEl();
+  const jpPos = D.king ? player.pos.clone() : ch ? ch.s.position.clone() : new V3(0, 0, 11);
+  const usPos = us ? us.s.position.clone() : new V3(0, 0, -11);
+  if (us) us.faceWant = us.face = 0; if (ch) ch.faceWant = ch.face = Math.PI; if (D.king) player.yaw = 0;
+  usdGunFx(jpWin ? jpPos : usPos);
+  setTimeout(() => { if (USD.on) usdGunFx(jpWin ? usPos : jpPos); }, 140);   // 負けた方の弾は外れる
+  el.innerHTML = jpWin ? '命中' : '……'; setTimeout(() => { el.style.display = 'none'; }, 1400);
+  if (jpWin) { if (us) { us.usdDuel = false; us.usdFree = true; damageEnemy(us, 99, jpPos, false, null, ch || null); usdVoice('cry_us', 6); } popup(D.king ? `早撃ち ${rt.toFixed(2)} 秒――殿の勝ち！` : `${USD_CHAMP[USD.champK].name}の勝ち！`); }
+  else {
+    if (D.king) { popup('殿が撃たれた……'); popupTimer = 4; player.shake = 0.6; USD.phase = 'lose'; USD.endT = 0; USD.kingShot = true; return; }
+    if (ch) { ch.usdDuel = false; ch.usdFree = true; damageEnemy(ch, 99, usPos, false, null, us || null); usdVoice('cry_' + USD.champK, 6); }
+    popup(`${USD_CHAMP[USD.champK].name}が倒れた……`);
+  }
+  popupTimer = 3.5;
+}
+function usdAfterDuel() {
+  const S = k => ({ say: k }), win = USD.duelWin;
+  const steps = win ? [S('d_jpwin'), S('d_return'), { fn: () => popup('借りたコルトを返した') }] : [S('d_uswin'), S('d_uswin_s')];
+  ukDlg(steps, () => usdBattle());
+}
+function usdBattle() {
+  USD.phase = 'battle'; USD.bt = 0; USD.d = null;
+  const ch = USD.champ, us = USD.duelUs;
+  if (ch && isUp(ch)) { ch.usdDuel = false; if (ch.usdStand) { const o = ch.usdStand; o.usdHide = false; o.s.visible = true; const i = enemies.indexOf(ch); if (i >= 0) enemies.splice(i, 1); disposeNpc(ch); USD.stand = null; } else ch.usdFree = true; }
+  else if (ch && ch.usdStand) { const o = ch.usdStand; if (USD.champK === 'fumi') { removeFumi(); fumi.dead = true; } else { removeSec2(); sec2.dead = true; } o.usdHide = false; }
+  if (us && isUp(us)) { us.usdDuel = false; us.home = [2, -27]; }
+  if (USD.by.us01) USD.by.us01.home = [0, -27];
+  for (const e of USD.us) if (isUp(e)) e.usdCd = rand(0.5, 3);
+  showBanner('総力戦', '竹束を押し立てて進め！'); bannerTimer = 3.5;
+  usdBark('b_start', 0, true); setTimeout(() => { if (USD.on && USD.phase === 'battle') usdBark('b_bundle', 0, true); }, 3800);
+}
+function usdKey() { if (UK.dlg) { if (!UK.choice) ukDlgSkip(); return true; } return false; }
+addEventListener('keydown', ev => { if (USD.on && USD.d && USD.d.king && state === 'play' && (ev.code === 'Space' || ev.code === 'KeyF' || ev.code === 'Enter')) { ev.preventDefault(); ev.stopImmediatePropagation(); usdDraw(); } }, true);
+addEventListener('pointerdown', ev => { if (USD.on && USD.d && USD.d.king && state === 'play' && (USD.d.st === 'draw' || USD.d.st === 'count') && !(ev.target && ev.target.closest && ev.target.closest('button'))) { ev.preventDefault(); ev.stopImmediatePropagation(); usdDraw(); } }, true);
+function usdCounts() { return { foe: USD.us.filter(isUp).length, ally: USD.jp.filter(isUp).length }; }
+function usdPhaseLabel() {
+  if (USD.phase === 'win') return 'アメリカ西部編 第一幕「荒野の決闘」 勝利';
+  if (USD.phase === 'battle') return '総力戦 ― アメリカ勢を半数まで減らせ';
+  if (USD.phase === 'duel') return '決闘 ― 背中合わせに十歩';
+  return 'アメリカ西部編 第一幕「荒野の決闘」';
+}
+function usdReset() {
+  USD.on = true; USD.phase = 'open'; USD.t = 0; USD.bt = 0; USD.ended = false; USD.endT = 0; USD.said = {}; USD.shells = []; USD.stats = {}; USD.log = []; USD.d = null; USD.champ = null; USD.champK = null; USD.stand = null; USD.wantDraw = false; USD.kingShot = false;
+  CFG.maxBodies = USD_MOB ? 70 : 160;
+  player.pos.set(0, 0, 30); player.yaw = 0; player.pitch = -0.02;
+  UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
+  const el = $('usdCount'); if (el) el.style.display = 'none';
+}
+function usdStart() {
+  usdSpawn();
+  showBanner('アメリカ西部編 第一幕', '荒野の決闘'); bannerTimer = 5;
+  usdParley();
+}
+function updateUsd(dt) {
+  if (!USD.on) return;
+  USD.t += dt; ukDlgTick(dt);
+  USD.live = { blue: [], orange: [] };
+  for (const e of enemies) if (isUp(e) && !e.medic && !e.usdHide && !e.usdDuel && USD.live[e.team]) USD.live[e.team].push(e);
+  for (const T of USD.tw) { const g = T.g; g.position.x += T.v * dt; g.position.z += Math.sin(USD.t * 0.3 + T.ph) * 0.4 * dt; g.position.y = 0.45 + Math.abs(Math.sin(USD.t * 2.6 + T.ph)) * 0.35; g.rotation.z -= T.v * dt / 0.45; if (g.position.x > 110) { g.position.x = -110; g.position.z = rand(-60, 60); } }
+  usdShellTick(dt);
+  player.pos.x = clamp(player.pos.x, -95, 95); player.pos.z = clamp(player.pos.z, -85, 85);
+  if (state !== 'play') return;
+  if (USD.phase === 'duel') usdDuelTick(dt);
+  if (USD.phase === 'battle') {
+    USD.bt += dt;
+    for (const B of USD.bundles) usdBundleTick(B, dt);
+    for (const G of USD.guns) usdGunTick(G, dt);
+    if (USD.bt > 20 && Math.random() < dt / 30) usdBark('b_winch', 40);
+    if (USD.bt > 8 && USD.omiya && isUp(USD.omiya) && Math.random() < dt / 35) usdBark('b_omiya1', 50);
+    const c = usdCounts();
+    if (c.foe <= Math.ceil(USD.usTotal * 0.5)) { USD.phase = 'win'; USD.endT = 0; popup('アメリカ勢が半数を割った！ 退いていく'); popupTimer = 4; usdBark('win', 0, true); }
+    else if (c.ally === 0) { USD.phase = 'lose'; USD.endT = 0; usdBark('lose', 0, true); }
+  } else if (USD.phase === 'win') {
+    USD.endT += dt;
+    for (const e of USD.us) if (isUp(e) && !e.usdFree) { e.home = [e.home[0], -90]; }
+    if (USD.endT > 5 && !USD.said.win_s) usdBark('win_s', 0, true);
+    if (USD.endT > 12 && !USD.ended) { USD.ended = true; gameOver(true); }
+  } else if (USD.phase === 'lose') { USD.endT += dt; if (USD.endT > (USD.kingShot ? 3 : 5) && !USD.ended) { USD.ended = true; if (USD.kingShot) player.hp = 0; gameOver(false); } }
+}
+if (TEST) window.__usd = { USD, usdDraw, usdChoose, usdDuelSetup, usdBattle, pick: i => ukPick(i), skip: () => ukDlgSkip() };
 
 function u3Lv(x, z, y) {
   if (y < 1.4) return 'B';
@@ -12655,7 +13131,7 @@ function loadStage(name) {
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name);
-  if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -12850,7 +13326,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -12921,6 +13397,25 @@ const EXTRA_GIRLS = {
   fr08: { type: 'fr', prof: { name: 'レア・フォンテーヌ', pers: '好戦的', cm: 163, vv: 2 } },
   fr09: { type: 'fr', prof: { name: 'マノン・ジラール', pers: '陽気', cm: 162, vv: 1 } },
   fr10: { type: 'fr', prof: { name: 'セヴリーヌ・デュボワ', pers: '好戦的', cm: 171, vv: 0 } },
+  // アメリカ西部編（type 'us'：他のステージには出ない。us08・us20 は使わない）
+  us01: { type: 'us', prof: { name: 'マギー・オコンネル', pers: '好戦的', cm: 168, vv: 1 } },
+  us02: { type: 'us', prof: { name: 'グレタ・ホフマン', pers: '冷静', cm: 176, vv: 0 } },
+  us03: { type: 'us', prof: { name: 'エミリー・ハーパー', pers: '慎重', cm: 165, vv: 1 } },
+  us04: { type: 'us', prof: { name: 'イングリッド・ラーセン', pers: '冷静', cm: 180, vv: 0 } },
+  us05: { type: 'us', prof: { name: 'イサベル・ベガ', pers: '陽気', cm: 163, vv: 2 } },
+  us06: { type: 'us', prof: { name: 'ローザ・マリーノ', pers: '陽気', cm: 155, vv: 2 } },
+  us07: { type: 'us', prof: { name: 'セレスト・ブランシャール', pers: '慎重', cm: 162, vv: 1 } },
+  us09: { type: 'us', prof: { name: 'ウィノナ・グレイ', pers: '冷静', cm: 165, vv: 1 } },
+  us10: { type: 'us', prof: { name: 'メイ・リン', pers: '慎重', cm: 154, vv: 2 } },
+  us11: { type: 'us', prof: { name: 'ジョジー・カーター', pers: '陽気', cm: 164, vv: 2 } },
+  us12: { type: 'us', prof: { name: 'エレノア・プライス', pers: '冷静', cm: 177, vv: 0 } },
+  us13: { type: 'us', prof: { name: 'ハンナ・コワルスキ', pers: '慎重', cm: 166, vv: 1 } },
+  us14: { type: 'us', prof: { name: 'フィオナ・マクリーン', pers: '好戦的', cm: 156, vv: 2 } },
+  us15: { type: 'us', prof: { name: 'アニカ・デ・フリース', pers: '陽気', cm: 178, vv: 1 } },
+  us16: { type: 'us', prof: { name: 'ルシア・ガルサ', pers: '臆病', cm: 155, vv: 2 } },
+  us17: { type: 'us', prof: { name: 'ミリアム・ローゼン', pers: '冷静', cm: 167, vv: 1 } },
+  us18: { type: 'us', prof: { name: 'レイラニ・カハレ', pers: '陽気', cm: 166, vv: 2 } },
+  us19: { type: 'us', prof: { name: 'ヴィヴィアン・カラス', pers: '好戦的', cm: 178, vv: 0 } },
   // 大宮 ひなた（おおみや ひなた。西園寺の従姉妹・殿の父方のハトコ。147cm）
   omiya: { type: 'omiya', prof: { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 } },
   sec5: { type: 'mob', anyRole: true, prof: { name: '小日向 ひより', pers: '慎重', cm: 152, vv: 2, pitch: 1.3 } },   // 小柄
@@ -14805,7 +15300,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on) return;
+  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on) return;
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -16827,6 +17322,7 @@ function updateEnemies(dt) {
     e.defending = e.armed && !e.hold && !(e.polishT > 0) && !(e.secretary && sec.mode !== 'hq') ? secThreat(e) : null;   // 護衛中の秘書は通常の戦い方
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
+    else if (USD.on && usdBrain(e, dt)) { /* アメリカ西部編：持ち場・竹束・銃 */ }
     else if (FRS.on && frsBrain(e, dt)) { /* フランス人形編 第一幕：持ち場の砲員 */ }
     else if (UK2.on && !FRS.on && uk2Brain(e, dt)) { /* 第二幕：砲撃の間は陰へ・戦列と方陣・退却・船の上 */ }
     else if (UK7.on && uk7Brain(e, dt)) { /* 第七幕：祝勝会（戦いは無い） */ }
@@ -17413,7 +17909,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -17430,6 +17926,7 @@ function updateHud(dt) {
   if (UK4.on) { const c = uk4Counts(), g = uk4Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第四幕：同じ「残敵・味方」
   if (UK3.on) { const c = uk3Counts(), g = uk3Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第三幕：同じ「残敵・味方」
   if (FRS.on) { const c = frsCounts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}`); }
+  if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
@@ -17721,7 +18218,7 @@ function setupTouch() {
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
-  tapBtn('bTalk', () => { if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
+  tapBtn('bTalk', () => { if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
@@ -17774,6 +18271,7 @@ addEventListener('keydown', e => {
     if (/^Digit/.test(e.code)) return;
   }
   if (FRS.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && frsKey()) return;
+  if (USD.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && usdKey()) return;
   if (UK2.on && UK.dlg && (e.code === 'KeyE' || e.code === 'Enter')) { ukDlgSkip(); return; }
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
@@ -17902,6 +18400,7 @@ function resetGame() {
   else if (builtStage === 'beach') beachReset();   // 殿の舟の屋形の中
   else if (builtStage === 'ukMeet') ukReset();   // 英国淑女編：殿の小早
   else if (builtStage === 'ukHarbor') uk2Reset();   // 英国淑女編 第二幕：町の通り
+  else if (builtStage === 'usDuel') usdReset();   // アメリカ西部編 第一幕：日本の陣の前
   else if (builtStage === 'frSea') frsReset();   // フランス人形編 第一幕：殿の船の甲板
   else if (builtStage === 'ukNight') uk3Reset();
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();
@@ -17917,14 +18416,15 @@ function resetGame() {
 function startGame() {
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
-  if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
+  if (builtStage === 'usDuel') { spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); for (const m of medics.blue) spawnMedic('blue', m); for (const A of aides) spawnAide(A); }   // アメリカ西部編：秘書課・救護班・補佐役は本陣に
+  else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
@@ -17932,13 +18432,14 @@ function startGame() {
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   SITU.reset(); SITU.preload(); saiDownPreload();
   state = 'play'; lock();
-  if (builtStage === 'frSea') frsStart();   // フランス人形編 第一幕：いきなり砲撃戦
+  if (builtStage === 'usDuel') usdStart();   // アメリカ西部編 第一幕：会見→決闘→総力戦
+  else if (builtStage === 'frSea') frsStart();   // フランス人形編 第一幕：いきなり砲撃戦
   else if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
   else if (builtStage === 'ukHarbor') uk2Start();   // 第二幕
   else if (builtStage === 'ukParty') uk7Start();   // 第七幕：祝勝会
@@ -18205,7 +18706,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (USD.on) updateUsd(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();
@@ -18217,6 +18718,7 @@ function frame(now) {
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }
     else if (builtStage === 'ukPrincess') { if (UK4.on) updateUk4(0); camera.position.set(58 + Math.sin(time * 0.04) * 12, 14, 70); camera.lookAt(0, 2, 10); }   // 第四幕：浜の陣と沖の艦隊
     else if (builtStage === 'ukNight') { if (UK3.on) updateUk3(0); camera.position.set(30 + Math.sin(time * 0.04) * 10, 9, 46); camera.lookAt(0, 4, 0); }   // 第三幕：闇の海から錨泊の船を望む
+    else if (builtStage === 'usDuel') { camera.position.set(Math.sin(time * 0.05) * 30, 7, 40); camera.lookAt(0, 1, -30); }   // アメリカ西部編：日本の陣から荒野を
     else if (builtStage === 'frSea') { camera.position.set(Math.sin(time * 0.05) * 18, 9, 22); camera.lookAt(0, 0, -90); }   // フランス人形編 第一幕：殿の船から沖の艦隊
     else if (builtStage === 'ukHarbor') { if (UK2.on) updateUk2(0); camera.position.set(Math.sin(time * 0.05) * 22, 10, 44); camera.lookAt(0, 3, -50); }   // 第二幕：町から沖の船を望む
     else if (builtStage === 'ukMeet') { if (UK.on) updateUk(0); camera.position.set(Math.sin(time * 0.05) * 16, 5, 34 + Math.cos(time * 0.05) * 4); camera.lookAt(0, 6, 0); }   // 英国淑女編：沖からガレオン船を望む

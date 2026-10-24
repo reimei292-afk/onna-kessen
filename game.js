@@ -10941,7 +10941,7 @@ function campSurvivors() {
   }
   return s;
 }
-function campHas(k) { return CAMP.solo || !CAMP.surv || (CAMP.surv.named || []).includes(k); }
+function campHas(k) { return CAMP.solo || !CAMP.surv || !CAMP.surv.named || CAMP.surv.named.includes(k); }
 // 生き残りを同じ顔・名前で呼び戻す（max 人まで）。f(i) は [x, z]
 function campSurvSpawn(max, f) {
   const L = (!CAMP.solo && CAMP.surv && CAMP.surv.list) || [], out = [];
@@ -11114,9 +11114,13 @@ function campUsBrain(e, dt) {
   if ((e.usdT -= dt) <= 0) {
     e.usdT = rand(0.45, 0.9);
     const R = campRange(e.usdW === 'colt' ? 40 : 60);
-    const n = campNear(e, CAMP.live.blue, R); let t = n ? n[0] : null, td = n ? n[1] : 1e9;
+    let t = null, td = 1e9;
+    if (CASTLE.on) {   // 城：塀と狭間の向こうで見える相手（近い順に数人まで確かめる）
+      const C = []; for (const b of CAMP.live.blue) { if (b.hiddenAmb) continue; const d = Math.hypot(b.s.position.x - p.x, b.s.position.z - p.z); if (d < R) C.push([d, b]); }
+      C.sort((a, b) => a[0] - b[0]); for (let i = 0; i < C.length && i < 6; i++) if (C[i][0] < 2.4 || castleLOS(e, C[i][1])) { t = C[i][1]; td = C[i][0]; break; }
+    } else { const n = campNear(e, CAMP.live.blue, R); if (n) { t = n[0]; td = n[1]; } }
     const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
-    if (state === 'play' && !inHQ() && dP < R && (dP < td * 0.8 || Math.random() < 0.1)) { t = PLAYER_T; td = dP; }
+    if (state === 'play' && !inHQ() && dP < R && (dP < td * 0.8 || Math.random() < 0.1) && (!CASTLE.on || castleLOS(e, PLAYER_T))) { t = PLAYER_T; td = dP; }
     e.tgt2 = t; e.tgtD = td;
   }
   let t = e.tgt2; if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = t = null; e.usdT = 0; }
@@ -11262,8 +11266,8 @@ function casGoal(e) {
     const viaCause = (x, z) => (p.z < -9.4 && Math.abs(p.x) > 2.4) ? [clamp(p.x, -2, 2), -10] : [x, z];
     if (C.charge && C.charge.t > 0) return { pt: viaCause(clamp(p.x, -2.4, 2.4), -8.5), hold: true, sp: 1.25 };   // 導火線：離れて伏せる
     if (e.usSap) return { pt: viaCause(e.lane * 1.5, -1.2), sp: 1.25 };
-    if (e.usLadMan) { const L = e.usLadMan; if (L.up) { e.usLadMan = null; e.usLadUse = L; } else return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.0 : -2.6), sp: 1.2 }; }
-    if (e.usLadUse && e.usLadUse.up) { const L = e.usLadUse; return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.1 : -2.6), sp: 1.2 }; }
+    if (e.usLadMan) { const L = e.usLadMan; if (L.up) { e.usLadMan = null; e.usLadUse = L; } else return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.6 : -2.6), sp: 1.2 }; }
+    if (e.usLadUse && e.usLadUse.up) { const L = e.usLadUse; return { pt: viaCause(p.z > -3.5 ? L.x : clamp(p.x, -2, 2), p.z > -3.5 ? -1.7 : -2.6), sp: 1.2 }; }
     return { pt: viaCause(clamp(e.musX * 0.4, -2.4, 2.4), -2.8), hold: true, sp: 1.2 };
   }
   // 小銃：竹束の列（前へ跳ぶたびに次の列）
@@ -11288,9 +11292,9 @@ function casTick(dt) {
   }
   // 梯子：係が塀の下に着いたら立てる。立てた梯子を使う者は順に上る
   for (const L of C.lad) {
-    if (!L.up && L.man && isUp(L.man) && Math.hypot(L.man.s.position.x - L.x, L.man.s.position.z + 1.0) < 0.9) { L.up = true; L.m = usLadderMesh(L.x, -0.75, 0); usOrder(L.man, 'u_lad', 6); C.ladN = (C.ladN || 0) + 1; }
+    if (!L.up && L.man && isUp(L.man) && Math.hypot(L.man.s.position.x - L.x, L.man.s.position.z + 1.6) < 1.5) { L.up = true; L.m = usLadderMesh(L.x, -0.75, 0); usOrder(L.man, 'u_lad', 6); C.ladN = (C.ladN || 0) + 1; }
     if (L.up && !L.man) L.man = null;
-    if (L.up && (!L.cT || time - L.cT > 2.8)) { const c = CAMP.live.orange.find(o => (o.usLadUse === L || o.usLadMan === L) && !o.usClimb && !o.usInside && Math.hypot(o.s.position.x - L.x, o.s.position.z + 1.1) < 1.0); if (c) { L.cT = time; c.usClimb = { t: 0, x: L.x, z0: -1.0, z1: 1.3 }; c.usLadUse = null; c.usLadMan = null; } }
+    if (L.up && (!L.cT || time - L.cT > 2.8)) { const c = CAMP.live.orange.find(o => (o.usLadUse === L || o.usLadMan === L) && !o.usClimb && !o.usInside && Math.hypot(o.s.position.x - L.x, o.s.position.z + 1.7) < 1.6); if (c) { L.cT = time; c.usClimb = { t: 0, x: L.x, z0: -1.1, z1: 1.3 }; c.usLadUse = null; c.usLadMan = null; } }
   }
   // 爆薬：門の前に着いた係が仕掛ける → 導火線 6 秒 → 破門
   if (CASTLE.phase === 0 && !C.charge) { const s = CAMP.live.orange.find(o => o.usSap && Math.abs(o.s.position.x) < 2.6 && o.s.position.z > -2.2 && o.s.position.z < 0); if (s) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.4), new THREE.MeshLambertMaterial({ color: 0x5a4632 })); m.position.set(clamp(s.s.position.x, -1, 1), 0.2, -0.5); stageRoot.add(m); C.charge = { t: 6, m }; usOrder(s, 'u_dem', 2); } }
@@ -12501,7 +12505,7 @@ function yjEscTick(dt) {
 }
 // ==== 流れ：始め・段ごとの初期化・毎フレーム・勝ち負け・結果 ====
 function campInit(solo) {
-  Object.assign(CAMP, { on: true, run: true, solo: !!solo, ph: 0, t: 0, said: {}, by: {}, log: [], sum: {}, kills: 0, frozen: false, switching: false, ended: false, ending: false, surv: {}, stopTot: 0, usAll: 0, endText: null, pitN: 0 });
+  Object.assign(CAMP, { on: true, run: true, solo: !!solo, ph: 0, t: 0, said: {}, by: {}, log: [], sum: {}, kills: 0, frozen: false, switching: false, ended: false, ending: false, surv: {}, stopTot: 0, usAll: 0, endText: null, pitN: 0, usGuns: [], cas: null, usGoal: null, usObj: null, usCov: null, usSqCur: null, usStorm: {}, aud: {}, uoLog: {}, uoT: {}, brT: 0, usGunShots: 0, usStormN: 0, usClimbed: 0, bayoN: 0, usFrag: 0, protN: 0 });
   CAMP.title = solo ? '山城の守り' : 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」';
   CAMP.oldMode = stageModes.castle;
   campFadeOff();

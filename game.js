@@ -8889,6 +8889,7 @@ function ukSpeak(key) {
   const nm = P ? `${P.name}<small>${P.en}・${P.role}</small>` : (UK_WHO_NAME[L.who] || '');
   const pic = e ? portraitOf(e.spr || (e.girl && e.girl.spr)) : '', pe = $('ukdlgPic');   // 話している本人の顔（殿は出さない）
   if (pe) { if (pic) { pe.src = pic; pe.style.display = 'block'; pe.dataset.who = L.who; } else { pe.removeAttribute('src'); pe.style.display = 'none'; pe.dataset.who = ''; } }
+  $('ukdlgJa').style.fontSize = L.small ? '0.7em' : ''; $('ukdlgJa').style.opacity = L.small ? '0.75' : '';
   $('ukdlgName').innerHTML = nm; $('ukdlgEn').textContent = L.en || ''; $('ukdlgJa').textContent = L.en || L.narr ? L.ja : '「' + L.ja + '」';
   $('ukdlg').classList.toggle('jp', !L.en); $('ukdlg').style.display = 'block'; $('ukdlgChoices').innerHTML = ''; $('ukdlgHint').style.display = 'block';
   UK.log.push(key);
@@ -12754,6 +12755,7 @@ function palClearFloor() {
   }
   for (const b of PAL.myBoxes) { const i = boxes.indexOf(b); if (i >= 0) boxes.splice(i, 1); }
   for (const c of PAL.myCol) { const i = colliders.indexOf(c); if (i >= 0) colliders.splice(i, 1); }
+  if (PAL.sm) { for (const k in PAL.sm) { const m = PAL.sm[k]; if (m && m.userData && m.userData.palOwn) { if (m.map) m.map.dispose(); m.dispose(); } } PAL.sm = null; }
   PAL.myBoxes = []; PAL.myCol = []; PAL.doors = []; PAL.rooms = []; PAL.lights = []; PAL.grp = new THREE.Group(); stageRoot.add(PAL.grp);
 }
 function palCol(x, z, r) { const c = { x, z, r }; colliders.push(c); PAL.myCol.push(c); }
@@ -13199,8 +13201,9 @@ function palSpawnFloor() {
     palPlace(e, S, R); if (k === 'sumi' && R.oni) e.ukTag = D.name + '（おにぎりを握っています）';
   }
   if (PAL.floor === 0 && PAL.slot === 0) { const R = palRoomOf('priv'); if (R) [['st_clothes', 3.0, 2.4], ['st_bed', R.rw - 2.6, -0.6]].forEach(([k, lx, lz], i) => { const e = palSpawn(palWX(R, lx), R.zc + lz, palPool()[(i * 7 + 2) % palPool().length], null, null); if (e) { e.ukTag = (i ? '秘書室（寝具を整えています） ' : '秘書室（お召し物を用意しています） ') + e.prof.name; e.palLine = k; e.palRoom = R; e.palAt = { x: e.s.position.x, z: e.s.position.z }; } }); }
+  const dep = palDeptSpawn(sl, N);
   // 名の無い侍女：部屋の混み具合で配る。廊下を行き来する娘も少し
-  const pool = palPool().slice(); for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const pool = palPool().filter(id => !dep.has(id)); for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
   let pi = 0; const nextGirl = () => pool.length ? pool[pi++ % pool.length] : undefined;
   const rest = Math.max(0, N - PAL.girls.length), walkers = bq ? 1 : USD_MOB ? 2 : 3;
   const W = PAL.rooms.map(R => (bq || evf) && R.type === 'banquet' ? 12 : (PAL_W[R.type] || [0, 0, 0, 0])[sl] * Math.sqrt(R.spots.length || 0)), tot = W.reduce((a, b) => a + b, 0);
@@ -13214,6 +13217,16 @@ function palSpawnFloor() {
   }
   palWelfareSpawn(); palCleanSpawn(); palPaySpawn(); palNewbies(); palEventSpawn();
   PAL.log.push('spawn:f' + PAL.floor + ':s' + sl + ':n' + PAL.girls.length);
+}
+function palDeptSpawn(sl, N) {   // 入宮後の新人：朝〜夕は配属先の部屋で働く
+  const out = new Set(); if (!palJoined() || sl === 3) return out; const ids = palRc(), lim = Math.max(0, N - PAL.girls.length - 4);
+  ids.forEach((id, i) => {
+    const P = PAL_RC[i]; if (!P || out.size >= lim) return; const R = palRoomOf(P.dept); if (!R || !R.spots) return;
+    const S = palFreeSpot(R); if (!S) return; const e = palRcSpawn(id, S.x, S.z, '新人の侍女'); if (!e) return; palPlace(e, S, R);
+    e.palNew = true; e.palDept = P.dept; e.ukTag = '新人の侍女（' + R.name + '） ' + e.prof.name; out.add(id);
+  });
+  if (out.size) PAL.log.push('dept:' + [...out].length);
+  return out;
 }
 function palWalker(e) {   // 廊下を行き来する（側近付き秘書は書類を抱えて部屋から部屋へ）
   const L = PAL.L || 20; e.palWalk = true; e.palRoom = null; const z = rand(2, L - 2), x = rand(-1.2, 1.2);
@@ -13279,8 +13292,14 @@ function palClockUI() {
   }
   return el;
 }
-function palSetSlot(i) { const pm = PAL.min; PAL.min = [7, 12, 17.5, 21.5][i] * 60; PAL.log.push('slot:' + i); if (PAL.min < pm - 300) PAL.day = (PAL.day || 0) + 1; palTick(0, true); }
+function palEvActive() { const E = PAL.ev; return !!(E && (E.ph === 'cere' || E.ph === 'party' || E.ph === 'bye' || E.ph === 'out')); }
+function palEvEnd(E, title, sub) {   // 式（懇親会・お見送りまで）が終わったら、始まりからちょうど 3 時間後に
+  E.ph = 'done'; const m = (E.t0 != null ? E.t0 : PAL.min) + 180; if (m >= 24 * 60) PAL.day = (PAL.day || 0) + 1; PAL.min = m % (24 * 60);
+  PAL.log.push('ev:end:' + E.k + ':' + Math.round(PAL.min)); palTick(0, true); if (title) showBanner(title, sub || '');
+}
+function palSetSlot(i) { if (palEvActive()) { showBanner('式典中', '式が終わるまで時計は止まっています'); PAL.log.push('slot:blocked'); return; } const pm = PAL.min; PAL.min = [7, 12, 17.5, 21.5][i] * 60; PAL.log.push('slot:' + i); if (PAL.min < pm - 300) PAL.day = (PAL.day || 0) + 1; palTick(0, true); }
 function palTick(dt, force) {
+  if (palEvActive()) dt = 0; palSkipUI();
   { const pm = PAL.min; PAL.min = (PAL.min + dt) % (24 * 60); if (PAL.min < pm - 300) PAL.day = (PAL.day || 0) + 1; } const sl = palSlotOf(PAL.min);
   if (sl !== PAL.slot || force) { const ch = sl !== PAL.slot; PAL.slot = sl; if (ch || force) { palSpawnFloor(); palLook(true); if (ch) showBanner(PAL_LOOK[sl].name + 'の宮殿', ['侍女たちは朝の支度。厨房とジムがにぎやか', '各室の仕事とカフェの時間', 'レストランと浴場別館がにぎわう', 'ラウンジ・バー・大部屋のおしゃべり'][sl]); } }
   const h = Math.floor(palHour()), m = Math.floor(PAL.min % 60), el = palClockUI();
@@ -13818,8 +13837,13 @@ function palMD() { const d = palDateObj(); return `${d.getMonth() + 1}月${d.get
 function palEvent() { const d = palDateObj(), m = d.getMonth() + 1, dd = d.getDate(); return m === 10 && dd === 1 ? 'naitei' : m === 4 && dd === 1 ? 'nyukyu' : null; }
 const PAL_NYD = () => palDayOf(2027, 4, 1);
 function palJoined() { const d = PAL.day || 0; return d > PAL_NYD() || (d === PAL_NYD() && PAL.ev && PAL.ev.k === 'nyukyu' && PAL.ev.ph === 'done'); }
+// 内定者 12 人：在籍校・勤め先（実在）と、入宮後の配属先。声は tools/add_pal_voices.py（nt_in_i・ny_dp_i）
+const PAL_RC = [
+  { name: '遠藤 加那', dept: 'gunmu' }, { name: '椎名 みのり', dept: 'zaimu' }, { name: '水瀬 りん', dept: 'med' }, { name: '朝倉 ひなた', dept: 'kitchen' },
+  { name: '青葉 みお', dept: 'info' }, { name: '神崎 真白', dept: 'seimu' }, { name: '長谷川 まい', dept: 'costume' }, { name: '藤崎 ほのか', dept: 'guard' },
+  { name: '藤宮 しおり', dept: 'music' }, { name: '谷口 のぞみ', dept: 'logi' }, { name: '春日 ひかり', dept: 'secr' }, { name: '桐谷 さくら', dept: 'eizen' }];
 function palRc() {   // 内定者：写真の娘から 12 人（スマホは 10 人）。入宮式までは侍女として配らない
-  if (!PAL.poolAll) palPool(); if (!PAL.rcIds) { const P = PAL.poolAll; PAL.rcIds = P.slice(Math.max(0, P.length - 12)); }
+  if (!PAL.poolAll) palPool(); if (!PAL.rcIds) { const P = PAL.poolAll; PAL.rcIds = P.slice(Math.max(0, P.length - 12)); PAL.rcName = PAL.rcName || {}; PAL.rcIds.forEach((id, i) => { if (PAL_RC[i]) PAL.rcName[id] = PAL_RC[i].name; }); }
   return USD_MOB ? PAL.rcIds.slice(0, 10) : PAL.rcIds;
 }
 function palEvState() {
@@ -13863,6 +13887,7 @@ Object.assign(PAL_FIX, {
   n_pl2: { who: 'narr', narr: true, ja: '背筋を伸ばし、きびきびと、深いお辞儀。', dur: 2.4 },
   n_tiara: { who: 'narr', narr: true, ja: '白瀬がティアラと名札を手渡す。拍手が起こった。', dur: 2.4 },
   pl_nm: { who: 'g0', ja: '', dur: 1.8 },
+  k_taru: { who: 'king', ja: '（……タルいと腹パンだな……）', dur: 2.0, small: true },
 });
 function palNT(k, x, z) { const D = PAL_NAMED[k], g = D.girl(); return palTemp(k, x, z, GIRLS[g] ? g : undefined, D.name, { name: D.name.split(' ').slice(-2).join(' '), pers: D.pers, cm: D.cm, vv: 1 }); }
 function palDropGirl(e) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = bodies.indexOf(e); if (j >= 0) bodies.splice(j, 1); try { disposeNpc(e); } catch (_) {} const k = PAL.girls.indexOf(e); if (k >= 0) PAL.girls.splice(k, 1); if (e.palSpot) e.palSpot.taken = null; if (e.palKey && PAL.named[e.palKey] === e) delete PAL.named[e.palKey]; }
@@ -13872,7 +13897,7 @@ function palRcSpawn(id, x, z, tag) {
 }
 function palNewbies() {   // 入宮後：内定者だった娘は「新人の侍女」として各室・寮に
   if (!palJoined()) return; const rc = new Set(palRc());
-  for (const e of PAL.girls) if (e.girl && rc.has(e.girl.id) && !e.palKey) { const nm = PAL.rcName && PAL.rcName[e.girl.id]; if (nm) e.prof.name = nm; e.palNew = true; e.ukTag = '新人の侍女 ' + e.prof.name; }
+  for (const e of PAL.girls) if (e.girl && rc.has(e.girl.id) && !e.palKey && !e.palDept) { const nm = PAL.rcName && PAL.rcName[e.girl.id]; if (nm) e.prof.name = nm; e.palNew = true; e.ukTag = '新人の侍女 ' + e.prof.name; }
 }
 function palEvMats() { return PAL.evM || (PAL.evM = ['#a82020', '#f4f1ea', '#f2e2c0', '#d84a2a', '#7ab648', '#f0c050', '#b07040', '#2a6a3a', '#7a2030', '#e0c060', '#305080'].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.8 }))); }
 function palEvProps(R, k) {   // 緋毛氈（入宮式）／ビュッフェ台・料理・飲み物（懇親会）
@@ -13911,25 +13936,58 @@ function palEventSpawn() {
 function palKingAt(R) { player.pos.set(palWX(R, R.king[0] - 0.6), 0, R.zc); player.yaw = R.side < 0 ? -Math.PI / 2 : Math.PI / 2; player.pitch = -0.08; }
 function palEventEnter(R) { const E = palEvState(); if (E && R && R.type === 'banquet' && E.ph === 'pre' && palEvFloor() && !UK.dlg) palCeremony(); }
 function palCeremony() {
-  const E = PAL.ev, R = palRoomOf('banquet'); if (!E || !R || E.ph !== 'pre') return; E.ph = 'cere'; palKingAt(R);
+  const E = PAL.ev, R = palRoomOf('banquet'); if (!E || !R || E.ph !== 'pre') return; E.ph = 'cere'; E.t0 = PAL.min; palKingAt(R);
   const s = PAL.named.sumi, rc = (PAL.rcG || []).filter(e => e.s), bowAll = t => { for (const e of rc) e.palBowT = time + t; };
   PAL.log.push('ev:cere:' + E.k);
   if (E.k === 'naitei') {
-    ukDlg([{ fn: () => palSay(s, 'nt_open') }, { say: 'nt_open' }, { say: 'k_nt1' }, { say: 'k_nt2' }, { fn: () => { bowAll(2.4); palSay(rc[0], 'nt_bow'); } }, { say: 'nt_bow' },
-      { fn: () => palSay(s, 'nt_party') }, { say: 'nt_party' }], palEvParty);
+    const st = [{ fn: () => palSay(s, 'nt_open') }, { say: 'nt_open' }, { say: 'k_nt1' }, { say: 'k_nt2' }, { fn: () => { bowAll(2.4); palSay(rc[0], 'nt_bow'); } }, { say: 'nt_bow' },
+      { fn: () => palSay(s, 'nt_mc') }, { say: 'nt_mc' }];
+    PAL.grpFin = {};
+    rc.forEach((e, n) => {   // 自己紹介：在籍校か勤め先 → 名前 → いまやっていること
+      const g = 'in' + n, k = 'nt_in_' + (e.palRcI % 12); let done = false;
+      PAL.grpFin[g] = () => { if (done) return; done = true; e.palBowT = time + 1.0; palClap(); PAL.intros = (PAL.intros || 0) + 1; };
+      st.push({ grp: g, fn: () => { e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); e.palBowT = time + 1.4; PAL.log.push('intro:' + n); palSay(e, k); } }, { grp: g, say: k }, { grp: g, fn: () => PAL.grpFin[g]() });
+    });
+    st.push({ fn: () => palSay(s, 'nt_party') }, { say: 'nt_party' });
+    ukDlg(st, palEvParty);
     return;
   }
   const st = [{ fn: () => palSay(s, 'ny_open') }, { say: 'ny_open' }, { say: 'k_ny' }, { fn: () => { bowAll(2.4); palSay(rc[0], 'ny_bow'); } }, { say: 'ny_bow' }, { fn: () => palSay(s, 'ny_mc') }, { say: 'ny_mc' }];
+  PAL.grpFin = {}; PAL.unsk = 0;
   rc.forEach((e, i) => {
-    const sty = i % 3, pk = 'pl_' + ((i * 3 + ((e.prof && e.prof.pers || '').length)) % 8);
-    st.push({ fn: () => { e.palTo = [palWX(R, R.king[0] - 1.8), R.zc]; e.speed = 1.3; PAL.log.push('pl:' + i + ':' + sty); } }, { wait: 1.8 },
-      { fn: () => { e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); e.palBowT = time + 2.6; if (sty === 0) e.palKneel = time + 6; } }, { say: 'n_pl' + sty },
-      { fn: () => { PAL_FIX.pl_nm.who = 'g' + (i % 5); PAL_FIX.pl_nm.ja = '侍女、' + e.prof.name + 'と申します。'; palSay(e, 'pl_nm'); } }, { say: 'pl_nm' },
-      { fn: () => palSay(e, pk) }, { say: pk }, { fn: () => palSay(s, 'pl_ok') }, { say: 'pl_ok' },
-      { fn: () => { e.ukTag = '侍女 ' + e.prof.name + '（ティアラ・名札）'; e.palBowT = time + 1.2; palClap(); PAL.pledges = (PAL.pledges || 0) + 1; } }, { say: 'n_tiara' },
-      { fn: () => { e.palKneel = 0; e.palTo = [e.palSpot.x, e.palSpot.z]; } });
+    const sty = i % 3, pk = 'pl_' + ((i * 3 + ((e.prof && e.prof.pers || '').length)) % 8), g = 'pl' + i, dk = 'ny_dp_' + (e.palRcI % 12); let done = false;
+    PAL.grpFin[g] = (skipped) => { if (done) return; done = true;
+      e.ukTag = '侍女 ' + e.prof.name + '（ティアラ・名札）'; e.palBowT = time + 1.2; e.palKneel = 0; e.palTo = [e.palSpot.x, e.palSpot.z]; palClap(); PAL.pledges = (PAL.pledges || 0) + 1;
+      if (skipped) return; PAL.unsk = (PAL.unsk || 0) + 1;
+      if (!E.taru && UK.dlg && (PAL.unsk >= 4 || (i >= 1 && Math.random() < 0.12))) {   // 長いと殿がぼそっと。誰も何もしない、ただの冗談
+        E.taru = true; const O = PAL.named.omiya, useO = O && O.s && Math.random() < 0.5, who = useO ? O : s, k = useO ? 'ny_taru_o' : 'ny_taru_s';
+        UK.dlg.q.unshift({ say: 'k_taru', gap: 0.3 }, { fn: () => { palSay(who, k); PAL.log.push('taru:' + k); } }, { say: k }); } };
+    st.push({ grp: g, fn: () => { e.palTo = [palWX(R, R.king[0] - 1.8), R.zc]; e.speed = 1.3; PAL.log.push('pl:' + i + ':' + sty); } }, { grp: g, wait: 1.8 },
+      { grp: g, fn: () => { e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); e.palBowT = time + 2.6; palSay(e, dk); } }, { grp: g, say: dk },
+      { grp: g, fn: () => { if (sty === 0) e.palKneel = time + 6; } }, { grp: g, say: 'n_pl' + sty },
+      { grp: g, fn: () => palSay(e, pk) }, { grp: g, say: pk }, { grp: g, fn: () => palSay(s, 'pl_ok') }, { grp: g, say: 'pl_ok' },
+      { grp: g, fn: () => { e.ukTag = '侍女 ' + e.prof.name + '（ティアラ・名札）'; e.palBowT = time + 1.2; } }, { grp: g, say: 'n_tiara' },
+      { grp: g, fn: () => PAL.grpFin[g]() });
   });
-  ukDlg(st, () => { E.ph = 'done'; palClap(); for (const e of rc) { e.palNew = true; e.palRecruit = false; e.ukTag = '新人の侍女 ' + e.prof.name; e.palWander = time + rand(3, 10); } PAL.log.push('ev:joined'); showBanner('入宮式', '新人の侍女が加わりました（各室・寮に）'); });
+  ukDlg(st, () => { E.ph = 'done'; palClap(); for (const e of rc) { e.palNew = true; e.palRecruit = false; } PAL.log.push('ev:joined');
+    palEvEnd(E, '入宮式', '3時間後。新人の侍女たちはそれぞれの配属先へ'); });
+}
+// 自己紹介・忠誠の儀の一人ずつのスキップ（Enter／Space／ボタン）と、全員ぶんのスキップ（Shift+Enter／ボタン）
+function palGrpSkip(all) {
+  const D = UK.dlg; if (!D || UK.choice || !D.cur || !D.cur.grp) return false;
+  if (D.cur.say) { const L = ukL(D.cur.say), e = L && ukWho(L.who); if (e) Talk.hush(e); else for (const o of Talk.srcs.slice()) if (!o.owner) try { o.src.stop(); } catch (_) {} }
+  const run = g => { while (D.q.length && D.q[0].grp === g) D.q.shift(); const f = PAL.grpFin && PAL.grpFin[g]; if (f) f(true); };
+  run(D.cur.grp); if (all) while (D.q.length && D.q[0].grp) run(D.q[0].grp);
+  PAL.unsk = 0; PAL.log.push('skip:' + (all ? 'all' : D.cur.grp)); D.cur = null; ukDlgNext(); return true;
+}
+function palSkipUI() {
+  let b = $('palSkip'); const on = !!(PAL.on && UK.dlg && !UK.choice && UK.dlg.cur && UK.dlg.cur.grp);
+  if (!b) { if (!on) return; b = document.createElement('div'); b.id = 'palSkip';
+    b.style.cssText = 'position:fixed;right:12px;bottom:34%;z-index:60;display:flex;flex-direction:column;gap:6px';
+    b.innerHTML = '<button data-a="0">スキップ ▶</button><button data-a="1">全員スキップ ▶▶</button>';
+    for (const x of b.querySelectorAll('button')) { x.style.cssText = 'font:600 14px sans-serif;padding:8px 12px;border-radius:8px;border:1px solid #d8c080;background:rgba(30,20,10,.75);color:#f4e4b8'; const go = ev => { ev.preventDefault(); ev.stopPropagation(); palGrpSkip(x.dataset.a === '1'); }; x.addEventListener('click', go); x.addEventListener('touchend', go, { passive: false }); }
+    document.body.appendChild(b); }
+  b.style.display = on ? 'flex' : 'none';
 }
 function palEvParty() {
   const E = PAL.ev, R = palRoomOf('banquet'); if (!E || !R) return; E.ph = 'party'; palEvProps(R, 'buffet'); PAL.log.push('ev:party');
@@ -13968,7 +14026,8 @@ function palEventTick() {
       { label: 'その服装で外出るの恥ずかしい？', sub: 'ふと気になって', then: [{ say: 'k_out' }, { fn: () => palSay(rc[0], 'out_0') }, { say: 'out_0' }, { fn: () => palSay(rc[1] || rc[0], 'out_1') }, { say: 'out_1' }, { fn: () => palSay(rc[2] || rc[0], 'out_2') }, { say: 'out_2' }].concat(O ? [{ fn: () => palSay(O, 'om_out') }, { say: 'om_out' }] : []) },
       { label: '気をつけて帰れよ', sub: '', then: [{ say: 'k_bye' }] }] },
       { fn: () => { for (const e of PAL.girls) e.palBowT = time + 2.2; palSay(O || s, 'nt_bye'); } }, { say: 'nt_bye' }, { fn: () => palSay(rc[3] || rc[0], 'nt_bye2') }, { say: 'nt_bye2' }],
-      () => { E.ph = 'done'; PAL.log.push('ev:bye'); for (const e of rc) { e.palAt = null; e.palSpot = null; e.palTo = [palWX(R, R.rw - 0.6), R.zc + rand(-1, 1)]; e.speed = 1.2; } setTimeout(() => { if (PAL.on) for (const e of rc) if (PAL.girls.includes(e)) palDropGirl(e); }, 6000); showBanner('お見送り', '内定者たちは正門から帰っていった。四月に、また'); });
+      () => { E.ph = 'out'; PAL.log.push('ev:bye'); for (const e of rc) { e.palAt = null; e.palSpot = null; e.palTo = [palWX(R, R.rw - 0.6), R.zc + rand(-1, 1)]; e.speed = 1.2; } showBanner('お見送り', '内定者たちは正門から帰っていった。四月に、また');
+        setTimeout(() => { if (!PAL.on) return; for (const e of rc) if (PAL.girls.includes(e)) palDropGirl(e); if (E.ph === 'out') palEvEnd(E, '内定式', '式から3時間。宮殿はいつもの午後へ'); }, 6000); });
   }
 }
 function palEvKey() {   // E：式の部屋に入ったら式。懇親会中に白瀬へ「お開き」
@@ -14766,7 +14825,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -19720,6 +19779,7 @@ addEventListener('keydown', e => {
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
   if (UK7.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk7Key(); return; }
+  if (PAL.on && UK.dlg && (e.code === 'Enter' || e.code === 'Space') && palGrpSkip(e.shiftKey)) { e.preventDefault(); return; }
   if (PAL.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { palKey(); return; }
   if (PAL.on && !UK.dlg && (e.code === 'KeyB' || e.code === 'KeyN' || e.code === 'KeyM')) { palPretend(e.code === 'KeyB' ? 'b' : e.code === 'KeyN' ? 's' : 'w'); return; }
   if (UK.choice && /^Digit[1-9]$/.test(e.code)) { ukPickKey(+e.code.slice(5) - 1); return; }   // 第三幕：送る／漕ぐ・止まる／旗   // 第二幕：語り・台詞を送る

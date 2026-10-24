@@ -11503,7 +11503,7 @@ function palStart2() {
   campFadeOff();
   ukDlg([{ wait: 0.6 }, { say: 'p_omiya1' }, { say: 'p_sumi1' }, { say: 'p_hiyori' }, { say: 'p_omiya2' }], null);
 }
-function palTick(dt) {
+function campPalTick(dt) {
   CAMP.bt += dt;
   if ((CAMP.waveT -= dt) <= 0 || (CAMP.wave > 0 && CAMP.wave < 5 && CAMP.live.orange.length < CAMP_N * 0.2 && CAMP.waveT < 34)) {
     if (CAMP.wave < 5) {
@@ -11830,7 +11830,7 @@ function updateCamp(dt) {
   if (CAMP.frozen) return;
   if (CAMP.ph === 1) { townTick(dt); usdShellTick(dt); }
   else if (CAMP.ph === 2) castleTick(dt);
-  else if (CAMP.ph === 3) palTick(dt);
+  else if (CAMP.ph === 3) campPalTick(dt);
   else if (CAMP.ph === 4) yjTick(dt);
   // 仕掛けの印に近いとき（山城）
   if (YJ.on) { const S = yjSpotNear(); if (S && !UK.dlg && (CAMP.hintT = (CAMP.hintT || 0) - dt) <= 0) { CAMP.hintT = 2.5; popup(`E：${S.label}` + (S.n > 1 ? `（残り${S.n}）` : '')); popupTimer = 1.4; } }

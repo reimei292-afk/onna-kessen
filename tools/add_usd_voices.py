@@ -132,6 +132,20 @@ for who, d in WND.items():
         for i, t in enumerate(ls): L['wn_%s_%s_%d' % (who, cat, i)] = (who, t)
 L.update({
  't_cry6': ('usA', 'Agh!', 'ぐっ！'), 't_cry7': ('usB', "I'm hit!", '撃たれた！'), 't_cry8': ('usC', 'Medic!', '衛生兵！'),
+ # 第二幕：アメリカ勢の号令（英語。字幕なし・声だけ）
+ 'u_fire0': ('usA', 'Fire!', '撃て！'), 'u_fire1': ('usB', 'Volley—fire!', '一斉に、撃て！'), 'u_fire2': ('usC', 'Give it to them!', '撃ち込め！'),
+ 'u_adv0': ('usA', 'Advance!', '前進！'), 'u_adv1': ('usB', 'Forward—double time!', '駆け足、前へ！'), 'u_adv2': ('usC', 'Move up! Move up!', '前へ！ 前へ！'),
+ 'u_cov0': ('usA', 'Take cover!', '伏せろ、陰へ！'), 'u_cov1': ('usB', 'Get down!', '伏せろ！'),
+ 'u_bayo': ('usA', 'Fix bayonets!', '着剣！'), 'u_chg': ('usB', 'Charge!', '突撃！'),
+ 'u_lad': ('usC', 'Ladders up!', '梯子をかけろ！'), 'u_dem': ('usA', 'Charge is set—stand clear!', '爆薬よし、離れろ！'), 'u_ram': ('usB', 'Heave!', 'それっ！'),
+ 'u_gun0': ('usA', 'Battery—fire!', '砲列、撃て！'), 'u_gun1': ('usB', 'Fire the gun!', '大砲、撃て！'),
+ 'u_haul': ('usC', 'Haul that gun up the hill!', '大砲を坂の上へ引き上げろ！'), 'u_breach': ('usA', "The gate's down! Go, go!", '門が破れた！ 行け、行け！'),
+ 'u_clear': ('usB', 'Clear that court!', 'その曲輪を掃討しろ！'), 'u_rel': ('usC', 'Reloading!', '弾込め！'),
+ # 町：大宮は宮殿に居る（町の台詞は麗華と静香へ）
+ 't_pit_r': ('reika', '一人、穴に落ちましたわ！ 次が来ます！'), 't_hold_sh': ('shizuka', 'まだ持ちこたえています、殿。押し返しています。'),
+ # 大将は討ち死にせず、殿のそばへ下がる
+ 'k_back_f': ('fumi', '下がります――殿のそばで指揮を執ります！'), 'k_back_o': ('ojou', '一度下がります。皆、私の前を固めて！'), 'k_back_om': ('omiya', '下がりますっ！ 殿のそばに！'),
+ 'p_fall_om2': ('omiya', '殿、こちらへ！ 私がお連れします！'),
  # 山城の最後：裏の抜け道
  'm_esc_o': ('ojou', '殿、裏の抜け道へ！ ここは私たちが食い止めます！'),
  'm_esc_om': ('omiya', '殿、裏の抜け道へ！ 早く！'),

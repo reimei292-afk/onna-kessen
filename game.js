@@ -12682,6 +12682,7 @@ const PAL_FIX = {
   k_rs: { who: 'king', ja: '今日はここで皆と食べるぞ。', dur: 1.8 },
   k_any: { who: 'king', ja: 'いや、別にどっちでもいいよ', dur: 1.8 },
   k_wf: { who: 'king', ja: '無理するなよ', dur: 1.6 },
+  k_knock: { who: 'king', ja: '（コン、コン）入っていいか？', dur: 1.8 },
   k_uni: { who: 'king', ja: 'そういえば、みんないつも上は下着姿だけど慣れた？', dur: 2.4 },
 };
 Object.assign(UK_WHO_NAME, { sec2: '秘書課 早瀬 ことね', sec3: '秘書課 桜井 ゆかり', sec4: '秘書課 宮下 千尋', fumi: '秘書課 綾瀬 文乃', omiya: '大宮 ひなた', kujo: '外科医 九条 紗英', sysop: '情報室 霧島 怜', flute: '笛役 小鳥遊 ひびき',
@@ -12841,7 +12842,7 @@ function palRoom(R, out) {
   if (!out) {
     const door = palBox(0.08, 2.45, g * 2 - 0.05, wc ? M.wood : M.woodL, x0, 1.23, dz, false), D = { R, mesh: door, x: x0, z: dz, open: 0, wc, s };
     if (wc) { const b = { x0: x0 - 0.15, x1: x0 + 0.15, z0: dz - g, z1: dz + g, y0: 0, y1: 2.5 }; boxes.push(b); PAL.myBoxes.push(b); }
-    PAL.doors.push(D);
+    PAL.doors.push(D); palVisitDoor(D);
   }
   if (!wc) palRoomFurn(R);
 }
@@ -12992,7 +12993,7 @@ function palSpawnFloor() {
     if (R.type === 'kitchen' && Math.random() < 0.6) e.ukTag = '厨房の調理係 ' + e.prof.name;
     if (Math.random() < 0.35 && !['kitchen', 'secr', 'seimu', 'zaimu', 'gunmu', 'info', 'med'].includes(R.type)) e.palWander = time + rand(4, 12);
   }
-  palWelfareSpawn(); palCleanSpawn();
+  palWelfareSpawn(); palCleanSpawn(); palPaySpawn();
   PAL.log.push('spawn:f' + PAL.floor + ':s' + sl + ':n' + PAL.girls.length);
 }
 function palWalker(e) {   // 廊下を行き来する（側近付き秘書は書類を抱えて部屋から部屋へ）
@@ -13063,7 +13064,7 @@ function palTick(dt, force) {
   { const pm = PAL.min; PAL.min = (PAL.min + dt) % (24 * 60); if (PAL.min < pm - 300) PAL.day = (PAL.day || 0) + 1; } const sl = palSlotOf(PAL.min);
   if (sl !== PAL.slot || force) { const ch = sl !== PAL.slot; PAL.slot = sl; if (ch || force) { palSpawnFloor(); palLook(true); if (ch) showBanner(PAL_LOOK[sl].name + 'の宮殿', ['侍女たちは朝の支度。厨房とジムがにぎやか', '各室の仕事とカフェの時間', 'レストランと浴場別館がにぎわう', 'ラウンジ・バー・大部屋のおしゃべり'][sl]); } }
   const h = Math.floor(palHour()), m = Math.floor(PAL.min % 60), el = palClockUI();
-  el.style.display = 'block'; $('palTime').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  el.style.display = 'block'; $('palTime').textContent = `${palDate()}日 ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}` + (palPayday() ? ' 給料日' : '');
   for (const b of el.querySelectorAll('button')) b.classList.toggle('on', +b.dataset.sl === PAL.slot);
   $('palFloorName').textContent = PAL_FLOORS[PAL.floor].name + (PAL.inRoom ? '・' + PAL.inRoom.name : '');
 }
@@ -13085,6 +13086,7 @@ function palLineFor(e) {
   if (e.palRoom && e.palRoom.type === 'med' && !e.palKey && Math.random() < 0.35) return 'wf_med';
   if (e.palRoom && e.palRoom.type === 'dock' && !e.palKey && Math.random() < 0.6) return PAL.slot === 1 ? 'dk_0' : Math.random() < 0.5 ? 'dk_0' : 'dk_1';
   if (e.palClean && Math.random() < 0.6) return 'cl_wet2';
+  if (Math.random() < 0.12) { const p = palPayLine(e); if (p) return p; }
   if (e.palKey) { const ls = V.named[e.palKey] || []; if (ls.length) { e.palN = ((e.palN == null ? -1 : e.palN) + 1) % ls.length; return ls[e.palN]; } }
   if (PAL.doors.some(D => D.wc && Math.hypot(D.x - player.pos.x, D.z - player.pos.z) < 4) && Math.random() < 0.5) return 'wc';
   const ls = V.cat[palCatOf(e)] || V.cat.misc || []; if (!ls.length) return null;
@@ -13143,7 +13145,7 @@ function palOmiyaStrict(e) {
 }
 function palDoorTick(dt) {
   for (const D of PAL.doors) {
-    if (D.wc) continue;
+    if (D.wc || (D.visit && !D.R.allowed)) continue;
     const d = Math.hypot(player.pos.x - D.x, player.pos.z - D.z), want = d < 3.0 ? 1 : 0;
     if (want && !D.open && !D.opening) {   // いちばん近くで気づいた娘が扉を開けて礼
       D.opening = true; let best = null, bd = 9;
@@ -13281,6 +13283,7 @@ function palDailyAct(dry) {   // 近くにある「殿の日常」の行い。dr
   if ((R = palAt('wash', 'sink', 1.8))) return dry ? '洗面所で歯を磨く（E）' : palBrush();
   if ((R = palRoomOf('dining')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4) return dry ? '食堂で食事にする（E）' : palMeal();
   if ((R = palRoomOf('rest_r')) && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.2) return dry ? '上座で侍女たちと食事（E）' : palRestMeal();
+  { const V = PAL.doors.find(d => d.visit && !d.R.allowed && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 2.4); if (V) return dry ? V.R.name + 'をノックする（E）' : palVisitKnock(V); }
   const D = palDoorNear(['kwc', 'kbath', 'wc']);
   if (D) { if (D.R.type === 'wc') return dry ? '女子トイレ（殿は使わない）' : popup('女子トイレ。殿のお手洗いは最上階の私室の隣'); return dry ? D.R.name + 'を使う（E）' : palPrivate(D.R); }
   return dry ? '' : false;
@@ -13309,8 +13312,8 @@ function palSontakuTick() {
     let pickA = null; pickA = pick(La.who); const B = pick(Lb.who); if (!pickA || !B) continue;
     R.skDone = PAL.slot; (PAL.skHeard = PAL.skHeard || {})[S.id] = 1; PAL.skN = (PAL.skN || 0) + 1; PAL.log.push('sontaku:' + S.id);
     const t = palBark(pickA, 'sk_' + S.id + '_a') || 3;
-    let at = Math.min(t, 5) + 0.3; (S.parts || ['a', 'b']).slice(1).forEach((pt, i) => { const L = V['sk_' + S.id + '_' + pt] || {}, who = (/^g\d$/.test(L.who) || !L.who) ? (i % 2 ? pickA : B) : (inR.find(e => e.palKey === L.who) || B);
-      setTimeout(() => { if (PAL.on && who.s && PAL.inRoom !== R && !UK.dlg) palBark(who, 'sk_' + S.id + '_' + pt); }, at * 1000); at += Math.min(L.dur || 3, 5) + 0.3; });
+    const fl0 = PAL.floor; let at = Math.min(t, 5) + 0.3; (S.parts || ['a', 'b']).slice(1).forEach((pt, i) => { const L = V['sk_' + S.id + '_' + pt] || {}, who = (/^g\d$/.test(L.who) || !L.who) ? (i % 2 ? pickA : B) : (inR.find(e => e.palKey === L.who) || B);
+      setTimeout(() => { if (PAL.on && who.s && PAL.floor === fl0 && PAL.inRoom !== R && !UK.dlg) palBark(who, 'sk_' + S.id + '_' + pt); }, at * 1000); at += Math.min(L.dur || 3, 5) + 0.3; });
     if (S.after) setTimeout(() => { if (PAL.on) S.after(); }, at * 1000);
     R.sk = { t: time, a: pickA, b: B, id: S.id, sw: false }; PAL.skT = time + 14; return;
   }
@@ -13522,6 +13525,69 @@ function palTopCleaned(f) {   // 朝、最上階を出て戻ると、お留守�
   if (f === 0 && PAL.slot === 0 && PAL.topOut && PAL.topClean !== (PAL.day || 0)) { PAL.topClean = PAL.day || 0; setTimeout(() => popup('（殿がお留守のあいだに、最上階はぴかぴかに掃除されていた）'), 1200); PAL.log.push('clean:top'); }
   PAL.topOut = f !== 0;
 }
+// ---- お給料：住まいと食事は無料、年俸は役職で（新人 約300万・隊長/部署長 500〜600万・側近 800万〜）。毎月 25 日は給料日：財務室の前に列 ----
+function palDate() { return ((24 + (PAL.day || 0) - 1) % 30) + 1; }
+function palPayday() { return palDate() === 25 || PAL.payForce; }
+function palPaySpawn() {   // 上層階・昼〜夕：財務室の前に並ぶ
+  if (!palPayday() || !(PAL.slot === 1 || PAL.slot === 2)) return;
+  const R = palRoomOf('zaimu'), D = R && PAL.doors.find(d => d.R === R); if (!D) return;
+  const n = USD_MOB ? 4 : 6, sx = Math.sign(D.x) * 0.95;
+  for (let i = 0; i < n; i++) { const e = palSpawn(sx, D.z + 1.4 + i * 0.75, palPool()[(i * 5 + 3) % palPool().length], null, null); if (!e) continue;
+    e.ukTag = '給料日の列 ' + e.prof.name; e.palAt = { x: sx, z: D.z + 1.4 + i * 0.75 }; e.palQueue = true; e.palRoom = null; e.faceWant = Math.PI; }
+  PAL.payQ = 0; PAL.log.push('pay:queue'); setTimeout(() => popup('本日は給料日（毎月 25 日）。財務室の前に列ができている'), 1500);
+}
+function palPayTick() {
+  if (!palPayday() || UK.dlg || time < (PAL.payT || 0)) return;
+  const q = PAL.girls.filter(e => e.palQueue && e.s); if (!q.length) return;
+  const near = q.find(e => Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 9); if (!near) return;
+  const O = PAL.named.omiya, i = PAL.payQ = (PAL.payQ || 0) + 1;
+  if (O && i % 4 === 0) palBark(O, 'pq_om'); else palBark(q[(i * 3) % q.length], 'pq_' + (i % 4));
+  PAL.payT = time + 7;
+}
+function palPayLine(e) {   // 会話の中で、ときどきお給料の話
+  if (e.palKey === 'sumi') return 'pay_sumi'; if (e.palKey === 'omiya') return 'pay_omiya';
+  if (e.palKey) return null; return 'pay_' + ((Math.random() * 4) | 0);
+}
+// ---- 殿が侍女の部屋を訪ねる：ノックして「入っていいか？」。昼・夕だけ（夜は消灯）。扉は開けたまま。色恋は無し ----
+const PAL_VISIT = { dorm: null, ojou_r: 'ojou', sumi_r: 'sumi', omiya_r: 'omiya', fumi_r: 'fumi' };
+function palVisitDoor(D) {   // 部屋を建てたあと：扉の前をふさいでおく（ノックして許されたら開く）
+  if (!(D.R.type in PAL_VISIT) || D.R.allowed) return;
+  const b = { x0: D.x - 0.15, x1: D.x + 0.15, z0: D.z - 0.95, z1: D.z + 0.95, y0: 0, y1: 2.5 }; boxes.push(b); PAL.myBoxes.push(b); D.block = b; D.visit = true;
+}
+function palVisitOpen(D) {
+  D.R.allowed = true; if (D.block) { const i = boxes.indexOf(D.block); if (i >= 0) boxes.splice(i, 1); D.block = null; }
+  palVisitDecor(D.R); PAL.visits = (PAL.visits || 0) + 1; PAL.log.push('visit:' + D.R.type);
+}
+function palVisitDecor(R) {   // ポスター・観葉植物・お菓子・漫画・テニスラケット・写真（寝具や洗濯物は映さない）
+  if (R.decor) return; R.decor = true; const M = palHkMats(), W = palWfMats(), hd = R.rd / 2, ry = 0;
+  for (let k = 0; k < 2; k++) { const o = palBox(0.7, 0.95, 0.02, [M[7], W[0]][k], palWX(R, 3 + k * 2.2), 1.8, R.zc - hd + 0.12, false); }   // ポスター
+  palCyl(0.18, 0.14, 0.32, M[6], palWX(R, 1.6), 0.16, R.zc + hd - 0.6); { const o = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), M[2]); o.position.set(palWX(R, 1.6), 0.6, R.zc + hd - 0.6); palAdd(o); }   // 観葉植物
+  palFurnBox(R, R.rw / 2, 0.4, 1.0, 0.8, 0.42, palMats().wood, true); for (let k = 0; k < 3; k++) palFurnBox(R, R.rw / 2 - 0.3 + k * 0.3, 0.4, 0.18, 0.12, 0.06, [M[0], M[3], W[0]][k], false, 0.42);   // ちゃぶ台とお菓子
+  for (let k = 0; k < 5; k++) palFurnBox(R, R.rw / 2 + 0.35, 0.2, 0.18, 0.13, 0.03, [M[0], M[7], M[3], M[2], M[4]][k], false, 0.42 + k * 0.03);   // 漫画
+  { const o = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.015, 6, 16), M[5]); o.position.set(palWX(R, 1.2), 0.9, R.zc - hd + 0.15); palAdd(o); palCyl(0.015, 0.015, 0.35, M[5], palWX(R, 1.2), 0.6, R.zc - hd + 0.15); }   // テニスラケット
+  for (let k = 0; k < 3; k++) palBox(0.22, 0.17, 0.02, M[4], palWX(R, 6.2 + k * 0.32), 1.45, R.zc - hd + 0.12, false);   // 写真立て
+}
+function palVisitKnock(D) {
+  const R = D.R, own = PAL_VISIT[R.type]; let host = null;
+  Sfx.tone && [0, 0.18, 0.36].forEach(t => setTimeout(() => Sfx.tone(180, 0.05, 'square', 0.12), t * 1000));   // コン、コン、コン
+  if (own) { host = PAL.girls.find(e => e.palKey === own && e.palRoom === R) || null;
+    if (!host && PAL.named[own]) { ukDlg([{ say: 'k_knock' }, { fn: () => popup('（返事がない。' + (UK_WHO_NAME[own] || '部屋の主') + 'は別の部屋にいるようだ）') }]); PAL.log.push('visit:away'); return; }
+    if (!host) { const P = PAL_NAMED[own]; host = palTemp(own, palWX(R, R.rw - 2.5), R.zc + 0.8, P.girl(), P.name, { name: P.name.replace(/^.* /, ''), pers: P.pers, cm: P.cm, vv: 1 }); if (host) { host.palRoom = R; host.palAt = { x: host.s.position.x, z: host.s.position.z }; } }
+  } else host = PAL.girls.find(e => e.palRoom === R && !e.palKey) || null;
+  if (!host) { ukDlg([{ say: 'k_knock' }, { fn: () => popup('（返事がない。留守のようだ）') }]); return; }
+  if (PAL.slot === 3) { ukDlg([{ say: 'k_knock' }, { fn: () => palSay(host, 'vs_night') }, { say: 'vs_night' }]); PAL.log.push('visit:night'); return; }
+  if (own && own !== 'omiya' && (Math.random() < 0.25 || PAL.visitNo)) { PAL.visitNo = false; ukDlg([{ say: 'k_knock' }, { fn: () => palSay(host, 'vs_no') }, { say: 'vs_no' }]); PAL.log.push('visit:no'); return; }
+  const wait = Math.random() < 0.5 ? 'vs_wait' : 'vs_wait2', inL = own ? 'vs_' + own : 'vs_in_' + ((Math.random() * 2) | 0);
+  const O = PAL.named.omiya;
+  ukDlg([{ say: 'k_knock' }, { fn: () => palSay(host, wait) }, { say: wait }, { fn: () => { popup('（中で、ばたばたと片付ける音……）'); PAL.busy = true; } }, { wait: 2.2 },
+    { fn: () => { PAL.busy = false; palVisitOpen(D); palSay(host, inL); host.palTo = [D.x + D.s * 1.2, D.z]; host.palBowT = time + 2.4; } }, { say: inL }], () => {
+    if (O && O !== host && own !== 'omiya' && Math.random() < 0.6) { O.palAt = null; O.palTo = [D.x - D.s * 0.6, D.z + 1.0]; setTimeout(() => { if (PAL.on && O.s) palBark(O, 'om_vs'); }, 1800); PAL.log.push('visit:omiya'); }
+  });
+}
+function palVisitTalk(e) {   // 部屋の中：お茶と趣味の話
+  e.ukTalkT = time + 4; const k = Math.random() < 0.35 ? 'vs_tea' : 'vs_h_' + ((PAL.vsN = ((PAL.vsN || 0) + 1)) % 4);
+  palSay(e, k); ukDlg([{ say: k }]); PAL.log.push('visit:talk');
+}
 function palRoomAt(x, z) { for (const R of PAL.rooms) { const a = R.side * PAL_CW, b = R.side * (PAL_CW + R.rw); if (x >= Math.min(a, b) && x <= Math.max(a, b) && z >= R.z0 && z <= R.z1) return R; } return null; }
 function updatePal(dt) {
   if (!PAL.on) return;
@@ -13532,7 +13598,7 @@ function updatePal(dt) {
     if (R && R.type === 'banquet' && PAL.banquet === 'open' && !PAL.bqSeated && !UK.dlg) palBanquetSeat();
     if (R) { palSontakuEnter(R); palWelfareEnter(R); } }
   palTick(dt);
-  palDoorTick(dt); palGreetTick(); palBanquetTick(); palJazz(dt); palSontakuTick(); palPantsTick(); palCleanTick();
+  palDoorTick(dt); palGreetTick(); palBanquetTick(); palJazz(dt); palSontakuTick(); palPantsTick(); palCleanTick(); palPayTick();
   if (R && R.noren && Math.hypot(player.pos.x - R.noren[0], player.pos.z - R.noren[1]) < 1.6 && time > (PAL.norenT || 0)) { popup('ここから先は女湯。殿は入れません'); PAL.norenT = time + 3; PAL.norenHits = (PAL.norenHits || 0) + 1; }
   ukDlgTick(dt);
   document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
@@ -13542,7 +13608,7 @@ function palKey() {
   if (PAL.busy) return;
   if (PAL.pants == null) PAL.pants = TEST || Math.random() < 0.6 ? 1 : 0;
   if (palDailyAct(true) && palDailyAct(false) !== false) return;
-  const e = palNear(); if (e) { if (e.palWf) palWelfareTalk(e); else if (e.palSk) palSontakuTalk(e); else palTalk(e); return; }
+  const e = palNear(); if (e) { if (e.palWf) palWelfareTalk(e); else if (e.palRoom && e.palRoom.allowed && !e.palKey && Math.random() < 0.7) palVisitTalk(e); else if (e.palSk) palSontakuTalk(e); else palTalk(e); return; }
   if (Math.hypot(player.pos.x - PAL.stairs.x, player.pos.z - PAL.stairs.z) < 2.4) { palStairs(); return; }
   if (Math.hypot(player.pos.x - PAL.elev.x, player.pos.z - PAL.elev.z) < 2.0) { palElevator(); return; }
   const P = palRoomOf('yuagari'); if (P && Math.hypot(player.pos.x - P.pong[0], player.pos.z - P.pong[1]) < 2.4) { palPong(); return; }
@@ -13565,7 +13631,7 @@ function palStart() {
 }
 function palPhaseLabel() { return '宮殿の日常　' + PAL_FLOORS[PAL.floor].name + (PAL.inRoom ? '・' + PAL.inRoom.name : ''); }
 function palGoal() { return PAL.banquet === 'open' ? '宴会：浴場別館の宴会場へ（上座は奥の中央）' : PAL.banquet === 'called' ? '白瀬が侍女たちに声をかけています（夜 19 時から宴会）' : 'E：侍女と話す／階段・エレベーターで階を移る／右上で時間帯を切り替え'; }
-if (TEST) window.__pal = { PAL, nb: () => bodies.length, wf: () => { PAL.wfForce = true; palSpawnFloor(); }, pd: k => palPretend(k), pdT: () => palPDTarget(), go: (f, h) => palGoFloor(f, h || 'stairs'), slot: i => palSetSlot(i), key: () => palKey(), skip: () => ukDlgSkip(), pick: i => ukPick(i), dlg: () => !!UK.dlg, near: () => palNear(), elev: () => palElevator(), pong: () => palPong(), call: () => palBanquetCall(), seat: () => palBanquetSeat(), pl: () => player, wx: (R, x) => palWX(R, x) };
+if (TEST) window.__pal = { PAL, knock: () => palDailyAct(false), nb: () => bodies.length, wf: () => { PAL.wfForce = true; palSpawnFloor(); }, pd: k => palPretend(k), pdT: () => palPDTarget(), go: (f, h) => palGoFloor(f, h || 'stairs'), slot: i => palSetSlot(i), key: () => palKey(), skip: () => ukDlgSkip(), pick: i => ukPick(i), dlg: () => !!UK.dlg, near: () => palNear(), elev: () => palElevator(), pong: () => palPong(), call: () => palBanquetCall(), seat: () => palBanquetSeat(), pl: () => player, wx: (R, x) => palWX(R, x) };
 // =====================================================================
 //  英国淑女編 第七幕「祝勝会」(?stage=ukParty)
 //   英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間で祝勝会。円卓 20 卓（殿の卓は入口から最も遠い中央）。

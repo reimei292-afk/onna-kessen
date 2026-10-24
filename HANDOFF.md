@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261024j`
+- 現在のバージョン: `20261024r`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。
   2. `node --check game.js`
@@ -247,3 +247,12 @@
 - 徴募の娘：assets/conscripts/conscript_01〜08（既存の脇役侍女 mob01, mob02, mob04, mob08, mob09, girl35, girl39, girl41 から作った4方向の立ち絵、スマホは最初の4人）。着替え室の外の扉だけを映し、「規定の服装に着替え中…」の後に出てきて各自の制服の姿になる。全員18歳以上。腕は控えめ（aimErr×1.8、速さ×0.88）、組頭のそばにいる。
 - 本気の戦の声（USD / CAMP / UK2〜7 / FRS）：warSay・warChat。名前付きは wn_<who>_<kind>、無名は w_<rom><vv>_<kind>。倒れる時は短い声だけ。「戦死判定」表示は戦では出さない。声は tools/add_usd_voices.py（tools/voice_profiles.py の表から固定の声）。
 - クレジット：CREDITS.md、assets/yj_tex/CREDITS.md。
+
+## 20261024r：第二幕（usTown）の手直し
+- **人の並び**: 大宮は宮殿（第三の場）から。町＝綾瀬と町の守り・英国の娘・殿と秘書／城＝西園寺と城の者＋町の生き残り／宮殿＝大宮・近衛・侍女＋生き残り／山城・総構え＝生き残り＋その段の兵（徴募）。`campSurvivors()` が顔・名前ごと記録し `campSurvSpawn()` で呼び戻す。`campHas(k)` で名のある娘を条件付きに。
+- **大将は討ち死にしない**: `e.campProt`（綾瀬・西園寺・大宮）。`damageEnemy` で hp を 1.5 に止め `campProtFall`→14秒 殿の後ろへ（`campProtBrain`）。`campProtOn` が偽になるのは総構え ODW.zone>=2 だけ。
+- **寄せ手はどの段もアメリカ勢**: `campUs()` で英語名（`usName`）・`usVox`・`USD_W` の銃。`yariSay/runSay` は第二幕の orange を黙らせ、`npcSay0` は英語の悲鳴。号令は `usOrder`（u_fire/u_adv/u_cov/u_bayo/u_chg/u_lad/u_dem/u_gun/u_haul/u_breach/u_clear/u_rel、声は tools/add_usd_voices.py）。
+- **戦い方**: `usSquad`（6人組・半分ずつ前へ・一斉射撃）、`usGunMake/usGunTick`（野砲・山砲、至近弾＋赤い輪、`usdBurst` の `vs:'blue'`）、`usStormGoal`（虎口・門の前に溜まって号令で突撃）、`usBayo`（2.4m 以内だけ銃剣）。平城は `casStart/casGoal/casTick`（竹束の列→梯子→爆薬で破門→曲輪の掃討）。山城は木と岩 `YJ.cov` を陰に、山砲を `YJ_PATH` に沿って引き上げる（曲輪が落ちるたび stopAt 3→6→9）。
+- **数と描画**: 平城 PC 守り100／寄せ手130（3波）、スマホ 44／48。`staticMerge(stageRoot, keep)`＋`mergeLocal`（竹束）で城の静的メッシュ 940→172。
+- 単独の「山城の守り」（CAMP.solo）は日本の寄せ手のまま（`campUsBrainJp`）。
+- 試験: /tmp/camptest.js ＋ /tmp/audit.js（寄せ手全員の名前・顔・声・武器を出し、日本の型・弓・槍・刀を数える `CAMP.aud`）。

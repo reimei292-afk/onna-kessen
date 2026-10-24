@@ -507,6 +507,7 @@ const SITU = {
   // 勝敗：近くに残っている娘がひと言
   end(win) {
     if (UK2.on) { if (win && !UK2.saidWin) uk2SayNear('win'); return; }
+    if (USD.on || CAMP.on || UK7.on || FRS.on) return;   // 本気の戦：勝ち負けの軽い台詞は言わない
     if (UK3.on || UK4.on) return;   // 第三幕：勝ちの台詞は幕の終わりに言う   // 第二幕：模擬戦の勝ち負けの台詞は言わない
     const cand = enemies.filter(e => e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.role && !e.silenced);
     if (!cand.length) return;
@@ -16163,7 +16164,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

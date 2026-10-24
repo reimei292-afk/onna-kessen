@@ -238,3 +238,12 @@
 - 名前の無い侍女：性格ごとの声＋ vv（0〜2）で言い方を固定、再生の揺らぎ ±3% は廃止（同じ娘は同じ声）。
 - スマホ：音声キャッシュは 140 本まで（LRU、VoicePack.CAP）、先読みは上限の 6 割・戦闘の主な台詞の 1 通りだけ。
 - 作り直した台詞：大宮（frs・usd・pal、旧 +18%/+26Hz）、看護師（frs）、霧島（pal・uk7）、久遠・白石（uk・uk7）、白瀬（uk）、ひより（pal）、綾瀬（戦闘の _extra、旧 -10%）。計 198 本。
+
+## アメリカ西部編 第二幕：総構え（第5幕）・山城の抜け道・本気の戦の声（20261024q）
+- 流れ：town → castle → usPal → yamajiro → usOdw。山城の本丸が落ちかけると yjLost → yjEscStart（抜け道の印、PC 40 秒／スマホ 45 秒）。印に着けば campGo('usOdw')、間に合わなければ yjEnding()（画面外の切腹エンド）。山城単独モード（CAMP.solo）は従来どおり落城で終わる。
+- 第5幕は ODW / ODW_R / ODW_G / odwBuild / odwStart / odwOpTick / odwTick（game.js の「流れ：始め」の直前）。守りの層：外の土塁（zone0）→ 三の丸（zone1）→ 本丸（zone2 で yjEnding('総構えの大城')）。勝ち：全波を退ける、または 480 秒 zone0 を持ちこたえる。
+- 地形の移動判定は TERR.move（yjBuild→yjMoveOK、odwBuild→odwMoveOK、campDispose で消す）。NPC とプレイヤー両方が使う。
+- 名前の衝突：IIFE 内で同名の関数は後勝ち。宮殿の palTick と衝突したので幕用は campPalTick。
+- 徴募の娘：assets/conscripts/conscript_01〜08（既存の脇役侍女 mob01, mob02, mob04, mob08, mob09, girl35, girl39, girl41 から作った4方向の立ち絵、スマホは最初の4人）。着替え室の外の扉だけを映し、「規定の服装に着替え中…」の後に出てきて各自の制服の姿になる。全員18歳以上。腕は控えめ（aimErr×1.8、速さ×0.88）、組頭のそばにいる。
+- 本気の戦の声（USD / CAMP / UK2〜7 / FRS）：warSay・warChat。名前付きは wn_<who>_<kind>、無名は w_<rom><vv>_<kind>。倒れる時は短い声だけ。「戦死判定」表示は戦では出さない。声は tools/add_usd_voices.py（tools/voice_profiles.py の表から固定の声）。
+- クレジット：CREDITS.md、assets/yj_tex/CREDITS.md。

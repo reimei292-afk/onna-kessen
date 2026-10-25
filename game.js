@@ -14976,7 +14976,8 @@ function palRoomFurn(R) {
     case 'conv': for (let k = 0; k < 2; k++) shelf(3.5 + k * 3, 0, 0.8, rd - 4, M.white); B(back - 0.4, 0, 0.7, rd - 2, 2.0, M.mirror); B(1.6, hd - 1.4, 0.8, 2.0, 1.0, M.white); break;
     case 'gym': for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j++) B(3 + i * 3, j * 3.6, 1.6, 0.7, 1.0, M.dark); B(back - 0.3, 0, 0.1, rd - 2, 1.8, M.mirror, false); break;
     case 'dance': { const m = new THREE.Mesh(new THREE.PlaneGeometry(rd - 1, 2.4), M.mirror); m.position.set(palWX(R, back - 0.05), 1.5, R.zc); m.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(m); B(back - 0.4, 0, 0.06, rd - 1, 0.06, M.gold, false, 1.0); } break;
-    case 'banquet': { for (const k of [-1, 1]) B(mid - 0.5, k * 3.6, rw - 6, 1.2, 0.72, M.cloth); B(back - 2.3, 0, 1.2, 4.0, 0.72, M.cloth); B(back - 0.3, 0, 0.4, 0.6, 0.9, M.gold); for (let z = -hd + 2.5; z < hd - 2; z += 4) palChand(palWX(R, mid), R.zc + z, PAL_H - 0.15, 0.6);
+    case 'banquet': { const tl = rw - 3.4, tz = hd >= 10.4 ? [-8.4, -3.6, 3.6, 8.4] : [-3.6, 3.6];   // 長卓：奥行きいっぱい（入口側 2 m は通路）。広い部屋は 4 卓（侍女が皆そろうように）
+      for (const z of tz) B(2.0 + tl / 2, z, tl, 1.2, 0.72, M.cloth); R.bqTabs = tz.length; B(back - 2.3, 0, 1.2, 4.0, 0.72, M.cloth); B(back - 0.3, 0, 0.4, 0.6, 0.9, M.gold); for (let z = -hd + 2.5; z < hd - 2; z += 4) palChand(palWX(R, mid), R.zc + z, PAL_H - 0.15, 0.6);
       B(2.2, 0, 0.9, 5, 0.9, M.steel); for (let k = -2; k <= 2; k++) palCyl(0.3, 0.3, 0.12, [M.gold, M.white, M.red][(k + 2) % 3], palWX(R, 2.2), 0.96, R.zc + k * 0.9);   // ビュッフェ
       R.king = [back - 0.4, 0]; } break;   // 上座：いちばん奥の中央
     case 'karaoke': { const sc = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.2), M.screen); sc.position.set(palWX(R, back - 0.05), 1.8, R.zc); sc.rotation.y = R.side > 0 ? -Math.PI / 2 : Math.PI / 2; palAdd(sc); sofa(2.2, 0, 0.8, rd - 3, M.sofa); sofa(mid, -hd + 0.7, rw - 5, 0.8, M.sofa); sofa(mid, hd - 0.7, rw - 5, 0.8, M.sofa); B(mid, 0, 2.4, 1.2, 0.4, M.woodD); R.king = [mid, hd - 0.7]; } break;
@@ -15017,15 +15018,18 @@ function palSpots(R) {
     let near = null, nd = 1e9, bad = false;
     for (const f of R.foot) { const dx = Math.max(f.x0 - x, 0, x - f.x1), dz = Math.max(f.z0 - z, 0, z - f.z1), d = Math.hypot(dx, dz); if (d < 0.45) { bad = true; break; } if (d < nd) { nd = d; near = f; } }
     if (bad) continue;
-    S.push({ x, z, face: near && nd < 1.6 ? Math.atan2(near.cx - x, near.cz - z) : Math.atan2(palWX(R, R.rw / 2) - x, R.zc - z) + rand(-0.8, 0.8), taken: null });
+    S.push({ x, z, face: near && nd < 1.6 ? Math.atan2(near.cx - x, near.cz - z) : Math.atan2(palWX(R, R.rw / 2) - x, R.zc - z) + rand(-0.8, 0.8), taken: null, tab: !!(near && nd < 1.3) });
   }
   for (let i = S.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [S[i], S[j]] = [S[j], S[i]]; }
+  if (R.type === 'banquet') S.sort((a, b) => b.tab - a.tab);   // 宴会場：卓のそばの立ち位置から埋める
 }
 // ---- 人：時間帯ごとに、いまの階にいる娘だけを出す ----
 const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);
+// 日本の名の無い侍女の見た目すべて：侍女（旧 雑兵）mob・girl と、弓を持たない姿のある弓兵（archer01〜10）。名のある娘の写真は除く
+function jpMobLooks() { const no = PAL_NOGEN();
+  return Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.front && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
 function palPool() {
-  if (!PAL.poolAll) { const no = PAL_NOGEN();
-  PAL.poolAll = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
+  if (!PAL.poolAll) PAL.poolAll = jpMobLooks();
   if (palJoined()) return PAL.poolAll;   // 入宮式のあとは内定者だった娘も侍女として
   if (!PAL.poolNR) { const rc = new Set(palRc()); PAL.poolNR = PAL.poolAll.filter(id => !rc.has(id)); }
   return PAL.poolNR;
@@ -15075,11 +15079,14 @@ function palSpawnFloor() {
   // 名の無い侍女：部屋の混み具合で配る。廊下を行き来する娘も少し
   const pool = palPool().filter(id => !dep.has(id)); for (let i = pool.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [pool[i], pool[j]] = [pool[j], pool[i]]; }
   let pi = 0; const nextGirl = () => pool.length ? pool[pi++ % pool.length] : undefined;
-  const rest = Math.max(0, N - PAL.girls.length), walkers = bq ? 1 : USD_MOB ? 2 : 3;
+  // 夜の宴会：PC は名の無い侍女が皆そろう（どの見た目も一人ずつ）。スマホは人数だけ減らす（15 人、顔は重ならない）
+  const rest = bq ? (USD_MOB ? Math.max(0, 15 - PAL.girls.length) : pool.length) : Math.max(0, N - PAL.girls.length), walkers = bq ? 0 : USD_MOB ? 2 : 3;
+  const bqR = bq ? palRoomOf('banquet') : null;
   const W = PAL.rooms.map(R => (bq || evf) && R.type === 'banquet' ? 12 : (PAL_W[R.type] || [0, 0, 0, 0])[sl] * Math.sqrt(R.spots.length || 0)), tot = W.reduce((a, b) => a + b, 0);
   for (let i = 0; i < rest; i++) {
     if (i < walkers || !tot) { const e = palSpawn(0, 0, nextGirl(), null, '侍女'); if (e) palWalker(e); continue; }
     let r = Math.random() * tot, R = PAL.rooms[0]; for (let j = 0; j < W.length; j++) { r -= W[j]; if (r <= 0) { R = PAL.rooms[j]; break; } }
+    if (bqR && palFreeSpot(bqR)) R = bqR;   // 宴会中は皆が宴会場へ（満席なら同じ階のほかの部屋）
     const S = palFreeSpot(R); if (!S) continue;
     const e = palSpawn(S.x, S.z, nextGirl(), null, PAL_TAG[R.type] || '侍女'); if (!e) continue; palPlace(e, S, R);
     if (R.type === 'kitchen' && Math.random() < 0.6) e.ukTag = '厨房の調理係 ' + e.prof.name;
@@ -16050,7 +16057,7 @@ function palGoal() { return PAL.banquet === 'open' ? '宴会：浴場別館の�
 if (TEST) window.__pal = { PAL, jump: k => palJump(k), evKey: () => palEvKey(), near2: () => palNear(), md: () => palMD(), rcTalk: e => palRcTalk(e), newTalk: e => palNewTalk(e), bye: () => palEvBye(), knock: () => palDailyAct(false), nb: () => bodies.length, wf: () => { PAL.wfForce = true; palSpawnFloor(); }, pd: k => palPretend(k), pdT: () => palPDTarget(), go: (f, h) => palGoFloor(f, h || 'stairs'), slot: i => palSetSlot(i), key: () => palKey(), skip: () => ukDlgSkip(), pick: i => ukPick(i), dlg: () => !!UK.dlg, near: () => palNear(), elev: () => palElevator(), pong: () => palPong(), call: () => palBanquetCall(), seat: () => palBanquetSeat(), pl: () => player, wx: (R, x) => palWX(R, x) };
 // =====================================================================
 //  英国淑女編 第七幕「祝勝会」(?stage=ukParty)
-//   英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間で祝勝会。円卓 20 卓（殿の卓は入口から最も遠い中央）。
+//   英国は降伏した。日本へ帰る大型客船「瑞鳳丸」の大広間で祝勝会。円卓 22 卓（殿の卓は入口から最も遠い中央）。
 //   給仕は降伏した英国の娘たち（王女アラベラも給仕）と、船の技術を学ぶ侍女たち。戦いは無い（武器は鞘に収めたまま）。
 //   開会の挨拶（白瀬）→ 歓談（E：話す／英国の給仕を呼んで注文）→ 中締め（西園寺）→ 夜の甲板で想いを告げる → 「英国淑女編 完」
 // =====================================================================
@@ -16122,10 +16129,9 @@ function buildUkParty() {
   stageRoot.add(new THREE.AmbientLight(0xfff0dc, 0.55));
   // 立食の台（東西の壁沿い）
   for (const sx of [-1, 1]) for (const z of [-10, 2, 14, 24]) { u7Box(1.1, 0.9, 7, M.buf, sx * (U7.BUF + 0.9), 0.45, z, true); if (sx < 0 && z === 24) { u7Drinks(sx * (U7.BUF + 0.9), z); continue; } for (let k = -2; k <= 2; k++) u7Food(sx * (U7.BUF + 0.9), 0.915, z + k * 1.3, (k + 2 + (z > 10 ? 3 : 0) + (sx > 0 ? 1 : 0)) % 6); }
-  // 円卓 20：殿の卓（中央・入口から最も遠い）、隣の卓、ほか 18
+  // 円卓 22：殿の卓（中央・入口から最も遠い）、隣の卓、ほか 20（南の列も 5 卓。侍女の見た目が均等に出るように 2 卓増やした）
   u7Table(U7.KING[0], U7.KING[1], true); u7Table(U7.T2[0], U7.T2[1], false);
-  for (const z of [-8, 3, 14]) for (const x of [-18, -9, 0, 9, 18]) u7Table(x, z, false);
-  for (const x of [-9, 0, 9]) u7Table(x, 24, false);
+  for (const z of [-8, 3, 14, 24]) for (const x of [-18, -9, 0, 9, 18]) u7Table(x, z, false);
   // 厨房（南東の隅、配膳台ごしに見える）：ステンレスの調理台・コンロ・鍋・換気フード
   { const st = new THREE.MeshLambertMaterial({ color: 0xb8bcc2 }), dk = new THREE.MeshLambertMaterial({ color: 0x2a2c30 }), tile = new THREE.MeshLambertMaterial({ color: 0xdfe4e6 });
     const tf = new THREE.Mesh(new THREE.PlaneGeometry(10.4, 5.4), tile); tf.rotation.x = -Math.PI / 2; tf.position.set(19.6, 0.02, 30.2); stageRoot.add(tf);
@@ -16163,9 +16169,12 @@ function u7SpawnAll() {
   const vip = (key, girl, T, si, pers, cm) => { const e = u7Spawn(T.seats[si].x, T.seats[si].z, GIRLS[girl] ? girl : undefined, { name: UK7_NAME[key], pers, cm, vv: 1 }, { uk7Vip: key }); if (!e) return; e.ukTag = UK7_NAME[key]; u7Seat(e, T.seats[si], T); UK7.vip[key] = e; };
   vip('ojou', OJOU_ID, K, 0, '冷静', 163); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
   vip('fumi', FUMI_ID, T2, 0, '慎重', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
+  // 名の無い侍女：日本の侍女の見た目（旧 雑兵・弓を持たない弓兵も）を混ぜて順に配る → どの見た目も同じ回数（差は 1 まで）
+  const looks = jpMobLooks(); for (let i = looks.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [looks[i], looks[j]] = [looks[j], looks[i]]; }
+  let li = 0; const look = () => looks.length ? looks[li++ % looks.length] : undefined; UK7.looks = looks;
   let n = 0;
-  for (const T of UK7.tables.slice(2)) for (let si = 0; si < 5; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; e.uk7Bg = UK7.bgN = ((UK7.bgN == null ? -1 : UK7.bgN) + 1); } }
-  for (const [x, z, f] of [[-14, U7.Z0 - 10.9, Math.PI], [-12.8, U7.Z0 - 10.6, -2.4], [11, U7.Z0 - 10.9, Math.PI], [16, U7.Z0 - 10.8, 2.7], [17, U7.Z0 - 9.8, 0.3]]) { const e = u7Spawn(x, z); if (!e) continue; e.uk7Deck = true; e.ukTag = '甲板で夜風に当たる ' + e.prof.name; u7Seat(e, { x, z, face: f, taken: null }, null); }   // 夜の甲板で風に当たる娘
+  UK7.tables.slice(2).forEach((T, ti) => { const per = USD_MOB && ti % 2 ? 4 : 5; for (let si = 0; si < per; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z, look()); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; e.uk7Bg = UK7.bgN = ((UK7.bgN == null ? -1 : UK7.bgN) + 1); } } });
+  for (const [x, z, f] of [[-14, U7.Z0 - 10.9, Math.PI], [-12.8, U7.Z0 - 10.6, -2.4], [11, U7.Z0 - 10.9, Math.PI], [16, U7.Z0 - 10.8, 2.7], [17, U7.Z0 - 9.8, 0.3]]) { const e = u7Spawn(x, z, look()); if (!e) continue; e.uk7Deck = true; e.ukTag = '甲板で夜風に当たる ' + e.prof.name; u7Seat(e, { x, z, face: f, taken: null }, null); }   // 夜の甲板で風に当たる娘
   // 給仕：降伏した英国の娘たち（王女アラベラも）と、船の技術を学ぶ侍女
   const posts = [[-20.5, -10], [-20.5, 2], [-20.5, 14], [-20.5, 24], [20.5, -10], [20.5, 2], [20.5, 14], [20.5, 24], [-4.5, 9], [4.5, -2], [-4.5, -13]];
   ['uk01', 'uk02', 'uk03', 'uk04', 'uk05', 'uk06', 'uk07', 'uk08', 'uk09', 'uk10', 'uk00'].forEach((id, i) => {
@@ -16173,7 +16182,7 @@ function u7SpawnAll() {
     const e = u7Spawn(x, z, id, { name: G.name, pers: G.pers, cm: G.cm, vv: G.vv }, { uk7Crew: id }); if (!e) return;
     e.ukTag = (id === 'uk00' ? '給仕 ' : '船の給仕 ') + G.name; e.uk7Post = [x, z]; e.uk7Wp = [x, z + (i % 2 ? 4 : -4)]; e.speed = 1.1; UK7.crew.push(e);
   });
-  for (const [x, z, cook] of [[-3, 30], [3, 30], [-21, 30], [17, 30.6, 1], [21, 30.6, 1]]) { const e = u7Spawn(x, z, undefined, null, { uk7Crew: 'jp' }); if (e) { e.ukTag = (cook ? '厨房（侍女） ' : '船員（侍女） ') + e.prof.name; if (cook) e.faceWant = e.face = 0; e.uk7Post = [x, z]; e.uk7Wp = [x, z]; } }
+  for (const [x, z, cook] of [[-3, 30], [3, 30], [-21, 30], [17, 30.6, 1], [21, 30.6, 1]]) { const e = u7Spawn(x, z, look(), null, { uk7Crew: 'jp' }); if (e) { e.ukTag = (cook ? '厨房（侍女） ' : '船員（侍女） ') + e.prof.name; if (cook) e.faceWant = e.face = 0; e.uk7Post = [x, z]; e.uk7Wp = [x, z]; } }
 }
 // ---- 動き：立食の台へ行って戻る侍女、給仕、注文 ----
 function uk7Brain(e, dt) {
@@ -16769,7 +16778,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261025b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261025c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

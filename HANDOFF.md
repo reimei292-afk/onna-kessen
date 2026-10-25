@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261024s`
+- 現在のバージョン: `20261025c`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。
   2. `node --check game.js`
@@ -316,3 +316,11 @@
 - テスト用：`?rkts=3`（時間 3 倍）、`?rkgod=1`（殿に当たらない）。/tmp/rktest.js・/tmp/rkauto.js・/tmp/rkshots.js。
 - game.js：`buildUsRaid` / `rkReset` / `rkStart` / `rkUpdate` / `rkFtrTick` / `rkAATick` / `rkBombTick` / `rkCrewTick` / `rkFinish`（`function frame(now)` の前の RK ブロック）。RK.on のとき frame() はふつうの更新を飛ばす。
 - 残り：同時に最終進入した機が重なることがある、台詞の setTimeout は時間倍率に合わせていない、外からの視点は単純な追尾カメラ。
+
+## 宴の席：侍女の見た目を均等に（20261025c）
+- 原因：祝勝会（ukParty）の名の無い侍女は `pickGirl('mob')` で選んでいて、type 'mob' だけ（弓兵 archer01〜10 は一度も出ない）・名のある娘の写真（sec5〜7・girl26/31/34/37）も混ざる・同じ顔が最大 7 人だった。宮殿の夜の宴会は階の 24 人を部屋の重みで配るので、宴会場に来る名の無い侍女は 3 人ほどだった。
+- `jpMobLooks()`（palPool の元）：日本の名の無い侍女の見た目すべて＝mob（旧 雑兵）・girl21〜44・弓を持たない姿のある archer01〜10。PAL_NOGEN（名のある娘・秘書・笛役など）は除く。arch01〜06 は弓を引く写真しか無いので宴には出さない。徴募の娘（assets/conscripts）の制服姿は mob01/02/04/08/09・girl35/39/41 そのもので、この中に入っている。
+- 祝勝会：見た目を混ぜて順に配る（`UK7.looks`）。円卓を 20→22 卓（南の列 z=24 に x=±18 を足して 5 卓×4 列）。PC は 20 卓×5 人＋甲板 5＋船員 5＝110 人（35 種が 3〜4 回ずつ）、スマホ（?lite=1）は卓ごとに 5/4 人で従来どおり 100 人（2〜3 回ずつ）。弓の写真は出ない。
+- 宮殿の夜の宴会：宴会場の長卓を 2→4 卓（部屋の奥行き hd≥10.4 のとき z=±3.6/±8.4、長さ rw−3.4、入口側 2 m は通路）。立ち位置は卓のそば（S.tab）から埋める。宴会中は名の無い侍女が皆、宴会場へ（PC は palPool 全員を一人ずつ：入宮前 23 人・入宮後 35 人。スマホは名のある 8 人と合わせて 15 人、顔は重ならない）。廊下を歩く娘は宴会中は無し。
+- 内定式・入宮式・給料日の列は元から一人一回（重なり無し）なので変えていない。
+- 試験：/tmp/bq_audit.js（`node bq_audit.js <lite 0|1> all <tag> [shot]`）、/tmp/bq_shot.js、/tmp/bq_join.js（入宮後の宴会）。

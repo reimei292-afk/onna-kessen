@@ -3614,6 +3614,7 @@ function yariDrop(e) {
 }
 function yariPose(e, dt) {
   const g = e.spear; if (!g) return;
+  if (e._msYari) { g.visible = false; return; }   // 動画の槍が描いてある。立体の槍は重ねない
   g.visible = e.state !== 'down' && !e.ramCrew && !e.hiddenAmb;
   if (!g.visible) return;
   let ang = -1.3, push = 0;
@@ -16778,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261025c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261025d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -20725,6 +20726,7 @@ function animateNpc(e, dt, lean) {
   }
   // ---- 動画から作ったコマ（motion_sprite.js）。読めていない／対象外なら従来の写真 ----
   let msOn = false, msWalk = false, msBow = false;
+  e._msYari = false;
   if (MS_ON && MS_GIRLS[g.id]) {
     msPrefetch(g.id);
     if (MotionSprite.ready(g.id) && isUp(e) && !e.kneel && !e.fluter && !e.seated && !e.lean && !e.wounded && !airportAirborne && !airportGroundAlive && !(gd.top && el > 0.9) && !(gd.low && el < -0.6)) {
@@ -20732,17 +20734,29 @@ function animateNpc(e, dt, lean) {
       const st = { id: g.id, facing: f, x: p.x, z: p.z, camX: camera.position.x, camZ: camera.position.z };
       if (e.kind === 'archer' && !e._msBowNeed) { e._msBowNeed = 1; if (MotionSprite.need) MotionSprite.need(g.id, 'bow'); }   // 弓のページは弓兵の時だけ読む
       let ms = null;
-      if (e.kind === 'archer' && (e.state === 'aim' || e.state === 'zanshin')) {
+      const wepU = (stage, u) => ({ stage, u: Math.max(0, Math.min(0.999, u)) });
+      if (e.yari && (e.state === 'windup' || e.state === 'recover' || e.state === 'charge')) {
+        if (!e._msYariNeed && MotionSprite.need) { e._msYariNeed = 1; MotionSprite.need(g.id, 'yari'); }
+        const wu = e.state === 'windup' ? wepU('windup', e.t / YARI.windup) : e.state === 'charge' ? wepU('hit', 0.4) : (e.t < 0.18 ? wepU('hit', e.t / 0.18) : wepU('back', (e.t - 0.18) / 0.67));
+        ms = { state: 'yari', weapon: wu };
+      }
+      else if (e.melee && !e.yari && !e.ramCrew && (e.state === 'windup' || e.state === 'recover')) {
+        if (!e._msTantoNeed && MotionSprite.need) { e._msTantoNeed = 1; MotionSprite.need(g.id, 'tanto'); }
+        const wu = e.state === 'windup' ? wepU('windup', e.t / 0.45) : (e.t < 0.16 ? wepU('hit', e.t / 0.16) : wepU('back', (e.t - 0.16) / 0.5));
+        ms = { state: 'tanto', weapon: wu };
+      }
+      else if (e.kind === 'archer' && (e.state === 'aim' || e.state === 'zanshin')) {
         const a = MotionSprite.viewDeg(st);   // 真正面・真後ろ（±20°）から見るときは、横向きに引くコマが不自然なので従来の弓の写真
         if (!(a < 20 || a > 340 || Math.abs(a - 180) < 20)) ms = { state: 'bow', bow: msBowStage(e, ka) };
       }
       else if (!acting && moving) ms = { state: 'walk', stepT: e.stepT, speed: sv };
       else if (!acting && !thrust) ms = { state: 'idle' };
+      e._msYari = !!(ms && ms.state === 'yari');
       if (ms) { Object.assign(ms, st); msOn = MotionSprite.update(e, ms); }
       if (msOn) {
-        e.msOn = true; msWalk = ms.state === 'walk'; msBow = ms.state === 'bow'; if (msWalk) { bob = 0; rock = 0; }   // 上下動は動画に含まれる
+        e.msOn = true; msWalk = ms.state === 'walk'; msBow = ms.state === 'bow' || ms.state === 'yari' || ms.state === 'tanto'; if (msWalk) { bob = 0; rock = 0; }   // 上下動は動画に含まれる。武器のコマには武器が描き込み済み
         const t = e.mat.map; if (t && e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(t.offset.x, t.offset.y, t.repeat.x, t.repeat.y);
-      }
+      } else e._msYari = false;
     }
   }
   if (!msOn) { if (e.msOn) { MotionSprite.detach(e); e.msOn = false; } setFrame(e, fr, mirror); }

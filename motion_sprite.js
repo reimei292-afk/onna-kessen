@@ -85,6 +85,16 @@
         // 射の方向（= facing）が画面の右なら元のまま、左なら反転。弓のコマは「体はカメラ向き・矢は画面右へ」
         return ['bow', k, a < 180];
       }
+      case 'yari':
+      case 'tanto': {
+        var Wep = meta[st.state];
+        if (!Wep || !S[st.state]) return null;   // 槍・懐刀のコマが無い娘は従来の写真
+        var wb = st.weapon || { stage: 'windup', u: 0 }, wr = Wep.stages[wb.stage] || Wep.stages.windup;
+        var wu = Math.max(0, Math.min(0.999, wb.u || 0));
+        k = wr[0] + Math.floor(wu * (wr[1] - wr[0] + 1));
+        if (k > wr[1]) k = wr[1];
+        return [st.state, k, a < 180];   // 画面右へ突く絵。相手が左なら反転
+      }
       case 'fall': n = S.fall.f.length; k = Math.min(n - 1, Math.floor((st.fallT || 0) * FALL_FPS)); return ['fall', k, a < 180];
       case 'down': n = S.fall.f.length; return ['fall', n - 1, a < 180];
       default: k = Math.round(a / 22.5) % 16; return ['turn', k, false];

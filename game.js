@@ -16779,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261025d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261025e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17939,7 +17939,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   return e;
 }
 // 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
-// ---- 動画から作ったコマ（motion_sprite.js）：mob01 と mob02。既定では使わない。?msprite=1 のときだけ。読めない／file:// なら従来の写真 ----
+// ---- 動画から作ったコマ（motion_sprite.js）：mob01 と mob02。index.html がアドレスに ?msprite=1 を付ける。?msprite=0 なら従来の写真 ----
 const MS_ON = !!window.MotionSprite && /[?&]msprite=1/.test(location.search) && /^https?:/.test(location.protocol);
 const MS_GIRLS = { mob01: 'assets/motion/mob01/', mob02: 'assets/motion/mob02/' };
 function msPrefetch(gid) { if (MS_ON && MS_GIRLS[gid]) MotionSprite.load(gid, MS_GIRLS[gid], { lite: LITE, v: ASSET_V }); }   // 何度呼んでも一度だけ読む。スマホは小さいアトラス

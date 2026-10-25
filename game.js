@@ -11495,7 +11495,7 @@ function yjPressWatch(e, dt) {
   }
   if (now - W.t > 8 && e.yjPush && now - e.yjPush < 6) { e.yjFree = now + 3; W.t = now; CAMP.yjFreeN = (CAMP.yjFreeN || 0) + 1; return false; }   // 向け直しても進めない：道へ抜け出させる
   if (e.yjPush > now && now - (e.yjPush - 6) > 2.5 && Math.hypot(p.x - W.px, p.z - W.pz) < 0.8) { e.yjPush = 0; e.yjFree = now + 3; CAMP.yjFreeN = (CAMP.yjFreeN || 0) + 1; return false; }   // 向け直しても 2.5 秒で 0.8m も進まない
-  if (now - W.t > 5.5 && !(e.yjPush > now) && e.usdRel == null) { e.yjPush = now + 6; W.t = now; W.px = p.x; W.pz = p.z; if (e.usCvP) e.usCvP.by = null; e.usCvP = null; e.usdT = 0; CAMP.yjPushN = (CAMP.yjPushN || 0) + 1; }
+  if (now - W.t > 5 && !(e.yjPush > now)) { e.yjPush = now + 6; W.t = now; W.px = p.x; W.pz = p.z; if (e.usCvP) e.usCvP.by = null; e.usCvP = null; e.usdT = 0; CAMP.yjPushN = (CAMP.yjPushN || 0) + 1; }
   return e.yjPush > now;
 }
 function yjPushTick(e, t, dt) {
@@ -16695,7 +16695,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

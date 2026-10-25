@@ -272,8 +272,17 @@
 - **archer01-10 の素手の絵**：`assets/archer_un/archerNN_sheet.jpg`（今の絵を参考に同じ顔・髪・体つき・標準の装いで生成）を `tools/make_archer_unarmed.py` で front / front_diag / side / back / walk に分け、down は元の絵から弓を取り除いた。戦では弓の小道具を持ち、弓を引く瞬間だけ元の写真（`g.bow`）。宮殿の日常では部署のある普通の侍女として出る（`PAL.poolAll` が `g.unarmed` の弓兵も含む）。
 - **薙刀**：`NAGI`（間合い 2.6m・振りかぶり 0.55s・前方の扇に最大4人・押し返し）。`nagiSweep` は血を出さない（`nagiKO`）。大宮の近衛隊（宮殿の大階段の踊り場の組：`palNagi`）と西園寺（`opt.ojou` / `campNamed('ojou')`、戦では薙刀で戦う）。
 - **骨格タイプ（骨格診断）**：`KOKKAKU[gid]` = 'S'（ストレート）／'W'（ウェーブ）／'N'（ナチュラル）。`tools/make_kokkaku.py` が今の絵の肩幅・腰幅の比から中立に判定（絵は変えていない）。動きは `KK` で少しだけ変える（上下の揺れ・歩幅と足の速さ・横揺れ・姿勢の傾き）。弓兵の素手の絵は元の絵と同じ体つきで作ったので、タイプはそのまま。今後絵を作り直すときも同じタイプを保つこと。
-- S（ストレート） 34人：archer01、archer02、archer03、archer05、archer06、girl21、girl22、girl23、girl26、girl28、girl29、girl31、girl34、girl37、girl40、girl42、girl43、girl44、medic、mob01、mob02、mob03、mob05、mob08、mob09、mob10、ojou、sec6、sysop、uk01、uk07、uk09、uk10、us04
-- W（ウェーブ） 34人：archer07、archer09、archer10、fr03、fr07、fr08、fumi、girl24、girl25、girl27、girl30、girl32、girl35、girl36、girl38、girl39、girl41、mob04、mob06、mob07、nurse2、omiya、sec3、sec5、sec7、uk00、uk04、uk06、us02、us07、us10、us11、us12、us14
+- S（ストレート） 33人：archer01、archer02、archer03、archer05、archer06、girl21、girl22、girl23、girl26、girl28、girl29、girl31、girl34、girl37、girl40、girl42、girl43、girl44、medic、mob02、mob03、mob05、mob08、mob09、mob10、ojou、sec6、sysop、uk01、uk07、uk09、uk10、us04
+- W（ウェーブ） 35人：archer07、archer09、archer10、fr03、fr07、fr08、fumi、girl24、girl25、girl27、girl30、girl32、girl35、girl36、girl38、girl39、girl41、mob01、mob04、mob06、mob07、nurse2、omiya、sec3、sec5、sec7、uk00、uk04、uk06、us02、us07、us10、us11、us12、us14
 - N（ナチュラル） 33人：arch01、arch02、arch03、arch04、arch05、arch06、archer04、archer08、fr01、fr02、fr04、fr05、fr06、fr09、fr10、girl33、sec4、surgeon、uk02、uk03、uk05、uk08、us01、us03、us05、us06、us09、us13、us15、us16、us17、us18、us19
-- **山城の山砲**：引き上げる間、近くの小銃兵が最大4人（スマホ2人）護衛として砲の前と左右に付き、膝をついて撃ち返す（`usEscortTick` / `usEscortGoal`）。組が倒れたら護衛から補う（3回まで、スマホ2回）。砲のそばで引く組は、矢・弾の半分ほどを砲の盾が受ける（刃は防げない）。組を倒し切れば砲は止まる。
+- **山城の山砲**：引き上げる間、近くの小銃兵が最大4人（スマホ2人）護衛として砲の前と左右に付き、膝をついて撃ち返す（`usEscortTick` / `usEscortGoal`）。組が倒れたら護衛から補う（4回まで、スマホ3回）。砲のそばで引く組は、矢・弾の6割ほどを砲の盾が受け、引き手は体力が1多い（刃は防げない）。組を倒し切れば砲は止まる。離れた組・護衛は斜面をまっすぐ行かず、砲が通ったつづら折りをたどる（`usViaRoute`。以前は斜面で詰まって追いつけなかった）。
 - index.html の ?v= は **22 個**（frames_props.js が増えた）。ASSET_V と一緒に上げること。
+
+## 20261024u：mob01 の動画スプライト（16方向の待機・5方向の歩き・弓道の射）
+- `motion_sprite.js`（試作 /workspace/motion_proto から写したもの。three の後、game.js の前で読む）と `assets/motion/mob01/`（atlas.json + mob01_motion.webp、スマホは atlas_lite.json + mob01_motion_lite.webp）。**index.html の ?v= は 23 個**になった。
+- game.js：`MS_ON` / `MS_GIRLS` / `msPrefetch` / `msBowStage`（KAI・KY_SET・KY_DRAW と残心 0.35 秒から段階を決める。性格は `e.prof.pers`）。`animateNpc` の `setFrame` の所で、待機・歩き・弓をアトラスのコマに替える。座り・膝つき・負傷・笛・真上/真下の視点・空港の降下兵・突きでは従来の写真。読めない／file:// ／`?msprite=0` でも従来の写真。
+- 弓：真正面・真後ろ（±20°）から見るときは従来の弓の写真に戻す。弓のコマの間は手の持ち物（弓・矢筒）を出さない（コマに描き込み済み）。待機・歩きでは懐刀／弓の小道具が手に付く。
+- 歩きのコマには上下動が含まれるので、板の bob / roll（KK・MOTION とも）は足さない。足の運びの速さは骨格のタイプで変わる。**mob01 の骨格タイプは W（ウェーブ）**（アトラスの撮り直しもウェーブの歩き方）。
+- 縁の暗さ：`spriteMat` に `uUvR`（コマの offset / repeat）を足し、左右の端の暗さをコマ基準で計算する。従来の写真では (0,0,1,1)。
+- 倒れ方は今のまま（板を傾ける → `down` の写真で寝る）。
+- `pickGirl`：弓兵を選ぶとき、mob01 が出ていなければ3割で mob01（弓道の射のコマが見えるように）。

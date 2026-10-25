@@ -11118,7 +11118,8 @@ function usStormGoal(e, O) {
   const ds = Math.hypot(O.sx - p.x, O.sz - p.z);
   if (ds > 14) return null;
   if (time - S.cT > 1) { S.cT = time; S.n = CAMP.live.orange.filter(o => o.campUs && !o.usGun && Math.hypot(O.sx - o.s.position.x, O.sz - o.s.position.z) < 12).length; if (!S.t0) S.t0 = time; }
-  if (S.n >= (USD_MOB ? 5 : 10) || (S.t0 && time - S.t0 > 25)) {
+  const yq = O.id === 'yj0' && yjPressOn();   // 山城・三の丸：溜まりすぎない
+  if (S.n >= (yq ? (USD_MOB ? 4 : 6) : USD_MOB ? 5 : 10) || (S.t0 && time - S.t0 > (yq ? 10 : 25))) {
     S.go = time; usOrder(e, 'u_bayo', 3); setTimeout(() => { if (CAMP.on) usOrder(e, 'u_chg', 3); }, 1300); CAMP.usStormN = (CAMP.usStormN || 0) + 1;
   }
   return { pt: [O.sx + (e.lane || 0) * 3.2, O.sz], hold: true, sp: 1 };
@@ -11154,6 +11155,8 @@ function campUsBrain(e, dt) {
   let t = e.tgt2; if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = t = null; e.usdT = 0; }
   if (t && e.tgtD < 2.4) return usBayo(e, t, dt);
   if (e.usSq) usSqUpd(e.usSq);
+  const yjP = yjPressOn();
+  if (yjP && yjPressWatch(e, dt)) return yjPushTick(e, t, dt);
   const goal = (e.usEscort && usEscortGoal(e)) || (CAMP.usGoal && CAMP.usGoal(e)) || (CAMP.usObj && (() => { const O = CAMP.usObj(e); return O ? usStormGoal(e, O) : null; })()) || null;
   let tg = goal && goal.pt ? goal.pt : campAdvance(e);
   if (goal && goal.route && CASTLE.on) tg = castleRoute(p, tg[0], tg[1]);
@@ -11164,7 +11167,7 @@ function campUsBrain(e, dt) {
   const atGoal = goal && goal.hold && Math.hypot(tg[0] - p.x, tg[1] - p.z) < 0.6;
   if (t && !(goal && goal.charge)) {
     const tx = t.isPlayer ? player.pos.x : t.s.position.x, tz = t.isPlayer ? player.pos.z : t.s.position.z, d = Math.hypot(tx - p.x, tz - p.z);
-    const want = e.usdW === 'colt' ? 14 : 34, bound = e.usdW !== 'colt' && e.usSq && e.usSq.mv === e.usHalf && !(goal && goal.hold);
+    const want = yjP ? (e.usdW === 'colt' ? 12 : 24) : e.usdW === 'colt' ? 14 : 34, bound = e.usdW !== 'colt' && e.usSq && e.usSq.mv === e.usHalf && !(goal && goal.hold);
     if (goal && goal.hold) { if (!atGoal && sp > 0) campStep(e, tg, sp, dt); else { e.faceWant = Math.atan2(tx - p.x, tz - p.z); e.kneel = e.usdW !== 'colt'; } }
     else if ((d > want || bound) && e.usdRel == null && sp > 0) {
       if (!e.usCvP || Math.hypot(e.usCvP[0] - p.x, e.usCvP[1] - p.z) < 0.5) { const c = bound ? usCoverAhead(e, tg) : null; if (e.usCvP) { e.usCvP.by = null; } e.usCvP = c; if (c) c.by = e; }
@@ -11473,6 +11476,34 @@ function campUsBrainJp(e, dt) {
   return true;
 }
 // 次に向かう点（段ごとの道順）。落とし穴を見抜いた者は穴を避ける
+// ---- 山城・三の丸だけ：アメリカ勢が溜まって止まらないように ----
+// 8 秒進まない兵は、近い守り手か次の道の点へ向け直す（6 秒、前へ）。地形に足を取られて動けない（竪堀の中など）ときは道の方へ抜け出させる
+function yjPressOn() { return YJ.on && CAMP.ph === 4 && !CAMP.solo && CAMP.zone === 0; }
+function yjPressWatch(e, dt) {
+  const p = e.s.position, now = CAMP.bt, W = e.yjW || (e.yjW = { x: p.x, z: p.z, t: now, sx: p.x, sz: p.z, st: now });
+  if (Math.hypot(p.x - W.x, p.z - W.z) > 1.5) { W.x = p.x; W.z = p.z; W.t = now; }
+  if (Math.hypot(p.x - W.sx, p.z - W.sz) > 0.3) { W.sx = p.x; W.sz = p.z; W.st = now; }
+  else if (e.moving && now - W.st > 2) { e.yjFree = now + 2.5; W.st = now; CAMP.yjFreeN = (CAMP.yjFreeN || 0) + 1; }   // 足を動かしているのに進まない：地形に止められている
+  if (e.yjFree > now) {
+    let bx = 0, bz = p.z + 2, bd = 1e9;
+    for (let i = 0; i < YJ_PATH.length - 1; i++) { const [ax, az] = YJ_PATH[i], [cx, cz] = YJ_PATH[i + 1], dx = cx - ax, dz = cz - az, L = dx * dx + dz * dz || 1, u = clamp(((p.x - ax) * dx + (p.z - az) * dz) / L + 0.15, 0, 1), qx = ax + dx * u, qz = az + dz * u, d = Math.hypot(qx - p.x, qz - p.z); if (qz > p.z - 1 && d < bd) { bd = d; bx = qx; bz = qz; } }
+    const d = Math.hypot(bx - p.x, bz - p.z) || 1, s = Math.min(d, e.speed * 0.7 * dt);
+    p.x += (bx - p.x) / d * s; p.z += (bz - p.z) / d * s; e.footOk = [p.x, p.z]; e.moving = true; e.kneel = false; e.faceWant = Math.atan2(bx - p.x, bz - p.z);
+    W.sx = p.x; W.sz = p.z;
+    return false;
+  }
+  if (now - W.t > 8 && !(e.yjPush > now) && e.usdRel == null) { e.yjPush = now + 6; W.t = now; if (e.usCvP) e.usCvP.by = null; e.usCvP = null; e.usdT = 0; CAMP.yjPushN = (CAMP.yjPushN || 0) + 1; }
+  return e.yjPush > now;
+}
+function yjPushTick(e, t, dt) {
+  const p = e.s.position;
+  let tg = null;
+  if (t && !t.isPlayer && isUp(t) && e.tgtD < 30 && p.z > -58) { const tp = t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z); if (d < 2.4) return usBayo(e, t, dt); tg = [tp.x + (e.lane || 0) * 2, tp.z - 3]; }
+  if (!tg) tg = campAdvance(e);   // 虎口の下では道をたどる（切岸は登れない）
+  campStep(e, tg, e.speed * (e.usdW === 'colt' ? 1.05 : 0.95), dt); e.kneel = false;
+  if (e.usdRel != null && (e.usdRel -= dt) <= 0) { e.usdRel = null; e.ammo = USD_W[e.usdW].mag; }
+  return true;
+}
 function campAdvance(e) {
   const R = e.route || CAMP.route || [[0, 0]], p = e.s.position;
   let i = e.wp || 0;
@@ -11482,6 +11513,7 @@ function campAdvance(e) {
   let [tx, tz] = R[i];
   if (e.lane == null) e.lane = rand(-1, 1);
   tx += e.lane * (R[i][2] || 1.5);
+  if (e.campUs && yjPressOn() && p.z < -66 && !e.usEscort) tx = clamp(R[i][0] + e.lane * 3.6, -7.6, 7.6);   // 三の丸の下の斜面：散兵の間隔（竪堀 |x|≈9.5 には入らない）
   if (CAMP.ph === 1 && e.pitWise) for (const P of TOWN.pits) if (!P.used && P.z > p.z && P.z - p.z < 5 && Math.abs(P.x - p.x) < 1.8) tx = P.x + (p.x >= P.x ? 2.3 : -2.3);
   return [tx, tz];
 }
@@ -12228,7 +12260,7 @@ function yjStart() {
 }
 function yjSpawnWave(n) {
   for (let i = 0; i < n; i++) {
-    const x = rand(-6, 6), z = -108 - rand(0, 4) - (i % 6);
+    const x = rand(-6, 6), z = !yjPressOn() ? -108 - rand(0, 4) - (i % 6) : -101 - rand(0, 2) - (i % 6) * 1.4;   // 三の丸の間：-112 より下は歩けない（足が地形に止められて動けなくなる）ので、その手前に出す
     if (CAMP.solo) { const e = spawnEnemy(x, z, i % 3 === 0 ? 'archer' : 'mob', false, 'orange', { yari: i % 3 === 1 ? 1 : -1 }); if (e) { e.sq = null; e.campUs = true; e.campJpFoe = true; e.ammo = 99; e.hp = e.hpMax = 3; e.passive = true; e.state = 'idle'; e.wp = 0; e.s.rotation.y = e.face = e.faceWant = 0; CAMP.usAll = (CAMP.usAll || 0) + 1; } }
     else { const e = campUs(x, z, campUsW()); if (e) e.baseY = e.s.position.y = yjH(x, z); }
   }
@@ -17819,8 +17851,8 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   return e;
 }
 // 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
-// ---- 動画から作ったコマ（motion_sprite.js）：今は mob01 だけ。読めない／file:// ／?msprite=0 なら従来の写真 ----
-const MS_ON = !!window.MotionSprite && !/[?&]msprite=0/.test(location.search) && /^https?:/.test(location.protocol);
+// ---- 動画から作ったコマ（motion_sprite.js）：今は mob01 だけ。既定では使わない（画質がまだ写真に及ばない）。?msprite=1 のときだけ。読めない／file:// なら従来の写真 ----
+const MS_ON = !!window.MotionSprite && /[?&]msprite=1/.test(location.search) && /^https?:/.test(location.protocol);
 const MS_GIRLS = { mob01: 'assets/motion/mob01/' };
 function msPrefetch(gid) { if (MS_ON && MS_GIRLS[gid]) MotionSprite.load(gid, MS_GIRLS[gid], { lite: LITE, v: ASSET_V }); }   // 何度呼んでも一度だけ読む。スマホは小さいアトラス
 function msBowStage(e, ka) {   // 弓の段階：胴造り→打起し・引分け→会→離れ→残心（敵の AI の時間に合わせる）

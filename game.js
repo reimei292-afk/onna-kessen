@@ -11037,6 +11037,7 @@ function usGunTick(G, dt) {
     const near = G.crew.filter(c => Math.hypot(c.s.position.x - gx, c.s.position.z - gz) < 3.2).length;
     if (!G.hauling) { G.hauling = true; usOrder(G.crew[0], 'u_haul', 20); }
     usEscortTick(G, dt);
+    for (const c of G.crew) if (!c.haulHp) { c.haulHp = 1; c.hp += 1; c.hpMax = (c.hpMax || 3) + 1; }   // 引き手は少しだけ打たれ強い（倒せる）
     if (near && d > 0.2) { const s = Math.min(d, (near >= 2 ? 1.4 : 0.85) * dt); G.g.position.x += (tx - gx) / d * s; G.g.position.z += (tz - gz) / d * s; G.g.rotation.y = Math.atan2(tx - gx, tz - gz) + Math.PI; }
     if (d <= 0.25) G.pi++;
     G.x = G.g.position.x; G.z = G.g.position.z; return;
@@ -11063,13 +11064,21 @@ function usEscortTick(G, dt) {
   const gx = G.g.position.x, gz = G.g.position.z, want = USD_MOB ? 2 : 4;
   G.esc = (G.esc || []).filter(o => isUp(o) && o.usEscort === G);
   for (const o of CAMP.live.orange) { if (G.esc.length >= want) break; if (!o.campUs || o.usGun || o.usEscort || o.usClimb || o.usdW === 'colt' || !isUp(o)) continue; if (Math.hypot(o.s.position.x - gx, o.s.position.z - gz) > 40) continue; o.usEscort = G; G.esc.push(o); }
-  const maxRe = USD_MOB ? 2 : 3;
+  const maxRe = USD_MOB ? 3 : 4;
   while (G.crew.length < G.need && G.esc.length && (G.refill || 0) < maxRe) { const o = G.esc.shift(); o.usEscort = null; o.usGun = G; G.crew.push(o); o.usdW = 'spr'; o.ammo = 1; o.hpk = undefined; G.refill = (G.refill || 0) + 1; }
+}
+// 山城：砲から離れた組・護衛は、まっすぐ斜面を行かず、砲の通ったつづら折り（G.route）をたどって追いつく
+function usViaRoute(p, G, tx, tz) {
+  if (!YJ.on || !G.route || Math.hypot(tx - p.x, tz - p.z) < 6) return [tx, tz];
+  let bi = 0, bd = 1e9; for (let i = 0; i <= G.pi && i < G.route.length; i++) { const d = Math.hypot(G.route[i][0] - p.x, G.route[i][1] - p.z); if (d < bd) { bd = d; bi = i; } }
+  const j = bd < 2.5 ? bi + 1 : bi; return j > G.pi ? [tx, tz] : G.route[j];
 }
 function usEscortGoal(e) {
   const G = e.usEscort; if (!G.route || !(G.pi < G.stopAt) || !G.crew.length) { e.usEscort = null; return null; }
   const i = Math.max(0, (G.esc || []).indexOf(e)), off = [[-2.6, 3.6], [2.6, 3.6], [-3.4, 0.6], [3.4, 0.6]][i % 4], a = G.g.rotation.y + Math.PI;   // 砲は後ろ向きに引くので、進む向きは反対
-  return { pt: [G.g.position.x + Math.cos(a) * off[0] + Math.sin(a) * off[1], G.g.position.z - Math.sin(a) * off[0] + Math.cos(a) * off[1]], hold: true, sp: 1.15 };
+  const pt = [G.g.position.x + Math.cos(a) * off[0] + Math.sin(a) * off[1], G.g.position.z - Math.sin(a) * off[0] + Math.cos(a) * off[1]];
+  const via = usViaRoute(e.s.position, G, pt[0], pt[1]);
+  return via[0] === pt[0] && via[1] === pt[1] ? { pt, hold: true, sp: 1.15 } : { pt: via, sp: 1.2 };
 }
 // 砲の組：砲の後ろに立つ（引くときは砲の前）。近づかれたら銃剣
 function usCrewTick(e, dt) {
@@ -11081,7 +11090,7 @@ function usCrewTick(e, dt) {
   const off = hauling ? [[-0.8, 2.4], [0.8, 2.4], [0, -1.6]][i % 3] : [[-1.1, -0.7], [1.1, -0.7], [0, -1.7]][i % 3];
   const hx = G.g.position.x + Math.cos(a) * off[0] + Math.sin(a) * off[1], hz = G.g.position.z - Math.sin(a) * off[0] + Math.cos(a) * off[1];
   const d = Math.hypot(hx - p.x, hz - p.z);
-  if (d > 0.3) campStep(e, [hx, hz], e.speed * (d > 4 ? 1.1 : 0.8), dt); else { e.faceWant = a; e.kneel = !hauling; }
+  if (d > 0.3) campStep(e, usViaRoute(p, G, hx, hz), e.speed * (d > 4 ? 1.1 : 0.8), dt); else { e.faceWant = a; e.kneel = !hauling; }
   return true;
 }
 // 梯子：塀に立てかけ、上って向こうへ降りる
@@ -16787,24 +16796,25 @@ function pickGirl(kind, perch) {
     const sl = pool.filter(g => g.slump && !inUse.has(g.id)); if (sl.length) return pick(sl);
   }
   const fresh = pool.filter(g => !inUse.has(g.id));
+  if (kind === 'archer' && MS_ON && GIRLS.mob01 && GIRLS.mob01.bow && !inUse.has('mob01') && Math.random() < 0.3) return GIRLS.mob01;   // 動画のコマ（弓道の射）を見せるため、mob01 はときどき弓兵で出る
   return (fresh.length ? pick(fresh) : pick(pool)) || null;
 }
 // 写真用の材質：縁（透明に近い所）を暗く、左右の端を少し暗くして厚みを出す。uAdd で被弾の白い閃光・構えの色
 const spriteGeo = new THREE.PlaneGeometry(1, 1); spriteGeo.translate(0, 0.5, 0);
 function spriteMat(tex) {
   const m = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.42, side: THREE.DoubleSide });
-  const uAdd = { value: new THREE.Color(0, 0, 0) }, uTexel = { value: new THREE.Vector2(1 / 256, 1 / 640) };
-  m.userData.uAdd = uAdd; m.userData.uTexel = uTexel;
+  const uAdd = { value: new THREE.Color(0, 0, 0) }, uTexel = { value: new THREE.Vector2(1 / 256, 1 / 640) }, uUvR = { value: new THREE.Vector4(0, 0, 1, 1) };
+  m.userData.uAdd = uAdd; m.userData.uTexel = uTexel; m.userData.uUvR = uUvR;   // uUvR：アトラスの1コマ（offset.xy, repeat.xy）。左右の端の暗さをコマ基準にする
   m.onBeforeCompile = sh => {
-    sh.uniforms.uAdd = uAdd; sh.uniforms.uTexel = uTexel;
-    sh.fragmentShader = 'uniform vec3 uAdd;\nuniform vec2 uTexel;\n' + sh.fragmentShader
+    sh.uniforms.uAdd = uAdd; sh.uniforms.uTexel = uTexel; sh.uniforms.uUvR = uUvR;
+    sh.fragmentShader = 'uniform vec3 uAdd;\nuniform vec2 uTexel;\nuniform vec4 uUvR;\n' + sh.fragmentShader
       .replace('#include <map_fragment>', `#include <map_fragment>
 #ifdef USE_MAP
   {
     float e = 0.0;
     for (int i = 0; i < 8; i++) { float a = float(i) * 0.785398; e += 1.0 - texture2D(map, vMapUv + vec2(cos(a), sin(a)) * uTexel * 5.0).a; }
     e = clamp(e / 8.0 * 1.7, 0.0, 1.0);
-    float cx = abs(vMapUv.x - 0.5) * 2.0;
+    float cx = abs((vMapUv.x - uUvR.x) / uUvR.z - 0.5) * 2.0;
     diffuseColor.rgb *= (1.0 - 0.36 * e) * (1.0 - 0.1 * cx * cx);
   }
 #endif`)
@@ -16814,7 +16824,7 @@ function spriteMat(tex) {
   return m;
 }
 function setFrame(e, fr, mirror) {
-  if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); }
+  if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); if (e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(0, 0, 1, 1); }
   const h = e.figH * fr.hk, w = h * fr.aspect, sg = mirror ? -1 : 1;
   e.bb.scale.set(w * sg, h, 1);
   e.bb.position.x = (0.5 - fr.ax) * w * sg;   // 足元の中心を立ち位置に
@@ -17631,7 +17641,7 @@ function hpFlush() {
 }
 // 骨格診断のタイプ（S＝ストレート：上半身に厚み・腰の位置が高め、W＝ウェーブ：上半身が薄く柔らか・重心が低め、N＝ナチュラル：骨格がしっかり・肩幅広め・手足が長い）。
 // 今の写真の輪郭から中立に割り振ったもの（tools/make_kokkaku.py）。歩きの上下動・歩幅と足の運び・揺れ・姿勢にほんの少しだけ効かせる
-const KOKKAKU = {"arch01":"N","arch02":"N","arch03":"N","arch04":"N","arch05":"N","arch06":"N","archer01":"S","archer02":"S","archer03":"S","archer04":"N","archer05":"S","archer06":"S","archer07":"W","archer08":"N","archer09":"W","archer10":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl21":"S","girl22":"S","girl23":"S","girl24":"W","girl25":"W","girl26":"S","girl27":"W","girl28":"S","girl29":"S","girl30":"W","girl31":"S","girl32":"W","girl33":"N","girl34":"S","girl35":"W","girl36":"W","girl37":"S","girl38":"W","girl39":"W","girl40":"S","girl41":"W","girl42":"S","girl43":"S","girl44":"S","medic":"S","mob01":"S","mob02":"S","mob03":"S","mob04":"W","mob05":"S","mob06":"W","mob07":"W","mob08":"S","mob09":"S","mob10":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
+const KOKKAKU = {"arch01":"N","arch02":"N","arch03":"N","arch04":"N","arch05":"N","arch06":"N","archer01":"S","archer02":"S","archer03":"S","archer04":"N","archer05":"S","archer06":"S","archer07":"W","archer08":"N","archer09":"W","archer10":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl21":"S","girl22":"S","girl23":"S","girl24":"W","girl25":"W","girl26":"S","girl27":"W","girl28":"S","girl29":"S","girl30":"W","girl31":"S","girl32":"W","girl33":"N","girl34":"S","girl35":"W","girl36":"W","girl37":"S","girl38":"W","girl39":"W","girl40":"S","girl41":"W","girl42":"S","girl43":"S","girl44":"S","medic":"S","mob01":"W","mob02":"S","mob03":"S","mob04":"W","mob05":"S","mob06":"W","mob07":"W","mob08":"S","mob09":"S","mob10":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
 const KK = { S: { bob: 0.9, rate: 1.0, sway: 0.8, lean: -0.01 }, W: { bob: 0.8, rate: 1.1, sway: 1.2, lean: 0.012 }, N: { bob: 1.12, rate: 0.9, sway: 1.0, lean: 0.004 } };
 const kkOf = e => KK[(e.girl && e.girl.kokkaku) || 'S'] || KK.S;
 // ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----
@@ -17764,6 +17774,17 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   return e;
 }
 // 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
+// ---- 動画から作ったコマ（motion_sprite.js）：今は mob01 だけ。読めない／file:// ／?msprite=0 なら従来の写真 ----
+const MS_ON = !!window.MotionSprite && !/[?&]msprite=0/.test(location.search) && /^https?:/.test(location.protocol);
+const MS_GIRLS = { mob01: 'assets/motion/mob01/' };
+function msPrefetch(gid) { if (MS_ON && MS_GIRLS[gid]) MotionSprite.load(gid, MS_GIRLS[gid], { lite: LITE, v: ASSET_V }); }   // 何度呼んでも一度だけ読む。スマホは小さいアトラス
+function msBowStage(e, ka) {   // 弓の段階：胴造り→打起し・引分け→会→離れ→残心（敵の AI の時間に合わせる）
+  if (e.state === 'zanshin') return e.t < 0.12 ? { stage: 'hanare', u: e.t / 0.12 } : { stage: 'zanshin', u: Math.min(1, (e.t - 0.12) / 0.23) };
+  const t = e.t / (ka || 1), kai = KAI[e.prof && e.prof.pers] || 0.8;
+  if (t < KY_SET) return { stage: 'set', u: t / KY_SET };
+  if (t < KY_SET + KY_DRAW) return { stage: 'draw', u: (t - KY_SET) / KY_DRAW };
+  return { stage: 'kai', u: Math.min(1, (t - KY_SET - KY_DRAW) / kai) };
+}
 const KAI = { 冷静: 1.0, 慎重: 0.95, 臆病: 0.75, 陽気: 0.65, 好戦的: 0.6 };
 const KY_SET = 0.3, KY_DRAW = 0.5, KY_ZAN = 0.3;
 function aimTotal(e, close) { const k = close ? 0.6 : 1; e.aimK = k; return (KY_SET + KY_DRAW + (KAI[e.prof.pers] || 0.8) + (e.ph % 1) * 0.12) * k; }
@@ -18615,7 +18636,7 @@ function updateSlump(e, dt) {
     // 画面上で脚が手前側（法線の向き）に来るよう左右を決める：写真は「左に脚」
     const rx = Math.cos(camYaw), rz = -Math.sin(camYaw);   // カメラから見た右（ビルボードの +x）
     const mirror = (L.nx * rx + L.nz * rz) > 0;              // 法線が画面の右 → 脚を右へ（反転）
-    if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); }
+    if (e.fr !== fr) { e.fr = fr; e.mat.map = fr.tex; e.mat.userData.uTexel.value.set(1 / fr.tex.image.width, 1 / fr.tex.image.height); if (e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(0, 0, 1, 1); e.msOn = false; }
     const h = ln.h, w = h * fr.aspect, sg = mirror ? -1 : 1;
     e.bb.scale.set(w * sg, h, 1);
     e.bb.position.x = (0.5 - ln.rx) * w * sg;   // 手すりの位置を立ち位置に
@@ -18877,7 +18898,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (e.state === 'down' || UK.on || UK7.on || PAL.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
   { const G = e.usGun;   // 山砲を引く組：砲の盾と車輪の陰で、矢・弾の半分ほどは砲が受ける（刃は防げない。砲の組は倒せる）
-    if (G && G.route && G.pi < G.stopAt && !(hit && hit.thrust) && Math.random() < 0.5 && Math.hypot(e.s.position.x - G.g.position.x, e.s.position.z - G.g.position.z) < 3.6) {
+    if (G && G.route && G.pi < G.stopAt && !(hit && hit.thrust) && Math.random() < 0.6 && Math.hypot(e.s.position.x - G.g.position.x, e.s.position.z - G.g.position.z) < 3.6) {
       CAMP.usShieldN = (CAMP.usShieldN || 0) + 1; const q = G.g.position.clone(); q.y += 0.8; puff(q, 0xd8d0c0, 2, 0.05, 1.6, 0.1); return; } }
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
     const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
@@ -20538,7 +20559,28 @@ function animateNpc(e, dt, lean) {
     if (e.mat) { e.mat.transparent = false; e.mat.opacity = 1; e.mat.alphaTest = 0.42; e.mat.needsUpdate = true; }
     if (airportAirborne && e.airChute) e.airChute.visible = true;
   }
-  setFrame(e, fr, mirror);
+  // ---- 動画から作ったコマ（motion_sprite.js）。読めていない／対象外なら従来の写真 ----
+  let msOn = false, msWalk = false, msBow = false;
+  if (MS_ON && MS_GIRLS[g.id]) {
+    msPrefetch(g.id);
+    if (MotionSprite.ready(g.id) && isUp(e) && !e.kneel && !e.fluter && !e.seated && !e.lean && !e.wounded && !airportAirborne && !airportGroundAlive && !(gd.top && el > 0.9) && !(gd.low && el < -0.6)) {
+      const thrust = e.melee && (e.state === 'windup' || e.state === 'icicle' || e.state === 'recover');
+      const st = { id: g.id, facing: f, x: p.x, z: p.z, camX: camera.position.x, camZ: camera.position.z };
+      let ms = null;
+      if (e.kind === 'archer' && (e.state === 'aim' || e.state === 'zanshin')) {
+        const a = MotionSprite.viewDeg(st);   // 真正面・真後ろ（±20°）から見るときは、横向きに引くコマが不自然なので従来の弓の写真
+        if (!(a < 20 || a > 340 || Math.abs(a - 180) < 20)) ms = { state: 'bow', bow: msBowStage(e, ka) };
+      }
+      else if (!acting && moving) ms = { state: 'walk', stepT: e.stepT, speed: sv };
+      else if (!acting && !thrust) ms = { state: 'idle' };
+      if (ms) { Object.assign(ms, st); msOn = MotionSprite.update(e, ms); }
+      if (msOn) {
+        e.msOn = true; msWalk = ms.state === 'walk'; msBow = ms.state === 'bow'; if (msWalk) { bob = 0; rock = 0; }   // 上下動は動画に含まれる
+        const t = e._msTex; if (t && e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(t.offset.x, t.offset.y, t.repeat.x, t.repeat.y);
+      }
+    }
+  }
+  if (!msOn) { if (e.msOn) { MotionSprite.detach(e); e.msOn = false; } setFrame(e, fr, mirror); }
   // 空港ステージの生存兵は、状態遷移や方向別写真の欠落で本体メッシュが消えたままにならないよう、
   // 毎フレーム、有効な写真テクスチャと描画設定を復旧する。負傷中の味方にも適用する。
   if (AIRPORT.on && isUp(e) && !e.airportCrewActor) {
@@ -20579,7 +20621,7 @@ function animateNpc(e, dt, lean) {
     }
   }
   if (e.armed) updateProps(e, fr, mirror, sgn);
-  hpPose(e, fr, mirror, sgn);
+  if (!(msOn && msBow)) hpPose(e, fr, mirror, sgn);   // 弓のコマには弓が描き込み済み
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
     const h = e.figH, sg = mirror ? -1 : 1, front = fr === g.front || fr === g.back || fr === g.walk;
@@ -20591,7 +20633,7 @@ function animateNpc(e, dt, lean) {
   if (MOTION) {
     const o = Mo.drive(e, dt, sv, moving && !e.kneel, acting, camYaw - f), w = o.w;
     const kc = cyc ? CYCLE_DAMP : null;   // 歩行サイクルの写真は上下動・前傾をすでに含むので、板の動きは控えめに
-    bob += (o.bob * (kc ? kc.bob : 1) - bob) * w; rock += (o.roll * (kc ? kc.roll : 1) - rock) * w;
+    if (!msWalk) { bob += (o.bob * (kc ? kc.bob : 1) - bob) * w; rock += (o.roll * (kc ? kc.roll : 1) - rock) * w; }
     sway = o.sway * w * (kc ? kc.sway : 1); surge = o.surge * w * (kc ? kc.surge : 1); twist = o.twist * w * (kc ? kc.twist : 1);
   }
   // ビルボード（Y 軸のみ）：板をカメラへ向ける。被弾は一瞬、後ろへ反る

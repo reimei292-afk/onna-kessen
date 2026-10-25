@@ -171,7 +171,7 @@
 - 西園寺の従姉妹、王の父方のハトコ。23歳、身長147cm、テニス・バドミントン経験者。
 - よく笑う、義理人情に厚い、上にも物を言う、味方には好意的、有能で返事が早い、相談には優しい、部下には上下関係に厳しい。
 - 絵: assets/omiya/omiya_{front,side,front_diag,back,down}.jpg（down は頭が左の横向き遺体）。元絵はユーザー提供の架空キャラで、顔はそのまま。
-- 切り抜き：tools/make_omiya_frames.py（rembg u2net）→ assets/frames/omiya_*.png と frames_omiya.js（FRAME_META に 'omiya' を足す）。EXTRA_GIRLS.omiya（type 'omiya'：雑兵の抽選には出ない）。身長 147cm で figH 1.47。
+- 切り抜き：tools/make_omiya_frames.py（rembg u2net）→ assets/frames/omiya_*.png と frames_omiya.js（FRAME_META に 'omiya' を足す）。EXTRA_GIRLS.omiya（type 'omiya'：侍女の抽選には出ない）。身長 147cm で figH 1.47。
 - 声：ja-JP-NanamiNeural rate +18% pitch +26Hz（明るく速い）。assets/voices/frs/ の o_omiya・b_omiya1-5・om_down（短い「うっ……！」）・om_down2・t_*・h_*。
 - 出番：フランス人形編 第一幕の殿の船（殿のそば）。戦闘中に時々ひと言。E で会話：西園寺との関係（従姉妹）、ハトコの話、テニス・バドミントン、身長（笑う）、布陣への意見（上にも物を言う）、相談、笑い、そして「侍女と早瀬」の場面（馴れ馴れしく早瀬に話しかけた侍女をきっぱり注意し、そのあと優しくフォロー）。
 - 他のステージの本陣会話にはまだ入れていない。

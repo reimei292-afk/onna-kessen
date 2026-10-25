@@ -11337,6 +11337,7 @@ function campNamed(key, x, z, kind, cmdr) {
   const g = CAMP_GIRL[key] ? CAMP_GIRL[key]() : undefined;
   const e = campJp(x, z, kind || 'mob', { girl: g, prof: CAMP_PROF[key], key, tag: CAMP_PROF[key] ? CAMP_PROF[key].name : key, cmdr: cmdr ? key : null });
   if (e && CAMP_PROT.includes(key)) e.campProt = true;
+  if (e && key === 'ojou') e.nagi = true;   // 西園寺：薙刀
   return e;
 }
 // 大将（綾瀬・西園寺・大宮）は討ち死にしない：弱れば殿のそばへ下がる。最後の段で殿が追い詰められた時だけ倒れうる
@@ -11914,7 +11915,7 @@ function palStart2() {
   const put = (n, f) => { for (let i = 0; i < n && left > 0; i++, left--) f(i); };
   put(Math.round(left * 0.36), i => campJp(-7 + (i % 6) * 2.8 + rand(-0.4, 0.4), -24.5 + Math.floor(i / 6) * 1.5, i % 3 === 0 ? 'archer' : 'mob', { yari: i % 3 === 2 }));   // 中庭（近衛）
   put(Math.round(left * 0.45), i => campJp(-10 + (i % 8) * 2.8, -4 + Math.floor(i / 8) * 2.4, i % 2 ? 'mob' : 'archer', { yari: i % 4 === 1 }));   // 大広間（侍女・近衛）
-  put(left + extra, i => { const e = campJp(-4 + (i % 5) * 2, 14.5 + Math.floor(i / 5) * 1.3, i % 2 ? 'archer' : 'mob', {}); if (e) { e.baseY = PAL2.SH; e.s.position.y = PAL2.SH; } });   // 踊り場（最後の線）
+  put(left + extra, i => { const e = campJp(-4 + (i % 5) * 2, 14.5 + Math.floor(i / 5) * 1.3, i % 2 ? 'archer' : 'mob', {}); if (e) { e.baseY = PAL2.SH; e.s.position.y = PAL2.SH; if (e.kind === 'mob') { e.nagi = true; e.palNagi = true; } } });   // 踊り場（最後の線）：大宮の近衛・薙刀隊
   for (const e of CAMP.live.blue) if (e.home && e.home[1] > 13) { e.baseY = PAL2.SH; e.s.position.y = PAL2.SH; }
   showBanner('第三の場：宮殿', '大宮が近衛を率いる。大階段の上を渡すな'); bannerTimer = 4;
   campFadeOff();
@@ -16608,6 +16609,8 @@ function loadFrames(done) {
     const x = EXTRA_GIRLS[gid] || {};
     GIRLS[gid] = Object.assign({ id: gid, type: gid === 'medic' || gid === 'surgeon' ? 'medic' : 'extra', spr: null, front: null }, x);
   }
+  // 弓を持たない姿のある弓兵（archer01〜10）：元の写真（弓を引く立ち姿）は「弓を引く」見え方として残す
+  for (const gid of window.ARCH_UNARMED || []) { const g = GIRLS[gid]; if (g && g.front && !g.bow) { g.bow = g.front; g.unarmed = true; } }
   for (const gid in meta) for (const k in meta[gid]) if (GIRLS[gid]) jobs.push([gid, k, meta[gid][k]]);
   // 歩行サイクル（tools/make_walkcycle.py → assets/frames/cycles.js）：横から見た歩きの連続写真。?cycle=0 で使わない
   const cyc = CYCLE_ON ? window.FRAME_CYCLES || {} : {}, cdata = window.CYCLE_DATA || {};
@@ -16618,6 +16621,7 @@ function loadFrames(done) {
   }
   const done2 = () => {
     for (const gid in GIRLS) { const g = GIRLS[gid]; if (!g.front) { delete GIRLS[gid]; continue; }
+      g.gid = gid; g.kokkaku = g.kokkaku || KOKKAKU[gid] || 'S';
       if (g.cycles) for (const k in g.cycles) { const C = g.cycles[k]; if (C.seq.some(i => !C.frs[i])) delete g.cycles[k]; }   // 読めなかった絵があれば使わない
       g.cycle = g.cycles && g.cycles.walk_side || null;
       if (g.type === 'archer' && !g.bow && !(g.side && g.back)) g.bowOnly = true;   // 弓を引く立ち姿（assets/archerNN.png）だけの弓兵：弓兵として出す（倒れたら archerNN_down）
@@ -17471,6 +17475,7 @@ function armSecretary(e) {
 // 写真に武器が写っていない見え方のとき、懐刀・弓を板の上に添える（板と同じ向き・左右反転）
 function updateProps(e, fr, mirror, sgn) {
   const g = e.girl, h = e.figH, sg = mirror ? -1 : 1;
+  if (e.nagi && HP.ok) { e.saya.visible = false; e.blade.visible = false; if (e.slung) e.slung.visible = false; return; }   // 薙刀の娘（西園寺）：写真の薙刀だけ
   const weaponPhoto = fr === g.stab || fr === g.bow || (fr === g.action && fr !== g.front);
   const down = e.state === 'down' || fr === g.kneel;
   const front = fr === g.front || fr === g.walk || fr === g.front_diag, back = fr === g.back || fr === g.back_diag;
@@ -17495,6 +17500,123 @@ function updateProps(e, fr, mirror, sgn) {
     else { e.slung.position.set(-0.07 * h * sgn, 0.62 * h, -0.03); e.slung.rotation.z = 0.45 * sgn; }
   }
 }
+// ==== 手に持つ武器（写真の切り抜き）：弓・箙・槍・薙刀・懐刀・小銃・拳銃を一枚のアトラス（assets/frames/props.webp）に入れ、
+//  手の位置へ小さな板で添える。どの娘でも持てる（HAND_META：見え方ごとの手の位置。無ければ体の幅から推す）。
+//  写真に武器が写っている見え方（弓を引く・突く）や倒れている間は出さない。全員分を一つの InstancedMesh で描く（描画 1 回）。
+const HP = { ok: false, mesh: null, uvr: null, max: LITE ? 140 : 300, tick: 1, n: 0 };
+const _hpM = new THREE.Matrix4(), _hpL = new THREE.Matrix4(), _hpQ = new THREE.Quaternion(), _hpP = new V3(), _hpS = new V3(), _hpZ = new V3(0, 0, 1);
+function hpInit() {
+  const PM = window.PROP_META; if (!PM || HP.mesh || HP.loading || !/^https?:/.test(location.protocol)) return; HP.loading = true;
+  new THREE.TextureLoader().load('assets/frames/props.webp?v=' + ASSET_V, t => {
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    const mat = new THREE.MeshBasicMaterial({ map: t, alphaTest: 0.45, side: THREE.DoubleSide });
+    mat.onBeforeCompile = sh => { sh.vertexShader = 'attribute vec4 uvr;\n' + sh.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n#ifdef USE_MAP\n\tvMapUv = uvr.xy + vMapUv * uvr.zw;\n#endif'); };
+    const geo = new THREE.PlaneGeometry(1, 1);
+    HP.uvr = new THREE.InstancedBufferAttribute(new Float32Array(HP.max * 4), 4); HP.uvr.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('uvr', HP.uvr);
+    const m = new THREE.InstancedMesh(geo, mat, HP.max); m.frustumCulled = false; m.count = 0; m.renderOrder = 3; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    HP.mesh = m; HP.ok = true;
+  }, undefined, () => { HP.loading = false; });
+}
+// 誰が何を持つか（一度決めたら覚える）
+function hpKindOf(e) {
+  if (PAL.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on || AIRPORT.on || TRENCH.on) return '';
+  if (e.usdW) return e.usdW === 'colt' ? 'colt' : e.usdW === 'spr' ? 'musket' : 'rifle';
+  if (e.nagi) return 'naginata';
+  if (e.armed || e.special || e.yari || e.bayo || e.ramCrew || e.uk2Gun || e.team === 'none') return '';
+  if (e.kind === 'archer') return 'yumi';
+  if (e.kind === 'mob') return 'kaiken';
+  return '';
+}
+const HP_VIEWS = ['front', 'back', 'walk', 'front_diag', 'back_diag', 'side'];
+// 手の位置（板の上の座標）。L＝画像の左の手、R＝右の手、S＝横向きの手
+function hpHands(e, fr) {
+  const g = e.girl, H = window.HAND_META && HAND_META[g.gid];
+  let vk = fr.cyc ? 'side' : HP_VIEWS.find(k => g[k] === fr) || 'front';
+  const h = (H && H[vk]) || (vk === 'side' ? [0.55, 0.52, 0.55, 0.52] : [0.1, 0.53, 0.9, 0.53]);
+  return { vk, h };
+}
+// アニメーションごとに：持ち物の板の位置（tilt の座標）を e.hpL に入れる。描くのは hpFlush（描画の直前）
+function hpPose(e, fr, mirror, sgn) {
+  if (!HP.ok) return;
+  if (e.hpk === undefined) e.hpk = hpKindOf(e);
+  const k = e.hpk; if (!k || !fr) return;
+  const g = e.girl;
+  if (e.state === 'down' || e.wounded || e.seated || e.kneel || e.hid && e.crouch > 0.6 || fr === g.down || fr === g.kneel || fr === g.slump) return;
+  const baked = fr === g.stab || fr === g.bow || (fr === g.action && fr !== g.front);
+  if (baked) return;
+  const L = e.hpL || (e.hpL = []); L.length = 0;
+  const hh = e.figH * fr.hk, ww = hh * fr.aspect, sg = mirror ? -1 : 1, fh = e.figH, sc = fh / 1.6;
+  const { vk, h } = hpHands(e, fr), back = vk === 'back' || vk === 'back_diag', side = vk === 'side';
+  const px = u => (u - fr.ax) * ww * sg, py = v => (1 - v) * hh;
+  // 画面上の前（横・斜めの写真の向き）。正面・後ろは 0
+  const fwd = fr.dir ? fr.dir * sg : (side ? sgn : 0);
+  // 体の右手（正面では画像の左、後ろ姿では右）と左手
+  const rH = side ? [h[0], h[1]] : back ? [h[2], h[3]] : [h[0], h[1]], lH = side ? [h[0], h[1]] : back ? [h[0], h[1]] : [h[2], h[3]];
+  const put = (key, x, y, z, rot, flip, s) => L.push(key, x, y, z, rot, flip, s || 1);
+  const st = e.state, aimS = st === 'aim' || st === 'zanshin', strike = st === 'windup' || st === 'recover';
+  if (k === 'yumi') {
+    const by = py(lH[1]);
+    if (aimS && e.kind === 'archer') {   // 弓を引く写真の無い娘：弓を胸の前に立てる
+      if (side) put('yumi', px(lH[0]) + fwd * 0.22 * fh, 0.62 * fh, 0.03, -0.08 * fwd, 1);
+      else put('yumi', px(lH[0]) * 0.6, 0.6 * fh, 0.05, 0.1 * sg, 1);
+    } else if (side) put('yumi', px(lH[0]) + fwd * 0.03 * fh, by, 0.035, -0.12 * fwd, 1);
+    else put('yumi', px(lH[0]), by, 0.035, (back ? -0.1 : 0.1) * sg, 1);
+    // 箙：右の腰
+    if (side) put('quiver', px(h[0]) - fwd * 0.09 * fh, 0.56 * fh, -0.02, 0.28 * fwd, 1);
+    else put('quiver', px(rH[0]) * 0.8, 0.57 * fh, back ? 0.03 : -0.025, (back ? 0.18 : -0.18) * sg, 1);
+  } else if (k === 'kaiken') {
+    if (strike) {   // 突き：胸の前で相手へ
+      const u = st === 'windup' ? 0 : 1;
+      if (side) put('kaiken', px(h[0]) + fwd * (0.1 + 0.1 * u) * fh, 0.6 * fh, 0.05, -1.35 * fwd, 1);
+      else put('kaiken', px(rH[0]) * 0.4, (0.58 + 0.04 * u) * fh, 0.06, 0.15 * sg, 1);
+    } else if (side) put('kaiken', px(h[0]) + fwd * 0.02 * fh, py(h[1]), 0.04, Math.PI - 0.5 * fwd, 1);
+    else put('kaiken', px(rH[0]), py(rH[1]), 0.04, Math.PI + 0.25 * sg * (back ? -1 : 1), 1);
+  } else if (k === 'naginata') {
+    // 振り：構えで後ろへ振りかぶり、打ちで前へ大きく払う（恐ろしい表現は無し）
+    let r = 0.1, y = py(rH[1]);
+    if (st === 'windup') { const q = Math.min(1, e.t / 0.55); r = 0.1 + 0.9 * q; y += 0.1 * fh * q; }
+    else if (st === 'recover') { const t = Math.max(0, e.t), q = Math.min(1, t / 0.22); r = q < 1 ? 1.0 - 2.5 * q : -1.5 + 1.6 * Math.min(1, (t - 0.22) / 0.58); y += 0.1 * fh * (1 - q); }
+    if (side) put('naginata', px(h[0]) + fwd * 0.05 * fh, y, 0.04, r * fwd, 1);
+    else put('naginata', px(rH[0]), y, 0.04, -r * sg * (back ? -1 : 1), 1);
+  } else if (k === 'rifle' || k === 'musket' || k === 'colt') {
+    const aimG = e.tgt && !(e.vs > 0.35) && st !== 'approach' && st !== 'advance';
+    const fl = fwd < 0 ? -1 : 1;
+    if (k === 'colt') {
+      if (aimG) { if (side) put('colt', px(h[0]) + fwd * 0.3 * fh, 0.76 * fh, 0.04, -Math.PI / 2 * fwd, fl); else put('colt', px(rH[0]) * 0.3, 0.7 * fh, 0.06, 0, 1, 0.7); }
+      else put('colt', side ? px(h[0]) : px(rH[0]), side ? py(h[1]) : py(rH[1]), 0.04, Math.PI, side ? -fl : 1);
+    } else if (aimG) {
+      if (side) put(k, px(h[0]) + fwd * 0.12 * fh, 0.79 * fh, 0.04, -Math.PI / 2 * fwd, fl);
+      else put(k, px(rH[0]) * 0.25, 0.72 * fh, back ? -0.03 : 0.06, (back ? -0.35 : 0.35) * sg, 1, 0.55);   // 正面・後ろ：こちら（向こう）へ向けた銃は短く見える
+    } else if (side) put(k, px(h[0]) + fwd * 0.02 * fh, py(h[1]), 0.04, -0.35 * fwd, fl);
+    else put(k, px(rH[0]), py(rH[1]), 0.04, (back ? -0.3 : 0.3) * sg, 1);
+  }
+  e.hpT = HP.tick; e.hpSc = sc;
+}
+function hpFlush() {
+  if (!HP.ok) { hpInit(); return; }
+  const m = HP.mesh, a = HP.uvr.array, PM = window.PROP_META; let n = 0;
+  if (m.parent !== scene) scene.add(m);
+  for (const e of enemies) {
+    if (e.hpT !== HP.tick || !e.hpL || !e.hpL.length || !e.s.visible || !e.tilt.visible || !e.bb.visible || !e.s.parent) continue;
+    e.tilt.updateWorldMatrix(true, false);
+    const L = e.hpL, sc = e.hpSc || 1;
+    for (let i = 0; i < L.length && n < HP.max; i += 7) {
+      const P = PM[L[i]]; if (!P) continue;
+      const len = P.len * sc * L[i + 6], w = P.w * sc, fl = L[i + 5], rot = L[i + 4];
+      const ox = (0.5 - (P.gx != null ? P.gx : 0.5)) * w * fl, oy = (0.5 - P.grip) * len, c = Math.cos(rot), s = Math.sin(rot);
+      _hpP.set(L[i + 1] + ox * c - oy * s, L[i + 2] + ox * s + oy * c, L[i + 3]);
+      _hpQ.setFromAxisAngle(_hpZ, rot); _hpS.set(w * fl, len, 1);
+      _hpL.compose(_hpP, _hpQ, _hpS); _hpM.multiplyMatrices(e.tilt.matrixWorld, _hpL); m.setMatrixAt(n, _hpM);
+      a[n * 4] = P.u; a[n * 4 + 1] = P.v; a[n * 4 + 2] = P.uw; a[n * 4 + 3] = P.vh; n++;
+    }
+  }
+  m.count = n; HP.n = n; m.instanceMatrix.needsUpdate = true; HP.uvr.needsUpdate = true; HP.tick++;
+}
+// 骨格診断のタイプ（S＝ストレート：上半身に厚み・腰の位置が高め、W＝ウェーブ：上半身が薄く柔らか・重心が低め、N＝ナチュラル：骨格がしっかり・肩幅広め・手足が長い）。
+// 今の写真の輪郭から中立に割り振ったもの（tools/make_kokkaku.py）。歩きの上下動・歩幅と足の運び・揺れ・姿勢にほんの少しだけ効かせる
+const KOKKAKU = {"arch01":"N","arch02":"N","arch03":"N","arch04":"N","arch05":"N","arch06":"N","archer01":"S","archer02":"S","archer03":"S","archer04":"N","archer05":"S","archer06":"S","archer07":"W","archer08":"N","archer09":"W","archer10":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl21":"S","girl22":"S","girl23":"S","girl24":"W","girl25":"W","girl26":"S","girl27":"W","girl28":"S","girl29":"S","girl30":"W","girl31":"S","girl32":"W","girl33":"N","girl34":"S","girl35":"W","girl36":"W","girl37":"S","girl38":"W","girl39":"W","girl40":"S","girl41":"W","girl42":"S","girl43":"S","girl44":"S","medic":"S","mob01":"S","mob02":"S","mob03":"S","mob04":"W","mob05":"S","mob06":"W","mob07":"W","mob08":"S","mob09":"S","mob10":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
+const KK = { S: { bob: 0.9, rate: 1.0, sway: 0.8, lean: -0.01 }, W: { bob: 0.8, rate: 1.1, sway: 1.2, lean: 0.012 }, N: { bob: 1.12, rate: 0.9, sway: 1.0, lean: 0.004 } };
+const kkOf = e => KK[(e.girl && e.girl.kokkaku) || 'S'] || KK.S;
 // ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----
 function secThreat(e) {
   const p = e.s.position, fol = (e.sec2 && sec2.mode !== 'hq') || (e.ojou && ojou.mode === 'follow') || (e.fumi && fumi.mode === 'follow') || (e.aide && e.aide.follow) || (e.secretary && sec.mode !== 'hq');
@@ -17580,8 +17702,8 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
     mk.scale.set(0.3, 0.3, 1);
     const band = new THREE.Mesh(armbandGeo, armbandMat[team]); e.band = band; tilt.add(band);
   }
-  if (opt.ojou) {   // お嬢さま秘書：青組の腕章とほんのり青
-    e.ojou = true; e.special = true; e.speed = 3.9; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
+  if (opt.ojou) {   // お嬢さま秘書：青組の腕章とほんのり青。薙刀で払う
+    e.ojou = true; e.nagi = true; e.special = true; e.speed = 3.9; s.rotation.y = e.face = Math.PI; e.home = [x, z]; e.state = 'idle';
     e.tintBase = [0, 0.015, 0.05]; npcGlow(e, 0, 0, 0);
     const band = new THREE.Mesh(armbandGeo, armbandMat.blue); e.band = band; tilt.add(band);
   }
@@ -18870,7 +18992,7 @@ function killEnemy(e, byPlayer, from) {
   SITU.down(e);
   e.silenced = true;
   if (!e.quietDeath && !warOn()) kiaLabel(e.s.position, e.baseY + e.figH);   // 本物の戦では「戦死判定」の札は出さない
-  if (!e.frozen && !(MOTION && Mo.fbx)) spillBlood(e.s.position.x, e.baseY, e.s.position.z, rand(0.7, 1));   // FBX の倒れ方：血・傷は出さない
+  if (!e.frozen && !e.nagiKO && !(MOTION && Mo.fbx)) spillBlood(e.s.position.x, e.baseY, e.s.position.z, rand(0.7, 1));   // FBX の倒れ方：血・傷は出さない
   if (e.team === 'orange') {
     const r = Math.random();
     if (r < 0.38) addPickup('arrow', e.s.position);
@@ -20307,7 +20429,8 @@ function animateNpc(e, dt, lean) {
   const moving = !acting && sv > 0.35;
   // 足音
   if (moving) {
-    const ph = Math.floor((MOTION ? (e.stepT = Mo.step(e, dt, sv)) : (e.stepT += dt * sv * 1.5)) / Math.PI);   // モーション：実際の歩調（左右の接地）で一歩
+    const kr = kkOf(e).rate;   // 骨格のタイプ：同じ速さでも歩幅が違えば足の運びが違う
+    const ph = Math.floor((MOTION ? (e.stepT = Mo.step(e, dt * kr, sv)) : (e.stepT += dt * sv * 1.5 * kr)) / Math.PI);   // モーション：実際の歩調（左右の接地）で一歩
     if (ph !== e.stepPh) {
       e.stepPh = ph;
       if (stepBudget > 0) { const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < 16) { stepBudget--; Sfx.step(e.baseY > 0.3, sv > 3.1 ? 0.9 : 0.6, p); } }
@@ -20342,7 +20465,7 @@ function animateNpc(e, dt, lean) {
   if (gd.top && el > 0.9) e.view2 = 'top'; else if (gd.low && el < -0.6) e.view2 = 'low';
   // 画面の右を向いているか（横・構えの写真の左右反転に使う）
   const sgn = Math.sin(f) * Math.cos(player.yaw) - Math.cos(f) * Math.sin(player.yaw) > 0 ? 1 : -1;
-  const g = e.girl;
+  const g = e.girl, KQ = kkOf(e);
   let fr, mirror = false, bob = 0, rock = 0, cyc = false;
   if (e.kneel) {   // 医療係の手当て：膝をつく写真（無ければしゃがむ）。手元が小さく動く
     fr = g.kneel || g.front; mirror = fr.dir ? fr.dir !== sgn : false;
@@ -20360,14 +20483,14 @@ function animateNpc(e, dt, lean) {
     else if (e.state !== 'windup' && e.state !== 'recover') bob = Math.sin(time * 1.6 + e.ph) * 0.003 * e.figH;
   } else if (moving && (e.view2 === 'front_diag' || e.view2 === 'back_diag' || e.view2 === 'top' || e.view2 === 'low')) {
     fr = girlFrame(g, e.view2); mirror = fr.dir ? fr.dir !== sgn : false;
-    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH; rock = Math.sin(e.stepT) * 0.03;
+    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH * KQ.bob; rock = Math.sin(e.stepT) * 0.03 * KQ.sway;
   } else if (moving) {
     const stride = Math.floor(e.stepT / Math.PI) & 1;
-    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH;
+    bob = Math.abs(Math.sin(e.stepT)) * 0.025 * e.figH * KQ.bob;
     if (e.view === 'front') { fr = girlFrame(g, 'walk'); mirror = fr === g.front ? false : !!stride; }
-    else if (e.view === 'back') { fr = girlFrame(g, 'back'); rock = Math.sin(e.stepT) * 0.025; }
+    else if (e.view === 'back') { fr = girlFrame(g, 'back'); rock = Math.sin(e.stepT) * 0.025 * KQ.sway; }
     else if (g.cycle) { fr = cycleFrame(g.cycle, e.stepT); mirror = fr.dir ? fr.dir !== sgn : false; bob = 0; rock = 0; cyc = true; }   // 横から：歩きの連続写真（上下動は写真に含まれる）
-    else { fr = girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; rock = Math.sin(e.stepT) * 0.03; }
+    else { fr = girlFrame(g, 'side'); mirror = fr.dir ? fr.dir !== sgn : false; rock = Math.sin(e.stepT) * 0.03 * KQ.sway; }
   } else {
     fr = girlFrame(g, e.view2 || e.view);
     mirror = fr.dir ? fr.dir !== sgn : false;
@@ -20436,6 +20559,7 @@ function animateNpc(e, dt, lean) {
     }
   }
   if (e.armed) updateProps(e, fr, mirror, sgn);
+  hpPose(e, fr, mirror, sgn);
   if (e.band) e.band.visible = !(fr === g.kneel && !e.medic);
   if (e.band) {   // 腕章：正面・後ろの写真では左の二の腕、横・膝つきでは手前の腕のあたり
     const h = e.figH, sg = mirror ? -1 : 1, front = fr === g.front || fr === g.back || fr === g.walk;
@@ -20451,7 +20575,7 @@ function animateNpc(e, dt, lean) {
     sway = o.sway * w * (kc ? kc.sway : 1); surge = o.surge * w * (kc ? kc.surge : 1); twist = o.twist * w * (kc ? kc.twist : 1);
   }
   // ビルボード（Y 軸のみ）：板をカメラへ向ける。被弾は一瞬、後ろへ反る
-  e.tilt.rotation.set(e.recoil > 0 ? -Math.sin(Math.min(1, e.recoil / 0.36) * Math.PI) * 0.16 : 0, camYaw - f + twist, lean * 0.5 + rock);
+  e.tilt.rotation.set(e.recoil > 0 ? -Math.sin(Math.min(1, e.recoil / 0.36) * Math.PI) * 0.16 : 0, camYaw - f + twist, lean * 0.5 + rock - KQ.lean * sgn * (e.view === 'side' ? 1 : 0.3) * (moving ? 1 : 0.5));   // 骨格のタイプ：姿勢の前後の傾きをほんの少し
   e.tilt.position.set(sway, bob - e.crouch * 0.42 * e.figH, surge - (e.recoil > 0 ? 0.05 * e.figH * Math.sin(Math.min(1, e.recoil / 0.36) * Math.PI) : 0));
 }
 // 歩行サイクルを使っているときのモーションの効き（1＝そのまま）。横から見るので左右の揺れ（画面の奥行き）とひねりも小さく
@@ -20459,6 +20583,24 @@ const CYCLE_DAMP = { bob: 0.2, roll: 0.25, sway: 0.5, surge: 0.6, twist: 0.3 };
 // ---- NPC の行動 ----
 const tmp = new V3();
 const MELEE_RANGE = 1.8;   // 懐刀の突き：短く狭い
+// 薙刀（西園寺・宮殿の大階段の近衛）：長い間合いで前の扇（約 110°）をまとめて払う。当たった相手は 1m ほど押し戻され、構えが崩れる（傷の表現は無し）
+const NAGI = { reach: 2.6, windup: 0.55, cos: 0.55, max: 4, push: 4.5 };
+function nagiSweep(e, nx, nz) {
+  const p = e.s.position; let n = 0;
+  for (const o of enemies) {
+    if (n >= NAGI.max) break;
+    if (o === e || o.team === e.team || !isUp(o) || o.perch || o.special && o.team === 'blue') continue;
+    const dx = o.s.position.x - p.x, dz = o.s.position.z - p.z, d = Math.hypot(dx, dz);
+    if (d > NAGI.reach + 0.4 || d < 0.01 || (dx * nx + dz * nz) / d < NAGI.cos || Math.abs((o.baseY || 0) - (e.baseY || 0)) > 1.2) continue;
+    o.nagiKO = true;
+    damageEnemy(o, 1, p, false, { pt: new V3(o.s.position.x, o.baseY + o.figH * 0.55, o.s.position.z), thrust: false }, e);
+    if (isUp(o)) { o.nagiKO = false; if (!o.seated) { o.knock.x += dx / d * NAGI.push; o.knock.z += dz / d * NAGI.push; } if (o.state === 'windup') { o.state = 'approach'; o.t = 0; npcTint(o, 0); } o.cd = Math.max(o.cd || 0, 0.6); }
+    n++;
+  }
+  if (e.team === 'orange') { const q = player.pos, dx = q.x - p.x, dz = q.z - p.z, d = Math.hypot(dx, dz); if (d < NAGI.reach + 0.3 && d > 0.01 && (dx * nx + dz * nz) / d > NAGI.cos) { hurtPlayer(e.dmg); n++; } }
+  if (n) campAud(e, 'sword');
+  e.nagiN = (e.nagiN || 0) + n;
+}
 // 弓兵（味方・敵とも）：近い相手には懐刀の突き。雪の敵弓兵はツララで突く。投げナイフは使わない
 function archerMelee(e, dt, dist, nx, nz, tx, tz) {
   if (e.kind !== 'archer' || e.perch || e.seated) return false;
@@ -20857,7 +20999,7 @@ function updateEnemies(dt) {
           else if (e.state === 'approach' && e.screen && dist > SCREEN.guardR && screenHold(e, tx, tz, dt)) { /* 弓兵の前に立って待つ */ }
           else if (e.state === 'approach' && e.yari && yariApproach(e, dt, dist, nx, nz, tx, tz)) { /* 槍：突撃／懐から下がる */ }
           else if (e.state === 'approach') {
-            if (dist > (e.yari ? YARI.reach : e.bayo ? BAYO.reach : MELEE_RANGE) - 0.35) {
+            if (dist > (e.yari ? YARI.reach : e.bayo ? BAYO.reach : e.nagi ? NAGI.reach : MELEE_RANGE) - 0.35) {
               const side = Math.sin(time * 0.7 + e.ph) * (P.cautious ? 0.6 : 0.35) * e.strafe * Math.min(1, dist / 6);
               steer(e, p.x + (nx - nz * side) * 3, p.z + (nz + nx * side) * 3, e.speed, dt);
             } else if (e.cd <= 0) {
@@ -20876,13 +21018,14 @@ function updateEnemies(dt) {
         } else if (e.state === 'charge') { yariCharge(e, dt);
         } else if (e.state === 'windup') {
           // 構え：少し引いてから…（槍は長く構える）
-          const T = e.yari ? YARI.windup : e.bayo ? BAYO.windup : P === PERS.好戦的 ? 0.4 : 0.5, k = e.t / T;
+          const T = e.yari ? YARI.windup : e.bayo ? BAYO.windup : e.nagi ? NAGI.windup : P === PERS.好戦的 ? 0.4 : 0.5, k = e.t / T;
           tint(k);
           p.x -= nx * 0.6 * dt; p.z -= nz * 0.6 * dt;
           if (e.t >= T) {
             // 突き：正面に踏み込み、標的一人だけを判定
             e.state = 'recover'; e.t = 0; e.cd = rand(P.atkCd[0], P.atkCd[1]); npcTint(e, 0);
             p.x += nx * 0.45; p.z += nz * 0.45;
+            if (e.nagi) { nagiSweep(e, nx, nz); } else {   // 薙刀：前の扇の中の数人をまとめて払い、押し戻す
             const d2 = Math.hypot(tx - p.x, tz - p.z);
             const miss = (e.yari && d2 < YARI.inside && Math.random() < 0.55) || (e.bayo && d2 < BAYO.inside && Math.random() < 0.35);   // 槍：懐に入られると突きが外れやすい
             if (e.yari) e.cd += 0.5; else if (e.bayo) e.cd += 0.45;
@@ -20894,6 +21037,7 @@ function updateEnemies(dt) {
                 const tp2 = e.tgt.s.position;
                 damageEnemy(e.tgt, 1, p, false, { pt: new V3(tp2.x - nx * 0.15, e.tgt.baseY + e.tgt.figH * rand(0.5, 0.68), tp2.z - nz * 0.15), thrust: true }, e);
               }
+            }
             }
           }
         } else if (e.state === 'recover') {
@@ -22109,6 +22253,7 @@ function frame(now) {
   if (PLANE.on) updatePlaneFx(state === 'play' ? dt : state === 'title' ? dt : 0);
   if (MOTION) { updateSunShadow((now - (frame.prev || now)) / 1000); frame.prev = now; Mo.flush(); }
   if (window.__camOverride) window.__camOverride(camera);   // テスト用（見え方の確認）
+  hpFlush();   // 手に持つ武器（全員分を一度に）
   renderer.render(scene, camera);
   drawWeapon();
 }

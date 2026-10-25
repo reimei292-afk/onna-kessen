@@ -11080,6 +11080,7 @@ function usEscortGoal(e) {
   const G = e.usEscort; if (!G.route || !(G.pi < G.stopAt) || !G.crew.length) { e.usEscort = null; return null; }
   const i = Math.max(0, (G.esc || []).indexOf(e)), off = [[-2.6, 3.6], [2.6, 3.6], [-3.4, 0.6], [3.4, 0.6]][i % 4], a = G.g.rotation.y + Math.PI;   // 砲は後ろ向きに引くので、進む向きは反対
   const pt = [G.g.position.x + Math.cos(a) * off[0] + Math.sin(a) * off[1], G.g.position.z - Math.sin(a) * off[0] + Math.cos(a) * off[1]];
+  if (yjPressOn() && pt[1] < -60) pt[0] = clamp(pt[0], -7.8, 7.8);   // 三の丸の下：護衛が竪堀（|x|≈9.5）に落ちて動けなくならないように
   const via = usViaRoute(e.s.position, G, pt[0], pt[1]);
   return via[0] === pt[0] && via[1] === pt[1] ? { pt, hold: true, sp: 1.15 } : { pt: via, sp: 1.2 };
 }
@@ -11492,7 +11493,9 @@ function yjPressWatch(e, dt) {
     W.sx = p.x; W.sz = p.z;
     return false;
   }
-  if (now - W.t > 8 && !(e.yjPush > now) && e.usdRel == null) { e.yjPush = now + 6; W.t = now; if (e.usCvP) e.usCvP.by = null; e.usCvP = null; e.usdT = 0; CAMP.yjPushN = (CAMP.yjPushN || 0) + 1; }
+  if (now - W.t > 8 && e.yjPush && now - e.yjPush < 6) { e.yjFree = now + 3; W.t = now; CAMP.yjFreeN = (CAMP.yjFreeN || 0) + 1; return false; }   // 向け直しても進めない：道へ抜け出させる
+  if (e.yjPush > now && now - (e.yjPush - 6) > 2.5 && Math.hypot(p.x - W.px, p.z - W.pz) < 0.8) { e.yjPush = 0; e.yjFree = now + 3; CAMP.yjFreeN = (CAMP.yjFreeN || 0) + 1; return false; }   // 向け直しても 2.5 秒で 0.8m も進まない
+  if (now - W.t > 5.5 && !(e.yjPush > now) && e.usdRel == null) { e.yjPush = now + 6; W.t = now; W.px = p.x; W.pz = p.z; if (e.usCvP) e.usCvP.by = null; e.usCvP = null; e.usdT = 0; CAMP.yjPushN = (CAMP.yjPushN || 0) + 1; }
   return e.yjPush > now;
 }
 function yjPushTick(e, t, dt) {
@@ -11508,7 +11511,8 @@ function campAdvance(e) {
   const R = e.route || CAMP.route || [[0, 0]], p = e.s.position;
   let i = e.wp || 0;
   while (i < R.length - 1 && Math.hypot(R[i][0] - p.x, R[i][1] - p.z) < 2.6) i++;
-  if (!e.route && i < R.length - 1 && R[i][1] < p.z - 1 && CAMP.ph !== 3) i++;   // もう通り過ぎた点は飛ばす
+  if (!e.route && i < R.length - 1 && R[i][1] < p.z - 1 && CAMP.ph !== 3) i++;
+  if (e.campUs && yjPressOn()) while (i < R.length - 1 && Math.abs(R[i][1] - p.z) < 2.6) i++;   // 三の丸の下：散兵の間隔で道の点から横にずれていても、その高さまで来たら次の点へ   // もう通り過ぎた点は飛ばす
   e.wp = i;
   let [tx, tz] = R[i];
   if (e.lane == null) e.lane = rand(-1, 1);

@@ -16779,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261025h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21977,7 +21977,7 @@ const locked = () => document.pointerLockElement === canvas;
 function lock() { if (TEST || MOBILE) return; try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
 document.addEventListener('pointerlockchange', () => {
   if (menuOpen || UK.choice) return;   // 選択肢を選ぶ間はマウスを出す
-  if (!locked() && state === 'play') pauseGame();
+  if (!locked() && state === 'play' && !(RK.on && RK.ask)) pauseGame();
 });
 addEventListener('keydown', e => {
   keys[e.code] = true;
@@ -22676,13 +22676,13 @@ function rkReset() {
   RK.ftr = []; RK.aa = RK.aaPos.map((p, i) => ({ p, cd: rand(0, 2), burst: 0, tgt: null, i })); RK.fkB = RK_FKB.map((_, b) => ({ b, cd: rand(1, 4), guns: RK.fkPos.filter(p => p.b === b) })); RK.shells = [];
   RK.L = { p: new V3(0, 460, 900), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0, wp: 0, vel: new V3() };
   for (const P of RK.planes) { P.p.copy(RK.L.p).add(P.slot); P.hdg = 0; }
-  Object.assign(RK, { ph: 'out', t: 0, st: 'cockpit', ext: 0, said: {}, log: [], dropped: false, dropT: 0, fSpawn: 0, kills: 0, kingHit: false, endT: 0, over: false, fade: 0, fireHeld: false, gunCd: 0, hits: 0, aaOn: false, results: null, hint: 0, aimLate: false, god: /[?&]rkgod=1/.test(location.search), rtb: 0, parkN: 0, verdict: 0, lastImp: 0, bq: [], shots: 0, hm: 0, shake: 0, extI: 0, kq: [], walk: 0, icam: 0, ic: null, kp: Object.assign(new V3(), { out: false }), gbs: [], gndK: null, zst: { head: 0, chest: 0, abd: 0, arm: 0, leg: 0 }, kw: null, kbleed: null, kTreated: false, treated: 0, fl: 0, gk: 0, silent: false, roster: 0 });
+  Object.assign(RK, { ph: 'out', t: 0, st: 'cockpit', ext: 0, said: {}, log: [], dropped: false, dropT: 0, fSpawn: 0, kills: 0, kingHit: false, endT: 0, endHint: false, endHintT: 0, ask: false, orbNext: 0, over: false, fade: 0, fireHeld: false, gunCd: 0, hits: 0, aaOn: false, results: null, hint: 0, aimLate: false, god: /[?&]rkgod=1/.test(location.search), rtb: 0, parkN: 0, verdict: 0, lastImp: 0, bq: [], shots: 0, hm: 0, shake: 0, extI: 0, kq: [], walk: 0, icam: 0, ic: null, kp: Object.assign(new V3(), { out: false }), gbs: [], gndK: null, zst: { head: 0, chest: 0, abd: 0, arm: 0, leg: 0 }, kw: null, kbleed: null, kTreated: false, treated: 0, fl: 0, gk: 0, silent: false, roster: 0 });
   RK.keys = RK.keys || {};
   for (const P of RK.planes) rkPose(P);
   player.pos.set(0, 460, 900); player.yaw = 0; player.pitch = RK_VIEW.cockpit.bp; player.hp = CFG.maxHp; player.deathCold = true;
 }
 function rkStart() {
-  RK.ph = 'out'; RK.t = 0; RK.log.push('start');
+  RK.ph = 'out'; RK.t = 0; RK.log.push('start'); { const d = $('rkAsk'); if (d) d.style.display = 'none'; } RK.ask = false;
   showBanner('陸攻出撃', `試製 嶺雲 ${RK_N} 機 ── 目標：アメリカ軍 前進飛行場`);
   setTimeout(() => { if (RK.on && state === 'play') rkSay('r_brief'); }, 1800); setTimeout(() => { if (RK.on && state === 'play' && !RK.over) rkSay('x_fumi_start', 0); }, 9500);
   RK.kq = [[5.5, 'k_start']];
@@ -22753,7 +22753,7 @@ function rkLandTick(P, dt) {   // 自動・手動とも同じ着陸の道筋：�
     rkSteer(P, tgt, 72, dt, 0.25, 12); P.p.x += (0 - P.p.x) * Math.min(1, dt * 0.4);
     if (P.p.y <= 2.6 || P.p.z > RK_TD.z) { P.st = 'roll'; P.p.y = 2.6; P.vy = 0; RK.log.push('touch:' + P.no); if (P.king) rkSay('r_land'); else rkPop(`${P.no}番機${rkAlive(P) ? '' : '（無人）'}、着陸`); }
   } else if (P.st === 'roll') {
-    P.spd = Math.max(0, P.spd - dt * 7); P.pitch += (0.06 - P.pitch) * Math.min(1, dt * 2); P.roll *= 0.9; P.hdg += angDiff(P.hdg, Math.PI) * Math.min(1, dt);
+    P.spd = Math.max(0, P.spd - dt * (!P.king && RK.planes[0] && RK.planes[0].st === 'landed' ? 12 : 7)); P.pitch += (0.06 - P.pitch) * Math.min(1, dt * 2); P.roll *= 0.9; P.hdg += angDiff(P.hdg, Math.PI) * Math.min(1, dt);
     P.p.x += (0 - P.p.x) * Math.min(1, dt); P.p.z += P.spd * dt; P.p.y = 2.6; P.vel.set(0, 0, P.spd);
     if (P.spd <= 0.1 || (!P.king && P.spd < 14)) { P.landed = true; RK.log.push('landed:' + P.no + (rkAlive(P) ? '' : ':auto'));
       if (P.king) P.st = 'landed'; else { const n = RK.parkN = (RK.parkN || 0) + 1; P.st = 'taxi'; P.park = new V3(-70, 2.6, -280 + n * 48); } }
@@ -23043,6 +23043,13 @@ html.rk #hpbox,html.rk #stats,html.rk #wavebox,html.rk #radar,html.rk #weapons,h
 #rkBtns{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:flex;gap:5px;pointer-events:auto}
 #rkBtns button{font:12px sans-serif;padding:7px 9px;border-radius:6px;border:1px solid #9ab;background:rgba(20,30,40,.6);color:#eee}
 #rkBtns button.on{background:rgba(170,130,40,.8);border-color:#fd8}
+#rkBtns button.rkEnd{background:rgba(110,30,30,.7);border-color:#d99}
+#rkAsk{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;background:rgba(0,0,0,.35);pointer-events:auto}
+#rkAsk .rkAskBox{background:rgba(15,20,28,.92);border:1px solid #9ab;border-radius:10px;padding:18px 26px;text-align:center;color:#eee;font-family:sans-serif}
+#rkAsk .rkAskQ{font-size:20px;margin-bottom:6px}#rkAsk .rkAskS{font-size:12px;opacity:.8;margin-bottom:14px}
+#rkAsk button{font:16px sans-serif;margin:0 10px 8px;padding:8px 26px;border-radius:6px;border:1px solid #9ab;background:rgba(40,60,80,.8);color:#fff}
+#rkAsk button[data-a=y]{background:rgba(130,40,40,.85);border-color:#d99}
+#rkAsk small{display:block;opacity:.6;font-size:11px}
 html.mobile #rkBtns{bottom:auto;top:15%;left:8px;transform:none;flex-direction:column;flex-wrap:wrap;max-height:46vh;align-content:flex-start}
 html.mobile #rkBtns button{padding:7px 8px;font-size:12px}
 html.mobile #rkCrew{display:none;left:auto;right:150px;top:8px;font-size:11px;max-height:70vh;overflow:hidden}
@@ -23052,9 +23059,9 @@ html.rk.rkwalk #joy{display:block!important}
 html.mobile #rkHud #rkRad{bottom:auto;top:120px;width:96px;height:96px}
 .rkd{color:#f88}.rka{color:#9cf}.rkk{color:#fd8}`; document.head.appendChild(st); }
     h = document.createElement('div'); h.id = 'rkHud';
-    h.innerHTML = `<div id="rkTop"></div><div id="rkPl"></div><div id="rkCrew"></div><canvas id="rkRad" width="260" height="260"></canvas><div id="rkBtns">${RK_VK.map(k => `<button data-k="${k}">${RK_VIEW[k].key} ${RK_VIEW[k].n.replace('機銃', '')}</button>`).join('')}<button data-k="ext">V 外</button><button data-k="walk">E 歩く/つく</button><button data-k="icam">C 機内カメラ</button><button data-k="ros">R 名簿</button><button data-k="run">${MOBILE ? '' : 'Shift '}走る</button></div>`;
+    h.innerHTML = `<div id="rkTop"></div><div id="rkPl"></div><div id="rkCrew"></div><canvas id="rkRad" width="260" height="260"></canvas><div id="rkBtns">${RK_VK.map(k => `<button data-k="${k}">${RK_VIEW[k].key} ${RK_VIEW[k].n.replace('機銃', '')}</button>`).join('')}<button data-k="ext">V 外</button><button data-k="walk">E 歩く/つく</button><button data-k="icam">C 機内カメラ</button><button data-k="ros">R 名簿</button><button data-k="run">${MOBILE ? '' : 'Shift '}走る</button><button data-k="end" class="rkEnd">${MOBILE ? '' : 'Q '}作戦終了</button></div>`;
     document.body.appendChild(h);
-    h.querySelectorAll('#rkBtns button').forEach(b => { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const k = b.dataset.k; if (k === 'ext') rkExtView(); else if (k === 'walk') rkUse(); else if (k === 'icam') rkICam(); else if (k === 'ros') rkRoster(); else if (k === 'run') { RK.run = !RK.run; b.classList.toggle('on', RK.run); rkPop(RK.run ? '走る' : '歩く'); } else rkStation(k); };
+    h.querySelectorAll('#rkBtns button').forEach(b => { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const k = b.dataset.k; if (k === 'ext') rkExtView(); else if (k === 'walk') rkUse(); else if (k === 'icam') rkICam(); else if (k === 'ros') rkRoster(); else if (k === 'end') rkEndAsk(); else if (k === 'run') { RK.run = !RK.run; b.classList.toggle('on', RK.run); rkPop(RK.run ? '走る' : '歩く'); } else rkStation(k); };
       b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', f); });
   }
   if (MOBILE) document.documentElement.classList.add('mobile');
@@ -23073,11 +23080,12 @@ function rkHudSync(force) {
   const h = $('rkHud'); if (!h || h.style.display === 'none') return;
   if (!force && (RK.hudT = (RK.hudT || 0) - 1) > 0) return; RK.hudT = 6;
   const K = RK.planes[0], dT = K ? Math.hypot(K.p.x - RK_TGT.x, K.p.z - RK_TGT.z) : 0;
-  const V = RK.icam ? (RK.ic && RK.ic.out ? `${RK.icam + 1}番機の外（隠しカメラ・地上）` : `${RK.icam + 1}番機の機内カメラ`) : RK.ext ? '外から' : RK.walk ? (RK.kp.out ? '機外（地上）' : '機内を歩いている') : RK_VIEW[RK.st].n, ph = RK.ph === 'out' && RK.ftr.some(F => !F.dead && !F.gone && F.st !== 'in' && F.st !== 'rtb') ? '迎撃を受けている' : RK_PH[RK.ph] || '';
-  const tip = MOBILE ? '' : '<br><small>1〜6 持ち場 ／ E 立って歩く・持ち場につく ／ C 僚機の機内カメラ ／ V 外から ／ R 名簿 ／ クリック：射撃・投下</small>';
+  const V = RK.icam ? (RK.ic && RK.ic.out ? `${RK.icam + 1}番機の外（隠しカメラ・地上）` : `${RK.icam + 1}番機の機内カメラ`) : RK.ext ? '外から' : RK.walk ? (RK.kp.out ? '機外（地上）' : '機内を歩いている') : RK_VIEW[RK.st].n, ph = K && (K.st === 'landed' || K.st === 'taxi') ? '着陸した' : RK.ph === 'out' && RK.ftr.some(F => !F.dead && !F.gone && F.st !== 'in' && F.st !== 'rtb') ? '迎撃を受けている' : RK_PH[RK.ph] || '';
+  const tip = (RK.endHint ? `<br><span style="color:#fd8">作戦終了は${RK_ENDK()}</span>` : '') + (MOBILE ? '' : '<br><small>1〜6 持ち場 ／ E 立って歩く・持ち場につく ／ C 僚機の機内カメラ ／ V 外から ／ R 名簿 ／ Q 作戦終了 ／ クリック：射撃・投下</small>');
   const IP = RK.icam && RK.planes[RK.icam], GK = IP && IP.gb ? IP.gb : RK.gndK; if (GK) { const ul = GK.us.filter(u => u.alive && !u.gone).length, jl = (GK.jeeps || []).filter(J => J.alive).length; $('rkTop').innerHTML = `<b>${GK === RK.gndK ? '' : GK.P.no + '番機 '}不時着 ── 地上戦</b>　殿：${V}<br>${GK.res === 'won' ? '米兵を全員倒した' : GK.res === 'lost' ? '搭乗員は全員倒れた' : !GK.spawned ? '米兵が来る前に持ち場へ' : `残る米兵 ${ul}/${GK.n}${jl ? `・ジープ ${jl} 台` : ''}　どちらかが倒れるまで`}${RK.kw ? `　<span class="rkw">殿 負傷${RK.kTreated ? '（手当て済）' : RK.kw === 'abd' ? '（重い）' : ''}</span>` : ''}${tip}`; }
   else $('rkTop').innerHTML = `<b>${ph}</b>　殿：${V}<br>${RK.ph === 'home' || RK.ph === 'egress' ? '基地へ' : '目標まで'} ${(RK.ph === 'home' || RK.ph === 'egress' ? Math.hypot(K.p.x - RK_TD.x, K.p.z - RK_TD.z) : dT) / 1000 | 0}.${((RK.ph === 'home' || RK.ph === 'egress' ? Math.hypot(K.p.x - RK_TD.x, K.p.z - RK_TD.z) : dT) % 1000) / 100 | 0} km　高度 ${K ? K.p.y | 0 : 0} m　爆弾 ${RK.dropped ? '投下済' : '4 発／機'}${tip}`;
   $('rkPl').innerHTML = RK.planes.map(P => `${P.king ? '<span class="rkk">' : ''}${P.no}番機${P.king ? '（殿）</span>' : ''} ${rkStat(P)}`).join('<br>') + `<br>撃墜 ${RK.kills} 機`;
+  if (!MOBILE) $('rkCrew').style.top = RK.endHint ? '96px' : '';
   const VP = RK.icam ? RK.planes[RK.icam] : K;
   if (VP && (!MOBILE || RK.roster)) $('rkCrew').innerHTML = `<b>${VP.no}番機${VP.king ? '（殿の機）' : ''}の搭乗員</b><br>` + (VP.king ? `殿 ── ${RK.kingHit ? '<span class="rkd">被弾</span>' : RK.kw ? `<span class="rkw">負傷${RK.kTreated ? '（手当て済）' : ''}</span>` : '健在'}<br>` : '') +
     VP.ppl.map(c => { const t = rkCond(c); return `${c.label} ── ${t === '戦死' ? `<span class="rkd">${t}</span>` : t === '健在' ? t : `<span class="rkw">${t}</span>`}`; }).join('<br>');
@@ -23115,6 +23123,7 @@ function rkDraw2D() {
 // ---- 結果 ----
 function rkFinish(win, why) {
   if (!RK.on || RK.results || (state !== 'play' && state !== 'pause')) return;
+  RK.ask = false; { const d = $('rkAsk'); if (d) d.style.display = 'none'; }
   rkGndResolve();
   RK.over = true; RK.fireHeld = false; state = 'over'; $('banner').style.opacity = 0; bannerTimer = 0; rkEngineSnd(false); if (RK.snd) RK.snd.g.gain.value = 0;
   if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {}
@@ -23128,8 +23137,9 @@ function rkFinish(win, why) {
   RK.results = { win, why, sortie: P.length, back: back.length, unmanned: unm.length, fl: fl.length, flRes: fl.map(x => [x.no, x.gb ? x.gb.res : null, x.ppl.filter(c => c.alive).length, x.ppl.filter(c => !c.alive).length]), dead: dead.length + fl.reduce((a, x) => a + x.ppl.filter(c => !c.alive).length, 0), wounded: wnd.length, treated: RK.treated, zones: Object.assign({}, Z), hits: T.filter(t => t.dead).length, tgts: T.length, kills: RK.kills, t: RK.t, kingW: RK.kw, gk: RK.gk };
   RK.log.push('finish:' + (win ? 'win' : 'lose'));
   const kf = RK.gndK;
-  $('over').querySelector('h1').textContent = win ? (kf ? '生還' : '帰投') : '作戦中止';
-  $('over').querySelector('h2').textContent = win ? (kf ? '陸攻出撃 ── 不時着・地上戦に勝つ' : '陸攻出撃 ── 作戦終了') : why;
+  const K0 = P[0], kHome = K0 && (K0.st === 'landed' || K0.st === 'taxi');
+  $('over').querySelector('h1').textContent = !win ? '作戦中止' : kf ? (kf.res === 'won' ? '生還' : '作戦終了') : kHome ? '帰投' : '作戦終了';
+  $('over').querySelector('h2').textContent = !win ? why : kf ? (kf.res === 'won' ? '陸攻出撃 ── 不時着・地上戦に勝つ' : '陸攻出撃 ── 不時着・地上戦の途中で作戦終了') : kHome ? '陸攻出撃 ── 作戦終了' : '陸攻出撃 ── 帰還の途中で作戦終了';
   $('result').innerHTML = `<div style="text-align:left;max-width:600px;margin:auto;font-size:14px;line-height:1.6;max-height:62vh;overflow:auto">
 出撃 ${P.length} 機 ／ 帰還 ${back.length} 機${unm.length ? `（うち無人のまま自動着陸 ${unm.length} 機）` : ''} ／ 不時着 ${fl.length} 機<br>
 目標の破壊 ${RK.results.hits}/${T.length}（格納庫 ${cnt('hangar')}・燃料タンク ${cnt('tank')}・駐機中の戦闘機 ${cnt('plane')}・対空機銃座 ${cnt('aa')}）<br>
@@ -23714,7 +23724,26 @@ function rkStep(dt) {
   const K = RK.planes[0];
   if (K && K.st === 'landed' && !RK.endT) { RK.endT = RK.t; const lost = RK.planes.some(P => P.st !== 'landed' && P.st !== 'taxi' || P.crew.some(c => !c.alive)); RK.kq.push([RK.t + 1.2, lost ? 'k_loss' : 'k_end']); rkEndLines(K, 2.6); }
   if (RK.gndK && RK.gndK.res === 'won' && !RK.endT && !RK.kingHit) { RK.endT = RK.t + 2; RK.kq.push([RK.t + 2.5, 'k_resc']); rkEndLines(K, 4.5); }
-  if (RK.endT && RK.t - RK.endT > 8.5) rkFinish(true);
+  if (K && K.st !== 'app' && K.st !== 'final' && K.st !== 'roll' && K.st !== 'form' && K.st !== 'auto' && !RK.planes.some(P => P.st === 'app' || P.st === 'final' || P.st === 'roll')) {   // 殿の機が降りたあと：上空待機の僚機も順に降りる
+    const O = RK.planes.find(P => P.st === 'orbit'); if (O && RK.t > (RK.orbNext || 0)) { O.st = 'app'; RK.orbNext = RK.t + 6; RK.log.push('orbland:' + O.no); } }
+  if (RK.endT && !RK.endHint && RK.t - RK.endT > 6) rkEndHint();   // 自動では終わらない：作戦終了はこちらのコマンドで
+  if (!RK.endHint && !RK.kingHit && RK.planes.length && !RK.planes.some(P => rkFlying(P)) && RK.t > 30) { RK.endHintT = RK.endHintT || RK.t; if (RK.t - RK.endHintT > 8) rkEndHint(); }
+}
+const RK_ENDK = () => MOBILE ? '作戦終了ボタン' : 'Q／作戦終了ボタン';
+function rkEndHint() { RK.endHint = true; RK.log.push('endhint'); rkPop(`作戦終了は${RK_ENDK()}`, 5); rkHudSync(true); }
+function rkEndAsk() {   // 作戦終了の確認（はい／いいえ）
+  if (!RK.on || state !== 'play' || RK.over || RK.results) return;
+  let d = $('rkAsk'); if (!d) { d = document.createElement('div'); d.id = 'rkAsk';
+    d.innerHTML = `<div class="rkAskBox"><div class="rkAskQ">作戦を終了しますか？</div><div class="rkAskS">結果の画面へ進みます（まだ続いている地上戦はその場で決着します）</div><div><button data-a="y">はい</button><button data-a="n">いいえ</button></div><small>${MOBILE ? '' : 'Y / Enter：はい　N / Esc：いいえ'}</small></div>`;
+    document.body.appendChild(d);
+    d.querySelectorAll('button').forEach(b => { const f = ev => { ev.preventDefault(); ev.stopPropagation(); rkEndAns(b.dataset.a === 'y'); }; b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', f); });
+    d.addEventListener('mousedown', ev => ev.stopPropagation()); d.addEventListener('touchstart', ev => ev.stopPropagation(), { passive: true }); }
+  RK.ask = true; RK.fireHeld = false; RK.keys = {}; d.style.display = 'flex'; RK.log.push('endask');
+  if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {}
+}
+function rkEndAns(yes) {
+  const d = $('rkAsk'); if (d) d.style.display = 'none'; if (!RK.ask) return; RK.ask = false;
+  if (yes) { RK.log.push('endyes'); rkFinish(true, '作戦終了'); } else { RK.log.push('endno'); lock(); }
 }
 function rkEndLines(K, t0) {   // 帰還・地上戦の勝ち：秘書課のひとことと、地上の綾瀬 文乃（無線）
   if (RK.silent) return; setTimeout(() => { if (RK.on && !RK.results) rkSecSay(K, 'win', 0); }, t0 * 1000); setTimeout(() => { if (RK.on && !RK.results) rkSay('x_fumi_win', 0); }, (t0 + 3.4) * 1000);
@@ -23724,6 +23753,8 @@ function rkTitleCam() { for (const P of RK.planes) { rkPose(P); P.g.updateMatrix
 addEventListener('keydown', ev => {   // 陸攻出撃：持ち場 1〜6・外から V/0・投下 Enter/Space
   if (!RK.on || state !== 'play') return;
   const c = ev.code, m = /^Digit([1-6])$/.exec(c);
+  if (RK.ask) { if (!ev.repeat && (c === 'KeyY' || c === 'Enter' || c === 'NumpadEnter')) rkEndAns(true); else if (!ev.repeat && (c === 'KeyN' || c === 'Escape' || c === 'KeyQ')) rkEndAns(false); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (!ev.repeat && (c === 'KeyQ' || c === 'Escape')) { rkEndAsk(); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (m) { rkStation(RK_VK[+m[1] - 1]); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (c === 'Digit0' || c === 'KeyV') { rkExtView(); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (/^(Key[WASD]|Arrow|Shift)/.test(c)) RK.keys[c] = true;

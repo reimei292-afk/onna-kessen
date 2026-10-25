@@ -15774,8 +15774,8 @@ function palDmProps(R) {   // 机の上の青図と模型、壁の配置図
   for (const z of [-0.26, 0.26]) { const en = palCyl(0.035, 0.03, 0.2, mm, mx + sx * 0.1, y - 0.01, R.zc + z); en.rotation.z = Math.PI / 2; }
   palCyl(0.012, 0.02, 0.17, M.woodD, mx, 0.86, R.zc);   // 模型の台
   const bm = new THREE.MeshBasicMaterial({ map: palDmBoard() }); bm.userData.palOwn = true;
-  const bd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), bm); bd.position.set(palWX(R, back - 3.2), 1.65, R.zc - hd + 0.07); palAdd(bd);
-  palBox(2.5, 1.6, 0.04, M.woodD, palWX(R, back - 3.2), 1.65, R.zc - hd + 0.04, false);
+  const bd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), bm); bd.position.set(palWX(R, back - 3.2), 1.65, R.zc - hd + 0.17); palAdd(bd);
+  palBox(2.5, 1.6, 0.04, M.woodD, palWX(R, back - 3.2), 1.65, R.zc - hd + 0.13, false);
 }
 function palDmPut(e, R, x, z) {
   if (e.palSpot) e.palSpot.taken = null; e.palSpot = null; e.palWalk = false; e.palAt = null; e.palTo = null; e.palWander = 0; e.palBackT = 0; e.palPause = 0; e.palRoom = R; e.s.visible = true;

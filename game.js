@@ -15390,6 +15390,7 @@ function palDailyAct(dry) {   // 近くにある「殿の日常」の行い。dr
   let R;
   if ((R = palAt('wash', 'sink', 1.8))) return dry ? '洗面所で歯を磨く（E）' : palBrush();
   if ((R = palRoomOf('dining')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4) return dry ? '食堂で食事にする（E）' : palMeal();
+  if (PAL.slot === 1 && (R = palRoomOf('gunmu')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4 && !(PAL.dm && PAL.dm.d === (PAL.day || 0))) return dry ? '開発会議をひらく（E）' : palDevMeet(R);
   if ((R = palRoomOf('rest_r')) && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.2) return dry ? '上座で侍女たちと食事（E）' : palRestMeal();
   { const V = PAL.doors.find(d => d.visit && !d.R.allowed && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 2.4); if (V) return dry ? V.R.name + 'をノックする（E）' : palVisitKnock(V); }
   const D = palDoorNear(['kwc', 'kbath', 'wc']);
@@ -15725,6 +15726,7 @@ function palEvFloor() {
 }
 function palEvN() { return Math.max(3, (USD_MOB ? 15 : 28) - palRc().length); }
 function palJump(k) {   // 行事の日へ（昼 13 時）。式は浴場別館の宴会場
+  if (k === 'dm') return palDmJump();
   if (PAL.busy || UK.dlg) return;
   let d; if (k === 'naitei') d = palDayOf(2026, 10, 1); else if (k === 'nyukyu') d = PAL_NYD();
   else { const o = palDateObj(); d = Math.round((new Date(o.getFullYear(), o.getMonth() + (o.getDate() >= 25 ? 1 : 0), 25) - PAL_D0) / 864e5); }
@@ -15737,10 +15739,80 @@ function palJump(k) {   // 行事の日へ（昼 13 時）。式は浴場別館�
 function palCalUI(el) {
   if (el.querySelector('#palEvBtns')) return;
   const d = document.createElement('div'); d.id = 'palEvBtns';
-  d.innerHTML = [['naitei', '内定式'], ['nyukyu', '入宮式'], ['pay', '給料日']].map(([k, n]) => `<button data-ev="${k}">${n}へ</button>`).join('');
+  d.innerHTML = [['naitei', '内定式'], ['nyukyu', '入宮式'], ['pay', '給料日'], ['dm', '開発会議']].map(([k, n]) => `<button data-ev="${k}">${n}へ</button>`).join('');
   el.insertBefore(d, $('palFloorName'));
   for (const b of d.querySelectorAll('button')) { const go = ev => { ev.preventDefault(); ev.stopPropagation(); palJump(b.dataset.ev); }; b.addEventListener('click', go); b.addEventListener('touchend', go, { passive: false }); }
 }
+// ---- 開発会議（3階・軍務室・昼）：双発の陸上攻撃機「試製 嶺雲」。技術の取りまとめは情報室 霧島 怜。殿の台詞は字幕だけ ----
+// 行事ボタン「開発会議へ」か、昼の軍務室で上座に立って E。機体そのもの（操縦・ステージ）はまだ無い（HANDOFF.md）
+const PAL_DM_CAST = ['sysop', 'fumi', 'ojou', 'omiya', 'kujo', 'sumi'];
+const PAL_DM_CREW = [['操縦手', 0.30, 0.47], ['副操縦手', 0.30, 0.55], ['電探係', 0.40, 0.51], ['破裂爆弾投下係', 0.18, 0.51], ['前方機銃手', 0.11, 0.51], ['左側方機銃手', 0.58, 0.40], ['右側方機銃手', 0.58, 0.62], ['後方機銃手', 0.86, 0.51]];
+function palDmBoard() {   // 搭乗員配置図（8 名）：機体の上面図に番号、横に一覧
+  return canvasTex(1024, 640, (c, W, H) => {
+    c.fillStyle = '#f3efe2'; c.fillRect(0, 0, W, H); c.strokeStyle = '#3a3a3a'; c.lineWidth = 6; c.strokeRect(6, 6, W - 12, H - 12);
+    c.fillStyle = '#1d1d1d'; c.font = 'bold 40px serif'; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText('試製 嶺雲（双発陸上攻撃機）搭乗員配置　8名', 34, 26);
+    c.font = '26px serif'; c.fillStyle = '#444'; c.fillText('航続距離 約 4,000 km ／ 爆弾 800 kg まで ／ 双発', 34, 80);
+    const ox = 34, oy = 130, w = 620, h = 470, X = u => ox + u * w, Y = v => oy + v * h;
+    c.strokeStyle = '#2a3a5a'; c.lineWidth = 4; c.fillStyle = '#dfe6ee';
+    c.beginPath(); c.ellipse(X(0.5), Y(0.51), w * 0.46, h * 0.07, 0, 0, Math.PI * 2); c.fill(); c.stroke();   // 胴体
+    c.beginPath(); c.moveTo(X(0.36), Y(0.45)); c.lineTo(X(0.42), Y(0.05)); c.lineTo(X(0.52), Y(0.05)); c.lineTo(X(0.55), Y(0.45)); c.closePath(); c.fill(); c.stroke();   // 主翼
+    c.beginPath(); c.moveTo(X(0.36), Y(0.57)); c.lineTo(X(0.42), Y(0.97)); c.lineTo(X(0.52), Y(0.97)); c.lineTo(X(0.55), Y(0.57)); c.closePath(); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(X(0.84), Y(0.45)); c.lineTo(X(0.88), Y(0.28)); c.lineTo(X(0.94), Y(0.28)); c.lineTo(X(0.94), Y(0.74)); c.lineTo(X(0.88), Y(0.74)); c.lineTo(X(0.84), Y(0.57)); c.closePath(); c.fill(); c.stroke();   // 尾翼
+    for (const v of [0.24, 0.78]) { c.beginPath(); c.ellipse(X(0.36), Y(v), w * 0.07, h * 0.035, 0, 0, Math.PI * 2); c.fill(); c.stroke(); }   // 発動機
+    PAL_DM_CREW.forEach(([n, u, v], i) => { c.fillStyle = '#a8303c'; c.beginPath(); c.arc(X(u), Y(v), 15, 0, Math.PI * 2); c.fill(); c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), X(u), Y(v) + 1); });
+    c.textAlign = 'left'; c.textBaseline = 'top';
+    PAL_DM_CREW.forEach(([n], i) => { c.fillStyle = '#a8303c'; c.beginPath(); c.arc(700, 160 + i * 56, 15, 0, Math.PI * 2); c.fill(); c.fillStyle = '#fff'; c.font = 'bold 20px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(String(i + 1), 700, 161 + i * 56);
+      c.fillStyle = '#1d1d1d'; c.font = '30px serif'; c.textAlign = 'left'; c.fillText(n, 728, 161 + i * 56); });
+  });
+}
+function palDmProps(R) {   // 机の上の青図と模型、壁の配置図
+  if (R.dmProps) return; R.dmProps = 1; const back = R.rw - 0.6, mid = R.rw / 2, hd = R.rd / 2, sx = R.side < 0 ? -1 : 1;
+  const pm = palTexMat('dm_plan', 0, 0, true), pl = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.84), pm); pl.rotation.x = -Math.PI / 2; pl.rotation.z = sx > 0 ? -Math.PI / 2 : Math.PI / 2; pl.position.set(palWX(R, mid + 0.4), 0.795, R.zc); palAdd(pl);
+  const M = palMats(), mm = new THREE.MeshStandardMaterial({ color: '#b8b2a2', roughness: 0.6 }), mx = palWX(R, mid - 1.6), y = 0.98;
+  const fu = palCyl(0.05, 0.035, 0.9, mm, mx, y, R.zc); fu.rotation.z = Math.PI / 2;   // 胴体（机の長手に沿って）
+  palBox(0.16, 0.012, 1.1, mm, mx + sx * 0.05, y, R.zc, false); palBox(0.08, 0.01, 0.34, mm, mx - sx * 0.4, y + 0.01, R.zc, false); palBox(0.08, 0.12, 0.01, mm, mx - sx * 0.4, y + 0.06, R.zc, false);
+  for (const z of [-0.26, 0.26]) { const en = palCyl(0.035, 0.03, 0.2, mm, mx + sx * 0.1, y - 0.01, R.zc + z); en.rotation.z = Math.PI / 2; }
+  palCyl(0.012, 0.02, 0.17, M.woodD, mx, 0.86, R.zc);   // 模型の台
+  const bm = new THREE.MeshBasicMaterial({ map: palDmBoard() }); bm.userData.palOwn = true;
+  const bd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), bm); bd.position.set(palWX(R, back - 3.2), 1.65, R.zc - hd + 0.07); palAdd(bd);
+  palBox(2.5, 1.6, 0.04, M.woodD, palWX(R, back - 3.2), 1.65, R.zc - hd + 0.04, false);
+}
+function palDmPut(e, R, x, z) {
+  if (e.palSpot) e.palSpot.taken = null; e.palSpot = null; e.palWalk = false; e.palAt = null; e.palTo = null; e.palWander = 0; e.palBackT = 0; e.palPause = 0; e.palRoom = R; e.s.visible = true;
+  e.s.position.set(x, 0, z); e.face = e.faceWant = Math.atan2(player.pos.x - x, player.pos.z - z); e.s.rotation.y = e.face; e.palDm = true;
+}
+function palDmJump() {   // 行事ボタン：その日の昼、3階・軍務室へ
+  if (PAL.busy || UK.dlg || palEvActive()) return;
+  PAL.min = 13 * 60; PAL.slot = 1; PAL.log.push('jump:dm'); palGoFloor(palFI('gunmu'), 'stairs');
+  const t0 = Date.now(), w = () => { if (!PAL.on) return; if (PAL.busy && Date.now() - t0 < 8000) { setTimeout(w, 200); return; } const R = palRoomOf('gunmu'); if (R) palDevMeet(R); };
+  setTimeout(w, 400);
+}
+function palDevMeet(R) {
+  if (UK.dlg || (PAL.dm && PAL.dm.ph === 'on')) return; PAL.dm = { d: PAL.day || 0, ph: 'on', t0: PAL.min }; PAL.dmN = (PAL.dmN || 0) + 1; PAL.log.push('dm:start');
+  palDmProps(R); palKingAt(R); player.pitch = -0.1;
+  const back = R.rw - 0.6, seats = [[back - 2.0, -1.25], [back - 2.0, 1.25], [back - 3.3, -1.25], [back - 3.3, 1.25], [back - 4.6, -1.25], [back - 4.6, 1.25]], C = {};
+  PAL_DM_CAST.forEach((k, i) => { const x = palWX(R, seats[i][0]), z = R.zc + seats[i][1]; let e = PAL.named[k]; if (!e || !e.s) e = palNT(k, x, z); if (!e) return; palDmPut(e, R, x, z); C[k] = e; });
+  for (const e of PAL.girls) if (e.palRoom === R && !e.palDm && e.s) { e.palWander = 0; }
+  const S = (k, line) => [{ fn: () => { const e = C[k]; if (e) { e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); palSay(e, line); } } }, { say: line }];
+  const all = f => { for (const k in C) if (C[k].s) f(C[k]); }, bowAll = t => all(e => { e.palBowT = time + t; });
+  PAL.dmCast = Object.keys(C);
+  ukDlg([{ say: 'n_dm0' }, ...S('sumi', 'dm_open'), ...S('sysop', 'dm_s1'), ...S('sysop', 'dm_s2'), ...S('ojou', 'dm_o1'), ...S('fumi', 'dm_f1'), { fn: () => PAL.log.push('dm:board') }, ...S('fumi', 'dm_f2'),
+    ...S('omiya', 'dm_om1'), ...S('kujo', 'dm_k1'), ...S('sysop', 'dm_s3'), { say: 'k_dm1' }, { say: 'k_dm2' },
+    { fn: () => { PAL.log.push('dm:silence'); all(e => { e.ukTalkT = 0; }); } }, { say: 'n_dm1' }, { wait: 1.6 }, ...S('fumi', 'dm_f3'),
+    { say: 'k_dm3' }, { say: 'n_dm2' }, { wait: 1.0 }, ...S('sysop', 'dm_s4'), ...S('sysop', 'dm_s5'), ...S('sumi', 'dm_close'), { fn: () => bowAll(2.2) }, { say: 'n_dm3' }],
+  () => { PAL.dm.ph = 'done'; PAL.dmDone = (PAL.dmDone || 0) + 1; PAL.log.push('dm:done');
+    const D = PAL.doors.find(d => d.R === R); all(e => { e.palDm = false; if (D) { e.palTo = [D.x, D.z]; e.speed = 1.1; setTimeout(() => { if (PAL.on && e.s && !e.palDm) e.s.visible = false; }, 6500); } });
+    const m = PAL.dm.t0 + 60; PAL.min = m; showBanner('開発会議', '試製 嶺雲：自動着陸装置の研究が始まった'); });
+}
+Object.assign(PAL_FIX, {
+  n_dm0: { who: 'narr', narr: true, ja: '3階・軍務室。緑の机に青図と木の模型。壁には搭乗員配置図。', dur: 3.2 },
+  k_dm1: { who: 'king', ja: 'ガラスに防弾はほとんどいらない。そのぶん軽くしろ。', dur: 3.0 },
+  k_dm2: { who: 'king', ja: '侍女は死んでも畑から採れる。', dur: 2.6 },
+  n_dm1: { who: 'narr', narr: true, ja: '会議室が静まり返った。誰も、すぐには顔を上げなかった。', dur: 3.2 },
+  k_dm3: { who: 'king', ja: 'だが、機体を失うのは困る。乗っている娘が全員死んだら、自動で着陸するようにしろ。', dur: 4.4 },
+  n_dm2: { who: 'narr', narr: true, ja: '霧島が、手元の青図に目を落とした。', dur: 2.4 },
+  n_dm3: { who: 'narr', narr: true, ja: '青図が丸められ、娘たちは黙って一礼し、軍務室を出ていった。', dur: 3.2 },
+});
 Object.assign(PAL_FIX, {
   k_nt1: { who: 'king', ja: 'まだ入宮はしていないが、これから半年間、宮殿での暮らしを想像して研鑽を積んでほしい。', dur: 4.2 },
   k_nt2: { who: 'king', ja: '堅くならなくていい。四月に皆と会えるのを楽しみにしている。', dur: 3.2 },
@@ -16695,7 +16767,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -17610,8 +17610,16 @@ function hpPose(e, fr, mirror, sgn) {
   if (baked) return;
   const L = e.hpL || (e.hpL = []); L.length = 0;
   const hh = e.figH * fr.hk, ww = hh * fr.aspect, sg = mirror ? -1 : 1, fh = e.figH, sc = fh / 1.6;
-  const { vk, h } = hpHands(e, fr), back = vk === 'back' || vk === 'back_diag', side = vk === 'side';
-  const px = u => (u - fr.ax) * ww * sg, py = v => (1 - v) * hh;
+  let { vk, h } = hpHands(e, fr), back = vk === 'back' || vk === 'back_diag', side = vk === 'side';
+  let px = u => (u - fr.ax) * ww * sg, py = v => (1 - v) * hh;
+  const MH = e.msOn && e._msHand && e._msVk;   // 動画のコマ：コマごとの手の位置（m）を使う。見えない手は写真の値から
+  if (MH) {
+    const M = e._msHand, P = h.map((v, i) => i % 2 ? (1 - v) * hh : (v - fr.ax) * ww * sg);
+    vk = e._msVk; back = vk === 'back' || vk === 'back_diag'; side = vk === 'side';
+    h = [isNaN(M[0]) ? P[0] : M[0], isNaN(M[1]) ? P[1] : M[1], isNaN(M[2]) ? P[2] : M[2], isNaN(M[3]) ? P[3] : M[3]];
+    if (side) { const lo = isNaN(M[1]) ? 2 : isNaN(M[3]) ? 0 : (M[1] <= M[3] ? 0 : 2); h = [h[lo], h[lo + 1], h[lo], h[lo + 1]]; }   // 横：見えている下の手
+    px = u => u; py = v => v;
+  }
   // 画面上の前（横・斜めの写真の向き）。正面・後ろは 0
   const fwd = fr.dir ? fr.dir * sg : (side ? sgn : 0);
   // 体の右手（正面では画像の左、後ろ姿では右）と左手
@@ -20603,6 +20611,7 @@ function animateNpc(e, dt, lean) {
     if (MotionSprite.ready(g.id) && isUp(e) && !e.kneel && !e.fluter && !e.seated && !e.lean && !e.wounded && !airportAirborne && !airportGroundAlive && !(gd.top && el > 0.9) && !(gd.low && el < -0.6)) {
       const thrust = e.melee && (e.state === 'windup' || e.state === 'icicle' || e.state === 'recover');
       const st = { id: g.id, facing: f, x: p.x, z: p.z, camX: camera.position.x, camZ: camera.position.z };
+      if (e.kind === 'archer' && !e._msBowNeed) { e._msBowNeed = 1; if (MotionSprite.need) MotionSprite.need(g.id, 'bow'); }   // 弓のページは弓兵の時だけ読む
       let ms = null;
       if (e.kind === 'archer' && (e.state === 'aim' || e.state === 'zanshin')) {
         const a = MotionSprite.viewDeg(st);   // 真正面・真後ろ（±20°）から見るときは、横向きに引くコマが不自然なので従来の弓の写真
@@ -20613,7 +20622,7 @@ function animateNpc(e, dt, lean) {
       if (ms) { Object.assign(ms, st); msOn = MotionSprite.update(e, ms); }
       if (msOn) {
         e.msOn = true; msWalk = ms.state === 'walk'; msBow = ms.state === 'bow'; if (msWalk) { bob = 0; rock = 0; }   // 上下動は動画に含まれる
-        const t = e._msTex; if (t && e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(t.offset.x, t.offset.y, t.repeat.x, t.repeat.y);
+        const t = e.mat.map; if (t && e.mat.userData.uUvR) e.mat.userData.uUvR.value.set(t.offset.x, t.offset.y, t.repeat.x, t.repeat.y);
       }
     }
   }

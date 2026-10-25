@@ -21,19 +21,38 @@
 
   function wrap360(d) { d %= 360; return d < 0 ? d + 360 : d; }
 
+  // v3 の atlas.json は複数ページ（pages[]：turn+fall／歩き／弓）。最初のページ（turn）だけ先に読み、ほかは使う時に読む
+  function loadTex(url) {
+    return new Promise(function (res, rej) {
+      new THREE.TextureLoader().load(url, function (t) {
+        t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+        t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
+        res(t);
+      }, undefined, function (err) { rej(err || new Error('atlas image ' + url)); });
+    });
+  }
+  function pageOf(meta, seq) { var d = meta.seq[seq]; if (!d) return 0; var f = d.f[0]; return f && f.length > 6 ? f[6] : 0; }
+  function needPage(A, i) {
+    if (A.tex[i] || A.ld[i]) return; var P = A.meta.pages[i];
+    A.ld[i] = loadTex(A.base + P.image + A.q).then(function (t) { A.tex[i] = t; }, function (err) { A.bad[i] = true; if (window.console) console.warn('MotionSprite page', i, err); });
+  }
+  function needSeq(A, re) { A.meta.pages.forEach(function (P, i) { if (!P.seq || P.seq.some(function (q) { return re.test(q); })) needPage(A, i); }); }
   function load(id, base, opt) {
     opt = opt || {};
     if (atlases[id]) return atlases[id].p;
-    var A = atlases[id] = { meta: null, tex: null, ok: false, failed: false, p: null };
-    var json = base + (opt.lite ? 'atlas_lite.json' : 'atlas.json') + (opt.v ? '?v=' + opt.v : '');
+    var A = atlases[id] = { meta: null, tex: [], ld: [], bad: [], ok: false, failed: false, p: null, base: base, q: opt.v ? '?v=' + opt.v : '' };
+    var json = base + (opt.lite ? 'atlas_lite.json' : 'atlas.json') + A.q;
     A.p = fetch(json).then(function (r) { if (!r.ok) throw new Error('atlas.json ' + r.status); return r.json(); })
       .then(function (meta) {
-        return new Promise(function (res, rej) {
-          new THREE.TextureLoader().load(base + meta.image + (opt.v ? '?v=' + opt.v : ''), function (t) {
-            t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-            t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; t.magFilter = THREE.LinearFilter;
-            A.meta = meta; A.tex = t; A.ok = true; res(A);
-          }, undefined, function (err) { rej(err || new Error('atlas image')); });
+        if (!meta.pages) meta.pages = [{ image: meta.image, size: meta.size }];   // v2：1 枚
+        A.meta = meta; var p0 = pageOf(meta, 'turn');
+        needPage(A, p0);
+        return A.ld[p0].then(function () {
+          if (!A.tex[p0]) throw new Error('atlas page ' + p0);
+          A.ok = true;
+          // 歩きのページは少し後に（最初の表示を遅らせない）。弓のページは初めて弓を引く時に
+          setTimeout(function () { needSeq(A, /^walk/); }, 1200);
+          return A;
         });
       })
       .catch(function (err) { A.failed = true; if (window.console) console.warn('MotionSprite: ' + id + ' を使わない（従来の写真に戻す）', err); return null; });
@@ -71,15 +90,18 @@
     }
   }
 
+  var VK = ['front', 'front_diag', 'side', 'back_diag', 'back'];
   function update(e, st) {
     var A = atlases[st.id];
     if (!A || !A.ok || !e || !e.bb || !e.mat) return false;
-    var meta = A.meta, sel = pick(meta, st, e), fr = meta.seq[sel[0]] && meta.seq[sel[0]].f[sel[1]];
+    var meta = A.meta, sel = pick(meta, st, e), sq = meta.seq[sel[0]], fr = sq && sq.f[sel[1]];
     if (!fr) return false;
-    // 娘ごとに複製したテクスチャ（画像と GPU 上のテクスチャは共有される）
-    var t = e._msTex;
-    if (!t || t._msId !== st.id) { t = e._msTex = A.tex.clone(); t._msId = st.id; t.needsUpdate = true; }
-    var W = meta.size[0], H = meta.size[1];
+    var pg = fr.length > 6 ? fr[6] : 0;
+    if (!A.tex[pg]) { if (!A.bad[pg]) needPage(A, pg); return false; }   // まだ読み込み中：今は従来の写真
+    // 娘ごとに複製したテクスチャ（画像と GPU 上のテクスチャは共有される）。ページごとに一つ
+    var T = e._msTex; if (!T || T._msId !== st.id) { T = e._msTex = []; T._msId = st.id; }
+    var t = T[pg]; if (!t) { t = T[pg] = A.tex[pg].clone(); t.needsUpdate = true; }
+    var P = meta.pages[pg], W = P.size[0], H = P.size[1];
     if (e.mat.map !== t) {
       e.mat.map = t; e.fr = null;   // ゲームの setFrame に「別の絵になった」と知らせる
       if (e.mat.userData && e.mat.userData.uTexel) e.mat.userData.uTexel.value.set(1 / W, 1 / H);
@@ -93,10 +115,19 @@
     e.bb.position.x = (ox + w / 2) * pxm * sg;   // 足元の中心（胴の中心）を立ち位置に
     if (oy || e._msOy) { e.bb.position.y = oy * pxm; e._msOy = oy; }
     e._msSel = sel;
+    // 手の位置（m、板の座標・反転込み）：[画像左の手 x, y, 画像右の手 x, y]。見えない手は null
+    var hd = sq.hd && sq.hd[sel[1]];
+    if (hd) {
+      var H4 = e._msHand || (e._msHand = [0, 0, 0, 0]);
+      for (var j = 0; j < 4; j += 2) { if (hd[j] == null) { H4[j] = H4[j + 1] = NaN; } else { H4[j] = hd[j] * pxm * sg; H4[j + 1] = hd[j + 1] * pxm; } }
+      if (sg < 0) { var a0 = H4[0], a1 = H4[1]; H4[0] = H4[2]; H4[1] = H4[3]; H4[2] = a0; H4[3] = a1; }   // 反転すると画像の左右が入れ替わる
+      var ad = viewDeg(st), dd = Math.min(ad, 360 - ad);
+      e._msVk = sel[0] === 'turn' || /^walk/.test(sel[0]) ? VK[Math.min(4, Math.round(dd / 45))] : null;
+    } else e._msHand = null;
     return true;
   }
   // 使うのをやめるとき（従来の写真に戻す）：次の setFrame が map を戻せるように
-  function detach(e) { if (e) { e.fr = null; if (e._msOy) { e.bb.position.y = 0; e._msOy = 0; } } }
+  function detach(e) { if (e) { e.fr = null; e._msHand = null; if (e._msOy) { e.bb.position.y = 0; e._msOy = 0; } } }
 
-  window.MotionSprite = { load: load, ready: ready, failed: failed, update: update, detach: detach, viewDeg: viewDeg };
+  window.MotionSprite = { load: load, ready: ready, failed: failed, update: update, detach: detach, viewDeg: viewDeg, need: function (id, seq) { var A = atlases[id]; if (A && A.ok) needSeq(A, new RegExp('^' + seq)); } };
 })();

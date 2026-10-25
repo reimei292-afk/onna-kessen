@@ -22449,7 +22449,7 @@ const RK_Q = new URLSearchParams(location.search);
 const RK_N = (() => { const q = parseInt(RK_Q.get('rkn'), 10); if (q > 0) return Math.min(12, q); return LITE ? 4 : 9; })();
 const RK_TS = (() => { const q = parseFloat(RK_Q.get('rkts')); return q > 0 ? Math.min(4, q) : 1; })();   // テスト用の時間の速さ
 const RK_NF = LITE ? 3 : Math.min(8, Math.max(3, Math.round(RK_N * 0.67)));   // 迎撃の戦闘機
-const RK_AAT = { m2: { n: 'M2 12.7mm 機銃', sh: 0.085, p: 0.05, rg: 1700, tr: 1, sz: 2.4 }, m45: { n: 'M45 四連装 12.7mm', sh: 0.06, p: 0.075, rg: 1700, tr: 2, sz: 2.4 }, bof: { n: '40mm ボフォース', sh: 0.5, p: 0.2, rg: 2500, tr: 1, sz: 5.5 } };
+const RK_AAT = { m2: { n: 'M2 12.7mm 機銃', sh: 0.085, p: 0.018, rg: 1700, tr: 1, sz: 2.4 }, m45: { n: 'M45 四連装 12.7mm', sh: 0.06, p: 0.026, rg: 1700, tr: 2, sz: 2.4 }, bof: { n: '40mm ボフォース', sh: 0.5, p: 0.07, rg: 2500, tr: 1, sz: 5.5 } };
 const RK_AAMIX = LITE ? ['m45', 'm2', 'm45', 'bof', 'm2', 'm45', 'm2'] : ['m45', 'm2', 'bof', 'm45', 'm2', 'm45', 'bof', 'm2', 'm45', 'm2', 'bof', 'm45', 'm2', 'm45'];
 const RK_NAA = RK_AAMIX.length;   // 目標の対空機銃座（米軍の M2・M45 四連装・40mm ボフォース）
 const RK = { on: false, built: false, ph: 'off', planes: [], ftr: [], aa: [], tgts: [], bombs: [], bul: [], tr: [], st: 'cockpit', ext: 0, said: {}, log: [], perf: { upd: 0, n: 0 } };
@@ -22642,7 +22642,7 @@ function rkTracer(p, dir, spd, base, c, life, len) { if (RK.silent) return; cons
 function rkPool() {   // 名の無い侍女（宮殿の侍女と同じ写真：標準の装い・ティアラ）。弓兵は弓を持たない写真の娘だけ
   const no = PAL_NOGEN(), pax = rkPaxIds();
   const all = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.front && g.front.tex && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !pax.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; });
-  const wd = all.filter(id => GIRLS[id].down && GIRLS[id].down.tex); return wd.length >= 18 ? wd : all;   // 倒れた時の写真（down）がある娘を優先
+  return all;
 }
 function rkCrewMesh(gid) {
   const g = GIRLS[gid], fr = g.front;
@@ -22821,7 +22821,7 @@ function rkFtrTick(F, dt) {
       const near = camera.position.distanceTo(F.p) < 2500;
       if (near) for (const s of [-1, 1]) { const mz = F.p.clone().addScaledVector(new V3(Math.cos(F.hdg), 0, -Math.sin(F.hdg)), s * 2.6); rkTracer(mz, fw.clone().add(new V3(rand(-0.02, 0.02), rand(-0.02, 0.02), rand(-0.02, 0.02))).normalize(), 820, F.vel, RK_TRU, 1.2); }
       if (T.king && Math.random() < 0.3 && Sfx.ctx) Sfx.mg(F.p);
-      if (Math.random() < 0.4 * (1 - d / 620) * (T.king ? (LITE ? 0.6 : 0.75) : 1) * (LITE ? 0.6 : 1)) rkHit(T, rkAspOf(T, F.p), F.p); }
+      if (Math.random() < 0.32 * (1 - d / 620) * (T.king ? (LITE ? 0.6 : 0.75) : 1) * (LITE ? 0.62 : 1)) rkHit(T, rkAspOf(T, F.p), F.p); }
     const close = F.vel.clone().sub(T.vel).dot(T.p.clone().sub(F.p));
     if (d < 120 || (close < 0 && d < 450) || F.aT > 10) { F.st = 'break'; F.bT = 0; F.bs = Math.random() < 0.5 ? -1 : 1; }
   } else if (F.st === 'break') {
@@ -22864,7 +22864,7 @@ function rkAATick(dt) {
       const T = A.tgt; if (!T || !rkFlying(T)) { A.burst = 0; continue; }
       const mz = A.p.clone().setY(2.6), d = T.p.distanceTo(mz); if (d > Y.rg) { A.burst = 0; continue; }
       for (let q = 0; q < Y.tr; q++) { const aim = T.p.clone().addScaledVector(T.vel, d / 800).sub(mz).normalize().add(new V3(rand(-0.03, 0.03), rand(-0.03, 0.03), rand(-0.03, 0.03))).normalize(); rkTracer(mz, aim, Y.sh > 0.3 ? 700 : 800, null, RK_TRU, Y.sz, 0.03); }
-      if (Math.random() < Y.p * (1 - d / Y.rg)) rkHit(T, 'aa', mz);
+      if (Math.random() < Y.p * (1 - d / Y.rg) * (LITE ? 0.7 : 1)) rkHit(T, 'aa', mz);
     } else if (A.cd <= 0) {
       const Y = RK_AAT[A.p.aat || 'm2']; let best = null, bd = Y.rg - 100; for (const P of RK.planes) { if (!rkFlying(P)) continue; const d = P.p.distanceTo(A.p) * (0.7 + Math.random() * 0.6); if (d < bd) { bd = d; best = P; } }
       if (best) { A.tgt = best; A.burst = Y.sh > 0.3 ? rand(2.5, 4.5) : rand(1.8, 3.2); A.cd = rand(1.0, 2.2); } else A.cd = 1;
@@ -22991,7 +22991,7 @@ html.rk.rkwalk #joy{display:block!important}
 html.mobile #rkHud #rkRad{bottom:auto;top:120px;width:96px;height:96px}
 .rkd{color:#f88}.rka{color:#9cf}.rkk{color:#fd8}`; document.head.appendChild(st); }
     h = document.createElement('div'); h.id = 'rkHud';
-    h.innerHTML = `<div id="rkTop"></div><div id="rkPl"></div><div id="rkCrew"></div><canvas id="rkRad" width="260" height="260"></canvas><div id="rkBtns">${RK_VK.map(k => `<button data-k="${k}">${RK_VIEW[k].key} ${RK_VIEW[k].n.replace('機銃', '')}</button>`).join('')}<button data-k="ext">V 外</button><button data-k="walk">E 歩く/つく</button><button data-k="icam">C 機内カメラ</button><button data-k="ros">R 名簿</button><button data-k="run">Shift 走る</button></div>`;
+    h.innerHTML = `<div id="rkTop"></div><div id="rkPl"></div><div id="rkCrew"></div><canvas id="rkRad" width="260" height="260"></canvas><div id="rkBtns">${RK_VK.map(k => `<button data-k="${k}">${RK_VIEW[k].key} ${RK_VIEW[k].n.replace('機銃', '')}</button>`).join('')}<button data-k="ext">V 外</button><button data-k="walk">E 歩く/つく</button><button data-k="icam">C 機内カメラ</button><button data-k="ros">R 名簿</button><button data-k="run">${MOBILE ? '' : 'Shift '}走る</button></div>`;
     document.body.appendChild(h);
     h.querySelectorAll('#rkBtns button').forEach(b => { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const k = b.dataset.k; if (k === 'ext') rkExtView(); else if (k === 'walk') rkUse(); else if (k === 'icam') rkICam(); else if (k === 'ros') rkRoster(); else if (k === 'run') { RK.run = !RK.run; b.classList.toggle('on', RK.run); rkPop(RK.run ? '走る' : '歩く'); } else rkStation(k); };
       b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', f); });
@@ -23156,10 +23156,11 @@ function rkMakePlane(i, pool) {
   const inter = new THREE.Mesh(king ? G.intK : G.int, G.mOp); inter.visible = false; body.add(inter);
   const bay = new THREE.Mesh(G.bay, G.mOp); body.add(bay);
   const props = [-1, 1].map(s => { const m = new THREE.Mesh(G.prop, G.mOp); m.position.set(s * 4.3, -0.3, -5.25); body.add(m); return m; });
-  const P = { i, no: i + 1, g, body, inter, bay, sc, props, disc, gear, crew: [], pax: [], ppl: [], hp: 50, ctl: 100, eng: [21, 21], engOff: [0, 0], st: 'form', p: new V3(), vel: new V3(), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0,
+  const P = { i, no: i + 1, g, body, inter, bay, sc, props, disc, gear, crew: [], pax: [], ppl: [], hp: 56, ctl: 100, eng: [23, 23], engOff: [0, 0], st: 'form', p: new V3(), vel: new V3(), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0,
     slot: new V3(...RK_SLOTS[i % RK_SLOTS.length]), lag: 0, bombs: 4, king, landed: false, auto: false, gunCd: {}, crewVis: true, hitT: 0 };
   RK_ST.forEach((S, k) => {
-    const gid = pool.length ? pool.splice((Math.random() * pool.length) | 0, 1)[0] : Object.keys(GIRLS)[k];
+    if (!pool.length) pool.push(...rkPool());   // 足りなければ同じ写真をもう一巡
+    const wd = pool.filter(id => GIRLS[id].down && GIRLS[id].down.tex), src = wd.length ? wd : pool, gid = src.length ? src[(Math.random() * src.length) | 0] : Object.keys(GIRLS)[k]; if (src.length) pool.splice(pool.indexOf(gid), 1);   // 倒れた時の写真（down）がある娘を先に
     const prof = makeProfile(); P.crew.push(rkPerson(P, S, gid, prof.name, S.n, prof.cm || 158, 'crew', k));
   });
   if (king) for (const X of RK_PAX) {
@@ -23176,7 +23177,7 @@ function rkSpark(P, lp) { if (RK.silent) return; const w = P.g.localToWorld(_rkW
 function rkCry(c, k) { if (c.X && rkLine('x_' + c.X.id + '_cry')) { rkSay('x_' + c.X.id + '_cry', 0, c.label); return; } const L = rkLine(k + '2') && Math.random() < 0.5 ? k + '2' : k; rkSay(L, 0, c.label); }
 // ---- 被弾（空中）：発動機（止まるだけ、火は出ない）・舵（操縦系統）・胴体を貫く弾（線上の人に当たる） ----
 function rkHit(P, asp, srcP) {
-  if (RK.over || !rkFlying(P)) return; P.hitT = RK.t; P.hitN = (P.hitN || 0) + 1;
+  if (RK.over || !rkFlying(P)) return; P.hitT = RK.t; P.hitN = (P.hitN || 0) + 1; if (TEST) { const h = RK.hs || (RK.hs = { aa: 0, f: 0 }); h[asp === 'aa' ? 'aa' : 'f']++; }
   if (P.king || camera.position.distanceTo(P.p) < 60) { RK.shake = Math.max(RK.shake || 0, P.king ? 0.25 : 0.1); if (Sfx.ctx && !RK.silent) Sfx.noiseBurst(0.05, 'bandpass', 2400, 1800, 0.25, 2); }
   if (P.king && Math.random() < 0.35) setTimeout(() => { if (RK.on && !RK.over) rkSecSay(P, 'hit', 16); }, 700);
   const r = Math.random();

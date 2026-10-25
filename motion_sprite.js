@@ -78,6 +78,7 @@
         return [w[0], k, !!w[1]];
       }
       case 'bow': {
+        if (!meta.bow || !S.bow) return null;   // 弓のコマが無い娘は従来の弓の写真
         var B = meta.bow, b = st.bow || { stage: 'kai', u: 0 }, r = B.stages[b.stage] || B.stages.kai;
         var uu = Math.max(0, Math.min(0.999, b.u || 0));
         k = r[0] + Math.floor(uu * (r[1] - r[0] + 1));
@@ -94,7 +95,9 @@
   function update(e, st) {
     var A = atlases[st.id];
     if (!A || !A.ok || !e || !e.bb || !e.mat) return false;
-    var meta = A.meta, sel = pick(meta, st, e), sq = meta.seq[sel[0]], fr = sq && sq.f[sel[1]];
+    var meta = A.meta, sel = pick(meta, st, e);
+    if (!sel) return false;
+    var sq = meta.seq[sel[0]], fr = sq && sq.f[sel[1]];
     if (!fr) return false;
     var pg = fr.length > 6 ? fr[6] : 0;
     if (!A.tex[pg]) { if (!A.bad[pg]) needPage(A, pg); return false; }   // まだ読み込み中：今は従来の写真

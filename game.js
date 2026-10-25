@@ -22809,7 +22809,7 @@ function rkFtrTick(F, dt) {
       const near = camera.position.distanceTo(F.p) < 2500;
       if (near) for (const s of [-1, 1]) { const mz = F.p.clone().addScaledVector(new V3(Math.cos(F.hdg), 0, -Math.sin(F.hdg)), s * 2.6); rkTracer(mz, fw.clone().add(new V3(rand(-0.02, 0.02), rand(-0.02, 0.02), rand(-0.02, 0.02))).normalize(), 820, F.vel, RK_TRU, 1.2); }
       if (T.king && Math.random() < 0.3 && Sfx.ctx) Sfx.mg(F.p);
-      if (Math.random() < 0.28 * (1 - d / 620) * (T.king ? 0.85 : 1)) rkHit(T, rkAspOf(T, F.p), F.p); }
+      if (Math.random() < 0.28 * (1 - d / 620) * (T.king ? 0.85 : 1) * (LITE ? 0.5 : 1)) rkHit(T, rkAspOf(T, F.p), F.p); }
     const close = F.vel.clone().sub(T.vel).dot(T.p.clone().sub(F.p));
     if (d < 120 || (close < 0 && d < 450) || F.aT > 10) { F.st = 'break'; F.bT = 0; F.bs = Math.random() < 0.5 ? -1 : 1; }
   } else if (F.st === 'break') {
@@ -23139,7 +23139,7 @@ function rkMakePlane(i, pool) {
   const inter = new THREE.Mesh(king ? G.intK : G.int, G.mOp); inter.visible = false; body.add(inter);
   const bay = new THREE.Mesh(G.bay, G.mOp); body.add(bay);
   const props = [-1, 1].map(s => { const m = new THREE.Mesh(G.prop, G.mOp); m.position.set(s * 4.3, -0.3, -5.25); body.add(m); return m; });
-  const P = { i, no: i + 1, g, body, inter, bay, sc, props, disc, gear, crew: [], pax: [], ppl: [], hp: 100, ctl: 100, eng: [34, 34], engOff: [0, 0], st: 'form', p: new V3(), vel: new V3(), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0,
+  const P = { i, no: i + 1, g, body, inter, bay, sc, props, disc, gear, crew: [], pax: [], ppl: [], hp: 60, ctl: 100, eng: [24, 24], engOff: [0, 0], st: 'form', p: new V3(), vel: new V3(), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0,
     slot: new V3(...RK_SLOTS[i % RK_SLOTS.length]), lag: 0, bombs: 4, king, landed: false, auto: false, gunCd: {}, crewVis: true, hitT: 0 };
   RK_ST.forEach((S, k) => {
     const gid = pool.length ? pool.splice((Math.random() * pool.length) | 0, 1)[0] : Object.keys(GIRLS)[k];
@@ -23163,7 +23163,7 @@ function rkHit(P, asp, srcP) {
   if (P.king || camera.position.distanceTo(P.p) < 60) { RK.shake = Math.max(RK.shake || 0, P.king ? 0.25 : 0.1); if (Sfx.ctx && !RK.silent) Sfx.noiseBurst(0.05, 'bandpass', 2400, 1800, 0.25, 2); }
   const r = Math.random();
   if (r < 0.18) { const s = asp === 'left' ? 0 : asp === 'right' ? 1 : Math.random() < 0.5 ? 0 : 1; rkEngHit(P, s); }
-  else if (r < 0.30) { P.ctl -= rand(9, 17); if (P.ctl < 60 && !P.ctlSaid) { P.ctlSaid = 1; RK.log.push('ctl:' + P.no); if (P.king) rkSay('r_ctrl', 10); } rkSpark(P, rkLP(P, [rand(-2, 2), rand(0, 2), 9.4])); }
+  else if (r < 0.30) { P.ctl -= rand(14, 24); if (P.ctl < 60 && !P.ctlSaid) { P.ctlSaid = 1; RK.log.push('ctl:' + P.no); if (P.king) rkSay('r_ctrl', 10); } rkSpark(P, rkLP(P, [rand(-2, 2), rand(0, 2), 9.4])); }
   else {   // 薄い外板とガラスは弾を止めない
     const A = new V3(rand(-0.3, 0.3) * P.sc.x, rand(-0.5, 0.75) * P.sc.y, rand(-9.0, 10.0) * P.sc.z), h = rkRay(P, rkLocal(P, srcP), A);
     if (h) rkPersonHit(P, h.c, h.zone, h.pt); else { P.hp -= rand(4, 9); rkSpark(P, A); }
@@ -23183,7 +23183,7 @@ function rkRay(P, O, A) {   // 機体の座標の線（O→A）と人の柱（�
     const u = (y - py) / h, zone = u > 0.87 ? 'head' : u > 0.64 ? (lat > 0.13 ? 'arm' : 'chest') : u > 0.5 ? (lat > 0.15 ? 'arm' : 'abd') : 'leg';
     best = { c, t, zone, pt: new V3(qx, y, qz) }; };
   for (const c of P.ppl) if (c.alive) test(c, c.pos.x, c.pos.y, c.pos.z, c.cm / 100 * (c.able ? 1 : 0.55));
-  if (P.king && !RK.god && !RK.kingHit && Math.random() < 0.5) { const k = rkKingPos(); test('king', k.x, k.y, k.z, 1.66); }
+  if (P.king && !RK.god && !RK.kingHit && Math.random() < 0.22) { const k = rkKingPos(); test('king', k.x, k.y, k.z, 1.66); }
   return best;
 }
 function rkZone() { const r = Math.random(); return r < 0.1 ? 'head' : r < 0.32 ? 'chest' : r < 0.5 ? 'abd' : r < 0.72 ? 'arm' : 'leg'; }
@@ -23323,7 +23323,7 @@ function rkCrewTick(P, dt) {
     const g = c.girl, f = c.face + Math.PI, cy = Math.atan2(camL.x - c.pos.x, camL.z - c.pos.z), cc = Math.cos(angDiff(f, cy));
     let fr = c.fr || g.front, sq = 1, tilt = 0;
     if (c.alive) {
-      if (c.kneel && g.kneel) { fr = g.kneel; c.view = 'side'; }
+      if ((c.kneel || !c.able) && g.kneel) { fr = g.kneel; c.view = 'side'; }
       else { c.view = cc > 0.5 + (c.view === 'front' ? -0.08 : 0.08) ? 'front' : cc < -0.5 - (c.view === 'back' ? -0.08 : 0.08) ? 'back' : 'side'; fr = c.view === 'front' ? g.front : girlFrame(g, c.view); }
     }
     const dx = c.pos.x - camL.x, dz = c.pos.z - camL.z, yawL = Math.atan2(-dx, -dz), sgn = Math.sin(f - yawL) > 0 ? 1 : -1;
@@ -23331,6 +23331,7 @@ function rkCrewTick(P, dt) {
     if (c.fr !== fr) { c.fr = fr; c.m.material.map = fr.tex; c.m.material.needsUpdate = true; }
     const h = c.cm / 100 * fr.hk, w = h * fr.aspect, sg = mirror ? -1 : 1;
     if (!c.alive) { c.fallT += dt; const u = Math.min(1, c.fallT / 0.55); sq = 1 - 0.6 * u * u; tilt = 0.32 * u * (c.k % 2 ? 1 : -1); }
+    else if (!c.able && g.kneel) { sq = 0.9; tilt = 0.1 * (c.k % 2 ? 1 : -1); }
     else if (!c.able) { sq = 0.56; tilt = 0.14 * (c.k % 2 ? 1 : -1); }
     else if (c.kneel && !g.kneel) sq = 0.74;
     else if (c.wound === 'leg' || c.wound === 'both') sq = 0.86;
@@ -23352,7 +23353,7 @@ function rkForceLand(P, why) {
 function rkFlTick(P, dt) {
   if (P.st === 'fl') {
     P.spd += (85 - P.spd) * Math.min(1, dt * 0.2);
-    const want = P.p.y > 60 ? -Math.min(10, 3 + P.p.y * 0.012) : -1.0 - P.p.y * 0.03;
+    const want = P.p.y > 60 ? -Math.min(16, 5 + P.p.y * 0.015) : -1.5 - P.p.y * 0.05;
     P.vy += (want - P.vy) * Math.min(1, dt * 0.8);
     P.hdg += angDiff(P.hdg, P.flH) * Math.min(1, dt * 0.3); P.roll += ((P.engOff[0] - P.engOff[1]) * 0.08 + Math.sin(RK.t * 0.9 + P.i) * 0.05 - P.roll) * Math.min(1, dt);
     P.pitch = Math.atan2(P.vy, P.spd) + (P.p.y < 40 ? 0.07 : 0);
@@ -23380,8 +23381,8 @@ function rkGndStart(P) {
 }
 function rkUsSpawn(G) {
   const P = G.P, n = LITE ? 5 : 8, ids = USD_IDS.filter(id => GIRLS[id]); if (!ids.length) return;
-  for (let k = 0; k < n; k++) { const a = G.dir + rand(-0.5, 0.5), R = rand(280, 380), gid = ids[(k * 3 + P.i * 5) % ids.length], m = rkCrewMesh(gid); m.visible = false; RK.dyn.add(m);
-    G.us.push({ gid, girl: GIRLS[gid], m, p: new V3(P.p.x - Math.sin(a) * R, 0, P.p.z - Math.cos(a) * R), alive: true, st: 'adv', t: rand(0, 3), cd: rand(1, 3), stopD: rand(80, 150), cm: rand(160, 172), face: 0, sway: rand(0, 6) }); }
+  for (let k = 0; k < n; k++) { const a = G.dir + rand(-0.5, 0.5), R = rand(230, 300), gid = ids[(k * 3 + P.i * 5) % ids.length], m = rkCrewMesh(gid); m.visible = false; RK.dyn.add(m);
+    G.us.push({ gid, girl: GIRLS[gid], m, p: new V3(P.p.x - Math.sin(a) * R, 0, P.p.z - Math.cos(a) * R), alive: true, st: 'adv', t: rand(0, 3), cd: rand(1, 3), stopD: rand(170, 230), cm: rand(160, 172), face: 0, sway: rand(0, 6) }); }
   G.n = n;
   const jg = new THREE.Mesh(rkJeepGeo(), RKG.mOp), a = G.dir + rand(-0.2, 0.2); RK.dyn.add(jg);
   G.jeep = { g: jg, p: new V3(P.p.x - Math.sin(a) * 520, 0, P.p.z - Math.cos(a) * 520), hp: 8, alive: true, cd: 3, burst: 0, stopD: rand(150, 190) };
@@ -23411,9 +23412,9 @@ function rkGndTick(G, dt) {
   for (const u of live) {
     const dx = P.p.x - u.p.x, dz = P.p.z - u.p.z, d = Math.hypot(dx, dz);
     if (G.retreat) u.st = 'back';
-    if (u.st === 'adv') { const s = 2.3 * dt; u.p.x += dx / d * s + Math.cos(RK.t * 0.7 + u.sway) * dt * 0.8; u.p.z += dz / d * s; u.face = Math.atan2(-dx, -dz); if (d < u.stopD) { u.st = 'fire'; u.t = rand(4, 7); } }
+    if (u.st === 'adv') { const s = 3.4 * dt; u.p.x += dx / d * s + Math.cos(RK.t * 0.7 + u.sway) * dt * 0.8; u.p.z += dz / d * s; u.face = Math.atan2(-dx, -dz); if (d < u.stopD) { u.st = 'fire'; u.t = rand(3, 6); } }
     else if (u.st === 'fire') { u.face = Math.atan2(-dx, -dz); u.t -= dt; u.cd -= dt; if (u.cd <= 0) { u.cd = rand(1.4, 2.8); rkUsShoot(G, u.p, d, false); }
-      if (u.t <= 0) { u.stopD = Math.max(30, u.stopD - rand(18, 36)); u.st = d > u.stopD + 5 ? 'adv' : 'fire'; u.t = rand(4, 7); } }
+      if (u.t <= 0) { u.stopD = Math.max(25, u.stopD - rand(30, 55)); u.st = d > u.stopD + 5 ? 'adv' : 'fire'; u.t = rand(4, 7); } }
     else if (u.st === 'back') { const s = 3.0 * dt; u.p.x -= dx / d * s; u.p.z -= dz / d * s; u.face = Math.atan2(dx, dz); if (d > 460) { u.gone = true; u.m.visible = false; } }
   }
   const J = G.jeep;
@@ -23444,7 +23445,7 @@ function rkDefTick(G, dt, live) {
     if (atGun) { const l = rkLocal(P, best.p.clone().setY(P.p.y)).normalize(); if (Math.acos(clamp(l.dot(_rkK.set(...V.gun)), -1, 1)) > RK_ARC[gk] + 0.2) { c.dcd = 0.6; continue; } }
     else c.faceT = Math.atan2(-(rkLocal(P, best.p).x - c.pos.x), -(rkLocal(P, best.p).z - c.pos.z));
     let p;
-    if (atGun) { c.dcd = Math.random() < 0.12 ? 1.1 : 0.12; p = 0.03 * (1 - bd / 600) * c.eff * (c.kind === 'sec' ? 0.7 : 1);
+    if (atGun) { c.dcd = Math.random() < 0.12 ? 1.1 : 0.12; p = 0.018 * (1 - bd / 560) * c.eff * (c.kind === 'sec' ? 0.7 : 1);
       if (!RK.silent && camera.position.distanceTo(wp) < 700) { const mz = P.g.localToWorld(rkLP(P, V.gl)); rkTracer(mz, best.p.clone().setY(best === J ? 1.4 : 1.1).sub(mz).normalize().add(new V3(rand(-0.02, 0.02), rand(-0.02, 0.02), rand(-0.02, 0.02))).normalize(), 800, null, RK_TRJ, 1.0); if (Sfx.ctx && Math.random() < 0.4) Sfx.mg(mz); } }
     else if (bd < 2.2) { c.dcd = 1.2; p = 0.5 * c.eff; }   // 懐刀
     else { c.dcd = rand(0.8, 1.4); p = 0.16 * (1 - bd / 80) * c.eff; if (!RK.silent && Sfx.ctx && camera.position.distanceTo(wp) < 150) Sfx.noiseBurst(0.04, 'bandpass', 1900, 900, 0.22, 1.4); }
@@ -23472,7 +23473,8 @@ function rkGndDraw(G) {
 // 終わりの時に決着していない地上戦は、音も絵も出さずに先まで進める
 function rkGndResolve() {
   RK.silent = true;
-  try { for (const G of (RK.gbs || [])) { if (G.P.king) continue; let k = 0; while (!G.res && k++ < 900) { for (const c of G.P.ppl) rkMovePerson(G.P, c, 0.4); rkBleed(G.P, 0.4); rkGndTick(G, 0.4); } } }
+  try { for (const P of RK.planes) { let k = 0; while ((P.st === 'fl' || P.st === 'skid') && k++ < 2000) rkFlTick(P, 0.25); }   // まだ降りている途中の機も降ろして決着
+    for (const G of (RK.gbs || [])) { if (G.P.king) continue; let k = 0; while (!G.res && k++ < 900) { for (const c of G.P.ppl) rkMovePerson(G.P, c, 0.4); rkBleed(G.P, 0.4); rkGndTick(G, 0.4); } } }
   finally { RK.silent = false; }
 }
 function rkBleed(P, dt) {

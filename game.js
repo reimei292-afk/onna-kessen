@@ -11036,10 +11036,12 @@ function usGunTick(G, dt) {
     const [tx, tz] = G.route[G.pi + 1], gx = G.g.position.x, gz = G.g.position.z, d = Math.hypot(tx - gx, tz - gz);
     const near = G.crew.filter(c => Math.hypot(c.s.position.x - gx, c.s.position.z - gz) < 3.2).length;
     if (!G.hauling) { G.hauling = true; usOrder(G.crew[0], 'u_haul', 20); }
-    if (near && d > 0.2) { const s = Math.min(d, (near >= 2 ? 1.25 : 0.7) * dt); G.g.position.x += (tx - gx) / d * s; G.g.position.z += (tz - gz) / d * s; G.g.rotation.y = Math.atan2(tx - gx, tz - gz) + Math.PI; }
+    usEscortTick(G, dt);
+    if (near && d > 0.2) { const s = Math.min(d, (near >= 2 ? 1.4 : 0.85) * dt); G.g.position.x += (tx - gx) / d * s; G.g.position.z += (tz - gz) / d * s; G.g.rotation.y = Math.atan2(tx - gx, tz - gz) + Math.PI; }
     if (d <= 0.25) G.pi++;
     G.x = G.g.position.x; G.z = G.g.position.z; return;
   }
+  if (G.hauling && G.esc) { for (const o of G.esc) o.usEscort = null; G.esc = []; }   // 据え付けた：護衛は元の役目へ
   G.hauling = false;
   if ((G.cd -= dt) > 0) return;
   const T = (G.pick && G.pick(G)) || usGunPick(G); if (!T) { G.cd = 2; return; }
@@ -11054,6 +11056,20 @@ function usGunTick(G, dt) {
   const o = Sfx.at(mz, 520, 1.5); if (o) { const dl = dP / 340; Sfx.noiseBurst(1.4, 'lowpass', 600, 40, 0.95, 0.7, dl, o); Sfx.tone('sine', 56, 24, 1.1, 0.8, dl, o); }
   G.shots++; CAMP.usGunShots = (CAMP.usGunShots || 0) + 1; usOrder(G.crew[0], 'u_gun', 16);
   for (const c of G.crew) c.faceWant = G.g.rotation.y;
+}
+// 山砲を引き上げる間の護衛：近くの小銃兵が砲の前と左右に付き、膝をついて撃ち返す。組が倒れたら護衛から補う（補うのは数回まで。砲の組を倒し切れば止まる）
+function usEscortTick(G, dt) {
+  if ((G.escT = (G.escT || 0) - dt) > 0) return; G.escT = 1.5;
+  const gx = G.g.position.x, gz = G.g.position.z, want = USD_MOB ? 2 : 4;
+  G.esc = (G.esc || []).filter(o => isUp(o) && o.usEscort === G);
+  for (const o of CAMP.live.orange) { if (G.esc.length >= want) break; if (!o.campUs || o.usGun || o.usEscort || o.usClimb || o.usdW === 'colt' || !isUp(o)) continue; if (Math.hypot(o.s.position.x - gx, o.s.position.z - gz) > 40) continue; o.usEscort = G; G.esc.push(o); }
+  const maxRe = USD_MOB ? 2 : 3;
+  while (G.crew.length < G.need && G.esc.length && (G.refill || 0) < maxRe) { const o = G.esc.shift(); o.usEscort = null; o.usGun = G; G.crew.push(o); o.usdW = 'spr'; o.ammo = 1; o.hpk = undefined; G.refill = (G.refill || 0) + 1; }
+}
+function usEscortGoal(e) {
+  const G = e.usEscort; if (!G.route || !(G.pi < G.stopAt) || !G.crew.length) { e.usEscort = null; return null; }
+  const i = Math.max(0, (G.esc || []).indexOf(e)), off = [[-2.6, 3.6], [2.6, 3.6], [-3.4, 0.6], [3.4, 0.6]][i % 4], a = G.g.rotation.y + Math.PI;   // 砲は後ろ向きに引くので、進む向きは反対
+  return { pt: [G.g.position.x + Math.cos(a) * off[0] + Math.sin(a) * off[1], G.g.position.z - Math.sin(a) * off[0] + Math.cos(a) * off[1]], hold: true, sp: 1.15 };
 }
 // 砲の組：砲の後ろに立つ（引くときは砲の前）。近づかれたら銃剣
 function usCrewTick(e, dt) {
@@ -11126,7 +11142,7 @@ function campUsBrain(e, dt) {
   let t = e.tgt2; if (t && !t.isPlayer && !isUp(t)) { e.tgt2 = t = null; e.usdT = 0; }
   if (t && e.tgtD < 2.4) return usBayo(e, t, dt);
   if (e.usSq) usSqUpd(e.usSq);
-  const goal = (CAMP.usGoal && CAMP.usGoal(e)) || (CAMP.usObj && (() => { const O = CAMP.usObj(e); return O ? usStormGoal(e, O) : null; })()) || null;
+  const goal = (e.usEscort && usEscortGoal(e)) || (CAMP.usGoal && CAMP.usGoal(e)) || (CAMP.usObj && (() => { const O = CAMP.usObj(e); return O ? usStormGoal(e, O) : null; })()) || null;
   let tg = goal && goal.pt ? goal.pt : campAdvance(e);
   if (goal && goal.route && CASTLE.on) tg = castleRoute(p, tg[0], tg[1]);
   const base = e.speed * (e.usdW === 'colt' ? 0.95 : 0.78);
@@ -11334,6 +11350,7 @@ const CAMP_PROF = { sumi: { name: '白瀬 澄', pers: '冷静', cm: 156, vv: 1 }
   shizuka: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0 }, reika: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1 }, shinobu: { name: '氷室 しのぶ', pers: '冷静', cm: 162, vv: 1 },
   chikage: { name: '一条 千景', pers: '冷静', cm: 159, vv: 0 }, hiyori: { name: '小日向 ひより', pers: '陽気', cm: 152, vv: 2 }, akari: { name: '夏目 あかり', pers: '陽気', cm: 155, vv: 2 } };
 function campNamed(key, x, z, kind, cmdr) {
+  if (key === 'ojou') kind = 'mob';   // 西園寺は薙刀で戦う
   const g = CAMP_GIRL[key] ? CAMP_GIRL[key]() : undefined;
   const e = campJp(x, z, kind || 'mob', { girl: g, prof: CAMP_PROF[key], key, tag: CAMP_PROF[key] ? CAMP_PROF[key].name : key, cmdr: cmdr ? key : null });
   if (e && CAMP_PROT.includes(key)) e.campProt = true;
@@ -14927,7 +14944,7 @@ function palSpots(R) {
 const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);
 function palPool() {
   if (!PAL.poolAll) { const no = PAL_NOGEN();
-  PAL.poolAll = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.type === 'mob' && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
+  PAL.poolAll = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
   if (palJoined()) return PAL.poolAll;   // 入宮式のあとは内定者だった娘も侍女として
   if (!PAL.poolNR) { const rc = new Set(palRc()); PAL.poolNR = PAL.poolAll.filter(id => !rc.has(id)); }
   return PAL.poolNR;
@@ -16599,7 +16616,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261024s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261024t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -18859,6 +18876,9 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (CAMP.on && CAMP.frozen) return;
   if (e.state === 'down' || UK.on || UK7.on || PAL.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
+  { const G = e.usGun;   // 山砲を引く組：砲の盾と車輪の陰で、矢・弾の半分ほどは砲が受ける（刃は防げない。砲の組は倒せる）
+    if (G && G.route && G.pi < G.stopAt && !(hit && hit.thrust) && Math.random() < 0.5 && Math.hypot(e.s.position.x - G.g.position.x, e.s.position.z - G.g.position.z) < 3.6) {
+      CAMP.usShieldN = (CAMP.usShieldN || 0) + 1; const q = G.g.position.clone(); q.y += 0.8; puff(q, 0xd8d0c0, 2, 0.05, 1.6, 0.1); return; } }
   if (e.bayo && e.uk2Gun && hit && hit.thrust && !hit.arrow && !e.wounded && isUp(e) && (e.uk2Free || e.uk3Free) && Math.random() < BAYO.parry) {   // 銃剣の兵：正面の刃は銃で受け流すことがある
     const fp = byPlayer ? player.pos : by && by.s ? by.s.position : from; let front = true;
     if (fp) { const a = Math.atan2(fp.x - e.s.position.x, fp.z - e.s.position.z), f = e.face != null ? e.face : e.s.rotation.y; front = Math.abs(Math.atan2(Math.sin(a - f), Math.cos(a - f))) < 1.3; }

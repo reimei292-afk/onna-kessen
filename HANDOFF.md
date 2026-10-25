@@ -262,3 +262,18 @@
 - 横送り：指でなぞる・ホイール（縦も横に変換）・Shift+ホイール・マウスでつかんで引く・◀▶（タッチ端末では隠す）。scroll-snap。上のタブで列へ跳ぶ（高さ520px以下では隠す）。
 - ステージのボタンは button[data-st]（◀▶とタブは data-st なし。selectStage の対象を [data-st] に絞った）。選ぶと列の中でその札まで送る（stageCardShow）。
 - 高さ420px以下ではタイトル下の説明文を隠し、開始ボタンを近づける。PC幅900px以上では操作説明を二段組み。
+
+## 20261024t：手に持つ武器（写真の切り抜き）・弓兵の素手の絵・薙刀・骨格タイプ・山砲の護衛
+- **武器の小道具**：`assets/props_src/*.jpg`（GenerateImage の写真）を `tools/make_props.py`（rembg）で切り抜き、一枚のアトラス `assets/frames/props.webp`（1024²）にまとめた。弓・矢筒・槍・薙刀・懐刀・ウィンチェスター・スプリングフィールド・コルト。
+  - `tools/make_frames_props.py` → `assets/frames/frames_props.js`：`PROP_META`（アトラス上の位置・長さ・握る位置）と `HAND_META[gid][view]`（各娘の各向きの両手の位置。シルエットから自動で算出）。
+  - game.js の `HP` モジュール：全員の小道具を **一つの InstancedMesh（描画1回）** で描く（uv は InstancedBufferAttribute 'uvr'）。`hpPose` が向き・構え・振りに合わせて手の位置へ置き、ビルボード（e.tilt）と一緒に回る。`hpFlush` は描画の直前に呼ぶ。
+  - `hpKindOf`：弓兵→弓＋矢筒、侍女（mob）→懐刀、`e.nagi`→薙刀、米兵→小銃・マスケット・コルト。武器が描き込まれた絵（弓を引く・突く・action）の間と、倒れ・負傷・座り・膝つきの間は小道具を出さない。宮殿の日常・英国・仏・空港・塹壕では出さない。
+- **雑兵は無し**：日本方の徒の娘はすべて「侍女」（字幕・UI・組の名・声の文も）。mob01-10・girl21-44 の正面はみな標準の装い＋ティアラ（確認済み、作り直しは不要だった）。
+- **archer01-10 の素手の絵**：`assets/archer_un/archerNN_sheet.jpg`（今の絵を参考に同じ顔・髪・体つき・標準の装いで生成）を `tools/make_archer_unarmed.py` で front / front_diag / side / back / walk に分け、down は元の絵から弓を取り除いた。戦では弓の小道具を持ち、弓を引く瞬間だけ元の写真（`g.bow`）。宮殿の日常では部署のある普通の侍女として出る（`PAL.poolAll` が `g.unarmed` の弓兵も含む）。
+- **薙刀**：`NAGI`（間合い 2.6m・振りかぶり 0.55s・前方の扇に最大4人・押し返し）。`nagiSweep` は血を出さない（`nagiKO`）。大宮の近衛隊（宮殿の大階段の踊り場の組：`palNagi`）と西園寺（`opt.ojou` / `campNamed('ojou')`、戦では薙刀で戦う）。
+- **骨格タイプ（骨格診断）**：`KOKKAKU[gid]` = 'S'（ストレート）／'W'（ウェーブ）／'N'（ナチュラル）。`tools/make_kokkaku.py` が今の絵の肩幅・腰幅の比から中立に判定（絵は変えていない）。動きは `KK` で少しだけ変える（上下の揺れ・歩幅と足の速さ・横揺れ・姿勢の傾き）。弓兵の素手の絵は元の絵と同じ体つきで作ったので、タイプはそのまま。今後絵を作り直すときも同じタイプを保つこと。
+- S（ストレート） 34人：archer01、archer02、archer03、archer05、archer06、girl21、girl22、girl23、girl26、girl28、girl29、girl31、girl34、girl37、girl40、girl42、girl43、girl44、medic、mob01、mob02、mob03、mob05、mob08、mob09、mob10、ojou、sec6、sysop、uk01、uk07、uk09、uk10、us04
+- W（ウェーブ） 34人：archer07、archer09、archer10、fr03、fr07、fr08、fumi、girl24、girl25、girl27、girl30、girl32、girl35、girl36、girl38、girl39、girl41、mob04、mob06、mob07、nurse2、omiya、sec3、sec5、sec7、uk00、uk04、uk06、us02、us07、us10、us11、us12、us14
+- N（ナチュラル） 33人：arch01、arch02、arch03、arch04、arch05、arch06、archer04、archer08、fr01、fr02、fr04、fr05、fr06、fr09、fr10、girl33、sec4、surgeon、uk02、uk03、uk05、uk08、us01、us03、us05、us06、us09、us13、us15、us16、us17、us18、us19
+- **山城の山砲**：引き上げる間、近くの小銃兵が最大4人（スマホ2人）護衛として砲の前と左右に付き、膝をついて撃ち返す（`usEscortTick` / `usEscortGoal`）。組が倒れたら護衛から補う（3回まで、スマホ2回）。砲のそばで引く組は、矢・弾の半分ほどを砲の盾が受ける（刃は防げない）。組を倒し切れば砲は止まる。
+- index.html の ?v= は **22 個**（frames_props.js が増えた）。ASSET_V と一緒に上げること。

@@ -8917,7 +8917,8 @@ function ukDlg(steps, onEnd) { UK.dlg = { q: steps.slice(), cur: null, t: 0, len
 function ukDlgNext() {
   const D = UK.dlg; if (!D) return;
   for (;;) {
-    const s = D.q.shift();
+    let s = D.q.shift();
+    if (s && s.say && CAMP.on && typeof campIsDead === 'function') { const L = ukL(s.say); if (L && campIsDead(L.who)) { if (ukL(s.say + '_d')) s = Object.assign({}, s, { say: s.say + '_d' }); else continue; } }   // 討たれた大将の台詞は代わりの者が言うか、飛ばす
     if (!s) { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; if (D.onEnd) D.onEnd(); return; }
     if (s.fn) { s.fn(); if (UK.dlg !== D) return; continue; }
     D.cur = s; D.t = 0;
@@ -10880,20 +10881,22 @@ const CAMP = { on: false, run: false, solo: false, ph: 0, t: 0, said: {}, by: {}
 const CAMP_N = USD_N;
 const CAMP_OWN = ['usTown', 'usPal', 'yamajiro', 'usOdw'];
 const TERR = { fn: null, move: null };   // 地面の高さ（山城の斜面・宮殿の大階段）。null なら平ら
-function campWho(who) { if (who === 'sumi') return CAMP.by.sumi || sec.e; if (who === 'sec2') return sec2.e; return CAMP.by[who] || (who === 'fumi' ? fumi.e : who === 'ojou' ? ojou.e : null); }
-function campBark(k, gap, force) {
-  const L = usdLine(k); if (!L || !CAMP.on || (UK.dlg && !force)) return false;
+function campWho(who) { if (who === 'jicho' || who === 'konoe') return campDeputy(who); if (who === 'sumi') return CAMP.by.sumi || sec.e; if (who === 'sec2') return sec2.e; return CAMP.by[who] || (who === 'fumi' ? fumi.e : who === 'ojou' ? ojou.e : null); }
+function campBark(k, gap, force, as) {
+  let L = usdLine(k); if (!L || !CAMP.on || (UK.dlg && !force)) return false;
+  if (campIsDead(L.who)) { const d = usdLine(k + '_d'); if (!d) return false; k = k + '_d'; L = d; }   // 討たれた大将の台詞：代わりの者（侍女長・近衛の副長）か、言わない
   if (!force && CAMP.said[k] && time - CAMP.said[k] < (gap || 10)) return false;
-  const e = campWho(L.who); if (e && !isUp(e) && L.who !== 'sumi') return false;
+  const e = as || campWho(L.who); if (e && !isUp(e) && L.who !== 'sumi') return false;
+  if (!e && (L.who === 'jicho' || L.who === 'konoe')) return false;
   CAMP.said[k] = time;
   const d = e ? Math.min(/^us/.test(L.who) ? 30 : 10, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
   if (L.file) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
-  const nm = (UK_WHO_NAME[L.who] || CAMP_NAME[L.who] || '').replace(/<small>.*<\/small>/, '').replace(/<[^>]+>/g, '');
+  const nm = as ? (as.ukTag || (as.prof && as.prof.name) || '') : (UK_WHO_NAME[L.who] || CAMP_NAME[L.who] || '').replace(/<small>.*<\/small>/, '').replace(/<[^>]+>/g, '');
   subtitle(L.en || L.ja); const el = $('subtitle'); if (el) el.textContent = L.en ? `${nm}「${L.en}」　${L.ja}` : `${nm}「${L.ja}」`;
   return true;
 }
 const CAMP_NAME = { sumi: '白瀬 澄', sec2: '早瀬 ことね', fumi: '綾瀬 文乃', ojou: '西園寺 すみれ', omiya: '大宮 ひなた', shinobu: '氷室 しのぶ', chikage: '一条 千景', hiyori: '小日向 ひより', akari: '夏目 あかり',
-  shizuka: '久遠 静香', reika: '白石 麗華', uk10: 'シャーロット・ケンドール', uk04: 'ベアトリス・ソーン', uk03: '英国の娘', king: '殿' };
+  shizuka: '久遠 静香', reika: '白石 麗華', jicho: '侍女長', konoe: '近衛の副長', uk10: 'シャーロット・ケンドール', uk04: 'ベアトリス・ソーン', uk03: '英国の娘', king: '殿' };
 // 殿の字幕（声は出さない）と語り
 function campKing(ja, dur) { subtitle(ja); const el = $('subtitle'); if (el) el.textContent = `殿「${ja}」`; }
 function campNarr(ja) { const el = $('subtitle'); subtitle(ja); if (el) el.textContent = ja; }
@@ -11373,6 +11376,35 @@ function campProtFall(e) {
   if (e.protBack > time) return; e.protBack = time + 14; CAMP.protN = (CAMP.protN || 0) + 1;
   const k = e.campKey || (e.fumi ? 'fumi' : e.ojou ? 'ojou' : 'omiya'); campBark(k === 'fumi' ? 'k_back_f' : k === 'ojou' ? 'k_back_o' : 'k_back_om', 30);
 }
+// 大将が討たれた：近くの娘の短い声（「綾瀬様…！」）、手当て中なら看護師の「御臨終です」、字幕「…が討たれた」、記録。次の段は代わりの者が指揮
+function campIsDead(k) { return !!(CAMP.sum.dead && CAMP.sum.dead.some(d => d.k === k)); }
+function campCmdrDied(e) {
+  e.campDeadDone = true; e.quietDeath = true;
+  const k = e.campKey || (e.fumi ? 'fumi' : e.ojou ? 'ojou' : 'omiya'), nm = CAMP_NAME[k] || (e.prof && e.prof.name) || '';
+  const ph = ['', '城下町', '平城', '宮殿', '山城', '総構え'][CAMP.ph] || '';
+  (CAMP.sum.dead = CAMP.sum.dead || []).push({ k, nm, ph, t: CAMP.bt });
+  if (CAMP.by[k] === e) CAMP.by[k] = null;
+  for (const o of enemies) if (o.guardOf === e) o.guardOf = null;
+  const p = e.s.position; let best = null, bd = 18;
+  for (const o of enemies) { if (o === e || o.team !== 'blue' || !isUp(o) || o.medic || o.campKey || o.special) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; best = o; } }
+  const medic = e.medBy && isUp(e.medBy) ? e.medBy : null;
+  CAMP.deadMsgT = time;
+  setTimeout(() => { if (!CAMP.on) return; if (best && isUp(best)) campBark('k_dead_' + k, 0, true, best); }, 500);
+  setTimeout(() => { if (!CAMP.on) return; const el = $('subtitle'); subtitle(nm + 'が討たれた'); if (el) el.textContent = `――${nm}が討たれた`; }, 2300);
+  if (medic) setTimeout(() => { if (CAMP.on && isUp(medic)) campBark('k_rinju', 0, true, medic); }, 3600);
+  setTimeout(() => { if (CAMP.on && !CAMP.falling) campBark(k === 'omiya' ? 'k_dep_take_om' : k === 'ojou' ? 'k_dep_take_o' : 'k_dep_take', 0, true); }, medic ? 5600 : 4300);
+  CAMP.log.push('dead:' + k);
+}
+// 代わりの指揮：名の無い侍女（宮殿では近衛）から一人を侍女長・近衛の副長に
+function campDeputy(kind) {
+  const D = CAMP.dep || (CAMP.dep = {}); let e = D[kind];
+  if (e && isUp(e) && enemies.includes(e)) return e;
+  let best = null, bd = 1e9;
+  for (const o of enemies) { if (o.team !== 'blue' || !isUp(o) || o.medic || o.campKey || o.special || o.secretary || o.consc) continue; const d = Math.hypot(o.s.position.x - player.pos.x, o.s.position.z - player.pos.z) + (o.kind === 'mob' ? 0 : 4); if (d < bd) { bd = d; best = o; } }
+  if (!best) return null;
+  best.ukTag = kind === 'konoe' ? '近衛の副長' : '侍女長'; best.campDep = kind; D[kind] = best;
+  return best;
+}
 function campProtBrain(e, dt) {
   const p = e.s.position; e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false; e.kneel = false;
   const n = campNear(e, CAMP.live.orange, 60); let dx = 0, dz = -1; if (n) { dx = n[0].s.position.x - player.pos.x; dz = n[0].s.position.z - player.pos.z; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L; }
@@ -11822,9 +11854,9 @@ function townTick(dt) {
 }
 function townFall() {
   CAMP.falling = true; CAMP.sum.townT = CAMP.bt;
-  campBark('t_fall_f', 0, true);
+  campBark('t_fall_f', 0, true);   // 綾瀬が討たれていれば侍女長が叫ぶ（t_fall_f_d）
   for (const e of CAMP.live.blue) if (e.campHold || e.cmdr || e.guardOf) { e.home = [rand(-2.5, 2.5), -24]; e.campRoof = null; e.usdFree = false; e.cmdr = null; e.guardOf = null; e.campHold = true; }
-  popup('城へ引けーっ！――殿を先に、門の内へ'); popupTimer = 3;
+  popup((campIsDead('fumi') ? '侍女長「城へ引けーっ！」' : '城へ引けーっ！') + '――殿を先に、門の内へ'); popupTimer = 3;
   setTimeout(() => {
     if (!CAMP.on || CAMP.ph !== 1 || state !== 'play') return;
     CAMP.frozen = true;
@@ -11842,6 +11874,7 @@ function campCastleStart() {
   B.box('path', -3.3, 3.3, 0, 0.06, -9, -3, 2);
   B.flush({ stone: yjMat('rock', 0xbdb8ae), path: yjMat('path', 0xc8bca8) });
   // 西園寺が城の大将（城の者）。綾瀬は町から生き残りを連れて引いてきた
+  for (const [o, k] of [[ojou, 'ojou'], [fumi, 'fumi']]) if (o.e && !campHas(k)) { const x = o.e; o.e = null; o.dead = true; const i = enemies.indexOf(x); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(x); } catch (_) {} }
   for (const [o, k] of [[ojou, 'ojou'], [fumi, 'fumi']]) if (o.e) { o.e.cmdr = k; CAMP.by[k] = o.e; o.e.home = [k === 'ojou' ? 0 : -6, 18]; o.e.cmdrDir = [0, -1]; o.e.hp = o.e.hpMax = Math.max(o.e.hpMax, 10); o.e.campProt = true; }
   campNamed('shinobu', -4, 10, 'mob'); campNamed('chikage', 4, 10, 'archer');
   for (const k of ['shinobu', 'chikage']) { const e = CAMP.by[k]; if (e) { e.campRun = { pts: [[0, 16], [k === 'shinobu' ? -10 : 10, 3], [0, 2.5]], i: 0, wait: 0 }; } }
@@ -11860,7 +11893,7 @@ function campCastleStart() {
   const t0 = performance.now(); staticMerge(stageRoot, [CASTLE, covers, flags, mountains, seirans, enemies, towers, USD.shells, UK2.flashes, CAMP.usGuns, CAMP.cas]); CAMP.mergeMs = Math.round(performance.now() - t0);
   showBanner('第二の場：平城', '西園寺が城を守る。大手門を破らせるな'); bannerTimer = 4;
   campFadeOff();
-  ukDlg([{ wait: 0.8 }, { say: 'c_ojou1' }, { say: 'c_shinobu1' }, { say: 'c_chikage1' }], null);
+  ukDlg([{ wait: 0.8 }, { say: 'c_ojou1' }, ...(campIsDead('fumi') ? [{ say: 'c_ojou_fd' }] : []), { say: 'c_shinobu1' }, { say: 'c_chikage1' }], null);
 }
 // 伝令（しのぶ・千景）：本丸と大手門の間を行き来する
 function campRunnerBrain(e, dt) {
@@ -12613,6 +12646,7 @@ function campResult(win) {
   const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
   if (h1) h1.textContent = win ? '勝利' : S.seppuku ? '落城' : '敗北';
   if (h2) h2.textContent = text + '　―　評価：' + rate;
+  if (S.dead && S.dead.length) rows.push('討たれた大将：' + S.dead.map(d => `${d.nm}（${d.ph}・${campMS(d.t)}）`).join('、'));
   $('result').innerHTML = rows.join('<br>') + `<br>止めたアメリカ勢 <b>${CAMP.stopTot}</b>　／　殿の撃破 <b>${CAMP.kills}</b>　／　戦った時間 ${campMS(CAMP.t)}`;
   CAMP.on = false; stageModes.castle = CAMP.oldMode || stageModes.castle;
   stageName = CAMP.solo ? 'yamajiro' : 'usTown'; builtStage = null;
@@ -17316,7 +17350,10 @@ function namedSets() {
   const add = nm => { if (!nm) return; const p = nm.replace(/^(秘書課|笛役|組頭|システム担当|看護師)\s+/, '').split(' '); if (p.length < 2) return; full.add(p.join('')); surn.add(p[0]); };
   for (const k in GIRLS) if (GIRLS[k].prof) add(GIRLS[k].prof.name);
   for (const o of [sec, sec2, ojou, fumi, sysop, fluter, ...aides]) add(o.name);
-  return NAMED = { full, surn };
+  try { for (const k in PAL_NAMED) add(PAL_NAMED[k].name); for (const k in CAMP_NAME) add(CAMP_NAME[k]); for (const k in USD_CHAMP) add(USD_CHAMP[k].name); } catch (_) {}   // 宮殿・戦の名のある娘（大宮・西園寺・九条・白石…）も
+  const given = new Set([...full].map(n => n)); for (const k in GIRLS) { const nm = GIRLS[k].prof && GIRLS[k].prof.name; if (nm && nm.includes(' ')) given.add(nm.split(' ')[1]); }
+  try { for (const k in PAL_NAMED) { const nm = PAL_NAMED[k].name; if (nm && nm.includes(' ')) given.add(nm.split(' ')[1]); } } catch (_) {}
+  return NAMED = { full, surn, given };
 }
 let usedNames = new Set();
 function makeProfile() {
@@ -17326,7 +17363,7 @@ function makeProfile() {
     const whole = Math.random() < 0.3;
     name = whole ? pick(NEW_NAMES) : pick(SURN_ALL) + ' ' + pick(GIVEN_ALL);
     const [sn] = name.split(' ');
-    if (N.full.has(name.replace(' ', '')) || (!whole && N.surn.has(sn)) || onField(name)) continue;   // 名のある娘と同じ名前・苗字は避ける。戦場に同じ名前は二人いない
+    if (N.full.has(name.replace(' ', '')) || (!whole && N.surn.has(sn)) || (!whole && N.given.has(name.split(' ')[1])) || onField(name)) continue;   // 名のある娘と同じ名前・苗字は避ける。戦場に同じ名前は二人いない
     if (!usedNames.has(name) || k > 25) break;
   }
   usedNames.add(name);
@@ -18698,8 +18735,8 @@ function startWave(n) {
   if (BEACH.on && !BEACH.king) beachKingBoats();
   if (sec.mode === 'dead') { sec.mode = 'hq'; spawnSecretary(); if (n > 1) popup('秘書課の侍女が本陣に戻りました'); }
   if (sysop.dead || (!sysop.e && hq)) { const was = sysop.dead; spawnSysop(); if (n > 1 && was) popup(sysop.name + 'が本陣に戻りました'); }
-  if (fumi.dead || (!fumi.e && hq)) { const was = fumi.dead; spawnFumi(); if (n > 1 && was) popup(fumi.name + 'が本陣に戻りました'); }
-  if (ojou.dead || (!ojou.e && hq)) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }
+  if ((fumi.dead || (!fumi.e && hq)) && !(CAMP.on && !campHas('fumi'))) { const was = fumi.dead; spawnFumi(); if (n > 1 && was) popup(fumi.name + 'が本陣に戻りました'); }
+  if ((ojou.dead || (!ojou.e && hq)) && !(CAMP.on && !campHas('ojou'))) { const was = ojou.dead; spawnOjou(); if (n > 1 && was) popup('秘書課 西園寺 すみれが本陣に戻りました'); }
   if (sec2.dead || (!sec2.e && hq)) { const was = sec2.dead; spawnSec2(); if (n > 1 && was) popup('秘書課の侍女（二人目）が本陣に戻りました'); }
   for (const t of ['blue', 'orange']) { if (t === 'orange' && CAMP.on && !CAMP.solo) continue; let was = false; for (const m of medics[t]) if (m.dead || !m.e) { was = was || m.dead; spawnMedic(t, m); } if (n > 1 && was && t === 'blue') popup('救護班が持ち場に戻りました'); }
   for (const A of aides) if (A.dead || (!A.e && hq)) { const was = A.dead; spawnAide(A); if (n > 1 && was) popup(A.name + 'が本陣に戻りました'); }
@@ -18917,7 +18954,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   e.hurtAt = time;   // 撃たれた娘はしばらく状況台詞を言わない
   e.wasTalking = partner || Talk.speaking(e);
   if (e.wasTalking) { if (partner) closeSecMenu(false); Talk.hush(e); }
-  e.hp -= dmg; if (e.campProt && CAMP.on && campProtOn(e)) { if (e.hp < 1.5) { e.hp = 1.5; campProtFall(e); } else if (e.hp <= e.hpMax * 0.4) campProtFall(e); }   // 大将は討ち死にしない（下がる）
+  e.hp -= dmg; if (e.campProt && CAMP.on && e.hp > 0 && e.hp <= e.hpMax * 0.4) campProtFall(e);   // 大将：弱れば声をかけて殿の後ろへ下がる（討たれることもある）
   e.flash = TRENCH.on ? 0 : 0.12; if (TRENCH.on) npcGlow(e,0,0,0); else npcGlow(e,0.9,0.9,0.9); // 塹壕戦では被弾時の白い発光を完全に消す
   let hitPos = null;
   if (hit && hit.pt) {
@@ -18951,7 +18988,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
 }
 // 戦死判定：倒れるアニメを一度だけ再生し、その姿勢のまま地面に残る（以後は動かない・しゃべらない）
 function killEnemy(e, byPlayer, from) {
-  if (e.campProt && CAMP.on && campProtOn(e) && e.state !== 'down') { e.hp = Math.max(e.hp, 1.5); campProtFall(e); return; }   // 大将：最後の段で殿が追い詰められるまでは倒れない
+  if (e.campProt && CAMP.on && e.state !== 'down' && !e.campDeadDone) campCmdrDied(e);   // 大将が討たれた：まわりの声・字幕・記録
   if (UK3.on) uk3OnKill(e);   // 第三幕：よじ登る途中で倒れても甲板（舟）の上に
   if (e.airportCrewActor && AIRPORT.on) {
     for (const p of AIRPORT.posts || []) if (p.crew === e) p.crewAlive = false;

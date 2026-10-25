@@ -166,6 +166,28 @@ L.update({
  'z_win': ('sumi', '殿……アメリカ勢が、兵を引いていきます。総構えを、守り抜きました。'),
 })
 for i in range(10): L['c%d' % (i + 1)] = ('us01', NUM[i], NJA[i])
+# 20261024v：大将も討たれうる。近くの娘の短い声・看護師・代わりの指揮（侍女長／近衛の副長）
+ST.update({'jicho': (N, -6, -6), 'konoe': (N, 2, -4), 'nurse': ST.get('nurse') or __import__('voice_profiles').PROFILES['nurse']})
+L.update({
+ 'k_dead_fumi': ('maid', '綾瀬様……！'), 'k_dead_ojou': ('maid', '西園寺様……！'), 'k_dead_omiya': ('maid', '大宮様……！'),
+ 'k_rinju': ('nurse', '……御臨終です。'),
+ 'k_dep_take': ('jicho', '綾瀬様に代わり、私が指揮を執ります！ 列を崩さないで！'),
+ 'k_dep_take_o': ('jicho', '西園寺様に代わり、私が指揮を執ります！'),
+ 'k_dep_take_om': ('konoe', '大宮様に代わり、近衛は私が率います！'),
+ 't_fall_f_d': ('jicho', '城へ引けーっ！ 殿を先に、皆、城へ！'),
+ 't_gate_o_d': ('jicho', '門を閉ざせ！ 閂をかけなさい！'),
+ 'c_ojou_fd': ('ojou', '綾瀬さんのことは、聞きました。……その分まで、この城は譲りません。'),
+ 'c_win_o_d': ('jicho', '……退いていきます。守り切りました、殿。'),
+ 'c_fall_o_d': ('jicho', '殿、抜け道へ！ 本丸の奥から、宮殿へ抜けられます！'),
+ 'p_win_om_d': ('konoe', '追い返しました……。殿、ご無事で。'),
+ 'p_fall_om_d': ('konoe', '殿、ここはもう持ちません！ 山城へお逃げください！'),
+ 'p_fall_om2_d': ('konoe', '殿、こちらへ！ 私がお連れします！'),
+ 'm_esc_o_d': ('jicho', '殿、裏の抜け道へ！ ここは私たちが食い止めます！'),
+ 'm_esc_om_d': ('konoe', '殿、裏の抜け道へ！ 早く！'),
+ 'z_breach1_d': ('konoe', '総構えを破られました！ 内堀まで退いてください！'),
+ 'z_breach2_d': ('jicho', '三の丸はもう持ちません。殿、本丸へ！'),
+ 'z_hold_d': ('jicho', '竹束の陰から射て！ 顔を出しすぎないで！'),
+})
 async def one(t, p, v, r, pi):
     for a in range(4):
         try: await edge_tts.Communicate(t, v, rate=f'{r:+d}%', pitch=f'{pi:+d}Hz').save(p); return

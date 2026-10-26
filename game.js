@@ -16779,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22620,6 +22620,7 @@ function buildUsRaid() {   // 地上（田畑・基地・目標の飛行場）�
   const st = rkSoft(64, 'rgba(255,255,255,0.85)', 'rgba(255,255,255,0)');
   mk('smoke', LITE ? 700 : 1600, 16, st, THREE.NormalBlending, 0.55);
   mk('spark', LITE ? 200 : 400, 0.5, st, THREE.AdditiveBlending, 0.9);   // 被弾の白い閃き（火は出さない）
+  mk('blood', LITE ? 240 : 500, 0.35, st, THREE.NormalBlending, 0.92);   // ガラスに飛ぶ血しぶき
   mk('big', LITE ? 200 : 420, 60, st, THREE.NormalBlending, 0.6);
   mk('flak', LITE ? 500 : 1200, 30, st, THREE.NormalBlending, 0.85);   // 高射砲の破裂：黒い煙の玉
   mk('flash', LITE ? 40 : 80, 26, st, THREE.AdditiveBlending, 0.9);    // 破裂の一瞬の閃き（火の玉ではない）
@@ -22634,7 +22635,7 @@ function rkPx(name, p, v, life, c0, c1) {   // 粒子をひとつ出す（色 c0
 function rkPxTick(dt) {
   for (const k in RK.px) { const S = RK.px[k], pos = S.m.geometry.attributes.position.array, col = S.m.geometry.attributes.color.array; let j = 0;
     S.list = S.list.filter(q => (q.t += dt) < q.life);
-    for (const q of S.list) { q.p.addScaledVector(q.v, dt); if (k === 'smoke' || k === 'big') { q.v.multiplyScalar(1 - dt * 0.6); q.v.y += dt * 1.5; } else if (k === 'flak') { q.v.multiplyScalar(1 - dt * 1.2); q.v.y += dt * 0.25; }
+    for (const q of S.list) { q.p.addScaledVector(q.v, dt); if (k === 'smoke' || k === 'big') { q.v.multiplyScalar(1 - dt * 0.6); q.v.y += dt * 1.5; } else if (k === 'flak') { q.v.multiplyScalar(1 - dt * 1.2); q.v.y += dt * 0.25; } else if (k === 'blood') q.v.y -= dt * 9;
       const u = q.t / q.life; pos[j * 3] = q.p.x; pos[j * 3 + 1] = q.p.y; pos[j * 3 + 2] = q.p.z;
       col[j * 3] = q.c0[0] + (q.c1[0] - q.c0[0]) * u; col[j * 3 + 1] = q.c0[1] + (q.c1[1] - q.c0[1]) * u; col[j * 3 + 2] = q.c0[2] + (q.c1[2] - q.c0[2]) * u; j++; }
     for (let i = j; i < (S.lastN || 0); i++) { pos[i * 3 + 1] = -1e5; }
@@ -22677,7 +22678,7 @@ function rkReset() {
   RK.L = { p: new V3(0, 460, 900), hdg: 0, pitch: 0, roll: 0, spd: RK_SPD, vy: 0, wp: 0, vel: new V3() };
   for (const P of RK.planes) { P.p.copy(RK.L.p).add(P.slot); P.hdg = 0; }
   Object.assign(RK, { ph: 'out', t: 0, st: 'cockpit', ext: 0, said: {}, log: [], dropped: false, dropT: 0, fSpawn: 0, kills: 0, kingHit: false, endT: 0, endHint: false, endHintT: 0, ask: false, orbNext: 0, over: false, fade: 0, fireHeld: false, gunCd: 0, hits: 0, aaOn: false, results: null, hint: 0, aimLate: false, god: /[?&]rkgod=1/.test(location.search), rtb: 0, parkN: 0, verdict: 0, lastImp: 0, bq: [], shots: 0, hm: 0, shake: 0, extI: 0, kq: [], walk: 0, icam: 0, ic: null, kp: Object.assign(new V3(), { out: false }), gbs: [], gndK: null, zst: { head: 0, chest: 0, abd: 0, arm: 0, leg: 0 }, kw: null, kbleed: null, kTreated: false, treated: 0, fl: 0, gk: 0, silent: false, roster: 0 });
-  RK.keys = RK.keys || {};
+  RK.keys = RK.keys || {}; RK.gBlood = [];
   for (const P of RK.planes) rkPose(P);
   player.pos.set(0, 460, 900); player.yaw = 0; player.pitch = RK_VIEW.cockpit.bp; player.hp = CFG.maxHp; player.deathCold = true;
 }
@@ -22771,8 +22772,9 @@ function rkBoom(p, k) {   // 着弾：土ぼこりだけ（火も爆発の光も
   if (Sfx.ctx) { const d = p.distanceTo(camera.position), g = clamp(1.2 - d / 2500, 0.05, 1); Sfx.noiseBurst(0.7, 'lowpass', 180, 40, 0.6 * g, 1, Math.min(2, d / 340)); }
 }
 // ---- 被弾：発動機・機体・搭乗員（殿も） ----
-function rkKingHit() {   // 殿の被弾：血や傷は描かない。画面が暗くなり、作戦は中止
+function rkKingHit() {   // 殿の被弾：窓に血が飛び、作戦は中止
   if (RK.kingHit) return; RK.kingHit = true; RK.over = true; RK.log.push('kinghit');
+  const K = RK.planes[0]; if (K) { const k = rkKingPos(); rkBloodAt(K, new V3(k.x, k.y + 1.15, k.z), true); }
   if (Sfx.ctx) Sfx.noiseBurst(0.12, 'lowpass', 900, 200, 0.5, 1);
   setTimeout(() => { if (RK.on) rkSay('r_king_hit'); }, 500);
   setTimeout(() => rkFinish(false, '殿が被弾した'), 4200);
@@ -22961,7 +22963,7 @@ function rkBombTick(dt) {
 const _rkV = new V3(), _rkV2 = new V3();
 function rkPlaneFx(P, dt) {   // プロペラ（止まった発動機は止まったまま）・片発での操縦の重さ・機内の見え方
   if (P.st === 'gone') return;
-  rkPose(P); P.g.updateMatrixWorld();
+  rkPose(P); P.g.updateMatrixWorld(); rkBloodTick(P, dt);
   const gnd = P.st === 'landed' || P.st === 'skid' || P.st === 'ground', run = s => P.eng[s] > 0 && !P.engOff[s] && !gnd && P.st !== 'fl' && !(P.st === 'taxi' && !rkAlive(P) && P.spd < 1);
   for (let s = 0; s < 2; s++) P.props[s].rotation.z += dt * (run(s) ? 55 : P.st === 'fl' && P.engOff[s] ? 0.6 : 0);
   const cd = camera.position.distanceTo(P.p);
@@ -23102,6 +23104,7 @@ function rkHudSync(force) {
 function rkDraw2D() {
   if (state !== 'play' && state !== 'pause') return;
   const W = innerWidth, H = innerHeight, g = wg, cx = W / 2, cy = H / 2;
+  rkDrawGlassBlood(g, W, H);
   const free = RK.ext || RK.walk || RK.icam;
   if (!free) rkLabels(g, W, H); else if (!RK.ext) { rkLabels(g, W, H); rkWalkHint(g, W, H); }
   if (!free && RK_VIEW[RK.st].gun) {   // 機銃の照準環
@@ -23249,6 +23252,63 @@ function rkAble(P) { let n = 0; for (const c of P.crew) if (c.alive && c.able) n
 function rkCond(c) { return !c.alive ? '戦死' : c.wound === 'abd' ? (c.treated ? '重傷（手当て済）' : '重傷') : c.wound ? `負傷（${c.wound === 'arm' ? '腕' : c.wound === 'leg' ? '脚' : '腕・脚'}${c.treated ? '・手当て済' : ''}）` : '健在'; }
 function rkNear(P) { if (RK.silent) return false; return (P.king && !RK.icam) || RK.icam === P.i || camera.position.distanceTo(P.p) < 80; }
 function rkSpark(P, lp) { if (RK.silent) return; const w = P.g.localToWorld(_rkW.copy(lp)); rkPx('spark', w, null, 0.12, [1, 1, 1], [0.75, 0.75, 0.75]); }
+const RK_GLZ = [[-9.35, -7.35], [-6.45, -4.35], [2.45, 3.95], [8.75, 10.65]];
+function rkGlassZ(z) { let best = z, bd = 99; for (const ab of RK_GLZ) { const c = clamp(z, ab[0], ab[1]), d = Math.abs(z - c); if (d < bd) { bd = d; best = c; } } return bd < 1.4 ? best : z; }
+function rkInside(P) { if (!P || RK.ext) return false; if (RK.icam) return RK.icam === P.i; return !!P.king; }
+function rkBloodGeom() {
+  if (RK._bMat) return;
+  RK._bMat = new THREE.MeshBasicMaterial({ color: 0x6e1218, transparent: true, opacity: 0.88, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4 });
+  RK._bGeo = new THREE.PlaneGeometry(1, 1); RK._bPool = new THREE.CircleGeometry(1, 8);
+}
+function rkScreenBlood(n) {
+  const W = innerWidth, H = innerHeight; RK.gBlood = RK.gBlood || [];
+  for (let i = 0; i < n; i++) RK.gBlood.push({ x: Math.random() * W, y: Math.random() * H * 0.72, rx: 8 + Math.random() * 34, ry: 6 + Math.random() * 18, a: 0.5 + Math.random() * 0.4, v: 10 + Math.random() * 28, tail: 4 + Math.random() * 14 });
+  if (RK.gBlood.length > 36) RK.gBlood.splice(0, RK.gBlood.length - 36);
+}
+function rkBloodAt(P, gp, heavy) {   // 機体座標の点から、ガラスへ血を飛ばして流す
+  if (!P || !P.body || RK.silent || !RK.px || !gp) return;
+  rkBloodGeom();
+  const bx = gp.x / P.sc.x, by = gp.y / P.sc.y, bz = gp.z / P.sc.z, z = rkGlassZ(bz), r = rkR(RK_FUS, z) * 0.93;
+  P.body.updateMatrixWorld();
+  const w = P.body.localToWorld(new V3(bx, by, bz));
+  for (let i = 0; i < (heavy ? 14 : 6); i++) rkPx('blood', w, new V3(rand(-1.8, 1.8), rand(0.3, 2.4), rand(-1.8, 1.8)), rand(0.16, 0.42), [0.58, 0.04, 0.06], [0.22, 0.015, 0.02]);
+  P.bleeds = P.bleeds || [];
+  for (let i = 0; i < (heavy ? 4 : 1); i++) {
+    const s = bx < -0.05 ? -1 : bx > 0.05 ? 1 : (Math.random() < 0.5 ? -1 : 1), a = rand(0.2, 1.15);
+    const x = Math.sin(a) * r * s, y = Math.max(0.12, Math.cos(a) * r * rand(0.42, 0.9));
+    const o = new V3(x, y, z + rand(-0.12, 0.12)), nrm = new V3(x, Math.max(0.2, y), 0).normalize();
+    const spot = new THREE.Mesh(RK._bGeo, RK._bMat); spot.renderOrder = 5; spot.position.copy(o);
+    spot.quaternion.setFromUnitVectors(new V3(0, 0, 1), nrm); spot.scale.set(rand(0.1, 0.26), rand(0.08, 0.18), 1);
+    const drip = new THREE.Mesh(RK._bGeo, RK._bMat); drip.renderOrder = 5; drip.quaternion.copy(spot.quaternion);
+    P.body.add(spot, drip);
+    P.bleeds.push({ spot, drip, o, q: drip.quaternion.clone(), len: 0.04, max: rand(0.22, heavy ? 0.95 : 0.42), spd: rand(0.07, 0.16) });
+  }
+  if (heavy) { const pool = new THREE.Mesh(RK._bPool, RK._bMat); pool.renderOrder = 5; pool.rotation.x = -Math.PI / 2; pool.position.set(bx, -0.9, bz); pool.scale.setScalar(0.04); P.body.add(pool); P.bleeds.push({ pool, grow: rand(0.16, 0.34) }); }
+  while (P.bleeds.length > 18) { const old = P.bleeds.shift(); if (old.spot) P.body.remove(old.spot); if (old.drip) P.body.remove(old.drip); if (old.pool) P.body.remove(old.pool); }
+  if (rkInside(P)) rkScreenBlood(heavy ? 8 : 3);
+}
+function rkBloodTick(P, dt) {
+  if (!P.bleeds) return;
+  const down = new V3();
+  for (const b of P.bleeds) {
+    if (b.pool) { const s = b.pool.scale.x; if (s < b.grow) b.pool.scale.setScalar(Math.min(b.grow, s + dt * 0.1)); continue; }
+    if (b.len >= b.max) continue;
+    b.len = Math.min(b.max, b.len + dt * b.spd);
+    down.set(0, -1, 0).applyQuaternion(b.q);
+    b.drip.position.copy(b.o).addScaledVector(down, b.len * 0.5);
+    b.drip.scale.set(0.028, Math.max(0.04, b.len), 1);
+  }
+}
+function rkDrawGlassBlood(g, W, H) {
+  const B = RK.gBlood; if (!B || !B.length) return;
+  for (let i = B.length - 1; i >= 0; i--) {
+    const b = B[i]; b.y += b.v * 0.016; b.tail = Math.min(140, b.tail + 0.7); b.a *= 0.996;
+    if (b.y > H + 40 || b.a < 0.04) { B.splice(i, 1); continue; }
+    g.fillStyle = `rgba(122,12,18,${b.a.toFixed(3)})`;
+    g.beginPath(); g.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); g.fill();
+    g.fillRect(b.x - 1.6, b.y, 3.2, b.tail);
+  }
+}
 function rkCry(c, k) { if (c.X && rkLine('x_' + c.X.id + '_cry')) { rkSay('x_' + c.X.id + '_cry', 0, c.label); return; } const L = rkLine(k + '2') && Math.random() < 0.5 ? k + '2' : k; rkSay(L, 0, c.label); }
 // ---- 被弾（空中）：発動機（止まるだけ、火は出ない）・舵（操縦系統）・胴体を貫く弾（線上の人に当たる） ----
 function rkHit(P, asp, srcP) {
@@ -23283,7 +23343,7 @@ function rkRay(P, O, A) {   // 機体の座標の線（O→A）と人の柱（�
 function rkZone() { const r = Math.random(); return r < 0.1 ? 'head' : r < 0.32 ? 'chest' : r < 0.5 ? 'abd' : r < 0.72 ? 'arm' : 'leg'; }
 function rkPersonHit(P, c, zone, pt) {
   RK.zst[zone] = (RK.zst[zone] || 0) + 1;
-  if (pt) rkSpark(P, pt);
+  if (pt) { rkSpark(P, pt); rkBloodAt(P, pt, zone === 'head' || zone === 'chest' || zone === 'abd'); }
   if (c === 'king') { rkKingWound(zone); return; }
   if (!c.alive) return;
   c.hits++; c.flash = 0.18; RK.log.push('hit:' + P.no + ':' + c.S.k + ':' + zone);
@@ -23298,6 +23358,7 @@ function rkPersonHit(P, c, zone, pt) {
 }
 function rkCrewDown(P, c) {
   if (!c.alive) return; c.alive = false; c.able = false; c.fallT = 0; c.flash = 0.18; c.take = null; RK.log.push('crew:' + P.no + ':' + c.S.k);
+  rkBloodAt(P, new V3(c.pos.x, c.pos.y + Math.min(1.2, c.cm / 100 * 0.7), c.pos.z), true);
   if (rkNear(P)) { if (c.X && rkLine('x_' + c.X.id + '_cry')) rkSay('x_' + c.X.id + '_cry', 0, c.label); else rkSay('c' + ((Math.random() * 6) | 0), 0, c.label); if (P.king) setTimeout(() => { if (RK.on && !RK.over) rkSecSay(P, 'mate', 14, c); }, 2600); if (P.king && c.kind === 'crew' && rkFlying(P)) setTimeout(() => { if (RK.on && !RK.over) rkSay(c.S.k === 'pilot' || c.S.k === 'copilot' ? 'r_pilot' : 'r_crew', 10); }, 1400); }
   rkCrewCheck(P);
 }
@@ -23319,6 +23380,7 @@ function rkKingWound(zone) {
   RK.log.push('kingw:' + zone);
   if (zone === 'head' || zone === 'chest' || (zone === 'abd' && RK.kw === 'abd')) { rkKingHit(); return; }
   if (zone === 'abd') { RK.kw = 'abd'; RK.kbleed = 75; } else if (!RK.kw) RK.kw = zone; else if (RK.kw !== zone && RK.kw !== 'abd') RK.kw = 'both';
+  { const K = RK.planes[0]; if (K) { const k = rkKingPos(); rkBloodAt(K, new V3(k.x, k.y + 1.1, k.z), zone === 'abd'); } }
   RK.kTreated = false; RK.shake = 0.6; RK.kq.push([RK.t + 0.6, zone === 'arm' ? 'k_warm' : zone === 'leg' ? 'k_wleg' : 'k_wabd']);
   const K = RK.planes[0], f = K && K.pax.find(c => c.X.id === 'fumi' && c.alive && c.able); if (f) setTimeout(() => RK.on && !RK.over && rkSay('s_king', 0, f.label), 1500);
 }
@@ -23582,7 +23644,7 @@ function rkGndResolve() {
 }
 function rkBleed(P, dt) {
   if (P.st === 'landed' || P.st === 'taxi' || P.st === 'roll') return;
-  for (const c of P.ppl) if (c.alive && c.bleed != null && !c.treated) { c.bleed -= dt; if (c.bleed <= 0) { c.bleed = null; rkCrewDown(P, c); RK.log.push('bleed:' + P.no + ':' + c.S.k); } }
+  for (const c of P.ppl) if (c.alive && c.bleed != null && !c.treated) { c.bleed -= dt; if (!RK.silent && (c.bldT = (c.bldT || 0) - dt) <= 0) { c.bldT = rand(0.55, 1.2); rkBloodAt(P, new V3(c.pos.x, c.pos.y + 0.8, c.pos.z), false); } if (c.bleed <= 0) { c.bleed = null; rkCrewDown(P, c); RK.log.push('bleed:' + P.no + ':' + c.S.k); } }
 }
 // ---- 殿：機内を歩く（WASD／左の棒）、持ち場の近くで E、地上では乗降口から外へ ----
 function rkWalkIn() { const k = RK.keys || {}; return [(k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) - touch.jy, (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + touch.jx]; }
@@ -23718,7 +23780,7 @@ function rkStep(dt) {
     if (P.king) { rkMedTick(P, dt); rkSecTick(P, dt); }
   }
   for (const G of (RK.gbs || [])) rkGndTick(G, dt);
-  if (RK.kbleed != null && !RK.kTreated && !RK.god) { RK.kbleed -= dt; if (RK.kbleed <= 0) { RK.kbleed = null; rkKingHit(); } }
+  if (RK.kbleed != null && !RK.kTreated && !RK.god) { RK.kbleed -= dt; if (!RK.silent && (RK.bldT = (RK.bldT || 0) - dt) <= 0) { RK.bldT = 0.45; const K = RK.planes[0]; if (K) { const k = rkKingPos(); rkBloodAt(K, new V3(k.x, k.y + 1.05, k.z), false); } } if (RK.kbleed <= 0) { RK.kbleed = null; rkKingHit(); } }
   for (const F of RK.ftr) rkFtrTick(F, dt);
   rkAATick(dt); rkFlakTick(dt); rkBombTick(dt); rkPlayerGun(dt); rkBulTick(dt); rkPxTick(dt);
   const K = RK.planes[0];

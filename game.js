@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24076,11 +24076,21 @@ function udGeo() {
   };
   return UD.geo;
 }
+function udFat(m) {
+  if (!m || m.userData.fat) return m;
+  m.userData.fat = 1;
+  if (m.material && m.material.map) m.material = spriteMat(m.material.map);
+  for (const z of [-0.08, -0.16]) {
+    const r = new THREE.Mesh(m.geometry, m.material);
+    r.position.z = z; r.frustumCulled = false; m.add(r);
+  }
+  return m;
+}
 function udGirl(gid, role, cm, name, face) {
   const g = GIRLS[gid]; if (!g || !g.front || !g.front.tex) return null;
-  const m = rkCrewMesh(gid), h = (cm || 158) / 100, fr = g.front;
+  const m = udFat(rkCrewMesh(gid)), h = (cm || 158) / 100, fr = g.front;
   m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false; m.position.y = -1.08;
-  return { m, gid, girl: g, role, name, cm: cm || 158, label: role + ' ' + name, face: face || 0, alive: true, fr };
+  return { m, gid, girl: g, role, name, cm: cm || 158, label: role + ' ' + name, face: face || 0, alive: true, fr, cab: 1 };
 }
 function udPose(m, rec, dead) {
   const girl = rec && rec.girl; if (!girl || !m || !m.parent) return;
@@ -24093,23 +24103,21 @@ function udPose(m, rec, dead) {
   const cc = Math.cos(angDiff(look, camYaw));
   let view = cc > 0.5 + (rec.view === 'front' ? -0.08 : 0.08) ? 'front' : cc < -0.5 - (rec.view === 'back' ? -0.08 : 0.08) ? 'back' : 'side';
   rec.view = view;
-  let view2 = view;
-  if (!dead) {
-    if (girl.front_diag && cc > 0.38 && cc < 0.92) view2 = 'front_diag';
-    else if (girl.back_diag && cc < -0.38 && cc > -0.92) view2 = 'back_diag';
-  }
-  let fr = girl.front;
+  let view2 = view, fr = girl.front;
   if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.side || girl.front); view2 = 'down'; }
   else fr = view2 === 'front' ? girl.front : girlFrame(girl, view2);
   if (!fr || !fr.tex) fr = girl.front;
   if (rec.fr !== fr) { rec.fr = fr; if (m.material) { m.material.map = fr.tex; m.material.needsUpdate = true; } }
-  const h = (rec.cm || 158) / 100 * (fr.hk || 1), w = h * (fr.aspect || 0.45);
+  const h = (rec.cm || 158) / 100 * (fr.hk || 1);
+  let bw = h * (fr.aspect || 0.45);
+  if (!dead && view2 === 'side') bw = Math.max(bw, h * 0.38);
+  if (rec.cab) bw = Math.min(bw, 0.48);
   const sgn = Math.sin(angDiff(look, camYaw)) > 0 ? 1 : -1;
   const mirror = view2 !== 'front' && view2 !== 'down' && fr.dir ? fr.dir !== sgn : false;
   _udE.set(0, camYaw, 0, 'YXZ');
   _udQ2.setFromEuler(_udE);
   m.quaternion.copy(m.parent.getWorldQuaternion(_udQ).invert()).multiply(_udQ2);
-  m.scale.set(w * (mirror ? -1 : 1), h, 1);
+  m.scale.set(bw * (mirror ? -1 : 1), h, 1);
 }
 function udGid(pool, avoid) {
   for (let n = 0; n < pool.length; n++) {
@@ -24130,8 +24138,8 @@ function udMakePlane(i, pool) {
   const avoid = new Set(rkPaxIds()), crew = [], pax = [], queue = [];
   const put = (who, x, z) => { if (!who) return; who.m.position.set(x, -1.08, z); body.add(who.m); };
   const crewSpec = [
-    ['操縦手', -0.48, -6.55, 0], ['副操縦手', 0.48, -6.55, 0], ['電探', 0.7, -3.55, Math.PI],
-    ['前方機銃手', -0.15, -8.85, 0], ['左側方機銃手', -1.25, 2.5, Math.PI / 2], ['右側方機銃手', 1.25, 2.5, -Math.PI / 2], ['後方機銃手', 0, 10.35, Math.PI],
+    ['操縦手', -0.42, -6.55, 0], ['副操縦手', 0.42, -6.55, 0], ['電探', 0.55, -3.55, Math.PI],
+    ['前方機銃手', -0.12, -8.85, 0], ['左側方機銃手', -0.82, 2.5, Math.PI / 2], ['右側方機銃手', 0.82, 2.5, -Math.PI / 2], ['後方機銃手', 0, 10.35, Math.PI],
   ];
   for (const [role, x, z, face] of crewSpec) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) continue; avoid.add(gid);
@@ -24140,9 +24148,9 @@ function udMakePlane(i, pool) {
   const medRole = i % 2 ? '医師' : '看護師';
   let medId = i % 2 ? (GIRLS.surgeon ? 'surgeon' : null) : (typeof MEDIC_ID !== 'undefined' ? MEDIC_ID : null);
   if (!medId || avoid.has(medId) || !GIRLS[medId] || !GIRLS[medId].front) medId = udGid(pool, avoid); else avoid.add(medId);
-  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name, Math.PI); if (c) { c.prof = prof; put(c, 1.05, -1.35); crew.push(c); } }
+  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name, Math.PI); if (c) { c.prof = prof; put(c, 0.7, -1.35); crew.push(c); } }
   if (i === 0) {
-    const seats = [[-1.05, -4.7], [1.05, -4.7], [-1.05, -3.85], [1.05, -3.85], [-0.35, -3.2], [0.35, -3.2], [-1.05, -2.55], [0.55, -2.45], [-0.35, -1.85]];
+    const seats = [[-0.72, -4.7], [0.72, -4.7], [-0.72, -3.85], [0.72, -3.85], [-0.28, -3.2], [0.28, -3.2], [-0.72, -2.55], [0.42, -2.45], [-0.28, -1.85]];
     RK_PAX.forEach((X, k) => {
       const gid = X.gid(); if (!GIRLS[gid] || !GIRLS[gid].front) return;
       const c = udGirl(gid, X.role, X.cm, X.name, Math.PI); if (!c) return;
@@ -24150,7 +24158,7 @@ function udMakePlane(i, pool) {
       const s = seats[k] || [0.4, -1.7]; put(c, s[0], s[1]); pax.push(c);
     });
   }
-  const cols = [-1.22, -0.55, 0.55, 1.22];
+  const cols = [-0.74, -0.26, 0.26, 0.74];
   for (let n = 0; n < 40; n++) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) break;
     const c = udGirl(gid, '空挺', prof.cm, prof.name, 0); if (!c) break; c.prof = prof;
@@ -24171,30 +24179,110 @@ function udSpawn() {
   for (let i = 0; i < 3; i++) { const P = udMakePlane(i, pool); UD.planes.push(P); UD.total += P.queue.length; rkPose(P); }
   udSpawnInf();
 }
+function udAirfield() {
+  const T = RK_TGT, P = [], lite = !!LITE;
+  const add = (g, x, y, z, c, rx, ry, rz) => { P.push({ g, m: rkM4(x, y, z, rx || 0, ry || 0, rz || 0), c, shade: 0.08 }); };
+  const box = (w, h, d, x, y, z, c, ry) => add(new THREE.BoxGeometry(w, h, d), x, y, z, c, 0, ry || 0, 0);
+  const cyl = (r0, r1, h, x, y, z, c, rx, seg) => add(new THREE.CylinderGeometry(r0, r1, h, seg || 8), x, y, z, c, rx || 0, 0, 0);
+  box(48, 0.16, 1680, T.x, 0.1, T.z, 0x9c978c);
+  box(18, 0.14, 420, T.x - 150, 0.09, T.z + 80, 0x8a867c);
+  box(220, 0.12, 160, T.x - 40, 0.08, T.z - 40, 0x7d786e);
+  for (let z = -780; z <= 780; z += 46) box(0.7, 0.18, 16, T.x, 0.2, T.z + z, 0xe4dfd2);
+  box(0.35, 0.18, 1600, T.x - 20, 0.19, T.z, 0xd8d3c6);
+  box(0.35, 0.18, 1600, T.x + 20, 0.19, T.z, 0xd8d3c6);
+  for (let i = 0; i < (lite ? 4 : 8); i++) box(1.6, 0.05, 7 + (i % 3), T.x + (i % 2 ? 6 : -5), 0.2, T.z - 500 + i * 140, 0x2e2c28, (i % 2 ? 0.15 : -0.1));
+  for (let i = 0; i < 4; i++) {
+    const x = T.x - 150, z = T.z - 120 + i * 78;
+    box(42, 5.5, 30, x, 2.6, z, 0x6e7268);
+    add(new THREE.CylinderGeometry(16, 16, 30, 10, 1, false, 0, Math.PI), x, 5.4, z, i === 1 || i === 2 ? 0x4a463e : 0x7a7e74, Math.PI / 2, 0, Math.PI / 2);
+    if (i === 1 || i === 2) {
+      box(16, 2.2, 14, x + 6, 3.2, z + 4, 0x3a342c, 0.4);
+      box(10, 1.2, 8, x - 8, 1.1, z - 10, 0x2c2822, 0.8);
+      add(new THREE.CircleGeometry(14, 10), x + 4, 0.07, z + 8, 0x241e18, -Math.PI / 2, 0, 0);
+    }
+    box(8, 3.4, 0.4, x, 2.2, z + 15.2, 0x2a2824);
+  }
+  box(16, 4, 14, T.x + 210, 2, T.z - 60, 0x6a6456);
+  box(7, 14, 7, T.x + 210, 11, T.z - 60, 0x7a7466);
+  box(12, 3.2, 12, T.x + 210, 18.2, T.z - 60, 0x8ec0cc);
+  box(13, 0.4, 13, T.x + 210, 20, T.z - 60, 0x5a564c);
+  cyl(0.15, 0.15, 8, T.x + 210, 24, T.z - 60, 0xc8c4b8, 0, 5);
+  for (let i = 0; i < (lite ? 3 : 6); i++) box(28, 3.6, 10, T.x + 250, 1.8, T.z - 220 + i * 36, 0x6d7058, 0.08);
+  for (let i = 0; i < (lite ? 3 : 7); i++) {
+    const x = T.x + 120 + (i % 3) * 28, z = T.z + 150 + ((i / 3) | 0) * 34;
+    cyl(7.2, 7.2, 8, x, 4, z, i === 2 ? 0x4a4036 : 0xb7b3a6, 0, 12);
+    cyl(7.5, 7.5, 0.5, x, 8.2, z, 0x8e8a80, 0, 12);
+    if (i === 2) { cyl(7.2, 6, 8, x + 3, 2.2, z + 2, 0x3a342c, 1.1, 10); add(new THREE.CircleGeometry(12, 10), x, 0.06, z, 0x1e1a16, -Math.PI / 2, 0, 0); }
+  }
+  const G = rkGeo();
+  for (let i = 0; i < (lite ? 3 : 7); i++) {
+    const x = T.x - 40 + (i % 2) * 28, z = T.z - 280 + i * 36;
+    const m = new THREE.Mesh(G.fo, udGeo().mOp);
+    m.position.set(x, i % 3 === 0 ? 1.6 : 1.15, z);
+    m.rotation.set(i % 3 === 0 ? 0.55 : 0.05, Math.PI / 2 + (i % 2 ? 0.4 : -0.2), i % 3 === 0 ? 0.7 : 0);
+    stageRoot.add(m);
+    if (i % 3 === 0) add(new THREE.CircleGeometry(10, 8), x, 0.05, z, 0x221c16, -Math.PI / 2, 0, 0);
+  }
+  for (let i = 0; i < (lite ? 2 : 5); i++) {
+    const x = T.x + 40 + i * 22, z = T.z + 280;
+    box(3.2, 1.15, 1.5, x, 0.7, z, 0x3e4634, 0.4);
+    box(1.5, 0.7, 1.3, x - 0.2, 1.35, z, 0x2c3328, 0.4);
+    cyl(0.32, 0.32, 0.3, x + 1.1, 0.32, z + 0.6, 0x1a1a18, Math.PI / 2, 6);
+    cyl(0.32, 0.32, 0.3, x - 1.1, 0.32, z + 0.6, 0x1a1a18, Math.PI / 2, 6);
+  }
+  for (let i = 0; i < (lite ? 1 : 3); i++) {
+    const x = T.x - 220, z = T.z + 200 + i * 28;
+    box(6.5, 2.2, 2.6, x, 1.3, z, 0x4a5340);
+    box(2.2, 1.6, 2.4, x - 1.6, 2.5, z, 0x3a4034);
+    cyl(0.55, 0.55, 0.4, x + 2.2, 0.4, z + 1.1, 0x1a1a18, Math.PI / 2, 6);
+    cyl(0.55, 0.55, 0.4, x - 2.2, 0.4, z + 1.1, 0x1a1a18, Math.PI / 2, 6);
+  }
+  for (let i = 0; i < (lite ? 4 : 10); i++) {
+    const x = T.x + rand(-30, 180), z = T.z + rand(-80, 220);
+    for (let k = 0; k < 3; k++) box(1.1, 0.7, 0.8, x + k * 0.2, 0.35 + k * 0.55, z + (k % 2) * 0.15, k % 2 ? 0x6a5a3c : 0x5c6a48);
+  }
+  for (let i = 0; i < (lite ? 6 : 14); i++) {
+    const a = i / 14 * Math.PI * 2, R = 90 + (i % 3) * 40;
+    add(new THREE.TorusGeometry(3.2, 0.45, 4, 8), T.x + Math.cos(a) * R, 0.4, T.z + Math.sin(a) * R * 0.7, 0x8a744c, Math.PI / 2, 0, 0);
+  }
+  for (let i = 0; i < (lite ? 4 : 9); i++) {
+    const x = T.x - 80 + (i % 3) * 18, z = T.z + 60 + ((i / 3) | 0) * 14;
+    cyl(0.42, 0.42, 0.9, x, 0.5, z, 0x4a5a38, 0, 8);
+    if (i % 2) cyl(0.42, 0.42, 0.9, x + 0.5, 1.3, z, 0x3e4a30, 0, 8);
+  }
+  if (!lite) {
+    for (let z = -200; z <= 500; z += 22) { cyl(0.08, 0.08, 1.3, T.x + 340, 0.65, T.z + z, 0x6a6458, 0, 4); box(0.08, 0.7, 22, T.x + 340, 1.15, T.z + z + 11, 0x8a8474); }
+    cyl(0.12, 0.16, 9, T.x - 40, 4.5, T.z + 420, 0xc8c2b4, 0, 5);
+    box(1.6, 0.35, 0.8, T.x - 40, 9.1, T.z + 420, 0xc45a3a);
+    cyl(1.6, 1.8, 6, T.x + 300, 3, T.z + 80, 0x9a9688, 0, 8);
+    cyl(0.35, 0.4, 8, T.x + 300, 9, T.z + 80, 0x8a8680, 0, 5);
+    box(2.2, 0.5, 2.2, T.x + 300, 6.3, T.z + 80, 0x7a766c);
+  }
+  for (let i = 0; i < (lite ? 5 : 12); i++) {
+    const x = T.x + rand(-260, 320), z = T.z + rand(-400, 500);
+    add(new THREE.CircleGeometry(rand(4, 9), 8), x, 0.04, z, 0x2a241c, -Math.PI / 2, rand(0, 2), 0);
+    box(rand(1.2, 3), rand(0.3, 0.8), rand(1, 2.4), x + rand(-2, 2), 0.3, z + rand(-2, 2), 0x4a4338, rand(-0.4, 0.4));
+  }
+  for (let i = 0; i < (lite ? 8 : 18); i++) {
+    const x = T.x + rand(-420, 480), z = T.z + rand(-700, 800);
+    cyl(rand(0.6, 1.4), rand(0.8, 1.8), rand(0.5, 1.3), x, 0.4, z, i % 2 ? 0x5a6840 : 0x6a6238, 0, 6);
+  }
+  stageRoot.add(new THREE.Mesh(rkMerge(P), udGeo().mOp));
+}
 function buildUsDrop() {
   udGeo();
-  const tex = canvasTex(512, 512, (g, W, H) => {
-    g.fillStyle = '#5d7445'; g.fillRect(0, 0, W, H);
-    const cs = ['#6b8649', '#7a8c50', '#8b8257', '#556c3d', '#4d6338'];
-    for (let i = 0; i < 70; i++) { g.fillStyle = cs[(Math.random() * cs.length) | 0]; g.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 80, 24 + Math.random() * 50); }
-  }, 36);
+  const tex = canvasTex(1024, 1024, (g, W, H) => {
+    g.fillStyle = '#6d7846'; g.fillRect(0, 0, W, H);
+    const cs = ['#7d8850', '#5e6a3c', '#8a7a48', '#4e5c34', '#948864', '#3f4a2c', '#6a6244'];
+    for (let i = 0; i < 220; i++) { g.fillStyle = cs[(Math.random() * cs.length) | 0]; g.beginPath(); g.ellipse(Math.random() * W, Math.random() * H, 18 + Math.random() * 70, 10 + Math.random() * 36, Math.random() * 3, 0, 7); g.fill(); }
+    g.strokeStyle = 'rgba(90,70,40,.45)'; g.lineWidth = 3;
+    for (let i = 0; i < 8; i++) { g.beginPath(); g.moveTo(0, Math.random() * H); g.bezierCurveTo(W * 0.3, Math.random() * H, W * 0.6, Math.random() * H, W, Math.random() * H); g.stroke(); }
+    g.fillStyle = 'rgba(40,36,28,.35)';
+    for (let i = 0; i < 40; i++) g.fillRect(Math.random() * W, Math.random() * H, 30 + Math.random() * 80, 4);
+  }, 48);
   const land = new THREE.Mesh(new THREE.PlaneGeometry(26000, 26000), new THREE.MeshLambertMaterial({ map: tex }));
   land.rotation.x = -Math.PI / 2; stageRoot.add(land);
-  const T = RK_TGT, bits = [];
-  bits.push({ g: new THREE.BoxGeometry(70, 0.55, 1500), m: rkM4(T.x, 0.28, T.z), c: 0x8f897a });
-  bits.push({ g: new THREE.BoxGeometry(240, 0.45, 200), m: rkM4(T.x - 180, 0.24, T.z + 40), c: 0x9a9384 });
-  for (let i = 0; i < 4; i++) {
-    const x = T.x - 150, z = T.z - 120 + i * 70;
-    bits.push({ g: new THREE.BoxGeometry(36, 3.2, 28), m: rkM4(x, 1.4, z, 0, 0.2, 0.18), c: 0x5a5348 });
-    bits.push({ g: new THREE.BoxGeometry(22, 1.4, 16), m: rkM4(x + 10, 3.1, z + 6, 0.4, 0.3, 0.5), c: 0x3a342c });
-    bits.push({ g: new THREE.BoxGeometry(8, 0.5, 10), m: rkM4(x - 16, 0.4, z + 14, 0, 0.6, 0), c: 0x2a241c });
-    const scorch = new THREE.Mesh(new THREE.CircleGeometry(16, 10), new THREE.MeshBasicMaterial({ color: 0x2a261c }));
-    scorch.rotation.x = -Math.PI / 2; scorch.position.set(x, 0.06, z); stageRoot.add(scorch);
-  }
-  for (let i = 0; i < 4; i++) bits.push({ g: new THREE.CylinderGeometry(7, 8, 2.2, 10), m: rkM4(T.x + 130 + (i % 2) * 28, 1.0, T.z + 150 + ((i / 2) | 0) * 26, 0.15, 0, 0.4), c: 0x4a473f });
-  stageRoot.add(new THREE.Mesh(rkMerge(bits), udGeo().mOp));
-  const G = rkGeo();
-  for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(G.fo, G.mOp); m.position.set(T.x - 40, 0.8, T.z - 280 + i * 40); m.rotation.set(0.4, Math.PI / 2 + rand(-0.3, 0.3), (i % 2 ? 0.5 : -0.4)); stageRoot.add(m); }
+  udAirfield();
   UD.dyn = new THREE.Group(); stageRoot.add(UD.dyn);
   udEnsureFx(); udPlaceAA();
   const ctex = rkSoft(128, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)');
@@ -24300,7 +24388,7 @@ function udSpawnInf() {
   if (!ids.length || !UD.dyn) return;
   const n = LITE ? 24 : 44;
   for (let i = 0; i < n; i++) {
-    const id = ids[i % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
+    const id = ids[i % ids.length], m = udFat(rkCrewMesh(id)), h = 1.68, fr = GIRLS[id].front;
     m.scale.set(h * (fr.aspect || 0.45), h, 1);
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
@@ -24376,7 +24464,7 @@ function udReinforce() {
   if (!ids.length) return;
   const n = LITE ? 14 : 22, kx = UD.kingDrop.g.position.x, kz = UD.kingDrop.g.position.z;
   for (let i = 0; i < n; i++) {
-    const id = ids[(i * 5) % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
+    const id = ids[(i * 5) % ids.length], m = udFat(rkCrewMesh(id)), h = 1.68, fr = GIRLS[id].front;
     m.scale.set(h * (fr.aspect || 0.45), h, 1);
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
@@ -24402,21 +24490,25 @@ function udGround(dt) {
   const king = UD.kingDrop && UD.kingLanded && !UD.kingDown ? UD.kingDrop : null;
   for (const d of drops) {
     if (d.king || d.dead || d.st !== 'land') continue;
-    let tgt = null, bd = 1e9;
-    for (const G of gr) if (G.alive) { const dx = G.x - d.g.position.x, dz = G.z - d.g.position.z, dd = dx * dx + dz * dz; if (dd < bd) { bd = dd; tgt = G; } }
-    if (!tgt) continue;
+    const cands = [];
+    for (const G of gr) if (G.alive) { const dx = G.x - d.g.position.x, dz = G.z - d.g.position.z; cands.push({ G, dd: dx * dx + dz * dz }); }
+    if (!cands.length) continue;
+    cands.sort((a, b) => a.dd - b.dd);
+    const tgt = cands[Math.min(cands.length - 1, (Math.random() * Math.min(4, cands.length)) | 0)].G;
     d.aim = tgt.g.position;
-    const dist = Math.sqrt(bd);
-    if (dist > 13) { const k = Math.min(2.4 * dt, dist - 11) / dist; d.g.position.x += (tgt.x - d.g.position.x) * k; d.g.position.z += (tgt.z - d.g.position.z) * k; }
-    d.cd = (d.cd || 0.4) - dt;
-    if (d.cd <= 0 && dist < 72) {
-      d.cd = rand(1.8, 3.1);
-      const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
-      const len = aim.length() || 1; aim.multiplyScalar(1 / len);
-      rkTracer(from, aim, 90, null, [0.75, 0.88, 1], 0.16, 1.5);
-      if (dist < 58 && Math.random() < 0.16) udHurtGrunt(tgt, 1);
-      if (Math.random() < 0.08) udBark(d, Math.random() < 0.5 ? 'attack' : 'push', d.g.position);
-    }
+    const dx = tgt.x - d.g.position.x, dz = tgt.z - d.g.position.z, dist = Math.hypot(dx, dz) || 1;
+    d.lookWorld = Math.atan2(dx, dz);
+    if (dist > 6) { const k = Math.min(4.2 * dt, dist - 4.5) / dist; d.g.position.x += dx * k; d.g.position.z += dz * k; }
+    d.cd = (d.cd || 0.2) - dt;
+    if (d.cd > 0 || dist > 90) continue;
+    d.cd = dist < 8 ? rand(0.28, 0.48) : rand(0.45, 0.85);
+    if (UD.kingLanded) d.cd *= 0.72;
+    const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
+    const len = aim.length() || 1; aim.multiplyScalar(1 / len);
+    rkTracer(from, aim, dist < 8 ? 70 : 110, null, dist < 8 ? [0.95, 0.9, 0.7] : [0.75, 0.88, 1], 0.16, 1.6);
+    const hit = dist < 3.4 ? 0.55 : dist < 22 ? 0.24 : dist < 48 ? 0.14 : 0.06;
+    if (Math.random() < hit + (UD.kingLanded ? 0.08 : 0)) udHurtGrunt(tgt, dist < 3.4 ? 2 : 1);
+    if (Math.random() < 0.1) udBark(d, dist < 8 ? 'push' : 'attack', d.g.position);
   }
   for (const G of gr) {
     if (!G.alive) continue;
@@ -24463,7 +24555,7 @@ function udPlaceAA() {
   const T = RK_TGT, matD = new THREE.MeshLambertMaterial({ color: 0x3e4636 }), matG = new THREE.MeshLambertMaterial({ color: 0x1c1c1a });
   const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   UD.foes = []; UD.aa = []; UD.flak = [];
-  const crew = (x, z, n) => { for (let i = 0; i < n && ids.length; i++) { const id = ids[(UD.foes.length * 3) % ids.length], m = rkCrewMesh(id), h = 1.62, fr = GIRLS[id].front; m.scale.set(h * (fr.aspect || 0.45), h, 1); m.position.set(x + Math.cos(i * 1.7) * 1.7, 0, z + Math.sin(i * 1.7) * 1.7); m.lookAt(T.x, 1.2, T.z); stageRoot.add(m); UD.foes.push({ m, alive: true }); } };
+  const crew = (x, z, n) => { for (let i = 0; i < n && ids.length; i++) { const id = ids[(UD.foes.length * 3) % ids.length], m = udFat(rkCrewMesh(id)), h = 1.62, fr = GIRLS[id].front; m.scale.set(h * (fr.aspect || 0.45), h, 1); m.position.set(x + Math.cos(i * 1.7) * 1.7, 0, z + Math.sin(i * 1.7) * 1.7); m.lookAt(T.x, 1.2, T.z); stageRoot.add(m); UD.foes.push({ m, alive: true }); } };
   const mg = [[-260, -180], [240, -40], [-40, 460], [320, 160], [-480, 220], [80, -320], [460, 380], [-180, 640]];
   for (const [dx, dz] of mg.slice(0, LITE ? 5 : 8)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
@@ -24633,7 +24725,7 @@ function udFinish() {
 function udStation(k) { if (!UD_VIEW[k] || UD.kingJump) return; UD.st = k; UD.ext = 0; UD.walk = 0; player.yaw = 0; player.pitch = k === 'door' ? -0.15 : -0.04; }
 function udLeave(P, c) {
   c.m.visible = false;
-  const h = c.cm / 100, fr = GIRLS[c.gid].front, m = rkCrewMesh(c.gid);
+  const h = c.cm / 100, fr = GIRLS[c.gid].front, m = udFat(rkCrewMesh(c.gid));
   m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false;
   const g = new THREE.Group(); g.add(m);
   const can = new THREE.Mesh(UD.canGeo, UD.canMats[P.i % 3]); can.position.y = 6.6; can.visible = false; g.add(can);
@@ -24644,7 +24736,7 @@ function udLeave(P, c) {
   g.position.copy(P.body.localToWorld(new V3(-2.15, -0.15, 4.15 + rand(-0.15, 0.15))));
   UD.dyn.add(g);
   const spd = P.spd || 52;
-  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 3, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
+  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 6, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
 }
 function udTickPlane(P, dt) {
   const lane = 900 + P.lane;

@@ -16779,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23256,57 +23256,118 @@ const RK_GLZ = [[-9.35, -7.35], [-6.45, -4.35], [2.45, 3.95], [8.75, 10.65]];
 function rkGlassZ(z) { let best = z, bd = 99; for (const ab of RK_GLZ) { const c = clamp(z, ab[0], ab[1]), d = Math.abs(z - c); if (d < bd) { bd = d; best = c; } } return bd < 1.4 ? best : z; }
 function rkInside(P) { if (!P || RK.ext) return false; if (RK.icam) return RK.icam === P.i; return !!P.king; }
 function rkBloodGeom() {
-  if (RK._bMat) return;
-  RK._bMat = new THREE.MeshBasicMaterial({ color: 0x6e1218, transparent: true, opacity: 0.88, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4 });
-  RK._bGeo = new THREE.PlaneGeometry(1, 1); RK._bPool = new THREE.CircleGeometry(1, 8);
+  if (RK._bReady) return;
+  RK._bReady = 1;
+  const paint = kind => {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    const blob = (x, y, rx, ry, rot, col, a) => { g.save(); g.translate(x, y); g.rotate(rot); g.globalAlpha = a; g.fillStyle = col; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.fill(); g.restore(); };
+    if (kind === 'splat') {
+      blob(64, 66, 26 + Math.random() * 10, 18 + Math.random() * 8, Math.random(), '#3c060a', 0.96);
+      blob(64 + rand(-10, 10), 60 + rand(-8, 8), 12, 16, Math.random() * 3, '#6a1014', 0.88);
+      blob(64 + rand(-16, 16), 72 + rand(-10, 6), 8, 11, Math.random(), '#4e0a0e', 0.8);
+      g.strokeStyle = 'rgba(74,8,12,0.65)'; g.lineWidth = 1.1;
+      for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(64 + rand(-4, 4), 64); g.lineTo(rand(8, 120), rand(8, 120)); g.stroke(); }
+      for (let i = 0; i < 16; i++) blob(rand(8, 120), rand(8, 120), rand(0.7, 3.2), rand(0.5, 2.2), Math.random() * 3, i % 3 ? '#7c1418' : '#2a0406', 0.55 + Math.random() * 0.4);
+    } else if (kind === 'mist') {
+      for (let i = 0; i < 34; i++) blob(rand(2, 126), rand(2, 126), rand(0.4, 2.1), rand(0.35, 1.5), Math.random() * 3, '#8a1618', 0.35 + Math.random() * 0.5);
+    } else {
+      g.fillStyle = '#4a080c'; g.beginPath(); g.moveTo(56, 108); g.quadraticCurveTo(64, 6, 72, 108); g.fill();
+      g.beginPath(); g.ellipse(64, 104, 8, 7, 0, 0, 7); g.fill();
+      g.fillStyle = 'rgba(140,28,32,0.45)'; g.beginPath(); g.ellipse(64, 102, 3.5, 3, 0, 0, 7); g.fill();
+    }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true;
+    return new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0.96, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6, alphaTest: 0.04 });
+  };
+  RK._bSplat = [0, 1, 2, 3].map(() => paint('splat'));
+  RK._bMist = paint('mist');
+  RK._bDrip = paint('drip');
+  RK._bGeo = new THREE.PlaneGeometry(1, 1);
+}
+function rkBloodSurf(bx, by, bz, i) {
+  const z0 = clamp(bz, -9.1, 10.4), r0 = rkR(RK_FUS, z0), r = Math.max(0.26, r0 - 0.055), floorY = -0.86;
+  const gz = rkGlassZ(bz), z = (Math.abs(gz - bz) < 1.15 ? gz : bz) + rand(-0.1, 0.1);
+  const side = bx < -0.04 ? -1 : bx > 0.04 ? 1 : (Math.random() < 0.5 ? -1 : 1);
+  if (i % 4 === 3 || by < -0.5) {
+    const x = clamp(bx * 0.65 + rand(-0.22, 0.22), -r * 0.72, r * 0.72);
+    return { x, y: floorY, z, nrm: new V3(0, 1, 0), kind: 'floor' };
+  }
+  const ang = Math.atan2(side * rand(0.25, 1.05), rand(-0.15, 1.15));
+  let x = Math.sin(ang) * r, y = Math.cos(ang) * r;
+  if (y < floorY + 0.06) return { x: clamp(x, -r * 0.72, r * 0.72), y: floorY, z, nrm: new V3(0, 1, 0), kind: 'floor' };
+  return { x, y, z, nrm: new V3(x, Math.max(0.08, y), 0).normalize(), kind: 'wall' };
+}
+function rkBloodDecal(P, hit, heavy) {
+  const mat = hit.kind === 'floor' || Math.random() < 0.72 ? RK._bSplat[(Math.random() * RK._bSplat.length) | 0] : RK._bMist;
+  const spot = new THREE.Mesh(RK._bGeo, mat); spot.renderOrder = 6; spot.frustumCulled = false;
+  const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, 0, 1), hit.nrm);
+  q.multiply(new THREE.Quaternion().setFromAxisAngle(new V3(0, 0, 1), Math.random() * 6.28));
+  spot.quaternion.copy(q);
+  const sc = hit.kind === 'floor' ? rand(0.16, heavy ? 0.48 : 0.28) : rand(0.06, heavy ? 0.3 : 0.16);
+  const sx = rand(0.65, 1.35), sy = rand(0.5, 1.15);
+  spot.position.set(hit.x, hit.y, hit.z).addScaledVector(hit.nrm, hit.kind === 'floor' ? 0.012 : -0.012);
+  spot.scale.set(sc * sx, sc * sy, 1); P.body.add(spot);
+  const rec = { spot };
+  if (hit.kind === 'floor') { rec.pool = spot; rec.grow = sc * rand(1.12, 1.45); rec.sx = sx; rec.sy = sy; }
+  else if (Math.random() < (heavy ? 0.8 : 0.4)) {
+    const grav = new V3(0, -1, 0), tang = grav.sub(hit.nrm.clone().multiplyScalar(grav.dot(hit.nrm)));
+    if (tang.lengthSq() < 1e-4) tang.set(0, -1, 0); tang.normalize();
+    const xAxis = new V3().crossVectors(tang, hit.nrm).normalize();
+    const drip = new THREE.Mesh(RK._bGeo, RK._bDrip); drip.renderOrder = 6; drip.frustumCulled = false;
+    drip.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(xAxis, tang, hit.nrm));
+    drip.position.copy(spot.position); P.body.add(drip);
+    rec.drip = drip; rec.o = spot.position.clone(); rec.tang = tang; rec.len = 0.03; rec.max = rand(0.12, heavy ? 0.62 : 0.28); rec.spd = rand(0.045, 0.11); rec.w = rand(0.028, 0.06);
+  }
+  P.bleeds.push(rec);
+  const ns = hit.kind === 'floor' ? 2 : (heavy ? 4 : 2);
+  for (let i = 0; i < ns; i++) {
+    const d = new THREE.Mesh(RK._bGeo, Math.random() < 0.6 ? RK._bMist : RK._bSplat[(Math.random() * RK._bSplat.length) | 0]);
+    d.renderOrder = 6; d.frustumCulled = false; d.quaternion.copy(spot.quaternion); d.rotateZ(Math.random() * 6);
+    const j = hit.kind === 'floor' ? new V3(rand(-0.16, 0.16), 0.004, rand(-0.16, 0.16)) : hit.nrm.clone().multiplyScalar(-0.01).add(new V3(rand(-0.1, 0.1), rand(-0.08, 0.02), rand(-0.1, 0.1)));
+    d.position.copy(spot.position).add(j);
+    const t = rand(0.018, 0.05); d.scale.set(t * rand(0.6, 1.5), t * rand(0.5, 1.3), 1); P.body.add(d); P.bleeds.push({ spot: d });
+  }
 }
 function rkScreenBlood(n) {
   const W = innerWidth, H = innerHeight; RK.gBlood = RK.gBlood || [];
-  for (let i = 0; i < n; i++) RK.gBlood.push({ x: Math.random() * W, y: Math.random() * H * 0.72, rx: 8 + Math.random() * 34, ry: 6 + Math.random() * 18, a: 0.5 + Math.random() * 0.4, v: 10 + Math.random() * 28, tail: 4 + Math.random() * 14 });
-  if (RK.gBlood.length > 36) RK.gBlood.splice(0, RK.gBlood.length - 36);
+  for (let i = 0; i < n; i++) {
+    const fine = Math.random() < 0.5;
+    RK.gBlood.push({ x: Math.random() * W, y: Math.random() * H * 0.88, rx: fine ? 1 + Math.random() * 2.4 : 3 + Math.random() * 11, ry: fine ? 0.8 + Math.random() * 1.8 : 2.2 + Math.random() * 7, a: fine ? 0.28 + Math.random() * 0.35 : 0.5 + Math.random() * 0.42, v: fine ? 0 : 6 + Math.random() * 36, run: fine ? 0 : 8 + Math.random() * 48, tail: 0, rot: (Math.random() - 0.5) * 0.5 });
+  }
+  const cap = LITE ? 16 : 32; if (RK.gBlood.length > cap) RK.gBlood.splice(0, RK.gBlood.length - cap);
 }
-function rkBloodAt(P, gp, heavy) {   // 機体座標の点から、ガラスへ血を飛ばして流す
-  if (!P || !P.body || RK.silent || !RK.px || !gp) return;
+function rkBloodAt(P, gp, heavy) {   // 傷の位置から内壁・床・ガラスへ血を飛ばし、付いたところで止める
+  if (!P || !P.body || RK.silent || !gp) return;
   rkBloodGeom();
-  const bx = gp.x / P.sc.x, by = gp.y / P.sc.y, bz = gp.z / P.sc.z, z = rkGlassZ(bz), r = rkR(RK_FUS, z) * 0.93;
+  const bx = gp.x / P.sc.x, by = gp.y / P.sc.y, bz = gp.z / P.sc.z;
   P.body.updateMatrixWorld();
   const w = P.body.localToWorld(new V3(bx, by, bz));
-  for (let i = 0; i < (heavy ? 14 : 6); i++) rkPx('blood', w, new V3(rand(-1.8, 1.8), rand(0.3, 2.4), rand(-1.8, 1.8)), rand(0.16, 0.42), [0.58, 0.04, 0.06], [0.22, 0.015, 0.02]);
+  for (let i = 0; i < (heavy ? 8 : 3); i++) rkPx('blood', w, new V3(rand(-0.7, 0.7), rand(0.15, 1.3), rand(-0.7, 0.7)), rand(0.1, 0.22), [0.62, 0.05, 0.06], [0.28, 0.02, 0.03]);
   P.bleeds = P.bleeds || [];
-  for (let i = 0; i < (heavy ? 4 : 1); i++) {
-    const s = bx < -0.05 ? -1 : bx > 0.05 ? 1 : (Math.random() < 0.5 ? -1 : 1), a = rand(0.2, 1.15);
-    const x = Math.sin(a) * r * s, y = Math.max(0.12, Math.cos(a) * r * rand(0.42, 0.9));
-    const o = new V3(x, y, z + rand(-0.12, 0.12)), nrm = new V3(x, Math.max(0.2, y), 0).normalize();
-    const spot = new THREE.Mesh(RK._bGeo, RK._bMat); spot.renderOrder = 5; spot.position.copy(o);
-    spot.quaternion.setFromUnitVectors(new V3(0, 0, 1), nrm); spot.scale.set(rand(0.1, 0.26), rand(0.08, 0.18), 1);
-    const drip = new THREE.Mesh(RK._bGeo, RK._bMat); drip.renderOrder = 5; drip.quaternion.copy(spot.quaternion);
-    P.body.add(spot, drip);
-    P.bleeds.push({ spot, drip, o, q: drip.quaternion.clone(), len: 0.04, max: rand(0.22, heavy ? 0.95 : 0.42), spd: rand(0.07, 0.16) });
-  }
-  if (heavy) { const pool = new THREE.Mesh(RK._bPool, RK._bMat); pool.renderOrder = 5; pool.rotation.x = -Math.PI / 2; pool.position.set(bx, -0.9, bz); pool.scale.setScalar(0.04); P.body.add(pool); P.bleeds.push({ pool, grow: rand(0.16, 0.34) }); }
-  while (P.bleeds.length > 18) { const old = P.bleeds.shift(); if (old.spot) P.body.remove(old.spot); if (old.drip) P.body.remove(old.drip); if (old.pool) P.body.remove(old.pool); }
-  if (rkInside(P)) rkScreenBlood(heavy ? 8 : 3);
+  const n = heavy ? 3 : 1;
+  for (let i = 0; i < n; i++) rkBloodDecal(P, rkBloodSurf(bx, by, bz, i), heavy);
+  const cap = LITE ? 36 : 72;
+  while (P.bleeds.length > cap) { const old = P.bleeds.shift(); if (old.spot) P.body.remove(old.spot); if (old.drip) P.body.remove(old.drip); }
+  if (rkInside(P)) rkScreenBlood(heavy ? 5 : 2);
 }
 function rkBloodTick(P, dt) {
   if (!P.bleeds) return;
-  const down = new V3();
   for (const b of P.bleeds) {
-    if (b.pool) { const s = b.pool.scale.x; if (s < b.grow) b.pool.scale.setScalar(Math.min(b.grow, s + dt * 0.1)); continue; }
-    if (b.len >= b.max) continue;
-    b.len = Math.min(b.max, b.len + dt * b.spd);
-    down.set(0, -1, 0).applyQuaternion(b.q);
-    b.drip.position.copy(b.o).addScaledVector(down, b.len * 0.5);
-    b.drip.scale.set(0.028, Math.max(0.04, b.len), 1);
+    if (b.pool && b.grow && b.pool.scale.x < b.grow * b.sx) { const s = Math.min(b.grow, b.pool.scale.x / b.sx + dt * 0.05); b.pool.scale.set(s * b.sx, s * b.sy, 1); continue; }
+    if (!b.drip || b.len >= b.max) continue;
+    b.len = Math.min(b.max, b.len + dt * b.spd * (1 - b.len / b.max));
+    b.drip.position.copy(b.o).addScaledVector(b.tang, b.len * 0.5);
+    b.drip.scale.set(b.w, Math.max(0.04, b.len), 1);
   }
 }
 function rkDrawGlassBlood(g, W, H) {
   const B = RK.gBlood; if (!B || !B.length) return;
-  for (let i = B.length - 1; i >= 0; i--) {
-    const b = B[i]; b.y += b.v * 0.016; b.tail = Math.min(140, b.tail + 0.7); b.a *= 0.996;
-    if (b.y > H + 40 || b.a < 0.04) { B.splice(i, 1); continue; }
-    g.fillStyle = `rgba(122,12,18,${b.a.toFixed(3)})`;
-    g.beginPath(); g.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, 7); g.fill();
-    g.fillRect(b.x - 1.6, b.y, 3.2, b.tail);
+  for (const b of B) {
+    if (b.run > 0) { const step = Math.min(b.run, b.v * 0.016); b.y += step; b.run -= step; b.tail = Math.min(b.ry * 4, (b.tail || 0) + step); }
+    g.save(); g.translate(b.x, b.y); g.rotate(b.rot || 0);
+    const dark = b.a > 0.62; g.fillStyle = `rgba(${dark ? 92 : 62},${dark ? 10 : 6},${dark ? 14 : 10},${b.a.toFixed(3)})`;
+    g.beginPath(); g.ellipse(0, 0, b.rx, b.ry, 0, 0, 7); g.fill();
+    if (b.tail > 1.5) { g.beginPath(); g.moveTo(-b.rx * 0.45, b.ry * 0.2); g.quadraticCurveTo(0, b.tail, b.rx * 0.45, b.ry * 0.2); g.fill(); }
+    g.restore();
   }
 }
 function rkCry(c, k) { if (c.X && rkLine('x_' + c.X.id + '_cry')) { rkSay('x_' + c.X.id + '_cry', 0, c.label); return; } const L = rkLine(k + '2') && Math.random() < 0.5 ? k + '2' : k; rkSay(L, 0, c.label); }

@@ -78,6 +78,8 @@
   #stagesel .slab{flex:0 0 auto;width:8.4em;font-size:11px;letter-spacing:.04em;white-space:nowrap;text-align:right;color:rgba(232,217,168,.75)}
   #stagesel .strack{flex:1 1 auto;min-width:0;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;padding:2px;touch-action:pan-x pan-y}
   #stagesel .strack::-webkit-scrollbar{display:none}
+  #stagesel .srow[data-cat="us"] .strack{flex-wrap:wrap;overflow:visible;scroll-snap-type:none}
+  #stagesel .srow[data-cat="us"] .strack button[data-st="usDrop"]{box-shadow:0 0 0 1px rgba(255,210,140,.9)}
   #stagesel .strack.drag{cursor:grabbing;scroll-snap-type:none}
   #stagesel .strack button{flex:0 0 auto;scroll-snap-align:start;font-size:14px;letter-spacing:.1em;padding:5px 13px;white-space:nowrap}
   #stagesel button.sarr{flex:0 0 auto;width:26px;height:30px;padding:0;font-size:11px;letter-spacing:0;line-height:28px;text-align:center;background:rgba(0,0,0,.3);border-color:rgba(232,217,168,.3)}
@@ -386,32 +388,32 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="motion_sprite.js?v=20261026g"></script>
-<script src="assets/sprites.js?v=20261026g"></script>
-<script src="assets/frames/frames.js?v=20261026g"></script>
-<script src="assets/frames/frames_fr.js?v=20261026g"></script>
-<script src="assets/frames/frames_omiya.js?v=20261026g"></script>
-<script src="assets/frames/frames_us.js?v=20261026g"></script>
-<script src="assets/frames/frames_props.js?v=20261026g"></script>
-<script src="assets/frames/cycles.js?v=20261026g"></script>
+<script src="motion_sprite.js?v=20261026h"></script>
+<script src="assets/sprites.js?v=20261026h"></script>
+<script src="assets/frames/frames.js?v=20261026h"></script>
+<script src="assets/frames/frames_fr.js?v=20261026h"></script>
+<script src="assets/frames/frames_omiya.js?v=20261026h"></script>
+<script src="assets/frames/frames_us.js?v=20261026h"></script>
+<script src="assets/frames/frames_props.js?v=20261026h"></script>
+<script src="assets/frames/cycles.js?v=20261026h"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261026g"></script>
-<script src="assets/voices/voices_situ.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk2.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk3.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk4.js?v=20261026g"></script>
-<script src="assets/voices/voices_saidown.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk5.js?v=20261026g"></script>
-<script src="assets/voices/voices_uk7.js?v=20261026g"></script>
-<script src="assets/voices/voices_frs.js?v=20261026g"></script>
-<script src="assets/voices/voices_usd.js?v=20261026g"></script>
-<script src="assets/voices/voices_rk.js?v=20261026g"></script>
-<script src="assets/voices/voices_pal.js?v=20261026g"></script>
+<script src="assets/voices/voices.js?v=20261026h"></script>
+<script src="assets/voices/voices_situ.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk2.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk3.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk4.js?v=20261026h"></script>
+<script src="assets/voices/voices_saidown.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk5.js?v=20261026h"></script>
+<script src="assets/voices/voices_uk7.js?v=20261026h"></script>
+<script src="assets/voices/voices_frs.js?v=20261026h"></script>
+<script src="assets/voices/voices_usd.js?v=20261026h"></script>
+<script src="assets/voices/voices_rk.js?v=20261026h"></script>
+<script src="assets/voices/voices_pal.js?v=20261026h"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261026g"></script>
-<script src="lib/death_fbx.js?v=20261026g"></script>
-<script src="game.js?v=20261026g"></script>
+<script src="lib/death_clips.js?v=20261026h"></script>
+<script src="lib/death_fbx.js?v=20261026h"></script>
+<script src="game.js?v=20261026h"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

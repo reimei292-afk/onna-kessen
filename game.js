@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24331,6 +24331,11 @@ const STAGE_ATK_DESC = {
   castle: '【攻める】青組（殿の側）が城を攻める。破門隊の丸太で大手門を破り、二の丸で中門の門櫓・狭間の弓と撃ち合い、毒煙玉の投げ手が守りを崩す。奥御殿の伏兵・落とし穴を越えて、橙組の本陣（いちばん奥の間）を奪えば勝ち。殿の本陣は門の外の陣幕。',
 };
 for (const b of document.querySelectorAll('#modesel button')) b.addEventListener('click', () => { stageModes[stageName] = b.dataset.md; try { localStorage.setItem('onna_modes', JSON.stringify(stageModes)); } catch (e) {} selectStage(stageName); });
+{ const raid = document.querySelector('#stagesel button[data-st="usRaid"]'), us = raid && raid.parentNode;
+  if (us) { us.style.flexWrap = 'wrap'; us.style.overflow = 'visible'; }
+  if (raid && !document.querySelector('#stagesel button[data-st="usDrop"]')) {
+    const b = document.createElement('button'); b.dataset.st = 'usDrop'; b.className = 'usarc'; b.title = 'アメリカ西部編 第四幕 空挺降下'; b.textContent = '第四幕 空挺降下'; raid.after(b);
+  } }
 for (const b of document.querySelectorAll('#stagesel button[data-st], #lifesel button')) b.addEventListener('click', ev => { if (stageDragAt && performance.now() - stageDragAt < 250) { ev.preventDefault(); return; } selectStage(b.dataset.st); });
 // 戦場選択：編ごとの横一列。指でなぞる・ホイール・ドラッグ・◀▶で横に送る
 let stageDragAt = 0;

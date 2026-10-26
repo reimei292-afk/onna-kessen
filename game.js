@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24076,48 +24076,36 @@ function udGeo() {
   };
   return UD.geo;
 }
-function udFat(m) {
-  if (!m || m.userData.fat) return m;
-  m.userData.fat = 1;
-  if (m.material && m.material.map) m.material = spriteMat(m.material.map);
-  for (const z of [-0.08, -0.16]) {
-    const r = new THREE.Mesh(m.geometry, m.material);
-    r.position.z = z; r.frustumCulled = false; m.add(r);
-  }
-  return m;
-}
+function udFat(m) { return m; }
 function udGirl(gid, role, cm, name, face) {
   const g = GIRLS[gid]; if (!g || !g.front || !g.front.tex) return null;
-  const m = udFat(rkCrewMesh(gid)), h = (cm || 158) / 100, fr = g.front;
+  const m = rkCrewMesh(gid), h = (cm || 158) / 100, fr = g.front;
   m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false; m.position.y = -1.08;
   return { m, gid, girl: g, role, name, cm: cm || 158, label: role + ' ' + name, face: face || 0, alive: true, fr, cab: 1 };
 }
 function udPose(m, rec, dead) {
   const girl = rec && rec.girl; if (!girl || !m || !m.parent) return;
-  const wp = m.getWorldPosition(_udP);
   m.parent.updateWorldMatrix(true, false);
-  const parentYaw = _udFE.setFromQuaternion(m.parent.getWorldQuaternion(_udQ), 'YXZ').y;
-  let look = rec.lookWorld;
-  if (look == null) look = parentYaw + (rec.face || 0) + Math.PI;
-  const camYaw = Math.atan2(camera.position.x - wp.x, camera.position.z - wp.z);
-  const cc = Math.cos(angDiff(look, camYaw));
+  const camL = m.parent.worldToLocal(_udW.copy(camera.position));
+  const dx = m.position.x - camL.x, dz = m.position.z - camL.z;
+  const cy = Math.atan2(camL.x - m.position.x, camL.z - m.position.z);
+  const f = rec.lookWorld == null ? (rec.face || 0) + Math.PI : rec.lookWorld;
+  const yawL = Math.atan2(-dx, -dz);
+  const cc = Math.cos(rec.lookWorld == null ? angDiff(f, cy) : angDiff(rec.lookWorld, Math.atan2(camera.position.x - m.getWorldPosition(_udP).x, camera.position.z - _udP.z)));
   let view = cc > 0.5 + (rec.view === 'front' ? -0.08 : 0.08) ? 'front' : cc < -0.5 - (rec.view === 'back' ? -0.08 : 0.08) ? 'back' : 'side';
   rec.view = view;
-  let view2 = view, fr = girl.front;
-  if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.side || girl.front); view2 = 'down'; }
-  else fr = view2 === 'front' ? girl.front : girlFrame(girl, view2);
+  let fr = girl.front;
+  if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.side || girl.front); view = 'down'; }
+  else fr = view === 'front' ? girl.front : girlFrame(girl, view);
   if (!fr || !fr.tex) fr = girl.front;
   if (rec.fr !== fr) { rec.fr = fr; if (m.material) { m.material.map = fr.tex; m.material.needsUpdate = true; } }
-  const h = (rec.cm || 158) / 100 * (fr.hk || 1);
-  let bw = h * (fr.aspect || 0.45);
-  if (!dead && view2 === 'side') bw = Math.max(bw, h * 0.38);
-  if (rec.cab) bw = Math.min(bw, 0.48);
-  const sgn = Math.sin(angDiff(look, camYaw)) > 0 ? 1 : -1;
-  const mirror = view2 !== 'front' && view2 !== 'down' && fr.dir ? fr.dir !== sgn : false;
-  _udE.set(0, camYaw, 0, 'YXZ');
-  _udQ2.setFromEuler(_udE);
-  m.quaternion.copy(m.parent.getWorldQuaternion(_udQ).invert()).multiply(_udQ2);
-  m.scale.set(bw * (mirror ? -1 : 1), h, 1);
+  const h = (rec.cm || 158) / 100 * (fr.hk || 1), w = h * (fr.aspect || 0.45);
+  const sgn = Math.sin((rec.lookWorld == null ? f : rec.lookWorld) - yawL) > 0 ? 1 : -1;
+  const mirror = view !== 'front' && view !== 'down' && fr.dir ? fr.dir !== sgn : false;
+  m.rotation.order = 'YXZ';
+  m.rotation.set(0, cy, 0);
+  m.scale.set(w * (mirror ? -1 : 1), h, 1);
+  if (rec.cab) m.visible = Math.hypot(dx, dz) > 0.34;
 }
 function udGid(pool, avoid) {
   for (let n = 0; n < pool.length; n++) {
@@ -24762,7 +24750,7 @@ function udTickPlane(P, dt) {
       else { c.a = c.m.position.clone(); c.b = new V3(-1.2, -1.08, 4.12); c.t = 0; c.dur = Math.min(0.62, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c; P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22; }
     }
   }
-  if (camera.position.distanceTo(P.p) < 140) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m && c.m.visible) udPose(c.m, c, !c.alive);
+  if (camera.position.distanceTo(P.p) < 140) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m) udPose(c.m, c, !c.alive);
 }
 function udTickDrop(d, dt) {
   d.t += dt;

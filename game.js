@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22061,7 +22061,8 @@ function primaryDown() {
       else { player.drawing = true; player.charge = 0; if (Sfx.drawCreak) Sfx.drawCreak(); }
       return;
     }
-    udUse(); return;
+    if (!UD.kingJump) udKingJump();
+    return;
   }
   if (PAL.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('宮殿の中では武器は使いません'); return; }
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
@@ -24034,7 +24035,7 @@ const UD_VIEW = {
   gunB: { n: '後方機銃', eye: [0, 0.18, 11.15], by: Math.PI, arc: [0.9, -0.55, 0.55] },
 };
 const UD_VK = ['cockpit', 'door', 'gunF', 'gunL', 'gunR', 'gunB'];
-const _udW = new V3(), _udP = new V3(), _udQ = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ'), _udFE = new THREE.Euler(0, 0, 0, 'YXZ');
+const _udW = new V3(), _udP = new V3(), _udQ = new THREE.Quaternion(), _udQ2 = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ'), _udFE = new THREE.Euler(0, 0, 0, 'YXZ');
 function udGeo() {
   if (UD.geo) return UD.geo;
   const CAMO = [0x4a5640, 0xb7b3a6], BLK = 0x1e1f1e;
@@ -24084,8 +24085,10 @@ function udGirl(gid, role, cm, name, face) {
 function udPose(m, rec, dead) {
   const girl = rec && rec.girl; if (!girl || !m || !m.parent) return;
   const wp = m.getWorldPosition(_udP);
+  m.parent.updateWorldMatrix(true, false);
+  const parentYaw = _udFE.setFromQuaternion(m.parent.getWorldQuaternion(_udQ), 'YXZ').y;
   let look = rec.lookWorld;
-  if (look == null) { m.parent.updateWorldMatrix(true, false); look = _udFE.setFromQuaternion(m.parent.getWorldQuaternion(_udQ), 'YXZ').y + (rec.face || 0); }
+  if (look == null) look = parentYaw + (rec.face || 0) + Math.PI;
   const camYaw = Math.atan2(camera.position.x - wp.x, camera.position.z - wp.z);
   const cc = Math.cos(angDiff(look, camYaw));
   let view = cc > 0.5 + (rec.view === 'front' ? -0.08 : 0.08) ? 'front' : cc < -0.5 - (rec.view === 'back' ? -0.08 : 0.08) ? 'back' : 'side';
@@ -24096,16 +24099,16 @@ function udPose(m, rec, dead) {
     else if (girl.back_diag && cc < -0.38 && cc > -0.92) view2 = 'back_diag';
   }
   let fr = girl.front;
-  if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.low || girl.side || girl.front); view2 = 'down'; }
+  if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.side || girl.front); view2 = 'down'; }
   else fr = view2 === 'front' ? girl.front : girlFrame(girl, view2);
   if (!fr || !fr.tex) fr = girl.front;
   if (rec.fr !== fr) { rec.fr = fr; if (m.material) { m.material.map = fr.tex; m.material.needsUpdate = true; } }
   const h = (rec.cm || 158) / 100 * (fr.hk || 1), w = h * (fr.aspect || 0.45);
   const sgn = Math.sin(angDiff(look, camYaw)) > 0 ? 1 : -1;
   const mirror = view2 !== 'front' && view2 !== 'down' && fr.dir ? fr.dir !== sgn : false;
-  const x0 = m.position.x, y0 = m.position.y, z0 = m.position.z;
-  m.lookAt(camera.position.x, wp.y + h * 0.45, camera.position.z);
-  m.position.set(x0, y0, z0);
+  _udE.set(0, camYaw, 0, 'YXZ');
+  _udQ2.setFromEuler(_udE);
+  m.quaternion.copy(m.parent.getWorldQuaternion(_udQ).invert()).multiply(_udQ2);
   m.scale.set(w * (mirror ? -1 : 1), h, 1);
 }
 function udGid(pool, avoid) {
@@ -24203,7 +24206,7 @@ function udReset() { udSpawn(); UD.st = 'cockpit'; UD.ext = 0; player.yaw = 0; p
 function udStart() {
   if (MOBILE || (navigator.maxTouchPoints > 0)) { document.documentElement.classList.add('touch'); setupTouch(); }
   showBanner('空挺降下', '試製 蒼雲 3 機 ── 着地したあとは地上の米軍');
-  popup('画面の左に小さいボタン。歩く、降下、着地したら弓と刀', 4.6);
+  popup('左の「空挺」で殿が降りる。秘書課も、機に残った者も続く', 4.6);
   setTimeout(() => { if (UD.on && state === 'play') subtitle('白瀬 澄「降下の用意はできています。左側の降下口です」'); }, 2400);
   udHud(true);
 }
@@ -24226,7 +24229,8 @@ function udHud(on) {
         if (!UD.on || state !== 'play' || UD.over) return;
         const k = b.dataset.k;
         if (k === 'ext') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } }
-        else if (k === 'use') { if (UD.ext) { UD.ext = 0; UD.walk = 0; } else udUse(); }
+        else if (k === 'use') { if (UD.kingLanded) { if (player.weapon === 1) udMelee(); else udShot(0.9); } else if (UD.ext) { UD.ext = 0; UD.walk = 0; } else udUse(); }
+        else if (k === 'jump') udKingJump();
         else if (k === 'run') { touch.run = !touch.run; }
         else if (k === 'bow') setWeapon(0);
         else if (k === 'knife') setWeapon(1);
@@ -24245,8 +24249,9 @@ function udHud(on) {
 function udHudSync() {
   const h = $('udHud'); if (!h || !UD._hud) return;
   document.documentElement.classList.toggle('udgnd', !!UD.kingLanded);
-  const name = udActLabel(), use = h.querySelector('[data-k=use]'), sh = h.querySelector('[data-k=shoot]');
-  if (use) use.textContent = name;
+  const name = udActLabel(), use = h.querySelector('[data-k=use]'), sh = h.querySelector('[data-k=shoot]'), jp = h.querySelector('[data-k=jump]');
+  if (use) use.textContent = UD.kingLanded ? name : (UD.ext ? '機内へ' : '歩く');
+  if (jp) jp.textContent = UD.kingJump ? (UD.kingLanded ? '着地' : '降下中') : '空挺';
   if (sh) sh.textContent = UD.kingLanded ? name : '射る';
   const atk = $('bAtk'), lab = $('bAtkL');
   if (atk && document.documentElement.classList.contains('touch')) { const s = atk.querySelector('span'); if (s) s.textContent = name; if (lab) lab.textContent = UD.kingLanded ? (player.weapon === 1 ? 'タップ' : '長押し') : 'ボタン'; }
@@ -24480,16 +24485,30 @@ function udHalfW(z) { const r = rkR(UD_FUS, z); return Math.max(0.38, Math.sqrt(
 function udClampKp(p) { p.z = clamp(p.z, -8.7, 10.5); const w = udHalfW(p.z); p.x = clamp(p.x, -w, w); p.y = -1.08; return p; }
 function udWalkIn() { const k = UD.keys || {}; return [(k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) - (touch.jy || 0), (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + (touch.jx || 0)]; }
 function udNearSt(p) { let best = null, bd = 1.25; for (const k of UD_VK) { const e = UD_VIEW[k].eye, d = Math.hypot(e[0] - p.x, e[2] - p.z); if (d < bd) { bd = d; best = k; } } return best; }
-function udAtDoor(p) { return p.z > 3.15 && p.z < 5.2 && p.x < -0.72; }
+function udAtDoor(p) { return p && p.z > 2.2 && p.z < 6.4 && p.x < -0.15; }
+function udAllOut() {
+  for (const P of UD.planes || []) {
+    const rest = [];
+    const take = c => { if (c && c.m && c.m.visible && !rest.includes(c)) rest.push(c); };
+    for (const c of P.pax || []) take(c);
+    for (const c of P.crew || []) take(c);
+    take(P.walking);
+    P.walking = null; P.pax = []; P.crew = [];
+    P.queue = rest.concat(P.queue || []);
+    P.dropOn = true; P.rush = true; P.dropT = 0.05 + P.i * 0.08;
+  }
+}
 function udKingJump() {
-  if (UD.kingJump) return; const K = UD.planes[0]; if (!K) return;
+  if (UD.kingJump || UD.kingLanded || UD.over) return; const K = UD.planes[0]; if (!K) return;
   UD.kingJump = 1; UD.walk = 0; UD.ext = 0;
   const g = new THREE.Group(), can = new THREE.Mesh(UD.canGeo, UD.canMats[0]); can.position.y = 6.6; can.visible = false; g.add(can);
   const lines = new THREE.Group(); lines.visible = false;
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.5, ln = new THREE.Mesh(UD.lineGeo, UD.lineMat); ln.position.set(Math.sin(a) * 0.85, 4.5, Math.cos(a) * 0.85); ln.rotation.z = Math.sin(a) * 0.28; ln.rotation.x = Math.cos(a) * 0.28; lines.add(ln); }
   g.add(lines); K.body.updateMatrixWorld(); g.position.copy(K.body.localToWorld(new V3(-2.15, -0.15, 4.2))); UD.dyn.add(g);
   const spd = K.spd || 52, d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-8, 8), v: new V3(-Math.sin(K.hdg) * spd * 0.25, -1.6, -Math.cos(K.hdg) * spd * 0.25) };
-  UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2; popup('殿、降下。落下傘が開くまで、上を見る', 3.2);
+  UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2;
+  udAllOut();
+  popup('殿、降下。秘書課も、残った者も続く', 3.2);
   rkSay('r_out', 0); setTimeout(() => UD.on && !UD.over && rkSay('x_sumi_fl', 0), 1800); setTimeout(() => UD.on && !UD.over && rkSay('s_king', 0), 4200);
 }
 function udStand() {
@@ -24503,7 +24522,7 @@ function udUse() {
   if (UD.ext) { popup('機内へ戻るには V'); return; }
   const K = UD.planes[0]; if (!K) return;
   if (!UD.walk) { udStand(); popup('機内を歩く（WASD・走るは Shift・降下口で E で空挺・持ち場の近くで E）', 3.8); return; }
-  if (udAtDoor(UD.kp)) { udKingJump(); return; }
+  if (udAtDoor(UD.kp) || UD.st === 'door') { udKingJump(); return; }
   const st = udNearSt(UD.kp); if (st) { udStation(st); popup(UD_VIEW[st].n + 'についた'); return; }
   popup('降下口は左の扉。持ち場の近くで E を押すと座る');
 }
@@ -24646,8 +24665,9 @@ function udTickPlane(P, dt) {
   } else if (P.dropOn && P.queue.length) {
     P.dropT -= dt;
     if (P.dropT <= 0) {
-      const c = P.queue.shift(); c.a = c.m.position.clone(); c.b = new V3(-1.2, -1.08, 4.12); c.t = 0; c.dur = Math.min(0.62, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c;
-      P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22;
+      const c = P.queue.shift();
+      if (P.rush) { udLeave(P, c); P.nJump++; P.dropT = 0.16; }
+      else { c.a = c.m.position.clone(); c.b = new V3(-1.2, -1.08, 4.12); c.t = 0; c.dur = Math.min(0.62, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c; P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22; }
     }
   }
   if (camera.position.distanceTo(P.p) < 140) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m && c.m.visible) udPose(c.m, c, !c.alive);

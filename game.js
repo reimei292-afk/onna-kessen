@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22225,7 +22225,9 @@ function pauseGame() {
   state = 'pause'; player.drawing = false; $('pause').style.display = 'flex';
   const ro = $('roster'); if (!ro) return;
   const c = battleCounts();
-  const head = `<div style="margin:0 0 10px;font-size:20px;letter-spacing:.08em">味方 <b>${c.ally}</b>　　敵 <b>${c.foe}</b>${c.note ? `<br><small style="letter-spacing:0;font-size:14px">${c.note}</small>` : ''}</div>`;
+  const h1 = document.querySelector('#pause h1');
+  if (h1) h1.innerHTML = `一時停止<br><span style="display:block;margin-top:10px;font-size:34px;letter-spacing:.14em">味方 ${c.ally}　　敵 ${c.foe}</span>`;
+  const head = `<div style="margin:0 0 10px;font-size:18px;letter-spacing:.06em">${c.note || '頭上の残敵・味方と同じ数え方'}</div>`;
   const tables = SQUAD_ON && builtStage !== 'usDrop' && builtStage !== 'usRaid' ? squadTable('blue', true) + squadTable('orange', true) : '';
   ro.innerHTML = head + tables; ro.style.display = 'block';
 }
@@ -23970,7 +23972,8 @@ function rkEndAsk() {   // 作戦終了の確認（はい／いいえ）
     d.querySelectorAll('button').forEach(b => { const f = ev => { ev.preventDefault(); ev.stopPropagation(); rkEndAns(b.dataset.a === 'y'); }; b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', f); });
     d.addEventListener('mousedown', ev => ev.stopPropagation()); d.addEventListener('touchstart', ev => ev.stopPropagation(), { passive: true }); }
   RK.ask = true; RK.fireHeld = false; RK.keys = {}; d.style.display = 'flex'; RK.log.push('endask');
-  const bc = battleCounts(), nn = d.querySelector('.rkAskN'); if (nn) nn.textContent = `いま 味方 ${bc.ally}　敵 ${bc.foe}`;
+  const bc = battleCounts(), nn = d.querySelector('.rkAskN');
+  if (nn) { nn.textContent = `味方 ${bc.ally}　　敵 ${bc.foe}`; nn.style.cssText = 'font-size:32px;letter-spacing:.16em;margin:10px 0 14px'; }
   if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {}
 }
 function rkEndAns(yes) {
@@ -24211,14 +24214,17 @@ function udKingJump() {
   const spd = K.spd || 52, d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-8, 8), v: new V3(-Math.sin(K.hdg) * spd * 0.25, -1.6, -Math.cos(K.hdg) * spd * 0.25) };
   UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2; popup('殿、降下。落下傘が開くまで、上を見る', 3.2);
 }
+function udStand() {
+  if (UD.kingJump || UD.walk || UD.ext || UD.over) return;
+  const V = UD_VIEW[UD.st] || UD_VIEW.cockpit;
+  UD.walk = 1; UD.ext = 0; UD.kp = UD.kp || new V3(); UD.kp.set(V.eye[0], -1.08, V.eye[2]); udClampKp(UD.kp);
+  player.yaw = V.by + player.yaw; player.pitch = 0;
+}
 function udUse() {
   if (!UD.on || state !== 'play' || UD.over || UD.kingJump) return;
   if (UD.ext) { popup('機内へ戻るには V'); return; }
   const K = UD.planes[0]; if (!K) return;
-  if (!UD.walk) {
-    const V = UD_VIEW[UD.st] || UD_VIEW.cockpit; UD.walk = 1; UD.ext = 0; UD.kp = UD.kp || new V3(); UD.kp.set(V.eye[0], -1.08, V.eye[2]); udClampKp(UD.kp);
-    player.yaw = V.by + player.yaw; player.pitch = 0; popup('機内を歩く（WASD・走るは Shift・降下口で E で空挺・持ち場の近くで E）', 3.8); return;
-  }
+  if (!UD.walk) { udStand(); popup('機内を歩く（WASD・走るは Shift・降下口で E で空挺・持ち場の近くで E）', 3.8); return; }
   if (udAtDoor(UD.kp)) { udKingJump(); return; }
   const st = udNearSt(UD.kp); if (st) { udStation(st); popup(UD_VIEW[st].n + 'についた'); return; }
   popup('降下口は左の扉。持ち場の近くで E を押すと座る');
@@ -24300,7 +24306,7 @@ function udDraw2D() {
   const W = innerWidth, H = innerHeight, g = wg, c = udCounts();
   const view = UD.kingJump ? (UD.kingLanded ? '着地した殿' : '殿の降下') : UD.walk ? (udAtDoor(UD.kp) ? '降下口（E で空挺）' : '機内を歩いている') : UD.ext ? '外から' : (UD_VIEW[UD.st] || UD_VIEW.cockpit).n;
   g.font = '15px sans-serif'; g.textAlign = 'left'; g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(16, 16, 540, 108);
-  g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view, 28, 38);
+  g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view + '　版 ' + ASSET_V, 28, 38);
   g.fillStyle = '#d7eccf'; g.fillText('味方 ' + c.ally + '　敵 ' + c.foe, 28, 60);
   g.fillStyle = 'rgba(243,236,220,.85)'; g.font = '13px sans-serif'; g.fillText(c.note, 28, 80);
   g.fillText('E 歩く／降下口で空挺　1〜6 持ち場　V 外から　Esc 一時停止（味方と敵の数）', 28, 104);
@@ -24374,7 +24380,10 @@ addEventListener('keydown', ev => {
   const c = ev.code, m = /^Digit([1-6])$/.exec(c);
   if (m) { if (!UD.kingJump) udStation(UD_VK[+m[1] - 1]); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (c === 'Digit0' || c === 'KeyV') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } ev.stopImmediatePropagation(); ev.preventDefault(); return; }
-  if (/^(Key[WASD]|Arrow|Shift)/.test(c)) { if (!UD.keys) UD.keys = {}; UD.keys[c] = true; ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (/^(Key[WASD]|Arrow|Shift)/.test(c)) {
+    if (!UD.kingJump && !UD.ext && /^(Key[WASD]|Arrow)/.test(c)) udStand();
+    if (!UD.keys) UD.keys = {}; UD.keys[c] = true; ev.stopImmediatePropagation(); ev.preventDefault(); return;
+  }
   if (!ev.repeat && c === 'KeyE') { udUse(); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (/^(Space|Key[QRFC])/.test(c)) { ev.stopImmediatePropagation(); ev.preventDefault(); }
 }, true);
@@ -24517,6 +24526,10 @@ if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(es =>
 addEventListener('resize', () => { for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr); });
 for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr);
 selectStage(stageName);
+{ const b = document.getElementById('buildtag'), t = '版 ' + ASSET_V;
+  if (b) b.textContent = t;
+  else { const h = document.querySelector('#title h2'); if (h) h.insertAdjacentHTML('afterend', '<p id="buildtag" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">' + t + '</p>'); }
+}
 // 用件を選んだらメニューを閉じて、その様子を画面で見せる（返事は字幕）。小メニュー（ご飯・感想）を開くだけのときは開いたまま
 function secAct(fn) {
   if (!menuOpen || state !== 'play') return;

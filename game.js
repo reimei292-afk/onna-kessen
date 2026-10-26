@@ -16779,7 +16779,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23644,7 +23644,7 @@ function rkGndResolve() {
 }
 function rkBleed(P, dt) {
   if (P.st === 'landed' || P.st === 'taxi' || P.st === 'roll') return;
-  for (const c of P.ppl) if (c.alive && c.bleed != null && !c.treated) { c.bleed -= dt; if (!RK.silent && (c.bldT = (c.bldT || 0) - dt) <= 0) { c.bldT = rand(0.55, 1.2); rkBloodAt(P, new V3(c.pos.x, c.pos.y + 0.8, c.pos.z), false); } if (c.bleed <= 0) { c.bleed = null; rkCrewDown(P, c); RK.log.push('bleed:' + P.no + ':' + c.S.k); } }
+  for (const c of P.ppl) if (c.alive && c.bleed != null && !c.treated) { c.bleed -= dt; if (c.bleed <= 0) { c.bleed = null; rkCrewDown(P, c); RK.log.push('bleed:' + P.no + ':' + c.S.k); } }
 }
 // ---- 殿：機内を歩く（WASD／左の棒）、持ち場の近くで E、地上では乗降口から外へ ----
 function rkWalkIn() { const k = RK.keys || {}; return [(k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) - touch.jy, (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + touch.jx]; }
@@ -23780,7 +23780,7 @@ function rkStep(dt) {
     if (P.king) { rkMedTick(P, dt); rkSecTick(P, dt); }
   }
   for (const G of (RK.gbs || [])) rkGndTick(G, dt);
-  if (RK.kbleed != null && !RK.kTreated && !RK.god) { RK.kbleed -= dt; if (!RK.silent && (RK.bldT = (RK.bldT || 0) - dt) <= 0) { RK.bldT = 0.45; const K = RK.planes[0]; if (K) { const k = rkKingPos(); rkBloodAt(K, new V3(k.x, k.y + 1.05, k.z), false); } } if (RK.kbleed <= 0) { RK.kbleed = null; rkKingHit(); } }
+  if (RK.kbleed != null && !RK.kTreated && !RK.god) { RK.kbleed -= dt; if (RK.kbleed <= 0) { RK.kbleed = null; rkKingHit(); } }
   for (const F of RK.ftr) rkFtrTick(F, dt);
   rkAATick(dt); rkFlakTick(dt); rkBombTick(dt); rkPlayerGun(dt); rkBulTick(dt); rkPxTick(dt);
   const K = RK.planes[0];

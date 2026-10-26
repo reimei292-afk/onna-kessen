@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24025,45 +24025,45 @@ addEventListener('blur', () => { RK.keys = {}; });
 //   殿の機だけ秘書課も乗る。格納庫は前幕で破壊済み。飛行場へ四人一組で落下傘降下。
 // ====================================================================
 const UD = { on: false, dyn: null, planes: [], drops: [], t: 0, st: 'cockpit', ext: 0, over: false, landed: 0, total: 120, dropZ: -7480, doneT: 0, said: false };
-const UD_FUS = [[-10.6, 0.16], [-10.15, 0.78], [-9.3, 1.32], [-8.0, 1.62], [-6.0, 1.82], [-3.2, 1.96], [2.2, 2.02], [6.8, 1.94], [8.8, 1.72], [10.3, 1.38], [11.3, 0.82], [11.85, 0.16]];
+const UD_FUS = [[-12.93, 0.30], [-12.38, 1.48], [-11.35, 2.51], [-9.76, 3.08], [-7.32, 3.46], [-3.90, 3.72], [2.68, 3.84], [8.30, 3.69], [10.74, 3.27], [12.57, 2.62], [13.79, 1.56], [14.46, 0.30]];
 const UD_VIEW = {
-  cockpit: { n: '操縦席', eye: [0, 0.42, -7.15], by: 0, arc: [1.15, -0.55, 0.42] },
-  door: { n: '降下口', eye: [-0.55, 0.28, 4.15], by: Math.PI / 2, arc: [1.15, -0.9, 0.75] },
-  gunF: { n: '前方機銃', eye: [0, 0.22, -9.55], by: 0, arc: [0.8, -0.6, 0.5] },
-  gunL: { n: '左側方機銃', eye: [-1.35, 0.22, 2.5], by: Math.PI / 2, arc: [1.05, -0.75, 0.65] },
-  gunR: { n: '右側方機銃', eye: [1.35, 0.22, 2.5], by: -Math.PI / 2, arc: [1.05, -0.75, 0.65] },
-  gunB: { n: '後方機銃', eye: [0, 0.18, 11.15], by: Math.PI, arc: [0.9, -0.55, 0.55] },
+  cockpit: { n: '操縦席', eye: [0, 0.48, -8.7], by: 0, arc: [1.15, -0.55, 0.42] },
+  door: { n: '降下口', eye: [-1.7, 0.42, 5.05], by: Math.PI / 2, arc: [1.15, -0.9, 0.75] },
+  gunF: { n: '前方機銃', eye: [0, 0.32, -11.6], by: 0, arc: [0.8, -0.6, 0.5] },
+  gunL: { n: '左側方機銃', eye: [-2.9, 0.38, 3.05], by: Math.PI / 2, arc: [1.05, -0.75, 0.65] },
+  gunR: { n: '右側方機銃', eye: [2.9, 0.38, 3.05], by: -Math.PI / 2, arc: [1.05, -0.75, 0.65] },
+  gunB: { n: '後方機銃', eye: [0, 0.28, 13.5], by: Math.PI, arc: [0.9, -0.55, 0.55] },
 };
 const UD_VK = ['cockpit', 'door', 'gunF', 'gunL', 'gunR', 'gunB'];
 const _udW = new V3(), _udP = new V3(), _udQ = new THREE.Quaternion(), _udQ2 = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ'), _udFE = new THREE.Euler(0, 0, 0, 'YXZ');
 function udGeo() {
   if (UD.geo) return UD.geo;
   const CAMO = [0x4a5640, 0xb7b3a6], BLK = 0x1e1f1e;
-  const glassZ = [[-10.5, -8.15], [-6.7, -4.55], [1.7, 5.55], [9.15, 11.45]];
+  const glassZ = [[-12.8, -9.94], [-8.17, -5.55], [2.07, 6.77], [11.16, 13.97]];
   const op = [], gl = [];
   let z = glassZ[0][1];
   for (let i = 1; i <= glassZ.length; i++) { const z1 = i < glassZ.length ? glassZ[i][0] : null; if (z1 == null) break; op.push({ g: rkLathe(UD_FUS, z, z1, 18, 6), camo: CAMO }); z = glassZ[i][1]; }
-  op.push({ g: rkLathe(UD_FUS, -10.6, glassZ[0][0], 14, 3), camo: CAMO });
-  op.push({ g: rkLathe(UD_FUS, glassZ[glassZ.length - 1][1], 11.85, 12, 3), camo: CAMO });
+  op.push({ g: rkLathe(UD_FUS, -12.93, glassZ[0][0], 14, 3), camo: CAMO });
+  op.push({ g: rkLathe(UD_FUS, glassZ[glassZ.length - 1][1], 14.46, 12, 3), camo: CAMO });
   for (const [a, b] of glassZ) { gl.push({ g: rkLathe(UD_FUS, a, b, 18, 4) }); for (let k = 0; k <= 3; k++) { const zz = a + (b - a) * k / 3; op.push({ g: new THREE.TorusGeometry(rkR(UD_FUS, zz) + 0.02, 0.03, 3, 18), m: rkM4(0, 0, zz), c: 0x2c3326 }); } }
-  op.push({ g: new THREE.BoxGeometry(2.6, 0.08, 12.4), m: rkM4(0, -1.08, 2.4), c: 0x5a5348 });
-  op.push({ g: new THREE.BoxGeometry(2.2, 0.08, 4.2), m: rkM4(0, -1.08, -6.3), c: 0x5a5348 });
-  for (let zz = -7.2; zz <= 9.4; zz += 1.35) { const r = rkR(UD_FUS, zz) - 0.06; if (r > 0.4) op.push({ g: new THREE.TorusGeometry(r, 0.04, 3, 16), m: rkM4(0, 0, zz), c: 0x3e4638 }); }
-  const rDoor = rkR(UD_FUS, 4.2);
-  op.push({ g: new THREE.BoxGeometry(0.08, 1.7, 0.08), m: rkM4(-rDoor + 0.02, -0.15, 3.35), c: 0x2a261f }, { g: new THREE.BoxGeometry(0.08, 1.7, 0.08), m: rkM4(-rDoor + 0.02, -0.15, 4.95), c: 0x2a261f });
-  op.push({ g: new THREE.BoxGeometry(0.08, 0.08, 1.7), m: rkM4(-rDoor + 0.02, 0.68, 4.15), c: 0x2a261f });
-  op.push({ g: new THREE.BoxGeometry(0.9, 1.55, 0.06), m: rkM4(-rDoor - 0.35, -0.2, 3.55, 0, 0.7, 0), c: 0x3a4034 });
+  op.push({ g: new THREE.BoxGeometry(6.2, 0.08, 16.5), m: rkM4(0, -1.08, 3.2), c: 0x5a5348 });
+  op.push({ g: new THREE.BoxGeometry(4.6, 0.08, 5.4), m: rkM4(0, -1.08, -7.6), c: 0x5a5348 });
+  for (let zz = -9.2; zz <= 12.4; zz += 1.7) { const r = rkR(UD_FUS, zz) - 0.08; if (r > 0.5) op.push({ g: new THREE.TorusGeometry(r, 0.045, 3, 18), m: rkM4(0, 0, zz), c: 0x3e4638 }); }
+  const rDoor = rkR(UD_FUS, 5.1);
+  op.push({ g: new THREE.BoxGeometry(0.08, 2.15, 0.08), m: rkM4(-rDoor + 0.04, -0.05, 4.15), c: 0x2a261f }, { g: new THREE.BoxGeometry(0.08, 2.15, 0.08), m: rkM4(-rDoor + 0.04, -0.05, 6.05), c: 0x2a261f });
+  op.push({ g: new THREE.BoxGeometry(0.08, 0.08, 2.05), m: rkM4(-rDoor + 0.04, 1.0, 5.1), c: 0x2a261f });
+  op.push({ g: new THREE.BoxGeometry(1.1, 2.0, 0.06), m: rkM4(-rDoor - 0.4, -0.05, 4.4, 0, 0.7, 0), c: 0x3a4034 });
   for (const s of [-1, 1]) {
-    op.push({ g: rkWing(13.5, 5.4, 0.58, s * 1.05, -0.42, -0.4, s, 0.55, 1.05, 0.42), camo: CAMO, shade: 0.05 });
-    const nac = new THREE.CylinderGeometry(0.62, 0.88, 5.1, 14); nac.rotateX(Math.PI / 2); op.push({ g: nac, m: rkM4(s * 5.5, -0.42, -2.6), camo: CAMO });
-    const cowl = new THREE.CylinderGeometry(0.92, 0.9, 0.9, 14, 1, true); cowl.rotateX(Math.PI / 2); op.push({ g: cowl, m: rkM4(s * 5.5, -0.42, -5.05), c: BLK });
-    const sp = new THREE.ConeGeometry(0.32, 0.85, 10); sp.rotateX(-Math.PI / 2); op.push({ g: sp, m: rkM4(s * 5.5, -0.42, -5.85), c: 0x5a4a38 });
-    op.push({ g: rkWing(4.4, 2.3, 0.2, s * 0.55, 0.35, 10.0, s, 0.42, 0.45, 0.08), camo: CAMO });
+    op.push({ g: rkWing(14.5, 5.6, 0.62, s * 3.55, -0.55, -0.5, s, 0.55, 1.15, 0.48), camo: CAMO, shade: 0.05 });
+    const nac = new THREE.CylinderGeometry(0.72, 0.98, 5.4, 14); nac.rotateX(Math.PI / 2); op.push({ g: nac, m: rkM4(s * 8.1, -0.55, -3.2), camo: CAMO });
+    const cowl = new THREE.CylinderGeometry(1.02, 1.0, 0.95, 14, 1, true); cowl.rotateX(Math.PI / 2); op.push({ g: cowl, m: rkM4(s * 8.1, -0.55, -5.85), c: BLK });
+    const sp = new THREE.ConeGeometry(0.36, 0.9, 10); sp.rotateX(-Math.PI / 2); op.push({ g: sp, m: rkM4(s * 8.1, -0.55, -6.7), c: 0x5a4a38 });
+    op.push({ g: rkWing(5.2, 2.6, 0.22, s * 0.7, 0.55, 12.2, s, 0.42, 0.5, 0.1), camo: CAMO });
   }
-  { const fin = new THREE.BoxGeometry(0.24, 3.3, 3.3, 1, 3, 1); const p = fin.attributes.position; for (let i = 0; i < p.count; i++) { const t = (p.getY(i) + 1.65) / 3.3; p.setZ(i, p.getZ(i) * (1 - 0.42 * t) + 1.05 * t); } fin.translate(0, 2.35, 10.0); op.push({ g: fin, camo: CAMO }); }
-  for (const x of [-0.2, 0.2]) op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 0.95), m: rkM4(x, 0.05, 11.7), c: BLK });
-  op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 1.0), m: rkM4(0, 0.15, -10.35), c: BLK });
-  for (const s of [-1, 1]) op.push({ g: new THREE.BoxGeometry(0.9, 0.05, 0.05), m: rkM4(s * 1.85, 0.15, 2.5), c: BLK });
+  { const fin = new THREE.BoxGeometry(0.26, 4.2, 3.8, 1, 3, 1); const p = fin.attributes.position; for (let i = 0; i < p.count; i++) { const t = (p.getY(i) + 2.1) / 4.2; p.setZ(i, p.getZ(i) * (1 - 0.42 * t) + 1.2 * t); } fin.translate(0, 2.8, 12.2); op.push({ g: fin, camo: CAMO }); }
+  for (const x of [-0.25, 0.25]) op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 1.05), m: rkM4(x, 0.08, 14.2), c: BLK });
+  op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 1.1), m: rkM4(0, 0.2, -12.6), c: BLK });
+  for (const s of [-1, 1]) op.push({ g: new THREE.BoxGeometry(1.1, 0.05, 0.05), m: rkM4(s * 2.4, 0.2, 3.05), c: BLK });
   const prop = []; for (let k = 0; k < 3; k++) prop.push({ g: new THREE.BoxGeometry(0.26, 1.9, 0.07).translate(0, 0.95, 0), m: rkM4(0, 0, 0, 0, 0, k * Math.PI * 2 / 3), c: 0x2e2a24 });
   UD.canGeo = new THREE.SphereGeometry(3.5, 12, 7, 0, Math.PI * 2, 0, Math.PI * 0.46);
   UD.lineGeo = new THREE.CylinderGeometry(0.012, 0.012, 5.4, 3);
@@ -24122,12 +24122,12 @@ function udMakePlane(i, pool) {
   const G = udGeo(), g = new THREE.Group(); g.rotation.order = 'YXZ';
   const body = new THREE.Group(); g.add(body);
   body.add(new THREE.Mesh(G.op, G.mOp), new THREE.Mesh(G.gl, G.mGl));
-  const props = [-1, 1].map(s => { const m = new THREE.Mesh(G.prop, G.mOp); m.position.set(s * 5.5, -0.42, -5.55); body.add(m); return m; });
+  const props = [-1, 1].map(s => { const m = new THREE.Mesh(G.prop, G.mOp); m.position.set(s * 8.1, -0.55, -6.7); body.add(m); return m; });
   const avoid = new Set(rkPaxIds()), crew = [], pax = [], queue = [];
   const put = (who, x, z) => { if (!who) return; who.m.position.set(x, -1.08, z); body.add(who.m); };
   const crewSpec = [
-    ['操縦手', -0.42, -6.55, 0], ['副操縦手', 0.42, -6.55, 0], ['電探', 0.55, -3.55, Math.PI],
-    ['前方機銃手', -0.12, -8.85, 0], ['左側方機銃手', -0.82, 2.5, Math.PI / 2], ['右側方機銃手', 0.82, 2.5, -Math.PI / 2], ['後方機銃手', 0, 10.35, Math.PI],
+    ['操縦手', -0.55, -8.0, 0], ['副操縦手', 0.55, -8.0, 0], ['電探', 0.9, -4.4, Math.PI],
+    ['前方機銃手', -0.15, -10.9, 0], ['左側方機銃手', -2.7, 3.05, Math.PI / 2], ['右側方機銃手', 2.7, 3.05, -Math.PI / 2], ['後方機銃手', 0, 12.7, Math.PI],
   ];
   for (const [role, x, z, face] of crewSpec) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) continue; avoid.add(gid);
@@ -24136,9 +24136,9 @@ function udMakePlane(i, pool) {
   const medRole = i % 2 ? '医師' : '看護師';
   let medId = i % 2 ? (GIRLS.surgeon ? 'surgeon' : null) : (typeof MEDIC_ID !== 'undefined' ? MEDIC_ID : null);
   if (!medId || avoid.has(medId) || !GIRLS[medId] || !GIRLS[medId].front) medId = udGid(pool, avoid); else avoid.add(medId);
-  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name, Math.PI); if (c) { c.prof = prof; put(c, 0.7, -1.35); crew.push(c); } }
+  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name, Math.PI); if (c) { c.prof = prof; put(c, 1.15, -1.8); crew.push(c); } }
   if (i === 0) {
-    const seats = [[-0.72, -4.7], [0.72, -4.7], [-0.72, -3.85], [0.72, -3.85], [-0.28, -3.2], [0.28, -3.2], [-0.72, -2.55], [0.42, -2.45], [-0.28, -1.85]];
+    const seats = [[-1.55, -5.6], [1.55, -5.6], [-1.55, -4.5], [1.55, -4.5], [-0.55, -3.7], [0.55, -3.7], [-1.55, -2.9], [0.7, -2.7], [-0.55, -2.0]];
     RK_PAX.forEach((X, k) => {
       const gid = X.gid(); if (!GIRLS[gid] || !GIRLS[gid].front) return;
       const c = udGirl(gid, X.role, X.cm, X.name, Math.PI); if (!c) return;
@@ -24146,12 +24146,12 @@ function udMakePlane(i, pool) {
       const s = seats[k] || [0.4, -1.7]; put(c, s[0], s[1]); pax.push(c);
     });
   }
-  const cols = [-0.74, -0.26, 0.26, 0.74];
+  const cols = [-2.15, -0.75, 0.75, 2.15];
   for (let n = 0; n < 40; n++) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) break;
     const c = udGirl(gid, '空挺', prof.cm, prof.name, 0); if (!c) break; c.prof = prof;
     const row = (n / 4) | 0, col = n % 4;
-    put(c, cols[col], 0.15 + row * 0.78); c.seat = c.m.position.clone(); queue.push(c);
+    put(c, cols[col], 0.4 + row * 0.95); c.seat = c.m.position.clone(); queue.push(c);
   }
   queue.sort((a, b) => b.m.position.z - a.m.position.z);
   UD.dyn.add(g);
@@ -24163,98 +24163,87 @@ function udSpawn() {
   for (const c of [...UD.dyn.children]) UD.dyn.remove(c);
   usedNames = new Set();
   const pool = rkPool(); UD.planes = []; UD.drops = []; UD.landed = 0; UD.total = 0; UD.over = false; UD.doneT = 0; UD.said = false; UD.t = 0;
-  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.reinforced = 0; UD.vq = null; UD.sayT = 0; UD.kp = new V3(0, -1.08, -7.1);
+  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.reinforced = 0; UD.vq = null; UD.sayT = 0; UD.held = 0; UD.sqI = 0; UD.ask = false; UD.kp = new V3(0, -1.08, -8.7);
   for (let i = 0; i < 3; i++) { const P = udMakePlane(i, pool); UD.planes.push(P); UD.total += P.queue.length; rkPose(P); }
   udSpawnInf();
 }
 function udAirfield() {
-  const T = RK_TGT, P = [], lite = !!LITE;
-  const add = (g, x, y, z, c, rx, ry, rz) => { P.push({ g, m: rkM4(x, y, z, rx || 0, ry || 0, rz || 0), c, shade: 0.08 }); };
-  const box = (w, h, d, x, y, z, c, ry) => add(new THREE.BoxGeometry(w, h, d), x, y, z, c, 0, ry || 0, 0);
-  const cyl = (r0, r1, h, x, y, z, c, rx, seg) => add(new THREE.CylinderGeometry(r0, r1, h, seg || 8), x, y, z, c, rx || 0, 0, 0);
-  box(48, 0.16, 1680, T.x, 0.1, T.z, 0x9c978c);
-  box(18, 0.14, 420, T.x - 150, 0.09, T.z + 80, 0x8a867c);
-  box(220, 0.12, 160, T.x - 40, 0.08, T.z - 40, 0x7d786e);
-  for (let z = -780; z <= 780; z += 46) box(0.7, 0.18, 16, T.x, 0.2, T.z + z, 0xe4dfd2);
-  box(0.35, 0.18, 1600, T.x - 20, 0.19, T.z, 0xd8d3c6);
-  box(0.35, 0.18, 1600, T.x + 20, 0.19, T.z, 0xd8d3c6);
-  for (let i = 0; i < (lite ? 4 : 8); i++) box(1.6, 0.05, 7 + (i % 3), T.x + (i % 2 ? 6 : -5), 0.2, T.z - 500 + i * 140, 0x2e2c28, (i % 2 ? 0.15 : -0.1));
-  for (let i = 0; i < 4; i++) {
-    const x = T.x - 150, z = T.z - 120 + i * 78;
-    box(42, 5.5, 30, x, 2.6, z, 0x6e7268);
-    add(new THREE.CylinderGeometry(16, 16, 30, 10, 1, false, 0, Math.PI), x, 5.4, z, i === 1 || i === 2 ? 0x4a463e : 0x7a7e74, Math.PI / 2, 0, Math.PI / 2);
-    if (i === 1 || i === 2) {
-      box(16, 2.2, 14, x + 6, 3.2, z + 4, 0x3a342c, 0.4);
-      box(10, 1.2, 8, x - 8, 1.1, z - 10, 0x2c2822, 0.8);
-      add(new THREE.CircleGeometry(14, 10), x + 4, 0.07, z + 8, 0x241e18, -Math.PI / 2, 0, 0);
+  const T = RK_TGT, P = [], lite = !!LITE, X = T.x, Z = T.z;
+  const add = (g, x, y, z, c, rx, ry, rz) => { P.push({ g, m: rkM4(x, y, z, rx || 0, ry || 0, rz || 0), c, shade: 0.06 }); };
+  const box = (w, h, d, x, y, z, c, ry, rx) => add(new THREE.BoxGeometry(w, h, d), x, y, z, c, rx || 0, ry || 0, 0);
+  const camo = [0x6d7554, 0x8d9284, 0x556246, 0xa39878, 0x4a5440, 0x7a8490];
+  box(46, 0.18, 460, X - 8, 0.1, Z, 0xb7b4aa);
+  box(18, 0.12, 460, X - 40, 0.06, Z, 0x4f8a38);
+  box(14, 0.12, 460, X + 22, 0.06, Z, 0x4f8a38);
+  box(78, 0.14, 300, X + 62, 0.09, Z + 10, 0xc4c0b4);
+  for (let z = -210; z <= 210; z += 28) box(0.7, 0.2, 12, X - 8, 0.22, Z + z, 0xf4f1e6);
+  box(0.45, 0.2, 440, X - 26, 0.21, Z, 0xe7e2d4);
+  box(0.45, 0.2, 440, X + 10, 0.21, Z, 0xe7e2d4);
+  for (const end of [-210, 210]) for (let k = -3; k <= 3; k++) box(1.3, 0.2, 8, X - 8 + k * 4.2, 0.22, Z + end, 0xf7f4ea);
+  const hangar = (x, z, w, d, broken) => {
+    box(w, 5.2, d, x, 2.7, z, 0x8e938a);
+    for (let i = 0; i < 4; i++) box(0.25, 1.3, 2.4, x - w / 2 + 0.2, 3.3, z - d * 0.32 + i * d * 0.2, 0x6a90a8);
+    for (let i = 0; i < 5; i++) {
+      const zz = z - d * 0.4 + i * d * 0.2, col = camo[(i + (broken ? 1 : 0)) % camo.length], col2 = camo[(i + 3) % camo.length];
+      if (!(broken && i > 3)) add(new THREE.BoxGeometry(w * 0.58, 0.4, d * 0.18), x - w * 0.16, 5.7, zz, col, -0.5, 0, 0);
+      if (!(broken && i < 1)) add(new THREE.BoxGeometry(w * 0.58, 0.4, d * 0.18), x + w * 0.16, 5.7, zz, col2, 0.5, 0, 0);
     }
-    box(8, 3.4, 0.4, x, 2.2, z + 15.2, 0x2a2824);
-  }
-  box(16, 4, 14, T.x + 210, 2, T.z - 60, 0x6a6456);
-  box(7, 14, 7, T.x + 210, 11, T.z - 60, 0x7a7466);
-  box(12, 3.2, 12, T.x + 210, 18.2, T.z - 60, 0x8ec0cc);
-  box(13, 0.4, 13, T.x + 210, 20, T.z - 60, 0x5a564c);
-  cyl(0.15, 0.15, 8, T.x + 210, 24, T.z - 60, 0xc8c4b8, 0, 5);
-  for (let i = 0; i < (lite ? 3 : 6); i++) box(28, 3.6, 10, T.x + 250, 1.8, T.z - 220 + i * 36, 0x6d7058, 0.08);
-  for (let i = 0; i < (lite ? 3 : 7); i++) {
-    const x = T.x + 120 + (i % 3) * 28, z = T.z + 150 + ((i / 3) | 0) * 34;
-    cyl(7.2, 7.2, 8, x, 4, z, i === 2 ? 0x4a4036 : 0xb7b3a6, 0, 12);
-    cyl(7.5, 7.5, 0.5, x, 8.2, z, 0x8e8a80, 0, 12);
-    if (i === 2) { cyl(7.2, 6, 8, x + 3, 2.2, z + 2, 0x3a342c, 1.1, 10); add(new THREE.CircleGeometry(12, 10), x, 0.06, z, 0x1e1a16, -Math.PI / 2, 0, 0); }
-  }
+    box(w * 0.7, 3.6, 0.35, x, 2.2, z + d / 2, 0x2c3034);
+    if (broken) {
+      box(8, 1.4, 6, x + 4, 1.2, z - d * 0.3, 0x3a3832, 0.4);
+      box(5, 0.8, 4, x - 6, 0.6, z - d * 0.15, 0x2a2824, -0.3);
+      add(new THREE.CircleGeometry(9, 8), x + 2, 0.08, z - 4, 0x241e18, -Math.PI / 2, 0, 0);
+    }
+  };
+  hangar(X + 78, Z - 78, 36, 26, false);
+  add(new THREE.CylinderGeometry(9, 9, 24, 12, 1, false, 0, Math.PI), X + 74, 4.6, Z - 28, 0x7c8474, Math.PI / 2, 0, Math.PI / 2);
+  box(22, 3.2, 24, X + 74, 1.7, Z - 28, 0x6a705f);
+  hangar(X + 86, Z + 18, 34, 18, false);
+  hangar(X + 80, Z + 62, 40, 28, true);
+  box(22, 6.5, 12, X + 96, 3.3, Z + 112, 0x3c4148);
+  box(18, 6.2, 11, X + 112, 3.1, Z + 124, 0x343940);
+  add(new THREE.BoxGeometry(12, 0.45, 11), X + 96, 7.1, Z + 112, 0x2a2e34, 0.55, 0, 0);
+  add(new THREE.BoxGeometry(12, 0.45, 11), X + 96, 7.1, Z + 112, 0x2a2e34, -0.55, 0, 0);
+  for (let i = 0; i < 3; i++) box(1.4, 1.1, 1.6, X + 92 + i * 4, 7.6, Z + 112, 0x2e3338);
+  box(16, 0.2, 12, X + 52, 0.16, Z - 48, 0x3f8a34);
+  box(14, 0.2, 10, X + 96, 0.16, Z + 36, 0x3f8a34);
+  const tx = X + 36, tz = Z + 8;
+  box(9, 0.4, 9, tx, 0.25, tz, 0x8a8478);
+  box(4.2, 11, 4.2, tx, 5.8, tz, 0xd8d4c8);
+  for (let k = 0; k < 4; k++) box(4.5, 0.35, 0.25, tx, 3 + k * 2.2, tz + 2.15, 0x6a8090);
+  box(8.5, 3.1, 8.5, tx, 13.2, tz, 0x9fd0dc);
+  box(9.2, 0.35, 9.2, tx, 14.9, tz, 0x4a5048);
+  box(7.2, 0.25, 0.2, tx, 13.2, tz + 4.3, 0x22262a);
+  box(0.2, 0.25, 7.2, tx + 4.3, 13.2, tz, 0x22262a);
+  add(new THREE.CylinderGeometry(0.12, 0.16, 5, 5), tx, 17.4, tz, 0xc8c4b8, 0, 0, 0);
+  box(3.2, 0.12, 0.12, tx, 18.6, tz, 0xc8c4b8);
+  for (let i = 0; i < 8; i++) box(1.6, 0.18, 0.5, tx - 2.6, 0.4 + i * 1.15, tz + 2.4, 0x6a6558);
   const G = rkGeo();
-  for (let i = 0; i < (lite ? 3 : 7); i++) {
-    const x = T.x - 40 + (i % 2) * 28, z = T.z - 280 + i * 36;
+  const nPlane = lite ? 8 : 16;
+  for (let i = 0; i < nPlane; i++) {
+    const col = i % 2, row = (i / 2) | 0;
+    const x = X + 6 + col * 14, z = Z - 150 + row * 22;
     const m = new THREE.Mesh(G.fo, udGeo().mOp);
-    m.position.set(x, i % 3 === 0 ? 1.6 : 1.15, z);
-    m.rotation.set(i % 3 === 0 ? 0.55 : 0.05, Math.PI / 2 + (i % 2 ? 0.4 : -0.2), i % 3 === 0 ? 0.7 : 0);
+    m.position.set(x, 1.15, z); m.rotation.y = col ? 0.15 : Math.PI + 0.1;
     stageRoot.add(m);
-    if (i % 3 === 0) add(new THREE.CircleGeometry(10, 8), x, 0.05, z, 0x221c16, -Math.PI / 2, 0, 0);
   }
-  for (let i = 0; i < (lite ? 2 : 5); i++) {
-    const x = T.x + 40 + i * 22, z = T.z + 280;
-    box(3.2, 1.15, 1.5, x, 0.7, z, 0x3e4634, 0.4);
-    box(1.5, 0.7, 1.3, x - 0.2, 1.35, z, 0x2c3328, 0.4);
-    cyl(0.32, 0.32, 0.3, x + 1.1, 0.32, z + 0.6, 0x1a1a18, Math.PI / 2, 6);
-    cyl(0.32, 0.32, 0.3, x - 1.1, 0.32, z + 0.6, 0x1a1a18, Math.PI / 2, 6);
+  { const m = new THREE.Mesh(G.fo, udGeo().mOp); m.position.set(X - 8, 1.2, Z - 70); m.rotation.y = 0.35; stageRoot.add(m); }
+  const bomber = (x, z) => {
+    box(2.6, 2.0, 18, x, 2.3, z, 0x4e5848);
+    box(28, 0.42, 4.2, x, 2.5, z, 0x3e4638);
+    box(6, 0.35, 3.2, x, 5.2, z + 7.2, 0x3e4638);
+    box(0.3, 2.4, 3.4, x, 4.2, z + 7.4, 0x3a4036);
+    for (const s of [-1, 1]) for (const [o, c] of [[4.2, 0x141414], [5.8, 0xf3f1ea], [7.4, 0x141414], [9.0, 0xf3f1ea]]) box(1.3, 0.55, 4.4, x + s * o, 2.55, z, c);
+    add(new THREE.CylinderGeometry(0.55, 0.7, 2.2, 6), x - 6, 1.7, z - 1, 0x2a2c28, Math.PI / 2, 0, 0);
+    add(new THREE.CylinderGeometry(0.55, 0.7, 2.2, 6), x + 6, 1.7, z - 1, 0x2a2c28, Math.PI / 2, 0, 0);
+  };
+  bomber(X + 52, Z + 36); bomber(X + 52, Z - 24);
+  for (let i = 0; i < (lite ? 2 : 4); i++) {
+    const x = X + 60 + (i % 2) * 8, z = Z + 80 + i * 6;
+    box(3.4, 1.2, 1.6, x, 0.75, z, 0x3a4034, 0.6);
+    box(1.6, 0.8, 1.4, x - 0.3, 1.45, z, 0x2a3028, 0.6);
   }
-  for (let i = 0; i < (lite ? 1 : 3); i++) {
-    const x = T.x - 220, z = T.z + 200 + i * 28;
-    box(6.5, 2.2, 2.6, x, 1.3, z, 0x4a5340);
-    box(2.2, 1.6, 2.4, x - 1.6, 2.5, z, 0x3a4034);
-    cyl(0.55, 0.55, 0.4, x + 2.2, 0.4, z + 1.1, 0x1a1a18, Math.PI / 2, 6);
-    cyl(0.55, 0.55, 0.4, x - 2.2, 0.4, z + 1.1, 0x1a1a18, Math.PI / 2, 6);
-  }
-  for (let i = 0; i < (lite ? 4 : 10); i++) {
-    const x = T.x + rand(-30, 180), z = T.z + rand(-80, 220);
-    for (let k = 0; k < 3; k++) box(1.1, 0.7, 0.8, x + k * 0.2, 0.35 + k * 0.55, z + (k % 2) * 0.15, k % 2 ? 0x6a5a3c : 0x5c6a48);
-  }
-  for (let i = 0; i < (lite ? 6 : 14); i++) {
-    const a = i / 14 * Math.PI * 2, R = 90 + (i % 3) * 40;
-    add(new THREE.TorusGeometry(3.2, 0.45, 4, 8), T.x + Math.cos(a) * R, 0.4, T.z + Math.sin(a) * R * 0.7, 0x8a744c, Math.PI / 2, 0, 0);
-  }
-  for (let i = 0; i < (lite ? 4 : 9); i++) {
-    const x = T.x - 80 + (i % 3) * 18, z = T.z + 60 + ((i / 3) | 0) * 14;
-    cyl(0.42, 0.42, 0.9, x, 0.5, z, 0x4a5a38, 0, 8);
-    if (i % 2) cyl(0.42, 0.42, 0.9, x + 0.5, 1.3, z, 0x3e4a30, 0, 8);
-  }
-  if (!lite) {
-    for (let z = -200; z <= 500; z += 22) { cyl(0.08, 0.08, 1.3, T.x + 340, 0.65, T.z + z, 0x6a6458, 0, 4); box(0.08, 0.7, 22, T.x + 340, 1.15, T.z + z + 11, 0x8a8474); }
-    cyl(0.12, 0.16, 9, T.x - 40, 4.5, T.z + 420, 0xc8c2b4, 0, 5);
-    box(1.6, 0.35, 0.8, T.x - 40, 9.1, T.z + 420, 0xc45a3a);
-    cyl(1.6, 1.8, 6, T.x + 300, 3, T.z + 80, 0x9a9688, 0, 8);
-    cyl(0.35, 0.4, 8, T.x + 300, 9, T.z + 80, 0x8a8680, 0, 5);
-    box(2.2, 0.5, 2.2, T.x + 300, 6.3, T.z + 80, 0x7a766c);
-  }
-  for (let i = 0; i < (lite ? 5 : 12); i++) {
-    const x = T.x + rand(-260, 320), z = T.z + rand(-400, 500);
-    add(new THREE.CircleGeometry(rand(4, 9), 8), x, 0.04, z, 0x2a241c, -Math.PI / 2, rand(0, 2), 0);
-    box(rand(1.2, 3), rand(0.3, 0.8), rand(1, 2.4), x + rand(-2, 2), 0.3, z + rand(-2, 2), 0x4a4338, rand(-0.4, 0.4));
-  }
-  for (let i = 0; i < (lite ? 8 : 18); i++) {
-    const x = T.x + rand(-420, 480), z = T.z + rand(-700, 800);
-    cyl(rand(0.6, 1.4), rand(0.8, 1.8), rand(0.5, 1.3), x, 0.4, z, i % 2 ? 0x5a6840 : 0x6a6238, 0, 6);
-  }
+  for (let i = 0; i < 6; i++) box(1.2, 0.8, 0.9, X + 70 + (i % 3) * 1.3, 0.45 + ((i / 3) | 0) * 0.7, Z + 4, i % 2 ? 0x6a5a3a : 0x4a5a38);
   stageRoot.add(new THREE.Mesh(rkMerge(P), udGeo().mOp));
 }
 function buildUsDrop() {
@@ -24307,6 +24296,7 @@ function udHud(on) {
         if (k === 'ext') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } }
         else if (k === 'use') { if (UD.kingLanded) { if (player.weapon === 1) udMelee(); else udShot(0.9); } else if (UD.ext) { UD.ext = 0; UD.walk = 0; } else udUse(); }
         else if (k === 'jump') udKingJump();
+        else if (k === 'end') udEndAsk();
         else if (k === 'run') { touch.run = !touch.run; }
         else if (k === 'bow') setWeapon(0);
         else if (k === 'knife') setWeapon(1);
@@ -24318,13 +24308,15 @@ function udHud(on) {
   }
   UD._hud = 1;
   document.documentElement.classList.toggle('udplay', !!on);
-  if (!on) document.documentElement.classList.remove('udgnd');
+  document.documentElement.classList.toggle('udheld', !!on && !!UD.held);
+  if (!on) document.documentElement.classList.remove('udgnd', 'udheld');
   if (!on) { const s = $('bAtk') && $('bAtk').querySelector('span'); if (s && /空挺|歩く|つく|機内へ|降下中|着地|射る|突く|倒れた/.test(s.textContent)) s.textContent = '攻撃'; const lab = $('bAtkL'); if (lab && lab.textContent === 'ボタン') lab.textContent = '長押しで引く'; }
   else udHudSync();
 }
 function udHudSync() {
   const h = $('udHud'); if (!h || !UD._hud) return;
   document.documentElement.classList.toggle('udgnd', !!UD.kingLanded);
+  document.documentElement.classList.toggle('udheld', !!UD.held);
   const name = udActLabel(), use = h.querySelector('[data-k=use]'), sh = h.querySelector('[data-k=shoot]'), jp = h.querySelector('[data-k=jump]');
   if (use) use.textContent = UD.kingLanded ? name : (UD.ext ? '機内へ' : '歩く');
   if (jp) jp.textContent = UD.kingJump ? (UD.kingLanded ? '着地' : '降下中') : '空挺';
@@ -24381,7 +24373,7 @@ function udSpawnInf() {
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
     gun.position.set((i % 2 ? 0.22 : -0.22), 1.05, 0.32); g.add(gun);
-    const x = T.x + rand(-280, 340), z = T.z + rand(-260, 760);
+    const x = T.x + rand(-110, 150), z = T.z + rand(-130, 170);
     g.position.set(x, 0, z); UD.dyn.add(g);
     UD.grunts.push({ g, m, girl: GIRLS[id], cm: 164, alive: true, hp: 5, cd: rand(0.3, 2.2), x, z, face: 0 });
   }
@@ -24471,32 +24463,58 @@ function udMaybeEnd() {
   const foe = (UD.grunts || []).filter(g => g.alive).length;
   const air = (UD.drops || []).some(d => !d.king && !d.dead && d.st !== 'land');
   const que = (UD.planes || []).some(P => (P.queue && P.queue.length) || P.walking);
-  if (!foe && !air && !que && (UD.landed > 0 || UD.kingLanded)) UD.doneT = UD.t + 3;
+  if (!foe && !air && !que && (UD.landed > 0 || UD.kingLanded) && !UD.held) {
+    UD.held = 1;
+    popup('飛行場を押さえた。このまま歩ける。左の「終了」で作戦終了', 4.8);
+    rkSay('x_sumi_win', 0);
+  }
+}
+const UD_SLOT = [[8, 2], [5, 8], [-2, 9], [-8, 4], [-7, -3], [-2, -8], [5, -7], [9, -1]];
+function udPosts() {
+  const T = RK_TGT;
+  return [[T.x - 55, T.z - 20], [T.x + 40, T.z - 35], [T.x + 85, T.z + 15], [T.x - 15, T.z + 55], [T.x + 25, T.z + 25], [T.x - 70, T.z + 30]];
+}
+function udAllyStep(d, gr, dt) {
+  if (d.sq == null) { UD.sqI = (UD.sqI || 0) + 1; d.sq = UD.sqI % 6; d.slot = UD.sqI % 8; }
+  const mates = [];
+  for (const o of UD.drops || []) if (o !== d && !o.king && !o.dead && o.st === 'land' && o.sq === d.sq) mates.push(o);
+  let tgt = null, hd = 11 * 11;
+  for (const o of mates) for (const G of gr) if (G.alive) {
+    const dd = (G.x - o.g.position.x) * (G.x - o.g.position.x) + (G.z - o.g.position.z) * (G.z - o.g.position.z);
+    if (dd < hd) { hd = dd; tgt = G; }
+  }
+  if (!tgt) {
+    const live = gr.filter(G => G.alive);
+    if (live.length) {
+      live.sort((a, b) => ((a.x - d.g.position.x) ** 2 + (a.z - d.g.position.z) ** 2) - ((b.x - d.g.position.x) ** 2 + (b.z - d.g.position.z) ** 2));
+      tgt = live[Math.min(live.length - 1, d.sq % Math.min(6, live.length))];
+    }
+  }
+  const slot = UD_SLOT[d.slot % 8];
+  const post = udPosts()[d.sq % 6];
+  const gx = tgt ? tgt.x + slot[0] : post[0] + slot[0] * 0.4;
+  const gz = tgt ? tgt.z + slot[1] : post[1] + slot[1] * 0.4;
+  d.lookWorld = tgt ? Math.atan2(tgt.x - d.g.position.x, tgt.z - d.g.position.z) : Math.atan2(d.g.position.x - post[0], d.g.position.z - post[1]);
+  const dx = gx - d.g.position.x, dz = gz - d.g.position.z, dist = Math.hypot(dx, dz) || 1;
+  if (dist > 2.4) { const k = Math.min(3.4 * dt, dist - 1.8) / dist; d.g.position.x += dx * k; d.g.position.z += dz * k; }
+  if (!tgt) return;
+  const td = Math.hypot(tgt.x - d.g.position.x, tgt.z - d.g.position.z);
+  d.cd = (d.cd || 0.25) - dt;
+  if (d.cd > 0 || td > 64) return;
+  d.cd = td < 10 ? rand(0.32, 0.55) : rand(0.5, 0.9);
+  const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
+  const len = aim.length() || 1; aim.multiplyScalar(1 / len);
+  rkTracer(from, aim, td < 10 ? 70 : 110, null, td < 10 ? [0.95, 0.9, 0.7] : [0.75, 0.88, 1], 0.16, 1.6);
+  const hit = td < 3.4 ? 0.55 : td < 22 ? 0.24 : td < 48 ? 0.14 : 0.06;
+  if (Math.random() < hit) udHurtGrunt(tgt, td < 3.4 ? 2 : 1);
+  if (Math.random() < 0.08) udBark(d, mates.length && hd < 80 ? 'cover' : 'attack', d.g.position);
 }
 function udGround(dt) {
   const gr = UD.grunts || [], drops = UD.drops || [];
   const king = UD.kingDrop && UD.kingLanded && !UD.kingDown ? UD.kingDrop : null;
   for (const d of drops) {
     if (d.king || d.dead || d.st !== 'land') continue;
-    const cands = [];
-    for (const G of gr) if (G.alive) { const dx = G.x - d.g.position.x, dz = G.z - d.g.position.z; cands.push({ G, dd: dx * dx + dz * dz }); }
-    if (!cands.length) continue;
-    cands.sort((a, b) => a.dd - b.dd);
-    const tgt = cands[Math.min(cands.length - 1, (Math.random() * Math.min(4, cands.length)) | 0)].G;
-    d.aim = tgt.g.position;
-    const dx = tgt.x - d.g.position.x, dz = tgt.z - d.g.position.z, dist = Math.hypot(dx, dz) || 1;
-    d.lookWorld = Math.atan2(dx, dz);
-    if (dist > 6) { const k = Math.min(4.2 * dt, dist - 4.5) / dist; d.g.position.x += dx * k; d.g.position.z += dz * k; }
-    d.cd = (d.cd || 0.2) - dt;
-    if (d.cd > 0 || dist > 90) continue;
-    d.cd = dist < 8 ? rand(0.28, 0.48) : rand(0.45, 0.85);
-    if (UD.kingLanded) d.cd *= 0.72;
-    const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
-    const len = aim.length() || 1; aim.multiplyScalar(1 / len);
-    rkTracer(from, aim, dist < 8 ? 70 : 110, null, dist < 8 ? [0.95, 0.9, 0.7] : [0.75, 0.88, 1], 0.16, 1.6);
-    const hit = dist < 3.4 ? 0.55 : dist < 22 ? 0.24 : dist < 48 ? 0.14 : 0.06;
-    if (Math.random() < hit + (UD.kingLanded ? 0.08 : 0)) udHurtGrunt(tgt, dist < 3.4 ? 2 : 1);
-    if (Math.random() < 0.1) udBark(d, dist < 8 ? 'push' : 'attack', d.g.position);
+    udAllyStep(d, gr, dt);
   }
   for (const G of gr) {
     if (!G.alive) continue;
@@ -24544,7 +24562,7 @@ function udPlaceAA() {
   const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   UD.foes = []; UD.aa = []; UD.flak = [];
   const crew = (x, z, n) => { for (let i = 0; i < n && ids.length; i++) { const id = ids[(UD.foes.length * 3) % ids.length], m = udFat(rkCrewMesh(id)), h = 1.62, fr = GIRLS[id].front; m.scale.set(h * (fr.aspect || 0.45), h, 1); m.position.set(x + Math.cos(i * 1.7) * 1.7, 0, z + Math.sin(i * 1.7) * 1.7); m.lookAt(T.x, 1.2, T.z); stageRoot.add(m); UD.foes.push({ m, alive: true }); } };
-  const mg = [[-260, -180], [240, -40], [-40, 460], [320, 160], [-480, 220], [80, -320], [460, 380], [-180, 640]];
+  const mg = [[-90, -70], [110, -20], [-20, 120], [70, 80], [-140, 40], [30, -110], [150, 30], [-60, 150]];
   for (const [dx, dz] of mg.slice(0, LITE ? 5 : 8)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.35, 10), matD); ring.position.y = 0.18; g.add(ring);
@@ -24552,7 +24570,7 @@ function udPlaceAA() {
     g.position.set(x, 0, z); stageRoot.add(g); crew(x, z, LITE ? 2 : 3);
     UD.aa.push({ p: new V3(x, 0, z), cd: rand(0.2, 1.2), burst: 0, sh: 0 });
   }
-  const fl = [[70, -540], [-390, 70], [430, -360], [-80, 220], [210, 540], [-520, -60]];
+  const fl = [[40, -160], [-120, 30], [130, -80], [-30, 90], [80, 140], [-150, -40]];
   for (const [dx, dz] of fl.slice(0, LITE ? 3 : 6)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.4, 10), matD); base.position.y = 0.2; g.add(base);
@@ -24562,10 +24580,10 @@ function udPlaceAA() {
   }
 }
 function udHalfW(z) { const r = rkR(UD_FUS, z); return Math.max(0.38, Math.sqrt(Math.max(0.05, r * r - 1.08 * 1.08)) - 0.32); }
-function udClampKp(p) { p.z = clamp(p.z, -8.7, 10.5); const w = udHalfW(p.z); p.x = clamp(p.x, -w, w); p.y = -1.08; return p; }
+function udClampKp(p) { p.z = clamp(p.z, -11.2, 13.2); const w = udHalfW(p.z); p.x = clamp(p.x, -w, w); p.y = -1.08; return p; }
 function udWalkIn() { const k = UD.keys || {}; return [(k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0) - (touch.jy || 0), (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0) + (touch.jx || 0)]; }
-function udNearSt(p) { let best = null, bd = 1.25; for (const k of UD_VK) { const e = UD_VIEW[k].eye, d = Math.hypot(e[0] - p.x, e[2] - p.z); if (d < bd) { bd = d; best = k; } } return best; }
-function udAtDoor(p) { return p && p.z > 2.2 && p.z < 6.4 && p.x < -0.15; }
+function udNearSt(p) { let best = null, bd = 2.4; for (const k of UD_VK) { const e = UD_VIEW[k].eye, d = Math.hypot(e[0] - p.x, e[2] - p.z); if (d < bd) { bd = d; best = k; } } return best; }
+function udAtDoor(p) { return p && p.z > 4.2 && p.z < 6.4 && p.x < -1.15; }
 function udAllOut() {
   for (const P of UD.planes || []) {
     const rest = [];
@@ -24584,7 +24602,7 @@ function udKingJump() {
   const g = new THREE.Group(), can = new THREE.Mesh(UD.canGeo, UD.canMats[0]); can.position.y = 6.6; can.visible = false; g.add(can);
   const lines = new THREE.Group(); lines.visible = false;
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.5, ln = new THREE.Mesh(UD.lineGeo, UD.lineMat); ln.position.set(Math.sin(a) * 0.85, 4.5, Math.cos(a) * 0.85); ln.rotation.z = Math.sin(a) * 0.28; ln.rotation.x = Math.cos(a) * 0.28; lines.add(ln); }
-  g.add(lines); K.body.updateMatrixWorld(); g.position.copy(K.body.localToWorld(new V3(-2.15, -0.15, 4.2))); UD.dyn.add(g);
+  g.add(lines); K.body.updateMatrixWorld(); g.position.copy(K.body.localToWorld(new V3(-4.2, -0.15, 5.1))); UD.dyn.add(g);
   const spd = K.spd || 52, d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-8, 8), v: new V3(-Math.sin(K.hdg) * spd * 0.25, -1.6, -Math.cos(K.hdg) * spd * 0.25) };
   UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2;
   udAllOut();
@@ -24644,8 +24662,8 @@ function udCam() {
     if (d.st === 'land') {
       const run = udRun(), [f, s] = udWalkIn(), m = Math.hypot(f, s), spd = run ? 3.4 : 1.6;
       if (!UD.kingDown && m > 0.05) { const k = Math.min(1, m) * spd * dtWalk() / m, y = player.yaw; d.g.position.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; d.g.position.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
-      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 700, RK_TGT.x + 700);
-      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 900, RK_TGT.z + 900);
+      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 280, RK_TGT.x + 280);
+      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 320, RK_TGT.z + 320);
       camera.position.set(d.g.position.x, 1.6, d.g.position.z);
     } else camera.position.set(d.g.position.x, d.g.position.y + 1.55, d.g.position.z);
     camera.up.set(0, 1, 0); _udE.set(player.pitch, player.yaw, 0, 'YXZ'); camera.quaternion.setFromEuler(_udE);
@@ -24692,8 +24710,8 @@ function udDraw2D() {
   g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view, x0 + 12, 34);
   g.fillStyle = '#d7eccf'; g.fillText('味方 ' + c.ally + '　敵 ' + c.foe, x0 + 12, 56);
   g.fillStyle = 'rgba(243,236,220,.85)'; g.font = '13px sans-serif'; g.fillText(c.note, x0 + 12, 76);
-  if (UD.kingLanded) g.fillText('体力 ' + Math.max(0, Math.ceil(player.hp)) + '　矢 ' + (UD.arrows || 0) + (player.weapon === 1 ? '　刀' : '　弓') + '　左のボタン', x0 + 12, 96);
-  else g.fillText('左の小さいボタンで歩く・空挺・持ち場', x0 + 12, 96);
+  if (UD.kingLanded) g.fillText('体力 ' + Math.max(0, Math.ceil(player.hp)) + '　矢 ' + (UD.arrows || 0) + (player.weapon === 1 ? '　刀' : '　弓') + (UD.held ? '　左の終了' : '　左のボタン'), x0 + 12, 96);
+  else g.fillText(UD.held ? '左の「終了」を押すまで、このまま歩ける' : '左の小さいボタンで歩く・空挺・持ち場', x0 + 12, 96);
   if (UD.kingLanded && !UD.kingDown) {
     g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2;
     g.beginPath(); g.moveTo(W / 2 - 10, H / 2); g.lineTo(W / 2 + 10, H / 2); g.moveTo(W / 2, H / 2 - 10); g.lineTo(W / 2, H / 2 + 10); g.stroke();
@@ -24702,13 +24720,31 @@ function udDraw2D() {
 function udFinish() {
   if (UD.over) return; UD.over = true; state = 'over';
   const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'), c = udCounts();
-  if (h1) h1.textContent = UD.kingDown ? '殿、倒れた' : (c.inf ? '降下' : '飛行場を押さえた');
-  if (h2) h2.textContent = UD.kingDown ? '地上の米軍の射撃' : '空挺降下 ── 地上の米軍';
+  if (h1) h1.textContent = UD.kingDown ? '殿、倒れた' : '作戦終了';
+  if (h2) h2.textContent = UD.kingDown ? '地上の米軍の射撃' : '空挺降下 ── 飛行場を押さえた';
   $('result').innerHTML = `味方 <b>${c.ally}</b>　／　敵 <b>${c.foe}</b>（米軍の歩兵 ${c.inf}、対空の兵 ${c.aa}）<br>米軍の歩兵を ${UD.infKill || 0} 人倒した。味方が倒れたのは ${UD.allyDown || 0} 人<br>輸送機 3 機（試製 蒼雲）。空挺 ${UD.landed} 人着地${UD.kingLanded ? '。殿も落下傘で降りた' : ''}${UD.kingDown ? '<br>殿は地上で撃たれた' : ''}<br>格納庫の爆弾は前の出撃で破壊済み`;
   $('over').style.display = 'flex'; if (document.exitPointerLock) document.exitPointerLock();
-  document.documentElement.classList.remove('udplay', 'udgnd');
-  if (!UD.kingDown) { rkSay('x_sumi_win', 0); setTimeout(() => rkSay('r_gwin', 0), 2200); setTimeout(() => rkSay('x_fumi_win', 0), 5000); }
+  document.documentElement.classList.remove('udplay', 'udgnd', 'udheld');
+  const ask = $('udAsk'); if (ask) ask.style.display = 'none'; UD.ask = false;
+  if (!UD.kingDown) { rkSay('r_gwin', 0); setTimeout(() => rkSay('x_fumi_win', 0), 2400); }
   else { rkSay('x_sumi_cry', 0); setTimeout(() => rkSay('x_reika_cry', 0), 2400); }
+}
+function udEndAsk() {
+  if (!UD.on || state !== 'play' || UD.over || !UD.held || UD.ask) return;
+  let d = $('udAsk');
+  if (!d) {
+    d = document.createElement('div'); d.id = 'udAsk';
+    d.style.cssText = 'position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:80;background:rgba(0,0,0,.35);pointer-events:auto';
+    d.innerHTML = '<div style="background:rgba(15,20,28,.94);border:1px solid #c8b48a;border-radius:10px;padding:18px 22px;text-align:center;color:#f3ecdc;max-width:90vw"><div style="font-size:20px;margin-bottom:8px">作戦を終了しますか？</div><div style="font-size:13px;opacity:.85;margin-bottom:14px">結果の画面へ進みます。いいえなら、このまま歩けます</div><div><button data-a="y" type="button" style="font:16px sans-serif;margin:0 8px;padding:10px 22px;border-radius:6px;border:1px solid #d99;background:rgba(130,40,40,.9);color:#fff">はい</button><button data-a="n" type="button" style="font:16px sans-serif;margin:0 8px;padding:10px 22px;border-radius:6px;border:1px solid #9ab;background:rgba(40,60,80,.85);color:#fff">いいえ</button></div></div>';
+    document.body.appendChild(d);
+    d.querySelectorAll('button').forEach(b => b.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); udEndAns(b.dataset.a === 'y'); }));
+  }
+  UD.ask = true; d.style.display = 'flex';
+  if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {}
+}
+function udEndAns(yes) {
+  const d = $('udAsk'); if (d) d.style.display = 'none'; if (!UD.ask) return; UD.ask = false;
+  if (yes) udFinish();
 }
 function udStation(k) { if (!UD_VIEW[k] || UD.kingJump) return; UD.st = k; UD.ext = 0; UD.walk = 0; player.yaw = 0; player.pitch = k === 'door' ? -0.15 : -0.04; }
 function udLeave(P, c) {
@@ -24721,7 +24757,7 @@ function udLeave(P, c) {
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.5, ln = new THREE.Mesh(UD.lineGeo, UD.lineMat); ln.position.set(Math.sin(a) * 0.85, 4.5, Math.cos(a) * 0.85); ln.rotation.z = Math.sin(a) * 0.28; ln.rotation.x = Math.cos(a) * 0.28; lines.add(ln); }
   g.add(lines);
   P.body.updateMatrixWorld();
-  g.position.copy(P.body.localToWorld(new V3(-2.15, -0.15, 4.15 + rand(-0.15, 0.15))));
+  g.position.copy(P.body.localToWorld(new V3(-4.2, -0.15, 5.1 + rand(-0.2, 0.2))));
   UD.dyn.add(g);
   const spd = P.spd || 52;
   UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 6, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
@@ -24747,7 +24783,7 @@ function udTickPlane(P, dt) {
     if (P.dropT <= 0) {
       const c = P.queue.shift();
       if (P.rush) { udLeave(P, c); P.nJump++; P.dropT = 0.16; }
-      else { c.a = c.m.position.clone(); c.b = new V3(-1.2, -1.08, 4.12); c.t = 0; c.dur = Math.min(0.62, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c; P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22; }
+      else { c.a = c.m.position.clone(); c.b = new V3(-2.5, -1.08, 5.1); c.t = 0; c.dur = Math.min(0.7, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c; P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22; }
     }
   }
   if (camera.position.distanceTo(P.p) < 140) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m) udPose(c.m, c, !c.alive);
@@ -24789,6 +24825,12 @@ addEventListener('keydown', ev => {
   if (/^(Key[WASD]|Arrow|Shift)/.test(c)) {
     if (!UD.kingJump && !UD.ext && /^(Key[WASD]|Arrow)/.test(c)) udStand();
     if (!UD.keys) UD.keys = {}; UD.keys[c] = true; ev.stopImmediatePropagation(); ev.preventDefault(); return;
+  }
+  if (!ev.repeat && c === 'KeyQ' && UD.held && !UD.ask) { udEndAsk(); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (UD.ask) {
+    if (!ev.repeat && (c === 'KeyY' || c === 'Enter' || c === 'NumpadEnter')) udEndAns(true);
+    else if (!ev.repeat && (c === 'KeyN' || c === 'Escape' || c === 'KeyQ')) udEndAns(false);
+    ev.stopImmediatePropagation(); ev.preventDefault(); return;
   }
   if (!ev.repeat && c === 'KeyE') {
     if (UD.kingLanded && !UD.kingDown) { if (player.weapon === 1) udMelee(); else udShot(1); }

@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24156,8 +24156,58 @@ function buildUsDrop() {
 function udReset() { udSpawn(); UD.st = 'cockpit'; UD.ext = 0; player.yaw = 0; player.pitch = -0.04; player.hp = CFG.maxHp; }
 function udStart() {
   showBanner('空挺降下', '試製 蒼雲 3 機 ── 格納庫は破壊済み。手前に対空砲火');
-  popup('E で機内を歩く。降下口で E を押すと、殿も落下傘で降りる', 4.4);
+  popup(MOBILE ? '左スティックで機内を歩く。降下口で攻撃ボタンを押すと、殿も落下傘で降りる' : 'E で機内を歩く。降下口で E を押すと、殿も落下傘で降りる', 4.4);
   setTimeout(() => { if (UD.on && state === 'play') subtitle('白瀬 澄「降下の用意はできています。左側の降下口です」'); }, 2400);
+  udHud(true);
+}
+function udActLabel() {
+  if (UD.kingJump) return UD.kingLanded ? '着地' : '降下中';
+  if (UD.ext) return '機内へ';
+  if (UD.walk && UD.kp && udAtDoor(UD.kp)) return '空挺';
+  if (UD.walk && UD.kp && udNearSt(UD.kp)) return 'つく';
+  return UD.walk ? '歩く' : '歩く';
+}
+function udHud(on) {
+  let h = $('udHud');
+  if (!h) {
+    if (!document.getElementById('udCss')) {
+      const st = document.createElement('style'); st.id = 'udCss';
+      st.textContent = '#udHud{position:fixed;left:50%;bottom:calc(8px + var(--sab,0px));transform:translateX(-50%);z-index:31;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:96vw;pointer-events:auto}#udHud button{font:13px sans-serif;padding:8px 10px;border-radius:8px;border:1px solid #9ab;background:rgba(20,30,40,.75);color:#eee;min-height:40px}#udHud button.on{background:rgba(170,130,40,.88);border-color:#fd8}html.touch #udHud,html.mobile #udHud{left:calc(8px + var(--sal,0px));top:14%;bottom:auto;transform:none;flex-direction:column;align-items:stretch;max-height:62vh}html.udplay #bWpn,html.udplay #bJump,html.udplay #bThrow{display:none!important}';
+      document.head.appendChild(st);
+    }
+    h = document.createElement('div'); h.id = 'udHud';
+    h.innerHTML = [['cockpit', '操縦'], ['door', '降下口'], ['gunF', '前'], ['gunL', '左'], ['gunR', '右'], ['gunB', '後'], ['ext', '外'], ['use', '歩く'], ['run', '走る']].map(([k, n]) => `<button type="button" data-k="${k}">${n}</button>`).join('');
+    document.body.appendChild(h);
+    h.querySelectorAll('button').forEach(b => {
+      const f = ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        if (!UD.on || state !== 'play' || UD.over) return;
+        const k = b.dataset.k;
+        if (k === 'ext') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } }
+        else if (k === 'use') { if (UD.ext) { UD.ext = 0; UD.walk = 0; } else udUse(); }
+        else if (k === 'run') { touch.run = !touch.run; b.classList.toggle('on', touch.run); }
+        else udStation(k);
+        udHudSync();
+      };
+      b.addEventListener('touchstart', f, { passive: false });
+      b.addEventListener('mousedown', f);
+    });
+  }
+  UD._hud = 1;
+  document.documentElement.classList.toggle('udplay', !!on);
+  h.style.display = on ? 'flex' : 'none';
+  if (!on) { const s = $('bAtk') && $('bAtk').querySelector('span'); if (s && (s.textContent === '空挺' || s.textContent === '歩く' || s.textContent === 'つく' || s.textContent === '機内へ' || s.textContent === '降下中' || s.textContent === '着地')) s.textContent = '攻撃'; const lab = $('bAtkL'); if (lab && lab.textContent === 'ボタン') lab.textContent = '長押しで引く'; }
+  else udHudSync();
+}
+function udHudSync() {
+  const h = $('udHud'); if (!h || h.style.display === 'none') return;
+  const name = udActLabel(), use = h.querySelector('[data-k=use]'); if (use) use.textContent = name;
+  const atk = $('bAtk'), lab = $('bAtkL');
+  if (atk && (MOBILE || document.documentElement.classList.contains('touch'))) { const s = atk.querySelector('span'); if (s) s.textContent = name; if (lab) lab.textContent = UD.kingJump ? '右ドラッグ' : 'ボタン'; }
+  h.querySelectorAll('button').forEach(b => {
+    const k = b.dataset.k;
+    b.classList.toggle('on', k === 'run' ? !!touch.run : k === 'ext' ? !!UD.ext && !UD.kingJump : k === 'use' ? !!UD.walk : !UD.walk && !UD.ext && !UD.kingJump && k === UD.st);
+  });
 }
 function udCounts() {
   let aboard = UD.kingJump ? 0 : 1;
@@ -24252,8 +24302,9 @@ function udFlakBurst(p) {
   if (camera.position.distanceTo(p) < 100) UD.shake = Math.max(UD.shake || 0, 0.32);
   if (Sfx.ctx && camera.position.distanceTo(p) < 1500) Sfx.noiseBurst(0.32, 'lowpass', 380, 70, 0.32, 0.75);
 }
+function udRun() { return !!(touch.run || (UD.keys && (UD.keys.ShiftLeft || UD.keys.ShiftRight))); }
 function udMoveKp(dt) {
-  const run = UD.keys && (UD.keys.ShiftLeft || UD.keys.ShiftRight);
+  const run = udRun();
   let spd = run ? 3.3 : 1.65;
   const [f, s] = udWalkIn(), m = Math.hypot(f, s); player.pitch = clamp(player.pitch, -1.15, 1.15);
   if (m > 0.05) { const k = Math.min(1, m) * spd * dt / m, y = player.yaw; UD.kp.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; UD.kp.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
@@ -24264,7 +24315,7 @@ function udCam() {
   if (UD.kingDrop) {
     const d = UD.kingDrop; player.pitch = clamp(player.pitch, -1.2, 1.2);
     if (d.st === 'land') {
-      const run = UD.keys && (UD.keys.ShiftLeft || UD.keys.ShiftRight), [f, s] = udWalkIn(), m = Math.hypot(f, s), spd = run ? 3.4 : 1.6;
+      const run = udRun(), [f, s] = udWalkIn(), m = Math.hypot(f, s), spd = run ? 3.4 : 1.6;
       if (m > 0.05) { const k = Math.min(1, m) * spd * dtWalk() / m, y = player.yaw; d.g.position.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; d.g.position.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
       camera.position.set(d.g.position.x, 1.6, d.g.position.z);
     } else camera.position.set(d.g.position.x, d.g.position.y + 1.55, d.g.position.z);
@@ -24296,7 +24347,9 @@ function udUpdate(dt) {
   for (const P of UD.planes) udTickPlane(P, dt);
   for (const d of UD.drops) udTickDrop(d, dt);
   udAATick(dt); if (RK.px && RK.trM) rkPxTick(dt);
+  if (!UD.kingJump && !UD.ext && !UD.walk && (Math.abs(touch.jx) > 0.22 || Math.abs(touch.jy) > 0.22)) udStand();
   udCam();
+  if (UD._hud) udHudSync();
   const hc = udCounts(); setText('wavetxt', '空挺降下'); setText('remain', `味方 ${hc.ally}　敵 ${hc.foe}`);
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; const pop = $('popup'); if (pop) { pop.style.opacity = clamp(popupTimer * 2, 0, 1); pop.style.transform = 'translate(-50%,-50%)'; }
@@ -24309,7 +24362,7 @@ function udDraw2D() {
   g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view + '　版 ' + ASSET_V, 28, 38);
   g.fillStyle = '#d7eccf'; g.fillText('味方 ' + c.ally + '　敵 ' + c.foe, 28, 60);
   g.fillStyle = 'rgba(243,236,220,.85)'; g.font = '13px sans-serif'; g.fillText(c.note, 28, 80);
-  g.fillText('E 歩く／降下口で空挺　1〜6 持ち場　V 外から　Esc 一時停止（味方と敵の数）', 28, 104);
+  g.fillText(MOBILE ? '左スティックで歩く　攻撃ボタンで空挺・つく　右ドラッグで視点　左のボタンで持ち場' : 'WASD 歩く／降下口で E 空挺　1〜6 持ち場　V 外から　Esc 一時停止（味方と敵の数）', 28, 104);
 }
 function udFinish() {
   if (UD.over) return; UD.over = true; state = 'over';
@@ -24448,8 +24501,9 @@ function frame(now) {
   }
   for (const f of flags) f.mesh.rotation.y = Math.sin(time * 1.7 + f.ph) * 0.35;
   if (document.body.classList.contains('playing') !== (state === 'play')) document.body.classList.toggle('playing', state === 'play');
+  if (UD._hud && (!UD.on || state !== 'play')) udHud(false);
   if (document.documentElement.classList.contains('dagger') !== (player.weapon === 1 && !!player.knife)) document.documentElement.classList.toggle('dagger', player.weapon === 1 && !!player.knife);
-  if (MOBILE) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
+  if (MOBILE && !UD.on) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
   if (UK.seaSnd && !UK.on && !UK2.on && !UK3.on && !UK4.on && !UK7.on) ukSeaSound(dt);
   sky.position.copy(camera.position);
   if (AIRPORT.on) airportCrewFaceAll();

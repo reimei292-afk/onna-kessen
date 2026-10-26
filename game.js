@@ -2807,6 +2807,9 @@ function stageLook(name) {
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
+
+  if (name === 'nanban') { NB.on = true; ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = 12; scene.fog.far = 58; scene.fog.color.setHex(0x1c3a24); scene.background.setHex(0x143222); hemiL.color.setHex(0xcfe6c4); hemiL.groundColor.setHex(0x1a3320); hemiL.intensity = 1.15; ambL.intensity = 0.72; sun.intensity = 0.8; }
+  else NB.on = false;
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -8395,6 +8398,268 @@ function updateIsland(dt){
  if(ISLAND.plaza){$('stagedesc').textContent='最終広場：味方 '+wave.total.blue+' 名／敵 '+wave.total.orange+' 名';}
 }
 
+// ====================================================================
+//  南蛮の戦い（?stage=nanban）
+//  日本軍がベトナムの山間のジャングルを進む。現地の娘は弓か懐刀だけ。
+//  檻の猛獣（蛇・虎・猪）は腹を空かせていて、どちらにも襲いかかる。
+// ====================================================================
+const NB = { on: false, beasts: [], cages: [], gibs: [], won: false, ridgeSaid: false, tex: null, organ: null };
+const NB_IDS = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'];
+function nbRemain() {
+  const ally = enemies.filter(e => e.team === 'blue' && e.state !== 'down').length + (player.hp > 0 ? 1 : 0);
+  const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
+  const beast = NB.beasts.filter(b => b.alive).length;
+  return `残敵 ${foe}　猛獣 ${beast}　味方 ${ally}`;
+}
+function nbGore(x, z, scale) {
+  spillBlood(x, 0, z, 0.9 * (scale || 1));
+  puff(new V3(x, 1.05, z), 0xb10f25, 12, 0.16, 3.2, 0.5);
+  if (!NB.organ) NB.organ = new THREE.MeshLambertMaterial({ color: 0x6a1020 });
+  const n = scale > 1 ? 6 : 3;
+  for (let i = 0; i < n; i++) {
+    const geo = new THREE.SphereGeometry(0.05 + Math.random() * 0.045, 6, 5);
+    const m = new THREE.Mesh(geo, NB.organ);
+    m.scale.set(1.8, 0.45, 0.7);
+    m.position.set(x + rand(-0.15, 0.15), 0.9 + rand(0, 0.4), z + rand(-0.15, 0.15));
+    scene.add(m);
+    NB.gibs.push({ m, geo, v: new V3(rand(-1.4, 1.4), rand(1.2, 3.4), rand(-1.4, 1.4)), life: 2.6 });
+  }
+}
+function nbHurt(b, dmg, pt) {
+  if (!b || !b.alive) return;
+  b.hp -= dmg; b.flash = 0.12;
+  const p = pt || new V3(b.x, 0.8, b.z);
+  puff(p, 0x7a1218, 5, 0.12, 2.2, 0.3);
+  if (b.hp <= 0) {
+    b.alive = false; b.s.visible = false; b.coil = null;
+    nbGore(b.x, b.z, 1.1);
+    popup(b.kind === 'tiger' ? '虎を仕留めた' : b.kind === 'snake' ? '蛇を仕留めた' : '猪を仕留めた');
+  }
+}
+function nbArrowBeast(p0, sx, sz, sl, sy) {
+  let best = null, bt = 2;
+  for (const b of NB.beasts) {
+    if (!b.alive) continue;
+    const t = clamp(((b.x - p0.x) * sx + (b.z - p0.z) * sz) / sl, 0, 1);
+    const cx = p0.x + sx * t, cz = p0.z + sz * t, y = p0.y + sy * t;
+    if (Math.hypot(cx - b.x, cz - b.z) < 0.55 && y > 0.15 && y < b.h + 0.3 && t < bt) {
+      bt = t; best = { b, t, pt: new V3(cx, y, cz) };
+    }
+  }
+  return best;
+}
+function nbMeleeBeast(fwd) {
+  let best = null, bd = 1e9;
+  for (const b of NB.beasts) {
+    if (!b.alive) continue;
+    const dx = b.x - player.pos.x, dz = b.z - player.pos.z;
+    if (Math.hypot(dx, dz) > 2.1) continue;
+    const along = dx * fwd.x + dz * fwd.z, lateral = Math.abs(dx * fwd.z - dz * fwd.x);
+    if (along <= 0.15 || lateral > 0.7) continue;
+    if (along < bd) { bd = along; best = { b, along }; }
+  }
+  return best;
+}
+function nbBeast(kind, x, z) {
+  if (!NB.tex) return null;
+  const h = kind === 'snake' ? 0.72 : kind === 'boar' ? 1.05 : 1.28;
+  const aspect = kind === 'snake' ? 2.3 : kind === 'boar' ? 1.85 : 2.05;
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: NB.tex[kind], transparent: true, alphaTest: 0.28, depthWrite: false }));
+  spr.scale.set(h * aspect, h, 1); spr.position.y = h * 0.5; spr.renderOrder = 2;
+  const g = new THREE.Group(); g.add(spr); g.position.set(x, 0, z); stageRoot.add(g);
+  const b = { kind, s: g, spr, x, z, h, alive: true, hp: kind === 'tiger' ? 16 : kind === 'boar' ? 12 : 8, vx: 0, vz: 0, cd: rand(0.2, 0.8), coil: null, feed: null, flash: 0 };
+  NB.beasts.push(b);
+  return b;
+}
+function nbOpenCage(c) {
+  if (!c || c.open) return;
+  c.open = true; c.g.visible = false;
+  nbBeast(c.kind, c.x, c.z);
+  const word = c.kind === 'tiger' ? '虎' : c.kind === 'boar' ? '猪' : '蛇';
+  showBanner('檻が開いた', '腹を空かせた' + word + 'が放たれた');
+}
+function buildNanban() {
+  NB.on = true; NB.beasts = []; NB.cages = []; NB.gibs = []; NB.won = false; NB.ridgeSaid = false;
+  if (!NB.tex) {
+    const L = new THREE.TextureLoader();
+    NB.tex = {};
+    for (const n of ['tiger', 'snake', 'boar']) {
+      const t = L.load('assets/beasts/' + n + '.png?v=' + ASSET_V);
+      t.colorSpace = THREE.SRGBColorSpace; NB.tex[n] = t;
+    }
+  }
+  const leaf = new THREE.MeshLambertMaterial({ color: 0x1e4a28 });
+  const mud = new THREE.MeshLambertMaterial({ color: 0x4a3a28 });
+  const vine = new THREE.MeshLambertMaterial({ color: 0x2f6a34 });
+  const rockM = new THREE.MeshLambertMaterial({ color: 0x5c645c });
+  const groundGeo = new THREE.PlaneGeometry(22, 120, 10, 40); groundGeo.rotateX(-Math.PI / 2);
+  const pos = groundGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i);
+    pos.setY(i, 0.12 * Math.sin(z * 0.11) + 0.05 * Math.cos(x * 0.7 + z * 0.2));
+  }
+  groundGeo.computeVertexNormals();
+  const floor = new THREE.Mesh(groundGeo, leaf); floor.position.z = -28; stageRoot.add(floor);
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 112), mud);
+  path.rotation.x = -Math.PI / 2; path.position.set(0, 0.03, -28); stageRoot.add(path);
+  for (const side of [-1, 1]) {
+    boxes.push({ x0: side < 0 ? -20 : 7.4, x1: side < 0 ? -7.4 : 20, z0: -88, z1: 42, y0: 0, y1: 8 });
+    for (let i = 0; i < 16; i++) {
+      const x = side * rand(7.6, 12), z = rand(-82, 36);
+      const h = rand(3.2, 6.5);
+      const c = new THREE.Mesh(new THREE.ConeGeometry(rand(1.4, 2.6), h, 6), vine);
+      c.position.set(x, h * 0.4, z); stageRoot.add(c);
+    }
+  }
+  for (let i = 0; i < 28; i++) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const x = side * rand(3.6, 6.6), z = rand(-78, 32);
+    if (Math.abs(x) < 2.2) continue;
+    tree(x, z, rand(0.85, 1.35));
+  }
+  for (const [x, z] of [[-4.2, 4], [4.6, -12], [-5.1, -30], [5.2, -48], [-4.4, -64]]) rock(x, z, rand(0.7, 1.15));
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.4, 0.35), rockM);
+  ridge.position.set(0, 1.2, -70); stageRoot.add(ridge);
+  buildHQ(-3.2, 3.2, 30, 38, 0, 34);
+  const wood = M.wood, dark = new THREE.MeshLambertMaterial({ color: 0x3a2a18 });
+  const spots = [[-1.6, -4, 'snake'], [1.8, -24, 'tiger'], [-1.2, -42, 'boar'], [1.4, -58, 'snake']];
+  for (const [x, z, kind] of spots) {
+    const g = new THREE.Group();
+    const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.15), dark); base.position.y = 0.06; g.add(base);
+    for (const [px, pz] of [[-0.65, -0.45], [0.65, -0.45], [-0.65, 0.45], [0.65, 0.45]]) {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.15, 0.08), wood); p.position.set(px, 0.64, pz); g.add(p);
+    }
+    for (let k = 0; k < 5; k++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.05, 0.05), wood);
+      bar.position.set(0, 0.28 + k * 0.2, 0.48); g.add(bar);
+      const bar2 = bar.clone(); bar2.position.z = -0.48; g.add(bar2);
+    }
+    g.position.set(x, 0, z); stageRoot.add(g);
+    NB.cages.push({ g, x, z, kind, open: false, t: 0 });
+  }
+}
+function nbStart() {
+  NB.won = false; NB.ridgeSaid = false;
+  const nB = MOBILE ? 12 : 18;
+  for (let i = 0; i < nB; i++) {
+    const sq = i % 3, row = (i / 3) | 0;
+    const x = (sq - 1) * 2.05 + rand(-0.25, 0.25);
+    const z = 18 - row * 1.3 + rand(-0.1, 0.1);
+    const kind = i % 5 === 0 ? 'mob' : 'archer';
+    const e = spawnEnemy(x, z, kind, false, 'blue', { yari: kind === 'mob' ? 1 : -1 });
+    if (e) e.nbSq = sq;
+  }
+  const spots = [];
+  for (const z0 of [2, -16, -34, -52]) {
+    const n = MOBILE ? 2 : 4;
+    for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.7 + rand(-0.2, 0.2), z0 + rand(-0.6, 0.6)]);
+  }
+  spots.forEach((p, i) => {
+    const id = NB_IDS[i % NB_IDS.length];
+    const bow = i % 2 === 0;
+    const e = spawnEnemy(p[0], p[1], bow ? 'archer' : 'mob', i % 4 === 0, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
+    if (!e) return;
+    e.nbVn = true;
+    const cage = NB.cages.find(c => Math.hypot(c.x - p[0], c.z - p[1]) < 3.2 && !c.carrier);
+    if (cage) { cage.carrier = e; e.nbCage = cage; }
+  });
+  showBanner('南蛮の戦い', '山間のジャングルを稜線まで進め。現地の娘は弓と懐刀。檻の獣は腹を空かせている');
+  if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('進め。道を空けるな', { pitch: 1.05, rate: 1.0 }, 1); }, 700);
+}
+function updateNanban(dt) {
+  if (!NB.on || state !== 'play') return;
+  for (let i = NB.gibs.length - 1; i >= 0; i--) {
+    const g = NB.gibs[i]; g.life -= dt; g.v.y -= 9 * dt;
+    g.m.position.addScaledVector(g.v, dt);
+    if (g.m.position.y < 0.06) { g.m.position.y = 0.06; g.v.y *= -0.15; g.v.x *= 0.6; g.v.z *= 0.6; }
+    if (g.life <= 0) { scene.remove(g.m); g.geo.dispose(); NB.gibs.splice(i, 1); }
+  }
+  for (const c of NB.cages) {
+    if (c.open) continue;
+    const near = Math.hypot(player.pos.x - c.x, player.pos.z - c.z) < 5.5 || enemies.some(e => e.team === 'blue' && e.state !== 'down' && Math.hypot(e.s.position.x - c.x, e.s.position.z - c.z) < 4.2);
+    const dead = c.carrier && c.carrier.state === 'down';
+    if (dead) nbOpenCage(c);
+    else if (near) { c.t += dt; if (c.t > 1.15) nbOpenCage(c); }
+    else c.t = Math.max(0, c.t - dt);
+  }
+  const living = [];
+  if (player.hp > 0) living.push('player');
+  for (const e of enemies) if (e.state !== 'down') living.push(e);
+  for (const b of NB.beasts) {
+    if (!b.alive) continue;
+    b.cd -= dt; if (b.flash > 0) { b.flash -= dt; b.spr.material.color && b.spr.material.color.setHex(b.flash > 0 ? 0xff8888 : 0xffffff); }
+    let prey = null, pd = 1e9;
+    for (const o of living) {
+      const x = o === 'player' ? player.pos.x : o.s.position.x;
+      const z = o === 'player' ? player.pos.z : o.s.position.z;
+      const hp = o === 'player' ? player.hp : o.hp;
+      let d = Math.hypot(x - b.x, z - b.z);
+      if (hp < (o === 'player' ? 40 : 3)) d *= 0.65;
+      if (d < pd) { pd = d; prey = o; }
+    }
+    if (b.kind === 'snake' && b.coil && (b.coil === 'player' ? player.hp <= 0 : b.coil.state === 'down')) b.coil = null;
+    if (b.coil) {
+      const o = b.coil;
+      const x = o === 'player' ? player.pos.x : o.s.position.x;
+      const z = o === 'player' ? player.pos.z : o.s.position.z;
+      b.x += (x - b.x) * 0.35; b.z += (z - b.z) * 0.35; b.s.position.set(b.x, 0.85, b.z);
+      b.spr.scale.set(0.9, 0.55, 1);
+      if (b.cd <= 0) {
+        b.cd = 0.55;
+        if (o === 'player') { hurtPlayer(7); popup('蛇に巻かれて噛まれた'); nbGore(x, z, 0.45); }
+        else { damageEnemy(o, 2, b.s.position, false, { pt: o.s.position.clone() }, null); if (o.state === 'down' && !o.nbEaten) { o.nbEaten = true; nbGore(x, z, 1.5); } }
+      }
+      continue;
+    }
+    if (!prey) continue;
+    const tx = prey === 'player' ? player.pos.x : prey.s.position.x;
+    const tz = prey === 'player' ? player.pos.z : prey.s.position.z;
+    const dx = tx - b.x, dz = tz - b.z, d = Math.hypot(dx, dz) || 1;
+    let sp = b.kind === 'boar' ? 4.4 : b.kind === 'tiger' ? 3.6 : 2.5;
+    if (b.kind === 'boar' && d < 9) sp = 7.2;
+    if (b.kind === 'tiger' && d < 7) sp = 6.4;
+    b.x += dx / d * sp * dt; b.z += dz / d * sp * dt;
+    b.x = clamp(b.x, -6.6, 6.6);
+    b.s.position.set(b.x, 0, b.z);
+    b.spr.scale.set(b.h * (b.kind === 'snake' ? 2.3 : b.kind === 'boar' ? 1.85 : 2.05), b.h, 1);
+    if (d < (b.kind === 'snake' ? 1.15 : 1.35) && b.cd <= 0) {
+      b.cd = b.kind === 'snake' ? 0.4 : 0.7;
+      if (b.kind === 'snake') b.coil = prey;
+      else if (prey === 'player') { hurtPlayer(b.kind === 'tiger' ? 14 : 10); popup(b.kind === 'tiger' ? '虎に噛まれた' : '猪に突かれた'); nbGore(player.pos.x, player.pos.z, 0.7); }
+      else {
+        damageEnemy(prey, b.kind === 'tiger' ? 3 : 2, b.s.position, false, { pt: prey.s.position.clone() }, null);
+        if (prey.state === 'down') { nbGore(prey.s.position.x, prey.s.position.z, b.kind === 'tiger' ? 1.6 : 0.8); if (b.kind === 'tiger') prey.nbEaten = true; }
+      }
+    }
+  }
+  let mi = 0;
+  for (const e of enemies) {
+    if (e.team !== 'blue' || e.state === 'down' || e.special || e.secretary || e.medic) continue;
+    for (const b of NB.beasts) {
+      if (!b.alive) continue;
+      if (Math.hypot(e.s.position.x - b.x, e.s.position.z - b.z) < 1.7) {
+        if ((e.nbBeastCd || 0) <= 0) { e.nbBeastCd = 0.85; nbHurt(b, e.kind === 'archer' ? 1 : 2, new V3(b.x, 0.7, b.z)); }
+      }
+    }
+    e.nbBeastCd = (e.nbBeastCd || 0) - dt;
+    const hot = enemies.some(o => o.team === 'orange' && o.state !== 'down' && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 11)
+      || NB.beasts.some(b => b.alive && Math.hypot(b.x - e.s.position.x, b.z - e.s.position.z) < 7);
+    if (hot) { e.passive = false; continue; }
+    e.passive = true; e.tgt = null;
+    if (e.state === 'aim' || e.state === 'shoot' || e.state === 'zanshin' || e.state === 'stab') continue;
+    const sq = e.nbSq || 0;
+    const tx = clamp(player.pos.x + (sq - 1) * 1.8, -5.2, 5.2);
+    const tz = player.pos.z - 3.2 - (mi % 4) * 1.15;
+    mi++;
+    steer(e, tx, tz, e.speed * 0.9, dt);
+  }
+  const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
+  const beasts = NB.beasts.filter(b => b.alive).length;
+  if (!NB.won && player.pos.z < -64 && foe === 0 && beasts === 0) { NB.won = true; gameOver(true); }
+  else if (player.pos.z < -64 && !NB.ridgeSaid && (foe || beasts)) { NB.ridgeSaid = true; showBanner('稜線', 'まだ獣か現地の娘が残っている'); }
+  wave.total = { blue: enemies.filter(e => e.team === 'blue' && e.state !== 'down').length + 1, orange: foe + beasts };
+}
+
 const STAGES = {
   ukMeet: { name: '英国淑女編 第一幕「邂逅」', desc: '小早で沖へ。英国のガレオン船ライオネス号が待つ。戦いはまだ無い——甲板の英国の娘たちと言葉を交わし、王女の使者の要求に答えよ（E で話す・1〜4 で選ぶ）。次の幕で、本格的な戦闘が始まる。' },
   ukParty: { name: '英国淑女編 第七幕「祝勝会」', desc: '英国は降伏した。日本へ帰る客船「瑞鳳丸」の大広間で祝勝会。立食の卓を回って侍女たちと話し、英国の給仕を呼んで注文しよう。中締めのあとは、心に決めた娘を夜の甲板へ。戦いは無い。' },
@@ -8421,6 +8686,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃つ。檻に入れた蛇・虎・猪を運び、腹を空かせた獣を放つ。巻かれて噛まれ、食われ、突かれる。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -16584,7 +16850,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -16780,7 +17046,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -16908,6 +17174,13 @@ const EXTRA_GIRLS = {
   girl42: { type: 'mob', anyRole: true, prof: { name: '田中 あおい', pers: '陽気', cm: 160, vv: 1, pitch: 1.2 } },  // 普通の兵。黒髪は前髪だけ残して耳の後ろで束ねる。白のキャミソール、銀のティアラは正面だけ
   girl43: { type: 'mob', anyRole: true, prof: { name: '遠藤 加那', pers: '冷静', cm: 163, vv: 1, pitch: 1.0 } },  // 普通の侍女。短い黒髪で耳が出る。白キャミ、細い黒革ベルト。銀のティアラは後ろ以外
   girl44: { type: 'mob', anyRole: true, prof: { name: '長谷川 まい', pers: '陽気', cm: 162, vv: 1, pitch: 1.25 } },  // 普通の侍女。肩までの黒髪に前髪。白キャミはベルトまで。銀のティアラは後ろ以外
+
+  vn01: { type: 'vn', prof: { name: 'ハノイのアイン', pers: '冷静', cm: 162, vv: 1 } },
+  vn02: { type: 'vn', prof: { name: 'ハノイのフォン', pers: '慎重', cm: 158, vv: 2 } },
+  vn03: { type: 'vn', prof: { name: 'ハノイのマイ', pers: '好戦的', cm: 165, vv: 1 } },
+  vn04: { type: 'vn', prof: { name: 'ホーチミンのリン', pers: '陽気', cm: 160, vv: 2 } },
+  vn05: { type: 'vn', prof: { name: 'ホーチミンのハー', pers: '冷静', cm: 168, vv: 0 } },
+  vn06: { type: 'vn', prof: { name: 'ホーチミンのキム', pers: '臆病', cm: 156, vv: 2 } },
 };
 // 見え方ごとのフレーム（無ければ正面）
 function girlFrame(g, k, kind) {
@@ -18936,7 +19209,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || CAMP.on) return;   // 第二幕の平城も自前の波（casTick）
+  if (NB.on || ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || CAMP.on) return;   // 第二幕の平城も自前の波（casTick）
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -21462,6 +21735,10 @@ function updateArrows(dt) {
       const top = e.figH * (1 - 0.38 * e.crouch);         // しゃがむと当たりも低くなる
       if (d < 0.3 && y > 0 && y < top && t < best) { best = t; hit = { e, y, top, pt: new V3(cx, y + e.baseY, cz) }; }
     }
+    if (NB.on) {
+      const bh = nbArrowBeast(p0, sx, sz, sl, p1.y - p0.y);
+      if (bh && bh.t < best) { nbHurt(bh.b, a.team === 'player' ? (a.charge > 0.5 ? 3 : 2) : 1, bh.pt); scene.remove(a.m); arrows.splice(i, 1); continue; }
+    }
     if (MECH.on) {
       const th = mechTireHit(p0, p1, a.team);
       if (th && th.t < best) {
@@ -21554,6 +21831,10 @@ function swingResolve() {
     if (along <= 0.2 || lateral > 0.45) continue;     // 正面の細い範囲だけ
     if (along < bd) { bd = along; best = e; }
   }
+  if (NB.on) {
+    const bb = nbMeleeBeast(fwd);
+    if (bb && bb.along < bd) { nbHurt(bb.b, 3, new V3(player.pos.x + fwd.x * bb.along, 0.8, player.pos.z + fwd.z * bb.along)); Sfx.clash(); player.shake = Math.max(player.shake, 0.08); return; }
+  }
   if (best) {
     const bp = best.s.position, yy = best.baseY + clamp(camera.position.y - 0.25 - best.baseY, best.figH * 0.45, best.figH * 0.75);
     damageEnemy(best, 2, player.pos, false, { pt: new V3(bp.x - fwd.x * 0.15, yy, bp.z - fwd.z * 0.15), thrust: true }, 'player');
@@ -21636,7 +21917,7 @@ function updateHud(dt) {
   const foeN = wave.toSpawn + livingHead('orange');
   const allyN = livingHead('blue');
   const islandSurvivors = enemies.filter(e=>e.islandRoster&&e.state!=='down').length+1;
-  setText('remain', ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
+  setText('remain', NB.on ? nbRemain() : ISLAND.on ? (ISLAND.plaza ? `敵役 ${enemies.filter(e=>e.islandZombie&&e.state!=='down').length}　味方 ${islandSurvivors}` : `生存者 ${islandSurvivors} / 200　敵味方の区別なし`) : (wave.inter > 0 ? '次の波まで ' + Math.ceil(wave.inter) + ' 秒' : `残敵 ${foeN}　味方 ${allyN}${SNOW.on ? '　寒気 ' + Math.min(99, SNOW.cold | 0) + (snowInRiver(player.pos.x, player.pos.z) && !snowOnBridge(player.pos.x, player.pos.z) ? '（川）' : '') : ''}${MTN.on ? '　' + (MTN.phase <= 0 ? '門前' : MTN.phase === 1 ? '二の丸' : '本丸') : ''}${castleHud()}${FORT.atk && builtStage === 'fort' ? `　櫃 西${towers.west.clear ? '○' : '×'} 東${towers.east.clear ? '○' : '×'}` : ''}${BEACH.on ? '　トーチカ 残り ' + BEACH.pbs.filter(P => !P.taken).length : ''}`));
   if (UK.on) setText('remain', UK.goal || '');
   if (UK7.on) setText('remain', uk7Goal());
   if (PAL.on) setText('remain', palGoal());   // 第七幕：数は出さない
@@ -22137,6 +22418,7 @@ function resetGame() {
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
+  else if (builtStage === 'nanban') { player.pos.set(0, 0, 26); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
@@ -22167,7 +22449,7 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
   if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -22184,7 +22466,7 @@ function startGame() {
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -22201,6 +22483,7 @@ function startGame() {
   else if (builtStage === 'ukPrincess') uk4Start();   // 第四幕：語り→二手の選択→前進→柵の攻防→本陣→王女との対話
   else if (builtStage === 'ukNight') uk3Start();   // 第三幕：語り→接近→乗り移り→甲板戦→退く英国の船   // 第二幕：語り→砲撃→上陸→斬り込み（波は使わない）
   else if (builtStage === 'island') { islandStart(); }
+  else if (builtStage === 'nanban') nbStart();
   else if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
   else if (builtStage === 'trench') {
     trenchStartBattle();
@@ -22263,7 +22546,7 @@ function gameOver(win) {
   if (state === 'play') try { SITU.end(win); } catch (_) {}
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
-  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : '敗北'; if (h2) h2.textContent = win ? (NB.on ? '山間の稜線まで抜けた' : AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = `味方 <b>${battleCounts().ally}</b>　／　敵 <b>${battleCounts().foe}</b><br>撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   if (CAMP.on) campResult(win);   // 第二幕：段ごとの結果
@@ -24867,7 +25150,7 @@ function frame(now) {
     if (TEST) testBot(dt);
     stepBudget = 3;
     if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
-    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
+    updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); if (NB.on) updateNanban(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();
     updateTags();
@@ -24876,6 +25159,7 @@ function frame(now) {
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
     else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
     else if (builtStage === 'usRaid') rkTitleCam();
+    else if (builtStage === 'nanban') { camera.position.set(0, 7.5, 38); camera.lookAt(0, 1.2, -8); }
     else if (builtStage === 'usDrop') udTitleCam();
     else if (builtStage === 'palace') { camera.position.set(0, 1.7, -8); camera.lookAt(Math.sin(time * 0.1) * 3, 1.5, 20); }
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }

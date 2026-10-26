@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22250,6 +22250,7 @@ function pauseGame() {
 function resumeGame() {
   if (MOBILE && innerHeight > innerWidth) return;   // 縦向きのままでは再開しない
   state = 'play'; $('pause').style.display = 'none'; unlockAudio(); goFullscreen(); resetTouch(); lock();
+  if (UD.on) udHud(true);
 }
 function toTitle() {
   $('bTrenchAttack').style.display='none';
@@ -24033,7 +24034,7 @@ const UD_VIEW = {
   gunB: { n: '後方機銃', eye: [0, 0.18, 11.15], by: Math.PI, arc: [0.9, -0.55, 0.55] },
 };
 const UD_VK = ['cockpit', 'door', 'gunF', 'gunL', 'gunR', 'gunB'];
-const _udW = new V3(), _udQ = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ');
+const _udW = new V3(), _udP = new V3(), _udQ = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ'), _udFE = new THREE.Euler(0, 0, 0, 'YXZ');
 function udGeo() {
   if (UD.geo) return UD.geo;
   const CAMO = [0x4a5640, 0xb7b3a6], BLK = 0x1e1f1e;
@@ -24074,11 +24075,38 @@ function udGeo() {
   };
   return UD.geo;
 }
-function udGirl(gid, role, cm, name) {
+function udGirl(gid, role, cm, name, face) {
   const g = GIRLS[gid]; if (!g || !g.front || !g.front.tex) return null;
   const m = rkCrewMesh(gid), h = (cm || 158) / 100, fr = g.front;
   m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false; m.position.y = -1.08;
-  return { m, gid, role, name, cm: cm || 158, label: role + ' ' + name };
+  return { m, gid, girl: g, role, name, cm: cm || 158, label: role + ' ' + name, face: face || 0, alive: true, fr };
+}
+function udPose(m, rec, dead) {
+  const girl = rec && rec.girl; if (!girl || !m || !m.parent) return;
+  const wp = m.getWorldPosition(_udP);
+  let look = rec.lookWorld;
+  if (look == null) { m.parent.updateWorldMatrix(true, false); look = _udFE.setFromQuaternion(m.parent.getWorldQuaternion(_udQ), 'YXZ').y + (rec.face || 0); }
+  const camYaw = Math.atan2(camera.position.x - wp.x, camera.position.z - wp.z);
+  const cc = Math.cos(angDiff(look, camYaw));
+  let view = cc > 0.5 + (rec.view === 'front' ? -0.08 : 0.08) ? 'front' : cc < -0.5 - (rec.view === 'back' ? -0.08 : 0.08) ? 'back' : 'side';
+  rec.view = view;
+  let view2 = view;
+  if (!dead) {
+    if (girl.front_diag && cc > 0.38 && cc < 0.92) view2 = 'front_diag';
+    else if (girl.back_diag && cc < -0.38 && cc > -0.92) view2 = 'back_diag';
+  }
+  let fr = girl.front;
+  if (dead) { fr = (girl.down && girl.down.tex) ? girl.down : (girl.low || girl.side || girl.front); view2 = 'down'; }
+  else fr = view2 === 'front' ? girl.front : girlFrame(girl, view2);
+  if (!fr || !fr.tex) fr = girl.front;
+  if (rec.fr !== fr) { rec.fr = fr; if (m.material) { m.material.map = fr.tex; m.material.needsUpdate = true; } }
+  const h = (rec.cm || 158) / 100 * (fr.hk || 1), w = h * (fr.aspect || 0.45);
+  const sgn = Math.sin(angDiff(look, camYaw)) > 0 ? 1 : -1;
+  const mirror = view2 !== 'front' && view2 !== 'down' && fr.dir ? fr.dir !== sgn : false;
+  const x0 = m.position.x, y0 = m.position.y, z0 = m.position.z;
+  m.lookAt(camera.position.x, wp.y + h * 0.45, camera.position.z);
+  m.position.set(x0, y0, z0);
+  m.scale.set(w * (mirror ? -1 : 1), h, 1);
 }
 function udGid(pool, avoid) {
   for (let n = 0; n < pool.length; n++) {
@@ -24099,29 +24127,30 @@ function udMakePlane(i, pool) {
   const avoid = new Set(rkPaxIds()), crew = [], pax = [], queue = [];
   const put = (who, x, z) => { if (!who) return; who.m.position.set(x, -1.08, z); body.add(who.m); };
   const crewSpec = [
-    ['操縦手', -0.48, -6.55], ['副操縦手', 0.48, -6.55], ['電探', 0.7, -3.55],
-    ['前方機銃手', -0.15, -8.85], ['左側方機銃手', -1.25, 2.5], ['右側方機銃手', 1.25, 2.5], ['後方機銃手', 0, 10.35],
+    ['操縦手', -0.48, -6.55, 0], ['副操縦手', 0.48, -6.55, 0], ['電探', 0.7, -3.55, Math.PI],
+    ['前方機銃手', -0.15, -8.85, 0], ['左側方機銃手', -1.25, 2.5, Math.PI / 2], ['右側方機銃手', 1.25, 2.5, -Math.PI / 2], ['後方機銃手', 0, 10.35, Math.PI],
   ];
-  for (const [role, x, z] of crewSpec) {
+  for (const [role, x, z, face] of crewSpec) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) continue; avoid.add(gid);
-    const c = udGirl(gid, role, prof.cm, prof.name); if (!c) continue; put(c, x, z); crew.push(c);
+    const c = udGirl(gid, role, prof.cm, prof.name, face); if (!c) continue; c.prof = prof; put(c, x, z); crew.push(c);
   }
   const medRole = i % 2 ? '医師' : '看護師';
   let medId = i % 2 ? (GIRLS.surgeon ? 'surgeon' : null) : (typeof MEDIC_ID !== 'undefined' ? MEDIC_ID : null);
   if (!medId || avoid.has(medId) || !GIRLS[medId] || !GIRLS[medId].front) medId = udGid(pool, avoid); else avoid.add(medId);
-  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name); if (c) { put(c, 1.05, -1.35); crew.push(c); } }
+  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name, Math.PI); if (c) { c.prof = prof; put(c, 1.05, -1.35); crew.push(c); } }
   if (i === 0) {
     const seats = [[-1.05, -4.7], [1.05, -4.7], [-1.05, -3.85], [1.05, -3.85], [-0.35, -3.2], [0.35, -3.2], [-1.05, -2.55], [0.55, -2.45], [-0.35, -1.85]];
     RK_PAX.forEach((X, k) => {
       const gid = X.gid(); if (!GIRLS[gid] || !GIRLS[gid].front) return;
-      const c = udGirl(gid, X.role, X.cm, X.name); if (!c) return;
+      const c = udGirl(gid, X.role, X.cm, X.name, Math.PI); if (!c) return;
+      c.prof = { name: X.name, pers: '冷静', cm: X.cm, vv: 1 };
       const s = seats[k] || [0.4, -1.7]; put(c, s[0], s[1]); pax.push(c);
     });
   }
   const cols = [-1.22, -0.55, 0.55, 1.22];
   for (let n = 0; n < 40; n++) {
     const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) break;
-    const c = udGirl(gid, '空挺', prof.cm, prof.name); if (!c) break;
+    const c = udGirl(gid, '空挺', prof.cm, prof.name, 0); if (!c) break; c.prof = prof;
     const row = (n / 4) | 0, col = n % 4;
     put(c, cols[col], 0.15 + row * 0.78); c.seat = c.m.position.clone(); queue.push(c);
   }
@@ -24135,7 +24164,7 @@ function udSpawn() {
   for (const c of [...UD.dyn.children]) UD.dyn.remove(c);
   usedNames = new Set();
   const pool = rkPool(); UD.planes = []; UD.drops = []; UD.landed = 0; UD.total = 0; UD.over = false; UD.doneT = 0; UD.said = false; UD.t = 0;
-  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.reinforced = 0; UD.kp = new V3(0, -1.08, -7.1);
+  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.reinforced = 0; UD.vq = null; UD.sayT = 0; UD.kp = new V3(0, -1.08, -7.1);
   for (let i = 0; i < 3; i++) { const P = udMakePlane(i, pool); UD.planes.push(P); UD.total += P.queue.length; rkPose(P); }
   udSpawnInf();
 }
@@ -24236,20 +24265,44 @@ function udCounts() {
   const aa = (UD.foes || []).filter(f => f.alive).length;
   return { ally: aboard + air + ground, foe: inf + aa, inf, aa, note: `機内 ${aboard}　降下中 ${air}　着地 ${ground}　米軍 ${inf}　対空 ${aa}` };
 }
+function udBark(rec, cat, pos) {
+  if (!rec || !rec.prof || (UD.sayT && UD.t - UD.sayT < 2.6)) return false;
+  const pers = rec.prof.pers || '冷静';
+  const bag = PERS[pers] && PERS[pers].lines && PERS[pers].lines[cat];
+  const text = bag && bag.length ? bag[(Math.random() * bag.length) | 0] : '';
+  const dist = pos ? Math.hypot(pos.x - camera.position.x, pos.z - camera.position.z) : 8;
+  if (dist > 34) return false;
+  let played = false;
+  const pack = VoicePack.man && VoicePack.man[pers] && VoicePack.man[pers][cat];
+  if (pack && pack.length) played = !!VoicePack.say(pers, cat, (Math.random() * pack.length) | 0, rec.prof.vv || 0, Math.min(dist, 18), cat === 'defeat' ? 2 : 0);
+  if (text) { subtitle(text); const el = $('subtitle'); if (el) el.textContent = (rec.role ? rec.role + ' ' : '') + (rec.name || rec.prof.name) + '「' + text + '」'; }
+  if (played || text) UD.sayT = UD.t;
+  return !!(played || text);
+}
+function udVoices(dt) {
+  if (!UD.vq) UD.vq = [[1.4, 'r_brief'], [6, 'x_sumi_talk1'], [11, 'x_fumi_start'], [16, 'x_sec2_talk1'], [21, 'x_reika_talk1'], [26, 'x_omiya_talk2'], [31, 'x_hiyori_talk1'], [36, 'r_climb'], [42, 'x_ojou_talk1'], [48, 'x_sec3_talk1'], [54, 's_king']];
+  for (const q of UD.vq) { if (q[2] || (q[0] -= dt) > 0) continue; q[2] = 1; rkSay(q[1], 0); }
+  UD.barkT = (UD.barkT || 4) - dt;
+  if (UD.barkT > 0) return;
+  UD.barkT = rand(3.2, 5.8);
+  const near = (UD.drops || []).filter(d => !d.king && !d.dead && d.prof && d.g && camera.position.distanceTo(d.g.position) < 26);
+  if (near.length) udBark(near[(Math.random() * near.length) | 0], UD.kingLanded ? (Math.random() < 0.5 ? 'attack' : 'cover') : 'spot', near[0].g.position);
+  else rkSay(pick(['x_sumi_talk2', 'x_sec2_talk2', 'x_reika_talk2', 'x_ojou_talk2', 'x_omiya_talk1', 'g_back', 'u_run']), 6);
+}
 function udSpawnInf() {
   UD.grunts = []; UD.infSaid = 0; UD.arrows = 40; UD.kingDown = 0; UD.allyDown = 0; UD.infKill = 0;
   const T = RK_TGT, ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   if (!ids.length || !UD.dyn) return;
-  const n = LITE ? 14 : 26;
+  const n = LITE ? 24 : 44;
   for (let i = 0; i < n; i++) {
     const id = ids[i % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
     m.scale.set(h * (fr.aspect || 0.45), h, 1);
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
     gun.position.set((i % 2 ? 0.22 : -0.22), 1.05, 0.32); g.add(gun);
-    const x = T.x + rand(-240, 280), z = T.z + rand(-180, 620);
+    const x = T.x + rand(-280, 340), z = T.z + rand(-260, 760);
     g.position.set(x, 0, z); UD.dyn.add(g);
-    UD.grunts.push({ g, m, alive: true, hp: 5, cd: rand(0.3, 2.2), x, z });
+    UD.grunts.push({ g, m, girl: GIRLS[id], cm: 164, alive: true, hp: 5, cd: rand(0.3, 2.2), x, z, face: 0 });
   }
 }
 function udHurtGrunt(G, dmg) {
@@ -24257,17 +24310,18 @@ function udHurtGrunt(G, dmg) {
   G.hp -= dmg;
   if (G.hp > 0) return;
   G.alive = false; UD.infKill = (UD.infKill || 0) + 1;
-  G.g.rotation.z = 1.2; G.g.position.y = 0.2;
-  if (G.m.material && G.m.material.color) G.m.material.color.setHex(0x9a9a9a);
+  if (G.m) udPose(G.m, G, true);
+  if (G.m && G.m.material && G.m.material.color) G.m.material.color.setHex(0x9a9a9a);
   udMaybeEnd();
 }
 function udHurtDrop(d) {
   if (!d || d.dead || d.king) return;
   d.hp = (d.hp == null ? 3 : d.hp) - 1;
   if (d.hp > 0) return;
-  d.dead = true; UD.allyDown = (UD.allyDown || 0) + 1;
+  d.dead = true; d.alive = false; UD.allyDown = (UD.allyDown || 0) + 1;
   if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false;
-  if (d.st === 'land') { d.g.rotation.z = 1.15; d.g.position.y = 0.25; }
+  udBark(d, 'defeat', d.g.position);
+  if (Math.random() < 0.55) rkSay(pick(['x_sumi_mate', 'x_sec2_mate', 'x_reika_cry', 'x_omiya_mate', 'x_ojou_cry', 'x_hiyori_mate']), 5);
 }
 function udHurtKing(n) {
   if (UD.kingDown || !UD.kingLanded) return;
@@ -24275,7 +24329,7 @@ function udHurtKing(n) {
   const h = $('hurt'); if (h) { h.style.opacity = '0.7'; clearTimeout(udHurtKing._t); udHurtKing._t = setTimeout(() => { if ($('hurt')) $('hurt').style.opacity = '0'; }, 160); }
   if (player.hp <= 0) {
     UD.kingDown = 1; if (UD.kingDrop) UD.kingDrop.dead = true;
-    popup('殿、撃たれた'); UD.doneT = UD.t + 1.5;
+    popup('殿、撃たれた'); rkSay('r_king_hit', 0); rkSay('x_sumi_hit', 0); UD.doneT = UD.t + 1.5;
   }
 }
 function udShot(pow) {
@@ -24315,19 +24369,20 @@ function udReinforce() {
   UD.reinforced = 1;
   const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   if (!ids.length) return;
-  const n = LITE ? 8 : 12, kx = UD.kingDrop.g.position.x, kz = UD.kingDrop.g.position.z;
+  const n = LITE ? 14 : 22, kx = UD.kingDrop.g.position.x, kz = UD.kingDrop.g.position.z;
   for (let i = 0; i < n; i++) {
     const id = ids[(i * 5) % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
     m.scale.set(h * (fr.aspect || 0.45), h, 1);
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
     gun.position.set(0.22, 1.05, 0.32); g.add(gun);
-    const ang = rand(0, Math.PI * 2), rad = rand(26, 64);
+    const ang = rand(0, Math.PI * 2), rad = rand(26, 78);
     const x = kx + Math.cos(ang) * rad, z = kz + Math.sin(ang) * rad;
     g.position.set(x, 0, z); UD.dyn.add(g);
-    UD.grunts.push({ g, m, alive: true, hp: 5, cd: rand(0.2, 1.1), x, z });
+    UD.grunts.push({ g, m, girl: GIRLS[id], cm: 164, alive: true, hp: 5, cd: rand(0.15, 0.9), x, z, face: 0 });
   }
   popup('近くから米軍の歩兵。左の弓・刀・射る', 3.2);
+  rkSay('g_spot', 0); setTimeout(() => UD.on && !UD.over && rkSay('g_fire', 0), 1600);
 }
 function udMaybeEnd() {
   if (UD.over || UD.doneT) return;
@@ -24355,6 +24410,7 @@ function udGround(dt) {
       const len = aim.length() || 1; aim.multiplyScalar(1 / len);
       rkTracer(from, aim, 90, null, [0.75, 0.88, 1], 0.16, 1.5);
       if (dist < 58 && Math.random() < 0.16) udHurtGrunt(tgt, 1);
+      if (Math.random() < 0.08) udBark(d, Math.random() < 0.5 ? 'attack' : 'push', d.g.position);
     }
   }
   for (const G of gr) {
@@ -24368,7 +24424,8 @@ function udGround(dt) {
       else if (d.st !== 'land' && kind !== 'king' && kind !== 'g' && dd < bd && dd < 520 * 520) { bd = dd; tx = d.g.position.x; tz = d.g.position.z; ty = d.g.position.y + 0.8; kind = 'air'; who = d; }
     }
     if (tx == null) continue;
-    G.g.lookAt(tx, 0, tz);
+    G.lookWorld = Math.atan2(tx - G.x, tz - G.z);
+    if (camera.position.distanceTo(G.g.position) < 90) udPose(G.m, G, !G.alive);
     const dist = Math.sqrt(bd);
     if (kind !== 'air' && dist > 18) { const k = Math.min(1.6 * dt, dist - 15) / dist; G.x += (tx - G.x) * k; G.z += (tz - G.z) * k; G.g.position.x = G.x; G.g.position.z = G.z; }
     G.cd -= dt; if (G.cd > 0) continue;
@@ -24376,7 +24433,7 @@ function udGround(dt) {
     const from = new V3(G.x, 1.4, G.z), aim = new V3(tx - G.x + rand(-1.5, 1.5), ty - 1.4, tz - G.z + rand(-1.5, 1.5));
     const len = aim.length() || 1; aim.multiplyScalar(1 / len);
     rkTracer(from, aim, 150, null, [1, 0.72, 0.28], 0.14, 1.7);
-    if (!UD.infSaid) { UD.infSaid = 1; popup('地上の米軍が撃ってきた', 3.2); }
+    if (!UD.infSaid) { UD.infSaid = 1; popup('地上の米軍が撃ってきた', 3.2); rkSay('g_mg', 0); setTimeout(() => UD.on && !UD.over && rkSay('g_fire', 0), 2000); }
     if (kind === 'king' && dist < 75 && Math.random() < (dist < 22 ? 0.5 : 0.2)) udHurtKing(rand(8, 14));
     else if (kind === 'g' && who && dist < 62 && Math.random() < 0.32) udHurtDrop(who);
     else if (kind === 'air' && who && dist < 180 && Math.random() < 0.07) udHurtDrop(who);
@@ -24402,14 +24459,16 @@ function udPlaceAA() {
   const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   UD.foes = []; UD.aa = []; UD.flak = [];
   const crew = (x, z, n) => { for (let i = 0; i < n && ids.length; i++) { const id = ids[(UD.foes.length * 3) % ids.length], m = rkCrewMesh(id), h = 1.62, fr = GIRLS[id].front; m.scale.set(h * (fr.aspect || 0.45), h, 1); m.position.set(x + Math.cos(i * 1.7) * 1.7, 0, z + Math.sin(i * 1.7) * 1.7); m.lookAt(T.x, 1.2, T.z); stageRoot.add(m); UD.foes.push({ m, alive: true }); } };
-  for (const [dx, dz] of [[-260, -180], [240, -40], [-40, 460], [320, 160]].slice(0, LITE ? 2 : 4)) {
+  const mg = [[-260, -180], [240, -40], [-40, 460], [320, 160], [-480, 220], [80, -320], [460, 380], [-180, 640]];
+  for (const [dx, dz] of mg.slice(0, LITE ? 5 : 8)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.35, 10), matD); ring.position.y = 0.18; g.add(ring);
     const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 1.7), matG); barrel.position.set(0, 1.45, -0.35); barrel.rotation.x = 0.55; g.add(barrel);
     g.position.set(x, 0, z); stageRoot.add(g); crew(x, z, LITE ? 2 : 3);
-    UD.aa.push({ p: new V3(x, 0, z), cd: rand(0.3, 1.5), burst: 0, sh: 0 });
+    UD.aa.push({ p: new V3(x, 0, z), cd: rand(0.2, 1.2), burst: 0, sh: 0 });
   }
-  for (const [dx, dz] of (LITE ? [[70, -540]] : [[-390, 70], [430, -360]])) {
+  const fl = [[70, -540], [-390, 70], [430, -360], [-80, 220], [210, 540], [-520, -60]];
+  for (const [dx, dz] of fl.slice(0, LITE ? 3 : 6)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.4, 10), matD); base.position.y = 0.2; g.add(base);
     const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 4.0, 6), matG); barrel.position.set(0, 2.3, -0.7); barrel.rotation.x = 1.02; g.add(barrel);
@@ -24431,6 +24490,7 @@ function udKingJump() {
   g.add(lines); K.body.updateMatrixWorld(); g.position.copy(K.body.localToWorld(new V3(-2.15, -0.15, 4.2))); UD.dyn.add(g);
   const spd = K.spd || 52, d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-8, 8), v: new V3(-Math.sin(K.hdg) * spd * 0.25, -1.6, -Math.cos(K.hdg) * spd * 0.25) };
   UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2; popup('殿、降下。落下傘が開くまで、上を見る', 3.2);
+  rkSay('r_out', 0); setTimeout(() => UD.on && !UD.over && rkSay('x_sumi_fl', 0), 1800); setTimeout(() => UD.on && !UD.over && rkSay('s_king', 0), 4200);
 }
 function udStand() {
   if (UD.kingJump || UD.walk || UD.ext || UD.over) return;
@@ -24450,14 +24510,14 @@ function udUse() {
 function udAATick(dt) {
   const K = UD.planes[0]; if (!K || !UD.aa) return;
   const dz = K.p.z - UD.dropZ; if (dz > 1700 || dz < -800) return;
-  if (!UD.aaSaid) { UD.aaSaid = 1; popup('飛行場の対空機銃と、破裂弾', 3); }
+  if (!UD.aaSaid) { UD.aaSaid = 1; popup('飛行場の対空機銃と、破裂弾', 3); rkSay('u_aa1', 0); setTimeout(() => UD.on && !UD.over && rkSay('r_aa', 0), 2400); setTimeout(() => UD.on && !UD.over && rkSay('u_aa2', 0), 5600); setTimeout(() => UD.on && !UD.over && rkSay('u_aa3', 0), 9000); }
   for (const A of UD.aa) {
     A.cd -= dt;
-    if (A.burst > 0) { A.burst -= dt; A.sh -= dt; if (A.sh > 0) continue; A.sh = 0.16; const mz = A.p.clone().setY(2.1), aim = K.p.clone().add(new V3(rand(-22, 22), rand(-10, 12), rand(-22, 22))).sub(mz).normalize(); rkTracer(mz, aim, 740, null, RK_TRU, 1.05, 0.028); }
-    else if (A.cd <= 0) { A.burst = rand(0.6, 1.15); A.cd = rand(2.6, 4.4); A.sh = 0; }
+    if (A.burst > 0) { A.burst -= dt; A.sh -= dt; if (A.sh > 0) continue; A.sh = 0.11; const mz = A.p.clone().setY(2.1), aim = K.p.clone().add(new V3(rand(-22, 22), rand(-10, 12), rand(-22, 22))).sub(mz).normalize(); rkTracer(mz, aim, 740, null, RK_TRU, 1.05, 0.028); }
+    else if (A.cd <= 0) { A.burst = rand(0.7, 1.35); A.cd = rand(1.4, 2.8); A.sh = 0; }
   }
   for (const B of UD.flak || []) {
-    B.cd -= dt; if (B.cd > 0) continue; B.cd = rand(4.8, 7.2);
+    B.cd -= dt; if (B.cd > 0) continue; B.cd = rand(2.4, 4.2);
     const aim = K.p.clone().add(new V3(rand(-90, 90), rand(-25, 45), rand(-100, 80)));
     UD.shells.push({ p: aim, t: clamp(aim.distanceTo(B.p) / 500, 0.45, 2.2) });
     if (Sfx.ctx && camera.position.distanceTo(B.p) < 2400) Sfx.noiseBurst(0.2, 'lowpass', 260, 60, 0.22, 0.65);
@@ -24516,7 +24576,7 @@ function udUpdate(dt) {
   UD.t += dt; UD._dt = dt;
   for (const P of UD.planes) udTickPlane(P, dt);
   for (const d of UD.drops) udTickDrop(d, dt);
-  udAATick(dt); udGround(dt); if (RK.px && RK.trM) rkPxTick(dt);
+  udAATick(dt); udGround(dt); udVoices(dt); if (RK.px && RK.trM) rkPxTick(dt);
   if (!UD.kingJump && !UD.ext && !UD.walk && (Math.abs(touch.jx) > 0.22 || Math.abs(touch.jy) > 0.22)) udStand();
   udCam();
   if (UD._hud) udHudSync();
@@ -24548,6 +24608,8 @@ function udFinish() {
   $('result').innerHTML = `味方 <b>${c.ally}</b>　／　敵 <b>${c.foe}</b>（米軍の歩兵 ${c.inf}、対空の兵 ${c.aa}）<br>米軍の歩兵を ${UD.infKill || 0} 人倒した。味方が倒れたのは ${UD.allyDown || 0} 人<br>輸送機 3 機（試製 蒼雲）。空挺 ${UD.landed} 人着地${UD.kingLanded ? '。殿も落下傘で降りた' : ''}${UD.kingDown ? '<br>殿は地上で撃たれた' : ''}<br>格納庫の爆弾は前の出撃で破壊済み`;
   $('over').style.display = 'flex'; if (document.exitPointerLock) document.exitPointerLock();
   document.documentElement.classList.remove('udplay', 'udgnd');
+  if (!UD.kingDown) { rkSay('x_sumi_win', 0); setTimeout(() => rkSay('r_gwin', 0), 2200); setTimeout(() => rkSay('x_fumi_win', 0), 5000); }
+  else { rkSay('x_sumi_cry', 0); setTimeout(() => rkSay('x_reika_cry', 0), 2400); }
 }
 function udStation(k) { if (!UD_VIEW[k] || UD.kingJump) return; UD.st = k; UD.ext = 0; UD.walk = 0; player.yaw = 0; player.pitch = k === 'door' ? -0.15 : -0.04; }
 function udLeave(P, c) {
@@ -24563,7 +24625,7 @@ function udLeave(P, c) {
   g.position.copy(P.body.localToWorld(new V3(-2.15, -0.15, 4.15 + rand(-0.15, 0.15))));
   UD.dyn.add(g);
   const spd = P.spd || 52;
-  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 3, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
+  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 3, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
 }
 function udTickPlane(P, dt) {
   const lane = 900 + P.lane;
@@ -24576,7 +24638,7 @@ function udTickPlane(P, dt) {
   P.pitch = clamp(-P.vy * 0.012, -0.1, 0.1); P.roll = clamp(P.hdg * -1.1, -0.22, 0.22);
   rkPose(P);
   for (const pr of P.props) pr.rotation.z += dt * 26;
-  if (!P.dropOn && P.p.z < UD.dropZ && P.queue.length) { P.dropOn = true; if (P.king && !UD.said) { UD.said = true; popup('降下始め。落下傘が開くまで、降下口から見える', 3.4); } }
+  if (!P.dropOn && P.p.z < UD.dropZ && P.queue.length) { P.dropOn = true; if (P.king && !UD.said) { UD.said = true; popup('降下始め。落下傘が開くまで、降下口から見える', 3.4); rkSay('r_fight', 0); setTimeout(() => UD.on && !UD.over && rkSay('x_sumi_talk2', 0), 2200); setTimeout(() => UD.on && !UD.over && rkSay('x_ojou_take', 0), 5200); } }
   if (P.walking) {
     const c = P.walking; c.t += dt / c.dur;
     if (c.t >= 1) { c.m.position.copy(c.b); udLeave(P, c); P.walking = null; }
@@ -24588,7 +24650,7 @@ function udTickPlane(P, dt) {
       P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22;
     }
   }
-  if (camera.position.distanceTo(P.p) < 500) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m.visible) c.m.lookAt(camera.position.x, c.m.getWorldPosition(_udW).y, camera.position.z);
+  if (camera.position.distanceTo(P.p) < 140) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m && c.m.visible) udPose(c.m, c, !c.alive);
 }
 function udTickDrop(d, dt) {
   d.t += dt;
@@ -24598,14 +24660,15 @@ function udTickDrop(d, dt) {
     d.g.position.addScaledVector(d.v, dt);
     if (d.g.position.y <= 0) {
       d.g.position.y = 0; d.st = 'land'; if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false;
-      if (d.dead) { d.g.rotation.z = 1.15; d.g.position.y = 0.25; }
+      if (d.dead) { d.alive = false; }
       if (!d.king) { if (!d.dead) UD.landed++; udMaybeEnd(); }
       else { UD.kingLanded = 1; player.hp = CFG.maxHp; player.weapon = 0; popup('着地。左のボタンで弓・刀。地上に米軍がいる', 3.6); udReinforce(); udMaybeEnd(); }
     }
   }
-  if (d.m) {
-    if (d.st === 'land' && d.aim && !d.dead) d.m.lookAt(d.aim.x, d.g.position.y + 1.1, d.aim.z);
-    else d.m.lookAt(camera.position.x, d.g.position.y + d.m.scale.y * 0.6, camera.position.z);
+  if (d.m && d.girl) {
+    if (!d.dead && d.aim) d.lookWorld = Math.atan2(d.aim.x - d.g.position.x, d.aim.z - d.g.position.z);
+    else if (!d.dead) d.lookWorld = Math.atan2(d.v.x, d.v.z);
+    if (camera.position.distanceTo(d.g.position) < 220) udPose(d.m, d, !!d.dead);
   }
 }
 function udTitleCam() {
@@ -24696,7 +24759,8 @@ function frame(now) {
   }
   for (const f of flags) f.mesh.rotation.y = Math.sin(time * 1.7 + f.ph) * 0.35;
   if (document.body.classList.contains('playing') !== (state === 'play')) document.body.classList.toggle('playing', state === 'play');
-  if (UD._hud && (!UD.on || state !== 'play')) udHud(false);
+  if (UD.on && (state === 'play' || state === 'pause')) { if (!document.documentElement.classList.contains('udplay')) udHud(true); }
+  else if (UD._hud) udHud(false);
   if (document.documentElement.classList.contains('dagger') !== (player.weapon === 1 && !!player.knife)) document.documentElement.classList.toggle('dagger', player.weapon === 1 && !!player.knife);
   if (MOBILE && !UD.on) { const wl = player.weapon === 0 ? '弓矢' : '懐刀'; if ($('bWpnL').textContent !== wl) { $('bWpnL').textContent = wl; $('bAtkL').textContent = player.weapon === 0 ? '長押しで引く' : 'タップで突く'; } }
   if (UK.seaSnd && !UK.on && !UK2.on && !UK3.on && !UK4.on && !UK7.on) ukSeaSound(dt);

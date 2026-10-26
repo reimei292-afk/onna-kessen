@@ -8488,20 +8488,14 @@ function buildNanban() {
       t.colorSpace = THREE.SRGBColorSpace; NB.tex[n] = t;
     }
   }
-  const leaf = new THREE.MeshLambertMaterial({ color: 0x1e4a28 });
-  const mud = new THREE.MeshLambertMaterial({ color: 0x4a3a28 });
-  const vine = new THREE.MeshLambertMaterial({ color: 0x2f6a34 });
+  const leaf = new THREE.MeshLambertMaterial({ color: 0x2a5a32 });
+  const mud = new THREE.MeshLambertMaterial({ color: 0x5a4632 });
+  const vine = new THREE.MeshLambertMaterial({ color: 0x1f6a32 });
   const rockM = new THREE.MeshLambertMaterial({ color: 0x5c645c });
-  const groundGeo = new THREE.PlaneGeometry(22, 120, 10, 40); groundGeo.rotateX(-Math.PI / 2);
-  const pos = groundGeo.attributes.position;
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i), z = pos.getZ(i);
-    pos.setY(i, 0.12 * Math.sin(z * 0.11) + 0.05 * Math.cos(x * 0.7 + z * 0.2));
-  }
-  groundGeo.computeVertexNormals();
-  const floor = new THREE.Mesh(groundGeo, leaf); floor.position.z = -28; stageRoot.add(floor);
-  const path = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 112), mud);
-  path.rotation.x = -Math.PI / 2; path.position.set(0, 0.03, -28); stageRoot.add(path);
+  const groundGeo = new THREE.PlaneGeometry(420, 280, 1, 1); groundGeo.rotateX(-Math.PI / 2);
+  const floor = new THREE.Mesh(groundGeo, leaf); floor.position.set(0, 0, -20); stageRoot.add(floor);
+  const path = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 150), mud);
+  path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -30); stageRoot.add(path);
   for (const side of [-1, 1]) {
     boxes.push({ x0: side < 0 ? -20 : 7.4, x1: side < 0 ? -7.4 : 20, z0: -88, z1: 42, y0: 0, y1: 8 });
     for (let i = 0; i < 16; i++) {
@@ -8544,13 +8538,13 @@ function nbStart() {
   for (let i = 0; i < nB; i++) {
     const sq = i % 3, row = (i / 3) | 0;
     const x = (sq - 1) * 2.05 + rand(-0.25, 0.25);
-    const z = 18 - row * 1.3 + rand(-0.1, 0.1);
+    const z = 28 + row * 1.25 + rand(-0.1, 0.1);
     const kind = i % 5 === 0 ? 'mob' : 'archer';
     const e = spawnEnemy(x, z, kind, false, 'blue', { yari: kind === 'mob' ? 1 : -1 });
     if (e) e.nbSq = sq;
   }
   const spots = [];
-  for (const z0 of [2, -16, -34, -52]) {
+  for (const z0 of [-8, -24, -40, -56]) {
     const n = MOBILE ? 2 : 4;
     for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.7 + rand(-0.2, 0.2), z0 + rand(-0.6, 0.6)]);
   }
@@ -8648,8 +8642,8 @@ function updateNanban(dt) {
     e.passive = true; e.tgt = null;
     if (e.state === 'aim' || e.state === 'shoot' || e.state === 'zanshin' || e.state === 'stab') continue;
     const sq = e.nbSq || 0;
-    const tx = clamp(player.pos.x + (sq - 1) * 1.8, -5.2, 5.2);
-    const tz = player.pos.z - 3.2 - (mi % 4) * 1.15;
+    const tx = clamp(player.pos.x + (sq - 1) * 1.8, -4.2, 4.2);
+    const tz = player.pos.z + 2.2 + (mi % 4) * 1.15;
     mi++;
     steer(e, tx, tz, e.speed * 0.9, dt);
   }
@@ -17046,7 +17040,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -22418,7 +22412,7 @@ function resetGame() {
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
-  else if (builtStage === 'nanban') { player.pos.set(0, 0, 26); player.yaw = 0; }
+  else if (builtStage === 'nanban') { player.pos.set(0, 0, 22); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から

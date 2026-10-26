@@ -8404,7 +8404,7 @@ const STAGES = {
   palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。' },
   usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。本丸が落ちれば裏の抜け道へ。⑤総構えの大城（小田原城に倣う）：急ぎの徴募の娘たちも加わり、町ぐるみの土塁と空堀で三方からの寄せを止めよ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
   usRaid: { name: 'アメリカ西部編 第三幕「陸攻出撃」', desc: '試製 嶺雲（双発の陸上攻撃機）の編隊でアメリカ軍の前進飛行場を叩く。殿は一番機に乗り、1〜6 で持ち場を移る（操縦席・爆撃照準・前方／左／右／後方機銃。V で外から）。ほかは搭乗員が受け持つ。米軍の戦闘機が上方前方・側方・後方から一撃をかけ、目標の上では対空機銃が待つ。破裂爆弾を落として帰る。搭乗員が全員倒れた機は、自動操縦でひとりで基地へ帰り着陸する。殿が被弾するか一番機が落ちれば作戦中止。' },
-  usDrop: { name: 'アメリカ西部編 第四幕「空挺降下」', desc: '前の出撃で、アメリカ軍前進飛行場の格納庫の爆弾は壊してある。一式陸攻を参考にした、中の広い双発輸送機「試製 蒼雲」が 3 機。1 機に空挺部隊 40 人。ほかは操縦手・副操縦手・電探・前方機銃手・右機銃手・左機銃手・後方機銃手・医師か看護師が 1 人。殿の乗る機には秘書課もいる。E で機内を歩き、降下口で E を押すと殿も落下傘で降りる。飛行場の手前で、残った対空機銃と破裂弾が少し来る。四人一組を一人ずつ降ろす。1〜6 で持ち場、V で外から。一時停止に味方と敵の数。' },
+  usDrop: { name: 'アメリカ西部編 第四幕「空挺降下」', desc: '前の出撃で、アメリカ軍前進飛行場の格納庫の爆弾は壊してある。一式陸攻を参考にした、中の広い双発輸送機「試製 蒼雲」が 3 機。1 機に空挺部隊 40 人。ほかは操縦手・副操縦手・電探・前方機銃手・右機銃手・左機銃手・後方機銃手・医師か看護師が 1 人。殿の乗る機には秘書課もいる。画面左の小さいボタンで機内を歩き、降下口で空挺。着地したあとは地上の米軍と弓・刀で戦う。飛行場の手前で、残った対空機銃と破裂弾が少し来る。一時停止に味方と敵の数。' },
   yamajiro: { name: '山城の守り', desc: '戦国の山城（月山富田城・七尾城・八王子城・竹田城の縄張りに倣う）。坂の下から寄せてくる敵を、三の丸→二の丸→本丸の曲輪で一つずつ食い止める。切岸・堀切・竪堀・枡形虎口。赤い杭の所で E：丸太・岩を転がす／吊り橋を切り落とす／太鼓で控えを呼ぶ。霧が時々立ちこめる。水の手を取られると手当てが遅くなる。' },
   usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21867,7 +21867,9 @@ function resetTouch() {
   if (MOBILE) joyHome();
 }
 function setupTouch() {
-  if (!MOBILE) return;
+  if (setupTouch.done) return;
+  if (!MOBILE && !(navigator.maxTouchPoints > 0)) return;
+  setupTouch.done = true;
   document.documentElement.classList.add('touch');
   const layer = $('touchlayer');
   const opt = { passive: false };
@@ -22053,7 +22055,14 @@ document.addEventListener('pointerlockchange', () => { if (locked() && (UK.choic
 
 function primaryDown() {
   if (RK.on) { rkFire(true); return; }
-  if (UD.on) { udUse(); return; }
+  if (UD.on) {
+    if (UD.kingLanded && !UD.kingDown) {
+      if (player.weapon === 1) udMelee();
+      else { player.drawing = true; player.charge = 0; if (Sfx.drawCreak) Sfx.drawCreak(); }
+      return;
+    }
+    udUse(); return;
+  }
   if (PAL.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('宮殿の中では武器は使いません'); return; }
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }
@@ -22066,7 +22075,14 @@ function primaryDown() {
 }
 function primaryUp() {
   if (RK.on) { rkFire(false); return; }
-  if (UD.on) return;
+  if (UD.on) {
+    if (UD.kingLanded && player.weapon === 0 && player.drawing) {
+      player.drawing = false;
+      if (player.charge > 0.08) udShot(player.charge);
+      player.charge = 0;
+    }
+    return;
+  }
   if (player.weapon === 0 && player.drawing) {
     player.drawing = false;
     if (player.charge > 0.08) fireArrow(player.charge);
@@ -24119,8 +24135,9 @@ function udSpawn() {
   for (const c of [...UD.dyn.children]) UD.dyn.remove(c);
   usedNames = new Set();
   const pool = rkPool(); UD.planes = []; UD.drops = []; UD.landed = 0; UD.total = 0; UD.over = false; UD.doneT = 0; UD.said = false; UD.t = 0;
-  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.kp = new V3(0, -1.08, -7.1);
+  UD.walk = 0; UD.kingJump = 0; UD.kingDrop = null; UD.kingLanded = 0; UD.aaSaid = 0; UD.shake = 0; UD.shells = []; UD.keys = {}; UD.reinforced = 0; UD.kp = new V3(0, -1.08, -7.1);
   for (let i = 0; i < 3; i++) { const P = udMakePlane(i, pool); UD.planes.push(P); UD.total += P.queue.length; rkPose(P); }
+  udSpawnInf();
 }
 function buildUsDrop() {
   udGeo();
@@ -24155,66 +24172,217 @@ function buildUsDrop() {
 }
 function udReset() { udSpawn(); UD.st = 'cockpit'; UD.ext = 0; player.yaw = 0; player.pitch = -0.04; player.hp = CFG.maxHp; }
 function udStart() {
-  showBanner('空挺降下', '試製 蒼雲 3 機 ── 格納庫は破壊済み。手前に対空砲火');
-  popup(MOBILE ? '左スティックで機内を歩く。降下口で攻撃ボタンを押すと、殿も落下傘で降りる' : 'E で機内を歩く。降下口で E を押すと、殿も落下傘で降りる', 4.4);
+  if (MOBILE || (navigator.maxTouchPoints > 0)) { document.documentElement.classList.add('touch'); setupTouch(); }
+  showBanner('空挺降下', '試製 蒼雲 3 機 ── 着地したあとは地上の米軍');
+  popup('画面の左に小さいボタン。歩く、降下、着地したら弓と刀', 4.6);
   setTimeout(() => { if (UD.on && state === 'play') subtitle('白瀬 澄「降下の用意はできています。左側の降下口です」'); }, 2400);
   udHud(true);
 }
 function udActLabel() {
-  if (UD.kingJump) return UD.kingLanded ? '着地' : '降下中';
+  if (UD.kingDown) return '倒れた';
+  if (UD.kingLanded) return player.weapon === 1 ? '突く' : '射る';
+  if (UD.kingJump) return '降下中';
   if (UD.ext) return '機内へ';
   if (UD.walk && UD.kp && udAtDoor(UD.kp)) return '空挺';
   if (UD.walk && UD.kp && udNearSt(UD.kp)) return 'つく';
-  return UD.walk ? '歩く' : '歩く';
+  return '歩く';
 }
 function udHud(on) {
-  let h = $('udHud');
-  if (!h) {
-    if (!document.getElementById('udCss')) {
-      const st = document.createElement('style'); st.id = 'udCss';
-      st.textContent = '#udHud{position:fixed;left:50%;bottom:calc(8px + var(--sab,0px));transform:translateX(-50%);z-index:31;display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:96vw;pointer-events:auto}#udHud button{font:13px sans-serif;padding:8px 10px;border-radius:8px;border:1px solid #9ab;background:rgba(20,30,40,.75);color:#eee;min-height:40px}#udHud button.on{background:rgba(170,130,40,.88);border-color:#fd8}html.touch #udHud,html.mobile #udHud{left:calc(8px + var(--sal,0px));top:14%;bottom:auto;transform:none;flex-direction:column;align-items:stretch;max-height:62vh}html.udplay #bWpn,html.udplay #bJump,html.udplay #bThrow{display:none!important}';
-      document.head.appendChild(st);
-    }
-    h = document.createElement('div'); h.id = 'udHud';
-    h.innerHTML = [['cockpit', '操縦'], ['door', '降下口'], ['gunF', '前'], ['gunL', '左'], ['gunR', '右'], ['gunB', '後'], ['ext', '外'], ['use', '歩く'], ['run', '走る']].map(([k, n]) => `<button type="button" data-k="${k}">${n}</button>`).join('');
-    document.body.appendChild(h);
+  const h = $('udHud'); if (!h) return;
+  if (!h._wired) {
+    h._wired = 1;
     h.querySelectorAll('button').forEach(b => {
-      const f = ev => {
+      b.addEventListener('pointerdown', ev => {
         ev.preventDefault(); ev.stopPropagation();
         if (!UD.on || state !== 'play' || UD.over) return;
         const k = b.dataset.k;
         if (k === 'ext') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } }
         else if (k === 'use') { if (UD.ext) { UD.ext = 0; UD.walk = 0; } else udUse(); }
-        else if (k === 'run') { touch.run = !touch.run; b.classList.toggle('on', touch.run); }
+        else if (k === 'run') { touch.run = !touch.run; }
+        else if (k === 'bow') setWeapon(0);
+        else if (k === 'knife') setWeapon(1);
+        else if (k === 'shoot') { if (!UD.kingLanded) udUse(); else if (player.weapon === 1) udMelee(); else udShot(0.9); }
         else udStation(k);
         udHudSync();
-      };
-      b.addEventListener('touchstart', f, { passive: false });
-      b.addEventListener('mousedown', f);
+      });
     });
   }
   UD._hud = 1;
   document.documentElement.classList.toggle('udplay', !!on);
-  h.style.display = on ? 'flex' : 'none';
-  if (!on) { const s = $('bAtk') && $('bAtk').querySelector('span'); if (s && (s.textContent === '空挺' || s.textContent === '歩く' || s.textContent === 'つく' || s.textContent === '機内へ' || s.textContent === '降下中' || s.textContent === '着地')) s.textContent = '攻撃'; const lab = $('bAtkL'); if (lab && lab.textContent === 'ボタン') lab.textContent = '長押しで引く'; }
+  if (!on) document.documentElement.classList.remove('udgnd');
+  if (!on) { const s = $('bAtk') && $('bAtk').querySelector('span'); if (s && /空挺|歩く|つく|機内へ|降下中|着地|射る|突く|倒れた/.test(s.textContent)) s.textContent = '攻撃'; const lab = $('bAtkL'); if (lab && lab.textContent === 'ボタン') lab.textContent = '長押しで引く'; }
   else udHudSync();
 }
 function udHudSync() {
-  const h = $('udHud'); if (!h || h.style.display === 'none') return;
-  const name = udActLabel(), use = h.querySelector('[data-k=use]'); if (use) use.textContent = name;
+  const h = $('udHud'); if (!h || !UD._hud) return;
+  document.documentElement.classList.toggle('udgnd', !!UD.kingLanded);
+  const name = udActLabel(), use = h.querySelector('[data-k=use]'), sh = h.querySelector('[data-k=shoot]');
+  if (use) use.textContent = name;
+  if (sh) sh.textContent = UD.kingLanded ? name : '射る';
   const atk = $('bAtk'), lab = $('bAtkL');
-  if (atk && (MOBILE || document.documentElement.classList.contains('touch'))) { const s = atk.querySelector('span'); if (s) s.textContent = name; if (lab) lab.textContent = UD.kingJump ? '右ドラッグ' : 'ボタン'; }
+  if (atk && document.documentElement.classList.contains('touch')) { const s = atk.querySelector('span'); if (s) s.textContent = name; if (lab) lab.textContent = UD.kingLanded ? (player.weapon === 1 ? 'タップ' : '長押し') : 'ボタン'; }
   h.querySelectorAll('button').forEach(b => {
     const k = b.dataset.k;
-    b.classList.toggle('on', k === 'run' ? !!touch.run : k === 'ext' ? !!UD.ext && !UD.kingJump : k === 'use' ? !!UD.walk : !UD.walk && !UD.ext && !UD.kingJump && k === UD.st);
+    b.classList.toggle('on', k === 'run' ? !!touch.run : k === 'bow' ? player.weapon === 0 && !!UD.kingLanded : k === 'knife' ? player.weapon === 1 && !!UD.kingLanded : k === 'ext' ? !!UD.ext && !UD.kingJump : k === 'use' ? !!UD.walk : !UD.walk && !UD.ext && !UD.kingJump && k === UD.st);
   });
 }
 function udCounts() {
   let aboard = UD.kingJump ? 0 : 1;
   for (const P of UD.planes || []) aboard += (P.crew || []).length + (P.pax || []).length + (P.queue || []).length + (P.walking ? 1 : 0);
-  const air = (UD.drops || []).filter(d => d.st !== 'land').length, ground = (UD.drops || []).filter(d => d.st === 'land').length;
-  const foe = (UD.foes || []).filter(f => f.alive).length;
-  return { ally: aboard + air + ground, foe, note: `機内 ${aboard}　降下中 ${air}　着地 ${ground}　対空の兵 ${foe}` };
+  const drops = UD.drops || [];
+  const air = drops.filter(d => d.st !== 'land' && !d.dead).length;
+  const ground = drops.filter(d => d.st === 'land' && !d.dead).length;
+  const inf = (UD.grunts || []).filter(g => g.alive).length;
+  const aa = (UD.foes || []).filter(f => f.alive).length;
+  return { ally: aboard + air + ground, foe: inf + aa, inf, aa, note: `機内 ${aboard}　降下中 ${air}　着地 ${ground}　米軍 ${inf}　対空 ${aa}` };
+}
+function udSpawnInf() {
+  UD.grunts = []; UD.infSaid = 0; UD.arrows = 40; UD.kingDown = 0; UD.allyDown = 0; UD.infKill = 0;
+  const T = RK_TGT, ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
+  if (!ids.length || !UD.dyn) return;
+  const n = LITE ? 14 : 26;
+  for (let i = 0; i < n; i++) {
+    const id = ids[i % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
+    m.scale.set(h * (fr.aspect || 0.45), h, 1);
+    const g = new THREE.Group(); g.add(m);
+    const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
+    gun.position.set((i % 2 ? 0.22 : -0.22), 1.05, 0.32); g.add(gun);
+    const x = T.x + rand(-240, 280), z = T.z + rand(-180, 620);
+    g.position.set(x, 0, z); UD.dyn.add(g);
+    UD.grunts.push({ g, m, alive: true, hp: 5, cd: rand(0.3, 2.2), x, z });
+  }
+}
+function udHurtGrunt(G, dmg) {
+  if (!G || !G.alive) return;
+  G.hp -= dmg;
+  if (G.hp > 0) return;
+  G.alive = false; UD.infKill = (UD.infKill || 0) + 1;
+  G.g.rotation.z = 1.2; G.g.position.y = 0.2;
+  if (G.m.material && G.m.material.color) G.m.material.color.setHex(0x9a9a9a);
+  udMaybeEnd();
+}
+function udHurtDrop(d) {
+  if (!d || d.dead || d.king) return;
+  d.hp = (d.hp == null ? 3 : d.hp) - 1;
+  if (d.hp > 0) return;
+  d.dead = true; UD.allyDown = (UD.allyDown || 0) + 1;
+  if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false;
+  if (d.st === 'land') { d.g.rotation.z = 1.15; d.g.position.y = 0.25; }
+}
+function udHurtKing(n) {
+  if (UD.kingDown || !UD.kingLanded) return;
+  player.hp = Math.max(0, player.hp - n); player.hurtT = 0.45;
+  const h = $('hurt'); if (h) { h.style.opacity = '0.7'; clearTimeout(udHurtKing._t); udHurtKing._t = setTimeout(() => { if ($('hurt')) $('hurt').style.opacity = '0'; }, 160); }
+  if (player.hp <= 0) {
+    UD.kingDown = 1; if (UD.kingDrop) UD.kingDrop.dead = true;
+    popup('殿、撃たれた'); UD.doneT = UD.t + 1.5;
+  }
+}
+function udShot(pow) {
+  if (!UD.kingLanded || UD.kingDown) return;
+  if ((UD.arrows || 0) <= 0) { popup('矢がない。刀で'); setWeapon(1); return; }
+  UD.arrows--;
+  const dir = new V3(); camera.getWorldDirection(dir);
+  const p = camera.position.clone();
+  rkTracer(p, dir, 140, null, [1, 0.93, 0.6], 0.2, 2.2);
+  if (Sfx.noiseBurst) Sfx.noiseBurst(0.07, 'highpass', 1600, 500, 0.12, 0.35);
+  let best = null, bd = 95, slop = 0.7 + (1 - Math.min(1, pow || 0.8)) * 0.55;
+  for (const G of UD.grunts || []) {
+    if (!G.alive) continue;
+    const dx = G.g.position.x - p.x, dy = 1.2 - p.y, dz = G.g.position.z - p.z;
+    const along = dx * dir.x + dy * dir.y + dz * dir.z;
+    if (along < 1 || along > bd) continue;
+    const lx = dx - dir.x * along, ly = dy - dir.y * along, lz = dz - dir.z * along;
+    if (Math.hypot(lx, ly, lz) < slop) { bd = along; best = G; }
+  }
+  if (best) udHurtGrunt(best, 2);
+}
+function udMelee() {
+  if (!UD.kingLanded || UD.kingDown || player.swingCd > 0) return;
+  player.swingCd = 0.42; if (Sfx.stab) Sfx.stab();
+  const dir = new V3(); camera.getWorldDirection(dir);
+  const p = camera.position; let best = null, bd = 2.4;
+  for (const G of UD.grunts || []) {
+    if (!G.alive) continue;
+    const dx = G.g.position.x - p.x, dz = G.g.position.z - p.z, d = Math.hypot(dx, dz);
+    const along = dx * dir.x + dz * dir.z, lat = Math.abs(dx * dir.z - dz * dir.x);
+    if (d < bd && along > 0.25 && lat < 0.75) { bd = d; best = G; }
+  }
+  if (best) udHurtGrunt(best, 4);
+}
+function udReinforce() {
+  if (UD.reinforced || !UD.kingDrop || !UD.dyn) return;
+  UD.reinforced = 1;
+  const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
+  if (!ids.length) return;
+  const n = LITE ? 8 : 12, kx = UD.kingDrop.g.position.x, kz = UD.kingDrop.g.position.z;
+  for (let i = 0; i < n; i++) {
+    const id = ids[(i * 5) % ids.length], m = rkCrewMesh(id), h = 1.68, fr = GIRLS[id].front;
+    m.scale.set(h * (fr.aspect || 0.45), h, 1);
+    const g = new THREE.Group(); g.add(m);
+    const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
+    gun.position.set(0.22, 1.05, 0.32); g.add(gun);
+    const ang = rand(0, Math.PI * 2), rad = rand(26, 64);
+    const x = kx + Math.cos(ang) * rad, z = kz + Math.sin(ang) * rad;
+    g.position.set(x, 0, z); UD.dyn.add(g);
+    UD.grunts.push({ g, m, alive: true, hp: 5, cd: rand(0.2, 1.1), x, z });
+  }
+  popup('近くから米軍の歩兵。左の弓・刀・射る', 3.2);
+}
+function udMaybeEnd() {
+  if (UD.over || UD.doneT) return;
+  if (UD.kingDown) { UD.doneT = UD.t + 1.5; return; }
+  const foe = (UD.grunts || []).filter(g => g.alive).length;
+  const air = (UD.drops || []).some(d => !d.king && !d.dead && d.st !== 'land');
+  const que = (UD.planes || []).some(P => (P.queue && P.queue.length) || P.walking);
+  if (!foe && !air && !que && (UD.landed > 0 || UD.kingLanded)) UD.doneT = UD.t + 3;
+}
+function udGround(dt) {
+  const gr = UD.grunts || [], drops = UD.drops || [];
+  const king = UD.kingDrop && UD.kingLanded && !UD.kingDown ? UD.kingDrop : null;
+  for (const d of drops) {
+    if (d.king || d.dead || d.st !== 'land') continue;
+    let tgt = null, bd = 1e9;
+    for (const G of gr) if (G.alive) { const dx = G.x - d.g.position.x, dz = G.z - d.g.position.z, dd = dx * dx + dz * dz; if (dd < bd) { bd = dd; tgt = G; } }
+    if (!tgt) continue;
+    d.aim = tgt.g.position;
+    const dist = Math.sqrt(bd);
+    if (dist > 13) { const k = Math.min(2.4 * dt, dist - 11) / dist; d.g.position.x += (tgt.x - d.g.position.x) * k; d.g.position.z += (tgt.z - d.g.position.z) * k; }
+    d.cd = (d.cd || 0.4) - dt;
+    if (d.cd <= 0 && dist < 72) {
+      d.cd = rand(1.8, 3.1);
+      const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
+      const len = aim.length() || 1; aim.multiplyScalar(1 / len);
+      rkTracer(from, aim, 90, null, [0.75, 0.88, 1], 0.16, 1.5);
+      if (dist < 58 && Math.random() < 0.16) udHurtGrunt(tgt, 1);
+    }
+  }
+  for (const G of gr) {
+    if (!G.alive) continue;
+    let tx = null, tz = null, ty = 1.2, kind = '', who = null, bd = 1e9;
+    if (king) { const dx = king.g.position.x - G.x, dz = king.g.position.z - G.z, dd = dx * dx + dz * dz; if (dd < 340 * 340) { bd = dd; tx = king.g.position.x; tz = king.g.position.z; ty = 1.45; kind = 'king'; } }
+    for (const d of drops) {
+      if (d.dead || d.king) continue;
+      const dx = d.g.position.x - G.x, dz = d.g.position.z - G.z, dd = dx * dx + dz * dz;
+      if (d.st === 'land' && dd < bd && dd < 280 * 280) { bd = dd; tx = d.g.position.x; tz = d.g.position.z; ty = 1.2; kind = 'g'; who = d; }
+      else if (d.st !== 'land' && kind !== 'king' && kind !== 'g' && dd < bd && dd < 520 * 520) { bd = dd; tx = d.g.position.x; tz = d.g.position.z; ty = d.g.position.y + 0.8; kind = 'air'; who = d; }
+    }
+    if (tx == null) continue;
+    G.g.lookAt(tx, 0, tz);
+    const dist = Math.sqrt(bd);
+    if (kind !== 'air' && dist > 18) { const k = Math.min(1.6 * dt, dist - 15) / dist; G.x += (tx - G.x) * k; G.z += (tz - G.z) * k; G.g.position.x = G.x; G.g.position.z = G.z; }
+    G.cd -= dt; if (G.cd > 0) continue;
+    G.cd = rand(0.85, 1.65);
+    const from = new V3(G.x, 1.4, G.z), aim = new V3(tx - G.x + rand(-1.5, 1.5), ty - 1.4, tz - G.z + rand(-1.5, 1.5));
+    const len = aim.length() || 1; aim.multiplyScalar(1 / len);
+    rkTracer(from, aim, 150, null, [1, 0.72, 0.28], 0.14, 1.7);
+    if (!UD.infSaid) { UD.infSaid = 1; popup('地上の米軍が撃ってきた', 3.2); }
+    if (kind === 'king' && dist < 75 && Math.random() < (dist < 22 ? 0.5 : 0.2)) udHurtKing(rand(8, 14));
+    else if (kind === 'g' && who && dist < 62 && Math.random() < 0.32) udHurtDrop(who);
+    else if (kind === 'air' && who && dist < 180 && Math.random() < 0.07) udHurtDrop(who);
+  }
+  if (player.swingCd > 0) player.swingCd -= dt;
+  if (UD.kingLanded && player.drawing) player.charge = Math.min(1, (player.charge || 0) + dt * 0.85);
 }
 function udEnsureFx() {
   RK.px = {}; RK.tr = [];
@@ -24316,7 +24484,9 @@ function udCam() {
     const d = UD.kingDrop; player.pitch = clamp(player.pitch, -1.2, 1.2);
     if (d.st === 'land') {
       const run = udRun(), [f, s] = udWalkIn(), m = Math.hypot(f, s), spd = run ? 3.4 : 1.6;
-      if (m > 0.05) { const k = Math.min(1, m) * spd * dtWalk() / m, y = player.yaw; d.g.position.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; d.g.position.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
+      if (!UD.kingDown && m > 0.05) { const k = Math.min(1, m) * spd * dtWalk() / m, y = player.yaw; d.g.position.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; d.g.position.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
+      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 700, RK_TGT.x + 700);
+      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 900, RK_TGT.z + 900);
       camera.position.set(d.g.position.x, 1.6, d.g.position.z);
     } else camera.position.set(d.g.position.x, d.g.position.y + 1.55, d.g.position.z);
     camera.up.set(0, 1, 0); _udE.set(player.pitch, player.yaw, 0, 'YXZ'); camera.quaternion.setFromEuler(_udE);
@@ -24346,7 +24516,7 @@ function udUpdate(dt) {
   UD.t += dt; UD._dt = dt;
   for (const P of UD.planes) udTickPlane(P, dt);
   for (const d of UD.drops) udTickDrop(d, dt);
-  udAATick(dt); if (RK.px && RK.trM) rkPxTick(dt);
+  udAATick(dt); udGround(dt); if (RK.px && RK.trM) rkPxTick(dt);
   if (!UD.kingJump && !UD.ext && !UD.walk && (Math.abs(touch.jx) > 0.22 || Math.abs(touch.jy) > 0.22)) udStand();
   udCam();
   if (UD._hud) udHudSync();
@@ -24357,19 +24527,27 @@ function udUpdate(dt) {
 }
 function udDraw2D() {
   const W = innerWidth, H = innerHeight, g = wg, c = udCounts();
-  const view = UD.kingJump ? (UD.kingLanded ? '着地した殿' : '殿の降下') : UD.walk ? (udAtDoor(UD.kp) ? '降下口（E で空挺）' : '機内を歩いている') : UD.ext ? '外から' : (UD_VIEW[UD.st] || UD_VIEW.cockpit).n;
-  g.font = '15px sans-serif'; g.textAlign = 'left'; g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(16, 16, 540, 108);
-  g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view + '　版 ' + ASSET_V, 28, 38);
-  g.fillStyle = '#d7eccf'; g.fillText('味方 ' + c.ally + '　敵 ' + c.foe, 28, 60);
-  g.fillStyle = 'rgba(243,236,220,.85)'; g.font = '13px sans-serif'; g.fillText(c.note, 28, 80);
-  g.fillText(MOBILE ? '左スティックで歩く　攻撃ボタンで空挺・つく　右ドラッグで視点　左のボタンで持ち場' : 'WASD 歩く／降下口で E 空挺　1〜6 持ち場　V 外から　Esc 一時停止（味方と敵の数）', 28, 104);
+  const view = UD.kingDown ? '倒れた' : UD.kingLanded ? (player.weapon === 1 ? '地上・刀' : '地上・弓') : UD.kingJump ? '殿の降下' : UD.walk ? (udAtDoor(UD.kp) ? '降下口（空挺）' : '機内を歩いている') : UD.ext ? '外から' : (UD_VIEW[UD.st] || UD_VIEW.cockpit).n;
+  const x0 = 78;
+  g.font = '15px sans-serif'; g.textAlign = 'left'; g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(x0, 12, Math.min(460, W - x0 - 16), UD.kingLanded ? 108 : 92);
+  g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view, x0 + 12, 34);
+  g.fillStyle = '#d7eccf'; g.fillText('味方 ' + c.ally + '　敵 ' + c.foe, x0 + 12, 56);
+  g.fillStyle = 'rgba(243,236,220,.85)'; g.font = '13px sans-serif'; g.fillText(c.note, x0 + 12, 76);
+  if (UD.kingLanded) g.fillText('体力 ' + Math.max(0, Math.ceil(player.hp)) + '　矢 ' + (UD.arrows || 0) + (player.weapon === 1 ? '　刀' : '　弓') + '　左のボタン', x0 + 12, 96);
+  else g.fillText('左の小さいボタンで歩く・空挺・持ち場', x0 + 12, 96);
+  if (UD.kingLanded && !UD.kingDown) {
+    g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(W / 2 - 10, H / 2); g.lineTo(W / 2 + 10, H / 2); g.moveTo(W / 2, H / 2 - 10); g.lineTo(W / 2, H / 2 + 10); g.stroke();
+  }
 }
 function udFinish() {
   if (UD.over) return; UD.over = true; state = 'over';
   const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'), c = udCounts();
-  if (h1) h1.textContent = '降下完了'; if (h2) h2.textContent = '空挺降下 ── 前進飛行場へ降りた';
-  $('result').innerHTML = `味方 <b>${c.ally}</b>　／　敵 <b>${c.foe}</b>（対空の兵）<br>輸送機 3 機（試製 蒼雲）<br>空挺 ${UD.landed} 人着地（各機 40 人。四人一組で、一人ずつ）${UD.kingLanded ? '<br>殿も落下傘で降りた' : ''}<br>格納庫の爆弾は前の出撃で破壊済み。手前で対空機銃と破裂弾<br>殿の機には秘書課が同乗。各機に医師または看護師が 1 人`;
+  if (h1) h1.textContent = UD.kingDown ? '殿、倒れた' : (c.inf ? '降下' : '飛行場を押さえた');
+  if (h2) h2.textContent = UD.kingDown ? '地上の米軍の射撃' : '空挺降下 ── 地上の米軍';
+  $('result').innerHTML = `味方 <b>${c.ally}</b>　／　敵 <b>${c.foe}</b>（米軍の歩兵 ${c.inf}、対空の兵 ${c.aa}）<br>米軍の歩兵を ${UD.infKill || 0} 人倒した。味方が倒れたのは ${UD.allyDown || 0} 人<br>輸送機 3 機（試製 蒼雲）。空挺 ${UD.landed} 人着地${UD.kingLanded ? '。殿も落下傘で降りた' : ''}${UD.kingDown ? '<br>殿は地上で撃たれた' : ''}<br>格納庫の爆弾は前の出撃で破壊済み`;
   $('over').style.display = 'flex'; if (document.exitPointerLock) document.exitPointerLock();
+  document.documentElement.classList.remove('udplay', 'udgnd');
 }
 function udStation(k) { if (!UD_VIEW[k] || UD.kingJump) return; UD.st = k; UD.ext = 0; UD.walk = 0; player.yaw = 0; player.pitch = k === 'door' ? -0.15 : -0.04; }
 function udLeave(P, c) {
@@ -24385,7 +24563,7 @@ function udLeave(P, c) {
   g.position.copy(P.body.localToWorld(new V3(-2.15, -0.15, 4.15 + rand(-0.15, 0.15))));
   UD.dyn.add(g);
   const spd = P.spd || 52;
-  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
+  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 3, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
 }
 function udTickPlane(P, dt) {
   const lane = 900 + P.lane;
@@ -24418,9 +24596,17 @@ function udTickDrop(d, dt) {
   else if (d.st === 'open') { d.v.y += (-5.0 - d.v.y) * Math.min(1, dt * 2.2); d.v.x += (d.bias * 0.12 - d.v.x) * dt * 0.5; d.v.z += (0.8 - d.v.z) * dt * 0.45; d.can.rotation.z = Math.sin(d.t * 1.4) * 0.07; }
   if (d.st !== 'land') {
     d.g.position.addScaledVector(d.v, dt);
-    if (d.g.position.y <= 0) { d.g.position.y = 0; d.st = 'land'; if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false; if (!d.king) { UD.landed++; if (UD.landed >= UD.total) UD.doneT = UD.t + 4; } else UD.kingLanded = 1; }
+    if (d.g.position.y <= 0) {
+      d.g.position.y = 0; d.st = 'land'; if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false;
+      if (d.dead) { d.g.rotation.z = 1.15; d.g.position.y = 0.25; }
+      if (!d.king) { if (!d.dead) UD.landed++; udMaybeEnd(); }
+      else { UD.kingLanded = 1; player.hp = CFG.maxHp; player.weapon = 0; popup('着地。左のボタンで弓・刀。地上に米軍がいる', 3.6); udReinforce(); udMaybeEnd(); }
+    }
   }
-  if (d.m) d.m.lookAt(camera.position.x, d.g.position.y + d.m.scale.y * 0.6, camera.position.z);
+  if (d.m) {
+    if (d.st === 'land' && d.aim && !d.dead) d.m.lookAt(d.aim.x, d.g.position.y + 1.1, d.aim.z);
+    else d.m.lookAt(camera.position.x, d.g.position.y + d.m.scale.y * 0.6, camera.position.z);
+  }
 }
 function udTitleCam() {
   const P = UD.planes && UD.planes[0]; if (!P) return;
@@ -24431,13 +24617,22 @@ function udTitleCam() {
 addEventListener('keydown', ev => {
   if (!UD.on || state !== 'play' || UD.over) return;
   const c = ev.code, m = /^Digit([1-6])$/.exec(c);
-  if (m) { if (!UD.kingJump) udStation(UD_VK[+m[1] - 1]); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (m) {
+    if (UD.kingLanded) { if (m[1] === '1') setWeapon(0); else if (m[1] === '2') setWeapon(1); }
+    else udStation(UD_VK[+m[1] - 1]);
+    ev.stopImmediatePropagation(); ev.preventDefault(); return;
+  }
   if (c === 'Digit0' || c === 'KeyV') { if (!UD.kingJump) { UD.ext = UD.ext ? 0 : 1; if (UD.ext) UD.walk = 0; player.yaw = 0.6; player.pitch = 0.15; } ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (/^(Key[WASD]|Arrow|Shift)/.test(c)) {
     if (!UD.kingJump && !UD.ext && /^(Key[WASD]|Arrow)/.test(c)) udStand();
     if (!UD.keys) UD.keys = {}; UD.keys[c] = true; ev.stopImmediatePropagation(); ev.preventDefault(); return;
   }
-  if (!ev.repeat && c === 'KeyE') { udUse(); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (!ev.repeat && c === 'KeyE') {
+    if (UD.kingLanded && !UD.kingDown) { if (player.weapon === 1) udMelee(); else udShot(1); }
+    else udUse();
+    ev.stopImmediatePropagation(); ev.preventDefault(); return;
+  }
+  if (!ev.repeat && c === 'Space' && UD.kingLanded && !UD.kingDown) { if (player.weapon === 1) udMelee(); else udShot(1); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
   if (/^(Space|Key[QRFC])/.test(c)) { ev.stopImmediatePropagation(); ev.preventDefault(); }
 }, true);
 

@@ -5,7 +5,7 @@
 <script>
 /* 公開版が古いまま残らないように、v.txt が違えば取り直す（GitHub Pages は HTML を約10分キャッシュする） */
 (function () {
-  var V = "20261026k";
+  var V = "20261026m";
   if (!/^https?:/.test(location.protocol)) return;
   var qv = (location.search.match(/[?&]gv=([^&]+)/) || [])[1];
   fetch("v.txt", { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
@@ -236,6 +236,15 @@
   #stagesel button.ukarc:not(.on){border-color:rgba(255,190,190,.55);background:linear-gradient(rgba(120,30,40,.45),rgba(40,20,30,.45))}
   html.ukmeet #weapons, html.ukmeet #arrows, html.ukmeet #stats, html.ukmeet #bWpn, html.ukmeet #bThrow{display:none!important} html.ukmeet.ukdlgon #target{opacity:0!important}
   html.ud #hpbox,html.ud #stats,html.ud #weapons,html.ud #arrows,html.ud #radar,html.ud #cross{display:none!important}
+  #udHud{display:none}
+  html.udplay #udHud{display:flex;position:fixed;left:calc(4px + env(safe-area-inset-left,0px));top:10%;z-index:90;flex-direction:column;gap:3px;pointer-events:auto;max-height:78vh}
+  html.udplay #udHud button{font:12px/1.15 sans-serif;padding:5px 6px;min-width:44px;min-height:34px;border-radius:6px;border:1px solid #e8d9a8;background:rgba(12,14,18,.88);color:#fff;touch-action:manipulation}
+  html.udplay #udHud button.on{background:rgba(168,110,28,.95);border-color:#ffe38a}
+  html.udplay #udHud .gnd{display:none}
+  html.udgnd #udHud .pre{display:none}
+  html.udgnd #udHud .gnd{display:block}
+  html.udplay #touchlayer{left:72px}
+  html.udplay:not(.udgnd) #bWpn,html.udplay:not(.udgnd) #bJump{display:none!important}
   #ukdlg{display:none;position:absolute;left:50%;bottom:calc(110px + var(--sab,0px));transform:translateX(-50%);width:min(860px,92vw);padding:14px 20px 12px;border-radius:12px;
     background:linear-gradient(rgba(14,18,30,.86),rgba(10,12,20,.9));border:1px solid rgba(220,200,160,.45);color:#f3ead8;z-index:30;pointer-events:auto;box-shadow:0 6px 30px rgba(0,0,0,.45)}
   #ukdlgPic{display:none;float:left;width:92px;height:92px;border-radius:50%;object-fit:cover;margin:0 16px 4px 0;border:2px solid rgba(255,217,160,.75);background:#222}
@@ -283,13 +292,27 @@
   <div class="tbtn" id="bTalk"><span>頼む</span></div>
   <div class="tbtn" id="bLad"><span>梯子</span><small id="bLadL">上る</small></div>
 </div>
+<div id="udHud">
+  <button type="button" class="pre" data-k="cockpit">操縦</button>
+  <button type="button" class="pre" data-k="door">降下</button>
+  <button type="button" class="pre" data-k="gunF">前</button>
+  <button type="button" class="pre" data-k="gunL">左</button>
+  <button type="button" class="pre" data-k="gunR">右</button>
+  <button type="button" class="pre" data-k="gunB">後</button>
+  <button type="button" class="pre" data-k="ext">外</button>
+  <button type="button" class="pre" data-k="use">歩く</button>
+  <button type="button" class="gnd" data-k="bow">弓</button>
+  <button type="button" class="gnd" data-k="knife">刀</button>
+  <button type="button" class="gnd" data-k="shoot">射る</button>
+  <button type="button" data-k="run">走る</button>
+</div>
 <button id="bFix" class="serif" type="button"><span>修理</span><small>タイヤ</small></button>
 <div id="rotate"><div class="ph"></div>横向きにしてください<br><small style="font-size:14px;opacity:.7;margin-top:10px;display:block">スマホを横に回すと遊べます</small></div>
 
 <div id="title" class="screen">
   <h1 class="serif">孤影の弓</h1>
   <h2 class="serif">― 模擬戦 ―</h2>
-  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261026k</p>
+  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261026m</p>
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
@@ -405,32 +428,32 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="motion_sprite.js?v=20261026k"></script>
-<script src="assets/sprites.js?v=20261026k"></script>
-<script src="assets/frames/frames.js?v=20261026k"></script>
-<script src="assets/frames/frames_fr.js?v=20261026k"></script>
-<script src="assets/frames/frames_omiya.js?v=20261026k"></script>
-<script src="assets/frames/frames_us.js?v=20261026k"></script>
-<script src="assets/frames/frames_props.js?v=20261026k"></script>
-<script src="assets/frames/cycles.js?v=20261026k"></script>
+<script src="motion_sprite.js?v=20261026m"></script>
+<script src="assets/sprites.js?v=20261026m"></script>
+<script src="assets/frames/frames.js?v=20261026m"></script>
+<script src="assets/frames/frames_fr.js?v=20261026m"></script>
+<script src="assets/frames/frames_omiya.js?v=20261026m"></script>
+<script src="assets/frames/frames_us.js?v=20261026m"></script>
+<script src="assets/frames/frames_props.js?v=20261026m"></script>
+<script src="assets/frames/cycles.js?v=20261026m"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261026k"></script>
-<script src="assets/voices/voices_situ.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk2.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk3.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk4.js?v=20261026k"></script>
-<script src="assets/voices/voices_saidown.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk5.js?v=20261026k"></script>
-<script src="assets/voices/voices_uk7.js?v=20261026k"></script>
-<script src="assets/voices/voices_frs.js?v=20261026k"></script>
-<script src="assets/voices/voices_usd.js?v=20261026k"></script>
-<script src="assets/voices/voices_rk.js?v=20261026k"></script>
-<script src="assets/voices/voices_pal.js?v=20261026k"></script>
+<script src="assets/voices/voices.js?v=20261026m"></script>
+<script src="assets/voices/voices_situ.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk2.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk3.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk4.js?v=20261026m"></script>
+<script src="assets/voices/voices_saidown.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk5.js?v=20261026m"></script>
+<script src="assets/voices/voices_uk7.js?v=20261026m"></script>
+<script src="assets/voices/voices_frs.js?v=20261026m"></script>
+<script src="assets/voices/voices_usd.js?v=20261026m"></script>
+<script src="assets/voices/voices_rk.js?v=20261026m"></script>
+<script src="assets/voices/voices_pal.js?v=20261026m"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261026k"></script>
-<script src="lib/death_fbx.js?v=20261026k"></script>
-<script src="game.js?v=20261026k"></script>
+<script src="lib/death_clips.js?v=20261026m"></script>
+<script src="lib/death_fbx.js?v=20261026m"></script>
+<script src="game.js?v=20261026m"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

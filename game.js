@@ -2797,7 +2797,7 @@ function stageLook(name) {
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
   const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4 || name === 'frSea', uk3 = name === 'ukNight' || name === 'ukParty'; UK7.on = name === 'ukParty'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
-  FRS.on = name === 'frSea'; USD.on = name === 'usDuel'; RK.on = name === 'usRaid'; camera.far = RK.on ? 24000 : 1200; camera.near = RK.on ? 0.2 : 0.05; camera.updateProjectionMatrix(); if (!RK.on) { document.documentElement.classList.remove('rk'); if ($('rkHud')) $('rkHud').style.display = 'none'; } PAL.on = name === 'palace'; if (PAL.on) document.documentElement.classList.add('ukmeet'); document.documentElement.classList.toggle('pal', PAL.on); if (!PAL.on && $('palClock')) $('palClock').style.display = 'none';
+  FRS.on = name === 'frSea'; USD.on = name === 'usDuel'; RK.on = name === 'usRaid'; UD.on = name === 'usDrop'; camera.far = (RK.on || UD.on) ? 24000 : 1200; camera.near = (RK.on || UD.on) ? 0.2 : 0.05; camera.updateProjectionMatrix(); if (!RK.on && !UD.on) { document.documentElement.classList.remove('rk'); if ($('rkHud')) $('rkHud').style.display = 'none'; } PAL.on = name === 'palace'; if (PAL.on) document.documentElement.classList.add('ukmeet'); document.documentElement.classList.toggle('pal', PAL.on); if (!PAL.on && $('palClock')) $('palClock').style.display = 'none';
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
   scene.fog.color.setHex(uk3 ? 0x0a1220 : FOG); sun.color.setHex(uk3 ? 0x9fb6e8 : 0xfff0d0);   // 第三幕：夜の霞と月の光
@@ -2806,7 +2806,7 @@ function stageLook(name) {
   ambL.intensity = uk3 ? 0.14 : pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = uk3 ? 0.5 : uk || uk2 ? 1.2 : pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
-  if (RK.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = 1800; scene.fog.far = 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
+  if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = 1800; scene.fog.far = 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -8404,6 +8404,7 @@ const STAGES = {
   palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。' },
   usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。本丸が落ちれば裏の抜け道へ。⑤総構えの大城（小田原城に倣う）：急ぎの徴募の娘たちも加わり、町ぐるみの土塁と空堀で三方からの寄せを止めよ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
   usRaid: { name: 'アメリカ西部編 第三幕「陸攻出撃」', desc: '試製 嶺雲（双発の陸上攻撃機）の編隊でアメリカ軍の前進飛行場を叩く。殿は一番機に乗り、1〜6 で持ち場を移る（操縦席・爆撃照準・前方／左／右／後方機銃。V で外から）。ほかは搭乗員が受け持つ。米軍の戦闘機が上方前方・側方・後方から一撃をかけ、目標の上では対空機銃が待つ。破裂爆弾を落として帰る。搭乗員が全員倒れた機は、自動操縦でひとりで基地へ帰り着陸する。殿が被弾するか一番機が落ちれば作戦中止。' },
+  usDrop: { name: 'アメリカ西部編 第四幕「空挺降下」', desc: '前の出撃で、アメリカ軍前進飛行場の格納庫の爆弾は壊してある。一式陸攻を参考にした、中の広い双発輸送機「試製 蒼雲」が 3 機。1 機に空挺部隊 40 人。ほかは操縦手・副操縦手・電探・前方機銃手・右機銃手・左機銃手・後方機銃手・医師か看護師が 1 人。殿の乗る機には秘書課もいる。飛行場の上で、四人一組を一人ずつ落下傘で降ろす。1 操縦席、2 降下口、3〜6 機銃、V で外から。' },
   yamajiro: { name: '山城の守り', desc: '戦国の山城（月山富田城・七尾城・八王子城・竹田城の縄張りに倣う）。坂の下から寄せてくる敵を、三の丸→二の丸→本丸の曲輪で一つずつ食い止める。切岸・堀切・竪堀・枡形虎口。赤い杭の所で E：丸太・岩を転がす／吊り橋を切り落とす／太鼓で控えを呼ぶ。霧が時々立ちこめる。水の手を取られると手当てが遅くなる。' },
   usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
@@ -16583,7 +16584,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'palace') buildPalace(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
+  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -16779,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21749,6 +21750,7 @@ function drawWeapon() {
   wg.clearRect(0, 0, W, H);
   if (state !== 'play' && state !== 'pause') return;
   if (RK.on) { rkDraw2D(); return; }
+  if (UD.on) { udDraw2D(); return; }
   if (UK.on || UK7.on || PAL.on) return;   // 英国淑女編の会見・祝勝会・宮殿の日常：弓は構えない
   const sw = player.switchT > 0 ? Math.sin(player.switchT / 0.3 * Math.PI) : 0;
   const bobX = Math.cos(player.bob) * H * 0.012, bobY = Math.abs(Math.sin(player.bob)) * H * 0.015 + sw * H * 0.35;
@@ -22050,6 +22052,7 @@ document.addEventListener('pointerlockchange', () => { if (locked() && (UK.choic
 
 function primaryDown() {
   if (RK.on) { rkFire(true); return; }
+  if (UD.on) return;
   if (PAL.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('宮殿の中では武器は使いません'); return; }
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }
@@ -22062,6 +22065,7 @@ function primaryDown() {
 }
 function primaryUp() {
   if (RK.on) { rkFire(false); return; }
+  if (UD.on) return;
   if (player.weapon === 0 && player.drawing) {
     player.drawing = false;
     if (player.charge > 0.08) fireArrow(player.charge);
@@ -22130,6 +22134,7 @@ function resetGame() {
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') uk4Reset();
   else if (builtStage === 'palace') palReset();   // 宮殿の日常：最上階・帝王の間
   else if (builtStage === 'usRaid') rkReset();   // 陸攻出撃：一番機の操縦席
+  else if (builtStage === 'usDrop') udReset();   // 空挺降下：一番機の操縦席
   else if (builtStage === 'ukParty') uk7Reset();   // 第七幕：殿の席   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
@@ -22155,13 +22160,13 @@ function startGame() {
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (CAMP_OWN.includes(builtStage)) { /* 第二幕：段ごとに campStart が置く */ }
-  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'palace' && builtStage !== 'usRaid') {
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace' && builtStage !== 'usRaid') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
@@ -22188,6 +22193,7 @@ function startGame() {
     trenchSupportEnsure();
   }
   else if (builtStage === 'usRaid') rkStart();   // 陸攻出撃
+  else if (builtStage === 'usDrop') udStart();   // 空挺降下
   else if (builtStage === 'twofront') startDualMission(); else { startWave(1); if (CAMP.on && builtStage === 'castle') campCastleStart(); }
 }
 function pauseGame() {
@@ -23961,11 +23967,276 @@ addEventListener('keydown', ev => {   // 陸攻出撃：持ち場 1〜6・外か
 addEventListener('keyup', ev => { if (RK.keys) RK.keys[ev.code] = false; }, true);
 addEventListener('blur', () => { RK.keys = {}; });
 
+// ====================================================================
+//  アメリカ西部編 第四幕「空挺降下」（?stage=usDrop）
+//   一式陸攻（試製 嶺雲）より胴の広い双発輸送機「試製 蒼雲」×3。
+//   各機：空挺 40、操縦・副操縦・電探・前／左／右／後の機銃手、医師か看護師 1。
+//   殿の機だけ秘書課も乗る。格納庫は前幕で破壊済み。飛行場へ四人一組で落下傘降下。
+// ====================================================================
+const UD = { on: false, dyn: null, planes: [], drops: [], t: 0, st: 'cockpit', ext: 0, over: false, landed: 0, total: 120, dropZ: -7480, doneT: 0, said: false };
+const UD_FUS = [[-10.6, 0.16], [-10.15, 0.78], [-9.3, 1.32], [-8.0, 1.62], [-6.0, 1.82], [-3.2, 1.96], [2.2, 2.02], [6.8, 1.94], [8.8, 1.72], [10.3, 1.38], [11.3, 0.82], [11.85, 0.16]];
+const UD_VIEW = {
+  cockpit: { n: '操縦席', eye: [0, 0.42, -7.15], by: 0, arc: [1.15, -0.55, 0.42] },
+  door: { n: '降下口', eye: [-0.55, 0.28, 4.15], by: Math.PI / 2, arc: [1.15, -0.9, 0.75] },
+  gunF: { n: '前方機銃', eye: [0, 0.22, -9.55], by: 0, arc: [0.8, -0.6, 0.5] },
+  gunL: { n: '左側方機銃', eye: [-1.35, 0.22, 2.5], by: Math.PI / 2, arc: [1.05, -0.75, 0.65] },
+  gunR: { n: '右側方機銃', eye: [1.35, 0.22, 2.5], by: -Math.PI / 2, arc: [1.05, -0.75, 0.65] },
+  gunB: { n: '後方機銃', eye: [0, 0.18, 11.15], by: Math.PI, arc: [0.9, -0.55, 0.55] },
+};
+const UD_VK = ['cockpit', 'door', 'gunF', 'gunL', 'gunR', 'gunB'];
+const _udW = new V3(), _udQ = new THREE.Quaternion(), _udE = new THREE.Euler(0, 0, 0, 'YXZ');
+function udGeo() {
+  if (UD.geo) return UD.geo;
+  const CAMO = [0x4a5640, 0xb7b3a6], BLK = 0x1e1f1e;
+  const glassZ = [[-10.5, -8.15], [-6.7, -4.55], [1.7, 5.55], [9.15, 11.45]];
+  const op = [], gl = [];
+  let z = glassZ[0][1];
+  for (let i = 1; i <= glassZ.length; i++) { const z1 = i < glassZ.length ? glassZ[i][0] : null; if (z1 == null) break; op.push({ g: rkLathe(UD_FUS, z, z1, 18, 6), camo: CAMO }); z = glassZ[i][1]; }
+  op.push({ g: rkLathe(UD_FUS, -10.6, glassZ[0][0], 14, 3), camo: CAMO });
+  op.push({ g: rkLathe(UD_FUS, glassZ[glassZ.length - 1][1], 11.85, 12, 3), camo: CAMO });
+  for (const [a, b] of glassZ) { gl.push({ g: rkLathe(UD_FUS, a, b, 18, 4) }); for (let k = 0; k <= 3; k++) { const zz = a + (b - a) * k / 3; op.push({ g: new THREE.TorusGeometry(rkR(UD_FUS, zz) + 0.02, 0.03, 3, 18), m: rkM4(0, 0, zz), c: 0x2c3326 }); } }
+  op.push({ g: new THREE.BoxGeometry(2.6, 0.08, 12.4), m: rkM4(0, -1.08, 2.4), c: 0x5a5348 });
+  op.push({ g: new THREE.BoxGeometry(2.2, 0.08, 4.2), m: rkM4(0, -1.08, -6.3), c: 0x5a5348 });
+  for (let zz = -7.2; zz <= 9.4; zz += 1.35) { const r = rkR(UD_FUS, zz) - 0.06; if (r > 0.4) op.push({ g: new THREE.TorusGeometry(r, 0.04, 3, 16), m: rkM4(0, 0, zz), c: 0x3e4638 }); }
+  const rDoor = rkR(UD_FUS, 4.2);
+  op.push({ g: new THREE.BoxGeometry(0.08, 1.7, 0.08), m: rkM4(-rDoor + 0.02, -0.15, 3.35), c: 0x2a261f }, { g: new THREE.BoxGeometry(0.08, 1.7, 0.08), m: rkM4(-rDoor + 0.02, -0.15, 4.95), c: 0x2a261f });
+  op.push({ g: new THREE.BoxGeometry(0.08, 0.08, 1.7), m: rkM4(-rDoor + 0.02, 0.68, 4.15), c: 0x2a261f });
+  op.push({ g: new THREE.BoxGeometry(0.9, 1.55, 0.06), m: rkM4(-rDoor - 0.35, -0.2, 3.55, 0, 0.7, 0), c: 0x3a4034 });
+  for (const s of [-1, 1]) {
+    op.push({ g: rkWing(13.5, 5.4, 0.58, s * 1.05, -0.42, -0.4, s, 0.55, 1.05, 0.42), camo: CAMO, shade: 0.05 });
+    const nac = new THREE.CylinderGeometry(0.62, 0.88, 5.1, 14); nac.rotateX(Math.PI / 2); op.push({ g: nac, m: rkM4(s * 5.5, -0.42, -2.6), camo: CAMO });
+    const cowl = new THREE.CylinderGeometry(0.92, 0.9, 0.9, 14, 1, true); cowl.rotateX(Math.PI / 2); op.push({ g: cowl, m: rkM4(s * 5.5, -0.42, -5.05), c: BLK });
+    const sp = new THREE.ConeGeometry(0.32, 0.85, 10); sp.rotateX(-Math.PI / 2); op.push({ g: sp, m: rkM4(s * 5.5, -0.42, -5.85), c: 0x5a4a38 });
+    op.push({ g: rkWing(4.4, 2.3, 0.2, s * 0.55, 0.35, 10.0, s, 0.42, 0.45, 0.08), camo: CAMO });
+  }
+  { const fin = new THREE.BoxGeometry(0.24, 3.3, 3.3, 1, 3, 1); const p = fin.attributes.position; for (let i = 0; i < p.count; i++) { const t = (p.getY(i) + 1.65) / 3.3; p.setZ(i, p.getZ(i) * (1 - 0.42 * t) + 1.05 * t); } fin.translate(0, 2.35, 10.0); op.push({ g: fin, camo: CAMO }); }
+  for (const x of [-0.2, 0.2]) op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 0.95), m: rkM4(x, 0.05, 11.7), c: BLK });
+  op.push({ g: new THREE.BoxGeometry(0.05, 0.05, 1.0), m: rkM4(0, 0.15, -10.35), c: BLK });
+  for (const s of [-1, 1]) op.push({ g: new THREE.BoxGeometry(0.9, 0.05, 0.05), m: rkM4(s * 1.85, 0.15, 2.5), c: BLK });
+  const prop = []; for (let k = 0; k < 3; k++) prop.push({ g: new THREE.BoxGeometry(0.26, 1.9, 0.07).translate(0, 0.95, 0), m: rkM4(0, 0, 0, 0, 0, k * Math.PI * 2 / 3), c: 0x2e2a24 });
+  UD.canGeo = new THREE.SphereGeometry(3.5, 12, 7, 0, Math.PI * 2, 0, Math.PI * 0.46);
+  UD.lineGeo = new THREE.CylinderGeometry(0.012, 0.012, 5.4, 3);
+  UD.canMats = [0xe7dfd0, 0xd9d3c6, 0xd5ddd4].map(c => new THREE.MeshLambertMaterial({ color: c, side: THREE.DoubleSide }));
+  UD.lineMat = new THREE.MeshLambertMaterial({ color: 0x6d675e });
+  UD.geo = {
+    op: rkMerge(op), gl: rkMerge(gl.map(o => Object.assign(o, { c: 0xffffff }))), prop: rkMerge(prop),
+    mOp: new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide }),
+    mGl: new THREE.MeshLambertMaterial({ color: 0xb7d0dc, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide }),
+  };
+  return UD.geo;
+}
+function udGirl(gid, role, cm, name) {
+  const g = GIRLS[gid]; if (!g || !g.front || !g.front.tex) return null;
+  const m = rkCrewMesh(gid), h = (cm || 158) / 100, fr = g.front;
+  m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false; m.position.y = -1.08;
+  return { m, gid, role, name, cm: cm || 158, label: role + ' ' + name };
+}
+function udGid(pool, avoid) {
+  for (let n = 0; n < pool.length; n++) {
+    const id = pool[n];
+    if (avoid.has(id) || !GIRLS[id] || !GIRLS[id].front || !GIRLS[id].front.tex) continue;
+    pool.splice(n, 1); return id;
+  }
+  if (!pool.udMore) pool.udMore = rkPool().filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
+  const more = pool.udMore.filter(id => !avoid.has(id));
+  if (!more.length) return Object.keys(GIRLS).find(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
+  pool.udI = ((pool.udI || 0) + 1) % more.length; return more[pool.udI];
+}
+function udMakePlane(i, pool) {
+  const G = udGeo(), g = new THREE.Group(); g.rotation.order = 'YXZ';
+  const body = new THREE.Group(); g.add(body);
+  body.add(new THREE.Mesh(G.op, G.mOp), new THREE.Mesh(G.gl, G.mGl));
+  const props = [-1, 1].map(s => { const m = new THREE.Mesh(G.prop, G.mOp); m.position.set(s * 5.5, -0.42, -5.55); body.add(m); return m; });
+  const avoid = new Set(rkPaxIds()), crew = [], pax = [], queue = [];
+  const put = (who, x, z) => { if (!who) return; who.m.position.set(x, -1.08, z); body.add(who.m); };
+  const crewSpec = [
+    ['操縦手', -0.48, -6.55], ['副操縦手', 0.48, -6.55], ['電探', 0.7, -3.55],
+    ['前方機銃手', -0.15, -8.85], ['左側方機銃手', -1.25, 2.5], ['右側方機銃手', 1.25, 2.5], ['後方機銃手', 0, 10.35],
+  ];
+  for (const [role, x, z] of crewSpec) {
+    const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) continue; avoid.add(gid);
+    const c = udGirl(gid, role, prof.cm, prof.name); if (!c) continue; put(c, x, z); crew.push(c);
+  }
+  const medRole = i % 2 ? '医師' : '看護師';
+  let medId = i % 2 ? (GIRLS.surgeon ? 'surgeon' : null) : (typeof MEDIC_ID !== 'undefined' ? MEDIC_ID : null);
+  if (!medId || avoid.has(medId) || !GIRLS[medId] || !GIRLS[medId].front) medId = udGid(pool, avoid); else avoid.add(medId);
+  if (medId) { const prof = makeProfile(), c = udGirl(medId, medRole, prof.cm, prof.name); if (c) { put(c, 1.05, -1.35); crew.push(c); } }
+  if (i === 0) {
+    const seats = [[-1.05, -4.7], [1.05, -4.7], [-1.05, -3.85], [1.05, -3.85], [-0.35, -3.2], [0.35, -3.2], [-1.05, -2.55], [0.55, -2.45], [-0.35, -1.85]];
+    RK_PAX.forEach((X, k) => {
+      const gid = X.gid(); if (!GIRLS[gid] || !GIRLS[gid].front) return;
+      const c = udGirl(gid, X.role, X.cm, X.name); if (!c) return;
+      const s = seats[k] || [0.4, -1.7]; put(c, s[0], s[1]); pax.push(c);
+    });
+  }
+  const cols = [-1.22, -0.55, 0.55, 1.22];
+  for (let n = 0; n < 40; n++) {
+    const prof = makeProfile(), gid = udGid(pool, avoid); if (!gid) break;
+    const c = udGirl(gid, '空挺', prof.cm, prof.name); if (!c) break;
+    const row = (n / 4) | 0, col = n % 4;
+    put(c, cols[col], 0.15 + row * 0.78); c.seat = c.m.position.clone(); queue.push(c);
+  }
+  queue.sort((a, b) => b.m.position.z - a.m.position.z);
+  UD.dyn.add(g);
+  const lane = [0, -170, 170][i];
+  return { i, no: i + 1, king: i === 0, g, body, props, crew, pax, queue, walking: null, dropT: 0.4 + i * 0.6, dropOn: false, nJump: 0, lane, p: new V3(900 + lane * 0.25, 390 - i * 18, -5200 - i * 50), hdg: 0, pitch: 0, roll: 0, spd: 78, vy: 0 };
+}
+function udSpawn() {
+  if (!UD.dyn) return;
+  for (const c of [...UD.dyn.children]) UD.dyn.remove(c);
+  usedNames = new Set();
+  const pool = rkPool(); UD.planes = []; UD.drops = []; UD.landed = 0; UD.total = 0; UD.over = false; UD.doneT = 0; UD.said = false; UD.t = 0;
+  for (let i = 0; i < 3; i++) { const P = udMakePlane(i, pool); UD.planes.push(P); UD.total += P.queue.length; rkPose(P); }
+}
+function buildUsDrop() {
+  udGeo();
+  const tex = canvasTex(512, 512, (g, W, H) => {
+    g.fillStyle = '#5d7445'; g.fillRect(0, 0, W, H);
+    const cs = ['#6b8649', '#7a8c50', '#8b8257', '#556c3d', '#4d6338'];
+    for (let i = 0; i < 70; i++) { g.fillStyle = cs[(Math.random() * cs.length) | 0]; g.fillRect(Math.random() * W, Math.random() * H, 40 + Math.random() * 80, 24 + Math.random() * 50); }
+  }, 36);
+  const land = new THREE.Mesh(new THREE.PlaneGeometry(26000, 26000), new THREE.MeshLambertMaterial({ map: tex }));
+  land.rotation.x = -Math.PI / 2; stageRoot.add(land);
+  const T = RK_TGT, bits = [];
+  bits.push({ g: new THREE.BoxGeometry(70, 0.55, 1500), m: rkM4(T.x, 0.28, T.z), c: 0x8f897a });
+  bits.push({ g: new THREE.BoxGeometry(240, 0.45, 200), m: rkM4(T.x - 180, 0.24, T.z + 40), c: 0x9a9384 });
+  for (let i = 0; i < 4; i++) {
+    const x = T.x - 150, z = T.z - 120 + i * 70;
+    bits.push({ g: new THREE.BoxGeometry(36, 3.2, 28), m: rkM4(x, 1.4, z, 0, 0.2, 0.18), c: 0x5a5348 });
+    bits.push({ g: new THREE.BoxGeometry(22, 1.4, 16), m: rkM4(x + 10, 3.1, z + 6, 0.4, 0.3, 0.5), c: 0x3a342c });
+    bits.push({ g: new THREE.BoxGeometry(8, 0.5, 10), m: rkM4(x - 16, 0.4, z + 14, 0, 0.6, 0), c: 0x2a241c });
+    const scorch = new THREE.Mesh(new THREE.CircleGeometry(16, 10), new THREE.MeshBasicMaterial({ color: 0x2a261c }));
+    scorch.rotation.x = -Math.PI / 2; scorch.position.set(x, 0.06, z); stageRoot.add(scorch);
+  }
+  for (let i = 0; i < 4; i++) bits.push({ g: new THREE.CylinderGeometry(7, 8, 2.2, 10), m: rkM4(T.x + 130 + (i % 2) * 28, 1.0, T.z + 150 + ((i / 2) | 0) * 26, 0.15, 0, 0.4), c: 0x4a473f });
+  stageRoot.add(new THREE.Mesh(rkMerge(bits), udGeo().mOp));
+  const G = rkGeo();
+  for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(G.fo, G.mOp); m.position.set(T.x - 40, 0.8, T.z - 280 + i * 40); m.rotation.set(0.4, Math.PI / 2 + rand(-0.3, 0.3), (i % 2 ? 0.5 : -0.4)); stageRoot.add(m); }
+  UD.dyn = new THREE.Group(); stageRoot.add(UD.dyn);
+  const ctex = rkSoft(128, 'rgba(255,255,255,0.9)', 'rgba(255,255,255,0)');
+  const cm = new THREE.SpriteMaterial({ map: ctex, transparent: true, depthWrite: false, opacity: 0.8 });
+  for (let i = 0; i < (LITE ? 10 : 24); i++) { const s = new THREE.Sprite(cm); s.position.set(rand(-2000, 4000), rand(900, 2200), rand(-11000, 2000)); const w = rand(280, 620); s.scale.set(w, w * 0.4, 1); stageRoot.add(s); }
+  udSpawn();
+}
+function udReset() { udSpawn(); UD.st = 'cockpit'; UD.ext = 0; player.yaw = 0; player.pitch = -0.04; player.hp = CFG.maxHp; }
+function udStart() {
+  showBanner('空挺降下', '試製 蒼雲 3 機 ── 格納庫は破壊済み。飛行場へ落下傘');
+  popup('2 が降下口。四人ずつ、一人ずつ出る', 4.2);
+  setTimeout(() => { if (UD.on && state === 'play') subtitle('白瀬 澄「降下の用意はできています。左側の降下口です」'); }, 2400);
+}
+function udLeave(P, c) {
+  c.m.visible = false;
+  const h = c.cm / 100, fr = GIRLS[c.gid].front, m = rkCrewMesh(c.gid);
+  m.scale.set(h * (fr.aspect || 0.48), h, 1); m.frustumCulled = false;
+  const g = new THREE.Group(); g.add(m);
+  const can = new THREE.Mesh(UD.canGeo, UD.canMats[P.i % 3]); can.position.y = 6.6; can.visible = false; g.add(can);
+  const lines = new THREE.Group(); lines.visible = false;
+  for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.5, ln = new THREE.Mesh(UD.lineGeo, UD.lineMat); ln.position.set(Math.sin(a) * 0.85, 4.5, Math.cos(a) * 0.85); ln.rotation.z = Math.sin(a) * 0.28; ln.rotation.x = Math.cos(a) * 0.28; lines.add(ln); }
+  g.add(lines);
+  P.body.updateMatrixWorld();
+  g.position.copy(P.body.localToWorld(new V3(-2.15, -0.15, 4.15 + rand(-0.15, 0.15))));
+  UD.dyn.add(g);
+  const spd = P.spd || 52;
+  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
+}
+function udTickPlane(P, dt) {
+  const lane = 900 + P.lane;
+  P.hdg = clamp((P.p.x - lane) * 0.0035, -0.28, 0.28);
+  const low = P.p.z < UD.dropZ + 500;
+  P.spd += ((low ? 50 : 82) - P.spd) * Math.min(1, dt * 0.4);
+  const wantY = low ? 210 : 380;
+  P.vy = clamp(P.vy + (wantY - P.p.y) * dt * 0.35, -12, 12);
+  P.p.x += -Math.sin(P.hdg) * P.spd * dt; P.p.z += -Math.cos(P.hdg) * P.spd * dt; P.p.y += P.vy * dt;
+  P.pitch = clamp(-P.vy * 0.012, -0.1, 0.1); P.roll = clamp(P.hdg * -1.1, -0.22, 0.22);
+  rkPose(P);
+  for (const pr of P.props) pr.rotation.z += dt * 26;
+  if (!P.dropOn && P.p.z < UD.dropZ && P.queue.length) { P.dropOn = true; if (P.king && !UD.said) { UD.said = true; popup('降下始め。落下傘が開くまで、降下口から見える', 3.4); } }
+  if (P.walking) {
+    const c = P.walking; c.t += dt / c.dur;
+    if (c.t >= 1) { c.m.position.copy(c.b); udLeave(P, c); P.walking = null; }
+    else c.m.position.lerpVectors(c.a, c.b, Math.min(1, c.t));
+  } else if (P.dropOn && P.queue.length) {
+    P.dropT -= dt;
+    if (P.dropT <= 0) {
+      const c = P.queue.shift(); c.a = c.m.position.clone(); c.b = new V3(-1.2, -1.08, 4.12); c.t = 0; c.dur = Math.min(0.62, Math.max(0.28, c.a.distanceTo(c.b) / 8)); P.walking = c;
+      P.nJump++; P.dropT = P.nJump % 4 === 0 ? 1.15 : 0.22;
+    }
+  }
+  if (camera.position.distanceTo(P.p) < 500) for (const c of P.crew.concat(P.pax, P.queue, P.walking ? [P.walking] : [])) if (c && c.m.visible) c.m.lookAt(camera.position.x, c.m.getWorldPosition(_udW).y, camera.position.z);
+}
+function udTickDrop(d, dt) {
+  d.t += dt;
+  if (d.st === 'fall') { d.v.y -= 7 * dt; if (d.t > 1.05) { d.st = 'open'; d.can.visible = true; d.lines.visible = true; d.v.y = Math.max(d.v.y, -8); } }
+  else if (d.st === 'open') { d.v.y += (-5.0 - d.v.y) * Math.min(1, dt * 2.2); d.v.x += (d.bias * 0.12 - d.v.x) * dt * 0.5; d.v.z += (0.8 - d.v.z) * dt * 0.45; d.can.rotation.z = Math.sin(d.t * 1.4) * 0.07; }
+  if (d.st !== 'land') {
+    d.g.position.addScaledVector(d.v, dt);
+    if (d.g.position.y <= 0) { d.g.position.y = 0; d.st = 'land'; d.can.visible = false; d.lines.visible = false; UD.landed++; if (UD.landed >= UD.total) UD.doneT = UD.t + 4; }
+  }
+  d.m.lookAt(camera.position.x, d.g.position.y + d.m.scale.y * 0.6, camera.position.z);
+}
+function udCam() {
+  const K = UD.planes[0]; if (!K) return;
+  K.g.updateMatrixWorld();
+  if (UD.ext) {
+    player.pitch = clamp(player.pitch, -0.35, 1.05);
+    const a = K.hdg + player.yaw, D = 62, cp = Math.cos(player.pitch);
+    camera.position.set(K.p.x + Math.sin(a) * cp * D, K.p.y + 6 + Math.sin(player.pitch) * D, K.p.z + Math.cos(a) * cp * D);
+    camera.up.set(0, 1, 0); camera.lookAt(K.p.x, K.p.y + 1, K.p.z);
+  } else {
+    const V = UD_VIEW[UD.st] || UD_VIEW.cockpit;
+    player.yaw = clamp(angDiff(0, player.yaw), -V.arc[0], V.arc[0]); player.pitch = clamp(player.pitch, V.arc[1], V.arc[2]);
+    camera.position.copy(K.g.localToWorld(_udW.set(V.eye[0], V.eye[1], V.eye[2])));
+    _udE.set(player.pitch, V.by + player.yaw, 0, 'YXZ'); camera.quaternion.copy(K.g.quaternion).multiply(_udQ.setFromEuler(_udE));
+  }
+  player.pos.copy(camera.position);
+}
+function udUpdate(dt) {
+  if (UD.over) return;
+  UD.t += dt;
+  for (const P of UD.planes) udTickPlane(P, dt);
+  for (const d of UD.drops) udTickDrop(d, dt);
+  udCam();
+  if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
+  popupTimer -= dt; const pop = $('popup'); if (pop) { pop.style.opacity = clamp(popupTimer * 2, 0, 1); pop.style.transform = 'translate(-50%,-50%)'; }
+  if (UD.doneT && UD.t > UD.doneT) udFinish();
+}
+function udDraw2D() {
+  const W = innerWidth, H = innerHeight, g = wg;
+  const air = UD.drops.filter(d => d.st !== 'land').length, seat = UD.planes.reduce((n, P) => n + P.queue.length + (P.walking ? 1 : 0), 0);
+  const view = UD.ext ? '外から' : (UD_VIEW[UD.st] || UD_VIEW.cockpit).n;
+  g.font = '15px sans-serif'; g.textAlign = 'left'; g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(16, 16, 340, 62);
+  g.fillStyle = '#f3ecdc'; g.fillText('空挺降下　' + view, 28, 38);
+  g.fillStyle = '#d7eccf'; g.fillText('機内 ' + seat + '　降下中 ' + air + '　着地 ' + UD.landed + ' / ' + UD.total, 28, 62);
+  g.font = '13px sans-serif'; g.fillStyle = 'rgba(243,236,220,.8)'; g.fillText('1 操縦席　2 降下口　3〜6 機銃　V 外から', 28, 96);
+}
+function udFinish() {
+  if (UD.over) return; UD.over = true; state = 'over';
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
+  if (h1) h1.textContent = '降下完了'; if (h2) h2.textContent = '空挺降下 ── 前進飛行場へ降りた';
+  $('result').innerHTML = `輸送機 3 機（試製 蒼雲）<br>空挺 ${UD.landed} 人着地（各機 40 人。四人一組で、一人ずつ）<br>格納庫の爆弾は前の出撃で破壊済み<br>殿の機には秘書課が同乗。各機に医師または看護師が 1 人`;
+  $('over').style.display = 'flex'; if (document.exitPointerLock) document.exitPointerLock();
+}
+function udStation(k) { if (!UD_VIEW[k]) return; UD.st = k; UD.ext = 0; player.yaw = 0; player.pitch = k === 'door' ? -0.15 : -0.04; }
+function udTitleCam() {
+  const P = UD.planes && UD.planes[0]; if (!P) return;
+  for (const Q of UD.planes) { rkPose(Q); for (const pr of Q.props) pr.rotation.z = time * 2; }
+  const a = time * 0.05; camera.up.set(0, 1, 0);
+  camera.position.set(P.p.x + Math.sin(a) * 70 + 30, P.p.y + 16, P.p.z + 46); camera.lookAt(P.p.x, P.p.y, P.p.z - 30);
+}
+addEventListener('keydown', ev => {
+  if (!UD.on || state !== 'play' || UD.over) return;
+  const c = ev.code, m = /^Digit([1-6])$/.exec(c);
+  if (m) { udStation(UD_VK[+m[1] - 1]); ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (c === 'Digit0' || c === 'KeyV') { UD.ext = UD.ext ? 0 : 1; player.yaw = 0.6; player.pitch = 0.15; ev.stopImmediatePropagation(); ev.preventDefault(); return; }
+  if (/^(Key[WASD]|Arrow|Shift|Space|Key[EQRFC])/.test(c)) { ev.stopImmediatePropagation(); ev.preventDefault(); }
+}, true);
+
 function frame(now) {
   requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000) * (window.__slowmo || 1); last = now;   // __slowmo：テスト撮影用のスロー
   if (TEST && window.__tick) try { window.__tick(dt); } catch (_) {}   // テスト撮影用：毎フレームの位置・向きの固定
   if (state === 'play' && RK.on) { time += dt; rkUpdate(dt); updateTags(); }
+  else if (state === 'play' && UD.on) { time += dt; udUpdate(dt); updateTags(); }
   else if (state === 'play') {
     time += dt;
     if (TEST) testBot(dt);
@@ -23980,6 +24251,7 @@ function frame(now) {
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
     else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
     else if (builtStage === 'usRaid') rkTitleCam();
+    else if (builtStage === 'usDrop') udTitleCam();
     else if (builtStage === 'palace') { camera.position.set(0, 1.7, -8); camera.lookAt(Math.sin(time * 0.1) * 3, 1.5, 20); }
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }
     else if (builtStage === 'ukPrincess') { if (UK4.on) updateUk4(0); camera.position.set(58 + Math.sin(time * 0.04) * 12, 14, 70); camera.lookAt(0, 2, 10); }   // 第四幕：浜の陣と沖の艦隊

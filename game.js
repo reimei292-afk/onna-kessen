@@ -2806,7 +2806,7 @@ function stageLook(name) {
   ambL.intensity = uk3 ? 0.14 : pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = uk3 ? 0.5 : uk || uk2 ? 1.2 : pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
-  if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = 1800; scene.fog.far = 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
+  if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -16780,7 +16780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261026r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261026s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24155,8 +24155,8 @@ function udMakePlane(i, pool) {
   }
   queue.sort((a, b) => b.m.position.z - a.m.position.z);
   UD.dyn.add(g);
-  const lane = [0, -170, 170][i];
-  return { i, no: i + 1, king: i === 0, g, body, props, crew, pax, queue, walking: null, dropT: 0.4 + i * 0.6, dropOn: false, nJump: 0, lane, p: new V3(900 + lane * 0.25, 390 - i * 18, -5200 - i * 50), hdg: 0, pitch: 0, roll: 0, spd: 78, vy: 0 };
+  const lane = [0, -12, 12][i];
+  return { i, no: i + 1, king: i === 0, g, body, props, crew, pax, queue, walking: null, dropT: 0.35 + i * 0.25, dropOn: false, nJump: 0, lane, p: new V3(900 + lane, 220 - i * 8, RK_TGT.z + 420 - i * 16), hdg: 0, pitch: 0, roll: 0, spd: 64, vy: 0 };
 }
 function udSpawn() {
   if (!UD.dyn) return;
@@ -24172,14 +24172,14 @@ function udAirfield() {
   const add = (g, x, y, z, c, rx, ry, rz) => { P.push({ g, m: rkM4(x, y, z, rx || 0, ry || 0, rz || 0), c, shade: 0.06 }); };
   const box = (w, h, d, x, y, z, c, ry, rx) => add(new THREE.BoxGeometry(w, h, d), x, y, z, c, rx || 0, ry || 0, 0);
   const camo = [0x6d7554, 0x8d9284, 0x556246, 0xa39878, 0x4a5440, 0x7a8490];
-  box(46, 0.18, 460, X - 8, 0.1, Z, 0xb7b4aa);
-  box(18, 0.12, 460, X - 40, 0.06, Z, 0x4f8a38);
-  box(14, 0.12, 460, X + 22, 0.06, Z, 0x4f8a38);
-  box(78, 0.14, 300, X + 62, 0.09, Z + 10, 0xc4c0b4);
-  for (let z = -210; z <= 210; z += 28) box(0.7, 0.2, 12, X - 8, 0.22, Z + z, 0xf4f1e6);
-  box(0.45, 0.2, 440, X - 26, 0.21, Z, 0xe7e2d4);
-  box(0.45, 0.2, 440, X + 10, 0.21, Z, 0xe7e2d4);
-  for (const end of [-210, 210]) for (let k = -3; k <= 3; k++) box(1.3, 0.2, 8, X - 8 + k * 4.2, 0.22, Z + end, 0xf7f4ea);
+  box(18, 0.18, 128, X - 4, 0.1, Z, 0xb7b4aa);
+  box(7, 0.12, 128, X - 16, 0.06, Z, 0x4f8a38);
+  box(6, 0.12, 128, X + 8, 0.06, Z, 0x4f8a38);
+  box(40, 0.14, 96, X + 28, 0.09, Z + 4, 0xc4c0b4);
+  for (let z = -56; z <= 56; z += 16) box(0.55, 0.2, 7, X - 4, 0.22, Z + z, 0xf4f1e6);
+  box(0.35, 0.2, 120, X - 11, 0.21, Z, 0xe7e2d4);
+  box(0.35, 0.2, 120, X + 3, 0.21, Z, 0xe7e2d4);
+  for (const end of [-58, 58]) for (let k = -2; k <= 2; k++) box(1.1, 0.2, 5, X - 4 + k * 2.8, 0.22, Z + end, 0xf7f4ea);
   const hangar = (x, z, w, d, broken) => {
     box(w, 5.2, d, x, 2.7, z, 0x8e938a);
     for (let i = 0; i < 4; i++) box(0.25, 1.3, 2.4, x - w / 2 + 0.2, 3.3, z - d * 0.32 + i * d * 0.2, 0x6a90a8);
@@ -24195,19 +24195,19 @@ function udAirfield() {
       add(new THREE.CircleGeometry(9, 8), x + 2, 0.08, z - 4, 0x241e18, -Math.PI / 2, 0, 0);
     }
   };
-  hangar(X + 78, Z - 78, 36, 26, false);
-  add(new THREE.CylinderGeometry(9, 9, 24, 12, 1, false, 0, Math.PI), X + 74, 4.6, Z - 28, 0x7c8474, Math.PI / 2, 0, Math.PI / 2);
-  box(22, 3.2, 24, X + 74, 1.7, Z - 28, 0x6a705f);
-  hangar(X + 86, Z + 18, 34, 18, false);
-  hangar(X + 80, Z + 62, 40, 28, true);
-  box(22, 6.5, 12, X + 96, 3.3, Z + 112, 0x3c4148);
-  box(18, 6.2, 11, X + 112, 3.1, Z + 124, 0x343940);
-  add(new THREE.BoxGeometry(12, 0.45, 11), X + 96, 7.1, Z + 112, 0x2a2e34, 0.55, 0, 0);
-  add(new THREE.BoxGeometry(12, 0.45, 11), X + 96, 7.1, Z + 112, 0x2a2e34, -0.55, 0, 0);
-  for (let i = 0; i < 3; i++) box(1.4, 1.1, 1.6, X + 92 + i * 4, 7.6, Z + 112, 0x2e3338);
-  box(16, 0.2, 12, X + 52, 0.16, Z - 48, 0x3f8a34);
-  box(14, 0.2, 10, X + 96, 0.16, Z + 36, 0x3f8a34);
-  const tx = X + 36, tz = Z + 8;
+  hangar(X + 34, Z - 28, 22, 14, false);
+  add(new THREE.CylinderGeometry(6, 6, 16, 12, 1, false, 0, Math.PI), X + 32, 3.4, Z - 8, 0x7c8474, Math.PI / 2, 0, Math.PI / 2);
+  box(14, 2.4, 16, X + 32, 1.3, Z - 8, 0x6a705f);
+  hangar(X + 36, Z + 10, 20, 12, false);
+  hangar(X + 34, Z + 30, 22, 14, true);
+  box(14, 5.2, 8, X + 46, 2.6, Z + 48, 0x3c4148);
+  box(12, 5, 7, X + 52, 2.5, Z + 54, 0x343940);
+  add(new THREE.BoxGeometry(8, 0.4, 8), X + 46, 5.5, Z + 48, 0x2a2e34, 0.55, 0, 0);
+  add(new THREE.BoxGeometry(8, 0.4, 8), X + 46, 5.5, Z + 48, 0x2a2e34, -0.55, 0, 0);
+  for (let i = 0; i < 3; i++) box(1.1, 0.9, 1.2, X + 43 + i * 2.6, 5.9, Z + 48, 0x2e3338);
+  box(8, 0.2, 6, X + 22, 0.16, Z - 18, 0x3f8a34);
+  box(7, 0.2, 5, X + 42, 0.16, Z + 18, 0x3f8a34);
+  const tx = X + 16, tz = Z + 2;
   box(9, 0.4, 9, tx, 0.25, tz, 0x8a8478);
   box(4.2, 11, 4.2, tx, 5.8, tz, 0xd8d4c8);
   for (let k = 0; k < 4; k++) box(4.5, 0.35, 0.25, tx, 3 + k * 2.2, tz + 2.15, 0x6a8090);
@@ -24219,31 +24219,31 @@ function udAirfield() {
   box(3.2, 0.12, 0.12, tx, 18.6, tz, 0xc8c4b8);
   for (let i = 0; i < 8; i++) box(1.6, 0.18, 0.5, tx - 2.6, 0.4 + i * 1.15, tz + 2.4, 0x6a6558);
   const G = rkGeo();
-  const nPlane = lite ? 8 : 16;
+  const nPlane = lite ? 6 : 10;
   for (let i = 0; i < nPlane; i++) {
     const col = i % 2, row = (i / 2) | 0;
-    const x = X + 6 + col * 14, z = Z - 150 + row * 22;
+    const x = X + 2 + col * 9, z = Z - 36 + row * 12;
     const m = new THREE.Mesh(G.fo, udGeo().mOp);
     m.position.set(x, 1.15, z); m.rotation.y = col ? 0.15 : Math.PI + 0.1;
     stageRoot.add(m);
   }
-  { const m = new THREE.Mesh(G.fo, udGeo().mOp); m.position.set(X - 8, 1.2, Z - 70); m.rotation.y = 0.35; stageRoot.add(m); }
+  { const m = new THREE.Mesh(G.fo, udGeo().mOp); m.position.set(X - 4, 1.2, Z - 16); m.rotation.y = 0.35; stageRoot.add(m); }
   const bomber = (x, z) => {
-    box(2.6, 2.0, 18, x, 2.3, z, 0x4e5848);
-    box(28, 0.42, 4.2, x, 2.5, z, 0x3e4638);
-    box(6, 0.35, 3.2, x, 5.2, z + 7.2, 0x3e4638);
-    box(0.3, 2.4, 3.4, x, 4.2, z + 7.4, 0x3a4036);
-    for (const s of [-1, 1]) for (const [o, c] of [[4.2, 0x141414], [5.8, 0xf3f1ea], [7.4, 0x141414], [9.0, 0xf3f1ea]]) box(1.3, 0.55, 4.4, x + s * o, 2.55, z, c);
-    add(new THREE.CylinderGeometry(0.55, 0.7, 2.2, 6), x - 6, 1.7, z - 1, 0x2a2c28, Math.PI / 2, 0, 0);
-    add(new THREE.CylinderGeometry(0.55, 0.7, 2.2, 6), x + 6, 1.7, z - 1, 0x2a2c28, Math.PI / 2, 0, 0);
+    box(1.8, 1.5, 11, x, 1.8, z, 0x4e5848);
+    box(16, 0.32, 2.8, x, 2.0, z, 0x3e4638);
+    box(4, 0.28, 2.2, x, 3.6, z + 4.4, 0x3e4638);
+    box(0.25, 1.6, 2.2, x, 3.0, z + 4.5, 0x3a4036);
+    for (const s of [-1, 1]) for (const [o, c] of [[2.4, 0x141414], [3.5, 0xf3f1ea], [4.6, 0x141414], [5.7, 0xf3f1ea]]) box(0.9, 0.4, 2.9, x + s * o, 2.05, z, c);
+    add(new THREE.CylinderGeometry(0.4, 0.5, 1.6, 6), x - 3.4, 1.3, z - 0.6, 0x2a2c28, Math.PI / 2, 0, 0);
+    add(new THREE.CylinderGeometry(0.4, 0.5, 1.6, 6), x + 3.4, 1.3, z - 0.6, 0x2a2c28, Math.PI / 2, 0, 0);
   };
-  bomber(X + 52, Z + 36); bomber(X + 52, Z - 24);
-  for (let i = 0; i < (lite ? 2 : 4); i++) {
-    const x = X + 60 + (i % 2) * 8, z = Z + 80 + i * 6;
-    box(3.4, 1.2, 1.6, x, 0.75, z, 0x3a4034, 0.6);
-    box(1.6, 0.8, 1.4, x - 0.3, 1.45, z, 0x2a3028, 0.6);
+  bomber(X + 22, Z + 22); bomber(X + 22, Z - 4);
+  for (let i = 0; i < (lite ? 2 : 3); i++) {
+    const x = X + 40, z = Z + 38 + i * 5;
+    box(2.6, 1.0, 1.3, x, 0.6, z, 0x3a4034, 0.4);
+    box(1.3, 0.6, 1.1, x - 0.2, 1.15, z, 0x2a3028, 0.4);
   }
-  for (let i = 0; i < 6; i++) box(1.2, 0.8, 0.9, X + 70 + (i % 3) * 1.3, 0.45 + ((i / 3) | 0) * 0.7, Z + 4, i % 2 ? 0x6a5a3a : 0x4a5a38);
+  for (let i = 0; i < 4; i++) box(0.9, 0.6, 0.7, X + 30 + (i % 2) * 1.1, 0.35 + ((i / 2) | 0) * 0.55, Z + 6, i % 2 ? 0x6a5a3a : 0x4a5a38);
   stageRoot.add(new THREE.Mesh(rkMerge(P), udGeo().mOp));
 }
 function buildUsDrop() {
@@ -24257,8 +24257,8 @@ function buildUsDrop() {
     g.fillStyle = 'rgba(40,36,28,.35)';
     for (let i = 0; i < 40; i++) g.fillRect(Math.random() * W, Math.random() * H, 30 + Math.random() * 80, 4);
   }, 48);
-  const land = new THREE.Mesh(new THREE.PlaneGeometry(26000, 26000), new THREE.MeshLambertMaterial({ map: tex }));
-  land.rotation.x = -Math.PI / 2; stageRoot.add(land);
+  const land = new THREE.Mesh(new THREE.PlaneGeometry(210, 160), new THREE.MeshLambertMaterial({ map: tex }));
+  land.rotation.x = -Math.PI / 2; land.position.set(RK_TGT.x, 0, RK_TGT.z); stageRoot.add(land);
   udAirfield();
   UD.dyn = new THREE.Group(); stageRoot.add(UD.dyn);
   udEnsureFx(); udPlaceAA();
@@ -24373,7 +24373,7 @@ function udSpawnInf() {
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
     gun.position.set((i % 2 ? 0.22 : -0.22), 1.05, 0.32); g.add(gun);
-    const x = T.x + rand(-110, 150), z = T.z + rand(-130, 170);
+    const x = T.x + rand(2, 42), z = T.z + rand(-32, 36);
     g.position.set(x, 0, z); UD.dyn.add(g);
     UD.grunts.push({ g, m, girl: GIRLS[id], cm: 164, alive: true, hp: 5, cd: rand(0.3, 2.2), x, z, face: 0 });
   }
@@ -24449,8 +24449,8 @@ function udReinforce() {
     const g = new THREE.Group(); g.add(m);
     const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.9), new THREE.MeshBasicMaterial({ color: 0x1a1a18 }));
     gun.position.set(0.22, 1.05, 0.32); g.add(gun);
-    const ang = rand(0, Math.PI * 2), rad = rand(26, 78);
-    const x = kx + Math.cos(ang) * rad, z = kz + Math.sin(ang) * rad;
+    const ang = rand(0, Math.PI * 2), rad = rand(10, 26);
+    const x = clamp(kx + Math.cos(ang) * rad, RK_TGT.x - 40, RK_TGT.x + 52), z = clamp(kz + Math.sin(ang) * rad, RK_TGT.z - 52, RK_TGT.z + 52);
     g.position.set(x, 0, z); UD.dyn.add(g);
     UD.grunts.push({ g, m, girl: GIRLS[id], cm: 164, alive: true, hp: 5, cd: rand(0.15, 0.9), x, z, face: 0 });
   }
@@ -24469,10 +24469,10 @@ function udMaybeEnd() {
     rkSay('x_sumi_win', 0);
   }
 }
-const UD_SLOT = [[8, 2], [5, 8], [-2, 9], [-8, 4], [-7, -3], [-2, -8], [5, -7], [9, -1]];
+const UD_SLOT = [[2.0, 0.4], [1.1, 1.7], [-0.4, 2.0], [-1.8, 0.7], [-1.5, -0.6], [-0.4, -1.8], [1.0, -1.4], [1.9, -0.3]];
 function udPosts() {
   const T = RK_TGT;
-  return [[T.x - 55, T.z - 20], [T.x + 40, T.z - 35], [T.x + 85, T.z + 15], [T.x - 15, T.z + 55], [T.x + 25, T.z + 25], [T.x - 70, T.z + 30]];
+  return [[T.x + 4, T.z - 8], [T.x + 14, T.z - 6], [T.x + 20, T.z + 6], [T.x + 6, T.z + 12], [T.x - 2, T.z + 2], [T.x + 12, T.z + 2]];
 }
 function udAllyStep(d, gr, dt) {
   if (d.sq == null) { UD.sqI = (UD.sqI || 0) + 1; d.sq = UD.sqI % 6; d.slot = UD.sqI % 8; }
@@ -24492,15 +24492,17 @@ function udAllyStep(d, gr, dt) {
   }
   const slot = UD_SLOT[d.slot % 8];
   const post = udPosts()[d.sq % 6];
-  const gx = tgt ? tgt.x + slot[0] : post[0] + slot[0] * 0.4;
-  const gz = tgt ? tgt.z + slot[1] : post[1] + slot[1] * 0.4;
+  const gx = tgt ? tgt.x + slot[0] : post[0] + slot[0] * 0.35;
+  const gz = tgt ? tgt.z + slot[1] : post[1] + slot[1] * 0.35;
   d.lookWorld = tgt ? Math.atan2(tgt.x - d.g.position.x, tgt.z - d.g.position.z) : Math.atan2(d.g.position.x - post[0], d.g.position.z - post[1]);
   const dx = gx - d.g.position.x, dz = gz - d.g.position.z, dist = Math.hypot(dx, dz) || 1;
-  if (dist > 2.4) { const k = Math.min(3.4 * dt, dist - 1.8) / dist; d.g.position.x += dx * k; d.g.position.z += dz * k; }
+  if (dist > 1.3) { const k = Math.min(3.2 * dt, dist - 0.8) / dist; d.g.position.x += dx * k; d.g.position.z += dz * k; }
+  d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 42, RK_TGT.x + 54);
+  d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 58, RK_TGT.z + 58);
   if (!tgt) return;
   const td = Math.hypot(tgt.x - d.g.position.x, tgt.z - d.g.position.z);
   d.cd = (d.cd || 0.25) - dt;
-  if (d.cd > 0 || td > 64) return;
+  if (d.cd > 0 || td > 28) return;
   d.cd = td < 10 ? rand(0.32, 0.55) : rand(0.5, 0.9);
   const from = d.g.position.clone().setY(1.35), aim = tgt.g.position.clone().setY(1.15).sub(from);
   const len = aim.length() || 1; aim.multiplyScalar(1 / len);
@@ -24530,7 +24532,7 @@ function udGround(dt) {
     G.lookWorld = Math.atan2(tx - G.x, tz - G.z);
     if (camera.position.distanceTo(G.g.position) < 90) udPose(G.m, G, !G.alive);
     const dist = Math.sqrt(bd);
-    if (kind !== 'air' && dist > 18) { const k = Math.min(1.6 * dt, dist - 15) / dist; G.x += (tx - G.x) * k; G.z += (tz - G.z) * k; G.g.position.x = G.x; G.g.position.z = G.z; }
+    if (kind !== 'air' && dist > 9) { const k = Math.min(1.5 * dt, dist - 7) / dist; G.x += (tx - G.x) * k; G.z += (tz - G.z) * k; G.x = clamp(G.x, RK_TGT.x - 42, RK_TGT.x + 54); G.z = clamp(G.z, RK_TGT.z - 58, RK_TGT.z + 58); G.g.position.x = G.x; G.g.position.z = G.z; }
     G.cd -= dt; if (G.cd > 0) continue;
     G.cd = rand(0.85, 1.65);
     const from = new V3(G.x, 1.4, G.z), aim = new V3(tx - G.x + rand(-1.5, 1.5), ty - 1.4, tz - G.z + rand(-1.5, 1.5));
@@ -24562,7 +24564,7 @@ function udPlaceAA() {
   const ids = USD_IDS.filter(id => GIRLS[id] && GIRLS[id].front && GIRLS[id].front.tex);
   UD.foes = []; UD.aa = []; UD.flak = [];
   const crew = (x, z, n) => { for (let i = 0; i < n && ids.length; i++) { const id = ids[(UD.foes.length * 3) % ids.length], m = udFat(rkCrewMesh(id)), h = 1.62, fr = GIRLS[id].front; m.scale.set(h * (fr.aspect || 0.45), h, 1); m.position.set(x + Math.cos(i * 1.7) * 1.7, 0, z + Math.sin(i * 1.7) * 1.7); m.lookAt(T.x, 1.2, T.z); stageRoot.add(m); UD.foes.push({ m, alive: true }); } };
-  const mg = [[-90, -70], [110, -20], [-20, 120], [70, 80], [-140, 40], [30, -110], [150, 30], [-60, 150]];
+  const mg = [[-24, -42], [40, -28], [46, 22], [-18, 40], [6, -50], [48, 4]];
   for (const [dx, dz] of mg.slice(0, LITE ? 5 : 8)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.35, 10), matD); ring.position.y = 0.18; g.add(ring);
@@ -24570,7 +24572,7 @@ function udPlaceAA() {
     g.position.set(x, 0, z); stageRoot.add(g); crew(x, z, LITE ? 2 : 3);
     UD.aa.push({ p: new V3(x, 0, z), cd: rand(0.2, 1.2), burst: 0, sh: 0 });
   }
-  const fl = [[40, -160], [-120, 30], [130, -80], [-30, 90], [80, 140], [-150, -40]];
+  const fl = [[-8, 48], [44, -6], [8, 36]];
   for (const [dx, dz] of fl.slice(0, LITE ? 3 : 6)) {
     const x = T.x + dx, z = T.z + dz, g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.3, 0.4, 10), matD); base.position.y = 0.2; g.add(base);
@@ -24603,7 +24605,7 @@ function udKingJump() {
   const lines = new THREE.Group(); lines.visible = false;
   for (let k = 0; k < 4; k++) { const a = k * Math.PI / 2 + 0.5, ln = new THREE.Mesh(UD.lineGeo, UD.lineMat); ln.position.set(Math.sin(a) * 0.85, 4.5, Math.cos(a) * 0.85); ln.rotation.z = Math.sin(a) * 0.28; ln.rotation.x = Math.cos(a) * 0.28; lines.add(ln); }
   g.add(lines); K.body.updateMatrixWorld(); g.position.copy(K.body.localToWorld(new V3(-4.2, -0.15, 5.1))); UD.dyn.add(g);
-  const spd = K.spd || 52, d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-8, 8), v: new V3(-Math.sin(K.hdg) * spd * 0.25, -1.6, -Math.cos(K.hdg) * spd * 0.25) };
+  const d = { g, m: null, can, lines, st: 'fall', t: 0, king: 1, bias: rand(-1.5, 1.5), v: new V3(rand(-0.4, 0.4), -2.2, rand(-0.4, 0.4)) };
   UD.drops.push(d); UD.kingDrop = d; player.yaw = K.hdg + Math.PI / 2; player.pitch = -0.2;
   udAllOut();
   popup('殿、降下。秘書課も、残った者も続く', 3.2);
@@ -24662,8 +24664,8 @@ function udCam() {
     if (d.st === 'land') {
       const run = udRun(), [f, s] = udWalkIn(), m = Math.hypot(f, s), spd = run ? 3.4 : 1.6;
       if (!UD.kingDown && m > 0.05) { const k = Math.min(1, m) * spd * dtWalk() / m, y = player.yaw; d.g.position.x += (-Math.sin(y) * f + Math.cos(y) * s) * k; d.g.position.z += (-Math.cos(y) * f - Math.sin(y) * s) * k; }
-      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 280, RK_TGT.x + 280);
-      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 320, RK_TGT.z + 320);
+      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 42, RK_TGT.x + 54);
+      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 58, RK_TGT.z + 58);
       camera.position.set(d.g.position.x, 1.6, d.g.position.z);
     } else camera.position.set(d.g.position.x, d.g.position.y + 1.55, d.g.position.z);
     camera.up.set(0, 1, 0); _udE.set(player.pitch, player.yaw, 0, 'YXZ'); camera.quaternion.setFromEuler(_udE);
@@ -24759,21 +24761,32 @@ function udLeave(P, c) {
   P.body.updateMatrixWorld();
   g.position.copy(P.body.localToWorld(new V3(-4.2, -0.15, 5.1 + rand(-0.2, 0.2))));
   UD.dyn.add(g);
-  const spd = P.spd || 52;
-  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 6, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-12, 12), v: new V3(-Math.sin(P.hdg) * spd * 0.25 + rand(-1.5, 1.5), -1.6, -Math.cos(P.hdg) * spd * 0.25) });
+  UD.drops.push({ g, m, can, lines, st: 'fall', t: 0, hp: 6, girl: c.girl, gid: c.gid, cm: c.cm, name: c.name, role: c.role, prof: c.prof, face: 0, alive: true, bias: rand(-2, 2), v: new V3(rand(-0.5, 0.5), -2.2, rand(-0.5, 0.5)) });
 }
 function udTickPlane(P, dt) {
-  const lane = 900 + P.lane;
-  P.hdg = clamp((P.p.x - lane) * 0.0035, -0.28, 0.28);
-  const low = P.p.z < UD.dropZ + 500;
-  P.spd += ((low ? 50 : 82) - P.spd) * Math.min(1, dt * 0.4);
-  const wantY = low ? 210 : 380;
-  P.vy = clamp(P.vy + (wantY - P.p.y) * dt * 0.35, -12, 12);
+  const T = RK_TGT;
+  const dropping = P.dropOn && ((P.queue && P.queue.length) || P.walking);
+  if (dropping) {
+    P.orbit = (P.orbit || P.i * 2.1) + dt * 0.7;
+    const rad = 16;
+    const tx = T.x + P.lane * 0.35 + Math.sin(P.orbit) * rad;
+    const tz = T.z + Math.cos(P.orbit) * rad * 0.7;
+    const dx = tx - P.p.x, dz = tz - P.p.z;
+    P.hdg = Math.atan2(-dx, -dz);
+    P.spd += (16 - P.spd) * Math.min(1, dt * 0.9);
+    P.vy = clamp(P.vy + (72 - P.p.y) * dt * 0.7, -10, 10);
+  } else {
+    const lane = T.x + P.lane;
+    P.hdg = clamp((P.p.x - lane) * 0.012, -0.18, 0.18);
+    const near = P.p.z < T.z + 160;
+    P.spd += ((near ? 34 : 62) - P.spd) * Math.min(1, dt * 0.4);
+    P.vy = clamp(P.vy + ((near ? 110 : 220) - P.p.y) * dt * 0.4, -12, 12);
+  }
   P.p.x += -Math.sin(P.hdg) * P.spd * dt; P.p.z += -Math.cos(P.hdg) * P.spd * dt; P.p.y += P.vy * dt;
-  P.pitch = clamp(-P.vy * 0.012, -0.1, 0.1); P.roll = clamp(P.hdg * -1.1, -0.22, 0.22);
+  P.pitch = clamp(-P.vy * 0.012, -0.1, 0.1); P.roll = clamp((dropping ? Math.sin(P.orbit || 0) * 0.08 : P.hdg * -1.1), -0.22, 0.22);
   rkPose(P);
   for (const pr of P.props) pr.rotation.z += dt * 26;
-  if (!P.dropOn && P.p.z < UD.dropZ && P.queue.length) { P.dropOn = true; if (P.king && !UD.said) { UD.said = true; popup('降下始め。落下傘が開くまで、降下口から見える', 3.4); rkSay('r_fight', 0); setTimeout(() => UD.on && !UD.over && rkSay('x_sumi_talk2', 0), 2200); setTimeout(() => UD.on && !UD.over && rkSay('x_ojou_take', 0), 5200); } }
+  if (!P.dropOn && P.p.z < T.z + 55 && P.p.z > T.z - 30) { P.dropOn = true; if (P.king && !UD.said) { UD.said = true; popup('降下始め。落下傘が開くまで、降下口から見える', 3.4); rkSay('r_fight', 0); setTimeout(() => UD.on && !UD.over && rkSay('x_sumi_talk2', 0), 2200); setTimeout(() => UD.on && !UD.over && rkSay('x_ojou_take', 0), 5200); } }
   if (P.walking) {
     const c = P.walking; c.t += dt / c.dur;
     if (c.t >= 1) { c.m.position.copy(c.b); udLeave(P, c); P.walking = null; }
@@ -24791,11 +24804,13 @@ function udTickPlane(P, dt) {
 function udTickDrop(d, dt) {
   d.t += dt;
   if (d.st === 'fall') { d.v.y -= 7 * dt; if (d.t > 1.05) { d.st = 'open'; d.can.visible = true; d.lines.visible = true; d.v.y = Math.max(d.v.y, -8); } }
-  else if (d.st === 'open') { d.v.y += (-5.0 - d.v.y) * Math.min(1, dt * 2.2); d.v.x += (d.bias * 0.12 - d.v.x) * dt * 0.5; d.v.z += (0.8 - d.v.z) * dt * 0.45; d.can.rotation.z = Math.sin(d.t * 1.4) * 0.07; }
+  else if (d.st === 'open') { d.v.y += (-4.2 - d.v.y) * Math.min(1, dt * 2.4); d.v.x += (d.bias * 0.05 - d.v.x) * dt; d.v.z += (-d.v.z) * dt; d.can.rotation.z = Math.sin(d.t * 1.4) * 0.05; }
   if (d.st !== 'land') {
     d.g.position.addScaledVector(d.v, dt);
     if (d.g.position.y <= 0) {
       d.g.position.y = 0; d.st = 'land'; if (d.can) d.can.visible = false; if (d.lines) d.lines.visible = false;
+      d.g.position.x = clamp(d.g.position.x, RK_TGT.x - 42, RK_TGT.x + 54);
+      d.g.position.z = clamp(d.g.position.z, RK_TGT.z - 58, RK_TGT.z + 58);
       if (d.dead) { d.alive = false; }
       if (!d.king) { if (!d.dead) UD.landed++; udMaybeEnd(); }
       else { UD.kingLanded = 1; player.hp = CFG.maxHp; player.weapon = 0; popup('着地。左のボタンで弓・刀。地上に米軍がいる', 3.6); udReinforce(); udMaybeEnd(); }

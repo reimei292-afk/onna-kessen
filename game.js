@@ -8403,27 +8403,69 @@ function updateIsland(dt){
 //  日本軍がベトナムの山間のジャングルを進む。現地の娘は弓か懐刀だけ。
 //  檻の猛獣（蛇・虎・猪）は腹を空かせていて、どちらにも襲いかかる。
 // ====================================================================
-const NB = { on: false, beasts: [], cages: [], gibs: [], won: false, ridgeSaid: false, tex: null, organ: null };
+const NB = { on: false, beasts: [], cages: [], gibs: [], won: false, ridgeSaid: false, tex: null, mats: null };
 const NB_IDS = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'];
+const NB_FEED = 300;   // 倒した遺体一頭につき、腹を空かせた獣が肉を貪る時間（秒）
 function nbRemain() {
   const ally = enemies.filter(e => e.team === 'blue' && e.state !== 'down').length + (player.hp > 0 ? 1 : 0);
   const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
   const beast = NB.beasts.filter(b => b.alive).length;
-  return `残敵 ${foe}　猛獣 ${beast}　味方 ${ally}`;
+  const eating = NB.beasts.filter(b => b.alive && b.feed).length;
+  return `残敵 ${foe}　猛獣 ${beast}${eating ? '（捕食 ' + eating + '）' : ''}　味方 ${ally}`;
 }
-function nbGore(x, z, scale) {
+function nbMat(hex) {
+  if (!NB.mats) NB.mats = {};
+  const k = hex.toString(16);
+  if (!NB.mats[k]) NB.mats[k] = new THREE.MeshLambertMaterial({ color: hex });
+  return NB.mats[k];
+}
+function nbKeep(mesh) {
+  stageRoot.add(mesh);
+  NB.gibs.push({ m: mesh, stay: true });
+}
+function nbGore(x, z, scale, heavy) {
   spillBlood(x, 0, z, 0.9 * (scale || 1));
-  puff(new V3(x, 1.05, z), 0xb10f25, 12, 0.16, 3.2, 0.5);
-  if (!NB.organ) NB.organ = new THREE.MeshLambertMaterial({ color: 0x6a1020 });
-  const n = scale > 1 ? 6 : 3;
-  for (let i = 0; i < n; i++) {
-    const geo = new THREE.SphereGeometry(0.05 + Math.random() * 0.045, 6, 5);
-    const m = new THREE.Mesh(geo, NB.organ);
-    m.scale.set(1.8, 0.45, 0.7);
-    m.position.set(x + rand(-0.15, 0.15), 0.9 + rand(0, 0.4), z + rand(-0.15, 0.15));
-    scene.add(m);
-    NB.gibs.push({ m, geo, v: new V3(rand(-1.4, 1.4), rand(1.2, 3.4), rand(-1.4, 1.4)), life: 2.6 });
+  puff(new V3(x, 0.7, z), 0xb10f25, heavy ? 14 : 8, 0.14, 2.6, 0.45);
+  if (NB.gibs.length > 180) return;
+  const sc = scale || 1;
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(0.28 * sc + Math.random() * 0.12, 10), nbMat(0x4a0610));
+  pool.rotation.x = -Math.PI / 2; pool.position.set(x + rand(-0.08, 0.08), 0.025, z + rand(-0.08, 0.08));
+  pool.scale.set(1, 1.4 + Math.random() * 0.6, 1); nbKeep(pool);
+  const gut = nbMat(0x7a1830);
+  let gx = x + rand(-0.05, 0.05), gz = z + rand(0.05, 0.2);
+  for (let i = 0; i < (heavy ? 9 : 5); i++) {
+    const geo = new THREE.SphereGeometry(0.035 + Math.random() * 0.012, 6, 5);
+    const m = new THREE.Mesh(geo, gut);
+    m.scale.set(1.7, 0.72, 0.85);
+    gx += rand(-0.07, 0.09); gz += rand(-0.02, 0.08);
+    m.position.set(gx, 0.04, gz); m.rotation.y = rand(0, 3); nbKeep(m);
   }
+  const liver = new THREE.Mesh(new THREE.SphereGeometry(0.09 * sc, 7, 6), nbMat(0x5c1020));
+  liver.scale.set(1.5, 0.55, 1.05);
+  liver.position.set(x + rand(0.05, 0.28), 0.05, z + rand(-0.12, 0.12));
+  liver.rotation.y = rand(0, 3); nbKeep(liver);
+  if (heavy) {
+    const skin = nbMat(0xd2b09a), cut = nbMat(0x6e1020);
+    const arm = new THREE.Group();
+    const up = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.34, 6), skin);
+    up.rotation.z = Math.PI / 2; up.position.x = 0.16; arm.add(up);
+    const fore = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.042, 0.3, 6), skin);
+    fore.rotation.z = Math.PI / 2 + 0.35; fore.position.set(0.44, 0.04, 0.02); arm.add(fore);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), skin);
+    hand.scale.set(1.1, 0.7, 0.55); hand.position.set(0.6, 0.08, 0.04); arm.add(hand);
+    const stump = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 5), cut);
+    stump.position.set(-0.02, 0.02, 0); arm.add(stump);
+    arm.position.set(x + rand(-0.35, 0.15), 0.05, z + rand(-0.25, 0.25));
+    arm.rotation.y = rand(-1.2, 1.2); nbKeep(arm);
+  }
+}
+function nbStartFeed(b, prey) {
+  if (!b || !prey || prey === 'player' || !prey.s || prey.nbDevoured) return;
+  b.feed = prey; b.feedT = NB_FEED; b.feedFx = 0.3; b.coil = null; prey.nbEaten = true;
+  const x = prey.s.position.x, z = prey.s.position.z;
+  nbGore(x, z, b.kind === 'tiger' ? 1.5 : 1.15, true);
+  const who = b.kind === 'tiger' ? '虎' : b.kind === 'boar' ? '猪' : '蛇';
+  popup(who + 'が倒した相手の肉に食らいついた');
 }
 function nbHurt(b, dmg, pt) {
   if (!b || !b.alive) return;
@@ -8534,14 +8576,15 @@ function buildNanban() {
 }
 function nbStart() {
   NB.won = false; NB.ridgeSaid = false;
-  const nB = MOBILE ? 12 : 18;
+  const nB = MOBILE ? 32 : 56;
+  const cols = 5;
   for (let i = 0; i < nB; i++) {
-    const sq = i % 3, row = (i / 3) | 0;
-    const x = (sq - 1) * 2.05 + rand(-0.25, 0.25);
-    const z = 28 + row * 1.25 + rand(-0.1, 0.1);
-    const kind = i % 5 === 0 ? 'mob' : 'archer';
+    const sq = i % cols, row = (i / cols) | 0;
+    const x = (sq - (cols - 1) / 2) * 1.45 + rand(-0.12, 0.12);
+    const z = 25 + row * 1.12 + rand(-0.08, 0.08);
+    const kind = i % 4 === 0 ? 'mob' : 'archer';
     const e = spawnEnemy(x, z, kind, false, 'blue', { yari: kind === 'mob' ? 1 : -1 });
-    if (e) e.nbSq = sq;
+    if (e) { e.nbSq = sq; e.nbRow = row; }
   }
   const spots = [];
   for (const z0 of [-8, -24, -40, -56]) {
@@ -8563,10 +8606,12 @@ function nbStart() {
 function updateNanban(dt) {
   if (!NB.on || state !== 'play') return;
   for (let i = NB.gibs.length - 1; i >= 0; i--) {
-    const g = NB.gibs[i]; g.life -= dt; g.v.y -= 9 * dt;
+    const g = NB.gibs[i];
+    if (g.stay) continue;
+    g.life -= dt; g.v.y -= 9 * dt;
     g.m.position.addScaledVector(g.v, dt);
     if (g.m.position.y < 0.06) { g.m.position.y = 0.06; g.v.y *= -0.15; g.v.x *= 0.6; g.v.z *= 0.6; }
-    if (g.life <= 0) { scene.remove(g.m); g.geo.dispose(); NB.gibs.splice(i, 1); }
+    if (g.life <= 0) { scene.remove(g.m); if (g.geo) g.geo.dispose(); NB.gibs.splice(i, 1); }
   }
   for (const c of NB.cages) {
     if (c.open) continue;
@@ -8591,7 +8636,29 @@ function updateNanban(dt) {
       if (hp < (o === 'player' ? 40 : 3)) d *= 0.65;
       if (d < pd) { pd = d; prey = o; }
     }
-    if (b.kind === 'snake' && b.coil && (b.coil === 'player' ? player.hp <= 0 : b.coil.state === 'down')) b.coil = null;
+    if (b.feed) {
+      const o = b.feed;
+      if (!o.s || b.feedT <= 0) {
+        if (o && o.s) { o.s.visible = false; o.nbDevoured = true; }
+        b.feed = null; b.coil = null;
+        if (o && o.s) popup('肉を食い尽くした');
+      } else {
+        b.feedT -= dt;
+        const x = o.s.position.x, z = o.s.position.z;
+        b.x += (x - b.x) * Math.min(1, dt * 3); b.z += (z - b.z) * Math.min(1, dt * 3);
+        b.s.position.set(b.x, b.kind === 'snake' ? 0.42 : 0.12, b.z);
+        const bob = 1 + Math.sin(time * 5) * 0.06;
+        b.spr.scale.set(b.h * (b.kind === 'snake' ? 1.6 : 1.35) * bob, b.h * 0.72, 1);
+        b.feedFx -= dt;
+        if (b.feedFx <= 0) { b.feedFx = 7; nbGore(x + rand(-0.15, 0.15), z + rand(-0.1, 0.1), 0.45, false); }
+        continue;
+      }
+    }
+    if (b.kind === 'snake' && b.coil && (b.coil === 'player' ? player.hp <= 0 : b.coil.state === 'down')) {
+      if (b.coil !== 'player' && b.coil.state === 'down') nbStartFeed(b, b.coil);
+      b.coil = null;
+      if (b.feed) continue;
+    }
     if (b.coil) {
       const o = b.coil;
       const x = o === 'player' ? player.pos.x : o.s.position.x;
@@ -8601,7 +8668,7 @@ function updateNanban(dt) {
       if (b.cd <= 0) {
         b.cd = 0.55;
         if (o === 'player') { hurtPlayer(7); popup('蛇に巻かれて噛まれた'); nbGore(x, z, 0.45); }
-        else { damageEnemy(o, 2, b.s.position, false, { pt: o.s.position.clone() }, null); if (o.state === 'down' && !o.nbEaten) { o.nbEaten = true; nbGore(x, z, 1.5); } }
+        else { damageEnemy(o, 2, b.s.position, false, { pt: o.s.position.clone() }, null); if (o.state === 'down') nbStartFeed(b, o); }
       }
       continue;
     }
@@ -8622,11 +8689,10 @@ function updateNanban(dt) {
       else if (prey === 'player') { hurtPlayer(b.kind === 'tiger' ? 14 : 10); popup(b.kind === 'tiger' ? '虎に噛まれた' : '猪に突かれた'); nbGore(player.pos.x, player.pos.z, 0.7); }
       else {
         damageEnemy(prey, b.kind === 'tiger' ? 3 : 2, b.s.position, false, { pt: prey.s.position.clone() }, null);
-        if (prey.state === 'down') { nbGore(prey.s.position.x, prey.s.position.z, b.kind === 'tiger' ? 1.6 : 0.8); if (b.kind === 'tiger') prey.nbEaten = true; }
+        if (prey.state === 'down') nbStartFeed(b, prey);
       }
     }
   }
-  let mi = 0;
   for (const e of enemies) {
     if (e.team !== 'blue' || e.state === 'down' || e.special || e.secretary || e.medic) continue;
     for (const b of NB.beasts) {
@@ -8641,10 +8707,8 @@ function updateNanban(dt) {
     if (hot) { e.passive = false; continue; }
     e.passive = true; e.tgt = null;
     if (e.state === 'aim' || e.state === 'shoot' || e.state === 'zanshin' || e.state === 'stab') continue;
-    const sq = e.nbSq || 0;
-    const tx = clamp(player.pos.x + (sq - 1) * 1.8, -4.2, 4.2);
-    const tz = player.pos.z + 2.2 + (mi % 4) * 1.15;
-    mi++;
+    const tx = clamp(player.pos.x + ((e.nbSq || 0) - 2) * 1.45, -4.6, 4.6);
+    const tz = player.pos.z + 2.4 + (e.nbRow || 0) * 1.05;
     steer(e, tx, tz, e.speed * 0.9, dt);
   }
   const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
@@ -17040,7 +17104,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

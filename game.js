@@ -8645,17 +8645,105 @@ function buildNanban() {
     NB.cages.push({ g, x, z, kind, open: false, t: 0 });
   }
 }
+function nbThreats() {
+  if (NB._tf === time && NB._th) return NB._th;
+  const list = [];
+  for (const o of enemies) if (o.team === 'orange' && o.state !== 'down' && !o.special) list.push({ x: o.s.position.x, z: o.s.position.z, e: o });
+  for (const b of NB.beasts) if (b.alive && !b.feed) list.push({ x: b.x, z: b.z, beast: b });
+  NB._tf = time; NB._th = list; return list;
+}
+function nbSeparate(e) {
+  const p = e.s.position; let x = 0, z = 0;
+  for (const o of enemies) {
+    if (o === e || o.state === 'down' || !o.s) continue;
+    const dx = p.x - o.s.position.x, dz = p.z - o.s.position.z, d2 = dx * dx + dz * dz;
+    if (d2 > 0.0004 && d2 < 0.64) { const d = Math.sqrt(d2); x += dx / d * (0.8 - d); z += dz / d * (0.8 - d); }
+  }
+  p.x = clamp(p.x + x * 0.4, -6.2, 6.2); p.z += z * 0.25;
+}
+function nbHit(th, dmg, from) {
+  if (!th) return;
+  if (th.beast) nbHurt(th.beast, dmg, new V3(th.x, 0.7, th.z));
+  else if (th.e && th.e.state !== 'down') damageEnemy(th.e, dmg, from, false, { pt: th.e.s.position.clone() }, null);
+}
+function nbAllyBrain(e, dt) {
+  const p = e.s.position, a = { x: clamp(player.pos.x, -3.4, 3.4), z: player.pos.z };
+  const ths = nbThreats(), ix = e.nbIx || 0;
+  e.cd -= dt; e.t += dt; e.moving = false;
+  if (e.state === 'aim') {
+    const T = aimTotal(e, false);
+    if (e.t >= T) {
+      if (e.nbMark) enemyShoot(e, e.nbMark);
+      npcSay(e, 'attack', 0, 0.2);
+      e.state = 'zanshin'; e.t = 0; e.nbMark = null;
+    }
+    return true;
+  }
+  if (e.state === 'zanshin') { if (e.t > 0.28) { e.state = 'idle'; e.t = 0; } return true; }
+  if (e.state === 'windup' || e.state === 'recover' || e.state === 'stab') {
+    if (e.state === 'windup' && e.t > 0.42) { e.state = 'recover'; e.t = 0; }
+    else if (e.t > 0.48) { e.state = 'idle'; e.t = 0; }
+  }
+  if (e.nbRole === 'archer') {
+    const col = ix % 5, row = (ix / 5) | 0;
+    const tx = clamp(a.x + (col - 2) * 1.4, -5.6, 5.6), tz = a.z + 3.4 + row * 1.2;
+    if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.95, dt);
+    e.faceWant = Math.PI;
+    let mark = null, md = 42;
+    for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (t.z < p.z + 1 && d < md) { md = d; mark = t; } }
+    if (NB._vf !== time) { NB._vf = time; NB._von = (NB.volleyT || 0) <= time; if (NB._von) NB.volleyT = time + 3.1; }
+    if (mark && NB._von && Math.hypot(tx - p.x, tz - p.z) < 2.2) {
+      e.nbMark = mark.e || { isPlayer: false, s: { position: { x: mark.x, z: mark.z } }, baseY: 0, figH: mark.beast ? mark.beast.h : 1.6 };
+      e.faceWant = Math.atan2(mark.x - p.x, mark.z - p.z);
+      e.state = 'aim'; e.t = 0;
+    }
+  } else if (e.nbRole === 'yari') {
+    const col = ix % 4, row = (ix / 4) | 0;
+    const tx = clamp(a.x + (col - 1.5) * 1.15, -5.2, 5.2), tz = a.z - 2.4 - row * 1.02;
+    if (e.state !== 'windup') steer(e, tx, tz, e.speed * 0.9, dt);
+    let th = null, td = 2.8;
+    for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (d < td) { td = d; th = t; } }
+    e.faceWant = th ? Math.atan2(th.x - p.x, th.z - p.z) : Math.PI;
+    if (th && (e.nbStab || 0) <= time && e.state === 'idle') {
+      e.nbStab = time + 1.25; e.state = 'windup'; e.t = 0; nbHit(th, 2, p.clone());
+    }
+  } else {
+    const th = ths.length ? ths[ix % ths.length] : null;
+    if (th) {
+      const side = ((ix % 5) - 2) * 0.9;
+      const tx = clamp(th.x + side, -6, 6), tz = th.z + 0.8;
+      const d = Math.hypot(tx - p.x, tz - p.z);
+      if (d > 1.15) steer(e, tx, tz, e.speed * 1.35, dt);
+      e.faceWant = Math.atan2(th.x - p.x, th.z - p.z);
+      if (e.state !== 'windup' && e.state !== 'recover') e.state = d > 1.15 ? 'charge' : 'idle';
+      if (d < 1.7 && (e.nbStab || 0) <= time && e.state !== 'windup') {
+        e.nbStab = time + 0.85; e.state = 'windup'; e.t = 0; nbHit(th, 2, p.clone());
+      }
+    } else {
+      const col = ix % 4, row = (ix / 4) | 0;
+      steer(e, clamp(a.x + (col - 1.5) * 1.45, -5.4, 5.4), a.z - 7.5 - row * 1.15, e.speed, dt);
+      e.faceWant = Math.PI; if (e.state === 'charge') e.state = 'idle';
+    }
+  }
+  nbSeparate(e);
+  return true;
+}
 function nbStart() {
-  NB.won = false; NB.ridgeSaid = false;
+  NB.won = false; NB.ridgeSaid = false; NB.volleyT = 1.2;
   const nB = MOBILE ? 32 : 56;
-  const cols = 5;
+  const roles = ['archer', 'yari', 'yari', 'knife', 'archer'];
+  const nRole = { archer: 0, yari: 0, knife: 0 };
   for (let i = 0; i < nB; i++) {
-    const sq = i % cols, row = (i / cols) | 0;
-    const x = (sq - (cols - 1) / 2) * 1.45 + rand(-0.12, 0.12);
-    const z = 25 + row * 1.12 + rand(-0.08, 0.08);
-    const kind = i % 4 === 0 ? 'mob' : 'archer';
-    const e = spawnEnemy(x, z, kind, false, 'blue', { yari: kind === 'mob' ? 1 : -1 });
-    if (e) { e.nbSq = sq; e.nbRow = row; }
+    const role = roles[i % roles.length];
+    const ix = nRole[role]++;
+    const kind = role === 'archer' ? 'archer' : 'mob';
+    const col = role === 'yari' ? ix % 4 : ix % 5;
+    const row = role === 'yari' ? (ix / 4) | 0 : (ix / 5) | 0;
+    const x = (col - (role === 'yari' ? 1.5 : 2)) * (role === 'knife' ? 1.5 : 1.25) + rand(-0.08, 0.08);
+    const z = role === 'archer' ? 27 + row * 1.2 : role === 'yari' ? 16 - row * 1.05 : 9 - row * 1.15;
+    const e = spawnEnemy(x, z, kind, false, 'blue', { yari: role === 'yari' ? 1 : -1 });
+    if (!e) continue;
+    e.nbRole = role; e.nbIx = ix; e.sq = null; e.ammo = undefined;
   }
   const spots = [];
   for (const z0 of [-8, -24, -40, -56]) {
@@ -8671,7 +8759,7 @@ function nbStart() {
     const cage = NB.cages.find(c => Math.hypot(c.x - p[0], c.z - p[1]) < 3.2 && !c.carrier);
     if (cage) { cage.carrier = e; e.nbCage = cage; }
   });
-  showBanner('南蛮の戦い', '山間のジャングルを稜線まで進め。現地の娘は弓と懐刀。獣は飼い主には向かわず、日本人だけを食う');
+  showBanner('南蛮の戦い', '弓は後ろから斉射。槍は方陣。懐刀は突撃。獣は飼い主には向かわない');
   if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('進め。道を空けるな', { pitch: 1.05, rate: 1.0 }, 1); }, 700);
   setTimeout(() => { if (state !== 'play') return; const v = enemies.find(e => e.nbVn && e.state !== 'down'); if (v) nbVnSay(v, 'spot'); }, 1400);
 }
@@ -8781,14 +8869,6 @@ function updateNanban(dt) {
       }
     }
     e.nbBeastCd = (e.nbBeastCd || 0) - dt;
-    const hot = enemies.some(o => o.team === 'orange' && o.state !== 'down' && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 11)
-      || NB.beasts.some(b => b.alive && Math.hypot(b.x - e.s.position.x, b.z - e.s.position.z) < 7);
-    if (hot) { e.passive = false; continue; }
-    e.passive = true; e.tgt = null;
-    if (e.state === 'aim' || e.state === 'shoot' || e.state === 'zanshin' || e.state === 'stab') continue;
-    const tx = clamp(player.pos.x + ((e.nbSq || 0) - 2) * 1.45, -4.6, 4.6);
-    const tz = player.pos.z + 2.4 + (e.nbRow || 0) * 1.05;
-    steer(e, tx, tz, e.speed * 0.9, dt);
   }
   const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
   const beasts = NB.beasts.filter(b => b.alive).length;
@@ -8823,7 +8903,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
-  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃ち、ベトナム語で話す。檻の蛇・虎・猪は飼い主には向かわず、倒した日本人の肉を食う。巻かれて噛まれ、食われ、突かれる。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。弓は殿の後ろから揃って射り、槍は方陣、懐刀は前へ突撃する。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃ち、ベトナム語で話す。檻の蛇・虎・猪は飼い主には向かわず、倒した日本人の肉を食う。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -17183,7 +17263,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21473,6 +21553,7 @@ function updateEnemies(dt) {
     else if (MTN.on && e.bundleBear && mtnBundleBrain(e, dt)) { /* 山城：竹束を押し立てて前進 */ }
     else if (MTN.on && e.team === 'blue' && mtnAllyAdvance(e, dt)) { /* 竹束の陰について坂を上る */ }
     else if (MTN.on && e.team === 'orange' && mtnDefenderBrain(e, dt)) { /* 階段の上と横の足場から射る。門は開けない */ }
+    else if (NB.on && e.nbRole && nbAllyBrain(e, dt)) { /* 南蛮：弓は後ろで斉射、槍は方陣、懐刀は突撃 */ }
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
       e.cd -= dt; e.t += dt;

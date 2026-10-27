@@ -8538,6 +8538,59 @@ function nbVnSay(e, kind) {
     speechSynthesis.speak(u);
   } catch (err) {}
 }
+const NB_VN_GIVEN = ['アイン', 'フォン', 'マイ', 'リン', 'ハー', 'キム', 'ラン', 'ゴック', 'タオ', 'チャン', 'ヴィ', 'チャウ', 'ズン', 'ハン', 'クイン', 'イエン', 'トゥ', 'ホア', 'ニュン', 'ティエン', 'ミー', 'ダオ', 'ルエン', 'トゥイ', 'ヒエン', 'フエ', 'スオン', 'カム', 'ビック', 'フオン'];
+function nbNameVn(e, id) {
+  if (!e || !e.prof) return;
+  const g = id && GIRLS[id];
+  const south = id && /^vn0[456]/.test(id);
+  const city = south ? 'ホーチミンの' : 'ハノイの';
+  let name = g && g.prof && g.prof.name;
+  if (!name || enemies.some(o => o !== e && o.prof && o.prof.name === name)) {
+    const i = NB.vnI = (NB.vnI || 0) + 1;
+    name = city + NB_VN_GIVEN[(i - 1) % NB_VN_GIVEN.length];
+    if (i > NB_VN_GIVEN.length) name += String(1 + ((i - 1) / NB_VN_GIVEN.length | 0));
+  }
+  e.prof.name = name;
+  if (g && g.prof) { e.prof.pers = g.prof.pers; e.prof.cm = g.prof.cm; e.prof.vv = g.prof.vv; e.P = PERS[g.prof.pers] || e.P; }
+}
+const NB_UK_IDS = ['uk01', 'uk02', 'uk03', 'uk04', 'uk05', 'uk06', 'uk07', 'uk08', 'uk10'];
+function nbNameUk(e, i) {
+  if (!e || !e.prof) return;
+  const id = NB_UK_IDS[i % NB_UK_IDS.length];
+  const G = UK_PROF[id];
+  let name = G && G.name;
+  if (!name || enemies.some(o => o !== e && o.prof && o.prof.name === name)) name = UK2_FILL[i % UK2_FILL.length];
+  e.prof.name = name;
+  if (G) { e.prof.pers = G.pers; e.prof.cm = G.cm; e.prof.vv = G.vv; e.P = PERS[G.pers] || e.P; }
+  e.ukId = id; e.nbUk = true;
+  e.ukInfo = { role: 'マスケット', en: name, age: (G && G.age) || 21, cm: e.prof.cm, desc: '日本軍に加わった英国の娘。列の後ろからマスケットで撃つ。' };
+}
+const NB_JP = {
+  march: ['道が細い。絶壁だ。仕掛けのある谷を進むしかない', '槍が先頭だ。列を乱すな', '懐刀は槍の後ろ。弓はさらに後ろから', '足元を見ろ。糸も穴もある', '脇へは出られない。谷底を行け', '英国も後ろに続いている', '大砲は二門。近づきすぎるな', '坂だ。足を止めずに進め', 'この先で会敵する。今はまだ仕掛けだけだ', '棒で突けば遅いが、見つけやすい'],
+  spot: ['前方に人影。現地の娘だ', '敵だ。槍、構え', '檻がある。獣を出すな', '見えた。弓は間合いを取れ', '先に娘がいる。道は一本だ'],
+  trap: ['仕掛けだ。足を止めろ', '糸が見える。跨ぐな', '上を見ろ。丸太だ', '穴だ。見張りを置け', '竹がしなっている', '蜂の巣だ。揺らすな', '見つけた。外すか、敵の方へ向けろ'],
+  shell: ['撃て。破裂弾だ', '頭を下げろ。破片が来る', '着弾。直撃はさせない', 'もう一門、続け', '間合いが空いた。大砲を放て'],
+  beast: ['獣だ。飼い主には行くまいが、こちらには来る', '槍で受け止めろ', '猪だ。道を開けるな、突け', '虎だ。囲むな、槍を揃えろ'],
+};
+function nbJpSay(e, kind) {
+  if (!e || e.nbVn || e.nbUk || e.state === 'down' || !e.prof) return;
+  if ((e.nbJpT || 0) > time) return;
+  const bag = NB_JP[kind]; if (!bag) return;
+  if ((NB.jpT || 0) > time) return;
+  e.nbJpT = time + 7; NB.jpT = time + 2.6;
+  const text = bag[(Math.random() * bag.length) | 0];
+  const name = (e.prof.name || '侍女').replace(/^組頭 /, '');
+  if (typeof subtitle === 'function') { subtitle(text); const el = $('subtitle'); if (el) el.textContent = name + '「' + text + '」'; }
+  if (typeof Voice !== 'undefined' && Voice.say) Voice.say(text, e.prof, 0);
+}
+function nbJpNear(kind) {
+  let best = null, bd = 14;
+  for (const e of enemies) if (e.team === 'blue' && e.nbRole && !e.nbUk && e.state !== 'down') {
+    const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (best) nbJpSay(best, kind);
+}
 function nbStartFeed(b, prey) {
   if (!b || !prey || prey === 'player' || !prey.s || prey.nbDevoured || prey.nbVn) return;
   b.feed = prey; b.feedT = NB_FEED; b.feedFx = 0.3; b.coil = null; prey.nbEaten = true;
@@ -8695,15 +8748,27 @@ function buildNanban() {
     const p = new THREE.Mesh(new THREE.CircleGeometry(rand(1.1, 2.4), 8), mossMat);
     p.rotation.x = -Math.PI / 2;
     const side = Math.random() < 0.5 ? -1 : 1;
-    p.position.set(side * rand(2.2, 6.4), 0.025, rand(-130, 36));
+    p.position.set(side * rand(0.35, 2.1), 0.025, rand(-130, 36));
     stageRoot.add(p);
   }
-  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -28 : 8.2, x1: side < 0 ? -8.2 : 28, z0: -150, z1: 46, y0: 0, y1: 12 });
+  const rockFace = yjMat('rock', 0x5c6858);
+  const rockLip = yjMat('rock', 0x6d8a62);
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 28; i++) {
+      const z = 50 - i * 7.3;
+      const h = 12 + (i % 4) * 1.35;
+      const w = new THREE.Mesh(new THREE.BoxGeometry(3.6, h, 7.5), rockFace);
+      w.position.set(side * 5.15, 0, z); w.userData.nbCliff = h; stageRoot.add(w);
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 7.5), rockLip);
+      lip.position.set(side * 3.42, 0, z); lip.userData.nbCliff = 1.1; stageRoot.add(lip);
+    }
+    boxes.push({ x0: side < 0 ? -40 : 3.32, x1: side < 0 ? -3.32 : 40, z0: -160, z1: 58, y0: -6, y1: 28 });
+  }
   const nPlant = USD_MOB ? 70 : 150;
   for (let i = 0; i < nPlant; i++) {
     const side = i % 2 ? 1 : -1;
     const z = 44 - (i * 175) / nPlant + rand(-0.6, 0.6);
-    const x = side * rand(2.15, 8.4);
+    const x = side * rand(4.4, 9.4);
     const kind = ['palm', 'banana', 'bamboo', 'bamboo', 'fern', 'fern'][i % 6];
     const h = kind === 'fern' ? rand(1.4, 2.4) : kind === 'bamboo' ? rand(4.2, 7.2) : kind === 'palm' ? rand(7.2, 11) : rand(3.6, 6.2);
     nbPlant(kind, x, z, h);
@@ -8743,7 +8808,7 @@ function buildNanban() {
   const waterMat = new THREE.MeshLambertMaterial({ map: water, color: 0x9ec8b4, transparent: true, opacity: 0.88 });
   for (let i = 0; i < 50; i++) {
     const z = 12 - i * 2.8, z2 = z - 2.8;
-    const x = Math.sin(z * 0.085) * 3.1 + 0.6, x2 = Math.sin(z2 * 0.085) * 3.1 + 0.6;
+    const x = Math.sin(z * 0.11) * 1.05, x2 = Math.sin(z2 * 0.11) * 1.05;
     const g = new THREE.Group();
     const seg = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 2.8), waterMat);
     seg.rotation.x = -Math.PI / 2; g.add(seg);
@@ -8752,7 +8817,7 @@ function buildNanban() {
     stageRoot.add(g);
   }
   const mossRock = yjMat('rock', 0x8ea878);
-  for (const [x, z, s] of [[2.8, 2, 0.9], [-3.4, -14, 1.15], [3.6, -28, 0.8], [-2.6, -46, 1.3], [4.1, -62, 0.95], [1.2, -36, 0.55], [-4.2, 6, 0.7], [3.2, -8, 0.65], [-3.8, -38, 1.05], [2.4, -52, 0.75]]) {
+  for (const [x, z, s] of [[4.8, 2, 0.9], [-5.2, -14, 1.15], [5.4, -28, 0.8], [-4.9, -46, 1.3], [5.1, -62, 0.95], [4.6, -36, 0.55], [-5.0, 6, 0.7], [4.7, -8, 0.65], [-5.3, -38, 1.05], [4.8, -52, 0.75]]) {
     const r = new THREE.Mesh(G.rock, mossRock);
     r.position.set(x, s * 0.32, z); r.scale.set(s * 1.2, s * 0.55, s); r.rotation.y = rand(0, 6); stageRoot.add(r);
     const moss = new THREE.Mesh(new THREE.CircleGeometry(s * 0.9, 7), mossMat);
@@ -8760,7 +8825,7 @@ function buildNanban() {
     if (s > 0.7) colliders.push({ x, z, r: s * 0.55 });
   }
   const bark = yjMat('bark');
-  for (const [x, z, len, yaw] of [[-2.4, -8, 3.2, 0.4], [2.2, -33, 3.6, 1.2], [-1.5, -55, 2.8, 0.2], [1.6, -18, 2.6, 0.9], [-2.8, -42, 3.4, -0.3], [0.4, -66, 3.1, 0.15]]) {
+  for (const [x, z, len, yaw] of [[-4.8, -8, 3.2, 0.4], [5.0, -33, 3.6, 1.2], [-4.7, -55, 2.8, 0.2], [4.9, -18, 2.6, 0.9], [-5.1, -42, 3.4, -0.3], [4.6, -66, 3.1, 0.15]]) {
     const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, len, 7), bark);
     log.rotation.z = Math.PI / 2; log.rotation.y = yaw;
     log.position.set(x, 0.24, z); stageRoot.add(log);
@@ -8782,12 +8847,12 @@ function buildNanban() {
     hut.position.set(x, 0, z); hut.rotation.y = yaw; stageRoot.add(hut);
     colliders.push({ x, z, r: 1.15 });
   }
-  nbHut(-5.4, -18, 0.4); nbHut(5.6, -48, -0.6); nbHut(-5.2, -96, 0.2);
+  nbHut(-6.4, -24, 0.4); nbHut(6.6, -70, -0.6); nbHut(-6.3, -108, 0.2);
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(10, 2.8, 1.1), yjMat('rock', 0x9a9a90));
   ridge.position.set(0, 1.4, -128); stageRoot.add(ridge);
-  buildHQ(-3.2, 3.2, 30, 38, 0, 34);
+  buildHQ(-3.2, 3.2, 48, 56, 0, 52);
   const wood = M.wood, dark = new THREE.MeshLambertMaterial({ color: 0x3a2a18 });
-  const spots = [[-1.6, -4, 'snake'], [1.8, -28, 'tiger'], [-1.2, -52, 'boar'], [1.4, -76, 'snake'], [-1.5, -100, 'tiger'], [1.3, -118, 'boar']];
+  const spots = [[-1.15, -44, 'snake'], [1.2, -64, 'tiger'], [-1.05, -84, 'boar'], [1.15, -102, 'snake'], [-1.2, -116, 'tiger'], [1.05, -126, 'boar']];
   for (const [x, z, kind] of spots) {
     const g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.15), dark); base.position.y = 0.06; g.add(base);
@@ -8804,11 +8869,17 @@ function buildNanban() {
   }
   TERR.fn = nbH;
   nbBuildTraps();
-  for (const o of stageRoot.children) { if (o.userData && o.userData.nbGround) continue; o.position.y += nbH(o.position.x, o.position.z); }
+  for (const o of stageRoot.children) {
+    if (o.userData && o.userData.nbGround) continue;
+    if (o.userData && o.userData.nbCliff) { o.position.y = nbH(0, o.position.z) + o.userData.nbCliff * 0.5 - 0.15; continue; }
+    o.position.y += nbH(o.position.x, o.position.z);
+  }
 }
 function nbH(x, z) {
   const bump = (z0, w, h) => { const u = (z - z0) / w; if (u < -1 || u > 1) return 0; const c = Math.cos(u * Math.PI * 0.5); return h * c * c; };
-  return bump(-16, 12, 1.35) + bump(-48, 9, -0.85) + bump(-78, 14, 1.9) + bump(-112, 16, 2.6) + Math.max(0, (Math.abs(x) - 4) * 0.12);
+  const ax = Math.abs(x);
+  const cliff = ax > 4.05 ? Math.min(16, Math.pow(ax - 4.05, 1.65) * 2.6) : 0;
+  return bump(-16, 12, 1.35) + bump(-48, 9, -0.85) + bump(-78, 14, 1.9) + bump(-112, 16, 2.6) + cliff;
 }
 function nbReveal(t) {
   if (!t || t.found || t.dead) return;
@@ -8832,52 +8903,52 @@ function nbFling(who, dirx, dirz, word) {
 }
 function nbBuildTraps() {
   NB.traps = []; NB.probe = false; NB.bee = 0;
-  const rope = new THREE.MeshLambertMaterial({ color: 0x2a241c });
-  const ropeSee = new THREE.MeshBasicMaterial({ color: 0x2a241c, transparent: true, opacity: 0.08 });
-  const wood = M.wood, spike = new THREE.MeshLambertMaterial({ color: 0xc8b8a0 });
-  const markMat = new THREE.MeshBasicMaterial({ color: 0xf0d060, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
-  const put = (kind, z, extra) => {
-    const x = Math.sin(z * 0.07) * 1.15 + (extra || 0);
+  const rope = new THREE.MeshLambertMaterial({ color: 0x6a5340 });
+  const ropeSee = new THREE.MeshBasicMaterial({ color: 0xf3e2a4 });
+  const wood = M.wood, spike = new THREE.MeshLambertMaterial({ color: 0xe6d2b4 });
+  const markMat = new THREE.MeshBasicMaterial({ color: 0xf0d060, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+  const cloth = { wire: 0xf0e2a0, log: 0xd24a32, bamboo: 0x79d36a, hole: 0x8a6a48, hive: 0xf0c24a };
+  const put = (kind, z) => {
+    const x = Math.sin(z * 0.05) * 0.28;
     const g = new THREE.Group();
-    const mark = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 10), markMat);
-    mark.rotation.x = -Math.PI / 2; mark.position.y = 0.06; mark.visible = false; g.add(mark);
+    const mark = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.98, 14), markMat);
+    mark.rotation.x = -Math.PI / 2; mark.position.y = 0.08; mark.visible = false; g.add(mark);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 2.6, 5), wood);
+    pole.position.set(1.35, 1.3, 0); g.add(pole);
+    const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.42), new THREE.MeshBasicMaterial({ color: cloth[kind] || 0xf0d060, side: THREE.DoubleSide }));
+    flag.position.set(1.7, 2.35, 0); g.add(flag);
     const t = { kind, x, z, g, mark, found: false, dead: false, flip: false, phase: 'idle', t: 0, hit: null };
     if (kind === 'wire') {
-      const w = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.02, 0.02), ropeSee.clone());
-      w.position.y = 0.2; g.add(w); t.wire = w;
-      const bow = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.08), wood);
-      bow.position.set(1.7, 0.7, 0); g.add(bow);
+      const w = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.07, 0.07), ropeSee.clone());
+      w.position.y = 0.28; g.add(w); t.wire = w;
+      const bow = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.15, 0.12), wood);
+      bow.position.set(1.45, 0.85, 0); g.add(bow);
+      const bow2 = bow.clone(); bow2.position.x = -1.45; g.add(bow2);
     } else if (kind === 'log') {
-      for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 5), wood); p.position.set(s * 1.5, 1.3, 0); g.add(p); }
-      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.2, 5), wood); bar.rotation.z = Math.PI / 2; bar.position.y = 2.5; g.add(bar);
-      const arm = new THREE.Group(); arm.position.y = 2.5; g.add(arm); t.arm = arm;
-      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 2.4, 7), wood); log.rotation.z = Math.PI / 2; log.position.y = -1.15; arm.add(log);
-      for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.06), spike); sp.position.set(-0.9 + i * 0.36, -1.15, 0.2); arm.add(sp); }
+      for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 3.1, 6), wood); p.position.set(s * 1.35, 1.55, 0); g.add(p); }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.0, 6), wood); bar.rotation.z = Math.PI / 2; bar.position.y = 3.0; g.add(bar);
+      const arm = new THREE.Group(); arm.position.y = 3.0; g.add(arm); t.arm = arm;
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 2.5, 8), wood); log.rotation.z = Math.PI / 2; log.position.y = -1.35; arm.add(log);
+      for (let i = 0; i < 7; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.32, 0.08), spike); sp.position.set(-0.95 + i * 0.32, -1.35, 0.28); arm.add(sp); }
     } else if (kind === 'bamboo') {
-      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 2.4, 5), NB.plantMat.bamboo);
-      b.rotation.z = 0.9; b.position.set(0.7, 0.9, 0); g.add(b); t.bend = b;
-      const tie = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), rope); tie.position.set(0.15, 0.15, 0); g.add(tie);
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 3.1, 6), NB.plantMat.bamboo);
+      b.rotation.z = 1.05; b.position.set(0.85, 1.15, 0); g.add(b); t.bend = b;
+      const tie = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), rope); tie.position.set(0.2, 0.22, 0); g.add(tie);
     } else if (kind === 'hole') {
-      const h = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), new THREE.MeshLambertMaterial({ color: 0x1a120c }));
-      h.rotation.x = -Math.PI / 2; h.position.y = 0.02; g.add(h);
+      const h = new THREE.Mesh(new THREE.CircleGeometry(0.72, 14), new THREE.MeshLambertMaterial({ color: 0x120c08 }));
+      h.rotation.x = -Math.PI / 2; h.position.y = 0.03; g.add(h);
+      const rim = new THREE.Mesh(new THREE.RingGeometry(0.72, 1.05, 14), new THREE.MeshLambertMaterial({ color: 0x5a4634 }));
+      rim.rotation.x = -Math.PI / 2; rim.position.y = 0.045; g.add(rim);
     } else {
-      const hive = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), new THREE.MeshLambertMaterial({ color: 0xc4a15a }));
-      hive.scale.set(1, 1.3, 1); hive.position.set(0.8, 2.3, 0); g.add(hive); t.hive = hive;
+      const hive = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 8), new THREE.MeshLambertMaterial({ color: 0xe2b84a }));
+      hive.scale.set(1, 1.45, 1); hive.position.set(0.15, 1.7, 0); g.add(hive); t.hive = hive;
+      const peg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.2, 5), wood); peg.position.set(0.15, 1.1, 0); g.add(peg);
     }
     g.position.set(x, 0, z); stageRoot.add(g);
     NB.traps.push(t);
   };
-  const wires = [-8, -34, -70, -102];
-  const logs = [-18, -62, -108];
-  const bamboos = [-26, -54, -88, -120];
-  const holes = [-14, -46, -82, -116];
-  const hives = [-30, -74, -98];
-  const cut = (arr, n) => USD_MOB ? arr.slice(0, n) : arr;
-  for (const z of cut(wires, 3)) put('wire', z, 0);
-  for (const z of cut(logs, 2)) put('log', z, 0);
-  for (const z of cut(bamboos, 2)) put('bamboo', z, 0.4);
-  for (const z of cut(holes, 2)) put('hole', z, -0.3);
-  for (const z of cut(hives, 2)) put('hive', z, 1.2);
+  const line = USD_MOB ? [['wire', -16], ['log', -36], ['hole', -56], ['hive', -76], ['bamboo', -96]] : [['wire', -16], ['log', -36], ['bamboo', -56], ['hole', -76], ['hive', -96], ['wire', -116]];
+  for (const [k, z] of line) put(k, z);
 }
 function nbTrapUse() {
   if (!NB.on || !NB.traps) return false;
@@ -8912,6 +8983,7 @@ function nbUpdateTraps(dt) {
     }
   }
   for (const t of NB.traps) {
+    if (!t.found && !t.dead && Math.hypot(player.pos.x - t.x, player.pos.z - t.z) < 8) nbReveal(t);
     if (t.dead) continue;
     const who = nbVictims(t);
     if (t.kind === 'wire') {
@@ -8921,7 +8993,7 @@ function nbUpdateTraps(dt) {
           const from = new V3(t.x + 1.6, nbH(t.x, t.z) + 0.9, t.z);
           const vel = new V3(o.x - from.x, 0.2, o.z - from.z).normalize().multiplyScalar(28);
           addArrow(t.flip ? 'blue' : 'orange', from, vel, { dmg: 6 });
-          if (o.p) { hurtPlayer(8); popup('張り線！ 仕掛け弓の矢'); } else damageEnemy(o.e, 2, from, false, null, null);
+          if (o.p) { hurtPlayer(8); popup('張り線！ 仕掛け弓の矢'); nbJpNear('trap'); } else damageEnemy(o.e, 2, from, false, null, null);
           Sfx.twangAt(from); nbReveal(t); break;
         }
       }
@@ -8943,7 +9015,7 @@ function nbUpdateTraps(dt) {
           if (t.hit.has(id)) continue;
           if (Math.hypot(o.x - hx, o.z - hz) < 1.15) {
             t.hit.add(id);
-            if (o.p) { hurtPlayer(14); player.vy = 2.4; popup('トゲの丸太に倒された'); }
+            if (o.p) { hurtPlayer(14); player.vy = 2.4; popup('トゲの丸太に倒された'); nbJpNear('trap'); }
             else { o.e.knock.set((o.x - t.x) * 2, 1.5, t.flip ? -4 : 4); damageEnemy(o.e, 4, o.e.s.position, false, null, null); }
           }
         }
@@ -8977,10 +9049,11 @@ function nbUpdateTraps(dt) {
             const e = spawnEnemy(t.x, t.z, 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
             if (!e) break;
             e.nbVn = true; e.nbHide = true; e.nbAmb = t; e.hold = { face: 0 }; e.quietDeath = true; t.amb = e;
+            nbNameVn(e, id);
           }
           t.phase = 'out'; t.t = 0; t.outx = o.x; t.outz = o.z + (t.flip ? -0.7 : 0.75); t.vx = o.x; t.vz = o.z;
           t.amb.nbHide = false; t.amb.s.visible = true; nbVnSay(t.amb, 'attack');
-          if (o.p) { hurtPlayer(9); popup('穴から出てきて、後ろから突かれた'); }
+          if (o.p) { hurtPlayer(9); popup('穴から出てきて、後ろから突かれた'); nbJpNear('trap'); }
           else damageEnemy(o.e, 2, new V3(t.x, 1, t.z), false, null, t.amb);
           break;
         }
@@ -8991,6 +9064,7 @@ function nbUpdateTraps(dt) {
         if (!t.flip) NB.bee = Math.max(NB.bee || 0, t.beeTill);
         puff(new V3(t.x, nbH(t.x, t.z) + 2, t.z), 0xe6c15a, 16, 0.12, 2.4, 0.5);
         popup(t.flip ? '蜂が敵の方へ群がった。命までは取らない' : '蜂だ。動きが鈍り、弓の狙いがぶれる');
+        if (!t.flip) nbJpNear('trap');
         break;
       }
     }
@@ -9020,7 +9094,7 @@ function nbSeparate(e) {
     const dx = p.x - o.s.position.x, dz = p.z - o.s.position.z, d2 = dx * dx + dz * dz;
     if (d2 > 0.0004 && d2 < 0.64) { const d = Math.sqrt(d2); x += dx / d * (0.8 - d); z += dz / d * (0.8 - d); }
   }
-  p.x = clamp(p.x + x * 0.4, -6.2, 6.2); p.z += z * 0.25;
+  p.x = clamp(p.x + x * 0.4, -2.55, 2.55); p.z += z * 0.25;
 }
 function nbHit(th, dmg, from) {
   if (!th) return;
@@ -9035,14 +9109,43 @@ function nbAllyBrain(e, dt) {
     e.faceWant = Math.PI; e.moving = true; return true;
   }
   const slow = NB.probe ? 0.62 : 1;
-  const p = e.s.position, a = { x: clamp(player.pos.x, -3.4, 3.4), z: player.pos.z };
+  const p = e.s.position, a = { x: clamp(player.pos.x, -1.15, 1.15), z: player.pos.z };
+  if (e.nbRole === 'gun') {
+    const G = e.nbGun;
+    if (G) {
+      const tx = G.x + (e.nbIx ? 0.95 : -0.95), tz = G.z + 1.05;
+      if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.85 * slow, dt);
+      e.faceWant = G.g ? G.g.rotation.y : Math.PI;
+    }
+    nbSeparate(e); return true;
+  }
+  if (e.nbRole === 'uk') {
+    const ix0 = e.nbIx || 0, col = ix0 % 5, row = (ix0 / 5) | 0;
+    const tx = clamp(a.x + (col - 2) * 0.82, -2.15, 2.15), tz = a.z + 21 + row * 0.9;
+    if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.92 * slow, dt);
+    e.faceWant = Math.PI;
+    if ((e.nbShot || 0) <= time) {
+      const ths = nbThreats();
+      let mark = null, md = 46;
+      for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (t.z < p.z - 4 && d < md) { md = d; mark = t; } }
+      if (mark) {
+        e.nbShot = time + rand(5.5, 7.5);
+        e.faceWant = Math.atan2(mark.x - p.x, mark.z - p.z);
+        const mz = new V3(p.x, (e.baseY || 0) + 1.25, p.z - 0.4);
+        puff(mz, 0xefeee8, 6, 0.35, 1.3, 2.2); uk2Flash(mz, 0.85, 0.06);
+        const o = Sfx.at(mz, 180, 1.1); if (o) { Sfx.noiseBurst(0.18, 'lowpass', 2400, 180, 0.65, 0.8, 0, o); Sfx.tone('square', 120, 48, 0.1, 0.16, 0, o); }
+        if (Math.random() < 0.42) { if (mark.beast) nbHurt(mark.beast, 1, mz); else if (mark.e) damageEnemy(mark.e, 1, mz, false, null, e); }
+      }
+    }
+    nbSeparate(e); return true;
+  }
   const ths = nbThreats(), ix = e.nbIx || 0;
   e.cd -= dt; e.t += dt; e.moving = false;
   if (e.state === 'aim') {
     const T = aimTotal(e, false);
     if (e.t >= T) {
       if (e.nbMark) enemyShoot(e, e.nbMark);
-      npcSay(e, 'attack', 0, 0.2);
+      npcSay(e, 'attack', 0, 0.45);
       e.state = 'zanshin'; e.t = 0; e.nbMark = null;
     }
     return true;
@@ -9054,7 +9157,7 @@ function nbAllyBrain(e, dt) {
   }
   if (e.nbRole === 'archer') {
     const col = ix % 5, row = (ix / 5) | 0;
-    const tx = clamp(a.x + (col - 2) * 1.4, -5.6, 5.6), tz = a.z + 3.4 + row * 1.2;
+    const tx = clamp(a.x + (col - 2) * 0.92, -2.2, 2.2), tz = a.z + 7.6 + row * 1.02;
     if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.95 * slow, dt);
     e.faceWant = Math.PI;
     let mark = null, md = 42;
@@ -9067,7 +9170,7 @@ function nbAllyBrain(e, dt) {
     }
   } else if (e.nbRole === 'yari') {
     const col = ix % 4, row = (ix / 4) | 0;
-    const tx = clamp(a.x + (col - 1.5) * 1.15, -5.2, 5.2), tz = a.z - 2.4 - row * 1.02;
+    const tx = clamp(a.x + (col - 1.5) * 0.9, -2.05, 2.05), tz = a.z - 2.3 - row * 0.9;
     if (e.state !== 'windup') steer(e, tx, tz, e.speed * 0.9 * slow, dt);
     let th = null, td = 2.8;
     for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (d < td) { td = d; th = t; } }
@@ -9079,7 +9182,7 @@ function nbAllyBrain(e, dt) {
     const th = ths.length ? ths[ix % ths.length] : null;
     if (th) {
       const side = ((ix % 5) - 2) * 0.9;
-      const tx = clamp(th.x + side, -6, 6), tz = th.z + 0.8;
+      const tx = clamp(th.x + side, -2.4, 2.4), tz = th.z + 0.8;
       const d = Math.hypot(tx - p.x, tz - p.z);
       if (d > 1.15) steer(e, tx, tz, e.speed * 1.35 * slow, dt);
       e.faceWant = Math.atan2(th.x - p.x, th.z - p.z);
@@ -9089,51 +9192,160 @@ function nbAllyBrain(e, dt) {
       }
     } else {
       const col = ix % 4, row = (ix / 4) | 0;
-      steer(e, clamp(a.x + (col - 1.5) * 1.45, -5.4, 5.4), a.z - 7.5 - row * 1.15, e.speed * slow, dt);
+      steer(e, clamp(a.x + (col - 1.5) * 0.9, -2.05, 2.05), a.z + 1.5 + row * 0.92, e.speed * slow, dt);
       e.faceWant = Math.PI; if (e.state === 'charge') e.state = 'idle';
     }
   }
   nbSeparate(e);
   return true;
 }
+function nbCannon(x, z) {
+  const g = new THREE.Group();
+  const wood = M.wood, iron = nbMat(0x2a2a2e), dark = nbMat(0x4a3320);
+  const car = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.42, 1.75), wood); car.position.y = 0.42; g.add(car);
+  for (const sx of [-0.55, 0.55]) for (const sz of [-0.55, 0.62]) {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.12, 12), dark);
+    w.rotation.z = Math.PI / 2; w.position.set(sx, 0.32, sz); g.add(w);
+  }
+  const b = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 2.35, 12), iron);
+  b.rotation.x = Math.PI / 2 - 0.1; b.position.set(0, 0.9, 0.45); g.add(b);
+  const muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.045, 6, 12), iron);
+  muzzle.position.set(0, 1.0, 1.6); g.add(muzzle);
+  g.position.set(x, nbH(x, z), z); g.rotation.y = Math.PI; stageRoot.add(g);
+  const box = { x0: x - 0.75, x1: x + 0.75, z0: z - 1.05, z1: z + 1.05, y0: nbH(x, z) - 0.2, y1: nbH(x, z) + 1.7 };
+  boxes.push(box);
+  const G = { x, z, g, box, cd: rand(4, 7), crew: [] };
+  NB.guns.push(G);
+  return G;
+}
+function nbGunMove(G, dt) {
+  const i = NB.guns.indexOf(G);
+  const tx = i ? 1.15 : -1.15, tz = player.pos.z + 17.2 + (i > 0 ? 1.8 : 0);
+  G.x += (tx - G.x) * Math.min(1, dt * 0.85);
+  G.z += (tz - G.z) * Math.min(1, dt * 0.85);
+  const y = nbH(G.x, G.z);
+  G.g.position.set(G.x, y, G.z);
+  G.box.x0 = G.x - 0.8; G.box.x1 = G.x + 0.8; G.box.z0 = G.z - 1.1; G.box.z1 = G.z + 1.1;
+  G.box.y0 = y - 0.3; G.box.y1 = y + 1.8;
+}
+function nbGuns(dt) {
+  if (!NB.guns) return;
+  for (const F of UK2.flashes || []) {
+    if (F.t >= F.life) { F.s.visible = false; continue; }
+    F.t += dt; const k = F.t / F.life; F.s.scale.setScalar(F.size * (0.6 + k)); F.s.material.opacity = Math.max(0, 1 - k);
+  }
+  for (const G of NB.guns) {
+    nbGunMove(G, dt);
+    const crew = G.crew.filter(e => e.state !== 'down');
+    if (!crew.length || (G.cd -= dt) > 0) continue;
+    const far = [];
+    for (const o of enemies) if (o.team === 'orange' && o.state !== 'down' && !o.nbHide) {
+      const d = Math.hypot(o.s.position.x - G.x, o.s.position.z - G.z);
+      if (d < 18 || d > 78) continue;
+      if (Math.hypot(player.pos.x - o.s.position.x, player.pos.z - o.s.position.z) < 8) continue;
+      if (enemies.some(b => b.team === 'blue' && b.state !== 'down' && Math.hypot(b.s.position.x - o.s.position.x, b.s.position.z - o.s.position.z) < 7)) continue;
+      far.push(o);
+    }
+    if (!far.length) { G.cd = 1.4; continue; }
+    const t = far[(Math.random() * far.length) | 0];
+    const dx = G.x - t.s.position.x, dz = G.z - t.s.position.z, d = Math.hypot(dx, dz) || 1;
+    let px = t.s.position.x + dx / d * rand(3.2, 5.2), pz = t.s.position.z + dz / d * rand(3.2, 5.2);
+    px += (dz / d) * rand(-1.4, 1.4); pz -= (dx / d) * rand(-1.4, 1.4);
+    const safe = (x, z) => Math.hypot(x - player.pos.x, z - player.pos.z) > 7 && !enemies.some(b => b.team === 'blue' && b.state !== 'down' && Math.hypot(b.s.position.x - x, b.s.position.z - z) < 6) && !enemies.some(o => o.team === 'orange' && o.state !== 'down' && Math.hypot(o.s.position.x - x, o.s.position.z - z) < 2.3);
+    if (!safe(px, pz)) { G.cd = 1.6; continue; }
+    G.cd = rand(9, 12);
+    G.g.rotation.y = Math.atan2(t.s.position.x - G.x, t.s.position.z - G.z);
+    const y = nbH(px, pz);
+    const ring = new THREE.Mesh(UK2.ringG || (UK2.ringG = new THREE.RingGeometry(0.8, 1.1, 32)), uk2Mats().ring.clone());
+    ring.rotation.x = -Math.PI / 2; ring.position.set(px, y + 0.08, pz); ring.renderOrder = 3; stageRoot.add(ring);
+    const air = Math.random() < 0.55;
+    NB.shells.push({ x: px, z: pz, y: air ? rand(2.3, 3.6) : 0.3, gy: y, air, t: 0, T: 1.15 + d / 80, ring });
+    const mz = new V3(G.x + Math.sin(G.g.rotation.y) * 1.7, y + 1.1, G.z + Math.cos(G.g.rotation.y) * 1.7);
+    puff(mz, 0xe9e6de, 10, 1.4, 1.8, 4); puff(mz, 0xffcf80, 3, 0.7, 2.6, 0.12); uk2Flash(mz, 3.2, 0.12);
+    const snd = Sfx.at(mz, 480, 1.4); if (snd) { Sfx.noiseBurst(1.2, 'lowpass', 560, 40, 0.9, 0.7, 0, snd); Sfx.tone('sine', 54, 24, 1.0, 0.75, 0, snd); }
+    if (!NB.saidGun) { NB.saidGun = true; popup('破裂弾の大砲を放った'); }
+    nbJpNear('shell');
+  }
+  for (const S of NB.shells) {
+    S.t += dt;
+    if (!S.whist && S.T - S.t < 0.9) { S.whist = true; const o = Sfx.at(new V3(S.x, S.gy + 2, S.z), 80, 1); if (o) { Sfx.tone('sine', 1600, 460, 0.9, 0.06, 0, o); Sfx.noiseBurst(0.9, 'bandpass', 2400, 700, 0.05, 3, 0, o); } }
+    const k = Math.min(1, S.t / S.T); S.ring.material.opacity = 0.25 + 0.55 * k; S.ring.scale.setScalar(1.6 - 0.7 * k);
+    if (S.t >= S.T) {
+      const P = new V3(S.x, S.gy + S.y, S.z);
+      uk2Flash(P, S.air ? 5 : 3.8, 0.14);
+      puff(P, 0xfff0c0, 5, 0.55, 6, 0.12); puff(P, 0x3a3631, 12, 1.3, 2.2, 3); puff(P, 0x1e1e1e, 16, 0.05, 12, 0.4);
+      const o = Sfx.at(P, 300, 1.6); if (o) { Sfx.noiseBurst(1.0, 'lowpass', 1500, 50, 0.95, 0.7, 0, o); Sfx.tone('sine', 74, 26, 0.85, 0.9, 0, o); }
+      const dP = Math.hypot(S.x - player.pos.x, S.z - player.pos.z);
+      if (dP < 24) player.shake = Math.max(player.shake || 0, clamp(0.42 - dP * 0.016, 0.04, 0.4));
+      const R = S.air ? 8 : 6.5; let nh = 0;
+      for (const e of enemies) {
+        if (e.team !== 'orange' || e.state === 'down' || e.nbHide) continue;
+        const d = Math.hypot(e.s.position.x - S.x, e.s.position.z - S.z); if (d > R) continue;
+        const kk = 1 - d / R;
+        if (Math.random() < 0.16 + 0.55 * kk * kk && nh++ < 4) damageEnemy(e, kk > 0.72 ? 3 : kk > 0.4 ? 2 : 1, P, false, null, null);
+      }
+      for (const b of NB.beasts) if (b.alive && Math.hypot(b.x - S.x, b.z - S.z) < R && Math.random() < 0.45) nbHurt(b, 3, P);
+      stageRoot.remove(S.ring); S.ring.material.dispose(); S.done = true;
+    }
+  }
+  NB.shells = NB.shells.filter(S => !S.done);
+}
 function nbStart() {
-  NB.won = false; NB.ridgeSaid = false; NB.volleyT = 1.2;
-  const nB = MOBILE ? 32 : 56;
-  const roles = ['archer', 'yari', 'yari', 'knife', 'archer'];
+  NB.won = false; NB.ridgeSaid = false; NB.volleyT = 1.2; NB.vnI = 0; NB.saidGun = false; NB.guns = []; NB.shells = []; UK2.flashes = [];
+  const mob = USD_MOB;
+  const nY = mob ? 20 : 40, nK = mob ? 12 : 24, nA = mob ? 16 : 36;
+  const plan = [];
+  for (let i = 0; i < nY; i++) plan.push('yari');
+  for (let i = 0; i < nK; i++) plan.push('knife');
+  for (let i = 0; i < nA; i++) plan.push('archer');
   const nRole = { archer: 0, yari: 0, knife: 0 };
-  for (let i = 0; i < nB; i++) {
-    const role = roles[i % roles.length];
+  const az = player.pos.z;
+  for (const role of plan) {
     const ix = nRole[role]++;
     const kind = role === 'archer' ? 'archer' : 'mob';
-    const col = role === 'yari' ? ix % 4 : ix % 5;
-    const row = role === 'yari' ? (ix / 4) | 0 : (ix / 5) | 0;
-    const x = (col - (role === 'yari' ? 1.5 : 2)) * (role === 'knife' ? 1.5 : 1.25) + rand(-0.08, 0.08);
-    const z = role === 'archer' ? 27 + row * 1.2 : role === 'yari' ? 16 - row * 1.05 : 9 - row * 1.15;
-    const e = spawnEnemy(x, z, kind, false, 'blue', { yari: role === 'yari' ? 1 : -1 });
+    const col = role === 'archer' ? ix % 5 : ix % 4;
+    const row = role === 'archer' ? (ix / 5) | 0 : (ix / 4) | 0;
+    const x = (col - (role === 'archer' ? 2 : 1.5)) * 0.9 + rand(-0.05, 0.05);
+    const z = role === 'yari' ? az - 2.3 - row * 0.9 : role === 'knife' ? az + 1.5 + row * 0.92 : az + 7.6 + row * 1.02;
+    const e = spawnEnemy(clamp(x, -2.2, 2.2), z, kind, false, 'blue', { yari: role === 'yari' ? 1 : -1 });
     if (!e) continue;
     e.nbRole = role; e.nbIx = ix; e.sq = null; e.ammo = undefined;
   }
+  nbCannon(-1.15, az + 17.2); nbCannon(1.15, az + 19);
+  for (const G of NB.guns) for (let c = 0; c < 2; c++) {
+    const e = spawnEnemy(G.x + (c ? 0.9 : -0.9), G.z + 1.1, 'mob', false, 'blue', { yari: -1 });
+    if (!e) continue;
+    e.nbRole = 'gun'; e.nbIx = c; e.nbGun = G; e.sq = null; e.ammo = undefined; G.crew.push(e);
+  }
+  const nUk = mob ? 14 : 30;
+  for (let i = 0; i < nUk; i++) {
+    const id = NB_UK_IDS[i % NB_UK_IDS.length];
+    const col = i % 5, row = (i / 5) | 0;
+    const e = spawnEnemy((col - 2) * 0.82, az + 21 + row * 0.9, 'mob', false, 'blue', { girl: GIRLS[id] ? id : undefined, yari: -1 });
+    if (!e) continue;
+    e.nbRole = 'uk'; e.nbIx = i; e.sq = null; e.ammo = undefined; e.nbShot = time + rand(5, 12); nbNameUk(e, i);
+  }
   const spots = [];
-  for (const z0 of [-8, -26, -44, -62, -80, -98, -116]) {
-    const n = MOBILE ? 3 : 5;
-    for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.35 + rand(-0.15, 0.15), z0 + rand(-0.8, 0.8)]);
+  for (const z0 of [-42, -60, -78, -96, -112, -124]) {
+    const n = mob ? 3 : 5;
+    for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.05 + rand(-0.1, 0.1), z0 + rand(-0.6, 0.6)]);
   }
   spots.forEach((p, i) => {
     const id = NB_IDS[i % NB_IDS.length];
     const bow = i % 2 === 0;
-    const e = spawnEnemy(p[0], p[1], bow ? 'archer' : 'mob', i % 4 === 0, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
+    const e = spawnEnemy(clamp(p[0], -2.2, 2.2), p[1], bow ? 'archer' : 'mob', i % 5 === 0, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
     if (!e) return;
-    e.nbVn = true;
+    e.nbVn = true; nbNameVn(e, id);
     const cage = NB.cages.find(c => Math.hypot(c.x - p[0], c.z - p[1]) < 3.2 && !c.carrier);
     if (cage) { cage.carrier = e; e.nbCage = cage; }
   });
-  showBanner('南蛮の戦い', '坂と仕掛けのある山道。棒で突けば遅いが見つかる。秘書に足元を見させれば印がつく');
-  if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('進め。道を空けるな', { pitch: 1.05, rate: 1.0 }, 1); }, 700);
-  setTimeout(() => { if (state !== 'play') return; const v = enemies.find(e => e.nbVn && e.state !== 'down'); if (v) nbVnSay(v, 'spot'); }, 1400);
+  showBanner('南蛮の戦い', '絶壁の谷だ。槍、懐刀、弓の順。英国と破裂弾の大砲が二門、後ろに続く。最初は仕掛けだけ');
+  if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('道は一本だ。絶壁のあいだを、仕掛けごと進め', { pitch: 1.02, rate: 0.98 }, 1); }, 700);
 }
 function updateNanban(dt) {
   if (!NB.on || state !== 'play') return;
   nbUpdateTraps(dt);
+  nbGuns(dt);
   if (NB.bee > time) {
     for (const e of enemies) if (e.team === 'blue' && e.state !== 'down' && e.nbRole) {
       if (e.nbSp0 == null) e.nbSp0 = e.speed;
@@ -9149,9 +9361,18 @@ function updateNanban(dt) {
   for (const e of enemies) if (e.nbSp0 != null && !(NB.bee > time) && !(e.nbBee > time - 0.05)) e.speed = e.nbSp0;
   for (const s of NB.shafts || []) s.material.opacity = 0.05 + (Math.sin(time * 0.65 + (s.userData.ph || 0)) * 0.5 + 0.5) * 0.09;
   if ((NB.chatT = (NB.chatT || 5) - dt) <= 0) {
-    NB.chatT = rand(7, 12);
-    const talk = enemies.filter(e => e.nbVn && e.state !== 'down' && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 22);
+    NB.chatT = rand(6, 11);
+    const talk = enemies.filter(e => e.nbVn && e.state !== 'down' && !e.nbHide && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 22);
     if (talk.length) nbVnSay(talk[(Math.random() * talk.length) | 0], Math.random() < 0.5 ? 'spot' : 'attack');
+  }
+  if ((NB.jpChat = (NB.jpChat || 3.5) - dt) <= 0) {
+    NB.jpChat = rand(4.5, 8);
+    const near = enemies.filter(e => e.team === 'blue' && e.nbRole && !e.nbUk && e.state !== 'down' && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 16);
+    if (near.length) {
+      const foe = enemies.some(e => e.nbVn && e.state !== 'down' && !e.nbHide && e.s.position.z < player.pos.z && player.pos.z - e.s.position.z < 26);
+      const beast = NB.beasts.some(b => b.alive && Math.hypot(b.x - player.pos.x, b.z - player.pos.z) < 16);
+      nbJpSay(near[(Math.random() * near.length) | 0], foe ? 'spot' : beast ? 'beast' : 'march');
+    }
   }
   for (let i = NB.gibs.length - 1; i >= 0; i--) {
     const g = NB.gibs[i];
@@ -9229,7 +9450,7 @@ function updateNanban(dt) {
     if (b.kind === 'boar' && d < 9) sp = 7.2;
     if (b.kind === 'tiger' && d < 7) sp = 6.4;
     b.x += dx / d * sp * dt; b.z += dz / d * sp * dt;
-    b.x = clamp(b.x, -6.6, 6.6);
+    b.x = clamp(b.x, -2.7, 2.7);
     b.s.position.set(b.x, nbH(b.x, b.z), b.z);
     nbBeastFace(b);
     if (d < (b.kind === 'snake' ? 1.15 : 1.35) && b.cd <= 0) {
@@ -9285,7 +9506,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
-  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は長く、坂と谷がある。落ち葉とぬかるみ、ヤシ・竹・バナナの葉。弓は後ろから斉射、槍は方陣、懐刀は突撃。張り線、振り子の丸太、しなる竹、穴、蜂の巣がある。秘書に「足元見て」と言うと近くの仕掛けに印がつく。「棒で突いて進め」と言うと先頭が地面を突き、進みは遅いが見つかる。見つけた仕掛けは、こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナム語で話す。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -17645,7 +17866,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21949,7 +22170,7 @@ function updateEnemies(dt) {
     else if (MTN.on && e.bundleBear && mtnBundleBrain(e, dt)) { /* 山城：竹束を押し立てて前進 */ }
     else if (MTN.on && e.team === 'blue' && mtnAllyAdvance(e, dt)) { /* 竹束の陰について坂を上る */ }
     else if (MTN.on && e.team === 'orange' && mtnDefenderBrain(e, dt)) { /* 階段の上と横の足場から射る。門は開けない */ }
-    else if (NB.on && e.nbRole && nbAllyBrain(e, dt)) { /* 南蛮：弓は後ろで斉射、槍は方陣、懐刀は突撃 */ }
+    else if (NB.on && e.nbRole && nbAllyBrain(e, dt)) { /* 南蛮：槍が先頭、懐刀、弓。英国は後ろ。大砲は砲側 */ }
     else if (e.passive) {
       const [hx, hz] = e.hold ? [p.x, p.z] : e.home || [p.x, p.z];
       e.cd -= dt; e.t += dt;
@@ -23034,7 +23255,7 @@ function resetGame() {
   else if (builtStage === 'trench') { player.pos.set(0, 0, 64.2); player.yaw = Math.PI; }
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
-  else if (builtStage === 'nanban') { player.pos.set(0, 0, 22); player.yaw = 0; }
+  else if (builtStage === 'nanban') { player.pos.set(0, 0, 16); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から

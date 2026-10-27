@@ -2808,8 +2808,17 @@ function stageLook(name) {
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 
-  if (name === 'nanban') { NB.on = true; ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false; scene.fog.near = 8; scene.fog.far = 34; scene.fog.color.setHex(0x1a3324); scene.background.setHex(0x163028); hemiL.color.setHex(0xd5e6c8); hemiL.groundColor.setHex(0x1a3320); hemiL.intensity = 0.72; ambL.intensity = 0.42; sun.intensity = 1.05; }
-  else NB.on = false;
+  if (name === 'nanban') {
+    NB.on = true; ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false;
+    const u = sky.material.uniforms;
+    if (!NB.sky0) NB.sky0 = { top: u.top.value.getHex(), mid: u.mid.value.getHex(), bot: u.bot.value.getHex() };
+    u.top.value.setHex(0x3d88b4); u.mid.value.setHex(0xb7e0d2); u.bot.value.setHex(0x7ea58a);
+    scene.fog.near = 28; scene.fog.far = 78; scene.fog.color.setHex(0x7ea58a); scene.background.setHex(0x9ed4d0);
+    hemiL.color.setHex(0xeaf6dc); hemiL.groundColor.setHex(0x3a5530); hemiL.intensity = 1.25; ambL.intensity = 0.7; sun.intensity = 1.5; sun.color.setHex(0xfff3c4);
+  } else {
+    NB.on = false;
+    if (NB.sky0) { const u = sky.material.uniforms; u.top.value.setHex(NB.sky0.top); u.mid.value.setHex(NB.sky0.mid); u.bot.value.setHex(NB.sky0.bot); }
+  }
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -8662,10 +8671,11 @@ function buildNanban() {
   for (const n of ['palm', 'banana', 'bamboo', 'fern']) {
     NB.plantMat[n] = new THREE.MeshLambertMaterial({ map: nbCut(n), transparent: true, alphaTest: 0.42, side: THREE.DoubleSide, depthWrite: true });
   }
-  const litter = nbPhoto('litter'); litter.repeat.set(12, 26);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(52, 150), new THREE.MeshLambertMaterial({ map: litter }));
+  const litter = nbPhoto('litter'); litter.repeat.set(22, 48);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 170), new THREE.MeshLambertMaterial({ map: litter }));
   floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -22); stageRoot.add(floor);
-  const mudMat = new THREE.MeshLambertMaterial({ map: nbPhoto('mud') });
+  const mud = nbPhoto('mud'); mud.repeat.set(2, 3);
+  const mudMat = new THREE.MeshLambertMaterial({ map: mud });
   for (let i = 0; i < 26; i++) {
     const z = 38 - i * 4.4, z2 = z - 4.4;
     const x = Math.sin(z * 0.07) * 1.15, x2 = Math.sin(z2 * 0.07) * 1.15;
@@ -8684,31 +8694,46 @@ function buildNanban() {
     p.position.set(side * rand(2.2, 6.4), 0.025, rand(-78, 34));
     stageRoot.add(p);
   }
-  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -20 : 7.4, x1: side < 0 ? -7.4 : 20, z0: -88, z1: 42, y0: 0, y1: 8 });
-  const nPlant = USD_MOB ? 36 : 78;
+  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -28 : 8.2, x1: side < 0 ? -8.2 : 28, z0: -88, z1: 42, y0: 0, y1: 10 });
+  const nPlant = USD_MOB ? 70 : 150;
   for (let i = 0; i < nPlant; i++) {
-    const side = Math.random() < 0.5 ? -1 : 1;
-    const x = side * rand(2.4, 7.2), z = rand(-80, 36);
-    if (Math.abs(x) < 1.7) continue;
-    const kind = ['palm', 'banana', 'bamboo', 'fern', 'fern', 'bamboo'][(Math.random() * 6) | 0];
-    const h = kind === 'fern' ? rand(1.3, 2.2) : kind === 'palm' ? rand(6.5, 9.5) : rand(3.4, 5.8);
+    const side = i % 2 ? 1 : -1;
+    const z = 40 - (i * 118) / nPlant + rand(-0.6, 0.6);
+    const x = side * rand(2.15, 8.4);
+    const kind = ['palm', 'banana', 'bamboo', 'bamboo', 'fern', 'fern'][i % 6];
+    const h = kind === 'fern' ? rand(1.4, 2.4) : kind === 'bamboo' ? rand(4.2, 7.2) : kind === 'palm' ? rand(7.2, 11) : rand(3.6, 6.2);
     nbPlant(kind, x, z, h);
+    if (kind === 'bamboo' && !USD_MOB) { nbPlant('bamboo', x + side * 0.45, z + 0.35, h * 0.85); nbPlant('fern', x - side * 0.3, z + 0.2, 1.6); }
+    if (kind !== 'fern') {
+      const leaf = new THREE.Mesh(NB.plantGeo[kind === 'palm' ? 'palm' : 'banana'], NB.plantMat[kind === 'bamboo' ? 'banana' : kind]);
+      leaf.position.set(x, h * 0.72, z); leaf.rotation.x = rand(-1.15, -0.55); leaf.rotation.y = rand(0, 6); stageRoot.add(leaf);
+    }
   }
-  const nCap = USD_MOB ? 14 : 28;
-  const capMat = { palm: NB.plantMat.palm, banana: NB.plantMat.banana };
+  const nCap = USD_MOB ? 36 : 72;
   for (let i = 0; i < nCap; i++) {
-    const w = rand(7, 12), name = i % 2 ? 'banana' : 'palm';
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.7), capMat[name]);
-    m.position.set(rand(-6, 6), rand(7.2, 10.5), rand(-76, 30));
-    m.rotation.x = rand(-1.35, -0.85); m.rotation.y = rand(0, 6.2);
+    const z = 36 - (i * 112) / nCap;
+    const name = i % 3 === 0 ? 'banana' : 'palm';
+    const w = rand(8, 14);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.62), NB.plantMat[name]);
+    m.position.set((i % 2 ? 1 : -1) * rand(0.2, 3.4), rand(6.4, 9.2), z);
+    m.rotation.x = rand(-1.25, -0.7); m.rotation.y = rand(0, 6.2); m.rotation.z = rand(-0.2, 0.2);
     stageRoot.add(m);
+    if (i % 2 === 0) {
+      const m2 = m.clone(); m2.position.x *= -0.4; m2.position.y += 0.8; m2.rotation.y += 1.4; stageRoot.add(m2);
+    }
   }
-  const shaftMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
-  for (let i = 0; i < (USD_MOB ? 4 : 7); i++) {
-    const s = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 11), shaftMat.clone());
-    s.position.set(rand(-3.5, 3.5), 5.2, rand(-60, 16));
-    s.rotation.y = rand(-0.4, 0.4); s.rotation.z = rand(-0.18, 0.18);
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  for (let i = 0; i < (USD_MOB ? 6 : 14); i++) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(rand(0.7, 1.8), rand(9, 14)), shaftMat.clone());
+    s.position.set(rand(-4.2, 4.2), 5.4, rand(-70, 24));
+    s.rotation.y = rand(-0.5, 0.5); s.rotation.z = rand(-0.22, 0.22);
     s.userData.ph = rand(0, 6); stageRoot.add(s); NB.shafts.push(s);
+  }
+  const mistMat = new THREE.MeshBasicMaterial({ color: 0xcfe6d4, transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide });
+  for (let i = 0; i < (USD_MOB ? 4 : 8); i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(rand(6, 11), rand(1.6, 2.8)), mistMat);
+    m.position.set(rand(-3, 3), rand(1.1, 2.4), rand(-68, 20));
+    m.rotation.y = rand(-0.4, 0.4); stageRoot.add(m);
   }
   const water = nbPhoto('water'); water.repeat.set(1, 3);
   const waterMat = new THREE.MeshLambertMaterial({ map: water, color: 0x9ec8b4, transparent: true, opacity: 0.88 });
@@ -8723,29 +8748,37 @@ function buildNanban() {
     stageRoot.add(g);
   }
   const mossRock = yjMat('rock', 0x8ea878);
-  for (const [x, z, s] of [[2.8, 2, 0.9], [-3.4, -14, 1.15], [3.6, -28, 0.8], [-2.6, -46, 1.3], [4.1, -62, 0.95], [1.2, -36, 0.55]]) {
+  for (const [x, z, s] of [[2.8, 2, 0.9], [-3.4, -14, 1.15], [3.6, -28, 0.8], [-2.6, -46, 1.3], [4.1, -62, 0.95], [1.2, -36, 0.55], [-4.2, 6, 0.7], [3.2, -8, 0.65], [-3.8, -38, 1.05], [2.4, -52, 0.75]]) {
     const r = new THREE.Mesh(G.rock, mossRock);
     r.position.set(x, s * 0.32, z); r.scale.set(s * 1.2, s * 0.55, s); r.rotation.y = rand(0, 6); stageRoot.add(r);
-    if (s > 0.7) colliders.push({ x, z, r: s * 0.7 });
+    const moss = new THREE.Mesh(new THREE.CircleGeometry(s * 0.9, 7), mossMat);
+    moss.rotation.x = -Math.PI / 2; moss.position.set(x, 0.03, z); stageRoot.add(moss);
+    if (s > 0.7) colliders.push({ x, z, r: s * 0.55 });
   }
   const bark = yjMat('bark');
-  for (const [x, z, len, yaw] of [[-2.4, -8, 3.2, 0.4], [2.2, -33, 3.6, 1.2], [-1.5, -55, 2.8, 0.2]]) {
+  for (const [x, z, len, yaw] of [[-2.4, -8, 3.2, 0.4], [2.2, -33, 3.6, 1.2], [-1.5, -55, 2.8, 0.2], [1.6, -18, 2.6, 0.9], [-2.8, -42, 3.4, -0.3], [0.4, -66, 3.1, 0.15]]) {
     const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, len, 7), bark);
     log.rotation.z = Math.PI / 2; log.rotation.y = yaw;
     log.position.set(x, 0.24, z); stageRoot.add(log);
-    colliders.push({ x, z, r: 0.45 });
+    const cap = new THREE.Mesh(new THREE.CircleGeometry(0.28, 7), bark); cap.position.set(0, len * 0.5, 0); cap.rotation.x = -Math.PI / 2; log.add(cap);
+    if (Math.abs(x) < 2.2) colliders.push({ x, z, r: 0.4 });
   }
-  const hut = new THREE.Group();
-  const plank = yjMat('planks'), postM = yjMat('wood');
-  for (const [px, pz] of [[-1.3, -0.9], [1.3, -0.9], [-1.3, 0.9], [1.3, 0.9]]) {
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), postM);
-    p.position.set(px, 1.2, pz); hut.add(p);
+  function nbHut(x, z, yaw) {
+    const hut = new THREE.Group();
+    const plank = yjMat('planks'), postM = yjMat('wood');
+    for (const [px, pz] of [[-1.3, -0.9], [1.3, -0.9], [-1.3, 0.9], [1.3, 0.9]]) {
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), postM);
+      p.position.set(px, 1.2, pz); hut.add(p);
+    }
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 2.2), plank); deck.position.y = 1.55; hut.add(deck);
+    for (let i = 0; i < 5; i++) {
+      const leaf = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.5), NB.plantMat[i % 2 ? 'palm' : 'banana']);
+      leaf.position.set((i - 2) * 0.35, 2.45, 0); leaf.rotation.x = -0.55; leaf.rotation.y = i * 0.4; hut.add(leaf);
+    }
+    hut.position.set(x, 0, z); hut.rotation.y = yaw; stageRoot.add(hut);
+    colliders.push({ x, z, r: 1.15 });
   }
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 2.2), plank); deck.position.y = 1.55; hut.add(deck);
-  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.3, 1.15, 4), yjMat('bamboo', 0xc2b48a));
-  roof.position.y = 2.55; roof.rotation.y = Math.PI / 4; hut.add(roof);
-  hut.position.set(-5.1, 0, -18); stageRoot.add(hut);
-  colliders.push({ x: -5.1, z: -18, r: 1.3 });
+  nbHut(-5.4, -18, 0.4); nbHut(5.6, -48, -0.6);
   const ridge = new THREE.Mesh(new THREE.BoxGeometry(8, 2.6, 0.8), yjMat('rock', 0x9a9a90));
   ridge.position.set(0, 1.3, -72); stageRoot.add(ridge);
   buildHQ(-3.2, 3.2, 30, 38, 0, 34);
@@ -17384,7 +17417,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

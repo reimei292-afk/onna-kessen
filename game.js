@@ -8671,13 +8671,17 @@ function buildNanban() {
   for (const n of ['palm', 'banana', 'bamboo', 'fern']) {
     NB.plantMat[n] = new THREE.MeshLambertMaterial({ map: nbCut(n), transparent: true, alphaTest: 0.42, side: THREE.DoubleSide, depthWrite: true });
   }
-  const litter = nbPhoto('litter'); litter.repeat.set(22, 48);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 170), new THREE.MeshLambertMaterial({ map: litter }));
-  floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -22); stageRoot.add(floor);
+  const litter = nbPhoto('litter'); litter.repeat.set(28, 70);
+  const groundGeo = new THREE.PlaneGeometry(80, 210, 28, 70); groundGeo.rotateX(-Math.PI / 2); groundGeo.translate(0, 0, -48);
+  const gp = groundGeo.attributes.position;
+  for (let i = 0; i < gp.count; i++) gp.setY(i, nbH(gp.getX(i), gp.getZ(i)));
+  groundGeo.computeVertexNormals();
+  const floor = new THREE.Mesh(groundGeo, new THREE.MeshLambertMaterial({ map: litter }));
+  floor.userData.nbGround = true; stageRoot.add(floor);
   const mud = nbPhoto('mud'); mud.repeat.set(2, 3);
   const mudMat = new THREE.MeshLambertMaterial({ map: mud });
-  for (let i = 0; i < 26; i++) {
-    const z = 38 - i * 4.4, z2 = z - 4.4;
+  for (let i = 0; i < 42; i++) {
+    const z = 42 - i * 4.15, z2 = z - 4.15;
     const x = Math.sin(z * 0.07) * 1.15, x2 = Math.sin(z2 * 0.07) * 1.15;
     const g = new THREE.Group();
     const seg = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 4.7), mudMat);
@@ -8691,14 +8695,14 @@ function buildNanban() {
     const p = new THREE.Mesh(new THREE.CircleGeometry(rand(1.1, 2.4), 8), mossMat);
     p.rotation.x = -Math.PI / 2;
     const side = Math.random() < 0.5 ? -1 : 1;
-    p.position.set(side * rand(2.2, 6.4), 0.025, rand(-78, 34));
+    p.position.set(side * rand(2.2, 6.4), 0.025, rand(-130, 36));
     stageRoot.add(p);
   }
-  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -28 : 8.2, x1: side < 0 ? -8.2 : 28, z0: -88, z1: 42, y0: 0, y1: 10 });
+  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -28 : 8.2, x1: side < 0 ? -8.2 : 28, z0: -150, z1: 46, y0: 0, y1: 12 });
   const nPlant = USD_MOB ? 70 : 150;
   for (let i = 0; i < nPlant; i++) {
     const side = i % 2 ? 1 : -1;
-    const z = 40 - (i * 118) / nPlant + rand(-0.6, 0.6);
+    const z = 44 - (i * 175) / nPlant + rand(-0.6, 0.6);
     const x = side * rand(2.15, 8.4);
     const kind = ['palm', 'banana', 'bamboo', 'bamboo', 'fern', 'fern'][i % 6];
     const h = kind === 'fern' ? rand(1.4, 2.4) : kind === 'bamboo' ? rand(4.2, 7.2) : kind === 'palm' ? rand(7.2, 11) : rand(3.6, 6.2);
@@ -8711,7 +8715,7 @@ function buildNanban() {
   }
   const nCap = USD_MOB ? 36 : 72;
   for (let i = 0; i < nCap; i++) {
-    const z = 36 - (i * 112) / nCap;
+    const z = 40 - (i * 165) / nCap;
     const name = i % 3 === 0 ? 'banana' : 'palm';
     const w = rand(8, 14);
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.62), NB.plantMat[name]);
@@ -8725,20 +8729,20 @@ function buildNanban() {
   const shaftMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.13, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
   for (let i = 0; i < (USD_MOB ? 6 : 14); i++) {
     const s = new THREE.Mesh(new THREE.PlaneGeometry(rand(0.7, 1.8), rand(9, 14)), shaftMat.clone());
-    s.position.set(rand(-4.2, 4.2), 5.4, rand(-70, 24));
+    s.position.set(rand(-4.2, 4.2), 5.4, rand(-118, 28));
     s.rotation.y = rand(-0.5, 0.5); s.rotation.z = rand(-0.22, 0.22);
     s.userData.ph = rand(0, 6); stageRoot.add(s); NB.shafts.push(s);
   }
   const mistMat = new THREE.MeshBasicMaterial({ color: 0xcfe6d4, transparent: true, opacity: 0.14, depthWrite: false, side: THREE.DoubleSide });
   for (let i = 0; i < (USD_MOB ? 4 : 8); i++) {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(rand(6, 11), rand(1.6, 2.8)), mistMat);
-    m.position.set(rand(-3, 3), rand(1.1, 2.4), rand(-68, 20));
+    m.position.set(rand(-3, 3), rand(1.1, 2.4), rand(-118, 24));
     m.rotation.y = rand(-0.4, 0.4); stageRoot.add(m);
   }
   const water = nbPhoto('water'); water.repeat.set(1, 3);
   const waterMat = new THREE.MeshLambertMaterial({ map: water, color: 0x9ec8b4, transparent: true, opacity: 0.88 });
-  for (let i = 0; i < 34; i++) {
-    const z = 8 - i * 2.5, z2 = z - 2.5;
+  for (let i = 0; i < 50; i++) {
+    const z = 12 - i * 2.8, z2 = z - 2.8;
     const x = Math.sin(z * 0.085) * 3.1 + 0.6, x2 = Math.sin(z2 * 0.085) * 3.1 + 0.6;
     const g = new THREE.Group();
     const seg = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 2.8), waterMat);
@@ -8778,12 +8782,12 @@ function buildNanban() {
     hut.position.set(x, 0, z); hut.rotation.y = yaw; stageRoot.add(hut);
     colliders.push({ x, z, r: 1.15 });
   }
-  nbHut(-5.4, -18, 0.4); nbHut(5.6, -48, -0.6);
-  const ridge = new THREE.Mesh(new THREE.BoxGeometry(8, 2.6, 0.8), yjMat('rock', 0x9a9a90));
-  ridge.position.set(0, 1.3, -72); stageRoot.add(ridge);
+  nbHut(-5.4, -18, 0.4); nbHut(5.6, -48, -0.6); nbHut(-5.2, -96, 0.2);
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(10, 2.8, 1.1), yjMat('rock', 0x9a9a90));
+  ridge.position.set(0, 1.4, -128); stageRoot.add(ridge);
   buildHQ(-3.2, 3.2, 30, 38, 0, 34);
   const wood = M.wood, dark = new THREE.MeshLambertMaterial({ color: 0x3a2a18 });
-  const spots = [[-1.6, -4, 'snake'], [1.8, -24, 'tiger'], [-1.2, -42, 'boar'], [1.4, -58, 'snake']];
+  const spots = [[-1.6, -4, 'snake'], [1.8, -28, 'tiger'], [-1.2, -52, 'boar'], [1.4, -76, 'snake'], [-1.5, -100, 'tiger'], [1.3, -118, 'boar']];
   for (const [x, z, kind] of spots) {
     const g = new THREE.Group();
     const base = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.12, 1.15), dark); base.position.y = 0.06; g.add(base);
@@ -8798,11 +8802,214 @@ function buildNanban() {
     g.position.set(x, 0, z); stageRoot.add(g);
     NB.cages.push({ g, x, z, kind, open: false, t: 0 });
   }
+  TERR.fn = nbH;
+  nbBuildTraps();
+  for (const o of stageRoot.children) { if (o.userData && o.userData.nbGround) continue; o.position.y += nbH(o.position.x, o.position.z); }
+}
+function nbH(x, z) {
+  const bump = (z0, w, h) => { const u = (z - z0) / w; if (u < -1 || u > 1) return 0; const c = Math.cos(u * Math.PI * 0.5); return h * c * c; };
+  return bump(-16, 12, 1.35) + bump(-48, 9, -0.85) + bump(-78, 14, 1.9) + bump(-112, 16, 2.6) + Math.max(0, (Math.abs(x) - 4) * 0.12);
+}
+function nbReveal(t) {
+  if (!t || t.found || t.dead) return;
+  t.found = true;
+  if (t.mark) t.mark.visible = true;
+  if (t.wire) { t.wire.material.opacity = 0.95; t.wire.material.color.setHex(0xf0e2a0); }
+}
+function nbVictims(t) {
+  const list = [];
+  if (!t.flip && player.hp > 0) list.push({ x: player.pos.x, z: player.pos.z, y: player.pos.y, p: true });
+  for (const e of enemies) {
+    if (e.state === 'down' || e.nbHide || e.special || !e.s) continue;
+    if (t.flip ? e.team !== 'orange' : e.team !== 'blue') continue;
+    list.push({ x: e.s.position.x, z: e.s.position.z, y: e.baseY || 0, e });
+  }
+  return list;
+}
+function nbFling(who, dirx, dirz, word) {
+  if (who.p) { player.pos.x += dirx * 1.5; player.pos.z += dirz * 1.5; player.vy = 4; hurtPlayer(6); popup(word); }
+  else if (who.e && who.e.state !== 'down') { who.e.knock.set(dirx * 7, 2.2, dirz * 7); damageEnemy(who.e, 2, who.e.s.position, false, null, null); }
+}
+function nbBuildTraps() {
+  NB.traps = []; NB.probe = false; NB.bee = 0;
+  const rope = new THREE.MeshLambertMaterial({ color: 0x2a241c });
+  const ropeSee = new THREE.MeshBasicMaterial({ color: 0x2a241c, transparent: true, opacity: 0.08 });
+  const wood = M.wood, spike = new THREE.MeshLambertMaterial({ color: 0xc8b8a0 });
+  const markMat = new THREE.MeshBasicMaterial({ color: 0xf0d060, transparent: true, opacity: 0.85, side: THREE.DoubleSide });
+  const put = (kind, z, extra) => {
+    const x = Math.sin(z * 0.07) * 1.15 + (extra || 0);
+    const g = new THREE.Group();
+    const mark = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 10), markMat);
+    mark.rotation.x = -Math.PI / 2; mark.position.y = 0.06; mark.visible = false; g.add(mark);
+    const t = { kind, x, z, g, mark, found: false, dead: false, flip: false, phase: 'idle', t: 0, hit: null };
+    if (kind === 'wire') {
+      const w = new THREE.Mesh(new THREE.BoxGeometry(3.3, 0.02, 0.02), ropeSee.clone());
+      w.position.y = 0.2; g.add(w); t.wire = w;
+      const bow = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.08), wood);
+      bow.position.set(1.7, 0.7, 0); g.add(bow);
+    } else if (kind === 'log') {
+      for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.6, 5), wood); p.position.set(s * 1.5, 1.3, 0); g.add(p); }
+      const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 3.2, 5), wood); bar.rotation.z = Math.PI / 2; bar.position.y = 2.5; g.add(bar);
+      const arm = new THREE.Group(); arm.position.y = 2.5; g.add(arm); t.arm = arm;
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 2.4, 7), wood); log.rotation.z = Math.PI / 2; log.position.y = -1.15; arm.add(log);
+      for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.06), spike); sp.position.set(-0.9 + i * 0.36, -1.15, 0.2); arm.add(sp); }
+    } else if (kind === 'bamboo') {
+      const b = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 2.4, 5), NB.plantMat.bamboo);
+      b.rotation.z = 0.9; b.position.set(0.7, 0.9, 0); g.add(b); t.bend = b;
+      const tie = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.08), rope); tie.position.set(0.15, 0.15, 0); g.add(tie);
+    } else if (kind === 'hole') {
+      const h = new THREE.Mesh(new THREE.CircleGeometry(0.42, 10), new THREE.MeshLambertMaterial({ color: 0x1a120c }));
+      h.rotation.x = -Math.PI / 2; h.position.y = 0.02; g.add(h);
+    } else {
+      const hive = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), new THREE.MeshLambertMaterial({ color: 0xc4a15a }));
+      hive.scale.set(1, 1.3, 1); hive.position.set(0.8, 2.3, 0); g.add(hive); t.hive = hive;
+    }
+    g.position.set(x, 0, z); stageRoot.add(g);
+    NB.traps.push(t);
+  };
+  const wires = [-8, -34, -70, -102];
+  const logs = [-18, -62, -108];
+  const bamboos = [-26, -54, -88, -120];
+  const holes = [-14, -46, -82, -116];
+  const hives = [-30, -74, -98];
+  const cut = (arr, n) => USD_MOB ? arr.slice(0, n) : arr;
+  for (const z of cut(wires, 3)) put('wire', z, 0);
+  for (const z of cut(logs, 2)) put('log', z, 0);
+  for (const z of cut(bamboos, 2)) put('bamboo', z, 0.4);
+  for (const z of cut(holes, 2)) put('hole', z, -0.3);
+  for (const z of cut(hives, 2)) put('hive', z, 1.2);
+}
+function nbTrapUse() {
+  if (!NB.on || !NB.traps) return false;
+  let best = null, bd = 1.9;
+  for (const t of NB.traps) {
+    if (t.dead || !t.found) continue;
+    const d = Math.hypot(player.pos.x - t.x, player.pos.z - t.z);
+    if (d < bd) { bd = d; best = t; }
+  }
+  if (!best) return false;
+  if (best.kind === 'hole') {
+    if (!best.watch) {
+      let m = null, md = 2.6;
+      for (const e of enemies) if (e.team === 'blue' && e.state !== 'down' && e.nbRole && !e.nbWatch) {
+        const d = Math.hypot(e.s.position.x - best.x, e.s.position.z - best.z);
+        if (d < md) { md = d; m = e; }
+      }
+      if (m) { best.watch = m; m.nbWatch = best; popup('見張りを置いた。穴からは出られない'); return true; }
+    }
+    best.dead = true; best.plugged = true; if (best.watch) { best.watch.nbWatch = null; best.watch = null; }
+    if (best.mark) best.mark.visible = false; popup('穴をふさいだ'); return true;
+  }
+  if (player.pos.z < best.z - 0.35) { best.flip = !best.flip; popup(best.flip ? '敵の来る方へ向けた' : 'こちらへ戻した'); }
+  else { best.dead = true; if (best.g) best.g.visible = false; popup('仕掛けを外した'); }
+  return true;
+}
+function nbUpdateTraps(dt) {
+  if (!NB.traps) return;
+  if (NB.probe) {
+    for (const e of enemies) if (e.nbRole === 'knife' && e.state !== 'down') {
+      for (const t of NB.traps) if (!t.found && !t.dead && t.z < e.s.position.z && e.s.position.z - t.z < 5 && Math.abs(t.x - e.s.position.x) < 2.3) nbReveal(t);
+    }
+  }
+  for (const t of NB.traps) {
+    if (t.dead) continue;
+    const who = nbVictims(t);
+    if (t.kind === 'wire') {
+      for (const o of who) {
+        if (Math.abs(o.z - t.z) < 0.35 && Math.abs(o.x - t.x) < 1.6) {
+          t.dead = true; if (t.wire) t.wire.visible = false;
+          const from = new V3(t.x + 1.6, nbH(t.x, t.z) + 0.9, t.z);
+          const vel = new V3(o.x - from.x, 0.2, o.z - from.z).normalize().multiplyScalar(28);
+          addArrow(t.flip ? 'blue' : 'orange', from, vel, { dmg: 6 });
+          if (o.p) { hurtPlayer(8); popup('張り線！ 仕掛け弓の矢'); } else damageEnemy(o.e, 2, from, false, null, null);
+          Sfx.twangAt(from); nbReveal(t); break;
+        }
+      }
+    } else if (t.kind === 'log') {
+      if (t.phase === 'idle') {
+        for (const o of who) {
+          const ahead = t.flip ? (o.z < t.z && t.z - o.z < 5.2) : (o.z > t.z && o.z - t.z < 5.2);
+          if (ahead && Math.abs(o.x - t.x) < 2.2) { t.phase = 'warn'; t.t = 0; const o2 = Sfx.at(new V3(t.x, 2, t.z), 30, 1); Sfx.noiseBurst(0.6, 'bandpass', 240, 70, 0.35, 3, 0, o2 || undefined); popup('丸太がきしんだ'); break; }
+        }
+      } else if (t.phase === 'warn') {
+        t.t += dt; if (t.arm) t.arm.rotation.z = Math.sin(t.t * 18) * 0.04;
+        if (t.t > 0.95) { t.phase = 'swing'; t.t = 0; t.hit = new Set(); }
+      } else if (t.phase === 'swing') {
+        t.t += dt; const u = Math.min(1, t.t / 0.72); const ang = -1.15 + u * 2.4;
+        if (t.arm) t.arm.rotation.z = ang;
+        const hx = t.x + Math.sin(ang) * 1.7, hz = t.z;
+        for (const o of who) {
+          const id = o.p ? 'p' : o.e.id;
+          if (t.hit.has(id)) continue;
+          if (Math.hypot(o.x - hx, o.z - hz) < 1.15) {
+            t.hit.add(id);
+            if (o.p) { hurtPlayer(14); player.vy = 2.4; popup('トゲの丸太に倒された'); }
+            else { o.e.knock.set((o.x - t.x) * 2, 1.5, t.flip ? -4 : 4); damageEnemy(o.e, 4, o.e.s.position, false, null, null); }
+          }
+        }
+        if (u >= 1) t.dead = true;
+      }
+    } else if (t.kind === 'bamboo') {
+      if (t.phase === 'idle') {
+        for (const o of who) if (Math.hypot(o.x - t.x, o.z - t.z) < 1.15) { t.phase = 'snap'; t.t = 0; t.who = o; Sfx.impactBamboo(new V3(t.x, 1, t.z)); break; }
+      } else {
+        t.t += dt; if (t.bend) t.bend.rotation.z += (0.05 - t.bend.rotation.z) * Math.min(1, dt * 14);
+        if (t.t > 0.08 && !t.spent) {
+          t.spent = true; const dir = t.flip ? -1 : 1;
+          nbFling(t.who, 0.4, dir * 0.9, '竹がしなって、はね飛ばされた');
+        }
+        if (t.t > 0.4) t.dead = true;
+      }
+    } else if (t.kind === 'hole') {
+      if (t.amb && t.amb.state === 'down') t.empty = true;
+      const watched = t.watch && t.watch.state !== 'down' && Math.hypot(t.watch.s.position.x - t.x, t.watch.s.position.z - t.z) < 2.8;
+      if (t.amb && t.amb.nbHide) { t.amb.s.position.set(t.x, nbH(t.x, t.z) - 1.6, t.z); t.amb.hold = { face: 0 }; }
+      if (t.phase === 'out') {
+        t.t += dt;
+        if (t.amb) { t.amb.nbHide = false; t.amb.s.visible = true; t.amb.s.position.set(t.outx, nbH(t.outx, t.outz), t.outz); t.amb.hold = { face: Math.atan2(t.vx - t.outx, t.vz - t.outz) }; }
+        if (t.t > 1.15) { t.phase = 'hide'; t.t = 0; if (t.amb && t.amb.state !== 'down') { t.amb.nbHide = true; t.amb.s.visible = false; } }
+      } else if (t.phase === 'hide') {
+        t.t += dt; if (t.t > 8 && !(t.amb && t.amb.state === 'down')) t.phase = 'idle';
+      } else if (!watched && !t.empty) {
+        for (const o of who) if (Math.hypot(o.x - t.x, o.z - t.z) < 1.35) {
+          if (!t.amb || t.amb.state === 'down') {
+            const id = NB_IDS[(Math.random() * NB_IDS.length) | 0];
+            const e = spawnEnemy(t.x, t.z, 'mob', false, 'orange', { girl: GIRLS[id] ? id : undefined, yari: -1 });
+            if (!e) break;
+            e.nbVn = true; e.nbHide = true; e.nbAmb = t; e.hold = { face: 0 }; e.quietDeath = true; t.amb = e;
+          }
+          t.phase = 'out'; t.t = 0; t.outx = o.x; t.outz = o.z + (t.flip ? -0.7 : 0.75); t.vx = o.x; t.vz = o.z;
+          t.amb.nbHide = false; t.amb.s.visible = true; nbVnSay(t.amb, 'attack');
+          if (o.p) { hurtPlayer(9); popup('穴から出てきて、後ろから突かれた'); }
+          else damageEnemy(o.e, 2, new V3(t.x, 1, t.z), false, null, t.amb);
+          break;
+        }
+      }
+    } else if (t.kind === 'hive' && !t.spent) {
+      for (const o of who) if (Math.hypot(o.x - t.x, o.z - t.z) < 1.4) {
+        t.spent = true; t.beeTill = time + 8;
+        if (!t.flip) NB.bee = Math.max(NB.bee || 0, t.beeTill);
+        puff(new V3(t.x, nbH(t.x, t.z) + 2, t.z), 0xe6c15a, 16, 0.12, 2.4, 0.5);
+        popup(t.flip ? '蜂が敵の方へ群がった。命までは取らない' : '蜂だ。動きが鈍り、弓の狙いがぶれる');
+        break;
+      }
+    }
+    if (t.hive && (t.beeTill > time || NB.bee > time) && t.spent) puff(new V3(t.x + Math.sin(time * 9) * 0.4, nbH(t.x, t.z) + 1.6, t.z), 0xe6c15a, 2, 0.06, 1.2, 0.2);
+  }
+  const el = $('talk');
+  if (el && !menuOpen && !sec.near) {
+    let best = null, bd = 1.9;
+    for (const t of NB.traps) { if (!t.found || t.dead) continue; const d = Math.hypot(player.pos.x - t.x, player.pos.z - t.z); if (d < bd) { bd = d; best = t; } }
+    if (best) {
+      el.style.opacity = 1;
+      el.textContent = best.kind === 'hole' ? '穴：見張りを置く。もう一度でふさぐ（E）' : (player.pos.z < best.z - 0.35 ? '仕掛けを敵の方へ向ける（E）' : '仕掛けを外す（E）');
+    }
+  }
 }
 function nbThreats() {
   if (NB._tf === time && NB._th) return NB._th;
   const list = [];
-  for (const o of enemies) if (o.team === 'orange' && o.state !== 'down' && !o.special) list.push({ x: o.s.position.x, z: o.s.position.z, e: o });
+  for (const o of enemies) if (o.team === 'orange' && o.state !== 'down' && !o.special && !o.nbHide) list.push({ x: o.s.position.x, z: o.s.position.z, e: o });
   for (const b of NB.beasts) if (b.alive && !b.feed) list.push({ x: b.x, z: b.z, beast: b });
   NB._tf = time; NB._th = list; return list;
 }
@@ -8821,6 +9028,13 @@ function nbHit(th, dmg, from) {
   else if (th.e && th.e.state !== 'down') damageEnemy(th.e, dmg, from, false, { pt: th.e.s.position.clone() }, null);
 }
 function nbAllyBrain(e, dt) {
+  if (e.nbWatch && e.nbWatch.dead) e.nbWatch = null;
+  if (e.nbWatch) {
+    const t = e.nbWatch, p0 = e.s.position;
+    if (Math.hypot(t.x + 1.05 - p0.x, t.z - p0.z) > 0.45) steer(e, t.x + 1.05, t.z, e.speed * 0.8, dt);
+    e.faceWant = Math.PI; e.moving = true; return true;
+  }
+  const slow = NB.probe ? 0.62 : 1;
   const p = e.s.position, a = { x: clamp(player.pos.x, -3.4, 3.4), z: player.pos.z };
   const ths = nbThreats(), ix = e.nbIx || 0;
   e.cd -= dt; e.t += dt; e.moving = false;
@@ -8841,7 +9055,7 @@ function nbAllyBrain(e, dt) {
   if (e.nbRole === 'archer') {
     const col = ix % 5, row = (ix / 5) | 0;
     const tx = clamp(a.x + (col - 2) * 1.4, -5.6, 5.6), tz = a.z + 3.4 + row * 1.2;
-    if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.95, dt);
+    if (Math.hypot(tx - p.x, tz - p.z) > 0.4) steer(e, tx, tz, e.speed * 0.95 * slow, dt);
     e.faceWant = Math.PI;
     let mark = null, md = 42;
     for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (t.z < p.z + 1 && d < md) { md = d; mark = t; } }
@@ -8854,7 +9068,7 @@ function nbAllyBrain(e, dt) {
   } else if (e.nbRole === 'yari') {
     const col = ix % 4, row = (ix / 4) | 0;
     const tx = clamp(a.x + (col - 1.5) * 1.15, -5.2, 5.2), tz = a.z - 2.4 - row * 1.02;
-    if (e.state !== 'windup') steer(e, tx, tz, e.speed * 0.9, dt);
+    if (e.state !== 'windup') steer(e, tx, tz, e.speed * 0.9 * slow, dt);
     let th = null, td = 2.8;
     for (const t of ths) { const d = Math.hypot(t.x - p.x, t.z - p.z); if (d < td) { td = d; th = t; } }
     e.faceWant = th ? Math.atan2(th.x - p.x, th.z - p.z) : Math.PI;
@@ -8867,7 +9081,7 @@ function nbAllyBrain(e, dt) {
       const side = ((ix % 5) - 2) * 0.9;
       const tx = clamp(th.x + side, -6, 6), tz = th.z + 0.8;
       const d = Math.hypot(tx - p.x, tz - p.z);
-      if (d > 1.15) steer(e, tx, tz, e.speed * 1.35, dt);
+      if (d > 1.15) steer(e, tx, tz, e.speed * 1.35 * slow, dt);
       e.faceWant = Math.atan2(th.x - p.x, th.z - p.z);
       if (e.state !== 'windup' && e.state !== 'recover') e.state = d > 1.15 ? 'charge' : 'idle';
       if (d < 1.7 && (e.nbStab || 0) <= time && e.state !== 'windup') {
@@ -8875,7 +9089,7 @@ function nbAllyBrain(e, dt) {
       }
     } else {
       const col = ix % 4, row = (ix / 4) | 0;
-      steer(e, clamp(a.x + (col - 1.5) * 1.45, -5.4, 5.4), a.z - 7.5 - row * 1.15, e.speed, dt);
+      steer(e, clamp(a.x + (col - 1.5) * 1.45, -5.4, 5.4), a.z - 7.5 - row * 1.15, e.speed * slow, dt);
       e.faceWant = Math.PI; if (e.state === 'charge') e.state = 'idle';
     }
   }
@@ -8900,9 +9114,9 @@ function nbStart() {
     e.nbRole = role; e.nbIx = ix; e.sq = null; e.ammo = undefined;
   }
   const spots = [];
-  for (const z0 of [-8, -24, -40, -56]) {
-    const n = MOBILE ? 2 : 4;
-    for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.7 + rand(-0.2, 0.2), z0 + rand(-0.6, 0.6)]);
+  for (const z0 of [-8, -26, -44, -62, -80, -98, -116]) {
+    const n = MOBILE ? 3 : 5;
+    for (let i = 0; i < n; i++) spots.push([(i - (n - 1) / 2) * 1.35 + rand(-0.15, 0.15), z0 + rand(-0.8, 0.8)]);
   }
   spots.forEach((p, i) => {
     const id = NB_IDS[i % NB_IDS.length];
@@ -8913,12 +9127,26 @@ function nbStart() {
     const cage = NB.cages.find(c => Math.hypot(c.x - p[0], c.z - p[1]) < 3.2 && !c.carrier);
     if (cage) { cage.carrier = e; e.nbCage = cage; }
   });
-  showBanner('南蛮の戦い', '弓は後ろから斉射。槍は方陣。懐刀は突撃。獣は飼い主には向かわない');
+  showBanner('南蛮の戦い', '坂と仕掛けのある山道。棒で突けば遅いが見つかる。秘書に足元を見させれば印がつく');
   if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('進め。道を空けるな', { pitch: 1.05, rate: 1.0 }, 1); }, 700);
   setTimeout(() => { if (state !== 'play') return; const v = enemies.find(e => e.nbVn && e.state !== 'down'); if (v) nbVnSay(v, 'spot'); }, 1400);
 }
 function updateNanban(dt) {
   if (!NB.on || state !== 'play') return;
+  nbUpdateTraps(dt);
+  if (NB.bee > time) {
+    for (const e of enemies) if (e.team === 'blue' && e.state !== 'down' && e.nbRole) {
+      if (e.nbSp0 == null) e.nbSp0 = e.speed;
+      e.speed = e.nbSp0 * 0.55;
+    }
+  } else if (NB.traps) {
+    for (const t of NB.traps) if (t.kind === 'hive' && t.flip && t.beeTill > time) {
+      for (const e of enemies) if (e.team === 'orange' && e.state !== 'down' && Math.hypot(e.s.position.x - t.x, e.s.position.z - t.z) < 7) {
+        if (e.nbSp0 == null) e.nbSp0 = e.speed; e.speed = e.nbSp0 * 0.5; e.nbBee = time;
+      }
+    }
+  }
+  for (const e of enemies) if (e.nbSp0 != null && !(NB.bee > time) && !(e.nbBee > time - 0.05)) e.speed = e.nbSp0;
   for (const s of NB.shafts || []) s.material.opacity = 0.05 + (Math.sin(time * 0.65 + (s.userData.ph || 0)) * 0.5 + 0.5) * 0.09;
   if ((NB.chatT = (NB.chatT || 5) - dt) <= 0) {
     NB.chatT = rand(7, 12);
@@ -8930,7 +9158,7 @@ function updateNanban(dt) {
     if (g.stay) continue;
     g.life -= dt; g.v.y -= 9 * dt;
     g.m.position.addScaledVector(g.v, dt);
-    if (g.m.position.y < 0.06) { g.m.position.y = 0.06; g.v.y *= -0.15; g.v.x *= 0.6; g.v.z *= 0.6; }
+    if (g.m.position.y < nbH(g.m.position.x, g.m.position.z) + 0.06) { g.m.position.y = nbH(g.m.position.x, g.m.position.z) + 0.06; g.v.y *= -0.15; g.v.x *= 0.6; g.v.z *= 0.6; }
     if (g.life <= 0) { scene.remove(g.m); if (g.geo) g.geo.dispose(); NB.gibs.splice(i, 1); }
   }
   for (const c of NB.cages) {
@@ -8968,7 +9196,7 @@ function updateNanban(dt) {
         b.feedT -= dt;
         const x = o.s.position.x, z = o.s.position.z;
         b.x += (x - b.x) * Math.min(1, dt * 3); b.z += (z - b.z) * Math.min(1, dt * 3);
-        b.s.position.set(b.x, b.kind === 'snake' ? 0.42 : 0.12, b.z);
+        b.s.position.set(b.x, nbH(b.x, b.z) + (b.kind === 'snake' ? 0.42 : 0.12), b.z);
         nbBeastFace(b, 'feed');
         b.feedFx -= dt;
         if (b.feedFx <= 0) { b.feedFx = 7; nbGore(x + rand(-0.15, 0.15), z + rand(-0.1, 0.1), 0.45, false); }
@@ -8984,7 +9212,7 @@ function updateNanban(dt) {
       const o = b.coil;
       const x = o === 'player' ? player.pos.x : o.s.position.x;
       const z = o === 'player' ? player.pos.z : o.s.position.z;
-      b.x += (x - b.x) * 0.35; b.z += (z - b.z) * 0.35; b.s.position.set(b.x, 0.85, b.z);
+      b.x += (x - b.x) * 0.35; b.z += (z - b.z) * 0.35; b.s.position.set(b.x, nbH(b.x, b.z) + 0.85, b.z);
       nbBeastFace(b, 'coil');
       if (b.cd <= 0) {
         b.cd = 0.55;
@@ -9002,7 +9230,7 @@ function updateNanban(dt) {
     if (b.kind === 'tiger' && d < 7) sp = 6.4;
     b.x += dx / d * sp * dt; b.z += dz / d * sp * dt;
     b.x = clamp(b.x, -6.6, 6.6);
-    b.s.position.set(b.x, 0, b.z);
+    b.s.position.set(b.x, nbH(b.x, b.z), b.z);
     nbBeastFace(b);
     if (d < (b.kind === 'snake' ? 1.15 : 1.35) && b.cd <= 0) {
       b.cd = b.kind === 'snake' ? 0.4 : 0.7;
@@ -9024,10 +9252,10 @@ function updateNanban(dt) {
     }
     e.nbBeastCd = (e.nbBeastCd || 0) - dt;
   }
-  const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special).length;
+  const foe = enemies.filter(e => e.team === 'orange' && e.state !== 'down' && !e.special && !e.nbHide).length;
   const beasts = NB.beasts.filter(b => b.alive).length;
-  if (!NB.won && player.pos.z < -64 && foe === 0 && beasts === 0) { NB.won = true; gameOver(true); }
-  else if (player.pos.z < -64 && !NB.ridgeSaid && (foe || beasts)) { NB.ridgeSaid = true; showBanner('稜線', 'まだ獣か現地の娘が残っている'); }
+  if (!NB.won && player.pos.z < -118 && foe === 0 && beasts === 0) { NB.won = true; gameOver(true); }
+  else if (player.pos.z < -118 && !NB.ridgeSaid && (foe || beasts)) { NB.ridgeSaid = true; showBanner('稜線', 'まだ獣か現地の娘が残っている'); }
   wave.total = { blue: enemies.filter(e => e.team === 'blue' && e.state !== 'down').length + 1, orange: foe + beasts };
 }
 
@@ -9057,7 +9285,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
-  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。落ち葉とぬかるみの道、ヤシ・竹・バナナの葉が空を塞ぐジャングル。小川と苔の岩、高床の小屋、倒木。弓は殿の後ろから揃って射り、槍は方陣、懐刀は前へ突撃する。現地の娘は弓か懐刀で迎え撃ち、ベトナム語で話す。檻の獣は飼い主には向かわず、倒した日本人の肉を食う。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は長く、坂と谷がある。落ち葉とぬかるみ、ヤシ・竹・バナナの葉。弓は後ろから斉射、槍は方陣、懐刀は突撃。張り線、振り子の丸太、しなる竹、穴、蜂の巣がある。秘書に「足元見て」と言うと近くの仕掛けに印がつく。「棒で突いて進め」と言うと先頭が地面を突き、進みは遅いが見つかる。見つけた仕掛けは、こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナム語で話す。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -17417,7 +17645,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -21027,6 +21255,19 @@ const SEC_REQ = {
   },
   follow() { startEscort(); },
   back() { sendBack(); },
+  feet() {
+    if (!NB.on || !NB.traps) { popup('ここでは足元に仕掛けはない'); return; }
+    let n = 0;
+    for (const t of NB.traps) if (!t.dead && Math.hypot(t.x - player.pos.x, t.z - player.pos.z) < 18) { nbReveal(t); n++; }
+    $('secsay').textContent = n ? '「足元に仕掛けが ' + n + ' つ。印をつけておきます」' : '「近くに仕掛けは見当たりません」';
+    popup(n ? '秘書が近くの仕掛けに印をつけた（' + n + '）' : '近くに仕掛けは見当たりません');
+  },
+  probe() {
+    if (!NB.on) { popup('ここでは使いません'); return; }
+    NB.probe = !NB.probe;
+    $('secsay').textContent = NB.probe ? '「先頭に、棒で地面を突かせます。進みは遅くなります」' : '「棒をしまわせます」';
+    popup(NB.probe ? '先頭が棒で地面を突く。進みは遅い' : '通常の速さで進む');
+  },
   ca() { caBit(); },
   arrows() {
     if (player.arrows >= arrowsMax()) { secReply('sec_arrows_full', 0); return; }
@@ -21220,6 +21461,7 @@ function openSecMenu() {
   menuWho = talkWho || 'sec';
   $('secName').textContent = menuWho === 'sec2' ? sec2.name : menuWho === 'ojou' ? ojou.name : menuWho === 'fumi' ? fumi.name : menuWho === 'sysop' ? sysop.name : sec.name;
   $('secmenu').style.display = 'flex'; showSub(null);
+  for (const b of document.querySelectorAll('.nanbanOnly')) b.style.display = NB.on ? '' : 'none';
   if (document.exitPointerLock && locked()) document.exitPointerLock();
   secReply('sec_greet');
 }
@@ -22031,6 +22273,7 @@ function fireArrow(charge) {
   if (player.arrows <= 0) { Sfx.empty(); return; }
   player.arrows--;
   const dir = new V3(); camera.getWorldDirection(dir);
+  if (NB.on && NB.bee > time) { dir.x += gauss() * 0.09; dir.y += gauss() * 0.06; dir.z += gauss() * 0.09; dir.normalize(); }
   const pos = camera.position.clone().addScaledVector(dir, 0.6); pos.y -= 0.05;
   addArrow('player', pos, dir.multiplyScalar(16 + 46 * charge), { charge });
   Sfx.twang(charge);
@@ -22049,7 +22292,7 @@ function enemyShoot(e, t) {
   if (MECH.on && e.kind === 'archer' && Math.random() < 0.62) { const w = mechAimWheel(e); if (w) target.copy(w); }
   const v = 30, d = from.distanceTo(target), tf = d / v;
   const dir = target.sub(from).normalize();
-  const err = e.P.aimErr * (1 + d / 40);
+  const err = e.P.aimErr * (1 + d / 40) * (NB.on && (NB.bee > time || (e.nbBee || 0) > time - 0.2) ? 3.4 : 1);
   dir.x += gauss() * err; dir.y += gauss() * err; dir.z += gauss() * err; dir.normalize();
   const vel = dir.multiplyScalar(v); vel.y += 0.5 * 9.8 * tf;
   from.addScaledVector(dir, 0.5);
@@ -22594,7 +22837,7 @@ function setupTouch() {
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
-  tapBtn('bTalk', () => { if (PAL.on) { palKey(); return; } if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (sec.near) openSecMenu(); });
+  tapBtn('bTalk', () => { if (PAL.on) { palKey(); return; } if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (NB.on && nbTrapUse()) return; else if (sec.near) openSecMenu(); });
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
@@ -22660,7 +22903,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Digit1') setWeapon(0);
   if (e.code === 'Digit2') setWeapon(1);
   if (e.code === 'KeyT') onigiriRemark();
-  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (keiUse()) { /* 浜の軽自動車 */ } else if (carUse()) { /* 平原の軽自動車 */ } else if (mechUse()) { /* 破れたタイヤ */ } else if (castleDoorClose() && castleUse()) { /* すぐ前の襖を優先 */ } else if (sec.near) openSecMenu(); else if (!castleUse()) ladderGo(); }
+  if (e.code === 'KeyE') { if (menuOpen) closeSecMenu(); else if (NB.on && nbTrapUse()) { /* 南蛮の仕掛け */ } else if (keiUse()) { /* 浜の軽自動車 */ } else if (carUse()) { /* 平原の軽自動車 */ } else if (mechUse()) { /* 破れたタイヤ */ } else if (castleDoorClose() && castleUse()) { /* すぐ前の襖を優先 */ } else if (sec.near) openSecMenu(); else if (!castleUse()) ladderGo(); }
   if (e.code === 'Space') e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
@@ -23003,6 +23246,8 @@ function updatePlayer(dt) {
   if (player.drawing) sp *= 0.5;
   if (PLANE.on && bodies.length) { const h = pileAt(player.pos.x, player.pos.z); if (h > 0) sp *= h > 0.5 ? 0.45 : 0.65; }
   if (SNOW.on && SNOW.cold > 20) sp *= SNOW.cold > 36 ? 0.62 : 0.82;   // 寒さで足が鈍る
+  if (NB.on && NB.bee > time) sp *= 0.55;
+  if (NB.on && NB.probe) sp *= 0.72;
   if (MTN.on && MTN.slowT > 0) sp *= 0.42;   // トラバサミで足を取られている
   // 梯子：前進で上る・後退で下りる（途中は横移動しない）
   let fin = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0) - touch.jy;

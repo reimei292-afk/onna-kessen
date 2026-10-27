@@ -10086,7 +10086,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
-  palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。' },
+  palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。3階の会議室では、主要メンバーと不正アクセスの緊急会議がひらかれる（行事の「緊急会議へ」、または上座で E）。' },
   usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。本丸が落ちれば裏の抜け道へ。⑤総構えの大城（小田原城に倣う）：急ぎの徴募の娘たちも加わり、町ぐるみの土塁と空堀で三方からの寄せを止めよ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
   usRaid: { name: 'アメリカ西部編 第三幕「陸攻出撃」', desc: '試製 嶺雲（双発の陸上攻撃機）の編隊でアメリカ軍の前進飛行場を叩く。殿は一番機に乗り、1〜6 で持ち場を移る（操縦席・爆撃照準・前方／左／右／後方機銃。V で外から）。ほかは搭乗員が受け持つ。米軍の戦闘機が上方前方・側方・後方から一撃をかけ、目標の上では対空機銃が待つ。破裂爆弾を落として帰る。搭乗員が全員倒れた機は、自動操縦でひとりで基地へ帰り着陸する。殿が被弾するか一番機が落ちれば作戦中止。' },
   usDrop: { name: 'アメリカ西部編 第四幕「空挺降下」', desc: '前の出撃で、アメリカ軍前進飛行場の格納庫の爆弾は壊してある。一式陸攻を参考にした、中の広い双発輸送機「試製 蒼雲」が 3 機。1 機に空挺部隊 40 人。ほかは操縦手・副操縦手・電探・前方機銃手・右機銃手・左機銃手・後方機銃手・医師か看護師が 1 人。殿の乗る機には秘書課もいる。画面左の小さいボタンで機内を歩き、降下口で空挺。着地したあとは地上の米軍と弓・刀で戦う。飛行場の手前で、残った対空機銃と破裂弾が少し来る。一時停止に味方と敵の数。' },
@@ -16190,7 +16190,7 @@ const PAL_RW = 12, PAL_H = 3.6; let PAL_CW = 2.5;   // 部屋の奥行き・廊�
 //  1階＝務めの階（旧開智学校に倣う：白い漆喰・板張りの床・上げ下げ窓・交差廊下・中庭）
 // '@' で始まる項目は部屋ではない広間（'both' は廊下の両側、-1/1 は片側だけ）
 const PAL_FLOORS = [
-  { name: '3階', sub: '帝王の間・食堂・殿の書斎・私室・側近の私室・秘書室・政務室・財務室・軍務室', style: 'state', cw: 3.2, rooms: [['@grand', '大階段の間', 1.4, 'both'], ['throne', '帝王の間', 2], ['dining', '帝王の間 食堂', 1], ['study', '殿の書斎', 1], ['priv', '殿の私室', 1], ['wash', '殿の洗面所', 0.7], ['kwc', '殿専用 浴室・お手洗い', 0.6], ['balcony', 'バルコニー', 1], ['ojou_r', '西園寺の私室・執務室', 1], ['ojou_ante', '西園寺の秘書控室', 0.8], ['sumi_r', '白瀬の私室', 0.8], ['omiya_r', '大宮の私室', 0.8], ['fumi_r', '綾瀬の私室', 0.8], ['@mirror', '鏡の間（控えの広間）', 1.2, 'both'], ['secr', '秘書室', 1.6], ['seimu', '政務室', 1], ['zaimu', '財務室', 1], ['gunmu', '軍務室', 1], ['wc', '女子トイレ（個室 10）', 0.8], ['wc', '女子トイレ（個室 10）', 0.8]] },
+  { name: '3階', sub: '帝王の間・食堂・殿の書斎・私室・側近の私室・秘書室・政務室・財務室・軍務室・会議室', style: 'state', cw: 3.2, rooms: [['@grand', '大階段の間', 1.4, 'both'], ['throne', '帝王の間', 2], ['dining', '帝王の間 食堂', 1], ['study', '殿の書斎', 1], ['priv', '殿の私室', 1], ['wash', '殿の洗面所', 0.7], ['kwc', '殿専用 浴室・お手洗い', 0.6], ['balcony', 'バルコニー', 1], ['ojou_r', '西園寺の私室・執務室', 1], ['ojou_ante', '西園寺の秘書控室', 0.8], ['sumi_r', '白瀬の私室', 0.8], ['omiya_r', '大宮の私室', 0.8], ['fumi_r', '綾瀬の私室', 0.8], ['@mirror', '鏡の間（控えの広間）', 1.2, 'both'], ['secr', '秘書室', 1.6], ['seimu', '政務室', 1], ['zaimu', '財務室', 1], ['gunmu', '軍務室', 1], ['kaigi', '会議室', 1.2], ['wc', '女子トイレ（個室 10）', 0.8], ['wc', '女子トイレ（個室 10）', 0.8]] },
   { name: '2階', sub: '侍女の大部屋・休憩室・遊びの部屋・お店・カフェ・レストラン・バー・ラウンジ', style: 'manor', cw: 2.6, rooms: [['@stair', '暖炉の大広間', 1.2, 'both'], ['dorm', '侍女の大部屋（一）', 2], ['dorm', '侍女の大部屋（二）', 2], ['rest', '休憩室', 1], ['game', 'ボードゲーム室', 1], ['manga', '漫画コーナー', 1], ['av', '視聴覚室', 1], ['@veranda', 'ベランダ（サンルーム）', 1.6, 1], ['book', '書店', 1], ['zakka', '雑貨店', 1], ['beauty', '美容室', 1], ['cafe', 'カフェ', 1.2], ['rest_r', 'レストラン', 2], ['bar', 'バー', 1], ['lounge', 'ラウンジ', 1.4], ['wc', '女子トイレ（個室 10）', 0.8], ['wc', '女子トイレ（個室 10）', 0.8]] },
   { name: '1階', sub: '玄関ホール・近衛室・詰所・武器庫・医務室・厨房・コンビニ・ジム・ダンスほか', style: 'meiji', cw: 2.0, rooms: [['hall', '玄関ホール', 1.6], ['guard', '近衛室', 1], ['post', '各隊詰所', 1], ['armory', '武器庫', 1], ['gunnery', '砲術室', 1], ['med', '医務室', 1.2], ['logi', '兵站室', 1], ['@cross', '交差廊下', 1.0, 'both'], ['@court', '中庭', 2.2, -1], ['dock', '搬入口', 1.4], ['eizen', '営繕室', 1], ['kitchen', '厨房', 2], ['costume', '衣装室', 1], ['info', '情報室', 1], ['music', '音楽室', 0.8], ['conv', 'コンビニ', 1], ['gym', '女性用ジム', 1.4], ['dance', 'ダンスセンター', 1.2], ['wc', '女子トイレ（個室 10）', 0.8], ['wc', '女子トイレ（個室 10）', 0.8]] },
   { name: '浴場別館', sub: '宴会場・大カラオケ部屋・共同浴場・湯上がり処', rooms: [['banquet', '宴会場', 2.4], ['karaoke', '大カラオケ部屋', 1.4], ['bath_e', '共同浴場（女湯）', 1.2], ['yuagari', '湯上がり処', 1.4], ['kbath', '殿専用浴室', 0.8], ['wc', '女子トイレ（個室 6）', 0.7], ['wc', '女子トイレ（個室 6）', 0.7]] },
@@ -16200,7 +16200,7 @@ function palFI(type) { const i = PAL_FLOORS.findIndex(F => F.rooms.some(r => r[0
 // 時間帯（朝・昼・夕・夜）ごとの、部屋の混み具合
 const PAL_W = {
   throne: [1, 1.2, 1, 0.4], dining: [0.4, 0.6, 0.4, 0], study: [0, 0.4, 0, 0], priv: [0, 0, 0, 0], balcony: [0.6, 0.6, 1.2, 0.4],
-  secr: [1, 2, 1, 0.2], seimu: [0.5, 2, 0.6, 0], zaimu: [0.5, 2, 0.6, 0], gunmu: [0.5, 2, 0.6, 0],
+  secr: [1, 2, 1, 0.2], seimu: [0.5, 2, 0.6, 0], zaimu: [0.5, 2, 0.6, 0], gunmu: [0.5, 2, 0.6, 0], kaigi: [0.4, 1.6, 0.5, 0],
   dorm: [2, 0.3, 1, 3], rest: [0.5, 1, 2, 1.5], game: [0.2, 0.8, 2, 1.6], manga: [0.3, 1, 1.5, 1.6], av: [0, 0.5, 1.5, 2], book: [0.3, 1, 1, 0.2], zakka: [0.3, 1, 1, 0.2], beauty: [0.3, 1, 1.2, 0.2],
   cafe: [1.2, 2.2, 0.6, 0], rest_r: [0.6, 1.2, 2.6, 0.6], bar: [0, 0, 0.6, 2.6], lounge: [0, 0.4, 1, 2.6], conv: [1, 1, 1, 1], gym: [2.4, 0.5, 1, 0.3], dance: [0.5, 0.5, 2, 0.6],
   banquet: [0, 0, 0.4, 0.4], karaoke: [0, 0.3, 1.6, 2.2], bath_e: [0.6, 0.3, 2, 1.6], yuagari: [0.4, 0.4, 2.6, 1.8],
@@ -16229,9 +16229,9 @@ const PAL_NAMED = {
   akari: { girl: () => 'sec7', name: '側近付き秘書 夏目 あかり', pers: '陽気', cm: 162, at: ['gym', 'walk', 'yuagari', null] },
   midori: { girl: () => 'girl37', name: '側近付き秘書 村瀬 碧', pers: '好戦的', cm: 164, at: ['secr', 'secr', 'walk', null] },
 };
-const PAL_TAG = { dock: '兵站室（搬入）', eizen: '営繕室', throne: '侍女', dining: '給仕の侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
+const PAL_TAG = { dock: '兵站室（搬入）', eizen: '営繕室', throne: '侍女', dining: '給仕の侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', kaigi: '会議室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
   cafe: 'カフェの侍女', rest_r: '侍女', bar: '侍女', lounge: '侍女', conv: 'コンビニの侍女', gym: '侍女', dance: '侍女', banquet: '侍女', karaoke: '侍女', bath_e: '侍女', yuagari: '侍女', hall: '取次の侍女', guard: '近衛室', post: '詰所の侍女', armory: '武器庫係', gunnery: '砲術室', med: '医務室 看護役', logi: '兵站室', kitchen: '厨房の侍女', costume: '衣装室', info: '情報室', kyudo: '弓の侍女', gymnasium: '侍女', budokan: '武術の侍女', practice: '侍女', tennis: '侍女', soccer: '侍女', walk: '侍女' };
-const PAL_CAT = { dock: 'work', eizen: 'work', throne: 'throne', dining: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
+const PAL_CAT = { dock: 'work', eizen: 'work', throne: 'throne', dining: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', kaigi: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
   cafe: 'cafe', rest_r: 'cafe', bar: 'bar', lounge: 'bar', conv: 'conv', gym: 'gym', dance: 'gym', banquet: 'bath', karaoke: 'bath', bath_e: 'bath', yuagari: 'bath', kitchen: 'kitchen', guard: 'guard', post: 'guard', armory: 'guard', gunnery: 'guard', med: 'med', hall: 'misc', logi: 'misc', costume: 'misc', info: 'misc', music: 'misc', kyudo: 'sport', gymnasium: 'sport', budokan: 'sport', practice: 'sport', tennis: 'sport', soccer: 'sport' };
 // 殿の台詞（字幕だけ）
 const PAL_FIX = {
@@ -16648,6 +16648,10 @@ function palRoomFurn(R) {
     case 'secr': for (let i = 0; i < 3; i++) for (let j = -1; j <= 1; j += 2) B(3 + i * 3, j * 2.6, 1.4, 1.0, 0.76, M.wood); shelf(back - 0.3, 0, 0.5, 4); break;
     case 'seimu': case 'zaimu': case 'gunmu': B(mid, 0, rw - 5, 1.6, 0.76, R.type === 'gunmu' ? M.green : M.woodD); for (let k = 0; k < Math.floor((rw - 5) / 1.3); k++) { chair(3.2 + k * 1.3, -1.2); chair(3.2 + k * 1.3, 1.2); } chair(back - 0.8, 0); shelf(mid, hd - 0.4, 4, 0.4);
       R.king = [back - 0.8, 0]; break;   // 上座：入口から最も遠い短辺
+    case 'kaigi': B(mid, 0, rw - 5, 1.6, 0.76, M.woodD); for (let k = 0; k < Math.floor((rw - 5) / 1.3); k++) { chair(3.2 + k * 1.3, -1.2); chair(3.2 + k * 1.3, 1.2); } chair(back - 0.8, 0); shelf(mid, hd - 0.4, 4, 0.4);
+      R.king = [back - 0.8, 0];
+      { const bm = new THREE.MeshBasicMaterial({ map: canvasTex(512, 256, (c, W, H) => { c.fillStyle = '#f4efe4'; c.fillRect(0, 0, W, H); c.strokeStyle = '#6a3030'; c.lineWidth = 10; c.strokeRect(10, 10, W - 20, H - 20); c.fillStyle = '#8a3030'; c.font = 'bold 46px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('緊急会議', W / 2, 78); c.fillStyle = '#1d1d1d'; c.font = '34px serif'; c.fillText('不正アクセスについて', W / 2, 148); c.fillStyle = '#444'; c.font = '24px serif'; c.fillText('主要メンバー　集合', W / 2, 204); }) }); bm.userData.palOwn = true;
+        const bd = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.2), bm); bd.position.set(palWX(R, mid), 1.7, R.zc - hd + 0.16); palAdd(bd); } break;
     case 'dorm': for (let z = -hd + 1.6; z < hd - 1; z += 2.4) { bed(back - 1.0, z); bed(2.6, z); } break;
     case 'rest': sofa(back - 0.6, 0, 0.9, 3); sofa(mid - 1, -3, 2.4, 0.9, M.sofaB); B(mid - 0.5, 0, 1.2, 1.2, 0.4, M.wood); B(back - 0.3, -hd + 0.8, 0.6, 1.2, 1.6, M.steel); break;
     case 'game': for (const [x, z] of [[3.5, -2.5], [3.5, 2.5], [8, -2.5], [8, 2.5]]) { table(x, z, 1.1, 1.1); B(x, z, 0.5, 0.5, 0.03, M.white, false, 0.78); } break;
@@ -17089,6 +17093,7 @@ function palDailyAct(dry) {   // 近くにある「殿の日常」の行い。dr
   if ((R = palAt('wash', 'sink', 1.8))) return dry ? '洗面所で歯を磨く（E）' : palBrush();
   if ((R = palRoomOf('dining')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4) return dry ? '食堂で食事にする（E）' : palMeal();
   if (PAL.slot === 1 && (R = palRoomOf('gunmu')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4 && !(PAL.dm && PAL.dm.d === (PAL.day || 0))) return dry ? '開発会議をひらく（E）' : palDevMeet(R);
+  if ((R = palRoomOf('kaigi')) && R.king && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.4 && !(PAL.sec && PAL.sec.ph === 'on')) return dry ? '緊急会議をひらく（E）' : palSecMeet(R);
   if ((R = palRoomOf('rest_r')) && Math.hypot(player.pos.x - palWX(R, R.king[0]), player.pos.z - R.zc) < 2.2) return dry ? '上座で侍女たちと食事（E）' : palRestMeal();
   { const V = PAL.doors.find(d => d.visit && !d.R.allowed && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 2.4); if (V) return dry ? V.R.name + 'をノックする（E）' : palVisitKnock(V); }
   const D = palDoorNear(['kwc', 'kbath', 'wc']);
@@ -17425,6 +17430,7 @@ function palEvFloor() {
 function palEvN() { return Math.max(3, (USD_MOB ? 15 : 28) - palRc().length); }
 function palJump(k) {   // 行事の日へ（昼 13 時）。式は浴場別館の宴会場
   if (k === 'dm') return palDmJump();
+  if (k === 'sec') return palSecJump();
   if (PAL.busy || UK.dlg) return;
   let d; if (k === 'naitei') d = palDayOf(2026, 10, 1); else if (k === 'nyukyu') d = PAL_NYD();
   else { const o = palDateObj(); d = Math.round((new Date(o.getFullYear(), o.getMonth() + (o.getDate() >= 25 ? 1 : 0), 25) - PAL_D0) / 864e5); }
@@ -17437,7 +17443,7 @@ function palJump(k) {   // 行事の日へ（昼 13 時）。式は浴場別館�
 function palCalUI(el) {
   if (el.querySelector('#palEvBtns')) return;
   const d = document.createElement('div'); d.id = 'palEvBtns';
-  d.innerHTML = [['naitei', '内定式'], ['nyukyu', '入宮式'], ['pay', '給料日'], ['dm', '開発会議']].map(([k, n]) => `<button data-ev="${k}">${n}へ</button>`).join('');
+  d.innerHTML = [['naitei', '内定式'], ['nyukyu', '入宮式'], ['pay', '給料日'], ['dm', '開発会議'], ['sec', '緊急会議']].map(([k, n]) => `<button data-ev="${k}">${n}へ</button>`).join('');
   el.insertBefore(d, $('palFloorName'));
   for (const b of d.querySelectorAll('button')) { const go = ev => { ev.preventDefault(); ev.stopPropagation(); palJump(b.dataset.ev); }; b.addEventListener('click', go); b.addEventListener('touchend', go, { passive: false }); }
 }
@@ -17502,6 +17508,41 @@ function palDevMeet(R) {
     const D = PAL.doors.find(d => d.R === R); all(e => { e.palDm = false; if (D) { e.palTo = [D.x, D.z]; e.speed = 1.1; setTimeout(() => { if (PAL.on && e.s && !e.palDm) e.s.visible = false; }, 6500); } });
     const m = PAL.dm.t0 + 60; PAL.min = m; showBanner('開発会議', '試製 嶺雲：自動着陸装置の研究が始まった'); });
 }
+const PAL_SEC_CAST = ['sumi', 'sysop', 'fumi', 'ojou', 'omiya', 'kujo', 'sec4'];
+function palSecJump() {
+  if (PAL.busy || UK.dlg || palEvActive()) return;
+  PAL.min = 13 * 60; PAL.slot = 1; PAL.log.push('jump:sec'); palGoFloor(palFI('kaigi'), 'stairs');
+  const t0 = Date.now(), w = () => { if (!PAL.on) return; if (PAL.busy && Date.now() - t0 < 8000) { setTimeout(w, 200); return; } const R = palRoomOf('kaigi'); if (R) palSecMeet(R); };
+  setTimeout(w, 400);
+}
+function palSecMeet(R) {
+  if (!R || UK.dlg || (PAL.sec && PAL.sec.ph === 'on')) return;
+  PAL.sec = { d: PAL.day || 0, ph: 'on', t0: PAL.min }; PAL.log.push('sec:start'); palKingAt(R); player.pitch = -0.08;
+  const back = R.rw - 0.6, seats = [[back - 2.0, -1.35], [back - 2.0, 1.35], [back - 3.4, -1.35], [back - 3.4, 1.35], [back - 4.8, -1.35], [back - 4.8, 1.35], [back - 6.2, 0]], C = {};
+  PAL_SEC_CAST.forEach((k, i) => { const x = palWX(R, seats[i][0]), z = R.zc + seats[i][1]; let e = PAL.named[k]; if (!e || !e.s) e = palNT(k, x, z); if (!e) return; palDmPut(e, R, x, z); C[k] = e; });
+  const S = (k, line) => [{ fn: () => { const e = C[k]; if (e && e.s) { e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); palSay(e, line); } } }, { say: line }];
+  const all = f => { for (const k in C) if (C[k] && C[k].s) f(C[k]); };
+  ukDlg([{ say: 'n_sec0' }, ...S('sumi', 'sec_open'), ...S('sysop', 'sec_s1'), ...S('sysop', 'sec_s2'), ...S('fumi', 'sec_f1'), ...S('ojou', 'sec_o1'), ...S('omiya', 'sec_om1'), ...S('kujo', 'sec_k1'), ...S('sec4', 'sec_4'),
+    { say: 'k_sec1' }, { say: 'k_sec2' }, ...S('sumi', 'sec_close'), { fn: () => all(e => { e.palBowT = time + 2.2; }) }, { say: 'n_sec1' }],
+  () => { PAL.sec.ph = 'done'; PAL.log.push('sec:done');
+    const D = PAL.doors.find(d => d.R === R); all(e => { e.palDm = false; if (D) { e.palTo = [D.x, D.z]; e.speed = 1.1; setTimeout(() => { if (PAL.on && e.s && !e.palDm) e.s.visible = false; }, 6500); } });
+    PAL.min = PAL.sec.t0 + 40; showBanner('緊急会議', '宮殿は該当しない。外の店の合言葉だけ、変えさせる'); });
+}
+Object.assign(PAL_FIX, {
+  n_sec0: { who: 'narr', narr: true, ja: '3階・会議室。長い机に、外から届いた知らせが重ねてある。主要メンバーが席についた。', dur: 3.4 },
+  sec_open: { who: 'sumi', ja: '緊急です。外で、会員の名簿を置く家が、次々と破られています。', dur: 3.4 },
+  sec_s1: { who: 'sysop', ja: '情報室で確かめました。破られているのは、メールの宛先と、いつ入ったかの記録を機械に置いている家です。一万を超える家もあります。', dur: 5.2 },
+  sec_s2: { who: 'sysop', ja: '合言葉そのものが流れた例は少なく、書き換えられた例が少しあります。殿の宮殿は、その形ではありません。', dur: 4.6 },
+  sec_f1: { who: 'fumi', ja: '戦闘の記録も、侍女の名も、紙と、この宮殿の中だけです。外から殿の居場所は引けません。', dur: 4.2 },
+  sec_o1: { who: 'ojou', ja: 'それでも、侍女が外の店で同じ合言葉を使っていれば、その店が破られたときに侍女の分まで渡ります。同じ合言葉は、今日変えさせます。', dur: 5.0 },
+  sec_om1: { who: 'omiya', ja: 'わたし、合言葉なんて持ってないです。顔を出せば、入れてもらえます。', dur: 3.2 },
+  sec_k1: { who: 'kujo', ja: '医務のカルテは紙です。機械には載せていません。血の型も、外には出ません。', dur: 3.6 },
+  sec_4: { who: 'sec4', ja: '政務の書類も同じです。会員という仕組み自体が、宮殿にはありません。', dur: 3.4 },
+  k_sec1: { who: 'king', ja: 'ならば、この宮殿は該当しない。', dur: 2.2 },
+  k_sec2: { who: 'king', ja: '会議はそれだけだ。侍女には、外の店の合言葉を変えるよう伝えよ。', dur: 3.2 },
+  sec_close: { who: 'sumi', ja: '承知しました。該当なし、と記録して、皆に回します。', dur: 3.0 },
+  n_sec1: { who: 'narr', narr: true, ja: '娘たちは一礼し、知らせの束を抱えて会議室を出ていった。', dur: 3.0 },
+});
 Object.assign(PAL_FIX, {
   n_dm0: { who: 'narr', narr: true, ja: '3階・軍務室。緑の机に青図と木の模型。壁には搭乗員配置図。', dur: 3.2 },
   k_dm1: { who: 'king', ja: 'ガラスに防弾はほとんどいらない。そのぶん軽くしろ。', dur: 3.0 },
@@ -18467,7 +18508,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

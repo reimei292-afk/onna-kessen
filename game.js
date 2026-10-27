@@ -2808,7 +2808,7 @@ function stageLook(name) {
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 
-  if (name === 'nanban') { NB.on = true; ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = 12; scene.fog.far = 58; scene.fog.color.setHex(0x1c3a24); scene.background.setHex(0x143222); hemiL.color.setHex(0xcfe6c4); hemiL.groundColor.setHex(0x1a3320); hemiL.intensity = 1.15; ambL.intensity = 0.72; sun.intensity = 0.8; }
+  if (name === 'nanban') { NB.on = true; ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false; scene.fog.near = 8; scene.fog.far = 34; scene.fog.color.setHex(0x1a3324); scene.background.setHex(0x163028); hemiL.color.setHex(0xd5e6c8); hemiL.groundColor.setHex(0x1a3320); hemiL.intensity = 0.72; ambL.intensity = 0.42; sun.intensity = 1.05; }
   else NB.on = false;
 }
 // ====================================================================
@@ -8576,7 +8576,7 @@ function nbBeast(kind, x, z) {
   if (!NB.tex) return null;
   const h = kind === 'snake' ? 0.72 : kind === 'boar' ? 1.05 : 1.28;
   const aspect = kind === 'snake' ? 2.3 : kind === 'boar' ? 1.85 : 2.05;
-  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: NB.tex[kind], transparent: true, alphaTest: 0.28, depthWrite: false }));
+  const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: NB.tex[kind + '_side'] || NB.tex[kind], transparent: true, alphaTest: 0.28, depthWrite: false }));
   spr.scale.set(h * aspect, h, 1); spr.position.y = h * 0.5; spr.renderOrder = 2;
   const g = new THREE.Group(); g.add(spr); g.position.set(x, 0, z); stageRoot.add(g);
   const b = { kind, s: g, spr, x, z, h, alive: true, hp: kind === 'tiger' ? 16 : kind === 'boar' ? 12 : 8, vx: 0, vz: 0, cd: rand(0.2, 0.8), coil: null, feed: null, flash: 0 };
@@ -8591,42 +8591,163 @@ function nbOpenCage(c) {
   const word = c.kind === 'tiger' ? '虎' : c.kind === 'boar' ? '猪' : '蛇';
   showBanner('檻が開いた', '腹を空かせた' + word + 'が放たれた');
 }
+function nbPhoto(name) {
+  if (!NB.photos) NB.photos = {};
+  const key = name + (USD_MOB ? '_m' : '');
+  if (!NB.photos[key]) {
+    const t = new THREE.TextureLoader().load('assets/nb_tex/' + key + '.jpg?v=' + ASSET_V);
+    t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = USD_MOB ? 1 : 4;
+    NB.photos[key] = t;
+  }
+  return NB.photos[key];
+}
+function nbCut(name) {
+  if (!NB.cuts) NB.cuts = {};
+  if (!NB.cuts[name]) {
+    const t = new THREE.TextureLoader().load('assets/nb_tex/' + name + '.png?v=' + ASSET_V);
+    t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+    NB.cuts[name] = t;
+  }
+  return NB.cuts[name];
+}
+function nbPlant(name, x, z, h) {
+  const asp = { palm: 0.49, banana: 0.72, bamboo: 0.43, fern: 1.6 }[name] || 0.7;
+  const mat = NB.plantMat[name];
+  const base = 4;
+  const geo = NB.plantGeo[name] || (NB.plantGeo[name] = new THREE.PlaneGeometry(base * asp, base));
+  const g = new THREE.Group();
+  const n = name === 'fern' ? 2 : 3;
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.y = base * 0.5;
+    m.rotation.y = (Math.PI * i) / n + rand(0, 0.5);
+    g.add(m);
+  }
+  g.scale.setScalar(h / base);
+  g.position.set(x, 0, z); stageRoot.add(g);
+  if (name !== 'fern') colliders.push({ x, z, r: name === 'palm' ? 0.35 : 0.28 });
+}
+function nbBeastFace(b, pose) {
+  const vx = b.x - (b.ox == null ? b.x : b.ox), vz = b.z - (b.oz == null ? b.z : b.oz);
+  if (vx * vx + vz * vz > 1e-4) b.yaw = Math.atan2(vx, vz);
+  b.ox = b.x; b.oz = b.z;
+  const cam = Math.atan2(camera.position.x - b.x, camera.position.z - b.z);
+  const d = angDiff(b.yaw == null ? Math.PI : b.yaw, cam);
+  const c = Math.cos(d), s = Math.sin(d);
+  let view = 'side';
+  if (c > 0.48) view = 'front';
+  else if (c < -0.4) view = 'back';
+  const tex = NB.tex && (NB.tex[b.kind + '_' + view] || NB.tex[b.kind]);
+  if (tex && b.spr.material.map !== tex) b.spr.material.map = tex;
+  const asp = (NB.asp && NB.asp[b.kind + '_' + view]) || 1.6;
+  let h = b.h * (pose === 'feed' ? 0.72 : pose === 'coil' ? 0.5 : 1);
+  if (pose === 'feed') h *= 1 + Math.sin(time * 5) * 0.06;
+  const flip = view === 'side' && s > 0 ? -1 : 1;
+  b.spr.scale.set(h * asp * flip, h, 1);
+  b.spr.position.y = h * 0.5;
+}
 function buildNanban() {
   NB.on = true; NB.beasts = []; NB.cages = []; NB.gibs = []; NB.won = false; NB.ridgeSaid = false;
-  if (!NB.tex) {
+  if (!NB.tex || !NB.tex.tiger_front) {
     const L = new THREE.TextureLoader();
-    NB.tex = {};
-    for (const n of ['tiger', 'snake', 'boar']) {
-      const t = L.load('assets/beasts/' + n + '.png?v=' + ASSET_V);
+    NB.tex = NB.tex || {};
+    const file = { tiger_side: 'tiger.png', boar_side: 'boar.png', snake_side: 'snake.png' };
+    for (const n of ['tiger_side', 'tiger_front', 'tiger_back', 'boar_side', 'boar_front', 'boar_back', 'snake_side', 'snake_front', 'snake_back']) {
+      const t = L.load('assets/beasts/' + (file[n] || n + '.png') + '?v=' + ASSET_V);
       t.colorSpace = THREE.SRGBColorSpace; NB.tex[n] = t;
     }
+    NB.asp = { tiger_side: 2.16, tiger_front: 0.53, tiger_back: 0.29, boar_side: 2.03, boar_front: 0.51, boar_back: 0.44, snake_side: 2.27, snake_front: 1.08, snake_back: 0.87 };
   }
-  const leaf = new THREE.MeshLambertMaterial({ color: 0x2a5a32 });
-  const mud = new THREE.MeshLambertMaterial({ color: 0x5a4632 });
-  const vine = new THREE.MeshLambertMaterial({ color: 0x1f6a32 });
-  const rockM = new THREE.MeshLambertMaterial({ color: 0x5c645c });
-  const groundGeo = new THREE.PlaneGeometry(420, 280, 1, 1); groundGeo.rotateX(-Math.PI / 2);
-  const floor = new THREE.Mesh(groundGeo, leaf); floor.position.set(0, 0, -20); stageRoot.add(floor);
-  const path = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 150), mud);
-  path.rotation.x = -Math.PI / 2; path.position.set(0, 0.02, -30); stageRoot.add(path);
-  for (const side of [-1, 1]) {
-    boxes.push({ x0: side < 0 ? -20 : 7.4, x1: side < 0 ? -7.4 : 20, z0: -88, z1: 42, y0: 0, y1: 8 });
-    for (let i = 0; i < 16; i++) {
-      const x = side * rand(7.6, 12), z = rand(-82, 36);
-      const h = rand(3.2, 6.5);
-      const c = new THREE.Mesh(new THREE.ConeGeometry(rand(1.4, 2.6), h, 6), vine);
-      c.position.set(x, h * 0.4, z); stageRoot.add(c);
-    }
+  NB.plantMat = {}; NB.plantGeo = {}; NB.shafts = [];
+  for (const n of ['palm', 'banana', 'bamboo', 'fern']) {
+    NB.plantMat[n] = new THREE.MeshLambertMaterial({ map: nbCut(n), transparent: true, alphaTest: 0.42, side: THREE.DoubleSide, depthWrite: true });
   }
-  for (let i = 0; i < 28; i++) {
+  const litter = nbPhoto('litter'); litter.repeat.set(12, 26);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(52, 150), new THREE.MeshLambertMaterial({ map: litter }));
+  floor.rotation.x = -Math.PI / 2; floor.position.set(0, 0, -22); stageRoot.add(floor);
+  const mudMat = new THREE.MeshLambertMaterial({ map: nbPhoto('mud') });
+  for (let i = 0; i < 26; i++) {
+    const z = 38 - i * 4.4, z2 = z - 4.4;
+    const x = Math.sin(z * 0.07) * 1.15, x2 = Math.sin(z2 * 0.07) * 1.15;
+    const g = new THREE.Group();
+    const seg = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 4.7), mudMat);
+    seg.rotation.x = -Math.PI / 2; g.add(seg);
+    g.position.set((x + x2) * 0.5, 0.03, (z + z2) * 0.5);
+    g.rotation.y = Math.atan2(x2 - x, z2 - z);
+    stageRoot.add(g);
+  }
+  const mossMat = new THREE.MeshLambertMaterial({ map: nbPhoto('moss') });
+  for (let i = 0; i < 18; i++) {
+    const p = new THREE.Mesh(new THREE.CircleGeometry(rand(1.1, 2.4), 8), mossMat);
+    p.rotation.x = -Math.PI / 2;
     const side = Math.random() < 0.5 ? -1 : 1;
-    const x = side * rand(3.6, 6.6), z = rand(-78, 32);
-    if (Math.abs(x) < 2.2) continue;
-    tree(x, z, rand(0.85, 1.35));
+    p.position.set(side * rand(2.2, 6.4), 0.025, rand(-78, 34));
+    stageRoot.add(p);
   }
-  for (const [x, z] of [[-4.2, 4], [4.6, -12], [-5.1, -30], [5.2, -48], [-4.4, -64]]) rock(x, z, rand(0.7, 1.15));
-  const ridge = new THREE.Mesh(new THREE.BoxGeometry(6.2, 2.4, 0.35), rockM);
-  ridge.position.set(0, 1.2, -70); stageRoot.add(ridge);
+  for (const side of [-1, 1]) boxes.push({ x0: side < 0 ? -20 : 7.4, x1: side < 0 ? -7.4 : 20, z0: -88, z1: 42, y0: 0, y1: 8 });
+  const nPlant = USD_MOB ? 36 : 78;
+  for (let i = 0; i < nPlant; i++) {
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const x = side * rand(2.4, 7.2), z = rand(-80, 36);
+    if (Math.abs(x) < 1.7) continue;
+    const kind = ['palm', 'banana', 'bamboo', 'fern', 'fern', 'bamboo'][(Math.random() * 6) | 0];
+    const h = kind === 'fern' ? rand(1.3, 2.2) : kind === 'palm' ? rand(6.5, 9.5) : rand(3.4, 5.8);
+    nbPlant(kind, x, z, h);
+  }
+  const nCap = USD_MOB ? 14 : 28;
+  const capMat = { palm: NB.plantMat.palm, banana: NB.plantMat.banana };
+  for (let i = 0; i < nCap; i++) {
+    const w = rand(7, 12), name = i % 2 ? 'banana' : 'palm';
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 0.7), capMat[name]);
+    m.position.set(rand(-6, 6), rand(7.2, 10.5), rand(-76, 30));
+    m.rotation.x = rand(-1.35, -0.85); m.rotation.y = rand(0, 6.2);
+    stageRoot.add(m);
+  }
+  const shaftMat = new THREE.MeshBasicMaterial({ color: 0xfff1c4, transparent: true, opacity: 0.1, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+  for (let i = 0; i < (USD_MOB ? 4 : 7); i++) {
+    const s = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 11), shaftMat.clone());
+    s.position.set(rand(-3.5, 3.5), 5.2, rand(-60, 16));
+    s.rotation.y = rand(-0.4, 0.4); s.rotation.z = rand(-0.18, 0.18);
+    s.userData.ph = rand(0, 6); stageRoot.add(s); NB.shafts.push(s);
+  }
+  const water = nbPhoto('water'); water.repeat.set(1, 3);
+  const waterMat = new THREE.MeshLambertMaterial({ map: water, color: 0x9ec8b4, transparent: true, opacity: 0.88 });
+  for (let i = 0; i < 34; i++) {
+    const z = 8 - i * 2.5, z2 = z - 2.5;
+    const x = Math.sin(z * 0.085) * 3.1 + 0.6, x2 = Math.sin(z2 * 0.085) * 3.1 + 0.6;
+    const g = new THREE.Group();
+    const seg = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 2.8), waterMat);
+    seg.rotation.x = -Math.PI / 2; g.add(seg);
+    g.position.set((x + x2) * 0.5, 0.04, (z + z2) * 0.5);
+    g.rotation.y = Math.atan2(x2 - x, z2 - z);
+    stageRoot.add(g);
+  }
+  const mossRock = yjMat('rock', 0x8ea878);
+  for (const [x, z, s] of [[2.8, 2, 0.9], [-3.4, -14, 1.15], [3.6, -28, 0.8], [-2.6, -46, 1.3], [4.1, -62, 0.95], [1.2, -36, 0.55]]) {
+    const r = new THREE.Mesh(G.rock, mossRock);
+    r.position.set(x, s * 0.32, z); r.scale.set(s * 1.2, s * 0.55, s); r.rotation.y = rand(0, 6); stageRoot.add(r);
+    if (s > 0.7) colliders.push({ x, z, r: s * 0.7 });
+  }
+  const bark = yjMat('bark');
+  for (const [x, z, len, yaw] of [[-2.4, -8, 3.2, 0.4], [2.2, -33, 3.6, 1.2], [-1.5, -55, 2.8, 0.2]]) {
+    const log = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, len, 7), bark);
+    log.rotation.z = Math.PI / 2; log.rotation.y = yaw;
+    log.position.set(x, 0.24, z); stageRoot.add(log);
+    colliders.push({ x, z, r: 0.45 });
+  }
+  const hut = new THREE.Group();
+  const plank = yjMat('planks'), postM = yjMat('wood');
+  for (const [px, pz] of [[-1.3, -0.9], [1.3, -0.9], [-1.3, 0.9], [1.3, 0.9]]) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 2.4, 6), postM);
+    p.position.set(px, 1.2, pz); hut.add(p);
+  }
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.1, 2.2), plank); deck.position.y = 1.55; hut.add(deck);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(2.3, 1.15, 4), yjMat('bamboo', 0xc2b48a));
+  roof.position.y = 2.55; roof.rotation.y = Math.PI / 4; hut.add(roof);
+  hut.position.set(-5.1, 0, -18); stageRoot.add(hut);
+  colliders.push({ x: -5.1, z: -18, r: 1.3 });
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(8, 2.6, 0.8), yjMat('rock', 0x9a9a90));
+  ridge.position.set(0, 1.3, -72); stageRoot.add(ridge);
   buildHQ(-3.2, 3.2, 30, 38, 0, 34);
   const wood = M.wood, dark = new THREE.MeshLambertMaterial({ color: 0x3a2a18 });
   const spots = [[-1.6, -4, 'snake'], [1.8, -24, 'tiger'], [-1.2, -42, 'boar'], [1.4, -58, 'snake']];
@@ -8765,6 +8886,7 @@ function nbStart() {
 }
 function updateNanban(dt) {
   if (!NB.on || state !== 'play') return;
+  for (const s of NB.shafts || []) s.material.opacity = 0.05 + (Math.sin(time * 0.65 + (s.userData.ph || 0)) * 0.5 + 0.5) * 0.09;
   if ((NB.chatT = (NB.chatT || 5) - dt) <= 0) {
     NB.chatT = rand(7, 12);
     const talk = enemies.filter(e => e.nbVn && e.state !== 'down' && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 22);
@@ -8814,8 +8936,7 @@ function updateNanban(dt) {
         const x = o.s.position.x, z = o.s.position.z;
         b.x += (x - b.x) * Math.min(1, dt * 3); b.z += (z - b.z) * Math.min(1, dt * 3);
         b.s.position.set(b.x, b.kind === 'snake' ? 0.42 : 0.12, b.z);
-        const bob = 1 + Math.sin(time * 5) * 0.06;
-        b.spr.scale.set(b.h * (b.kind === 'snake' ? 1.6 : 1.35) * bob, b.h * 0.72, 1);
+        nbBeastFace(b, 'feed');
         b.feedFx -= dt;
         if (b.feedFx <= 0) { b.feedFx = 7; nbGore(x + rand(-0.15, 0.15), z + rand(-0.1, 0.1), 0.45, false); }
         continue;
@@ -8831,7 +8952,7 @@ function updateNanban(dt) {
       const x = o === 'player' ? player.pos.x : o.s.position.x;
       const z = o === 'player' ? player.pos.z : o.s.position.z;
       b.x += (x - b.x) * 0.35; b.z += (z - b.z) * 0.35; b.s.position.set(b.x, 0.85, b.z);
-      b.spr.scale.set(0.9, 0.55, 1);
+      nbBeastFace(b, 'coil');
       if (b.cd <= 0) {
         b.cd = 0.55;
         if (o === 'player') { hurtPlayer(7); popup('蛇に巻かれて噛まれた'); nbGore(x, z, 0.45); }
@@ -8849,7 +8970,7 @@ function updateNanban(dt) {
     b.x += dx / d * sp * dt; b.z += dz / d * sp * dt;
     b.x = clamp(b.x, -6.6, 6.6);
     b.s.position.set(b.x, 0, b.z);
-    b.spr.scale.set(b.h * (b.kind === 'snake' ? 2.3 : b.kind === 'boar' ? 1.85 : 2.05), b.h, 1);
+    nbBeastFace(b);
     if (d < (b.kind === 'snake' ? 1.15 : 1.35) && b.cd <= 0) {
       b.cd = b.kind === 'snake' ? 0.4 : 0.7;
       if (b.kind === 'snake') b.coil = prey;
@@ -8903,7 +9024,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
-  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。弓は殿の後ろから揃って射り、槍は方陣、懐刀は前へ突撃する。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃ち、ベトナム語で話す。檻の蛇・虎・猪は飼い主には向かわず、倒した日本人の肉を食う。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。落ち葉とぬかるみの道、ヤシ・竹・バナナの葉が空を塞ぐジャングル。小川と苔の岩、高床の小屋、倒木。弓は殿の後ろから揃って射り、槍は方陣、懐刀は前へ突撃する。現地の娘は弓か懐刀で迎え撃ち、ベトナム語で話す。檻の獣は飼い主には向かわず、倒した日本人の肉を食う。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -17263,7 +17384,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

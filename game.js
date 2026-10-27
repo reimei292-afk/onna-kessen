@@ -8457,10 +8457,80 @@ function nbGore(x, z, scale, heavy) {
     stump.position.set(-0.02, 0.02, 0); arm.add(stump);
     arm.position.set(x + rand(-0.35, 0.15), 0.05, z + rand(-0.25, 0.25));
     arm.rotation.y = rand(-1.2, 1.2); nbKeep(arm);
+    const loose = new THREE.Group();
+    const palm = new THREE.Mesh(new THREE.SphereGeometry(0.048, 6, 5), skin);
+    palm.scale.set(1.15, 0.65, 0.5); loose.add(palm);
+    const wrist = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), cut);
+    wrist.position.x = -0.06; loose.add(wrist);
+    loose.position.set(x + rand(0.15, 0.45), 0.04, z + rand(-0.2, 0.2));
+    loose.rotation.y = rand(0, 3); nbKeep(loose);
+    const leg = new THREE.Group();
+    const calf = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.04, 0.36, 6), skin);
+    calf.rotation.z = Math.PI / 2; calf.position.x = 0.16; leg.add(calf);
+    const shoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.055, 0.07), nbMat(0x1a1a1c));
+    shoe.position.set(0.36, -0.015, 0); leg.add(shoe);
+    const knee = new THREE.Mesh(new THREE.SphereGeometry(0.052, 6, 5), cut);
+    knee.position.set(-0.02, 0, 0); leg.add(knee);
+    leg.position.set(x + rand(-0.2, 0.35), 0.045, z + rand(0.12, 0.4));
+    leg.rotation.y = rand(-2, 2); nbKeep(leg);
+    const heart = new THREE.Mesh(new THREE.SphereGeometry(0.065 * sc, 7, 6), nbMat(0x8a1528));
+    heart.scale.set(1.05, 1.3, 0.8);
+    heart.position.set(x + rand(-0.22, 0.05), 0.055, z + rand(0.05, 0.22));
+    heart.rotation.z = 0.4; nbKeep(heart);
+    const rib = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.012, 4, 8, Math.PI * 0.85), nbMat(0xe4d8c4));
+    rib.rotation.x = Math.PI / 2; rib.rotation.z = rand(-0.4, 0.4);
+    rib.position.set(x + rand(0.05, 0.3), 0.03, z + rand(-0.05, 0.18)); nbKeep(rib);
   }
 }
+const NB_VI = {
+  north: {
+    spot: ['Người Nhật tới rồi!', 'Bắn đi!', 'Thả hổ ra!'],
+    attack: ['Bắn!', 'Đâm!', 'Đừng cho chúng qua!'],
+    hit: ['Á!', 'Trúng rồi!', 'Đau quá!'],
+    defeat: ['Không… đứng nổi…', 'Mình…'],
+    kill: ['Ngã rồi!', 'Một đứa nữa!'],
+    callR: ['Chị ơi!', 'Bên này!'],
+    allydown: ['Chị ấy ngã rồi!', 'Cứu với!'],
+    lead: ['Thả ra!', 'Dàn hàng!'],
+  },
+  south: {
+    spot: ['Tụi Nhật tới rồi!', 'Bắn đi mấy chị!', 'Thả cọp ra!'],
+    attack: ['Bắn!', 'Đâm nó!', 'Đừng cho tụi nó qua!'],
+    hit: ['Á!', 'Dính rồi!', 'Đau quá!'],
+    defeat: ['Không… nổi nữa…', 'Em…'],
+    kill: ['Nó ngã rồi!', 'Thêm một đứa!'],
+    callR: ['Chị ơi!', 'Bên này nè!'],
+    allydown: ['Chị ấy té rồi!', 'Cứu với!'],
+    lead: ['Thả ra đi!', 'Dàn hàng đi!'],
+  },
+};
+function nbVnSay(e, kind) {
+  if (!e || !e.nbVn || e.silenced) return;
+  if (e.state === 'down' && kind !== 'defeat') return;
+  const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z);
+  if (d > 30) return;
+  if ((e.nbSayT || 0) > time && kind !== 'defeat') return;
+  e.nbSayT = time + (kind === 'defeat' ? 0.2 : 2.6);
+  const south = e.girl && /^vn0[456]/.test(e.girl.id);
+  const bag = (south ? NB_VI.south : NB_VI.north)[kind] || NB_VI.north.spot;
+  const text = bag[(Math.random() * bag.length) | 0];
+  const name = ((e.prof && e.prof.name) || '').replace(/^組頭 /, '');
+  if (d < 24 && typeof subtitle === 'function') { subtitle(text); const el = $('subtitle'); if (el) el.textContent = name + '「' + text + '」'; }
+  if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+  if (speechSynthesis.speaking && kind !== 'defeat') return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'vi-VN';
+  try {
+    const vs = speechSynthesis.getVoices();
+    const v = vs.find(x => /^vi/i.test(x.lang) && /female|nữ/i.test(x.name)) || vs.find(x => /^vi/i.test(x.lang));
+    if (v) u.voice = v;
+    u.rate = 1.02; u.pitch = e.prof && e.prof.vv === 0 ? 0.92 : 1.06; u.volume = 1;
+    if (kind === 'defeat' && speechSynthesis.speaking) speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch (err) {}
+}
 function nbStartFeed(b, prey) {
-  if (!b || !prey || prey === 'player' || !prey.s || prey.nbDevoured) return;
+  if (!b || !prey || prey === 'player' || !prey.s || prey.nbDevoured || prey.nbVn) return;
   b.feed = prey; b.feedT = NB_FEED; b.feedFx = 0.3; b.coil = null; prey.nbEaten = true;
   const x = prey.s.position.x, z = prey.s.position.z;
   nbGore(x, z, b.kind === 'tiger' ? 1.5 : 1.15, true);
@@ -8517,6 +8587,7 @@ function nbOpenCage(c) {
   if (!c || c.open) return;
   c.open = true; c.g.visible = false;
   nbBeast(c.kind, c.x, c.z);
+  if (c.carrier && c.carrier.nbVn && c.carrier.state !== 'down') nbVnSay(c.carrier, 'lead');
   const word = c.kind === 'tiger' ? '虎' : c.kind === 'boar' ? '猪' : '蛇';
   showBanner('檻が開いた', '腹を空かせた' + word + 'が放たれた');
 }
@@ -8600,11 +8671,17 @@ function nbStart() {
     const cage = NB.cages.find(c => Math.hypot(c.x - p[0], c.z - p[1]) < 3.2 && !c.carrier);
     if (cage) { cage.carrier = e; e.nbCage = cage; }
   });
-  showBanner('南蛮の戦い', '山間のジャングルを稜線まで進め。現地の娘は弓と懐刀。檻の獣は腹を空かせている');
+  showBanner('南蛮の戦い', '山間のジャングルを稜線まで進め。現地の娘は弓と懐刀。獣は飼い主には向かわず、日本人だけを食う');
   if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (state === 'play') Voice.say('進め。道を空けるな', { pitch: 1.05, rate: 1.0 }, 1); }, 700);
+  setTimeout(() => { if (state !== 'play') return; const v = enemies.find(e => e.nbVn && e.state !== 'down'); if (v) nbVnSay(v, 'spot'); }, 1400);
 }
 function updateNanban(dt) {
   if (!NB.on || state !== 'play') return;
+  if ((NB.chatT = (NB.chatT || 5) - dt) <= 0) {
+    NB.chatT = rand(7, 12);
+    const talk = enemies.filter(e => e.nbVn && e.state !== 'down' && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 22);
+    if (talk.length) nbVnSay(talk[(Math.random() * talk.length) | 0], Math.random() < 0.5 ? 'spot' : 'attack');
+  }
   for (let i = NB.gibs.length - 1; i >= 0; i--) {
     const g = NB.gibs[i];
     if (g.stay) continue;
@@ -8623,7 +8700,7 @@ function updateNanban(dt) {
   }
   const living = [];
   if (player.hp > 0) living.push('player');
-  for (const e of enemies) if (e.state !== 'down') living.push(e);
+  for (const e of enemies) if (e.state !== 'down' && !e.nbVn) living.push(e);
   for (const b of NB.beasts) {
     if (!b.alive) continue;
     b.cd -= dt; if (b.flash > 0) { b.flash -= dt; b.spr.material.color && b.spr.material.color.setHex(b.flash > 0 ? 0xff8888 : 0xffffff); }
@@ -8636,6 +8713,8 @@ function updateNanban(dt) {
       if (hp < (o === 'player' ? 40 : 3)) d *= 0.65;
       if (d < pd) { pd = d; prey = o; }
     }
+    if (b.coil && b.coil !== 'player' && b.coil.nbVn) b.coil = null;
+    if (b.feed && b.feed.nbVn) { b.feed = null; b.coil = null; }
     if (b.feed) {
       const o = b.feed;
       if (!o.s || b.feedT <= 0) {
@@ -8744,7 +8823,7 @@ const STAGES = {
   trench: { name: '塹壕の戦い', desc: '荒野の両軍陣地に深い塹壕とトーチカが各4基。第一波は味方100人・敵100人。味方は塹壕内で待機し、「攻めろ！」を押すと突撃。後方の王の本陣・休息所では秘書に話しかけ、肩もみ・食事・遺体の搬入などを頼める。' },
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
-  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃つ。檻に入れた蛇・虎・猪を運び、腹を空かせた獣を放つ。巻かれて噛まれ、食われ、突かれる。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道は狭いジャングル。現地の娘（ハノイとホーチミン）は弓か懐刀だけで迎え撃ち、ベトナム語で話す。檻の蛇・虎・猪は飼い主には向かわず、倒した日本人の肉を食う。巻かれて噛まれ、食われ、突かれる。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
 };
 
 // ====================================================================
@@ -17104,7 +17183,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261027c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261027d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -17862,6 +17941,7 @@ function warChat(S, dt) {
   const e = C[(Math.random() * C.length) | 0]; warSay(e, Math.random() < 0.55 ? 'hold' : 'spot', 0, true);
 }
 function npcSay0(e, kind, prio) {
+  if (e.nbVn) { nbVnSay(e, kind); return; }
   if (CAMP.on && !CAMP.solo && e.team === 'orange' && !e.ukId) { if ((kind === 'defeat' && Math.random() < 0.6) || (kind === 'hit' && Math.random() < 0.3)) { const L = usdLine('t_cry' + (kind === 'hit' ? 6 + ((Math.random() * 3) | 0) : (Math.random() * 9) | 0)); if (L && L.file) VoicePack.play(L.file, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z), 0.8, 1); } return; }   // アメリカ勢：短い英語の声だけ
   if (e.ukId) { if (UK2.on || UK3.on || UK4.on) uk2EngSay(e, kind); else ukNpcSay(e, kind); return; }
   if (UK3.on && e.team === 'blue' && !e.medic) { uk3NpcSay(e, kind, prio); return; }

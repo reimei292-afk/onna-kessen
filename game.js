@@ -2831,7 +2831,7 @@ function stageLook(name) {
     scene.fog.near = 80; scene.fog.far = 520; scene.fog.color.setHex(0x8ec5d6); scene.background.setHex(0x7ebbd2);
     hemiL.color.setHex(0xf5fbff); hemiL.groundColor.setHex(0x1a4a60); hemiL.intensity = 1.2; ambL.intensity = 0.62; sun.intensity = 1.45; sun.color.setHex(0xfff4d8);
     camera.far = 2400; camera.updateProjectionMatrix();
-  } else if (name !== 'nanban') CV.on = false;
+  } else if (name !== 'nanban') { CV.on = false; const endBtn = $('bCvEnd'); if (endBtn) endBtn.style.display = 'none'; }
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -9654,39 +9654,63 @@ function cvStar(g, x, y, z, s, up) {
 }
 function cvAir(x, y, z, yaw, kind) {
   const M = CV.M, g = new THREE.Group();
-  const usf = kind === 'usf', usb = kind === 'usb', foe = usf || usb;
-  const col = usf ? 0x314a68 : usb ? 0x596246 : kind === 'bomb' ? 0x5a6456 : kind === 'recon' ? 0xd9d3bc : kind === 'liaison' ? 0xc5d0d4 : 0x6e8f56;
-  const mat = new THREE.MeshLambertMaterial({ color: col });
-  g.userData.props = [];
-  const len = usb ? 7.2 : kind === 'liaison' ? 3.1 : kind === 'bomb' ? 4.8 : usf ? 4.6 : 4.3;
-  const fus = new THREE.Mesh(new THREE.BoxGeometry(usb ? 0.7 : 0.48, usb ? 0.62 : 0.42, len), mat); g.add(fus);
-  const wing = new THREE.Mesh(new THREE.BoxGeometry(usb ? 9.4 : kind === 'bomb' ? 6.6 : 5.6, 0.08, usb ? 1.35 : 1.05), mat);
-  wing.position.z = usb ? 0.4 : 0.15; g.add(wing);
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(usb ? 2.6 : 1.8, 0.06, 0.55), mat); tail.position.set(0, 0.15, -len * 0.42); g.add(tail);
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.08, usb ? 1.05 : 0.72, usb ? 0.8 : 0.55), mat); fin.position.set(0, usb ? 0.7 : 0.48, -len * 0.44); g.add(fin);
-  if (usb) {
+  const S = {
+    zero: { L: 7.6, span: 9.6, nr: 0.46, mr: 0.58, col: 0x4a6738, hin: 1, wingZ: 0.55, wingY: 0.05 },
+    escort: { L: 7.8, span: 9.2, nr: 0.5, mr: 0.62, col: 0x3e5a34, hin: 1, wingZ: 0.4, wingY: 0.02 },
+    bomb: { L: 8.4, span: 8.8, nr: 0.52, mr: 0.66, col: 0x3a4e38, hin: 1, wingZ: 0.15, wingY: -0.05, canopy: 2, belly: 1 },
+    recon: { L: 8.0, span: 10.4, nr: 0.4, mr: 0.48, col: 0xc9c3ae, hin: 1, wingZ: 0.3, wingY: 0.28 },
+    liaison: { L: 4.8, span: 6.4, nr: 0.28, mr: 0.36, col: 0xd8dce0, wingZ: 0.2, wingY: 0.42, high: 1 },
+    usf: { L: 7.8, span: 9.0, nr: 0.66, mr: 0.74, col: 0x1a3d68, star: 1, wingZ: 0.35, wingY: 0.02 },
+    usb: { L: 8.6, span: 9.8, nr: 0.72, mr: 0.92, col: 0x24362a, star: 1, wingZ: 0.05, wingY: 0.08, canopy: 2, belly: 1, turret: 1 },
+  }[kind] || { L: 7.6, span: 9.6, nr: 0.46, mr: 0.58, col: 0x4a6738, hin: 1, wingZ: 0.55, wingY: 0.05 };
+  if (!CV.M._p) CV.M._p = {};
+  const paint = (hex) => CV.M._p[hex] || (CV.M._p[hex] = new THREE.MeshLambertMaterial({ color: hex }));
+  const mat = paint(S.col), dark = M.dark, glass = M.glass;
+  const add = (mesh) => { g.add(mesh); return mesh; };
+  const L = S.L, nose = L * 0.48;
+  const spin = add(new THREE.Mesh(new THREE.CylinderGeometry(S.nr * 0.55, S.nr, 0.55, 12), dark)); spin.rotation.x = Math.PI / 2; spin.position.set(0, 0, nose + 0.28);
+  const cowl = add(new THREE.Mesh(new THREE.CylinderGeometry(S.nr, S.nr * 0.96, L * 0.22, 14), mat)); cowl.rotation.x = Math.PI / 2; cowl.position.z = nose - L * 0.08;
+  const mid = add(new THREE.Mesh(new THREE.CylinderGeometry(S.mr, S.nr * 0.98, L * 0.34, 12), mat)); mid.rotation.x = Math.PI / 2; mid.position.z = L * 0.12;
+  const rear = add(new THREE.Mesh(new THREE.CylinderGeometry(S.mr * 0.42, S.mr * 0.92, L * 0.28, 12), mat)); rear.rotation.x = Math.PI / 2; rear.position.z = -L * 0.16;
+  const boom = add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, S.mr * 0.4, L * 0.22, 10), mat)); boom.rotation.x = Math.PI / 2; boom.position.z = -L * 0.38;
+  for (const s of [-1, 1]) {
+    const w = add(new THREE.Mesh(new THREE.BoxGeometry(S.span * 0.46, 0.07, S.high ? 0.85 : 1.35), mat));
+    w.position.set(s * S.span * 0.25, S.wingY, S.wingZ); w.rotation.z = s * (S.high ? -0.02 : -0.07);
+    const tip = add(new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 6), mat)); tip.scale.set(1.4, 0.35, 0.8); tip.position.set(s * S.span * 0.48, S.wingY + 0.08, S.wingZ - 0.05);
+    const flap = add(new THREE.Mesh(new THREE.BoxGeometry(S.span * 0.28, 0.03, 0.28), paint(S.col - 0x101008)));
+    flap.position.set(s * S.span * 0.22, S.wingY - 0.02, S.wingZ - 0.62);
+  }
+  const tail = add(new THREE.Mesh(new THREE.BoxGeometry(S.span * 0.32, 0.05, 0.55), mat)); tail.position.set(0, 0.08, -L * 0.42);
+  const fin = add(new THREE.Mesh(new THREE.BoxGeometry(0.06, S.mr * 1.7, 0.85), mat)); fin.position.set(0, S.mr * 0.85, -L * 0.4);
+  const rud = add(new THREE.Mesh(new THREE.BoxGeometry(0.04, S.mr * 0.7, 0.22), paint(S.star ? 0xf2f2f2 : 0xc4382a))); rud.position.set(0, S.mr * 0.9, -L * 0.46);
+  const prop = new THREE.Group(); prop.position.set(0, 0, nose + 0.42);
+  for (let i = 0; i < 3; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.1, S.nr * 2.15, 0.035), dark); b.rotation.z = i * Math.PI * 2 / 3; prop.add(b); }
+  g.add(prop); g.userData.prop = prop; g.userData.props = [prop];
+  const canN = S.canopy || 1;
+  for (let i = 0; i < canN; i++) {
+    const c = add(new THREE.Mesh(new THREE.BoxGeometry(S.mr * 0.72, 0.32, 0.7), glass));
+    c.position.set(0, S.mr * 0.72, L * 0.18 - i * 1.15);
+  }
+  if (S.belly) { const bomb = add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 1.3, 8), dark)); bomb.rotation.x = Math.PI / 2; bomb.position.set(0, -S.mr * 0.7, S.wingZ); }
+  if (S.turret) { const t = add(new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), glass)); t.position.set(0, S.mr * 0.85, -0.35); }
+  if (S.hin) for (const s of [-1, 1]) {
+    const c = add(new THREE.Mesh(new THREE.CircleGeometry(0.38, 16), M.hin)); c.rotation.x = -Math.PI / 2; c.position.set(s * S.span * 0.28, S.wingY + 0.05, S.wingZ);
+    const side = add(new THREE.Mesh(new THREE.CircleGeometry(0.22, 14), M.hin)); side.position.set(s * (S.mr + 0.02), S.mr * 0.15, -L * 0.05); side.rotation.y = s * Math.PI / 2;
+  }
+  if (S.star && M.star) {
+    cvStar(g, S.span * 0.28, S.wingY + 0.06, S.wingZ, 0.42, true);
+    cvStar(g, -S.span * 0.28, S.wingY + 0.06, S.wingZ, 0.42, true);
+    cvStar(g, S.mr + 0.02, S.mr * 0.2, -0.2, 0.28, false);
+  }
+  if (!S.star) {
+    const gearY = -S.mr * 0.85;
     for (const s of [-1, 1]) {
-      const nac = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.5, 8), mat);
-      nac.rotation.x = Math.PI / 2; nac.position.set(s * 2.15, -0.05, 0.7); g.add(nac);
-      const prop = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.08), M.dark); prop.position.set(s * 2.15, -0.05, 1.55); g.add(prop); g.userData.props.push(prop);
+      const leg = add(new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.7, 6), dark)); leg.position.set(s * 0.7, gearY + 0.15, S.wingZ + 0.2);
+      const wh = add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 8), dark)); wh.rotation.z = Math.PI / 2; wh.position.set(s * 0.7, gearY - 0.15, S.wingZ + 0.2);
     }
-    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.7), M.glass); nose.position.set(0, 0.05, len * 0.48); g.add(nose);
-  } else {
-    const prop = new THREE.Mesh(new THREE.BoxGeometry(usf ? 1.55 : 1.35, 0.05, 0.08), M.dark); prop.position.z = len * 0.52; g.add(prop); g.userData.prop = prop; g.userData.props.push(prop);
-    if (usf) { const tip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.16, 0.16), M.gold); tip.position.z = len * 0.52; g.add(tip); }
-  }
-  const can = new THREE.Mesh(new THREE.BoxGeometry(usf ? 0.42 : 0.36, 0.22, usf ? 0.85 : 0.7), M.glass);
-  can.position.set(0, usb ? 0.42 : 0.32, usb ? 0.15 : len * 0.16); g.add(can);
-  if (!foe && kind !== 'liaison') for (const s of [-1, 1]) {
-    const c = new THREE.Mesh(new THREE.CircleGeometry(0.2, 14), M.hin); c.rotation.x = -Math.PI / 2; c.position.set(s * 1.55, 0.06, 0.15); g.add(c);
-  }
-  if (foe && M.star) {
-    cvStar(g, usf ? 1.7 : 2.6, 0.08, 0.2, usf ? 0.28 : 0.36, true);
-    cvStar(g, usf ? -1.7 : -2.6, 0.08, 0.2, usf ? 0.28 : 0.36, true);
-    cvStar(g, 0.28, 0.15, -0.2, 0.22, false);
   }
   g.position.set(x, y, z); g.rotation.y = yaw; stageRoot.add(g);
-  if (!foe) CV.parked.push(g);
+  if (kind !== 'usf' && kind !== 'usb') CV.parked.push(g);
   return g;
 }
 function cvGun(x, z, y, big) {
@@ -9727,9 +9751,15 @@ function buildKeiku() {
   // 船体。水線長およそ百八十。中央が widest、艦首と艦尾は細くする
   const hulls = [[2.4, -98, -90, -0.6, 3.6], [5.2, -90, -78, -1.8, 5.2], [7.6, -78, -60, -2.6, 6.3], [9.1, -60, 46, -3.3, 6.5], [8.0, 46, 62, -2.6, 6.1], [6.2, 62, 76, -1.8, 5.4], [3.8, 76, 90, -1.0, 4.2]];
   for (const [hw, z0, z1, y0, y1] of hulls) {
-    cvSlab(-hw, hw, y0, y1, z0, z1, M.hull);
-    cvSlab(-hw - 0.08, hw + 0.08, 0.05, 0.85, z0, z1, M.boot);
+    const t = 0.42;
+    cvSlab(-hw, hw, y0, y0 + 0.4, z0, z1, M.hull);
+    cvSlab(-hw, -hw + t, y0, y1, z0, z1, M.hull);
+    cvSlab(hw - t, hw, y0, y1, z0, z1, M.hull);
+    cvSlab(-hw + t, hw - t, y1 - 0.28, y1, z0, z1, M.steel);
+    cvSlab(-hw - 0.04, hw + 0.04, 0.05, 0.85, z0, z1, M.boot);
   }
+  cvSlab(-2.5, 2.5, -0.6, 3.5, -98.15, -97.7, M.hull);
+  cvSlab(-3.9, 3.9, -1.0, 4.1, 89.6, 90.15, M.hull);
   for (let z = -72; z <= 52; z += 4.6) for (const s of [-1, 1]) for (const yy of [3.15, 5.05]) {
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.2, 8), M.glass);
     p.rotation.z = Math.PI / 2; p.position.set(s * 9.05, yy, z); stageRoot.add(p);
@@ -9770,17 +9800,35 @@ function buildKeiku() {
   cvSign(7.2, Yb + 1.3, 0.7, '艦橋・定員表', 0);
   cvLad(3.15, 7.4, 8.6, Yd, Yb);
   // 格納庫（甲板の下）。翼を広げた艦攻が縦一列で入る幅
-  cvFloor(-9.2, 9.2, -66, 48, Yh);
-  wall(-8.55, -8.35, -66, -22, Yh, Yd - 0.2, M.steel); wall(-8.55, -8.35, -18, 8, Yh, Yd - 0.2, M.steel); wall(-8.55, -8.35, 12, 40, Yh, Yd - 0.2, M.steel);
-  wall(8.35, 8.55, -66, -22, Yh, Yd - 0.2, M.steel); wall(8.35, 8.55, -18, 8, Yh, Yd - 0.2, M.steel); wall(8.35, 8.55, 12, 40, Yh, Yd - 0.2, M.steel);
-  wall(-8.3, 8.3, -66.2, -66, Yh, Yd - 0.4, M.steel);
+  cvFloor(-9.2, 9.2, -66, 43.4, Yh);
+  cvFloor(-9.2, -1.55, 43.4, 46.4, Yh); cvFloor(1.55, 9.2, 43.4, 46.4, Yh);
+  cvFloor(-9.2, 9.2, 46.4, 48, Yh);
+  const deckPlate = (x0, x1, z0, z1, y, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(Math.abs(x1 - x0), 0.08, Math.abs(z1 - z0)), mat); m.position.set((x0 + x1) / 2, y + 0.04, (z0 + z1) / 2); stageRoot.add(m); };
+  deckPlate(-8.6, 8.6, -65, 43.2, Yh, M.steel);
+  deckPlate(-8.6, -1.6, 43.2, 46.2, Yh, M.steel); deckPlate(1.6, 8.6, 43.2, 46.2, Yh, M.steel);
+  deckPlate(-8.6, 8.6, 46.2, 47.5, Yh, M.steel);
+  const gapWall = (x0, x1, z0, z1, y0, y1, mat, doors) => {
+    const cuts = (doors || []).slice().sort((a, b) => a[0] - b[0]); let z = Math.min(z0, z1), zEnd = Math.max(z0, z1);
+    for (const [zc, half] of cuts) {
+      const a = zc - half, b = zc + half;
+      if (a > z + 0.08) wall(x0, x1, z, a, y0, y1, mat);
+      cvSlab(Math.min(x0, x1), Math.max(x0, x1), y1 - 0.22, y1, a, b, mat || M.wood);
+      cvSlab(Math.min(x0, x1), Math.max(x0, x1), y0, y0 + 0.9, a, a + 0.08, mat || M.wood);
+      cvSlab(Math.min(x0, x1), Math.max(x0, x1), y0, y0 + 0.9, b - 0.08, b, mat || M.wood);
+      z = b;
+    }
+    if (zEnd > z + 0.08) wall(x0, x1, z, zEnd, y0, y1, mat);
+  };
+  gapWall(-8.7, -8.2, -66, 40, Yh, Yd - 0.35, M.steel, [[-40, 0.7], [8, 0.7]]);
+  gapWall(8.2, 8.7, -66, 40, Yh, Yd - 0.35, M.steel, [[-40, 0.7], [12, 0.7]]);
+  wall(-8.6, 8.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
   const h1 = new THREE.PointLight(0xfff1d4, 0.7, 36); h1.position.set(0, 10.2, -30); stageRoot.add(h1);
   const h2 = new THREE.PointLight(0xfff1d4, 0.65, 36); h2.position.set(0, 10.2, 10); stageRoot.add(h2);
   cvSign(0, 10.4, 36, '格納庫', 0);
   cvLad(-2.2, -30.4, -29.1, Yh, Yd);
   cvLad(2.2, 18.2, 19.4, Yh, Yd);
-  const sc = 1.55;
-  const park = (x, y, z, yaw, kind) => { const g = cvAir(x, y, z, yaw, kind); g.scale.setScalar(kind === 'liaison' ? 1.25 : sc); g.position.y = y; return g; };
+  const sc = 1;
+  const park = (x, y, z, yaw, kind) => { const g = cvAir(x, y, z, yaw, kind); g.scale.setScalar(kind === 'liaison' ? 0.85 : sc); g.position.y = y + 0.55; return g; };
   for (let i = 0; i < 6; i++) { park(-6.2, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); park(2.4, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); }
   park(-6.2, Yd + 0.55, -16, 0, 'escort'); park(2.4, Yd + 0.55, -16, 0, 'escort');
   park(7.2, Yd + 0.45, 58, 0, 'liaison');
@@ -9788,6 +9836,8 @@ function buildKeiku() {
   for (let i = 0; i < 3; i++) park(0, Yh + 0.65, 18 + i * 6.5, Math.PI, 'recon');
   // 舷側歩廊（飛行甲板の張り出しの下）と、艦尾の遊歩・プール
   cvFloor(-11.3, -8.7, -62, 70, Yh); cvFloor(8.7, 11.3, -62, 70, Yh);
+  deckPlate(-11.2, -8.8, -60, 68, Yh, M.steel); deckPlate(8.8, 11.2, -60, 68, Yh, M.steel);
+  deckPlate(-8.0, 8.0, 66, 87, Yh, M.tile);
   rail(-11.45, -11.3, -60, 68, Yh, 1.0); rail(11.3, 11.45, -60, 68, Yh, 1.0);
   cvFloor(-11.2, 11.2, 64, 88, Yh);
   rail(-8.2, -1.1, 87.7, 87.9, Yh, 1.0); rail(1.1, 8.2, 87.7, 87.9, Yh, 1.0);
@@ -9810,14 +9860,23 @@ function buildKeiku() {
   }
   // 下のクルーズ区画。王の間、サロン、浴室、小劇場、食堂、大部屋
   cvFloor(-7.4, 7.4, 42, 88, Y1);
-  wall(-7.55, -7.35, 42, 88, Y1, Yh - 0.3); wall(7.35, 7.55, 42, 88, Y1, Yh - 0.3);
-  wall(-7.4, 7.4, 87.7, 87.95, Y1, Yh - 0.3); wall(-7.4, 7.4, 41.85, 42.05, Y1, Y1 + 2.4);
-  const wz = (z, x0, x1) => wall(x0, x1, z, z + 0.16, Y1, Y1 + 2.45, M.wood);
-  wz(52, -7.3, -1.2); wz(52, 1.2, 7.3);
-  wz(64, -7.3, -1.2); wz(64, 1.2, 7.3);
-  wz(74, -7.3, -1.2); wz(74, 1.2, 7.3);
-  wall(-0.08, 0.08, 52.4, 56.5, Y1, Y1 + 2.45, M.wood);
-  wall(-0.08, 0.08, 59, 63.6, Y1, Y1 + 2.45, M.wood);
+  deckPlate(-7.15, 7.15, 42.2, 87.6, Y1, M.wood);
+  wall(-7.7, -7.2, 42, 88, Y1, Y1 + 2.7); wall(7.2, 7.7, 42, 88, Y1, Y1 + 2.7);
+  wall(-7.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
+  wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 2.7);
+  const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 2.7, M.wood);
+  bulkZ(51.7, -7.15, -1.15); bulkZ(51.7, 1.15, 7.15);
+  bulkZ(63.7, -7.15, -1.15); bulkZ(63.7, 1.15, 7.15);
+  bulkZ(73.6, -7.15, -1.15); bulkZ(73.6, 1.15, 7.15);
+  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 2.7, M.white, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 2.7, M.white, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 2.62, M.white);
+  deckPlate(1.6, 7.1, 42.3, 51.5, Y1 + 2.62, M.white);
+  deckPlate(-7.1, 7.1, 52.2, 63.5, Y1 + 2.62, M.white);
+  deckPlate(-7.1, 7.1, 64.2, 73.3, Y1 + 2.62, M.white);
+  deckPlate(-1.05, 1.05, 42.4, 43.5, Y1 + 2.62, M.white);
+  deckPlate(-1.05, 1.05, 46.6, 87.2, Y1 + 2.62, M.white);
+  cvSign(0, Y1 + 1.6, 43.2, '中央通路', 0);
   const glow = new THREE.PointLight(0xffe2b8, 0.85, 18); glow.position.set(-3, Y1 + 2.1, 47); stageRoot.add(glow);
   const glow2 = new THREE.PointLight(0xfff0d0, 0.6, 16); glow2.position.set(3, Y1 + 2.2, 58); stageRoot.add(glow2);
   const glow3 = new THREE.PointLight(0xfff0d0, 0.55, 18); glow3.position.set(0, Y1 + 2.2, 80); stageRoot.add(glow3);
@@ -9906,7 +9965,7 @@ function cvMaid(x, z, y, face, line) {
   e.special = true; e.hold = { face }; e.cvCrew = true; e.state = 'idle'; e.baseY = y; e.s.position.y = y; e.cvLine = line;
 }
 function cvStart() {
-  CV.phase = 'sail'; CV.t = 0; CV.hp = 86; CV.total = 22; CV.killed = 0; CV.spawned = 0; CV.ended = false; CV.talkT = 3; CV.sailSaid = false; CV.usI = 0; CV.traces = [];
+  CV.phase = 'sail'; CV.t = 0; CV.hp = 86; CV.total = 22; CV.killed = 0; CV.spawned = 0; CV.ended = false; CV.talkT = 3; CV.sailSaid = false; CV.usI = 0; CV.traces = []; CV.ask = false; CV.sunkSaid = false; CV.clearSaid = false; CV.downSaid = false; CV.endWhy = '';
   CV.foe = []; CV.cap = []; CV.bombs = []; CV.shells = []; CV.back = [0, (CV.Yd || 12.35) + 0.3, 8];
   if (UK2.flashes) UK2.flashes = [];
   const Yd = CV.Yd || 12.35, Yh = CV.Yh || 6.55, Y1 = CV.Y1 || 2.2, Yb = CV.Yb || 16.7;
@@ -9990,7 +10049,9 @@ function cvBurstAt(x, y, z, dmg) {
   }
 }
 function updateCv(dt) {
-  if (!CV.on || state !== 'play') return;
+  const endBtn = $('bCvEnd');
+  if (!CV.on || state !== 'play') { if (endBtn && !CV.on) endBtn.style.display = 'none'; return; }
+  if (endBtn) endBtn.style.display = 'block';
   CV.t += dt;
   if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = (CV.sea.material.map.offset.y + dt * 0.018) % 1;
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
@@ -10061,19 +10122,54 @@ function updateCv(dt) {
     if (d < 4 && Math.abs(player.pos.y - y) < 2.2) { player.hp = Math.max(1, player.hp - 8); player.shake = Math.max(player.shake, 0.4); popup('至近弾'); }
     else if (d < 14 && player.pos.y > y - 2) player.shake = Math.max(player.shake, 0.2);
     CV.bombs.splice(i, 1);
-    if (CV.hp <= 0) { CV.hp = 0; cvEnd(false); return; }
+    if (CV.hp <= 0) { CV.hp = 0; if (!CV.sunkSaid) { CV.sunkSaid = true; showBanner('航行不能', '終わるのは終了ボタンだけ'); } }
   }
   if ((CV.capT = (CV.capT || 0) - dt) <= 0 && CV.cap.length) {
     CV.capT = 1.15;
     const up = CV.foe.filter(f => !f.dead);
     if (up.length) { const f = up[(Math.random() * up.length) | 0]; cvBurstAt(f.x + rand(-3, 3), f.y + rand(-1, 1), f.z + rand(-3, 3), 1); }
   }
-  if (CV.killed >= CV.total) cvEnd(true);
+  if (CV.killed >= CV.total && !CV.clearSaid) { CV.clearSaid = true; showBanner('空襲を退けた', '終わるのは終了ボタンだけ'); }
 }
 function cvEnd(win) {
   if (CV.ended || state !== 'play') return;
-  CV.ended = true; CV.phase = 'end'; gameOver(win);
+  CV.ended = true; CV.phase = 'end'; CV.ask = false;
+  const d = $('cvAsk'); if (d) d.style.display = 'none';
+  const b = $('bCvEnd'); if (b) b.style.display = 'none';
+  gameOver(win);
 }
+function cvEndAsk() {
+  if (!CV.on || state !== 'play' || CV.ask || CV.ended) return;
+  CV.ask = true;
+  if (document.exitPointerLock) document.exitPointerLock();
+  let d = $('cvAsk');
+  if (!d) { d = document.createElement('div'); d.id = 'cvAsk'; d.style.cssText = 'position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)'; document.body.appendChild(d); }
+  const sunk = CV.hp <= 0, cleared = CV.killed >= CV.total && CV.phase !== 'sail';
+  const note = sunk ? '艦は航行不能です。結果の画面へ進みます。' : cleared ? '米軍機は退けました。結果の画面へ進みます。' : 'まだ航海の途中です。ここで幕を引きます。';
+  d.style.display = 'flex';
+  d.innerHTML = `<div style="background:rgba(16,18,22,.94);border:1px solid #e8d9a8;padding:18px 22px;border-radius:8px;text-align:center;color:#f4ecd6;max-width:420px"><div style="font-size:20px;letter-spacing:.14em">航海を終了しますか？</div><div style="margin:10px 0 16px;font-size:14px;line-height:1.5">${note}</div><button data-a="y">はい</button><button data-a="n">いいえ</button><div style="margin-top:8px;font-size:12px;opacity:.7">Y / Enter はい　N いいえ</div></div>`;
+  d.querySelectorAll('button').forEach(b => {
+    b.style.cssText = 'font:inherit;font-size:16px;margin:0 8px;padding:8px 20px;background:#e8d9a8;color:#1a1410;border:0;border-radius:4px;cursor:pointer';
+    b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); cvEndAns(b.dataset.a === 'y'); });
+  });
+}
+function cvEndAns(yes) {
+  CV.ask = false; const d = $('cvAsk'); if (d) d.style.display = 'none';
+  if (!yes || state !== 'play') { if (state === 'play') lock(); return; }
+  CV.endWhy = CV.hp <= 0 ? 'sunk' : (CV.killed >= CV.total && CV.phase !== 'sail') ? 'win' : 'leave';
+  cvEnd(CV.endWhy !== 'sunk');
+}
+addEventListener('keydown', ev => {
+  if (!CV.on || (state !== 'play' && !CV.ask)) return;
+  const c = ev.code;
+  if (CV.ask) {
+    if (!ev.repeat && (c === 'KeyY' || c === 'Enter' || c === 'NumpadEnter')) cvEndAns(true);
+    else if (!ev.repeat && (c === 'KeyN' || c === 'Escape')) cvEndAns(false);
+    else return;
+    ev.stopImmediatePropagation(); ev.preventDefault(); return;
+  }
+  if (state === 'play' && !ev.repeat && c === 'KeyQ') { cvEndAsk(); ev.stopImmediatePropagation(); ev.preventDefault(); }
+}, true);
 function cvRemain() { return CV.phase === 'raid' ? `米軍機 ${Math.max(0, CV.total - CV.killed)}（戦闘機・爆撃機）　艦 ${Math.max(0, CV.hp | 0)}` : '航海中　乗艦 約1,100　戦いは米軍の空襲だけ'; }
 
 const STAGES = {
@@ -18504,7 +18600,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261028a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23104,7 +23200,10 @@ function hurtPlayer(dmg) {
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
   puff(player.pos.clone().setY(1), 0xb10f25, 7, 0.16, 1.6, 0.3);
   Sfx.hurt();
-  if (player.hp <= 0) { player.hp = 0; gameOver(); }
+  if (player.hp <= 0) {
+    if (CV.on) { player.hp = 1; if (!CV.downSaid) { CV.downSaid = true; showBanner('まだ終わらない', '終わるのは終了ボタンだけ'); } return; }
+    player.hp = 0; gameOver();
+  }
 }
 
 // ---- 矢（矢先は布で包んだたんぽ）。team: 'player' | 'blue' | 'orange' ----
@@ -23739,7 +23838,7 @@ const locked = () => document.pointerLockElement === canvas;
 function lock() { if (TEST || MOBILE) return; try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) {} }
 document.addEventListener('pointerlockchange', () => {
   if (menuOpen || UK.choice) return;   // 選択肢を選ぶ間はマウスを出す
-  if (!locked() && state === 'play' && !(RK.on && RK.ask)) pauseGame();
+  if (!locked() && state === 'play' && !(RK.on && RK.ask) && !(CV.on && CV.ask)) pauseGame();
 });
 addEventListener('keydown', e => {
   keys[e.code] = true;
@@ -24025,9 +24124,9 @@ function gameOver(win) {
   if (state === 'play') try { SITU.end(win); } catch (_) {}
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
-  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? '勝利' : (CV.on && CV.hp <= 0 ? '航行不能' : '敗北'); if (h2) h2.textContent = win ? (CV.on ? '米軍の空襲を退けた' : NB.on ? '山間の稜線まで抜けた' : AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (CV.on && CV.hp <= 0 ? '米軍の爆弾と機銃で艦がもたなかった' : AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
+  { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? (CV.on && CV.endWhy === 'leave' ? '航海を終えた' : '勝利') : (CV.on && CV.hp <= 0 ? '航行不能' : '敗北'); if (h2) h2.textContent = win ? (CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで幕を引いた' : '米軍の空襲を退けた') : NB.on ? '山間の稜線まで抜けた' : AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (CV.on && CV.hp <= 0 ? '終了ボタンで、航行不能を結果にした' : AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (document.exitPointerLock) document.exitPointerLock();
-  $('result').innerHTML = CV.on ? (win ? `米軍の戦闘機と爆撃機 <b>${CV.killed}</b> を退けた。乗艦は約 1,100 人。` : `艦が航行不能になった。残る米軍機 <b>${Math.max(0, CV.total - CV.killed)}</b>。`) : `味方 <b>${battleCounts().ally}</b>　／　敵 <b>${battleCounts().foe}</b><br>撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
+  $('result').innerHTML = CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで航海を終えた。乗艦は約 1,100 人。' : win ? `米軍の戦闘機と爆撃機 <b>${CV.killed}</b> を退けた。乗艦は約 1,100 人。` : `艦が航行不能になった。残る米軍機 <b>${Math.max(0, CV.total - CV.killed)}</b>。`) : `味方 <b>${battleCounts().ally}</b>　／　敵 <b>${battleCounts().foe}</b><br>撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   if (CAMP.on) campResult(win);   // 第二幕：段ごとの結果
   $('over').style.display = 'flex';
 }
@@ -24065,6 +24164,7 @@ if (mtnOpenBtn) {
 $('titleBtn').onclick = toTitle;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = toTitle;
+{ const b = $('bCvEnd'); if (b) b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); cvEndAsk(); }); }
 
 // 梯子の案内：近くに梯子があれば「W で上る／E で自動」などを出す（スマホは「梯子」ボタン）
 function ladderGo() {
@@ -24092,6 +24192,7 @@ function updateLadderHint() {
   if (!t && CV.on && state === 'play' && !menuOpen) {
     if (CV.phase === 'raid' && cvNearGun()) t = MOBILE ? '対空砲：攻撃ボタンで破裂弾' : '対空砲：クリックか E で破裂弾（直撃はしない）';
     else if (cvNearBoard()) t = '定員表：E';
+    else t = MOBILE ? '終わるときは上の終了' : '終わるときは終了ボタン、または Q';
   }
   if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr || car);
     const bl = $('bLadL'); if (bl) bl.textContent = car ? (CAR.riding ? '降りる' : '乗る') : dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る';

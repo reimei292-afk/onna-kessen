@@ -5,7 +5,7 @@
 <script>
 /* 公開版が古いまま残らないように、v.txt が違えば取り直す（GitHub Pages は HTML を約10分キャッシュする） */
 (function () {
-  var V = "20261028a";
+  var V = "20261029a";
   if (!/^https?:/.test(location.protocol)) return;
   var qv = (location.search.match(/[?&]gv=([^&]+)/) || [])[1];
   fetch("v.txt", { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
@@ -83,6 +83,7 @@
   #bFix{display:none;position:fixed;z-index:32;left:calc(50% - 168px);bottom:calc(24px + var(--sab));width:84px;height:84px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,90,40,.72);color:#fff;align-items:center;justify-content:center;flex-direction:column;font-size:18px;pointer-events:auto;cursor:pointer;font-family:inherit}
   html.canfix #bFix{display:flex}
   #bFix small{font-size:10px;opacity:.85}
+  #bCvEnd{display:none;position:fixed;z-index:34;top:16px;left:50%;transform:translateX(-50%);padding:8px 18px;font:600 16px sans-serif;letter-spacing:.18em;color:#1a1410;background:#e8d9a8;border:0;border-radius:6px;cursor:pointer}
   html.uk7 #weapons,html.uk7 #arrows,html.uk7 #bAtk,html.uk7 #bWpn{display:none!important}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
   #stagesel{margin:12px auto 0;width:min(940px,calc(100vw - 24px - var(--sal) - var(--sar)));max-width:100%;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
@@ -278,6 +279,7 @@
   <div id="cook"><span></span><div class="bar"><div id="cookbar"></div></div><button id="onigiriRem">「手塩にかけたおむすびだね」（T）</button></div>
   <div id="weapons"><div id="wp0">[1] 弓矢</div><div id="wp1">[2] 懐刀</div></div>
   <button id="bGod" class="serif" type="button">無敵</button>
+  <button id="bCvEnd" type="button">終了</button>
   <div id="arrows">矢の数 <b id="arrowcnt">30</b> / <span id="arrowmax">40</span></div>
 </div>
 <button id="bMtnOpen" class="serif" type="button" aria-label="本丸の扉を開く">開く</button>
@@ -316,7 +318,7 @@
 <div id="title" class="screen">
   <h1 class="serif">孤影の弓</h1>
   <h2 class="serif">― 模擬戦 ―</h2>
-  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261028a</p>
+  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261029a</p>
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
@@ -434,33 +436,33 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="motion_sprite.js?v=20261028a"></script>
-<script src="assets/sprites.js?v=20261028a"></script>
-<script src="assets/frames/frames.js?v=20261028a"></script>
-<script src="assets/frames/frames_fr.js?v=20261028a"></script>
-<script src="assets/frames/frames_omiya.js?v=20261028a"></script>
-<script src="assets/frames/frames_us.js?v=20261028a"></script>
-<script src="assets/frames/frames_vn.js?v=20261028a"></script>
-<script src="assets/frames/frames_props.js?v=20261028a"></script>
-<script src="assets/frames/cycles.js?v=20261028a"></script>
+<script src="motion_sprite.js?v=20261029a"></script>
+<script src="assets/sprites.js?v=20261029a"></script>
+<script src="assets/frames/frames.js?v=20261029a"></script>
+<script src="assets/frames/frames_fr.js?v=20261029a"></script>
+<script src="assets/frames/frames_omiya.js?v=20261029a"></script>
+<script src="assets/frames/frames_us.js?v=20261029a"></script>
+<script src="assets/frames/frames_vn.js?v=20261029a"></script>
+<script src="assets/frames/frames_props.js?v=20261029a"></script>
+<script src="assets/frames/cycles.js?v=20261029a"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261028a"></script>
-<script src="assets/voices/voices_situ.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk2.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk3.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk4.js?v=20261028a"></script>
-<script src="assets/voices/voices_saidown.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk5.js?v=20261028a"></script>
-<script src="assets/voices/voices_uk7.js?v=20261028a"></script>
-<script src="assets/voices/voices_frs.js?v=20261028a"></script>
-<script src="assets/voices/voices_usd.js?v=20261028a"></script>
-<script src="assets/voices/voices_rk.js?v=20261028a"></script>
-<script src="assets/voices/voices_pal.js?v=20261028a"></script>
+<script src="assets/voices/voices.js?v=20261029a"></script>
+<script src="assets/voices/voices_situ.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk2.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk3.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk4.js?v=20261029a"></script>
+<script src="assets/voices/voices_saidown.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk5.js?v=20261029a"></script>
+<script src="assets/voices/voices_uk7.js?v=20261029a"></script>
+<script src="assets/voices/voices_frs.js?v=20261029a"></script>
+<script src="assets/voices/voices_usd.js?v=20261029a"></script>
+<script src="assets/voices/voices_rk.js?v=20261029a"></script>
+<script src="assets/voices/voices_pal.js?v=20261029a"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261028a"></script>
-<script src="lib/death_fbx.js?v=20261028a"></script>
-<script src="game.js?v=20261028a"></script>
+<script src="lib/death_clips.js?v=20261029a"></script>
+<script src="lib/death_fbx.js?v=20261029a"></script>
+<script src="game.js?v=20261029a"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

@@ -9764,45 +9764,33 @@ function cvCrowdFill() {
   let n = rec.reduce((s, r) => s + r[5], 0), guard = 0;
   while (n > 1100 && guard++ < 8000) { const r = rec[guard % rec.length]; if (r[5] > 8) { r[5]--; n--; } }
   while (n < 1100) { rec[0][5]++; n++; }
-  const tex = canvasTex(128, 256, (g, w, h) => {
-    g.clearRect(0, 0, w, h);
-    g.fillStyle = '#2a241e'; g.beginPath(); g.ellipse(64, 42, 22, 26, 0, 0, 7); g.fill();
-    g.fillStyle = '#f4d8c4'; g.beginPath(); g.ellipse(64, 48, 16, 18, 0, 0, 7); g.fill();
-    g.fillStyle = '#fff'; g.beginPath(); g.moveTo(46, 78); g.quadraticCurveTo(64, 70, 82, 78); g.lineTo(104, 248); g.lineTo(24, 248); g.closePath(); g.fill();
-    g.fillStyle = '#6a3030'; g.fillRect(40, 112, 48, 14);
-    g.fillStyle = '#f4d8c4'; g.fillRect(28, 92, 12, 36); g.fillRect(88, 92, 12, 36);
-  });
-  const mat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide });
-  const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.62, 1.58), mat, n);
-  mesh.frustumCulled = false; mesh.count = n; stageRoot.add(mesh);
-  const A = new Float32Array(n * 6), col = new THREE.Color();
-  let i = 0;
-  for (const [y, x0, x1, z0, z1, cnt, hex] of rec) {
-    for (let k = 0; k < cnt; k++, i++) {
+  let made = 0;
+  for (const [y, x0, x1, z0, z1, cnt] of rec) {
+    for (let k = 0; k < cnt; k++) {
       const lane = x0 + 0.25 + Math.random() * Math.max(0.2, x1 - x0 - 0.5);
       const span = Math.max(2.2, (z1 - z0) * (0.25 + Math.random() * 0.45));
       const zA = z0 + Math.random() * Math.max(0.2, z1 - z0 - span);
-      const o = i * 6;
-      A[o] = lane; A[o + 1] = zA; A[o + 2] = lane + (Math.random() < 0.5 ? -0.35 : 0.35); A[o + 3] = zA + span; A[o + 4] = y; A[o + 5] = 0.42 + Math.random() * 0.7;
-      col.setHex(hex); mesh.setColorAt(i, col);
+      const zB = zA + span, xB = lane + (Math.random() < 0.5 ? -0.35 : 0.35);
+      const e = spawnEnemy(lane, zA, 'mob', false, 'blue', { yari: -1, y, cv: true, set: { special: true, cvWalk: true, passive: true } });
+      if (!e) continue;
+      e.state = 'idle'; e.baseY = y; e.s.position.y = y; e.hold = { face: 0 };
+      e.mk.visible = false; e.bb.frustumCulled = true; if (e.shadow) e.shadow.frustumCulled = true;
+      e.cvA = [lane, zA, xB, zB]; e.cvU = Math.random() * 2; e.cvSpd = 0.55 + Math.random() * 0.5;
+      made++;
     }
   }
-  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  CV.crowd = { mesh, A, n, ph: Float32Array.from({ length: n }, () => Math.random() * 2) };
-  CV.crewN = n;
+  CV.crewN = made; CV.crowd = null;
 }
-function cvCrowdUpdate() {
-  const C = CV.crowd; if (!C) return;
-  const A = C.A, arr = C.mesh.instanceMatrix.array, cx = camera.position.x, cz = camera.position.z, bob = time * 6;
-  for (let i = 0; i < C.n; i++) {
-    const o = i * 6, x0 = A[o], z0 = A[o + 1], x1 = A[o + 2], z1 = A[o + 3];
-    let u = (time * A[o + 5] + C.ph[i]) % 2; if (u < 0) u += 2;
-    const k = u < 1 ? u : 2 - u, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
-    const th = Math.atan2(cx - x, cz - z), c = Math.cos(th), s = Math.sin(th), m = i * 16;
-    arr[m] = c; arr[m + 1] = 0; arr[m + 2] = -s; arr[m + 4] = 0; arr[m + 5] = 1; arr[m + 6] = 0;
-    arr[m + 8] = s; arr[m + 9] = 0; arr[m + 10] = c; arr[m + 12] = x; arr[m + 13] = A[o + 4] + 0.8 + Math.sin(bob + C.ph[i]) * 0.035; arr[m + 14] = z; arr[m + 15] = 1;
-  }
-  C.mesh.instanceMatrix.needsUpdate = true;
+function cvCrewStep(e, dt) {
+  const A = e.cvA; if (!A) return;
+  let u = e.cvU + dt * e.cvSpd; if (u >= 2) u -= 2; e.cvU = u;
+  const k = u < 1 ? u : 2 - u;
+  const x = A[0] + (A[2] - A[0]) * k, z = A[1] + (A[3] - A[1]) * k;
+  e.s.position.set(x, e.baseY, z);
+  e.faceWant = Math.atan2(A[2] - A[0], (u < 1 ? 1 : -1) * (A[3] - A[1] || 0.01));
+  const near = Math.abs(e.baseY - player.pos.y) < 3.2 && Math.hypot(x - player.pos.x, z - player.pos.z) < 24;
+  if (near) animateNpc(e, dt, 0);
+  else { e.px = x; e.pz = z; e.s.rotation.y = e.faceWant; e.face = e.faceWant; }
 }
 function buildKeiku() {
   CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
@@ -10177,7 +10165,6 @@ function updateCv(dt) {
   const endBtn = $('bCvEnd');
   if (!CV.on || state !== 'play') { if (endBtn && !CV.on) endBtn.style.display = 'none'; return; }
   if (endBtn) endBtn.style.display = 'block';
-  cvCrowdUpdate();
   CV.t += dt;
   if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = (CV.sea.material.map.offset.y + dt * 0.018) % 1;
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
@@ -18726,7 +18713,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -19797,9 +19784,10 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   const g = (opt.girl && GIRLS[opt.girl]) || pickGirl(kind, opt.perch);
   if (!g) return null;
   const spr = g.spr;                                    // 照準パネルの顔写真
-  const prof = makeProfile(), n = wave.n;
+  const prof = opt.cv ? { name: '乗組', pers: '冷静', cm: Math.round(rand(150, 168)), pitch: 1, rate: 1, vv: 1 } : makeProfile();
+  const n = wave.n;
   prof.glasses = false;
-  if (g.prof && !opt.medic && !opt.aide && !enemies.some(o => o.girl === g && o.state !== 'down')) Object.assign(prof, g.prof);   // 固有の娘（同じ写真が同時に二人いれば二人目は一般の名前）
+  if (!opt.cv && g.prof && !opt.medic && !opt.aide && !enemies.some(o => o.girl === g && o.state !== 'down')) Object.assign(prof, g.prof);   // 固有の娘（同じ写真が同時に二人いれば二人目は一般の名前）
   if (opt.secretary) Object.assign(prof, { name: sec.name, pers: '冷静', cm: 160, vv: 1 });
   if (opt.fluter) Object.assign(prof, { name: fluter.name, pers: '陽気', cm: 156, vv: 2 });
   if (opt.sec2) Object.assign(prof, { name: sec2.name, pers: '陽気', cm: 158, vv: 2 });
@@ -19810,7 +19798,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (opt.sysop) Object.assign(prof, { name: sysop.name, pers: '冷静', cm: 162, vv: 0 });
   if (opt.medic && opt.medCm) Object.assign(prof, { cm: opt.medCm, pers: opt.medPers || prof.pers });
   const P = PERS[prof.pers] || PERS['冷静'];
-  VoicePack.prioritize(prof.pers);
+  if (!opt.cv) VoicePack.prioritize(prof.pers);
   if (captain) prof.name = '組頭 ' + prof.name;
   const figH = prof.cm / 100;
   const mat = spriteMat(g.front.tex), mats = [mat];
@@ -19890,7 +19878,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (kind === 'mob' && !e.special && !e.ramCrew && !e.hiddenAmb && (opt.yari === 1 || (opt.yari !== -1 && Math.random() < YARI.rate))) { e.yari = true; makeYari(e); }   // 槍兵（近接の約2割）
   enemies.push(e);
   assignSquad(e);
-  if (VoicePack.ok && VoicePack.man && VoicePack.man._extra) { const c = VoicePack.man._extra['call_' + givenOf(e)]; if (c) VoicePack.load(c[0].files[Math.min(2, e.prof.vv || 0)]); }   // 倒れたとき名前を呼ばれる声
+  if (!opt.cv && VoicePack.ok && VoicePack.man && VoicePack.man._extra) { const c = VoicePack.man._extra['call_' + givenOf(e)]; if (c) VoicePack.load(c[0].files[Math.min(2, e.prof.vv || 0)]); }   // 倒れたとき名前を呼ばれる声
   return e;
 }
 // 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
@@ -22868,6 +22856,7 @@ function updateEnemies(dt) {
   frameNo++;
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i], p = e.s.position, P = e.P;
+    if (e.cvWalk && e.state !== 'down') { cvCrewStep(e, dt); continue; }
     if (TRENCH.on && e.trenchPilot && e.trenchPlane && isUp(e)) {
       const A=e.trenchPlane;
       if(A.active&&!A.crashing){

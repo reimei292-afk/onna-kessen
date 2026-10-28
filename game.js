@@ -9725,6 +9725,85 @@ function cvGun(x, z, y, big) {
   g.position.set(x, y, z); stageRoot.add(g);
   CV.guns.push({ g, x, z, y, big, cd: rand(0.4, 1.8) });
 }
+function cvCrowdFill() {
+  const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Yb = CV.Yb, Y0 = CV.Y0, Y2 = CV.Y2;
+  const navy = 0x243044, air = 0x5a6840, eng = 0x6b5346, white = 0xf3f0e8, maid = 0xf7f4ef, med = 0xe7eef2;
+  const rec = [];
+  const add = (y, x0, x1, z0, z1, n, col) => { if (n > 0) rec.push([y, x0, x1, z0, z1, n, col]); };
+  add(Yd, -9.6, -7.3, -80, 64, 70, navy);
+  add(Yd, 7.3, 9.6, -80, 64, 70, navy);
+  add(Yd, -2.2, 2.2, 24, 68, 40, white);
+  add(Yb, 5.2, 9.6, 2.2, 15.5, 44, white);
+  add(Yb + 2.6, 6.1, 9.4, 7.2, 14.2, 20, white);
+  add(Yh, -7.4, -5.3, -60, 38, 110, air);
+  add(Yh, 5.3, 7.4, -60, 38, 110, air);
+  add(Yh, -10.8, -9.3, -55, 62, 36, navy);
+  add(Yh, 9.3, 10.8, -55, 62, 36, navy);
+  add(Yh, -2.4, 2.4, 68, 84, 22, maid);
+  add(Y2, -6.2, -1.6, -46, -33, 16, eng); add(Y2, 1.6, 6.2, -46, -33, 16, eng);
+  add(Y2, -6.2, -1.6, -31, -13, 18, eng); add(Y2, 1.6, 6.2, -31, -13, 18, med);
+  add(Y2, -6.2, -1.6, -11, 7, 18, med); add(Y2, 1.6, 6.2, -11, 7, 18, med);
+  add(Y2, -6.2, -1.6, 9, 25, 16, white); add(Y2, 1.6, 6.2, 9, 25, 16, white);
+  add(Y2, -0.7, 0.7, -46, 36, 20, white);
+  add(Y1, -6.4, -1.7, -52, -41, 28, maid); add(Y1, 1.7, 6.4, -52, -41, 28, maid);
+  add(Y1, -6.4, -1.7, -39, -23, 32, maid); add(Y1, 1.7, 6.4, -39, -23, 32, maid);
+  add(Y1, -6.4, -1.7, -21, -5, 32, maid); add(Y1, 1.7, 6.4, -21, -5, 32, maid);
+  add(Y1, -6.4, -1.7, -3, 15, 28, maid); add(Y1, 1.7, 6.4, -3, 15, 28, maid);
+  add(Y1, -6.4, -1.7, 17, 38, 24, maid); add(Y1, 1.7, 6.4, 17, 38, 24, maid);
+  add(Y1, -0.7, 0.7, -52, 38, 36, white);
+  add(Y1, -6.2, -1.7, 43.2, 51.2, 12, maid); add(Y1, 1.7, 6.2, 43.2, 51.2, 10, maid);
+  add(Y1, -6.2, -1.7, 52.4, 63.2, 12, maid); add(Y1, 1.7, 6.2, 52.4, 63.2, 14, maid);
+  add(Y1, -6.2, -1.7, 64.4, 73.2, 10, maid); add(Y1, 1.7, 6.2, 64.4, 73.2, 12, maid);
+  add(Y1, -6.2, -1.7, 74.2, 86, 16, maid); add(Y1, 1.7, 6.2, 74.2, 86, 16, maid);
+  add(Y0, -5.8, -1.6, -44, -33, 14, eng); add(Y0, 1.6, 5.8, -44, -33, 14, eng);
+  add(Y0, -5.8, -1.6, -31, -17, 14, eng); add(Y0, 1.6, 5.8, -31, -17, 14, eng);
+  add(Y0, -5.8, -1.6, -15, 1, 12, eng); add(Y0, 1.6, 5.8, -15, 1, 12, eng);
+  add(Y0, -5.8, -1.6, 3, 17, 12, eng); add(Y0, 1.6, 5.8, 3, 17, 12, eng);
+  add(Y0, -5.8, -1.6, 19, 32, 12, eng); add(Y0, 1.6, 5.8, 19, 32, 12, eng);
+  add(Y0, -0.6, 0.6, -44, 32, 18, eng);
+  let n = rec.reduce((s, r) => s + r[5], 0), guard = 0;
+  while (n > 1100 && guard++ < 8000) { const r = rec[guard % rec.length]; if (r[5] > 8) { r[5]--; n--; } }
+  while (n < 1100) { rec[0][5]++; n++; }
+  const tex = canvasTex(128, 256, (g, w, h) => {
+    g.clearRect(0, 0, w, h);
+    g.fillStyle = '#2a241e'; g.beginPath(); g.ellipse(64, 42, 22, 26, 0, 0, 7); g.fill();
+    g.fillStyle = '#f4d8c4'; g.beginPath(); g.ellipse(64, 48, 16, 18, 0, 0, 7); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.moveTo(46, 78); g.quadraticCurveTo(64, 70, 82, 78); g.lineTo(104, 248); g.lineTo(24, 248); g.closePath(); g.fill();
+    g.fillStyle = '#6a3030'; g.fillRect(40, 112, 48, 14);
+    g.fillStyle = '#f4d8c4'; g.fillRect(28, 92, 12, 36); g.fillRect(88, 92, 12, 36);
+  });
+  const mat = new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide });
+  const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.62, 1.58), mat, n);
+  mesh.frustumCulled = false; mesh.count = n; stageRoot.add(mesh);
+  const A = new Float32Array(n * 6), col = new THREE.Color();
+  let i = 0;
+  for (const [y, x0, x1, z0, z1, cnt, hex] of rec) {
+    for (let k = 0; k < cnt; k++, i++) {
+      const lane = x0 + 0.25 + Math.random() * Math.max(0.2, x1 - x0 - 0.5);
+      const span = Math.max(2.2, (z1 - z0) * (0.25 + Math.random() * 0.45));
+      const zA = z0 + Math.random() * Math.max(0.2, z1 - z0 - span);
+      const o = i * 6;
+      A[o] = lane; A[o + 1] = zA; A[o + 2] = lane + (Math.random() < 0.5 ? -0.35 : 0.35); A[o + 3] = zA + span; A[o + 4] = y; A[o + 5] = 0.42 + Math.random() * 0.7;
+      col.setHex(hex); mesh.setColorAt(i, col);
+    }
+  }
+  if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  CV.crowd = { mesh, A, n, ph: Float32Array.from({ length: n }, () => Math.random() * 2) };
+  CV.crewN = n;
+}
+function cvCrowdUpdate() {
+  const C = CV.crowd; if (!C) return;
+  const A = C.A, arr = C.mesh.instanceMatrix.array, cx = camera.position.x, cz = camera.position.z, bob = time * 6;
+  for (let i = 0; i < C.n; i++) {
+    const o = i * 6, x0 = A[o], z0 = A[o + 1], x1 = A[o + 2], z1 = A[o + 3];
+    let u = (time * A[o + 5] + C.ph[i]) % 2; if (u < 0) u += 2;
+    const k = u < 1 ? u : 2 - u, x = x0 + (x1 - x0) * k, z = z0 + (z1 - z0) * k;
+    const th = Math.atan2(cx - x, cz - z), c = Math.cos(th), s = Math.sin(th), m = i * 16;
+    arr[m] = c; arr[m + 1] = 0; arr[m + 2] = -s; arr[m + 4] = 0; arr[m + 5] = 1; arr[m + 6] = 0;
+    arr[m + 8] = s; arr[m + 9] = 0; arr[m + 10] = c; arr[m + 12] = x; arr[m + 13] = A[o + 4] + 0.8 + Math.sin(bob + C.ph[i]) * 0.035; arr[m + 14] = z; arr[m + 15] = 1;
+  }
+  C.mesh.instanceMatrix.needsUpdate = true;
+}
 function buildKeiku() {
   CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
   const M = cvMats();
@@ -9862,7 +9941,8 @@ function buildKeiku() {
   cvFloor(-7.4, 7.4, 42, 88, Y1);
   deckPlate(-7.15, 7.15, 42.2, 87.6, Y1, M.wood);
   wall(-7.7, -7.2, 42, 88, Y1, Y1 + 2.7); wall(7.2, 7.7, 42, 88, Y1, Y1 + 2.7);
-  wall(-7.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
+  wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
+  wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
   wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 2.7);
   const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 2.7, M.wood);
   bulkZ(51.7, -7.15, -1.15); bulkZ(51.7, 1.15, 7.15);
@@ -9909,6 +9989,51 @@ function buildKeiku() {
     const hm = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.07, 0.46), M.cloth); hm.position.set(x, Y1 + 0.95, z); hm.rotation.z = (i % 2 ? -1 : 1) * 0.1; stageRoot.add(hm);
   }
   cvLad(0, 44.2, 45.6, Y1, Yh);
+  // 甲板の下に層を足す。機関（吃水線の上）、兵員、烹炊、その上が格納庫。艦橋はもう一段
+  const Y0 = 0.25, Y2 = 4.45; CV.Y0 = Y0; CV.Y2 = Y2;
+  const bay = (y, z0, z1, xL, xR) => {
+    cvFloor(xL, xR, z0, z1, y);
+    deckPlate(xL + 0.15, xR - 0.15, z0 + 0.15, z1 - 0.15, y, M.steel);
+    wall(xL - 0.2, xL, z0, z1, y, y + 2.05, M.hull);
+    wall(xR, xR + 0.2, z0, z1, y, y + 2.05, M.hull);
+  };
+  bay(Y0, -48, 36, -6.4, 6.4);
+  bay(Y1, -56, 41.7, -7.2, 7.2);
+  bay(Y2, -50, 39, -7.0, 7.0);
+  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 2.05, M.wood); wall(1.15, xR, z, z + 0.36, y, y + 2.05, M.wood); };
+  for (const z of [-32, -16, 2, 18]) doorZ(Y0, z, -6.2, 6.2);
+  for (const z of [-40, -22, -4, 16]) doorZ(Y1, z, -7.0, 7.0);
+  for (const z of [-32, -12, 8, 26]) doorZ(Y2, z, -6.8, 6.8);
+  cvSign(0, Y0 + 1.7, -46.5, '缶室・タービン・弾薬', 0);
+  cvSign(0, Y1 + 1.7, -54.2, '兵員大部屋', 0);
+  cvSign(0, Y2 + 1.7, -48.2, '烹炊・整備控・応急', 0);
+  for (let i = 0; i < 8; i++) {
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 1.45, 10), M.dark);
+    b.position.set(i < 4 ? -3.6 : 3.6, Y0 + 0.85, -44 + (i % 4) * 4); stageRoot.add(b);
+  }
+  for (let i = 0; i < 4; i++) {
+    const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 1.3), M.steel);
+    t.position.set(i % 2 ? 3.4 : -3.4, Y0 + 0.6, 8 + (i / 2 | 0) * 8); stageRoot.add(t);
+  }
+  const hamG = new THREE.BoxGeometry(1.35, 0.06, 0.42), ham = new THREE.InstancedMesh(hamG, M.cloth, 80);
+  const hm = new THREE.Matrix4(); let hi = 0;
+  for (let z = -50; z < 36; z += 3.2) for (const x of [-4.6, 4.6]) {
+    hm.makeRotationZ(x > 0 ? -0.12 : 0.12); hm.setPosition(x, Y1 + 0.85, z); ham.setMatrixAt(hi++, hm);
+  }
+  ham.count = hi; stageRoot.add(ham);
+  for (const z of [-30, -8, 16]) {
+    const a = new THREE.PointLight(0xffe2c0, 0.45, 24); a.position.set(0, Y0 + 1.7, z); stageRoot.add(a);
+    const b = new THREE.PointLight(0xfff0d4, 0.4, 24); b.position.set(0, Y2 + 1.6, z); stageRoot.add(b);
+    const c = new THREE.PointLight(0xfff3e0, 0.35, 26); c.position.set(0, Y1 + 1.7, z - 10); stageRoot.add(c);
+  }
+  cvLad(0, -24.4, -23, Y0, Y1);
+  cvLad(0, 6.2, 7.6, Y1, Y2);
+  cvLad(2.6, -6.4, -5, Y2, Yh);
+  cvFloor(5.4, 10.2, 6.2, 15.4, Yb + 2.6);
+  deckPlate(5.5, 10.1, 6.4, 15.2, Yb + 2.6, M.white);
+  cvLad(6.4, 8.8, 10.1, Yb, Yb + 2.6);
+  cvSign(7.6, Yb + 3.5, 6.5, '最上艦橋・見張り', 0);
+  cvCrowdFill();
   // 高角砲は舷側スポンソン、機銃は甲板の縁
   for (const x of [-10.4, 10.4]) for (const z of [-70, -36, 46]) cvGun(x, z, Yd, true);
   for (const z of [-82, -54, -8, 28, 60]) cvGun(-10.7, z, Yd, false);
@@ -9926,7 +10051,7 @@ function cvNearGun() {
 }
 function cvNearBoard() { return CV.on && player.pos.x > 5.4 && player.pos.x < 10.4 && player.pos.z > 2.2 && player.pos.z < 8.5 && Math.abs(player.pos.y - (CV.Yb || 16.7)) < 1.3; }
 function cvRoster() {
-  const t = '乗艦およそ千百人。戦闘二百七十四、航空二百七十四、機関百五十、艦橋と航海二百六。客室は王と側近の二十室、クルーズは百三人。侍女は大部屋の吊り床。艦上機は三十、敵の艦上機は二十二。';
+  const t = '乗艦千百人。今、艦の中を歩いている。戦闘二百七十四、航空二百七十四、機関百五十、艦橋と航海二百六、クルーズ百三、残りは兵員室の予備。下は機関、その上に大部屋、烹炊、格納庫、甲板、艦橋。';
   subtitle(t); const el = $('subtitle'); if (el) el.textContent = '艦橋「' + t + '」';
   if (typeof Voice !== 'undefined' && Voice.say) Voice.say('乗艦はおよそ千百人。侍女は大部屋の吊り床です', { pitch: 1.05, rate: 0.95 }, 1);
   popup('定員表を読んだ');
@@ -10052,6 +10177,7 @@ function updateCv(dt) {
   const endBtn = $('bCvEnd');
   if (!CV.on || state !== 'play') { if (endBtn && !CV.on) endBtn.style.display = 'none'; return; }
   if (endBtn) endBtn.style.display = 'block';
+  cvCrowdUpdate();
   CV.t += dt;
   if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = (CV.sea.material.map.offset.y + dt * 0.018) % 1;
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
@@ -10199,7 +10325,7 @@ const STAGES = {
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
-  keiku: { name: '軽空母の航海', desc: '瑞鳳級に倣う軽空母。全長およそ百八十メートル。飛行甲板は船体より広く、下に格納庫と舷側の歩廊がある。艦尾は飛行甲板の外に遊歩甲板とプール。その下が王の間、サロン、浴室、小劇場、食堂、吊り床の大部屋。艦上機は三十。戦いといえば米軍の空襲だけ。戦闘機は機銃掃射、爆撃機は爆弾。甲板は危ない。' },
+  keiku: { name: '軽空母の航海', desc: '瑞鳳級に倣う軽空母。全長およそ百八十メートル。甲板の下に機関、兵員大部屋、烹炊、格納庫。右舷に艦橋が二段。約千百人が配置ごとに歩き、止まらない。終わるのは終了ボタンだけ。戦いといえば米軍の空襲だけ。' },
 };
 
 // ====================================================================
@@ -18600,7 +18726,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

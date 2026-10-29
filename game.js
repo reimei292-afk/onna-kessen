@@ -9952,10 +9952,17 @@ function cvCrowdFill() {
   CV.crewN = made; CV.crowd = null;
 }
 function cvCrewStep(e, dt) {
+  const faceCam = (x, z, extraYaw) => {
+    const camYaw = Math.atan2(camera.position.x - x, camera.position.z - z);
+    e.tilt.rotation.set(0, camYaw - (extraYaw || 0), 0);
+    e.s.visible = true; e.tilt.visible = true; e.bb.visible = true; e.bb.frustumCulled = false;
+  };
   if (e.cvRide) {
     const w = e._cvW || (e._cvW = new THREE.Vector3());
     e.s.getWorldPosition(w);
-    e.s.rotation.y = Math.atan2(camera.position.x - w.x, camera.position.z - w.z) - (e.cvRide.rotation.y || 0);
+    const py = e.s.parent && e.s.parent.rotation ? e.s.parent.rotation.y : 0;
+    e.s.rotation.y = 0;
+    faceCam(w.x, w.z, py);
     return;
   }
   const A = e.cvA; if (!A) return;
@@ -9964,9 +9971,9 @@ function cvCrewStep(e, dt) {
   const x = A[0] + (A[2] - A[0]) * k, z = A[1] + (A[3] - A[1]) * k;
   e.s.position.set(x, e.baseY, z);
   e.faceWant = Math.atan2(A[2] - A[0], (u < 1 ? 1 : -1) * (A[3] - A[1] || 0.01));
-  const near = Math.abs(e.baseY - player.pos.y) < 3.2 && Math.hypot(x - player.pos.x, z - player.pos.z) < 24;
+  const near = Math.abs(e.baseY - player.pos.y) < 4 && Math.hypot(x - player.pos.x, z - player.pos.z) < 18;
   if (near) animateNpc(e, dt, 0);
-  else { e.px = x; e.pz = z; e.s.rotation.y = e.faceWant; e.face = e.faceWant; }
+  else { e.px = x; e.pz = z; e.s.rotation.y = e.faceWant; e.face = e.faceWant; faceCam(x, z, e.s.rotation.y); }
 }
 function cvDress() {
   const M = CV.M, Y0 = CV.Y0, Y1 = CV.Y1, Y2 = CV.Y2, Yh = CV.Yh, Yb = CV.Yb;
@@ -10396,6 +10403,20 @@ function cvHand(x, z, y, face) {
   CV.crewN = (CV.crewN || 0) + 1;
   return e;
 }
+function cvOnGun(g, n) {
+  const ring = g.big ? 1.45 : g.triple ? 1.05 : 0.85;
+  const sc = g.g.scale.x || 1;
+  for (let i = 0; i < n; i++) {
+    const ang = (i / n) * Math.PI * 2 + 0.4;
+    const e = cvHand(g.x, g.z, g.y, ang);
+    if (!e) continue;
+    scene.remove(e.s); g.g.add(e.s);
+    e.s.scale.setScalar(1 / sc);
+    e.s.position.set(Math.cos(ang) * ring, 0.35, Math.sin(ang) * ring);
+    e.s.rotation.set(0, 0, 0);
+    e.cvRide = g.g; e.cvA = null;
+  }
+}
 function cvParty(x, z, y, n, face) {
   const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
   const fx = Math.sin(face), fz = Math.cos(face), rx = fz, rz = -fx;
@@ -10437,11 +10458,7 @@ function cvFill(x0, x1, z0, z1, y, n, face) {
 function cvStation() {
   const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb, S = CV.S || 1;
   CV.crewN = 0;
-  for (const g of CV.guns) {
-    const n = g.big ? 12 : g.triple ? 9 : 3;
-    const ox = -Math.sign(g.x || 1) * (g.big ? 2.6 : 2.1);
-    cvParty(g.x + ox, g.z, g.y, n, g.x > 0 ? -1.4 : 1.4);
-  }
+  for (const g of CV.guns) cvOnGun(g, g.big ? 12 : g.triple ? 9 : 3);
   for (const d of CV.dirs || []) cvParty(d.x * S, d.z * S, d.y * S, 8, Math.PI);
   cvFill(-9.4, -6.6, -74, -50, Yd, 30, 1.2);
   cvFill(-9.4, -6.6, 40, 64, Yd, 30, 1.2);
@@ -19374,7 +19391,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029l';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

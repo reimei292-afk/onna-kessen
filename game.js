@@ -9764,21 +9764,21 @@ function cvAir(x, y, z, yaw, kind) {
       const wh = add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 8), dark)); wh.rotation.z = Math.PI / 2; wh.position.set(s * 0.7, gearY - 0.15, S.wingZ + 0.2);
     }
   }
-  g.position.set(x, y, z); g.rotation.y = yaw; stageRoot.add(g);
+  g.position.set(x, y, z); g.rotation.y = yaw; g.userData.kind = kind; stageRoot.add(g);
   if (kind !== 'usf' && kind !== 'usb') CV.parked.push(g);
   return g;
 }
-function cvGun(x, z, y, big) {
+function cvGun(x, z, y, big, triple) {
   const M = CV.M, g = new THREE.Group();
   const tub = new THREE.Mesh(new THREE.CylinderGeometry(big ? 1.05 : 0.62, big ? 1.15 : 0.7, 0.55, 10), M.gun); tub.position.y = 0.28; g.add(tub);
   const base = new THREE.Mesh(new THREE.CylinderGeometry(big ? 0.42 : 0.26, big ? 0.5 : 0.32, 0.7, 8), M.steel); base.position.y = 0.75; g.add(base);
-  const n = big ? 2 : 1;
+  const n = big ? 2 : triple ? 3 : 1;
   for (let i = 0; i < n; i++) {
     const b = new THREE.Mesh(new THREE.CylinderGeometry(big ? 0.08 : 0.045, big ? 0.09 : 0.05, big ? 2.5 : 1.45, 7), M.dark);
     b.rotation.x = Math.PI / 2; b.position.set((i - (n - 1) / 2) * 0.28, big ? 1.15 : 0.95, big ? 0.85 : 0.5); g.add(b);
   }
   g.position.set(x, y, z); stageRoot.add(g);
-  CV.guns.push({ g, x, z, y, big, cd: rand(0.4, 1.8) });
+  CV.guns.push({ g, x, z, y, big, triple: !!triple, cd: rand(0.4, 1.8) });
 }
 function cvCrowdFill() {
   const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Yb = CV.Yb, Y0 = CV.Y0, Y2 = CV.Y2;
@@ -9837,6 +9837,12 @@ function cvCrowdFill() {
   CV.crewN = made; CV.crowd = null;
 }
 function cvCrewStep(e, dt) {
+  if (e.cvRide) {
+    const w = e._cvW || (e._cvW = new THREE.Vector3());
+    e.s.getWorldPosition(w);
+    e.s.rotation.y = Math.atan2(camera.position.x - w.x, camera.position.z - w.z) - (e.cvRide.rotation.y || 0);
+    return;
+  }
   const A = e.cvA; if (!A) return;
   let u = e.cvU + dt * e.cvSpd; if (u >= 2) u -= 2; e.cvU = u;
   const k = u < 1 ? u : 2 - u;
@@ -9995,7 +10001,7 @@ function buildKeiku() {
   cvFloor(-11.35, 11.35, -90, 74, Yd);
   rail(-11.55, -11.4, -86, 72, Yd); rail(11.4, 11.55, -86, 72, Yd);
   rail(-11.4, 11.4, -90.2, -90.05, Yd); rail(-11.4, -1.2, 73.9, 74.08, Yd); rail(1.2, 11.4, 73.9, 74.08, Yd);
-  cvSign(0, Yd + 1.6, 70, '飛行甲板　全長一八〇', Math.PI);
+  cvSign(0, Yd + 1.6, 70, '飛行甲板　全長約三百', Math.PI);
   cvSign(0, Yd + 1.5, -84, '艦首', 0);
   // 島型艦橋（右舷）。実艦と同じく甲板の右に寄せ、飛行路は左に残す
   wall(4.3, 11.15, -1.2, 22.5, Yd, Yd + 4.15);
@@ -10047,6 +10053,7 @@ function buildKeiku() {
   const sc = 1;
   const park = (x, y, z, yaw, kind) => { const g = cvAir(x, y, z, yaw, kind); g.scale.setScalar(kind === 'liaison' ? 0.85 : sc); g.position.y = y + 0.55; return g; };
   for (let i = 0; i < 6; i++) { park(-6.2, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); park(2.4, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); }
+  for (let i = 0; i < 4; i++) park(-6.2, Yd + 0.55, 4 + i * 11, 0, 'zero');
   park(-6.2, Yd + 0.55, -16, 0, 'escort'); park(2.4, Yd + 0.55, -16, 0, 'escort');
   park(7.2, Yd + 0.45, 58, 0, 'liaison');
   for (let i = 0; i < 12; i++) park(0, Yh + 0.7, -58 + i * 7.4, Math.PI, 'bomb');
@@ -10181,12 +10188,140 @@ function buildKeiku() {
   cvLad(6.4, 8.8, 10.1, Yb, Yb + 2.6);
   cvSign(7.6, Yb + 3.5, 6.5, '最上艦橋・見張り', 0);
   cvDress();
-  cvCrowdFill();
+  for (const x of [-10.3, 10.3]) for (let i = 0; i < 5; i++) cvGun(x, -48 + i * 20, Yh, false, true);
+  for (let i = 0; i < 12; i++) {
+    const boat = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.38, 2.8), M.white);
+    boat.position.set(i < 6 ? -10.5 : 10.5, Yh + 1.15, -58 + (i % 6) * 18); stageRoot.add(boat);
+  }
   // 高角砲は舷側スポンソン、機銃は甲板の縁
   for (const x of [-10.4, 10.4]) for (const z of [-70, -36, 46]) cvGun(x, z, Yd, true);
   for (const z of [-82, -54, -8, 28, 60]) cvGun(-10.7, z, Yd, false);
   for (const z of [-76, -46, -12, 32, 66]) cvGun(10.7, z, Yd, false);
   cvGun(-6.4, 80, Yh, false); cvGun(6.4, 80, Yh, false);
+  cvScaleShip(1.62);
+  cvStation();
+}
+function cvScaleShip(S) {
+  CV.S = S;
+  for (const o of stageRoot.children) {
+    if (o.isLight) { o.position.multiplyScalar(S); if (o.distance) o.distance *= S; continue; }
+    o.position.multiplyScalar(S);
+    o.scale.multiplyScalar(S);
+  }
+  for (const f of floors) { f.x0 *= S; f.x1 *= S; f.z0 *= S; f.z1 *= S; f.y *= S; }
+  for (const b of boxes) { b.x0 *= S; b.x1 *= S; b.z0 *= S; b.z1 *= S; b.y0 *= S; b.y1 *= S; }
+  for (const L of ladders) { L.x0 *= S; L.x1 *= S; L.z0 *= S; L.z1 *= S; L.y0 *= S; L.y1 *= S; }
+  for (const g of CV.guns) { g.x *= S; g.y *= S; g.z *= S; }
+  CV.Yd *= S; CV.Yh *= S; CV.Y1 *= S; CV.Yb *= S; if (CV.Y0) CV.Y0 *= S; if (CV.Y2) CV.Y2 *= S;
+}
+function cvHand(x, z, y, face) {
+  const e = spawnEnemy(x, z, 'mob', false, 'blue', { yari: -1, y, cv: true, set: { special: true, cvWalk: true, passive: true } });
+  if (!e) return null;
+  e.state = 'idle'; e.baseY = y; e.s.position.set(x, y, z); e.hold = { face }; e.faceWant = face;
+  e.mk.visible = false; e.bb.frustumCulled = false;
+  e.cvA = [x, z, x + Math.sin(face) * 1.2, z + Math.cos(face) * 1.2];
+  e.cvU = Math.random() * 2; e.cvSpd = 0.28 + Math.random() * 0.35;
+  CV.crewN = (CV.crewN || 0) + 1;
+  return e;
+}
+function cvParty(x, z, y, n, face) {
+  const cols = Math.max(1, Math.ceil(Math.sqrt(n)));
+  const fx = Math.sin(face), fz = Math.cos(face), rx = fz, rz = -fx;
+  for (let i = 0; i < n; i++) {
+    const c = i % cols, r = (i / cols) | 0;
+    const ox = (c - (cols - 1) / 2) * 0.9, oz = r * 0.9;
+    cvHand(x + rx * ox + fx * oz, z + rz * ox + fz * oz, y, face);
+  }
+}
+function cvSeat(g, n) {
+  const Sc = g.scale.x || 1;
+  for (let i = 0; i < n; i++) {
+    const e = cvHand(g.position.x, g.position.z, g.position.y, 0);
+    if (!e) continue;
+    e.cvRide = g;
+    scene.remove(e.s); g.add(e.s);
+    e.s.position.set((i - (n - 1) / 2) * 0.38, 0.22, 1.05 - i * 0.62);
+    e.s.scale.setScalar(1 / Sc);
+    e.s.rotation.set(0, 0, 0);
+  }
+}
+function cvStation() {
+  const S = CV.S || 1, Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb;
+  CV.crewN = 0;
+  let bigN = 0;
+  for (const g of CV.guns) {
+    const n = g.big ? (bigN++ < 4 ? 12 : 6) : g.triple ? 9 : 3;
+    const ox = g.big ? 0 : -Math.sign(g.x || 1) * 1.8;
+    cvParty(g.x + ox, g.z + (g.big ? 2.6 : 0), g.y, n, g.big ? 0 : (g.x > 0 ? -1.4 : 1.4));
+  }
+  cvParty(8 * S, 5 * S, Yb, 8, Math.PI); cvParty(6.2 * S, 13 * S, Yb, 8, 0);
+  for (let i = 0; i < 60; i++) cvHand((i % 2 ? 0.7 : -0.7) * S, (-22 + (i / 2 | 0) * 0.85) * S, Y0, i % 2 ? 0 : Math.PI);
+  cvParty(0, -84 * S, Yd, 8, Math.PI); cvParty(0, 68 * S, Yd, 8, 0); cvParty(7.4 * S, 11 * S, Yb + 2.6 * S, 8, 0);
+  let bombs = 0;
+  for (const g of CV.parked) {
+    const k = g.userData.kind;
+    if (k === 'zero' || k === 'escort') cvSeat(g, 1);
+    else if (k === 'bomb' && bombs++ < 9) cvSeat(g, 3);
+    else if (k === 'recon') cvSeat(g, 3);
+  }
+  for (let i = 0; i < 75; i++) { cvHand(-6.5 * S, (-60 + i * 1.2) * S, Yh, 1.57); cvHand(6.5 * S, (-60 + i * 1.2) * S, Yh, -1.57); }
+  for (let i = 0; i < 40; i++) cvHand((-4 + (i % 5) * 2) * S, (28 + (i / 5 | 0) * 2.2) * S, Yd, 0);
+  for (let i = 0; i < 30; i++) cvHand((i % 2 ? 2.2 : -2.2) * S, (-50 + (i / 2 | 0) * 1.6) * S, Yh, 0);
+  for (let i = 0; i < 8; i++) cvParty((i < 4 ? -3.6 : 3.6) * S, (-44 + (i % 4) * 4) * S, Y0, 6, 0);
+  for (let i = 0; i < 4; i++) cvParty((i % 2 ? 3.4 : -3.4) * S, (8 + (i / 2 | 0) * 8) * S, Y0, 8, Math.PI / 2);
+  for (let i = 0; i < 30; i++) cvHand((i % 2 ? 4.8 : -4.8) * S, (12 + (i / 2 | 0) * 1.1) * S, Y0, 0);
+  for (let i = 0; i < 40; i++) cvHand((i % 2 ? 2.4 : -2.4) * S, (-30 + (i / 2 | 0) * 1.3) * S, Y2, Math.PI);
+  cvParty(7.2 * S, 8 * S, Yb, 20, Math.PI); cvParty(7.4 * S, 9 * S, Yb, 20, 0);
+  cvParty(9 * S, 14 * S, Yb, 15, 0); cvParty(6 * S, 4 * S, Yb, 15, Math.PI);
+  for (let i = 0; i < 4; i++) cvParty((i < 2 ? -10.2 : 10.2) * S, (-40 + (i % 2) * 50) * S, Yh, 6, 0);
+  for (let i = 0; i < 16; i++) cvParty((i < 8 ? -10.4 : 10.4) * S, (-56 + (i % 8) * 14) * S, Yh, 2, 0);
+  cvParty(5.2 * S, 68 * S, Y1, 20, Math.PI / 2);
+  for (let i = 0; i < 60; i++) cvHand((-4.2 + (i % 6) * 1.3) * S, (-6 + (i / 6 | 0) * 1.8) * S, Y2, Math.PI);
+  cvParty(-4 * S, 47 * S, Y1, 8, 0.4);
+  cvParty(3.4 * S, 67 * S, Y1, 30, Math.PI);
+  cvParty(3.6 * S, 58 * S, Y1, 20, Math.PI);
+  cvParty(-3.6 * S, 58 * S, Y1, 10, 0);
+  cvParty(4 * S, 80 * S, Y1, 5, Math.PI);
+  cvParty(-2 * S, 46 * S, Y1, 30, 0.2);
+  for (let i = 0; i < 100; i++) cvHand((-5.2 + (i % 8) * 1.35) * S, (-50 + (i / 8 | 0) * 2.1) * S, Y1, 0);
+}
+function cvNearPlane() {
+  if (!CV.on || CV.ride) return null;
+  let best = null, bd = 4;
+  for (const g of CV.parked) {
+    const k = g.userData.kind;
+    if (k !== 'zero' && k !== 'escort') continue;
+    const d = Math.hypot(player.pos.x - g.position.x, player.pos.z - g.position.z);
+    if (d < bd && Math.abs(player.pos.y + 1.2 - g.position.y) < 3) { bd = d; best = g; }
+  }
+  return best;
+}
+function cvMount(g) {
+  CV.ride = g; CV.throttle = 0; player.autoClimb = null; player.drawing = false; player.vy = 0;
+  showBanner('零戦の操縦席', 'W で進む。S で落とす。向きは視線。甲板で止まれば E で降りる');
+}
+function cvDismount() {
+  const g = CV.ride; if (!g) return;
+  CV.ride = null; CV.throttle = 0;
+  player.pos.set(g.position.x + 3, CV.Yd + 0.3, g.position.z);
+  player.vy = 0; player.onGround = true;
+}
+function cvFly(dt) {
+  const g = CV.ride; if (!g) return;
+  const up = keys.KeyW || touch.jy < -0.2 ? 1 : 0, dn = keys.KeyS || touch.jy > 0.2 ? 1 : 0;
+  CV.throttle = Math.max(0, Math.min(52, (CV.throttle || 0) + (up - dn) * dt * 16));
+  g.rotation.order = 'YXZ';
+  g.rotation.y = player.yaw;
+  g.rotation.x = clamp(-player.pitch * 0.5, -0.42, 0.4);
+  const nose = new THREE.Vector3(0, 0, 1).applyEuler(g.rotation);
+  g.position.addScaledVector(nose, CV.throttle * dt);
+  const deckY = CV.Yd + 1.1, S = CV.S || 1;
+  if (Math.abs(g.position.x) < 17 * S && g.position.z > -96 * S && g.position.z < 78 * S && g.position.y < deckY + 2.4 && CV.throttle < 22) g.position.y += (deckY - g.position.y) * Math.min(1, dt * 5);
+  if (g.position.y < 1.5) { g.position.y = 1.5; CV.throttle *= 0.85; }
+  const seat = new THREE.Vector3(0, 0.95, 0.55); g.localToWorld(seat);
+  player.pos.set(seat.x, seat.y - CFG.eyeH, seat.z);
+  player.vy = 0; player.onGround = true;
+  if (g.userData.prop) g.userData.prop.rotation.z += dt * (6 + CV.throttle * 0.7);
 }
 function cvNearGun() {
   if (!CV.on) return null;
@@ -10197,9 +10332,12 @@ function cvNearGun() {
   }
   return best;
 }
-function cvNearBoard() { return CV.on && player.pos.x > 5.4 && player.pos.x < 10.4 && player.pos.z > 2.2 && player.pos.z < 8.5 && Math.abs(player.pos.y - (CV.Yb || 16.7)) < 1.3; }
+function cvNearBoard() {
+  const S = CV.S || 1;
+  return CV.on && player.pos.x > 5.4 * S && player.pos.x < 10.4 * S && player.pos.z > 2.2 * S && player.pos.z < 8.5 * S && Math.abs(player.pos.y - (CV.Yb || 16.7)) < 1.8;
+}
 function cvRoster() {
-  const t = '乗艦千百人。今、艦の中を歩いている。戦闘二百七十四、航空二百七十四、機関百五十、艦橋と航海二百六、クルーズ百三、残りは兵員室の予備。下は機関、その上に大部屋、烹炊、格納庫、甲板、艦橋。';
+  const t = '乗艦千百人を、部署の位置に置いてある。高角砲四基に十二人、三連装に九人、単装に三人。零戦の操縦席に搭乗員。機関は缶に六人、タービンに八人。艦は瑞鳳より長く、全長およそ三百メートル。戦闘機は E で操縦席。';
   subtitle(t); const el = $('subtitle'); if (el) el.textContent = '艦橋「' + t + '」';
   if (typeof Voice !== 'undefined' && Voice.say) Voice.say('乗艦はおよそ千百人。侍女は大部屋の吊り床です', { pitch: 1.05, rate: 0.95 }, 1);
   popup('定員表を読んだ');
@@ -10228,21 +10366,31 @@ function cvFire(g, manual) {
 }
 function cvUse() {
   if (!CV.on || state !== 'play') return false;
+  if (CV.ride) {
+    const g = CV.ride, S = CV.S || 1;
+    const onDeck = Math.abs(g.position.x) < 16 * S && g.position.z > -96 * S && g.position.z < 78 * S && g.position.y < CV.Yd + 4;
+    if ((CV.throttle || 0) < 2.5 && onDeck) { cvDismount(); popup('甲板に降りた'); }
+    else popup('甲板の上で、速度を落として');
+    return true;
+  }
+  const pl = cvNearPlane();
+  if (pl) { cvMount(pl); popup('操縦席に入った'); return true; }
   if (CV.phase === 'raid' && cvNearGun()) { cvFire(cvNearGun(), true); return true; }
   if (cvNearBoard()) { cvRoster(); return true; }
   return false;
 }
 function cvMaid(x, z, y, face, line) {
+  const S = CV.S || 1; x *= S; z *= S;
   const e = spawnEnemy(x, z, 'mob', false, 'blue', { yari: -1, y });
   if (!e) return;
   e.special = true; e.hold = { face }; e.cvCrew = true; e.state = 'idle'; e.baseY = y; e.s.position.y = y; e.cvLine = line;
 }
 function cvStart() {
   CV.phase = 'sail'; CV.t = 0; CV.hp = 86; CV.total = 22; CV.killed = 0; CV.spawned = 0; CV.ended = false; CV.talkT = 3; CV.sailSaid = false; CV.usI = 0; CV.traces = []; CV.ask = false; CV.sunkSaid = false; CV.clearSaid = false; CV.downSaid = false; CV.endWhy = '';
-  CV.foe = []; CV.cap = []; CV.bombs = []; CV.shells = []; CV.back = [0, (CV.Yd || 12.35) + 0.3, 8];
+  CV.foe = []; CV.cap = []; CV.bombs = []; CV.shells = []; CV.back = [0, (CV.Yd || 12.35) + 0.3, 8 * (CV.S || 1)];
   if (UK2.flashes) UK2.flashes = [];
   const Yd = CV.Yd || 12.35, Yh = CV.Yh || 6.55, Y1 = CV.Y1 || 2.2, Yb = CV.Yb || 16.7;
-  cvMaid(-4.2, 20, Yd, 0, '全長はおよそ百八十メートルです。艦首は向こう');
+  cvMaid(-4.2, 20, Yd, 0, '全長はおよそ三百メートル。瑞鳳より長い。戦闘機の脇で E');
   cvMaid(1.2, -30, Yd, Math.PI, '直掩は艦首側に十二。昇降機の印の下が格納庫です');
   cvMaid(-9.5, -10, Yd, -1.2, '来るなら米軍の空襲だけです。戦闘機と爆撃機');
   cvMaid(9.2, 24, Yd, 1.2, '戦闘機は機銃掃射もします。甲板は危ない。下へ');
@@ -10257,7 +10405,7 @@ function cvStart() {
   cvMaid(0, 68, Y1, 0.2, '食事は交代です。今は王と側近の分だけ');
   cvMaid(-2.2, 80, Y1, Math.PI, '吊り床が大部屋の寝床です。空いているのは当直の分');
   cvMaid(2.4, 84, Y1, Math.PI, '予備も入れて、乗艦はおよそ千百人です');
-  showBanner('軽空母の航海', '全長一八〇。甲板、格納庫、歩廊、艦尾のクルーズ。のちに米軍の空襲');
+  showBanner('軽空母の航海', '全長約三百。砲員、搭乗員、機関員を部署に配置。戦闘機は E で操縦席');
   if (typeof Voice !== 'undefined' && Voice.say) setTimeout(() => { if (CV.on && state === 'play') Voice.say('軽空母で出る。侍女は大部屋、艦上機は三十', { pitch: 1.02, rate: 0.98 }, 1); }, 600);
 }
 function cvUsGirl() {
@@ -10272,13 +10420,16 @@ function cvSpawnFoe() {
   if (CV.spawned >= CV.total || live >= (USD_MOB ? 4 : 6)) return;
   const kind = CV.spawned % 3 === 0 ? 'usb' : 'usf';
   const side = Math.random() < 0.5 ? 1 : -1;
-  const y = kind === 'usb' ? rand(28, 40) : rand(16, 24);
-  const z = rand(-70, 60);
+  const Sc = CV.S || 1;
+  const x0 = side * 160 * Sc;
+  const y = (CV.Yd || 18) + (kind === 'usb' ? rand(14, 26) : rand(6, 16));
+  const z = rand(-70, 60) * Sc;
   const who = cvUsGirl();
-  const g = cvAir(side * 140, y, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, kind);
+  const g = cvAir(x0, y, z, side > 0 ? -Math.PI / 2 : Math.PI / 2, kind);
+  g.scale.multiplyScalar(Sc);
   cvPilot(g, who.id, kind === 'usb' ? 0.72 : 0.62, kind === 'usb' ? 0.2 : 0.35, kind === 'usb' ? 1.15 : 1.05);
   if (kind === 'usb') { const b = cvUsGirl(); cvPilot(g, b.id, 0.35, 2.5, 0.95); who.bomb = b.name; }
-  CV.foe.push({ g, kind, who: who.name, pitch: who.pitch, x: side * 140, y, z, vx: -side * (kind === 'usb' ? rand(14, 18) : rand(22, 30)), vz: rand(-1.2, 1.2), hp: kind === 'usb' ? 5 : 3, dead: false, drop: false, strafed: false, prop: g.userData.prop });
+  CV.foe.push({ g, kind, who: who.name, pitch: who.pitch, x: x0, y, z, vx: -side * (kind === 'usb' ? rand(18, 24) : rand(28, 38)), vz: rand(-1.2, 1.2), hp: kind === 'usb' ? 5 : 3, dead: false, drop: false, strafed: false, prop: g.userData.prop });
   CV.spawned++;
 }
 function cvUsSay(name, ja, en, pitch) {
@@ -10328,12 +10479,13 @@ function updateCv(dt) {
   CV.t += dt;
   if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = (CV.sea.material.map.offset.y + dt * 0.018) % 1;
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
-  if (CV.wake) for (let i = 0; i < CV.wake.length; i++) { const w = CV.wake[i]; w.position.z = 90 + i * 4.2 + Math.sin(time * 0.8 + i) * 0.6; w.material.opacity = 0.28 + Math.sin(time * 2 + i) * 0.1; }
+  if (CV.wake) for (let i = 0; i < CV.wake.length; i++) { const w = CV.wake[i]; const S = CV.S || 1; w.position.z = (90 + i * 4.2) * S + Math.sin(time * 0.8 + i) * 0.6; w.material.opacity = 0.28 + Math.sin(time * 2 + i) * 0.1; }
   for (const g of CV.parked) if (g.userData.prop) g.userData.prop.rotation.z += dt * (CV.phase === 'raid' ? 22 : 4);
   const p = player.pos;
   const fy = floorUnder(p.x, p.z, p.y + 0.2);
-  if (fy > 0.02 && p.y < 40 && Math.abs(p.x) < 14) CV.back = [p.x, Math.max(fy, p.y), p.z];
-  if (CV.back && (p.y < -0.4 || Math.abs(p.x) > 16.5 || p.z < -108 || p.z > 98)) {
+  const S = CV.S || 1;
+  if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 15 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
+  if (CV.back && (p.y < -0.4 || Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)) {
     p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない');
   }
   if ((CV.talkT -= dt) <= 0) {
@@ -10353,14 +10505,15 @@ function updateCv(dt) {
     CV.phase = 'raid'; CV.t = 0;
     showBanner('米軍の空襲', '戦闘機と爆撃機。乗っているのは米軍。戦闘機は機銃掃射もする');
     if (typeof Voice !== 'undefined' && Voice.say) Voice.say('米軍の空襲。戦闘機と爆撃機だ', { pitch: 1.06, rate: 1 }, 1);
-    CV.parked.slice(0, 4).forEach((g, i) => CV.cap.push({ g, ang: i * 1.4, lag: i * 0.6 }));
+    CV.parked.slice(0, 4).forEach((g, i) => { if (g !== CV.ride) CV.cap.push({ g, ang: i * 1.4, lag: i * 0.6 }); });
   }
   if (CV.phase !== 'raid' || CV.ended) return;
   for (const c of CV.cap) {
+    if (c.g === CV.ride) continue;
     c.lag = Math.max(0, c.lag - dt);
     if (c.lag > 0) { c.g.position.y += dt * 7; continue; }
     c.ang += dt * 0.42;
-    c.g.position.set(Math.sin(c.ang) * 46, (CV.Yd || 12) + 12 + Math.sin(c.ang * 2) * 1.6, -20 + Math.cos(c.ang) * 34);
+    c.g.position.set(Math.sin(c.ang) * 46 * S, (CV.Yd || 12) + 14 + Math.sin(c.ang * 2) * 1.6, -20 * S + Math.cos(c.ang) * 34 * S);
     c.g.rotation.y = c.ang + Math.PI / 2;
     if (c.g.userData.prop) c.g.userData.prop.rotation.z += dt * 30;
   }
@@ -10369,15 +10522,15 @@ function updateCv(dt) {
   for (const f of CV.foe) {
     if (f.dead) { f.y -= dt * 10; f.g.position.y = f.y; f.g.rotation.z += dt * 2; if (f.y < 0) { f.g.visible = false; } continue; }
     f.x += f.vx * dt; f.z += f.vz * dt; f.y += Math.sin(time * 2 + f.x) * dt * 0.8;
-    if (Math.abs(f.x) > 150 && Math.sign(f.vx) === Math.sign(f.x)) { f.vx *= -1; f.z = rand(-70, 60); f.strafed = false; f.drop = f.kind !== 'usb'; }
+    if (Math.abs(f.x) > 150 * (CV.S || 1) && Math.sign(f.vx) === Math.sign(f.x)) { f.vx *= -1; f.z = rand(-70, 60) * (CV.S || 1); f.strafed = false; f.drop = f.kind !== 'usb'; }
     f.g.position.set(f.x, f.y, f.z); f.g.rotation.y = Math.atan2(f.vx, f.vz);
     if (f.prop) f.prop.rotation.z += dt * 28;
     const prs = f.g.userData && f.g.userData.props; if (prs) for (const pr of prs) if (pr !== f.prop) pr.rotation.z += dt * 28;
-    if (f.kind === 'usb' && !f.drop && Math.abs(f.x) < 16 && f.z < 70 && f.z > -84) {
-      f.drop = true; CV.bombs.push({ x: clamp(f.x * 0.25 + rand(-4, 4), -9, 9), z: clamp(f.z + rand(-6, 6), -80, 68), y: f.y, t: 0, T: 1.45 });
+    if (f.kind === 'usb' && !f.drop && Math.abs(f.x) < 16 * S && f.z < 70 * S && f.z > -84 * S) {
+      f.drop = true; CV.bombs.push({ x: clamp(f.x * 0.25 + rand(-4, 4), -11 * S, 11 * S), z: clamp(f.z + rand(-6, 6), -80 * S, 68 * S), y: f.y, t: 0, T: 1.45 });
       cvUsSay(f.who, '爆弾、投下！', 'Bombs away!', f.pitch);
     }
-    if (f.kind === 'usf' && !f.strafed && Math.abs(f.x) < 30 && f.y < 32 && Math.random() < 0.75) { f.strafed = true; cvStrafe(f); }
+    if (f.kind === 'usf' && !f.strafed && Math.abs(f.x) < 30 * (CV.S || 1) && f.y < (CV.Yd || 20) + 18 && Math.random() < 0.75) { f.strafed = true; cvStrafe(f); }
   }
   for (const g of CV.guns) { g.cd -= dt; if (g.cd <= 0 && Math.random() < dt * (g.big ? 0.55 : 0.9)) cvFire(g, false); }
   for (let i = CV.shells.length - 1; i >= 0; i--) {
@@ -10472,7 +10625,7 @@ const STAGES = {
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
-  keiku: { name: '軽空母の航海', desc: '瑞鳳級に倣う軽空母。全長およそ百八十メートル。甲板の下に機関、兵員大部屋、烹炊、格納庫。右舷に艦橋が二段。約千百人が配置ごとに歩き、止まらない。終わるのは終了ボタンだけ。戦いといえば米軍の空襲だけ。' },
+  keiku: { name: '軽空母の航海', desc: '瑞鳳（全長二百五、飛行甲板百八十）より長くして、全長およそ三百メートル。千百人を砲・操縦席・格納庫・機関・艦橋・大部屋に配置する。甲板の戦闘機は、脇で E を押すと操縦席に入れる。終わるのは終了ボタンだけ。' },
 };
 
 // ====================================================================
@@ -18873,7 +19026,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24270,7 +24423,7 @@ function resetGame() {
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'nanban') { player.pos.set(0, 0, 16); player.yaw = 0; }
-  else if (builtStage === 'keiku') { player.pos.set(0, 12.7, 12); player.yaw = 0; }
+  else if (builtStage === 'keiku') { player.pos.set(0, (CV.Yd || 12.35) + 0.35, 18 * (CV.S || 1)); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
@@ -24465,7 +24618,9 @@ function updateLadderHint() {
   const ch = !menuOpen && carOn() ? carHint() : (!menuOpen && BEACH.on ? keiHint() : ''), car = !!ch;   // 軽自動車（平原の運転手／浜の乗り合い）
   if (car) t = ch;
   if (!t && CV.on && state === 'play' && !menuOpen) {
-    if (CV.phase === 'raid' && cvNearGun()) t = MOBILE ? '対空砲：攻撃ボタンで破裂弾' : '対空砲：クリックか E で破裂弾（直撃はしない）';
+    if (CV.ride) t = MOBILE ? '操縦席：前で進む。速度を落として降りる' : '操縦席：W で進む、S で落とす。甲板で止まれば E で降りる';
+    else if (cvNearPlane()) t = MOBILE ? '戦闘機：「話す」で操縦席' : '戦闘機：E で操縦席';
+    else if (CV.phase === 'raid' && cvNearGun()) t = MOBILE ? '対空砲：攻撃ボタンで破裂弾' : '対空砲：クリックか E で破裂弾（直撃はしない）';
     else if (cvNearBoard()) t = '定員表：E';
     else t = MOBILE ? '終わるときは上の終了' : '終わるときは終了ボタン、または Q';
   }
@@ -24476,6 +24631,7 @@ function updateLadderHint() {
 }
 function updatePlayer(dt) {
   updateLadderHint();
+  if (CV.on && CV.ride) { cvFly(dt); return; }
   if (player.kei) { keiSeatPlayer(); keiCam(dt); return; }   // 浜の軽自動車
   if (CAR.riding && carOn()) { carSeatPlayer(); carCamera(dt); return; }   // 平原の助手席
   // 移動

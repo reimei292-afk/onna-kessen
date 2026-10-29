@@ -10345,16 +10345,31 @@ function buildKeiku() {
   cvLad(2.6, -6.4, -5, Y2, Yh);
   cvSign(12.4, Yb + 4.2, 2, '最上艦橋・見張り', 0);
   cvDress();
-  for (const x of [-10.3, 10.3]) for (let i = 0; i < 5; i++) cvGun(x, -48 + i * 20, Yh, false, true);
-  for (let i = 0; i < 12; i++) {
-    const boat = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.38, 2.8), M.white);
-    boat.position.set(i < 6 ? -10.5 : 10.5, Yh + 1.15, -58 + (i % 6) * 18); stageRoot.add(boat);
+  CV.boats = [];
+  for (let i = 0; i < 20; i++) {
+    const patrol = i < 4;
+    const x = i % 2 ? 10.6 : -10.6;
+    const z = -78 + Math.floor(i / 2) * 13;
+    const boat = new THREE.Mesh(new THREE.BoxGeometry(patrol ? 1.25 : 0.95, patrol ? 0.48 : 0.36, patrol ? 3.6 : 2.6), M.white);
+    boat.position.set(x, Yh + 1.15, z); stageRoot.add(boat);
+    CV.boats.push({ x, z, y: Yh, patrol });
   }
-  // 高角砲は舷側スポンソン、機銃は甲板の縁
-  for (const x of [-10.4, 10.4]) for (const z of [-70, -36, 46]) cvGun(x, z, Yd, true);
-  for (const z of [-82, -54, -8, 28, 60]) cvGun(-10.7, z, Yd, false);
-  for (const z of [-76, -46, -12, 32, 66]) cvGun(10.7, z, Yd, false);
-  cvGun(-6.4, 80, Yh, false); cvGun(6.4, 80, Yh, false);
+  CV.dirs = [];
+  for (const [x, z] of [[9.6, 6], [13.8, 20]]) {
+    const d = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.55, 1.3, 8), M.gun);
+    d.position.set(x, Yb + 0.7, z); stageRoot.add(d);
+    CV.dirs.push({ x, z, y: Yb });
+  }
+  // 高角砲4基、三連装10基、単装12基。艦橋の中には置かない
+  cvGun(-10.2, -62, Yd, true); cvGun(-10.2, 42, Yd, true);
+  cvGun(10.2, -62, Yd, true); cvGun(10.2, 52, Yd, true);
+  for (const z of [-80, -46, -22, 6, 24]) cvGun(-10.55, z, Yd, false, true);
+  for (const z of [-80, -46]) cvGun(10.55, z, Yd, false, true);
+  for (const z of [6, 20]) cvGun(15.2, z, Yd, false, true);
+  cvGun(10.55, 54, Yd, false, true);
+  for (const z of [-88, -70, -34, -4, 16, 66]) cvGun(-10.85, z, Yd, false);
+  for (const z of [-88, -70, 50, 68]) cvGun(10.85, z, Yd, false);
+  cvGun(15.6, 2, Yd, false); cvGun(15.6, 28, Yd, false);
   cvScaleShip(1.62);
   cvStation();
 }
@@ -10420,32 +10435,21 @@ function cvFill(x0, x1, z0, z1, y, n, face) {
   }
 }
 function cvStation() {
-  const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb;
+  const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb, S = CV.S || 1;
   CV.crewN = 0;
-  let bigN = 0;
   for (const g of CV.guns) {
-    const n = g.big ? (bigN++ < 4 ? 12 : 6) : g.triple ? 9 : 3;
-    const ox = g.big ? 0 : -Math.sign(g.x || 1) * 2.2;
-    cvParty(g.x + ox, g.z + (g.big ? 3.2 : 0), g.y, n, g.big ? 0 : (g.x > 0 ? -1.4 : 1.4));
+    const n = g.big ? 12 : g.triple ? 9 : 3;
+    const ox = -Math.sign(g.x || 1) * (g.big ? 2.6 : 2.1);
+    cvParty(g.x + ox, g.z, g.y, n, g.x > 0 ? -1.4 : 1.4);
   }
-  cvFill(8.3, 10.2, -8, 12, Yb, 28, Math.PI);
-  cvFill(11.4, 15.6, -8, 12, Yb, 28, 0);
-  cvFill(8.3, 15.6, 15, 36, Yb, 36, Math.PI);
-  cvFill(-6.2, -1.6, -46, -18, Y0, 24, 0);
-  cvFill(1.6, 6.2, -46, -18, Y0, 24, 0);
-  cvFill(-6.2, -1.6, -14, 34, Y0, 28, Math.PI);
-  cvFill(1.6, 6.2, -14, 34, Y0, 28, -Math.PI);
-  cvFill(-6.8, -1.5, -52, -8, Y1, 48, 0);
-  cvFill(1.5, 6.8, -52, -8, Y1, 48, 0);
-  cvFill(-6.8, -1.5, 2, 40, Y1, 42, Math.PI);
-  cvFill(1.5, 6.8, 2, 40, Y1, 42, Math.PI);
-  cvFill(-11.0, -7.6, -82, 70, Yd, 160, 1.2);
-  cvFill(5.4, 7.35, -82, -12, Yd, 52, -1.2);
-  cvFill(5.4, 7.35, 40, 70, Yd, 30, -1.2);
-  cvFill(11.5, 15.8, -8, 34, Yd, 40, 0);
-  const Su = CV.S || 1;
-  cvFill(8.4, 15.2, 0, 28, Yb + 3.05 * Su, 28, 0);
-  cvFill(10, 14.6, 6, 20, Yb + 5.7 * Su, 12, Math.PI);
+  for (const d of CV.dirs || []) cvParty(d.x * S, d.z * S, d.y * S, 8, Math.PI);
+  cvFill(-9.4, -6.6, -74, -50, Yd, 30, 1.2);
+  cvFill(-9.4, -6.6, 40, 64, Yd, 30, 1.2);
+  cvFill(-10.6, -8.2, -88, -76, Yd, 8, Math.PI);
+  cvFill(-10.6, -8.2, 62, 72, Yd, 8, 0);
+  cvFill(9.2, 14.2, 8, 18, Yb + 5.7 * S, 8, Math.PI);
+  cvFill(-8.8, -6.5, -50, -36, Yd, 20, 1.2);
+  cvFill(-8.8, -6.5, 16, 30, Yd, 20, 1.2);
   let bombs = 0;
   for (const g of CV.parked) {
     const k = g.userData.kind;
@@ -10453,22 +10457,33 @@ function cvStation() {
     else if (k === 'bomb' && bombs++ < 9) cvSeat(g, 3);
     else if (k === 'recon') cvSeat(g, 3);
   }
-  cvFill(-8.4, -2.4, -62, 40, Yh, 80, 1.57);
-  cvFill(2.4, 8.4, -62, 40, Yh, 80, -1.57);
-  cvFill(-11.1, -9.0, -58, 64, Yh, 28, 1.2);
-  cvFill(9.0, 11.1, -58, 64, Yh, 28, -1.2);
-  cvFill(-6.6, -1.6, -46, 36, Y2, 40, Math.PI);
-  cvFill(1.6, 6.6, -46, 36, Y2, 40, Math.PI);
-  cvFill(8.4, 10.3, 16, 36, Yb, 16, 1.2);
-  cvFill(11.5, 15.5, 16, 36, Yb, 16, -1.2);
-  cvFill(-6.4, -1.8, 43.4, 51.2, Y1, 12, 0.4);
-  cvFill(1.8, 6.4, 43.4, 51.2, Y1, 10, Math.PI);
-  cvFill(-6.2, -1.8, 53.2, 63, Y1, 8, 0);
-  cvFill(1.8, 6.2, 53.2, 63, Y1, 12, Math.PI);
-  cvFill(-6.2, -1.6, 64.8, 73, Y1, 10, Math.PI);
-  cvFill(1.6, 4.2, 64.8, 73, Y1, 8, Math.PI);
-  cvFill(-6.2, -1.6, 74.6, 86.2, Y1, 20, Math.PI);
-  cvFill(1.6, 6.2, 74.6, 86.2, Y1, 20, Math.PI);
+  cvFill(-8.2, -2.4, -36, 34, Yh, 75, 1.57);
+  cvFill(2.4, 8.2, -36, 34, Yh, 75, -1.57);
+  cvFill(-2.2, 2.2, 36, 46, Yh, 30, 0);
+  cvFill(-5.8, -1.7, -46, -30, Y0, 24, 0);
+  cvFill(1.7, 5.8, -46, -30, Y0, 24, 0);
+  cvFill(-5.6, -1.6, 2, 20, Y0, 16, Math.PI);
+  cvFill(1.6, 5.6, 2, 20, Y0, 16, Math.PI);
+  cvFill(-5.4, 5.4, 22, 34, Y0, 30, 0);
+  cvFill(-6.2, -1.6, -48, -24, Y2, 30, Math.PI);
+  cvFill(1.6, 6.2, -48, -24, Y2, 30, Math.PI);
+  cvFill(-6.2, 6.2, 8, 34, Y2, 40, 0);
+  cvFill(8.5, 11.2, -7, 8, Yb, 20, Math.PI);
+  cvFill(11.6, 15.6, -7, 10, Yb, 20, 0);
+  cvFill(8.6, 15.4, 16, 35, Yb, 30, Math.PI);
+  for (const b of CV.boats || []) cvParty(b.x * S, b.z * S, b.y * S + 0.3, b.patrol ? 6 : 2, b.x > 0 ? -1.2 : 1.2);
+  cvFill(2.4, 6.6, 65, 73, Y1, 20, Math.PI);
+  cvFill(-6.2, -2.4, 44.2, 50.6, Y1, 8, 0.4);
+  cvFill(-5.8, -1.8, 44.6, 50.4, Y1, 10, 0.2);
+  cvFill(2.2, 6.2, 44.4, 50.4, Y1, 10, Math.PI);
+  cvFill(-1.6, 1.6, 53,5, 62.5, Y1, 10, 0);
+  cvFill(-5.6, -1.8, 65.4, 72.2, Y1, 30, Math.PI);
+  cvFill(1.8, 6.4, 53.8, 62.4, Y1, 20, Math.PI);
+  cvFill(-5.8, -2.4, 54.4, 62, Y1, 6, 0);
+  cvFill(-3.2, 3.2, 75, 82, Yh, 4, Math.PI);
+  cvFill(2.4, 5.4, 50.6, 52.2, Y1, 5, Math.PI);
+  cvFill(-6.2, -1.6, 74.8, 86.2, Y1, 47, Math.PI);
+  cvFill(1.6, 6.2, 74.8, 86.2, Y1, 46, Math.PI);
 }
 function cvNearPlane() {
   if (!CV.on || CV.ride) return null;
@@ -10522,7 +10537,7 @@ function cvNearBoard() {
   return CV.on && player.pos.x > 8 * S && player.pos.x < 16.2 * S && player.pos.z > -8 * S && player.pos.z < 14 * S && Math.abs(player.pos.y - (CV.Yb || 16.7)) < 2.2;
 }
 function cvRoster() {
-  const t = '乗艦千百人を、部署の位置に置いてある。高角砲四基に十二人、三連装に九人、単装に三人。零戦の操縦席に搭乗員。機関は缶に六人、タービンに八人。艦は瑞鳳より長く、全長およそ三百メートル。戦闘機は E で操縦席。';
+  const t = '乗艦千百人。戦闘二百七十四、航空二百七十四、機関百五十、艦橋と艇二百六、王の航海は百三、大部屋に予備。高角砲は四基十二人、三連装は十基九人、単装は十二基三人。';
   subtitle(t); const el = $('subtitle'); if (el) el.textContent = '艦橋「' + t + '」';
   if (typeof Voice !== 'undefined' && Voice.say) Voice.say('乗艦はおよそ千百人。侍女は大部屋の吊り床です', { pitch: 1.05, rate: 0.95 }, 1);
   popup('定員表を読んだ');
@@ -19359,7 +19374,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029l';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

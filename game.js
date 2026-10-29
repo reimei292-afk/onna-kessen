@@ -9707,7 +9707,122 @@ function cvStar(g, x, y, z, s, up) {
   const c = new THREE.Mesh(new THREE.CircleGeometry(s, 16), CV.M.star);
   c.position.set(x, y, z); if (up) c.rotation.x = -Math.PI / 2; else c.rotation.y = Math.PI / 2; c.renderOrder = 3; g.add(c);
 }
+function cvSkin(hex) {
+  if (!CV.M._mt) CV.M._mt = {};
+  const k = hex.toString(16);
+  if (CV.M._mt[k]) return CV.M._mt[k];
+  const c = document.createElement('canvas'); c.width = 128; c.height = 256;
+  const g = c.getContext('2d');
+  const R = (hex >> 16) & 255, G = (hex >> 8) & 255, B = hex & 255;
+  g.fillStyle = `rgb(${R},${G},${B})`; g.fillRect(0, 0, 128, 256);
+  g.strokeStyle = `rgba(${Math.max(0, R - 50)},${Math.max(0, G - 50)},${Math.max(0, B - 40)},0.7)`;
+  g.lineWidth = 1.5;
+  for (let y = 6; y < 256; y += 16) { g.beginPath(); g.moveTo(0, y); g.lineTo(128, y + (y % 32 ? 3 : -2)); g.stroke(); }
+  for (let x = 8; x < 128; x += 20) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x + 6, 256); g.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace;
+  const m = new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide });
+  CV.M._mt[k] = m; return m;
+}
+function cvFighterProto(kind) {
+  const us = kind === 'usf', M = CV.M, g = new THREE.Group();
+  const body = cvSkin(us ? 0x1a3c70 : 0x3a5630);
+  const belly = cvSkin(us ? 0xd6d8dc : 0xc4c6b2);
+  const dark = M.dark, glass = M.glass;
+  const add = (mesh, isBody) => { if (isBody) mesh.userData.body = 1; g.add(mesh); return mesh; };
+  const prof = us
+    ? [[-3.55, 0.04], [-3.15, 0.16], [-2.45, 0.34], [-1.55, 0.52], [-0.45, 0.64], [0.55, 0.72], [1.55, 0.78], [2.35, 0.8], [2.95, 0.74], [3.3, 0.42], [3.52, 0.1]]
+    : [[-4.2, 0.02], [-3.75, 0.09], [-3.15, 0.18], [-2.4, 0.3], [-1.5, 0.4], [-0.55, 0.46], [0.45, 0.5], [1.4, 0.52], [2.25, 0.54], [2.9, 0.5], [3.35, 0.32], [3.7, 0.1]];
+  const pts = prof.map(([z, r]) => new THREE.Vector2(r, z));
+  const fuseGeo = new THREE.LatheGeometry(pts, 18); fuseGeo.rotateX(Math.PI / 2);
+  add(new THREE.Mesh(fuseGeo, body), 1);
+  const bellyGeo = new THREE.LatheGeometry(prof.map(([z, r]) => new THREE.Vector2(r * 0.96, z)), 12); bellyGeo.rotateX(Math.PI / 2);
+  const bellyM = add(new THREE.Mesh(bellyGeo, belly), 1); bellyM.position.y = us ? -0.1 : -0.06; bellyM.scale.set(1, 0.55, 1);
+  const wing = (span, cr, ct, thick) => {
+    const sh = new THREE.Shape();
+    sh.moveTo(0.05, -cr * 0.4); sh.lineTo(span * 0.96, -ct * 0.22); sh.lineTo(span, ct * 0.15);
+    sh.lineTo(span * 0.9, ct * 0.7); sh.lineTo(0.08, cr * 0.62); sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: thick, bevelEnabled: true, bevelThickness: thick * 0.4, bevelSize: 0.06, bevelSegments: 1 });
+    geo.translate(0, 0, -thick / 2); geo.rotateX(-Math.PI / 2);
+    return new THREE.Mesh(geo, body);
+  };
+  const span = us ? 4.7 : 5.15, cr = us ? 2.35 : 2.05, ct = us ? 1.25 : 0.72, thick = us ? 0.16 : 0.08;
+  const Rw = add(wing(span, cr, ct, thick), 1);
+  Rw.position.set(0.12, us ? -0.22 : -0.08, us ? 0.55 : 0.85); Rw.rotation.z = us ? -0.04 : -0.08;
+  const Lw = Rw.clone(); Lw.scale.x = -1; Lw.rotation.z = -Rw.rotation.z; add(Lw, 1);
+  const tip = (s) => { const t = add(new THREE.Mesh(new THREE.SphereGeometry(us ? 0.22 : 0.16, 10, 8), body), 1); t.scale.set(1.3, 0.45, us ? 1.1 : 0.85); t.position.set(s * span, us ? -0.05 : 0.28, us ? 0.7 : 1.05); };
+  tip(1); tip(-1);
+  const fillet = add(new THREE.Mesh(new THREE.SphereGeometry(us ? 0.42 : 0.28, 10, 8), body), 1);
+  fillet.scale.set(1.6, 0.55, 1.8); fillet.position.set(0, us ? -0.12 : -0.02, us ? 0.7 : 1.0);
+  const stab = wing(us ? 1.55 : 1.7, us ? 0.85 : 0.7, us ? 0.42 : 0.28, 0.05);
+  const Rs = add(stab, 1); Rs.position.set(0, 0.06, us ? -2.85 : -3.35); Rs.rotation.z = -0.02;
+  const Ls = Rs.clone(); Ls.scale.x = -1; add(Ls, 1);
+  const finSh = new THREE.Shape();
+  finSh.moveTo(0, 0); finSh.lineTo(us ? 0.35 : 0.22, us ? 1.15 : 1.35);
+  finSh.quadraticCurveTo(us ? 0.95 : 0.7, us ? 1.25 : 1.45, us ? 1.25 : 1.05, us ? 0.45 : 0.35);
+  finSh.lineTo(us ? 0.9 : 0.85, 0); finSh.closePath();
+  const finGeo = new THREE.ExtrudeGeometry(finSh, { depth: 0.07, bevelEnabled: false }); finGeo.translate(0, 0, -0.035); finGeo.rotateY(-Math.PI / 2);
+  const fin = add(new THREE.Mesh(finGeo, body), 1); fin.position.set(0, 0.15, us ? -3.15 : -3.85);
+  const rudC = us ? 0xf2f4f6 : 0xc4382a;
+  if (!M._rud) M._rud = {};
+  const rud = add(new THREE.Mesh(new THREE.BoxGeometry(0.035, us ? 0.55 : 0.62, 0.18), M._rud[rudC] || (M._rud[rudC] = new THREE.MeshLambertMaterial({ color: rudC }))));
+  rud.position.set(0, us ? 0.85 : 1.05, us ? -3.45 : -4.05);
+  const noseZ = us ? 3.15 : 3.45;
+  const spin = add(new THREE.Mesh(new THREE.ConeGeometry(us ? 0.22 : 0.16, us ? 0.55 : 0.48, 12), dark)); spin.rotation.x = Math.PI / 2; spin.position.set(0, 0, noseZ + 0.35);
+  const prop = new THREE.Group(); prop.name = 'prop'; prop.position.set(0, 0, noseZ + 0.12);
+  const bladeH = us ? 1.35 : 1.25;
+  for (let i = 0; i < 3; i++) {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.16, bladeH, 0.035), dark);
+    b.position.y = bladeH * 0.42; b.rotation.z = i * Math.PI * 2 / 3; b.rotation.y = 0.55; prop.add(b);
+  }
+  g.add(prop);
+  const cowl = add(new THREE.Mesh(new THREE.TorusGeometry(us ? 0.72 : 0.48, 0.05, 8, 18), dark)); cowl.rotation.x = Math.PI / 2; cowl.position.set(0, 0, us ? 2.7 : 3.05);
+  for (const s of [-1, 1]) for (let i = 0; i < (us ? 3 : 4); i++) {
+    const ex = add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.22, 6), dark));
+    ex.rotation.z = s * Math.PI / 2; ex.position.set(s * (us ? 0.62 : 0.46), -0.08 + i * 0.06, us ? 2.35 : 2.7);
+  }
+  const glare = add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, us ? 0.7 : 0.9), dark)); glare.position.set(0, us ? 0.62 : 0.48, us ? 1.7 : 2.15);
+  const canZ = us ? 0.85 : 1.15, canY = us ? 0.72 : 0.52;
+  const bubble = add(new THREE.Mesh(new THREE.SphereGeometry(us ? 0.42 : 0.32, 14, 10), glass));
+  bubble.scale.set(us ? 0.85 : 0.7, us ? 0.62 : 0.55, 1.15); bubble.position.set(0, canY, canZ);
+  const wind = add(new THREE.Mesh(new THREE.BoxGeometry(us ? 0.5 : 0.38, 0.28, 0.08), glass));
+  wind.position.set(0, canY - 0.02, canZ + (us ? 0.48 : 0.42)); wind.rotation.x = -0.45;
+  for (const dz of [-0.35, 0.05, 0.4]) { const fr = add(new THREE.Mesh(new THREE.BoxGeometry(0.025, us ? 0.28 : 0.22, 0.02), dark)); fr.position.set(0, canY + 0.05, canZ + dz); }
+  const ant = add(new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, us ? 2.2 : 2.6, 4), dark));
+  ant.position.set(0, us ? 0.95 : 0.85, us ? -1.3 : -1.5); ant.rotation.x = us ? 0.7 : 0.62;
+  const gearY = -0.42;
+  for (const s of [-1, 1]) {
+    const leg = add(new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.55, 6), dark)); leg.position.set(s * (us ? 0.85 : 0.72), -0.12, us ? 0.7 : 1.05); leg.rotation.z = s * 0.08;
+    const wh = add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 10), dark)); wh.rotation.z = Math.PI / 2; wh.position.set(s * (us ? 0.9 : 0.75), gearY, us ? 0.7 : 1.05);
+  }
+  const tw = add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 8), dark)); tw.rotation.z = Math.PI / 2; tw.position.set(0, -0.12, us ? -3.3 : -3.9);
+  if (!us) {
+    for (const s of [-1, 1]) {
+      const c = add(new THREE.Mesh(new THREE.CircleGeometry(0.42, 18), M.hin)); c.rotation.x = -Math.PI / 2; c.position.set(s * 2.3, 0.02, 1.15);
+      const side = add(new THREE.Mesh(new THREE.CircleGeometry(0.26, 16), M.hin)); side.position.set(s * 0.52, 0.08, -0.4); side.rotation.y = s * Math.PI / 2;
+    }
+  } else if (M.star) {
+    cvStar(g, 2.2, -0.02, 0.85, 0.46, true); cvStar(g, -2.2, -0.02, 0.85, 0.46, true); cvStar(g, 0.78, 0.15, -0.2, 0.3, false);
+  }
+  return g;
+}
+function cvFighter(x, y, z, yaw, kind) {
+  if (!CV.M._fp) CV.M._fp = {};
+  const key = kind === 'usf' ? 'usf' : 'zero';
+  if (!CV.M._fp[key]) CV.M._fp[key] = cvFighterProto(key);
+  const g = CV.M._fp[key].clone();
+  g.traverse(o => { if (o.name === 'prop') g.userData.prop = o; });
+  g.userData.props = g.userData.prop ? [g.userData.prop] : [];
+  g.userData.kind = kind;
+  if (kind === 'escort') { const mat = cvSkin(0x2a421f); g.traverse(o => { if (o.isMesh && o.userData.body) o.material = mat; }); }
+  g.position.set(x, y, z); g.rotation.y = yaw; stageRoot.add(g);
+  return g;
+}
 function cvAir(x, y, z, yaw, kind) {
+  if (kind === 'zero' || kind === 'escort' || kind === 'usf') {
+    const g = cvFighter(x, y, z, yaw, kind);
+    if (kind !== 'usf') CV.parked.push(g);
+    return g;
+  }
   const M = CV.M, g = new THREE.Group();
   const S = {
     zero: { L: 7.6, span: 9.6, nr: 0.46, mr: 0.58, col: 0x4a6738, hin: 1, wingZ: 0.55, wingY: 0.05 },
@@ -19057,7 +19172,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

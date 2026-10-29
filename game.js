@@ -10062,15 +10062,107 @@ function cvDress() {
   mirror.position.set(-6.55, Y1 + 1.5, 58); mirror.rotation.y = Math.PI / 2; stageRoot.add(mirror);
   cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 52.5, 52.7, M.boot);
   cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 63.2, 63.4, M.boot);
-  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.035, 8, 18), M.panel);
-  wheel.position.set(7.4, Yb + 1.15, 9); stageRoot.add(wheel);
-  for (let i = 0; i < 6; i++) {
-    const sp = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.78, 0.035), M.brass);
-    sp.position.set(7.4, Yb + 1.15, 9); sp.rotation.z = i * Math.PI / 6; stageRoot.add(sp);
+}
+function cvBridgeDress() {
+  const M = CV.M, Y = CV.Yb;
+  const box = (x, y, z, w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
+  const cyl = (x, y, z, r0, r1, h, mat, n) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, n || 10), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
+  const block = (x0, x1, z0, z1, y0, y1) => boxes.push({ x0, x1, z0, z1, y0, y1 });
+  box(9.3, Y + 2.68, 1.5, 2.9, 0.08, 20, M.bulk);
+  box(13.5, Y + 2.68, -2.5, 4.6, 0.08, 12, M.bulk);
+  box(13.7, Y + 2.68, 22, 4.8, 0.08, 22, M.bulk);
+  box(9.2, Y + 2.68, 24, 2.8, 0.08, 20, M.bulk);
+  const wx = 9.15, wz = 1.6;
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.05, 8, 22), M.brass);
+  wheel.position.set(wx, Y + 1.28, wz); stageRoot.add(wheel);
+  for (let i = 0; i < 8; i++) {
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(0.045, 1.1, 0.04), M.brass);
+    sp.position.set(wx, Y + 1.28, wz); sp.rotation.z = i * Math.PI / 8; stageRoot.add(sp);
   }
-  cvSlab(6.1, 8.8, Yb + 0.78, Yb + 0.86, 3.2, 5.6, M.panel);
-  const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.9, 8), M.brass);
-  bin.position.set(8.6, Yb + 0.5, 11.5); stageRoot.add(bin);
+  cyl(wx, Y + 0.55, wz, 0.09, 0.12, 1.05, M.steel);
+  box(wx, Y + 0.42, wz, 0.7, 0.08, 0.7, M.dark);
+  block(wx - 0.4, wx + 0.4, wz - 0.4, wz + 0.4, Y, Y + 1.7);
+  cyl(wx, Y + 0.85, wz - 1.25, 0.22, 0.28, 1.55, M.brass);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.28, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), M.glass);
+  dome.position.set(wx, Y + 1.62, wz - 1.25); stageRoot.add(dome);
+  block(wx - 0.3, wx + 0.3, wz - 1.55, wz - 0.95, Y, Y + 1.7);
+  for (const s of [-1, 1]) {
+    cyl(wx + s * 0.95, Y + 0.72, wz + 0.2, 0.07, 0.1, 1.35, M.brass);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.07, 14), M.dark);
+    head.rotation.z = Math.PI / 2; head.position.set(wx + s * 0.95, Y + 1.4, wz + 0.2); stageRoot.add(head);
+    const grip = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.22, 0.04), M.brass);
+    grip.position.set(wx + s * 0.95, Y + 1.4, wz + 0.38); stageRoot.add(grip);
+  }
+  box(9.2, Y + 0.8, 6.6, 1.8, 0.08, 1.15, M.panel);
+  for (const x of [8.45, 9.95]) for (const z of [6.15, 7.05]) cyl(x, Y + 0.38, z, 0.045, 0.045, 0.72, M.boot, 6);
+  const chart = canvasTex(256, 160, (g, w, h) => {
+    g.fillStyle = '#d7c59a'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#3d5f86'; g.lineWidth = 2;
+    for (let i = 0; i < 8; i++) { g.beginPath(); g.moveTo(0, 20 + i * 16); g.lineTo(w, 18 + i * 18); g.stroke(); }
+    g.strokeStyle = '#8c2424'; g.lineWidth = 3; g.beginPath(); g.moveTo(30, 120); g.lineTo(120, 70); g.lineTo(210, 40); g.stroke();
+    g.fillStyle = '#6d2030'; g.font = '20px serif'; g.fillText('海図', 16, 28);
+  });
+  const cm = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.9), new THREE.MeshLambertMaterial({ map: chart }));
+  cm.rotation.x = -Math.PI / 2; cm.position.set(9.2, Y + 0.86, 6.6); stageRoot.add(cm);
+  block(8.3, 10.1, 6.0, 7.2, Y, Y + 0.9);
+  const board = canvasTex(256, 320, (g, w, h) => {
+    g.fillStyle = '#1c2428'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#d4b06a'; g.lineWidth = 8; g.strokeRect(10, 10, w - 20, h - 20);
+    g.fillStyle = '#f3ead2'; g.font = '28px serif'; g.textAlign = 'center';
+    g.fillText('針路  090', w / 2, 70);
+    g.fillText('速力  18', w / 2, 130);
+    g.fillText('風  北東', w / 2, 190);
+    g.fillStyle = '#9ed8ee'; g.font = '22px serif'; g.fillText('操舵室', w / 2, 260);
+  });
+  const bd = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.45), new THREE.MeshBasicMaterial({ map: board }));
+  bd.position.set(8.15, Y + 1.7, 4.2); bd.rotation.y = Math.PI / 2; stageRoot.add(bd);
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 16, 6), M.brass);
+  tube.rotation.x = Math.PI / 2; tube.position.set(8.3, Y + 2.4, 2); stageRoot.add(tube);
+  for (const z of [-1, 4, 9]) cyl(8.3, Y + 1.7, z, 0.07, 0.05, 0.35, M.brass, 8);
+  box(13.0, Y + 1.35, 6.0, 2.5, 2.7, 3.3, M.steel);
+  box(13.0, Y + 2.2, 6.0, 2.7, 0.22, 3.5, M.brass);
+  block(11.8, 14.3, 4.4, 7.6, Y, Y + 2.7);
+  box(13.6, Y + 0.48, 10.2, 0.55, 0.1, 0.55, M.boot);
+  box(13.6, Y + 0.9, 10.45, 0.5, 0.7, 0.08, M.boot);
+  cyl(13.6, Y + 0.25, 10.2, 0.05, 0.05, 0.45, M.steel, 6);
+  for (let i = 0; i < 4; i++) {
+    const z = 18.5 + i * 3.4;
+    box(15.5, Y + 0.95, z, 0.85, 1.15, 1.6, M.dark);
+    box(15.15, Y + 1.55, z, 0.08, 0.35, 1.2, M.lamp);
+    cyl(15.15, Y + 1.15, z - 0.35, 0.06, 0.06, 0.06, M.boot, 8);
+    block(15.05, 15.95, z - 0.8, z + 0.8, Y, Y + 1.5);
+  }
+  const dial = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = '#101418'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#d4b06a'; g.lineWidth = 4; g.strokeRect(8, 8, w - 16, h - 16);
+    g.fillStyle = '#9ed8ee'; g.font = '18px serif'; g.textAlign = 'center'; g.fillText('無線', w / 2, 40);
+    g.fillStyle = '#e07040'; g.beginPath(); g.arc(w / 2, 78, 16, 0, 7); g.fill();
+  });
+  const radio = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.7), new THREE.MeshBasicMaterial({ map: dial }));
+  radio.position.set(15.02, Y + 1.2, 18.5); radio.rotation.y = -Math.PI / 2; stageRoot.add(radio);
+  const cols = [0xc43c3c, 0xf4f4f4, 0x244a88, 0xe6c15a, 0x2e6b3a, 0x111111];
+  for (let i = 0; i < 6; i++) {
+    const mat = new THREE.MeshLambertMaterial({ color: cols[i] });
+    box(9.0, Y + 0.45, 28 + i * 0.85, 0.42, 0.7, 0.55, mat);
+  }
+  box(9.0, Y + 0.9, 30.2, 0.7, 0.08, 5.4, M.woodD);
+  for (const z of [-6, 0, 6, 12, 22, 30]) {
+    const L = new THREE.PointLight(0xffe6c0, 0.55, 9);
+    L.position.set(z < 14 ? 10.2 : 13.2, Y + 2.35, z); stageRoot.add(L);
+  }
+  const Yu = Y + 3.05;
+  for (const z of [-1.2, 29.2]) box(12.2, Yu + 0.55, z, 6.2, 0.08, 0.08, M.brass);
+  box(8.15, Yu + 0.55, 14, 0.08, 0.08, 28, M.brass);
+  box(15.85, Yu + 0.55, 14, 0.08, 0.08, 28, M.brass);
+  cyl(12.4, Yu + 0.55, 8, 0.16, 0.2, 1.0, M.brass);
+  box(11.2, Yu + 0.78, 20, 1.6, 0.06, 0.9, M.panel);
+  const Yt = Y + 5.7;
+  box(12.2, Yt + 0.7, 4.3, 5.2, 0.9, 0.06, M.glass);
+  box(12.2, Yt + 0.7, 21.6, 5.2, 0.9, 0.06, M.glass);
+  box(9.55, Yt + 0.7, 13, 0.06, 0.9, 16, M.glass);
+  cyl(12.3, Yt + 0.65, 12, 0.2, 0.26, 1.15, M.brass);
+  const sight = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 8), M.dark);
+  sight.rotation.z = Math.PI / 2; sight.position.set(12.3, Yt + 1.35, 12); stageRoot.add(sight);
 }
 function buildKeiku() {
   CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
@@ -10186,6 +10278,7 @@ function buildKeiku() {
   cvLad(7.0, -0.6, 0.8, Yd, Yb);
   cvLad(12.4, 16.2, 17.6, Yb, Yb + 3.05);
   cvLad(12.2, 8.4, 9.6, Yb + 3.05, Yb + 5.7);
+  cvBridgeDress();
   // 格納庫（甲板の下）。翼を広げた艦攻が縦一列で入る幅
   cvFloor(-9.2, 9.2, -88, -65.6, Yh);
   cvFloor(-1.7, 1.7, 43.2, 46.6, Yh);
@@ -10488,7 +10581,8 @@ function cvStation() {
   cvFill(1.6, 6.2, -48, -24, Y2, 30, Math.PI);
   cvFill(-6.2, 6.2, 8, 34, Y2, 40, 0);
   cvFill(8.5, 11.2, -7, 8, Yb, 20, Math.PI);
-  cvFill(11.6, 15.6, -7, 10, Yb, 20, 0);
+  cvFill(11.6, 15.4, -8, 3.4, Yb, 12, 0);
+  cvFill(11.7, 12.8, 8.2, 13.2, Yb, 8, Math.PI);
   cvFill(8.6, 15.4, 16, 35, Yb, 30, Math.PI);
   for (const b of CV.boats || []) cvParty(b.x * S, b.z * S, b.y * S + 0.3, b.patrol ? 6 : 2, b.x > 0 ? -1.2 : 1.2);
   cvFill(2.4, 6.6, 65, 73, Y1, 20, Math.PI);
@@ -19411,7 +19505,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

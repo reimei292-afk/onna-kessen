@@ -10422,20 +10422,19 @@ function cvStation() {
   cvFill(8.3, 10.2, -8, 12, Yb, 28, Math.PI);
   cvFill(11.4, 15.6, -8, 12, Yb, 28, 0);
   cvFill(8.3, 15.6, 15, 36, Yb, 36, Math.PI);
-  cvFill(-5.4, -1.6, -46, -30, Y0, 24, 0);
-  cvFill(1.6, 5.4, -46, -30, Y0, 24, 0);
-  cvFill(-5.6, 5.6, -24, -2, Y0, 60, Math.PI);
-  cvFill(-5.4, -1.8, 4, 22, Y0, 16, Math.PI / 2);
-  cvFill(1.8, 5.4, 4, 22, Y0, 16, -Math.PI / 2);
-  cvFill(-5.4, 5.4, 24, 34, Y0, 30, 0);
-  cvFill(-6.2, -1.6, -52, -8, Y1, 50, 0);
-  cvFill(1.6, 6.2, -52, -8, Y1, 50, 0);
-  cvFill(-6.2, -1.6, 2, 38, Y1, 30, Math.PI);
-  cvFill(1.6, 6.2, 2, 38, Y1, 30, Math.PI);
-  cvFill(-10.6, -8.4, -82, -70, Yd, 12, Math.PI);
-  cvFill(8.6, 10.6, 40, 58, Yd, 12, 0);
+  cvFill(-6.2, -1.6, -46, -18, Y0, 24, 0);
+  cvFill(1.6, 6.2, -46, -18, Y0, 24, 0);
+  cvFill(-6.2, -1.6, -14, 34, Y0, 28, Math.PI);
+  cvFill(1.6, 6.2, -14, 34, Y0, 28, -Math.PI);
+  cvFill(-6.8, -1.5, -52, -8, Y1, 48, 0);
+  cvFill(1.5, 6.8, -52, -8, Y1, 48, 0);
+  cvFill(-6.8, -1.5, 2, 40, Y1, 42, Math.PI);
+  cvFill(1.5, 6.8, 2, 40, Y1, 42, Math.PI);
+  cvFill(-11.0, -7.6, -78, 68, Yd, 70, 1.2);
+  cvFill(5.4, 7.3, -78, -14, Yd, 28, -1.2);
+  cvFill(5.4, 7.3, 40, 68, Yd, 18, -1.2);
   const Su = CV.S || 1;
-  cvFill(8.4, 15.2, 0, 28, Yb + 3.05 * Su, 24, 0);
+  cvFill(8.4, 15.2, 0, 28, Yb + 3.05 * Su, 28, 0);
   cvFill(10, 14.6, 6, 20, Yb + 5.7 * Su, 12, Math.PI);
   let bombs = 0;
   for (const g of CV.parked) {
@@ -10444,27 +10443,22 @@ function cvStation() {
     else if (k === 'bomb' && bombs++ < 9) cvSeat(g, 3);
     else if (k === 'recon') cvSeat(g, 3);
   }
-  cvFill(-8.2, -4.2, -60, 36, Yh, 75, 1.57);
-  cvFill(4.2, 8.2, -60, 36, Yh, 75, -1.57);
-  cvFill(-10.8, -8.6, -50, 50, Yd, 24, 1.2);
-  cvFill(8.8, 10.8, 20, 55, Yd, 16, -1.2);
-  cvFill(-4.2, 4.2, -58, -36, Yh, 30, 0);
-  cvFill(-6.4, -1.8, -36, -8, Y2, 20, Math.PI);
-  cvFill(1.8, 6.4, -36, -8, Y2, 20, Math.PI);
-  cvFill(-6.2, 6.2, -4, 20, Y2, 60, 0);
-  cvFill(8.4, 10.3, 16, 36, Yb, 18, 1.2);
-  cvFill(11.5, 15.5, 16, 36, Yb, 18, -1.2);
-  cvFill(-11.2, -9.2, -55, 20, Yh, 28, 1.2);
-  cvFill(9.2, 11.2, -55, 20, Yh, 28, -1.2);
-  cvFill(3.4, 6.6, 65, 72, Y1, 20, Math.PI / 2);
-  cvFill(-6.3, -1.7, 43.2, 51.2, Y1, 24, 0.4);
-  cvFill(1.7, 6.4, 43.2, 51.2, Y1, 16, Math.PI);
-  cvFill(-6.4, -1.7, 53, 63, Y1, 15, 0);
-  cvFill(1.7, 6.4, 53, 63, Y1, 24, Math.PI);
-  cvFill(-6.2, -1.6, 64.6, 73, Y1, 20, Math.PI);
-  cvFill(1.6, 4.2, 64.6, 73, Y1, 16, Math.PI);
-  cvFill(-6.2, -1.6, 74.5, 86.5, Y1, 36, Math.PI);
-  cvFill(1.6, 6.2, 74.5, 86.5, Y1, 36, Math.PI);
+  cvFill(-8.4, -2.4, -62, 40, Yh, 80, 1.57);
+  cvFill(2.4, 8.4, -62, 40, Yh, 80, -1.57);
+  cvFill(-11.1, -9.0, -58, 64, Yh, 28, 1.2);
+  cvFill(9.0, 11.1, -58, 64, Yh, 28, -1.2);
+  cvFill(-6.6, -1.6, -46, 36, Y2, 40, Math.PI);
+  cvFill(1.6, 6.6, -46, 36, Y2, 40, Math.PI);
+  cvFill(8.4, 10.3, 16, 36, Yb, 16, 1.2);
+  cvFill(11.5, 15.5, 16, 36, Yb, 16, -1.2);
+  cvFill(-6.4, -1.8, 43.4, 51.2, Y1, 12, 0.4);
+  cvFill(1.8, 6.4, 43.4, 51.2, Y1, 10, Math.PI);
+  cvFill(-6.2, -1.8, 53.2, 63, Y1, 8, 0);
+  cvFill(1.8, 6.2, 53.2, 63, Y1, 12, Math.PI);
+  cvFill(-6.2, -1.6, 64.8, 73, Y1, 10, Math.PI);
+  cvFill(1.6, 4.2, 64.8, 73, Y1, 8, Math.PI);
+  cvFill(-6.2, -1.6, 74.6, 86.2, Y1, 20, Math.PI);
+  cvFill(1.6, 6.2, 74.6, 86.2, Y1, 20, Math.PI);
 }
 function cvNearPlane() {
   if (!CV.on || CV.ride) return null;
@@ -10921,7 +10915,7 @@ addEventListener('keydown', ev => {
   }
   if (state === 'play' && !ev.repeat && c === 'KeyQ') { cvEndAsk(); ev.stopImmediatePropagation(); ev.preventDefault(); }
 }, true);
-function cvRemain() { const left = CV.upLeft != null ? CV.upLeft : 0; return CV.phase === 'raid' ? `米軍機 ${Math.max(0, CV.total - CV.killed)}　零戦出撃残 ${left}　艦 ${Math.max(0, CV.hp | 0)}` : `航海中　零戦は格納庫からエレベーターで上がる（残り ${left}）`; }
+function cvRemain() { const left = CV.upLeft != null ? CV.upLeft : 0; const crew = CV.crewN || 0; return CV.phase === 'raid' ? `乗艦 ${crew}　米軍機 ${Math.max(0, CV.total - CV.killed)}　零戦残 ${left}　艦 ${Math.max(0, CV.hp | 0)}` : `航海中　乗艦 ${crew}　零戦はエレベーターで上がる（残り ${left}）`; }
 
 const STAGES = {
   ukMeet: { name: '英国淑女編 第一幕「邂逅」', desc: '小早で沖へ。英国のガレオン船ライオネス号が待つ。戦いはまだ無い——甲板の英国の娘たちと言葉を交わし、王女の使者の要求に答えよ（E で話す・1〜4 で選ぶ）。次の幕で、本格的な戦闘が始まる。' },
@@ -19351,7 +19345,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

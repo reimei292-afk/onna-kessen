@@ -10125,6 +10125,9 @@ function buildKeiku() {
     m.position.set(cx, Yd + 0.02, cz); stageRoot.add(m);
     const edge = new THREE.Mesh(new THREE.BoxGeometry(w - 0.2, 0.05, d - 0.2), M.gold);
     edge.position.y = 0.14; m.add(edge);
+    const grate = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.15, d - 0.15), M.grate);
+    grate.rotation.x = -Math.PI / 2; grate.position.set(cx, Yd + 0.035, cz); stageRoot.add(grate);
+    cvFloor(x0 - 0.55, x1 + 0.55, z0 - 0.35, z1 + 0.35, Yd);
     const fl = { x0, x1, z0, z1, y: Yd }; floors.push(fl);
     CV.elevs.push({ m, fl, y: 1, dir: 0, busy: null });
     cvSign(x0 - 0.2, Yd + 1.3, cz, label, Math.PI / 2);
@@ -10137,7 +10140,7 @@ function buildKeiku() {
   cvSlab(-6.2, 6.2, Yd + 0.03, Yd + 0.06, 22, 34, M.dark);
   rail(-11.55, -11.4, -86, 72, Yd); rail(11.4, 11.55, -86, 72, Yd);
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  rail(-11.4, -7.8, 73.9, 74.08, Yd); rail(7.8, 11.4, 73.9, 74.08, Yd);
+  rail(-11.4, 11.4, 73.85, 74.05, Yd);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
   cvSign(-9.2, Yd + 1.5, -78, '艦首', 0);
   // 右舷の艦橋。滑走路には出さず、舷外へ張り出して何層も人が入れる
@@ -10170,15 +10173,20 @@ function buildKeiku() {
   const flag = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.45), M.flag); flag.position.set(14.6, Yd + 11.2, 20); stageRoot.add(flag); CV.flag = flag;
   const radar = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.7), M.dark); radar.position.set(13.2, Yd + 9.6, 20); radar.rotation.z = 0.35; stageRoot.add(radar);
   cvSign(12.2, Yb + 1.4, -8.2, '艦橋　操舵・通信・作戦', 0);
-  cvLad(7.2, 0.2, 1.6, Yd, Yb);
+  cvFloor(6.7, 8.4, -1.6, 1.6, Yb);
+  cvLad(7.0, -0.6, 0.8, Yd, Yb);
   cvLad(12.4, 16.2, 17.6, Yb, Yb + 3.05);
   cvLad(12.2, 8.4, 9.6, Yb + 3.05, Yb + 5.7);
   // 格納庫（甲板の下）。翼を広げた艦攻が縦一列で入る幅
+  cvFloor(-9.2, 9.2, -88, -65.6, Yh);
+  cvFloor(-1.7, 1.7, 43.2, 46.6, Yh);
   cvFloor(-9.2, 9.2, -66, 43.4, Yh);
   cvFloor(-9.2, -1.55, 43.4, 46.4, Yh); cvFloor(1.55, 9.2, 43.4, 46.4, Yh);
   cvFloor(-9.2, 9.2, 46.4, 48, Yh);
   const deckPlate = (x0, x1, z0, z1, y, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(Math.abs(x1 - x0), 0.08, Math.abs(z1 - z0)), mat); m.position.set((x0 + x1) / 2, y + 0.04, (z0 + z1) / 2); stageRoot.add(m); };
   deckPlate(-8.6, 8.6, -65, 43.2, Yh, M.steel);
+  deckPlate(-6.0, 6.0, -86, -66.2, Yh, M.steel);
+  deckPlate(-1.5, 1.5, 43.3, 46.5, Yh, M.steel);
   deckPlate(-8.6, -1.6, 43.2, 46.2, Yh, M.steel); deckPlate(1.6, 8.6, 43.2, 46.2, Yh, M.steel);
   deckPlate(-8.6, 8.6, 46.2, 47.5, Yh, M.steel);
   const gapWall = (x0, x1, z0, z1, y0, y1, mat, doors) => {
@@ -10193,9 +10201,10 @@ function buildKeiku() {
     }
     if (zEnd > z + 0.08) wall(x0, x1, z, zEnd, y0, y1, mat);
   };
-  gapWall(-8.7, -8.2, -66, 40, Yh, Yd - 0.35, M.steel, [[-40, 0.7], [8, 0.7]]);
-  gapWall(8.2, 8.7, -66, 40, Yh, Yd - 0.35, M.steel, [[-40, 0.7], [12, 0.7]]);
-  wall(-8.6, 8.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
+  gapWall(-8.7, -8.2, -86, 40, Yh, Yd - 0.35, M.steel, [[-70, 1.5], [-48, 1.5], [-24, 1.5], [0, 1.5], [20, 1.5]]);
+  gapWall(8.2, 8.7, -86, 40, Yh, Yd - 0.35, M.steel, [[-70, 1.5], [-48, 1.5], [-24, 1.5], [8, 1.5], [24, 1.5]]);
+  wall(-8.6, -1.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
+  wall(1.6, 8.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
   const h1 = new THREE.PointLight(0xfff1d4, 0.7, 36); h1.position.set(0, 10.2, -30); stageRoot.add(h1);
   const h2 = new THREE.PointLight(0xfff1d4, 0.65, 36); h2.position.set(0, 10.2, 10); stageRoot.add(h2);
   cvSign(0, 10.4, 36, '格納庫', 0);
@@ -10210,8 +10219,8 @@ function buildKeiku() {
   for (let i = 0; i < 12; i++) park(0, Yh + 0.7, -58 + i * 7.4, Math.PI, 'bomb');
   for (let i = 0; i < 3; i++) park(0, Yh + 0.65, 18 + i * 6.5, Math.PI, 'recon');
   // 舷側歩廊（飛行甲板の張り出しの下）と、艦尾の遊歩・プール
-  cvFloor(-11.3, -8.7, -62, 70, Yh); cvFloor(8.7, 11.3, -62, 70, Yh);
-  deckPlate(-11.2, -8.8, -60, 68, Yh, M.steel); deckPlate(8.8, 11.2, -60, 68, Yh, M.steel);
+  cvFloor(-11.3, -8.7, -86, 70, Yh); cvFloor(8.7, 11.3, -86, 70, Yh);
+  deckPlate(-11.2, -8.8, -84, 68, Yh, M.steel); deckPlate(8.8, 11.2, -84, 68, Yh, M.steel);
   deckPlate(-8.0, 8.0, 66, 87, Yh, M.tile);
   rail(-11.45, -11.3, -60, 68, Yh, 1.0); rail(11.3, 11.45, -60, 68, Yh, 1.0);
   cvFloor(-11.2, 11.2, 64, 88, Yh);
@@ -10241,9 +10250,9 @@ function buildKeiku() {
   wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
   wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 3.25, M.bulk);
   const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 3.25, M.bulk);
-  bulkZ(51.7, -7.15, -1.15); bulkZ(51.7, 1.15, 7.15);
-  bulkZ(63.7, -7.15, -1.15); bulkZ(63.7, 1.15, 7.15);
-  bulkZ(73.6, -7.15, -1.15); bulkZ(73.6, 1.15, 7.15);
+  bulkZ(51.7, -7.15, -1.9); bulkZ(51.7, 1.9, 7.15);
+  bulkZ(63.7, -7.15, -1.9); bulkZ(63.7, 1.9, 7.15);
+  bulkZ(73.6, -7.15, -1.9); bulkZ(73.6, 1.9, 7.15);
   gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
   gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
   deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 3.12, M.white);
@@ -10296,7 +10305,7 @@ function buildKeiku() {
   bay(Y0, -48, 36, -6.4, 6.4);
   bay(Y1, -56, 41.7, -7.2, 7.2);
   bay(Y2, -50, 39, -7.0, 7.0);
-  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 3.15, M.bulk); wall(1.15, xR, z, z + 0.36, y, y + 3.15, M.bulk); };
+  const doorZ = (y, z, xL, xR) => { wall(xL, -1.85, z, z + 0.28, y, y + 3.15, M.bulk); wall(1.85, xR, z, z + 0.28, y, y + 3.15, M.bulk); };
   for (const z of [-32, -16, 2, 18]) doorZ(Y0, z, -6.2, 6.2);
   for (const z of [-40, -22, -4, 16]) doorZ(Y1, z, -7.0, 7.0);
   for (const z of [-32, -12, 8, 26]) doorZ(Y2, z, -6.8, 6.8);
@@ -10430,9 +10439,10 @@ function cvStation() {
   cvFill(1.5, 6.8, -52, -8, Y1, 48, 0);
   cvFill(-6.8, -1.5, 2, 40, Y1, 42, Math.PI);
   cvFill(1.5, 6.8, 2, 40, Y1, 42, Math.PI);
-  cvFill(-11.0, -7.6, -78, 68, Yd, 70, 1.2);
-  cvFill(5.4, 7.3, -78, -14, Yd, 28, -1.2);
-  cvFill(5.4, 7.3, 40, 68, Yd, 18, -1.2);
+  cvFill(-11.0, -7.6, -82, 70, Yd, 160, 1.2);
+  cvFill(5.4, 7.35, -82, -12, Yd, 52, -1.2);
+  cvFill(5.4, 7.35, 40, 70, Yd, 30, -1.2);
+  cvFill(11.5, 15.8, -8, 34, Yd, 40, 0);
   const Su = CV.S || 1;
   cvFill(8.4, 15.2, 0, 28, Yb + 3.05 * Su, 28, 0);
   cvFill(10, 14.6, 6, 20, Yb + 5.7 * Su, 12, Math.PI);
@@ -10803,7 +10813,11 @@ function updateCv(dt) {
   const p = player.pos;
   const fy = floorUnder(p.x, p.z, p.y + 0.2);
   const S = CV.S || 1;
-  if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 15 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
+  if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 18 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
+  if (fy > 1 && Math.abs(p.y - fy) < 1.4) CV.foot = [p.x, fy, p.z];
+  else if (CV.foot && !player.climbing && !CV.ride && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) {
+    p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true;
+  }
   if (CV.back && (p.y < -0.4 || Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)) {
     p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない');
   }
@@ -19345,7 +19359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -9960,6 +9960,7 @@ function cvCrewStep(e, dt) {
   if (e.cvRide) {
     const w = e._cvW || (e._cvW = new THREE.Vector3());
     e.s.getWorldPosition(w);
+    e.wx = w.x; e.wz = w.z; e.wy = w.y; e.baseY = w.y;
     const py = e.s.parent && e.s.parent.rotation ? e.s.parent.rotation.y : 0;
     e.s.rotation.y = 0;
     faceCam(w.x, w.z, py);
@@ -9970,6 +9971,7 @@ function cvCrewStep(e, dt) {
   const k = u < 1 ? u : 2 - u;
   const x = A[0] + (A[2] - A[0]) * k, z = A[1] + (A[3] - A[1]) * k;
   e.s.position.set(x, e.baseY, z);
+  e.wx = x; e.wz = z; e.wy = e.baseY;
   e.faceWant = Math.atan2(A[2] - A[0], (u < 1 ? 1 : -1) * (A[3] - A[1] || 0.01));
   const near = Math.abs(e.baseY - player.pos.y) < 4 && Math.hypot(x - player.pos.x, z - player.pos.z) < 18;
   if (near) animateNpc(e, dt, 0);
@@ -10659,6 +10661,24 @@ function cvUsSay(name, ja, en, pitch) {
       const u = new SpeechSynthesisUtterance(en || ja); u.lang = 'en-US'; u.rate = 1.02; u.pitch = pitch || 1; speechSynthesis.speak(u);
     }
   } catch (e) {}
+}
+function cvPush(pos, r) {
+  if (!CV.on) return;
+  const S = CV.S || 1;
+  for (const g of CV.guns) {
+    if (Math.abs(pos.y - g.y) > 2.4) continue;
+    const rad = (g.big ? 1.25 : g.triple ? 0.85 : 0.62) * S + r;
+    const dx = pos.x - g.x, dz = pos.z - g.z, d = Math.hypot(dx, dz);
+    if (d < rad && d > 1e-4) { pos.x = g.x + dx / d * rad; pos.z = g.z + dz / d * rad; }
+  }
+  for (const e of enemies) {
+    if (!e.cvWalk || e.state === 'down' || e.wx == null) continue;
+    if (Math.abs(e.wy - pos.y) > 1.7) continue;
+    const dx = pos.x - e.wx, dz = pos.z - e.wz, d = Math.hypot(dx, dz);
+    if (d >= 0.38 + r || d < 1e-4 || d > 2.4) continue;
+    const rad = 0.38 + r;
+    pos.x = e.wx + dx / d * rad; pos.z = e.wz + dz / d * rad;
+  }
 }
 function cvHitCrew(x, z, y, r, dmg) {
   const w = new THREE.Vector3();
@@ -19391,7 +19411,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -24094,13 +24114,15 @@ function updateArrows(dt) {
     for (const e of enemies) {
       if (e.state === 'down') continue;
       if (a.team !== 'player' && e.team === a.team) continue;
-      const ep = e.s.position;
-      const t = clamp(((ep.x - p0.x) * sx + (ep.z - p0.z) * sz) / sl, 0, 1);
+      const epx = e.cvWalk ? (e.wx != null ? e.wx : e.s.position.x) : e.s.position.x;
+      const epz = e.cvWalk ? (e.wz != null ? e.wz : e.s.position.z) : e.s.position.z;
+      const epy = e.cvWalk ? (e.wy != null ? e.wy : e.baseY) : e.baseY;
+      const t = clamp(((epx - p0.x) * sx + (epz - p0.z) * sz) / sl, 0, 1);
       const cx = p0.x + sx * t, cz = p0.z + sz * t;
-      const d = Math.hypot(cx - ep.x, cz - ep.z);
-      const y = p0.y + (p1.y - p0.y) * t - e.baseY;
-      const top = e.figH * (1 - 0.38 * e.crouch);         // しゃがむと当たりも低くなる
-      if (d < 0.3 && y > 0 && y < top && t < best) { best = t; hit = { e, y, top, pt: new V3(cx, y + e.baseY, cz) }; }
+      const d = Math.hypot(cx - epx, cz - epz);
+      const y = p0.y + (p1.y - p0.y) * t - epy;
+      const top = e.figH * (1 - 0.38 * e.crouch);
+      if (d < 0.34 && y > 0 && y < top && t < best) { best = t; hit = { e, y, top, pt: new V3(cx, y + epy, cz) }; }
     }
     if (NB.on) {
       const bh = nbArrowBeast(p0, sx, sz, sl, p1.y - p0.y);
@@ -24192,8 +24214,11 @@ function swingResolve() {
   let best = null, bd = 1e9;
   for (const e of enemies) {                      // 同士討ちあり：両軍が対象（秘書は除く）
     if (e.state === 'down') continue;
-    const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz);
-    if (d > 1.9 || Math.abs(e.baseY - player.pos.y) > 1.2) continue;
+    const ex = e.cvWalk && e.wx != null ? e.wx : e.s.position.x;
+    const ez = e.cvWalk && e.wz != null ? e.wz : e.s.position.z;
+    const ey = e.cvWalk && e.wy != null ? e.wy : e.baseY;
+    const dx = ex - player.pos.x, dz = ez - player.pos.z, d = Math.hypot(dx, dz);
+    if (d > 1.9 || Math.abs(ey - player.pos.y) > 1.2) continue;
     const along = dx * fwd.x + dz * fwd.z, lateral = Math.abs(dx * fwd.z - dz * fwd.x);
     if (along <= 0.2 || lateral > 0.45) continue;     // 正面の細い範囲だけ
     if (along < bd) { bd = along; best = e; }
@@ -24203,7 +24228,9 @@ function swingResolve() {
     if (bb && bb.along < bd) { nbHurt(bb.b, 3, new V3(player.pos.x + fwd.x * bb.along, 0.8, player.pos.z + fwd.z * bb.along)); Sfx.clash(); player.shake = Math.max(player.shake, 0.08); return; }
   }
   if (best) {
-    const bp = best.s.position, yy = best.baseY + clamp(camera.position.y - 0.25 - best.baseY, best.figH * 0.45, best.figH * 0.75);
+    const bp = best.cvWalk && best.wx != null ? new V3(best.wx, best.wy, best.wz) : best.s.position;
+    const by = best.cvWalk && best.wy != null ? best.wy : best.baseY;
+    const yy = by + clamp(camera.position.y - 0.25 - by, best.figH * 0.45, best.figH * 0.75);
     damageEnemy(best, 2, player.pos, false, { pt: new V3(bp.x - fwd.x * 0.15, yy, bp.z - fwd.z * 0.15), thrust: true }, 'player');
     Sfx.clash(); player.shake = Math.max(player.shake, 0.08);
   } else if ((MTN.on || DUAL.on) && mtnMeleeHon()) { /* 本丸の扉は近接で叩く */ }
@@ -25076,6 +25103,7 @@ function updatePlayer(dt) {
   }
   if (PLANE.on) { player.autoClimb = null; player.climbing = false; }   // 機内に梯子は無い（他のステージの上り下りを持ち込まない）
   if (boxes.length && !mechLadPass) pushOutBoxes(player.pos, 0.35, player.pos.y + 0.15, Math.min(player.pos.y + 1.75, PLANE.on ? 2.3 : 99));
+  if (CV.on) cvPush(player.pos, 0.35);
   if (PLANE.on) planeClamp(player.pos, 0.35);
   if (BEACH.on) beachPlayerClamp();
   if (UK.on || UK3.on) ukPlayerClamp();   // 英国淑女編：甲板・舟・舷梯の上だけ

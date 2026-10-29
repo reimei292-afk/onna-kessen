@@ -9618,6 +9618,61 @@ function cvMats() {
   });
   plank.wrapS = plank.wrapT = THREE.RepeatWrapping; plank.repeat.set(18, 70);
   CV.M.plank = new THREE.MeshLambertMaterial({ map: plank });
+  const lino = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#6a655c'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 48) {
+      const k = 96 + (y % 96 === 0 ? 18 : 0);
+      g.fillStyle = `rgb(${k},${k - 4},${k - 12})`; g.fillRect(0, y, w, 46);
+      g.fillStyle = 'rgba(40,30,18,.4)'; g.fillRect(0, y + 44, w, 4);
+    }
+    g.strokeStyle = 'rgba(255,255,255,.07)'; g.lineWidth = 1;
+    for (let x = 0; x < w; x += 36) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    g.fillStyle = 'rgba(50,36,22,.18)'; g.beginPath(); g.ellipse(w * 0.5, h * 0.5, 36, 100, 0, 0, 7); g.fill();
+  });
+  lino.wrapS = lino.wrapT = THREE.RepeatWrapping; lino.repeat.set(2, 8);
+  const grate = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = '#23282d'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#5c676e'; g.lineWidth = 2;
+    for (let i = -h; i < w + h; i += 9) {
+      g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke();
+      g.beginPath(); g.moveTo(i + h, 0); g.lineTo(i, h); g.stroke();
+    }
+    g.fillStyle = 'rgba(0,0,0,.4)';
+    for (let y = 6; y < h; y += 14) for (let x = 6; x < w; x += 14) g.fillRect(x, y, 3, 3);
+  });
+  grate.wrapS = grate.wrapT = THREE.RepeatWrapping; grate.repeat.set(8, 10);
+  const bulk = canvasTex(256, 512, (g, w, h) => {
+    const grd = g.createLinearGradient(0, 0, 0, h);
+    grd.addColorStop(0, '#f6f1e6'); grd.addColorStop(0.62, '#ebe3d4'); grd.addColorStop(1, '#b7ab96');
+    g.fillStyle = grd; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(110,86,52,.45)'; g.lineWidth = 5;
+    g.strokeRect(14, 18, w - 28, h * 0.58);
+    g.beginPath(); g.moveTo(14, h * 0.7); g.lineTo(w - 14, h * 0.7); g.stroke();
+    g.strokeRect(14, h * 0.74, w - 28, h * 0.2);
+    g.fillStyle = 'rgba(70,52,30,.55)';
+    for (let x = 22; x < w - 16; x += 26) { g.fillRect(x, 24, 3, 3); g.fillRect(x, h * 0.74 + 8, 3, 3); }
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(18, 22, w - 36, 8);
+  });
+  bulk.wrapS = bulk.wrapT = THREE.RepeatWrapping; bulk.repeat.set(3, 1);
+  const panel = canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = '#6b4124'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 14) {
+      const l = 92 + Math.random() * 40;
+      g.fillStyle = `rgb(${l},${l * 0.55},${l * 0.28})`; g.fillRect(x, 0, 13, h);
+      g.fillStyle = 'rgba(30,14,4,.45)'; g.fillRect(x + 12, 0, 2, h);
+      for (let y = (x * 7) % 50; y < h; y += 58) { g.fillStyle = 'rgba(40,18,6,.3)'; g.fillRect(x, y, 13, 2); }
+    }
+    g.strokeStyle = '#c6a15a'; g.lineWidth = 4; g.strokeRect(4, 4, w - 8, h - 8);
+  });
+  panel.wrapS = panel.wrapT = THREE.RepeatWrapping; panel.repeat.set(2, 1);
+  CV.M.lino = new THREE.MeshLambertMaterial({ map: lino });
+  CV.M.grate = new THREE.MeshLambertMaterial({ map: grate });
+  CV.M.bulk = new THREE.MeshLambertMaterial({ map: bulk });
+  CV.M.panel = new THREE.MeshLambertMaterial({ map: panel });
+  CV.M.pipe = L(0x8e9498);
+  CV.M.brass = L(0xd4b06a, { emissive: 0x4a3210 });
+  CV.M.lamp = new THREE.MeshBasicMaterial({ color: 0xfff4d2 });
+  CV.M.port = new THREE.MeshBasicMaterial({ color: 0x9ed8ee, transparent: true, opacity: 0.85 });
   return CV.M;
 }
 function cvSlab(x0, x1, y0, y1, z0, z1, mat) {
@@ -9792,6 +9847,101 @@ function cvCrewStep(e, dt) {
   if (near) animateNpc(e, dt, 0);
   else { e.px = x; e.pz = z; e.s.rotation.y = e.faceWant; e.face = e.faceWant; }
 }
+function cvDress() {
+  const M = CV.M, Y0 = CV.Y0, Y1 = CV.Y1, Y2 = CV.Y2, Yh = CV.Yh, Yb = CV.Yb;
+  const plate = (x0, x1, z0, z1, y, mat) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(Math.abs(x1 - x0), 0.04, Math.abs(z1 - z0)), mat);
+    m.position.set((x0 + x1) / 2, y + 0.02, (z0 + z1) / 2); stageRoot.add(m);
+  };
+  plate(-6.15, 6.15, -47.2, 35.2, Y0 + 0.08, M.grate);
+  plate(-6.95, 6.95, -55.2, 41.2, Y1 + 0.08, M.lino);
+  plate(-0.85, 0.85, -54, 40.5, Y1 + 0.13, M.carpet);
+  plate(-6.7, 6.7, -49.2, 38.2, Y2 + 0.08, M.tile);
+  plate(4.7, 10.8, 0.8, 17.2, Yb + 0.02, M.lino);
+  const ceil = (y, segs) => { for (const [z0, z1] of segs) plate(-6.2, 6.2, z0, z1, y + 1.86, M.bulk); };
+  ceil(Y0, [[-46, -26], [-21.5, 34]]);
+  ceil(Y1, [[-54, 4.6], [9.2, 40]]);
+  ceil(Y2, [[-48, -8.2], [-3.2, 37]]);
+  plate(-6.6, -1.8, 42.4, 51.4, Y1 + 2.35, M.panel);
+  plate(1.8, 6.6, 42.4, 51.4, Y1 + 2.35, M.bulk);
+  for (const y of [Y0, Y1, Y2]) {
+    cvSlab(-2.42, -2.22, y + 1.62, y + 1.78, -44, 32, M.pipe);
+    cvSlab(2.22, 2.42, y + 1.62, y + 1.78, -44, 32, M.pipe);
+  }
+  const lamps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.85, 0.06, 0.32), M.lamp, 120);
+  const lm = new THREE.Matrix4(); let li = 0;
+  const lampAt = (x, y, z) => { if (li >= 120) return; lm.makeTranslation(x, y, z); lamps.setMatrixAt(li++, lm); };
+  for (let z = -44; z <= 32; z += 5.5) { lampAt(0, Y0 + 1.8, z); lampAt(0, Y1 + 1.8, z); lampAt(0, Y2 + 1.8, z); }
+  for (let z = 46; z <= 84; z += 6) lampAt(0, Y1 + 2.35, z);
+  for (let z = -58; z <= 40; z += 7) lampAt(0, Yh + 4.55, z);
+  lamps.count = li; lamps.instanceMatrix.needsUpdate = true; stageRoot.add(lamps);
+  cvSlab(-0.12, 0.12, Yh + 4.85, Yh + 5.05, -62, 42, M.gold);
+  for (const x of [-7.6, 7.6]) cvSlab(x - 0.08, x + 0.08, Yh + 0.1, Yh + 0.14, -60, 40, M.gold);
+  const warm = (x, y, z, I, d) => { const L = new THREE.PointLight(0xffe4b8, I, d); L.position.set(x, y, z); stageRoot.add(L); };
+  for (const z of [-40, -18, 2, 22]) warm(0, Y0 + 1.5, z, 0.7, 14);
+  for (const z of [-40, -16, 4, 24, 48, 62, 78]) warm(0, Y1 + 1.7, z, 0.9, 16);
+  for (const z of [-36, -12, 8, 28]) warm(0, Y2 + 1.6, z, 0.75, 15);
+  warm(-4, Y0 + 1.3, -38, 0.55, 10);
+  const ports = new THREE.InstancedMesh(new THREE.CircleGeometry(0.28, 12), M.port, 140);
+  const rings = new THREE.InstancedMesh(new THREE.TorusGeometry(0.3, 0.035, 6, 14), M.brass, 140);
+  const m4 = new THREE.Matrix4(), qP = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)), qS = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, -Math.PI / 2, 0));
+  let pi = 0;
+  const portAt = (x, y, z, q) => { if (pi >= 140) return; m4.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1, 1, 1)); ports.setMatrixAt(pi, m4); rings.setMatrixAt(pi, m4); pi++; };
+  for (let z = -50; z <= 36; z += 4.6) { portAt(-6.85, Y1 + 1.15, z, qP); portAt(6.85, Y1 + 1.15, z, qS); portAt(-6.7, Y2 + 1.05, z, qP); portAt(6.7, Y2 + 1.05, z, qS); }
+  for (let z = 46; z <= 84; z += 4.4) { portAt(-6.9, Y1 + 1.25, z, qP); portAt(6.9, Y1 + 1.25, z, qS); }
+  ports.count = rings.count = pi; ports.instanceMatrix.needsUpdate = rings.instanceMatrix.needsUpdate = true; stageRoot.add(ports); stageRoot.add(rings);
+  const addDoor = (x, y, z, swing) => {
+    const g = new THREE.Group();
+    const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.82, 1.85, 0.05), M.panel);
+    leaf.position.set(Math.sign(x) * 0.41, 0.95, 0); g.add(leaf);
+    const wh = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.02, 6, 12), M.brass);
+    wh.position.set(Math.sign(x) * 0.62, 1.05, 0.04); g.add(wh);
+    g.position.set(x, y, z); g.rotation.y = swing; stageRoot.add(g);
+  };
+  for (const z of [-32, -16, 2, 18]) addDoor(1.18, Y0, z + 0.42, 0.85);
+  for (const z of [-40, -22, -4, 16]) addDoor(-1.18, Y1, z + 0.42, -0.85);
+  for (const z of [-32, -12, 8, 26]) addDoor(1.18, Y2, z + 0.42, 0.85);
+  for (const z of [46.6, 57.8, 68.2, 76.2]) addDoor(-1.2, Y1, z, -0.6);
+  const gc = canvasTex(256, 160, (g, w, h) => {
+    g.fillStyle = '#1c2428'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#d4b06a'; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+    for (let i = 0; i < 6; i++) {
+      g.beginPath(); g.arc(40 + i * 36, 78, 16, 0, 7); g.strokeStyle = '#9ad0c8'; g.stroke();
+      g.fillStyle = i % 3 === 0 ? '#e07040' : '#d8efe8'; g.fillRect(36 + i * 36, 76, 8, 3);
+    }
+    g.fillStyle = '#f0e2c0'; g.font = '22px serif'; g.textAlign = 'center'; g.fillText('缶圧・蒸気', w / 2, 28);
+  });
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.0), new THREE.MeshBasicMaterial({ map: gc }));
+  board.position.set(-5.7, Y0 + 1.35, -36); board.rotation.y = Math.PI / 2; stageRoot.add(board);
+  cvSlab(-6.85, -6.2, Y2 + 0.02, Y2 + 0.92, -9, 5, M.steel);
+  cvSlab(-6.7, -6.3, Y2 + 0.92, Y2 + 0.98, -3, 1, M.boot);
+  const pots = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.1, 0.16, 8), M.brass, 8);
+  for (let i = 0; i < 8; i++) { m4.makeTranslation(-6.5, Y2 + 1.08, -7.5 + i * 1.4); pots.setMatrixAt(i, m4); }
+  pots.instanceMatrix.needsUpdate = true; stageRoot.add(pots);
+  const crest = canvasTex(128, 160, (g, w, h) => {
+    g.fillStyle = '#241810'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#d4b06a'; g.lineWidth = 8; g.strokeRect(8, 8, w - 16, h - 16);
+    g.fillStyle = '#d4b06a'; g.beginPath(); g.arc(w / 2, h * 0.48, 28, 0, 7); g.fill();
+    g.fillStyle = '#6d2030'; g.beginPath(); g.arc(w / 2, h * 0.48, 12, 0, 7); g.fill();
+  });
+  const pic = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.9), new THREE.MeshBasicMaterial({ map: crest }));
+  pic.position.set(-6.95, Y1 + 1.55, 47); pic.rotation.y = Math.PI / 2; stageRoot.add(pic);
+  cvSlab(-6.7, -6.45, Y1 + 0.15, Y1 + 1.05, 43.2, 51.2, M.panel);
+  cvSlab(-6.7, -1.7, Y1 + 1.7, Y1 + 2.35, 43.4, 43.55, M.boot);
+  const mirror = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.7), new THREE.MeshBasicMaterial({ color: 0xd5eef8 }));
+  mirror.position.set(-6.55, Y1 + 1.5, 58); mirror.rotation.y = Math.PI / 2; stageRoot.add(mirror);
+  cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 52.5, 52.7, M.boot);
+  cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 63.2, 63.4, M.boot);
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.035, 8, 18), M.panel);
+  wheel.position.set(7.4, Yb + 1.15, 9); stageRoot.add(wheel);
+  for (let i = 0; i < 6; i++) {
+    const sp = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.78, 0.035), M.brass);
+    sp.position.set(7.4, Yb + 1.15, 9); sp.rotation.z = i * Math.PI / 6; stageRoot.add(sp);
+  }
+  cvSlab(6.1, 8.8, Yb + 0.78, Yb + 0.86, 3.2, 5.6, M.panel);
+  const bin = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.9, 8), M.brass);
+  bin.position.set(8.6, Yb + 0.5, 11.5); stageRoot.add(bin);
+}
 function buildKeiku() {
   CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
   const M = cvMats();
@@ -9928,16 +10078,16 @@ function buildKeiku() {
   // 下のクルーズ区画。王の間、サロン、浴室、小劇場、食堂、大部屋
   cvFloor(-7.4, 7.4, 42, 88, Y1);
   deckPlate(-7.15, 7.15, 42.2, 87.6, Y1, M.wood);
-  wall(-7.7, -7.2, 42, 88, Y1, Y1 + 2.7); wall(7.2, 7.7, 42, 88, Y1, Y1 + 2.7);
-  wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
-  wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.wood);
-  wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 2.7);
-  const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 2.7, M.wood);
+  wall(-7.7, -7.2, 42, 88, Y1, Y1 + 2.7, M.bulk); wall(7.2, 7.7, 42, 88, Y1, Y1 + 2.7, M.bulk);
+  wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 2.7, M.bulk);
+  wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.bulk);
+  wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 2.7, M.bulk);
+  const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 2.7, M.bulk);
   bulkZ(51.7, -7.15, -1.15); bulkZ(51.7, 1.15, 7.15);
   bulkZ(63.7, -7.15, -1.15); bulkZ(63.7, 1.15, 7.15);
   bulkZ(73.6, -7.15, -1.15); bulkZ(73.6, 1.15, 7.15);
-  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 2.7, M.white, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
-  gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 2.7, M.white, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 2.7, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 2.7, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
   deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 2.62, M.white);
   deckPlate(1.6, 7.1, 42.3, 51.5, Y1 + 2.62, M.white);
   deckPlate(-7.1, 7.1, 52.2, 63.5, Y1 + 2.62, M.white);
@@ -9982,13 +10132,13 @@ function buildKeiku() {
   const bay = (y, z0, z1, xL, xR) => {
     cvFloor(xL, xR, z0, z1, y);
     deckPlate(xL + 0.15, xR - 0.15, z0 + 0.15, z1 - 0.15, y, M.steel);
-    wall(xL - 0.2, xL, z0, z1, y, y + 2.05, M.hull);
-    wall(xR, xR + 0.2, z0, z1, y, y + 2.05, M.hull);
+    wall(xL - 0.2, xL, z0, z1, y, y + 2.05, M.bulk);
+    wall(xR, xR + 0.2, z0, z1, y, y + 2.05, M.bulk);
   };
   bay(Y0, -48, 36, -6.4, 6.4);
   bay(Y1, -56, 41.7, -7.2, 7.2);
   bay(Y2, -50, 39, -7.0, 7.0);
-  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 2.05, M.wood); wall(1.15, xR, z, z + 0.36, y, y + 2.05, M.wood); };
+  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 2.05, M.bulk); wall(1.15, xR, z, z + 0.36, y, y + 2.05, M.bulk); };
   for (const z of [-32, -16, 2, 18]) doorZ(Y0, z, -6.2, 6.2);
   for (const z of [-40, -22, -4, 16]) doorZ(Y1, z, -7.0, 7.0);
   for (const z of [-32, -12, 8, 26]) doorZ(Y2, z, -6.8, 6.8);
@@ -9996,8 +10146,17 @@ function buildKeiku() {
   cvSign(0, Y1 + 1.7, -54.2, '兵員大部屋', 0);
   cvSign(0, Y2 + 1.7, -48.2, '烹炊・整備控・応急', 0);
   for (let i = 0; i < 8; i++) {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 1.45, 10), M.dark);
-    b.position.set(i < 4 ? -3.6 : 3.6, Y0 + 0.85, -44 + (i % 4) * 4); stageRoot.add(b);
+    const x = i < 4 ? -3.6 : 3.6, z = -44 + (i % 4) * 4;
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.9, 1.5, 14), M.dark);
+    b.position.set(x, Y0 + 0.88, z); stageRoot.add(b);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(0.94, 0.94, 0.07, 14), M.brass);
+    band.position.set(x, Y0 + 1.2, z); stageRoot.add(band);
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), M.steel);
+    dome.position.set(x, Y0 + 1.6, z); stageRoot.add(dome);
+  }
+  for (const x of [-3.6, 3.6]) {
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 13, 8), M.pipe);
+    drum.rotation.x = Math.PI / 2; drum.position.set(x, Y0 + 1.72, -38); stageRoot.add(drum);
   }
   for (let i = 0; i < 4; i++) {
     const t = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.9, 1.3), M.steel);
@@ -10021,6 +10180,7 @@ function buildKeiku() {
   deckPlate(5.5, 10.1, 6.4, 15.2, Yb + 2.6, M.white);
   cvLad(6.4, 8.8, 10.1, Yb, Yb + 2.6);
   cvSign(7.6, Yb + 3.5, 6.5, '最上艦橋・見張り', 0);
+  cvDress();
   cvCrowdFill();
   // 高角砲は舷側スポンソン、機銃は甲板の縁
   for (const x of [-10.4, 10.4]) for (const z of [-70, -36, 46]) cvGun(x, z, Yd, true);
@@ -18713,7 +18873,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -9864,20 +9864,20 @@ function cvDress() {
   plate(-0.85, 0.85, -54, 40.5, Y1 + 0.13, M.carpet);
   plate(-6.7, 6.7, -49.2, 38.2, Y2 + 0.08, M.tile);
   plate(4.7, 10.8, 0.8, 17.2, Yb + 0.02, M.lino);
-  const ceil = (y, segs) => { for (const [z0, z1] of segs) plate(-6.2, 6.2, z0, z1, y + 1.86, M.bulk); };
+  const ceil = (y, segs) => { for (const [z0, z1] of segs) plate(-6.2, 6.2, z0, z1, y + 2.95, M.bulk); };
   ceil(Y0, [[-46, -26], [-21.5, 34]]);
   ceil(Y1, [[-54, 4.6], [9.2, 40]]);
   ceil(Y2, [[-48, -8.2], [-3.2, 37]]);
-  plate(-6.6, -1.8, 42.4, 51.4, Y1 + 2.35, M.panel);
-  plate(1.8, 6.6, 42.4, 51.4, Y1 + 2.35, M.bulk);
+  plate(-6.6, -1.8, 42.4, 51.4, Y1 + 3.05, M.panel);
+  plate(1.8, 6.6, 42.4, 51.4, Y1 + 3.05, M.bulk);
   for (const y of [Y0, Y1, Y2]) {
-    cvSlab(-2.42, -2.22, y + 1.62, y + 1.78, -44, 32, M.pipe);
-    cvSlab(2.22, 2.42, y + 1.62, y + 1.78, -44, 32, M.pipe);
+    cvSlab(-2.42, -2.22, y + 2.55, y + 2.72, -44, 32, M.pipe);
+    cvSlab(2.22, 2.42, y + 2.55, y + 2.72, -44, 32, M.pipe);
   }
   const lamps = new THREE.InstancedMesh(new THREE.BoxGeometry(0.85, 0.06, 0.32), M.lamp, 120);
   const lm = new THREE.Matrix4(); let li = 0;
   const lampAt = (x, y, z) => { if (li >= 120) return; lm.makeTranslation(x, y, z); lamps.setMatrixAt(li++, lm); };
-  for (let z = -44; z <= 32; z += 5.5) { lampAt(0, Y0 + 1.8, z); lampAt(0, Y1 + 1.8, z); lampAt(0, Y2 + 1.8, z); }
+  for (let z = -44; z <= 32; z += 5.5) { lampAt(0, Y0 + 2.72, z); lampAt(0, Y1 + 2.72, z); lampAt(0, Y2 + 2.72, z); }
   for (let z = 46; z <= 84; z += 6) lampAt(0, Y1 + 2.35, z);
   for (let z = -58; z <= 40; z += 7) lampAt(0, Yh + 4.55, z);
   lamps.count = li; lamps.instanceMatrix.needsUpdate = true; stageRoot.add(lamps);
@@ -9951,7 +9951,7 @@ function cvDress() {
 function buildKeiku() {
   CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
   const M = cvMats();
-  const Yd = 12.35, Yh = 6.55, Y1 = 2.2, Yb = 16.7;
+  const Yd = 17.2, Yh = 11.2, Y1 = 4.0, Yb = 21.55;
   CV.Yd = Yd; CV.Yh = Yh; CV.Y1 = Y1; CV.Yb = Yb;
   const sea = new THREE.Mesh(new THREE.PlaneGeometry(2200, 2200), M.sea);
   sea.rotation.x = -Math.PI / 2; sea.position.y = -0.08; stageRoot.add(sea); CV.sea = sea;
@@ -9972,7 +9972,7 @@ function buildKeiku() {
   };
   const wall = (x0, x1, z0, z1, y0, y1, mat) => { cvSlab(x0, x1, y0, y1, z0, z1, mat || M.white); boxes.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), y0, y1 }); };
   // 船体。水線長およそ百八十。中央が widest、艦首と艦尾は細くする
-  const hulls = [[2.4, -98, -90, -0.6, 3.6], [5.2, -90, -78, -1.8, 5.2], [7.6, -78, -60, -2.6, 6.3], [9.1, -60, 46, -3.3, 6.5], [8.0, 46, 62, -2.6, 6.1], [6.2, 62, 76, -1.8, 5.4], [3.8, 76, 90, -1.0, 4.2]];
+  const hulls = [[2.4, -98, -90, -0.6, 6.4], [5.2, -90, -78, -1.8, 8.6], [7.6, -78, -60, -2.6, 10.7], [9.1, -60, 46, -3.3, 11.05], [8.0, 46, 62, -2.6, 10.6], [6.2, 62, 76, -1.8, 9.4], [3.8, 76, 90, -1.0, 7.6]];
   for (const [hw, z0, z1, y0, y1] of hulls) {
     const t = 0.42;
     cvSlab(-hw, hw, y0, y0 + 0.4, z0, z1, M.hull);
@@ -9983,7 +9983,7 @@ function buildKeiku() {
   }
   cvSlab(-2.5, 2.5, -0.6, 3.5, -98.15, -97.7, M.hull);
   cvSlab(-3.9, 3.9, -1.0, 4.1, 89.6, 90.15, M.hull);
-  for (let z = -72; z <= 52; z += 4.6) for (const s of [-1, 1]) for (const yy of [3.15, 5.05]) {
+  for (let z = -72; z <= 52; z += 4.6) for (const s of [-1, 1]) for (const yy of [5.5, 8.9]) {
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.2, 8), M.glass);
     p.rotation.z = Math.PI / 2; p.position.set(s * 9.05, yy, z); stageRoot.add(p);
   }
@@ -10085,22 +10085,22 @@ function buildKeiku() {
   // 下のクルーズ区画。王の間、サロン、浴室、小劇場、食堂、大部屋
   cvFloor(-7.4, 7.4, 42, 88, Y1);
   deckPlate(-7.15, 7.15, 42.2, 87.6, Y1, M.wood);
-  wall(-7.7, -7.2, 42, 88, Y1, Y1 + 2.7, M.bulk); wall(7.2, 7.7, 42, 88, Y1, Y1 + 2.7, M.bulk);
-  wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 2.7, M.bulk);
-  wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 2.7, M.bulk);
-  wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 2.7, M.bulk);
-  const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 2.7, M.bulk);
+  wall(-7.7, -7.2, 42, 88, Y1, Yh - 0.25, M.bulk); wall(7.2, 7.7, 42, 88, Y1, Yh - 0.25, M.bulk);
+  wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
+  wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
+  wall(-7.2, 7.2, 87.75, 88.15, Y1, Y1 + 3.25, M.bulk);
+  const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 3.25, M.bulk);
   bulkZ(51.7, -7.15, -1.15); bulkZ(51.7, 1.15, 7.15);
   bulkZ(63.7, -7.15, -1.15); bulkZ(63.7, 1.15, 7.15);
   bulkZ(73.6, -7.15, -1.15); bulkZ(73.6, 1.15, 7.15);
-  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 2.7, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
-  gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 2.7, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
-  deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 2.62, M.white);
-  deckPlate(1.6, 7.1, 42.3, 51.5, Y1 + 2.62, M.white);
-  deckPlate(-7.1, 7.1, 52.2, 63.5, Y1 + 2.62, M.white);
-  deckPlate(-7.1, 7.1, 64.2, 73.3, Y1 + 2.62, M.white);
-  deckPlate(-1.05, 1.05, 42.4, 43.5, Y1 + 2.62, M.white);
-  deckPlate(-1.05, 1.05, 46.6, 87.2, Y1 + 2.62, M.white);
+  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[46.6, 0.65], [57.8, 0.65], [68.2, 0.75], [76.2, 0.7]]);
+  deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 3.12, M.white);
+  deckPlate(1.6, 7.1, 42.3, 51.5, Y1 + 3.12, M.white);
+  deckPlate(-7.1, 7.1, 52.2, 63.5, Y1 + 3.12, M.white);
+  deckPlate(-7.1, 7.1, 64.2, 73.3, Y1 + 3.12, M.white);
+  deckPlate(-1.05, 1.05, 42.4, 43.5, Y1 + 3.12, M.white);
+  deckPlate(-1.05, 1.05, 46.6, 87.2, Y1 + 3.12, M.white);
   cvSign(0, Y1 + 1.6, 43.2, '中央通路', 0);
   const glow = new THREE.PointLight(0xffe2b8, 0.85, 18); glow.position.set(-3, Y1 + 2.1, 47); stageRoot.add(glow);
   const glow2 = new THREE.PointLight(0xfff0d0, 0.6, 16); glow2.position.set(3, Y1 + 2.2, 58); stageRoot.add(glow2);
@@ -10135,17 +10135,17 @@ function buildKeiku() {
   }
   cvLad(0, 44.2, 45.6, Y1, Yh);
   // 甲板の下に層を足す。機関（吃水線の上）、兵員、烹炊、その上が格納庫。艦橋はもう一段
-  const Y0 = 0.25, Y2 = 4.45; CV.Y0 = Y0; CV.Y2 = Y2;
+  const Y0 = 0.6, Y2 = 7.6; CV.Y0 = Y0; CV.Y2 = Y2;
   const bay = (y, z0, z1, xL, xR) => {
     cvFloor(xL, xR, z0, z1, y);
     deckPlate(xL + 0.15, xR - 0.15, z0 + 0.15, z1 - 0.15, y, M.steel);
-    wall(xL - 0.2, xL, z0, z1, y, y + 2.05, M.bulk);
-    wall(xR, xR + 0.2, z0, z1, y, y + 2.05, M.bulk);
+    wall(xL - 0.2, xL, z0, z1, y, y + 3.15, M.bulk);
+    wall(xR, xR + 0.2, z0, z1, y, y + 3.15, M.bulk);
   };
   bay(Y0, -48, 36, -6.4, 6.4);
   bay(Y1, -56, 41.7, -7.2, 7.2);
   bay(Y2, -50, 39, -7.0, 7.0);
-  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 2.05, M.bulk); wall(1.15, xR, z, z + 0.36, y, y + 2.05, M.bulk); };
+  const doorZ = (y, z, xL, xR) => { wall(xL, -1.15, z, z + 0.36, y, y + 3.15, M.bulk); wall(1.15, xR, z, z + 0.36, y, y + 3.15, M.bulk); };
   for (const z of [-32, -16, 2, 18]) doorZ(Y0, z, -6.2, 6.2);
   for (const z of [-40, -22, -4, 16]) doorZ(Y1, z, -7.0, 7.0);
   for (const z of [-32, -12, 8, 26]) doorZ(Y2, z, -6.8, 6.8);
@@ -10229,7 +10229,7 @@ function cvParty(x, z, y, n, face) {
   const fx = Math.sin(face), fz = Math.cos(face), rx = fz, rz = -fx;
   for (let i = 0; i < n; i++) {
     const c = i % cols, r = (i / cols) | 0;
-    const ox = (c - (cols - 1) / 2) * 0.9, oz = r * 0.9;
+    const ox = (c - (cols - 1) / 2) * 1.65, oz = r * 1.65;
     cvHand(x + rx * ox + fx * oz, z + rz * ox + fz * oz, y, face);
   }
 }
@@ -10245,18 +10245,47 @@ function cvSeat(g, n) {
     e.s.rotation.set(0, 0, 0);
   }
 }
+function cvFill(x0, x1, z0, z1, y, n, face) {
+  if (n <= 0) return;
+  const S = CV.S || 1;
+  const xa = Math.min(x0, x1) * S, xb = Math.max(x0, x1) * S;
+  const za = Math.min(z0, z1) * S, zb = Math.max(z0, z1) * S;
+  const w = Math.max(1.4, xb - xa), d = Math.max(1.4, zb - za);
+  let cols = Math.max(1, Math.round(Math.sqrt(n * w / d)));
+  let rows = Math.ceil(n / cols);
+  const fit = (c, r) => w / c >= 1.35 && d / r >= 1.35;
+  while (cols > 1 && !fit(cols, rows)) { cols--; rows = Math.ceil(n / cols); }
+  while (rows > 1 && cols < n && !fit(cols, rows) && w / (cols + 1) >= 1.2) { cols++; rows = Math.ceil(n / cols); }
+  const sx = w / cols, sz = d / rows;
+  for (let i = 0; i < n; i++) {
+    const c = i % cols, r = (i / cols) | 0;
+    cvHand(xa + sx * (c + 0.5), za + sz * (r + 0.5), y, face);
+  }
+}
 function cvStation() {
-  const S = CV.S || 1, Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb;
+  const Yd = CV.Yd, Yh = CV.Yh, Y1 = CV.Y1, Y0 = CV.Y0, Y2 = CV.Y2, Yb = CV.Yb;
   CV.crewN = 0;
   let bigN = 0;
   for (const g of CV.guns) {
     const n = g.big ? (bigN++ < 4 ? 12 : 6) : g.triple ? 9 : 3;
-    const ox = g.big ? 0 : -Math.sign(g.x || 1) * 1.8;
-    cvParty(g.x + ox, g.z + (g.big ? 2.6 : 0), g.y, n, g.big ? 0 : (g.x > 0 ? -1.4 : 1.4));
+    const ox = g.big ? 0 : -Math.sign(g.x || 1) * 2.2;
+    cvParty(g.x + ox, g.z + (g.big ? 3.2 : 0), g.y, n, g.big ? 0 : (g.x > 0 ? -1.4 : 1.4));
   }
-  cvParty(8 * S, 5 * S, Yb, 8, Math.PI); cvParty(6.2 * S, 13 * S, Yb, 8, 0);
-  for (let i = 0; i < 60; i++) cvHand((i % 2 ? 0.7 : -0.7) * S, (-22 + (i / 2 | 0) * 0.85) * S, Y0, i % 2 ? 0 : Math.PI);
-  cvParty(0, -84 * S, Yd, 8, Math.PI); cvParty(0, 68 * S, Yd, 8, 0); cvParty(7.4 * S, 11 * S, Yb + 2.6 * S, 8, 0);
+  cvFill(6.2, 10.2, 2, 7, Yb, 16, Math.PI);
+  cvFill(5.4, 9.4, 11, 16.5, Yb, 16, 0);
+  cvFill(-5.4, -1.6, -46, -30, Y0, 24, 0);
+  cvFill(1.6, 5.4, -46, -30, Y0, 24, 0);
+  cvFill(-5.6, 5.6, -24, -2, Y0, 60, Math.PI);
+  cvFill(-5.4, -1.8, 4, 22, Y0, 16, Math.PI / 2);
+  cvFill(1.8, 5.4, 4, 22, Y0, 16, -Math.PI / 2);
+  cvFill(-5.4, 5.4, 24, 34, Y0, 30, 0);
+  cvFill(-6.2, -1.6, -52, -8, Y1, 50, 0);
+  cvFill(1.6, 6.2, -52, -8, Y1, 50, 0);
+  cvFill(-6.2, -1.6, 2, 38, Y1, 30, Math.PI);
+  cvFill(1.6, 6.2, 2, 38, Y1, 30, Math.PI);
+  cvFill(0, 2, -86, -78, Yd, 12, Math.PI);
+  cvFill(-2, 2, 62, 72, Yd, 12, 0);
+  cvFill(5.6, 9.6, 8, 14, Yb + 2.6 * (CV.S || 1), 12, 0);
   let bombs = 0;
   for (const g of CV.parked) {
     const k = g.userData.kind;
@@ -10264,26 +10293,28 @@ function cvStation() {
     else if (k === 'bomb' && bombs++ < 9) cvSeat(g, 3);
     else if (k === 'recon') cvSeat(g, 3);
   }
-  for (let i = 0; i < 75; i++) { cvHand(-6.5 * S, (-60 + i * 1.2) * S, Yh, 1.57); cvHand(6.5 * S, (-60 + i * 1.2) * S, Yh, -1.57); }
-  for (let i = 0; i < 40; i++) cvHand((-4 + (i % 5) * 2) * S, (28 + (i / 5 | 0) * 2.2) * S, Yd, 0);
-  for (let i = 0; i < 30; i++) cvHand((i % 2 ? 2.2 : -2.2) * S, (-50 + (i / 2 | 0) * 1.6) * S, Yh, 0);
-  for (let i = 0; i < 8; i++) cvParty((i < 4 ? -3.6 : 3.6) * S, (-44 + (i % 4) * 4) * S, Y0, 6, 0);
-  for (let i = 0; i < 4; i++) cvParty((i % 2 ? 3.4 : -3.4) * S, (8 + (i / 2 | 0) * 8) * S, Y0, 8, Math.PI / 2);
-  for (let i = 0; i < 30; i++) cvHand((i % 2 ? 4.8 : -4.8) * S, (12 + (i / 2 | 0) * 1.1) * S, Y0, 0);
-  for (let i = 0; i < 40; i++) cvHand((i % 2 ? 2.4 : -2.4) * S, (-30 + (i / 2 | 0) * 1.3) * S, Y2, Math.PI);
-  cvParty(7.2 * S, 8 * S, Yb, 20, Math.PI); cvParty(7.4 * S, 9 * S, Yb, 20, 0);
-  cvParty(9 * S, 14 * S, Yb, 15, 0); cvParty(6 * S, 4 * S, Yb, 15, Math.PI);
-  for (let i = 0; i < 4; i++) cvParty((i < 2 ? -10.2 : 10.2) * S, (-40 + (i % 2) * 50) * S, Yh, 6, 0);
-  for (let i = 0; i < 16; i++) cvParty((i < 8 ? -10.4 : 10.4) * S, (-56 + (i % 8) * 14) * S, Yh, 2, 0);
-  cvParty(5.2 * S, 68 * S, Y1, 20, Math.PI / 2);
-  for (let i = 0; i < 60; i++) cvHand((-4.2 + (i % 6) * 1.3) * S, (-6 + (i / 6 | 0) * 1.8) * S, Y2, Math.PI);
-  cvParty(-4 * S, 47 * S, Y1, 8, 0.4);
-  cvParty(3.4 * S, 67 * S, Y1, 30, Math.PI);
-  cvParty(3.6 * S, 58 * S, Y1, 20, Math.PI);
-  cvParty(-3.6 * S, 58 * S, Y1, 10, 0);
-  cvParty(4 * S, 80 * S, Y1, 5, Math.PI);
-  cvParty(-2 * S, 46 * S, Y1, 30, 0.2);
-  for (let i = 0; i < 100; i++) cvHand((-5.2 + (i % 8) * 1.35) * S, (-50 + (i / 8 | 0) * 2.1) * S, Y1, 0);
+  cvFill(-8.2, -4.2, -60, 36, Yh, 75, 1.57);
+  cvFill(4.2, 8.2, -60, 36, Yh, 75, -1.57);
+  cvFill(-8, 8, 24, 48, Yd, 40, 0);
+  cvFill(-4.2, 4.2, -58, -36, Yh, 30, 0);
+  cvFill(-6.4, -1.8, -36, -8, Y2, 20, Math.PI);
+  cvFill(1.8, 6.4, -36, -8, Y2, 20, Math.PI);
+  cvFill(-6.2, 6.2, -4, 20, Y2, 60, 0);
+  cvFill(5.2, 10.4, 3, 8, Yb, 20, Math.PI);
+  cvFill(6.4, 9.2, 8.2, 12, Yb, 20, 0);
+  cvFill(8.6, 10.6, 12, 16.5, Yb, 15, 0);
+  cvFill(5.2, 7.4, 1.2, 6, Yb, 15, Math.PI);
+  cvFill(-11.2, -9.2, -55, 20, Yh, 28, 1.2);
+  cvFill(9.2, 11.2, -55, 20, Yh, 28, -1.2);
+  cvFill(3.4, 6.6, 65, 72, Y1, 20, Math.PI / 2);
+  cvFill(-6.3, -1.7, 43.2, 51.2, Y1, 24, 0.4);
+  cvFill(1.7, 6.4, 43.2, 51.2, Y1, 16, Math.PI);
+  cvFill(-6.4, -1.7, 53, 63, Y1, 15, 0);
+  cvFill(1.7, 6.4, 53, 63, Y1, 24, Math.PI);
+  cvFill(-6.2, -1.6, 64.6, 73, Y1, 20, Math.PI);
+  cvFill(1.6, 4.2, 64.6, 73, Y1, 16, Math.PI);
+  cvFill(-6.2, -1.6, 74.5, 86.5, Y1, 36, Math.PI);
+  cvFill(1.6, 6.2, 74.5, 86.5, Y1, 36, Math.PI);
 }
 function cvNearPlane() {
   if (!CV.on || CV.ride) return null;
@@ -19026,7 +19057,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261029e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261029f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

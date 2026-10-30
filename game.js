@@ -11629,7 +11629,7 @@ function cvStart() {
   // 収録した声（voices_cv.js）
   CV.vmap = {}; const VL = (window.VOICE_CV || {}).lines || {}; for (const k in VL) { const L = VL[k]; CV.vmap[(L.who || '*') + '|' + L.ja] = L.file; }
   cvStream(0, true);
-  window.__cv = { CV, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally };
+  window.__cv = { CV, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, cvTracer, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
   let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;top:16px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
     b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); CV.rosOpen ? cvRosterClose() : cvRosterOpen(); }); }
   showBanner('軽空母の航海', `乗艦 ${CV.total0}（部署の定員と予備・交代員百）。R で定員表、戦闘機は E で操縦席`);

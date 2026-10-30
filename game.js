@@ -9526,15 +9526,39 @@ function cvMats() {
     g.fillStyle = 'rgba(255,255,255,.8)'; g.font = 'bold 48px serif'; g.textAlign = 'center'; g.fillText('艦首', w / 2, 78);
     g.fillText('艦尾', w / 2, h - 48);
   });
-  const hull = canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#3a4650'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 2;
-    for (let y = 0; y < h; y += 28) g.strokeRect(1, y, w - 2, 28);
-    for (let x = 0; x < w; x += 56) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-    g.fillStyle = 'rgba(190,205,214,.35)';
-    for (let y = 8; y < h; y += 28) for (let x = 8; x < w; x += 18) g.fillRect(x, y, 2, 2);
+  const hull = canvasTex(512, 256, (g, w, h) => {
+    g.fillStyle = '#69727a'; g.fillRect(0, 0, w, h);   // 呉海軍工廠色（軍艦色）
+    for (let i = 0; i < 3000; i++) { const l = rand(-14, 14); g.fillStyle = `rgba(${100 + l},${110 + l},${118 + l},.35)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    g.strokeStyle = 'rgba(30,34,38,.55)'; g.lineWidth = 2;
+    for (let y = 0; y < h; y += 42) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+    for (let y = 0; y < h; y += 42) for (let x = (y / 42) % 2 ? 0 : 64; x < w; x += 128) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 42); g.stroke(); }
+    g.fillStyle = 'rgba(30,34,38,.6)';
+    for (let y = 0; y < h; y += 42) for (let x = 3; x < w; x += 9) { g.fillRect(x, y + 3, 2, 2); g.fillRect(x, y - 5, 2, 2); }
+    for (let x = 0; x < w; x += 64) for (let y = 4; y < h; y += 9) g.fillRect(x + 3, y, 2, 2);
+    for (let i = 0; i < 26; i++) {   // 錆の筋（上から垂れる）
+      const x = Math.random() * w, y = Math.random() * h * 0.8, L = 20 + Math.random() * 70;
+      const gr = g.createLinearGradient(0, y, 0, y + L); gr.addColorStop(0, 'rgba(120,62,28,.55)'); gr.addColorStop(1, 'rgba(120,62,28,0)');
+      g.fillStyle = gr; g.fillRect(x, y, 1.5 + Math.random() * 3, L);
+    }
+    g.fillStyle = 'rgba(40,30,24,.35)'; g.fillRect(0, h - 10, w, 10);
   });
-  hull.wrapS = hull.wrapT = THREE.RepeatWrapping; hull.repeat.set(5, 2);
+  hull.wrapS = hull.wrapT = THREE.RepeatWrapping; hull.repeat.set(8, 2);
+  const isle = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#7a8389'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 1600; i++) { const l = rand(-12, 12); g.fillStyle = `rgba(${118 + l},${128 + l},${134 + l},.35)`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+    g.strokeStyle = 'rgba(40,44,48,.5)'; g.lineWidth = 2; for (let y = 0; y < h; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } for (let x = 0; x < w; x += 128) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+    g.fillStyle = 'rgba(40,44,48,.55)'; for (let y = 0; y < h; y += 64) for (let x = 2; x < w; x += 10) g.fillRect(x, y + 3, 2, 2);
+    for (const [x, y] of [[64, 36], [192, 36], [64, 164], [192, 164]]) { g.fillStyle = '#3a3f44'; g.beginPath(); g.arc(x, y, 9, 0, 7); g.fill(); g.fillStyle = '#9fc1cf'; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(x - 3, y - 4, 3, 2); }
+    for (let i = 0; i < 10; i++) { const x = Math.random() * w, y = Math.random() * h, L = 12 + Math.random() * 40; const gr = g.createLinearGradient(0, y, 0, y + L); gr.addColorStop(0, 'rgba(118,64,30,.45)'); gr.addColorStop(1, 'rgba(118,64,30,0)'); g.fillStyle = gr; g.fillRect(x, y, 2, L); }
+  });
+  isle.wrapS = isle.wrapT = THREE.RepeatWrapping; isle.repeat.set(4, 2);
+  const seaN = canvasTex(256, 256, (g, w, h) => {
+    const im = g.createImageData(w, h), H = new Float32Array(w * h);
+    for (let k = 0; k < 9; k++) { const fx = (1 + (k * 3) % 7) * 2 * Math.PI / w, fy = (1 + (k * 5) % 6) * 2 * Math.PI / h, ph = k * 1.7, a = 1 / (1 + k * 0.6); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) H[y * w + x] += Math.sin(x * fx * (k % 2 ? 1 : -1) + y * fy + ph) * a; }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const dx = H[y * w + (x + 1) % w] - H[y * w + (x + w - 1) % w], dy = H[((y + 1) % h) * w + x] - H[((y + h - 1) % h) * w + x]; const i = (y * w + x) * 4; im.data[i] = 128 - dx * 60; im.data[i + 1] = 128 - dy * 60; im.data[i + 2] = 255; im.data[i + 3] = 255; }
+    g.putImageData(im, 0, 0);
+  });
+  seaN.wrapS = seaN.wrapT = THREE.RepeatWrapping; seaN.repeat.set(90, 90);
   const white = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#f7f4ee'; g.fillRect(0, 0, w, h);
     for (let i = 0; i < 400; i++) { g.fillStyle = 'rgba(180,170,150,.15)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
@@ -9579,9 +9603,10 @@ function cvMats() {
   });
   const L = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
   CV.M = {
-    sea: new THREE.MeshLambertMaterial({ map: sea }),
+    sea: new THREE.MeshPhongMaterial({ map: sea, normalMap: seaN, normalScale: new THREE.Vector2(0.7, 0.7), specular: 0x9fc4d8, shininess: 60 }),
     deck: new THREE.MeshLambertMaterial({ map: deck }),
     hull: new THREE.MeshLambertMaterial({ map: hull }),
+    isle: new THREE.MeshLambertMaterial({ map: isle }),
     white: new THREE.MeshLambertMaterial({ map: white }),
     wood: new THREE.MeshLambertMaterial({ map: wood }),
     tile: new THREE.MeshLambertMaterial({ map: tile }),
@@ -9614,6 +9639,12 @@ function cvMats() {
       g.fillStyle = `rgb(${l + 28},${l + 8},${l - 18})`; g.fillRect(x, 0, 8, h);
       g.fillStyle = 'rgba(40,22,8,.4)'; g.fillRect(x + 7, 0, 1, h);
       for (let y = (x * 3) % 40; y < h; y += 46) { g.fillStyle = 'rgba(30,16,6,.28)'; g.fillRect(x, y, 8, 2); }
+    }
+    for (let i = 0; i < 2200; i++) { const v = Math.random() < 0.5 ? 'rgba(20,12,4,.10)' : 'rgba(255,240,210,.07)'; g.fillStyle = v; g.fillRect(Math.random() * w, Math.random() * h, 1, 3 + Math.random() * 8); }
+    for (let i = 0; i < 6; i++) { g.fillStyle = 'rgba(0,0,0,.08)'; g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h, 6 + Math.random() * 14, 10 + Math.random() * 30, 0, 0, 7); g.fill(); }
+    for (const y of [128, 384]) {   // 繋止用の鋼板（横に走る索止め金具）
+      g.fillStyle = '#505457'; g.fillRect(0, y, w, 5); g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, y, w, 1);
+      g.fillStyle = '#2a2d30'; for (let x = 4; x < w; x += 16) g.fillRect(x, y + 1, 6, 3);
     }
   });
   plank.wrapS = plank.wrapT = THREE.RepeatWrapping; plank.repeat.set(18, 70);
@@ -10064,6 +10095,69 @@ function cvDress() {
   cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 52.5, 52.7, M.boot);
   cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 63.2, 63.4, M.boot);
 }
+function cvBridge2() {   // 前部艦橋：窓・伝声管・速力通信器・羅針儀・測距儀・海図台・艦長席
+  const M = CV.M, Y = CV.Yb, iz0 = -10, ix0 = 7.6, ix1 = 16.4;
+  const box = (x, y, z, w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
+  const cyl = (x, y, z, r0, r1, h, mat, n) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, n || 10), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
+  const block = (x0, x1, z0, z1, y0, y1) => boxes.push({ x0, x1, z0, z1, y0, y1 });
+  const glass = M.glass2 || (M.glass2 = new THREE.MeshLambertMaterial({ color: 0xcfeaf4, transparent: true, opacity: 0.16, emissive: 0x0c2230, depthWrite: false }));
+  const y0 = Y + 0.95, y1 = Y + 2.25;
+  // 窓（前面・舷側・内側）。下は鋼板、上は庇
+  const band = (x0, x1, z0, z1, along) => {
+    cvSlab(x0, x1, CV.Yd, y0, z0, z1, M.isle); cvSlab(x0, x1, y1, Y + 2.8, z0, z1, M.isle);
+    const t = 0.05; if (along === 'x') cvSlab(x0, x1, y0, y1, (z0 + z1) / 2 - t, (z0 + z1) / 2 + t, glass); else cvSlab((x0 + x1) / 2 - t, (x0 + x1) / 2 + t, y0, y1, z0, z1, glass);
+    const L = along === 'x' ? x1 - x0 : z1 - z0, n = Math.max(2, Math.round(L / 1.15));
+    for (let i = 0; i <= n; i++) { const u = (along === 'x' ? x0 : z0) + L * i / n; if (along === 'x') cvSlab(u - 0.05, u + 0.05, y0, y1, z0, z1, M.dark); else cvSlab(x0, x1, y0, y1, u - 0.05, u + 0.05, M.dark); }
+    cvSlab(along === 'x' ? x0 : x0 - 0.35, along === 'x' ? x1 : x1 + 0.35, Y + 2.8, Y + 2.88, along === 'x' ? z0 - 0.45 : z0, along === 'x' ? z1 : z1, M.isle);   // 庇
+    boxes.push({ x0, x1, z0, z1, y0: CV.Yd, y1: Y + 2.8 });
+  };
+  band(ix0, ix1, iz0, iz0 + 0.4, 'x');
+  band(ix1 - 0.4, ix1, iz0 + 0.4, 3.2, 'z');
+  band(ix0, ix0 + 0.4, iz0 + 0.4, -1.6, 'z');
+  // 後ろの仕切り（扉口つき）
+  cvSlab(11.05, 13.0, Y, Y + 2.7, 3.3, 3.7, M.isle); block(11.05, 13.0, 3.3, 3.7, Y, Y + 2.7);
+  cvSlab(14.3, ix1 - 0.4, Y, Y + 2.7, 3.3, 3.7, M.isle); block(14.3, ix1 - 0.4, 3.3, 3.7, Y, Y + 2.7);
+  // 床（リノリウム）と天井の梁
+  cvSlab(ix0 + 0.4, ix1 - 0.4, Y - 0.02, Y + 0.02, iz0 + 0.4, 3.3, M.lino || M.wood);
+  for (let z = iz0 + 1.2; z < 3; z += 1.6) cvSlab(ix0 + 0.4, ix1 - 0.4, Y + 2.55, Y + 2.68, z, z + 0.16, M.steel);
+  // 屋根（防空指揮所・測距儀）
+  cvSlab(ix0 + 0.3, ix1 - 0.3, Y + 2.8, Y + 3.05, iz0, -1.8, M.isle); cvFloor(ix0 + 0.4, ix1 - 0.4, iz0 + 0.1, -1.8, Y + 3.05);
+  for (const [a, b, c, d] of [[ix0 + 0.3, ix1 - 0.3, iz0, iz0 + 0.08], [ix0 + 0.3, ix0 + 0.38, iz0, -1.8], [ix1 - 0.38, ix1 - 0.3, iz0, -1.8]]) { cvSlab(a, b, Y + 3.05, Y + 4.1, c, d, M.isle); block(a, b, c, d, Y + 3.05, Y + 4.15); }
+  cyl(12, Y + 3.5, -6, 0.38, 0.5, 0.9, M.gun, 12);
+  const rf = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 4.6, 12), M.gun); rf.rotation.z = Math.PI / 2; rf.position.set(12, Y + 4.15, -6); stageRoot.add(rf);
+  for (const s of [-1, 1]) { const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.3, 12), M.dark); cap.rotation.z = Math.PI / 2; cap.position.set(12 + s * 2.35, Y + 4.15, -6); stageRoot.add(cap); }
+  box(12, Y + 4.0, -5.55, 1.1, 0.6, 0.55, M.gun); block(9.6, 14.4, -6.5, -5.5, Y + 3.05, Y + 4.4);
+  cvSign(12, Y + 3.7, -9.75, '防空指揮所　測距儀', Math.PI);
+  // 伝声管（真鍮の口が前の壁に並ぶ）
+  for (const xc of [11, 13]) for (let i = 0; i < 5; i++) {
+    const x = xc - 0.5 + i * 0.25; cyl(x, Y + 0.9, -9.3, 0.045, 0.045, 1.6, M.brass, 8);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.05, 0.14, 10), M.brass); m.rotation.x = Math.PI / 2; m.position.set(x, Y + 1.45 + (i % 2) * 0.18, -9.2); stageRoot.add(m);
+  }
+  block(10.3, 13.7, -9.6, -9.0, Y, Y + 1.7);
+  // 双眼鏡台（12cm 高角双眼鏡）
+  for (const x of [9.0, 15.4]) {
+    cyl(x, Y + 0.6, -9.25, 0.08, 0.14, 1.2, M.gun, 8);
+    for (const s of [-1, 1]) { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.55, 10), M.dark); t.rotation.x = Math.PI / 2; t.position.set(x + s * 0.09, Y + 1.32, -9.3); stageRoot.add(t); }
+    block(x - 0.2, x + 0.2, -9.5, -9.0, Y, Y + 1.5);
+  }
+  // 艦長席
+  box(14.9, Y + 0.55, -8.6, 0.6, 0.08, 0.55, M.woodD); box(14.9, Y + 0.9, -8.33, 0.6, 0.7, 0.08, M.woodD); cyl(14.9, Y + 0.27, -8.6, 0.05, 0.12, 0.54, M.gun, 8);
+  block(14.55, 15.25, -8.95, -8.25, Y, Y + 1.0);
+  // 海図台と羅針儀の写し、時計
+  const chart = canvasTex(256, 160, (g, w, h) => {
+    g.fillStyle = '#e4d6b0'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(60,90,130,.6)'; g.lineWidth = 1;
+    for (let i = 0; i < w; i += 24) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, h); g.stroke(); } for (let i = 0; i < h; i += 24) { g.beginPath(); g.moveTo(0, i); g.lineTo(w, i); g.stroke(); }
+    g.fillStyle = '#b9ae86'; g.beginPath(); g.moveTo(170, 20); g.bezierCurveTo(220, 40, 240, 90, 200, 150); g.lineTo(256, 160); g.lineTo(256, 0); g.fill();
+    g.strokeStyle = '#8c2424'; g.lineWidth = 2; g.beginPath(); g.moveTo(30, 130); g.lineTo(90, 96); g.lineTo(150, 70); g.stroke();
+    g.fillStyle = '#1b2a3a'; g.font = '14px serif'; g.fillText('一二〇〇 北緯三〇度', 18, 20); g.strokeStyle = '#1b2a3a'; g.beginPath(); g.arc(60, 60, 24, 0, 7); g.stroke();
+  });
+  box(14.8, Y + 0.45, -1.5, 1.6, 0.9, 1.0, M.woodD); const cm = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.92), new THREE.MeshLambertMaterial({ map: chart }));
+  cm.rotation.x = -Math.PI / 2; cm.position.set(14.8, Y + 0.91, -1.5); stageRoot.add(cm); block(14.0, 15.6, -2.0, -1.0, Y, Y + 0.95);
+  const lamp = cyl(14.8, Y + 2.2, -1.5, 0.12, 0.22, 0.18, M.dark); lamp.material = M.dark;
+  const clock = canvasTex(64, 64, (g) => { g.fillStyle = '#f2ecd8'; g.beginPath(); g.arc(32, 32, 30, 0, 7); g.fill(); g.strokeStyle = '#222'; g.lineWidth = 3; g.beginPath(); g.moveTo(32, 32); g.lineTo(32, 12); g.moveTo(32, 32); g.lineTo(46, 38); g.stroke(); for (let i = 0; i < 12; i++) { const a = i / 12 * 6.28; g.fillStyle = '#222'; g.fillRect(32 + Math.cos(a) * 25 - 1, 32 + Math.sin(a) * 25 - 1, 3, 3); } });
+  const ck = new THREE.Mesh(new THREE.CircleGeometry(0.2, 18), new THREE.MeshBasicMaterial({ map: clock })); ck.position.set(12, Y + 2.45, -9.55); stageRoot.add(ck);
+  cvSign(12, Y + 0.7, -9.58, '面舵 ← 操舵 → 取舵', 0);
+}
 function cvBridgeDress() {
   const M = CV.M, Y = CV.Yb;
   const box = (x, y, z, w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
@@ -10073,7 +10167,7 @@ function cvBridgeDress() {
   box(13.5, Y + 2.68, -2.5, 4.6, 0.08, 12, M.bulk);
   box(13.7, Y + 2.68, 22, 4.8, 0.08, 22, M.bulk);
   box(9.2, Y + 2.68, 24, 2.8, 0.08, 20, M.bulk);
-  const wx = 9.15, wz = 1.6;
+  const wx = 12, wz = -6.6;
   const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.05, 8, 22), M.brass);
   wheel.position.set(wx, Y + 1.28, wz); stageRoot.add(wheel);
   for (let i = 0; i < 8; i++) {
@@ -10248,38 +10342,37 @@ function buildKeiku() {
   // 右舷の艦橋。滑走路には出さず、舷外へ張り出して何層も人が入れる
   const ix0 = 7.6, ix1 = 16.4, iz0 = -10, iz1 = 38;
   cvFloor(11.15, ix1, iz0, iz1, Yd);
-  wall(ix0, ix0 + 0.4, iz0, -1.3, Yd, Yb - 0.2, M.white);
-  wall(ix0, ix0 + 0.4, 1.3, 10.7, Yd, Yb - 0.2, M.white);
-  wall(ix0, ix0 + 0.4, 13.3, 22.8, Yd, Yb - 0.2, M.white);
-  wall(ix0, ix0 + 0.4, 25.2, iz1, Yd, Yb - 0.2, M.white);
-  wall(ix1 - 0.4, ix1, iz0, iz1, Yd, Yb + 2.8, M.white);
-  wall(ix0, ix1, iz0, iz0 + 0.4, Yd, Yb + 2.8, M.white);
-  wall(ix0, ix1, iz1 - 0.4, iz1, Yd, Yb + 2.8, M.white);
+  wall(ix0, ix0 + 0.4, iz0, -1.3, Yd, Yb - 0.2, M.isle);
+  wall(ix0, ix0 + 0.4, 1.3, 10.7, Yd, Yb - 0.2, M.isle);
+  wall(ix0, ix0 + 0.4, 13.3, 22.8, Yd, Yb - 0.2, M.isle);
+  wall(ix0, ix0 + 0.4, 25.2, iz1, Yd, Yb - 0.2, M.isle);
+  wall(ix1 - 0.4, ix1, 3.2, iz1, Yd, Yb + 2.8, M.isle);
+  wall(ix1 - 0.4, ix1, iz0, 3.2, Yd, Yb - 0.2, M.isle);
+  wall(ix0, ix1, iz1 - 0.4, iz1, Yd, Yb + 2.8, M.isle);
   cvFloor(ix0 + 0.45, ix1 - 0.45, iz0 + 0.5, iz1 - 0.5, Yb);
-  wall(10.6, 11.05, iz0 + 0.5, 3.2, Yb, Yb + 2.7, M.white);
   wall(10.6, 11.05, 4.8, 13.6, Yb, Yb + 2.7, M.white);
   wall(10.6, 11.05, 15.2, 23.2, Yb, Yb + 2.7, M.white);
   wall(10.6, 11.05, 24.8, iz1 - 0.5, Yb, Yb + 2.7, M.white);
-  wall(ix0 + 0.5, 11.5, 13.8, 14.3, Yb, Yb + 2.7, M.white);
-  wall(13.3, ix1 - 0.5, 13.8, 14.3, Yb, Yb + 2.7, M.white);
+  wall(ix0 + 0.5, 11.5, 13.8, 14.3, Yb, Yb + 2.7, M.isle);
+  wall(13.3, ix1 - 0.5, 13.8, 14.3, Yb, Yb + 2.7, M.isle);
   cvFloor(ix0 + 0.6, ix1 - 0.5, -2, 30, Yb + 3.05);
   cvFloor(9.4, 15.2, 4, 22, Yb + 5.7);
-  wall(ix0 + 0.3, ix1 - 0.3, -2, -1.6, Yb + 3.05, Yb + 5.5, M.white);
-  wall(ix0 + 0.3, ix1 - 0.3, 29.6, 30, Yb + 3.05, Yb + 5.5, M.white);
-  wall(ix1 - 0.7, ix1 - 0.35, -1.6, 29.6, Yb + 3.05, Yb + 5.5, M.white);
-  for (const z of [-4, 2, 8, 14, 20, 26, 32]) cvSlab(ix1 - 0.42, ix1 - 0.08, Yb + 0.7, Yb + 1.9, z, z + 2.2, M.glass);
+  wall(ix0 + 0.3, ix1 - 0.3, -2, -1.6, Yb + 3.05, Yb + 5.5, M.isle);
+  wall(ix0 + 0.3, ix1 - 0.3, 29.6, 30, Yb + 3.05, Yb + 5.5, M.isle);
+  wall(ix1 - 0.7, ix1 - 0.35, -1.6, 29.6, Yb + 3.05, Yb + 5.5, M.isle);
+  for (const z of [8, 14, 20, 26, 32]) cvSlab(ix1 - 0.42, ix1 - 0.08, Yb + 0.7, Yb + 1.9, z, z + 2.2, M.glass);
   cvSlab(ix0 + 0.15, ix0 + 0.45, Yb + 0.7, Yb + 1.8, 6, 12, M.glass);
   const fun = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.55, 6.2, 12), M.steel); fun.position.set(14.2, Yd + 7.2, 6); stageRoot.add(fun);
   const band = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.7, 0.55, 12), M.boot); band.position.set(14.2, Yd + 9.8, 6); stageRoot.add(band);
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 8.5, 6), M.steel); mast.position.set(13.2, Yd + 8.4, 20); stageRoot.add(mast);
   const flag = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.45), M.flag); flag.position.set(14.6, Yd + 11.2, 20); stageRoot.add(flag); CV.flag = flag;
   const radar = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 0.7), M.dark); radar.position.set(13.2, Yd + 9.6, 20); radar.rotation.z = 0.35; stageRoot.add(radar);
-  cvSign(12.2, Yb + 1.4, -8.2, '艦橋　操舵・通信・作戦', 0);
+  cvSign(12.2, Yb + 2.45, 3.2, '艦橋　操舵・通信・作戦', Math.PI);
   cvFloor(6.7, 8.4, -1.6, 1.6, Yb);
   cvLad(7.0, -0.6, 0.8, Yd, Yb);
   cvLad(12.4, 16.2, 17.6, Yb, Yb + 3.05);
   cvLad(12.2, 8.4, 9.6, Yb + 3.05, Yb + 5.7);
-  cvBridgeDress();
+  cvBridgeDress(); cvBridge2();
   // 格納庫（甲板の下）。翼を広げた艦攻が縦一列で入る幅
   cvFloor(-9.2, 9.2, -88, -65.6, Yh);
   cvFloor(-1.7, 1.7, 43.2, 46.6, Yh);

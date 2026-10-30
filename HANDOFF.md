@@ -367,3 +367,9 @@
 - 宮殿の夜の宴会：宴会場の長卓を 2→4 卓（部屋の奥行き hd≥10.4 のとき z=±3.6/±8.4、長さ rw−3.4、入口側 2 m は通路）。立ち位置は卓のそば（S.tab）から埋める。宴会中は名の無い侍女が皆、宴会場へ（PC は palPool 全員を一人ずつ：入宮前 23 人・入宮後 35 人。スマホは名のある 8 人と合わせて 15 人、顔は重ならない）。廊下を歩く娘は宴会中は無し。
 - 内定式・入宮式・給料日の列は元から一人一回（重なり無し）なので変えていない。
 - 試験：/tmp/bq_audit.js（`node bq_audit.js <lite 0|1> all <tag> [shot]`）、/tmp/bq_shot.js、/tmp/bq_join.js（入宮後の宴会）。
+
+## keiku 改修 (20261031a)
+- 艦橋 cvBridge2（窓帯・測距儀・伝声管・海図台・艦長席）、島型材質 M.isle、船体リベット/錆テクスチャ、海面法線マップ。
+- 客室甲板（家族用約20室・王の御寝所・大部屋・機関室/タービン）は buildKeiku 内 cruise ブロック。
+- 定員 1107（予備 100 は後部/前部大部屋で休養→戦死砲員を交代）。voices: assets/voices/voices_cv.js（tools/add_cv_voices.py で再生成）。
+- テスト hook: window.__cv / window.__cam。cvBoom(x,z,y,inHull=true,onDeck=true) で甲板穴。

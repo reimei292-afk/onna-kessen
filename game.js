@@ -10290,7 +10290,7 @@ function buildKeiku() {
     cvSlab(-hw, -hw + t, y0, y1, z0, z1, M.hull);
     cvSlab(hw - t, hw, y0, y1, z0, z1, M.hull);
     cvSlab(-hw + t, hw - t, y1 - 0.28, y1, z0, z1, M.steel);
-    cvSlab(-hw - 0.04, hw + 0.04, 0.05, 0.85, z0, z1, M.boot);
+    cvSlab(-hw - 0.04, -hw + 0.02, 0.05, 0.85, z0, z1, M.boot); cvSlab(hw - 0.02, hw + 0.04, 0.05, 0.85, z0, z1, M.boot);
   }
   cvSlab(-2.5, 2.5, -0.6, 3.5, -98.15, -97.7, M.hull);
   cvSlab(-3.9, 3.9, -1.0, 4.1, 89.6, 90.15, M.hull);
@@ -10417,7 +10417,7 @@ function buildKeiku() {
   // 舷側歩廊（飛行甲板の張り出しの下）と、艦尾の遊歩・プール
   cvFloor(-11.3, -8.7, -86, 70, Yh); cvFloor(8.7, 11.3, -86, 70, Yh);
   deckPlate(-11.2, -8.8, -84, 68, Yh, M.steel); deckPlate(8.8, 11.2, -84, 68, Yh, M.steel);
-  deckPlate(-8.0, 8.0, 66, 87, Yh, M.tile);
+  deckPlate(-8.0, -1.1, 66, 87, Yh, M.tile); deckPlate(1.1, 8.0, 66, 87, Yh, M.tile); deckPlate(-1.1, 1.1, 67.6, 87, Yh, M.tile);
   rail(-11.45, -11.3, -60, 68, Yh, 1.0); rail(11.3, 11.45, -60, 68, Yh, 1.0);
   cvFloor(-11.2, 11.2, 64, 88, Yh);
   rail(-8.2, -1.1, 87.7, 87.9, Yh, 1.0); rail(1.1, 8.2, 87.7, 87.9, Yh, 1.0);
@@ -10456,7 +10456,7 @@ function buildKeiku() {
   deckPlate(-7.1, 7.1, 52.2, 63.5, Y1 + 3.12, M.white);
   deckPlate(-7.1, 7.1, 64.2, 73.3, Y1 + 3.12, M.white);
   deckPlate(-1.05, 1.05, 42.4, 43.5, Y1 + 3.12, M.white);
-  deckPlate(-1.05, 1.05, 46.6, 87.2, Y1 + 3.12, M.white);
+  deckPlate(-1.05, 1.05, 46.6, 85.7, Y1 + 3.12, M.white);
   cvSign(0, Y1 + 1.6, 43.2, '中央通路', 0);
   const glow = new THREE.PointLight(0xffe2b8, 0.85, 18); glow.position.set(-3, Y1 + 2.1, 47); stageRoot.add(glow);
   const glow2 = new THREE.PointLight(0xfff0d0, 0.6, 16); glow2.position.set(3, Y1 + 2.2, 58); stageRoot.add(glow2);
@@ -10535,6 +10535,91 @@ function buildKeiku() {
     const a = new THREE.PointLight(0xffe2c0, 0.45, 24); a.position.set(0, Y0 + 1.7, z); stageRoot.add(a);
     const b = new THREE.PointLight(0xfff0d4, 0.4, 24); b.position.set(0, Y2 + 1.6, z); stageRoot.add(b);
     const c = new THREE.PointLight(0xfff3e0, 0.35, 26); c.position.set(0, Y1 + 1.7, z - 10); stageRoot.add(c);
+  }
+  // ── 客室甲板（王の一行だけの航海なので客室は二十）。大部屋の天井の上、格納庫の床の下 ──
+  {
+    const Yg = Y1 + 3.2, top = Yh - 0.3;
+    const cabin = M.cabin || (M.cabin = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#efe6d2'; g.fillRect(0, 0, w, h); for (let x = 0; x < w; x += 64) { g.fillStyle = 'rgba(150,120,80,.12)'; g.fillRect(x, 0, 2, h); } g.fillStyle = '#6b4526'; g.fillRect(0, h * 0.68, w, h * 0.32); g.fillStyle = '#8a5d35'; for (let x = 6; x < w; x += 64) g.fillRect(x, h * 0.72, 52, h * 0.24); g.fillStyle = '#c6a15a'; g.fillRect(0, h * 0.67, w, 3); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2, 1); return t; })() }));
+    const runner = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 256, (g, w, h) => { g.fillStyle = '#5a1a26'; g.fillRect(0, 0, w, h); g.fillStyle = '#c6a15a'; g.fillRect(4, 0, 3, h); g.fillRect(w - 7, 0, 3, h); for (let y = 0; y < h; y += 32) { g.beginPath(); g.arc(w / 2, y + 16, 6, 0, 7); g.fill(); } }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 10); return t; })() });
+    cvFloor(-7.15, 7.15, 46.6, 87.4, Yg);
+    deckPlate(-1.05, 1.05, 46.6, 87.2, Yg - 0.04, M.wood);
+    cvSlab(-0.55, 0.55, Yg + 0.04, Yg + 0.06, 46.8, 87.0, runner);
+    for (const s of [-1, 1]) deckPlate(s * 1.55, s * 7.15, 47, 87.2, Yg - 0.04, M.carpet);
+    wall(-7.2, 7.2, 87.3, 87.7, Yg, top, M.bulk);
+    wall(-7.2, -1.55, 46.6, 47.0, Yg, top, cabin); wall(1.55, 7.2, 46.6, 47.0, Yg, top, cabin);
+    const doors = []; for (let r = 0; r < 10; r++) doors.push([47 + r * 4 + 2.6, 0.48]);
+    gapWall(-1.55, -1.1, 47, 87.3, Yg, top, cabin, doors); gapWall(1.1, 1.55, 47, 87.3, Yg, top, cabin, doors);
+    for (let r = 1; r < 10; r++) for (const s of [-1, 1]) wall(s * 1.55, s * 7.15, 47 + r * 4 - 0.08, 47 + r * 4 + 0.08, Yg, top, cabin);
+    cvSlab(-7.15, 7.15, top, top + 0.12, 46.6, 87.3, M.bulk);   // 天井（格納庫床の裏）
+    cvSlab(-7.15, 7.15, Yh - 0.14, Yh - 0.02, 47.6, 64, M.steel);
+    cvSign(0, Yg + 2.3, 47.1, '客室甲板　王の一行', 0);
+    // 家具は種類ごとに一つの InstancedMesh（描画を軽く）
+    const I = {}, put = (k, geo, mat) => (I[k] = I[k] || { geo, mat, list: [] });
+    const G = (k, geo, mat, x, y, z, ry) => put(k, geo, mat).list.push([x, y, z, ry || 0]);
+    const bedG = new THREE.BoxGeometry(2.0, 0.42, 1.05), matG = new THREE.BoxGeometry(1.92, 0.16, 0.96), pilG = new THREE.BoxGeometry(0.4, 0.12, 0.72), heaG = new THREE.BoxGeometry(0.08, 1.0, 1.08);
+    const deskG = new THREE.BoxGeometry(0.55, 0.06, 1.0), legG = new THREE.BoxGeometry(0.5, 0.72, 0.9), chG = new THREE.BoxGeometry(0.45, 0.45, 0.45), chbG = new THREE.BoxGeometry(0.06, 0.55, 0.45);
+    const wdG = new THREE.BoxGeometry(0.55, 2.0, 0.95), rugG = new THREE.BoxGeometry(2.2, 0.02, 1.6), lampG = new THREE.CylinderGeometry(0.1, 0.16, 0.24, 10), portG = new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16), portR = new THREE.TorusGeometry(0.26, 0.04, 6, 16);
+    const frameG = new THREE.BoxGeometry(0.04, 0.55, 0.75), quilt = M.quilt || (M.quilt = new THREE.MeshLambertMaterial({ color: 0x7a2836 })), lampM = M.lampM || (M.lampM = new THREE.MeshLambertMaterial({ color: 0xffe9b8, emissive: 0x8a6a30 }));
+    for (let r = 0; r < 10; r++) for (const s of [-1, 1]) {
+      const zc = 47 + r * 4 + 2, xo = s * 6.0, f = s > 0 ? 0 : Math.PI;
+      G('bed', bedG, M.woodD, xo, Yg + 0.21, zc - 0.85); G('mat', matG, M.cloth, xo, Yg + 0.5, zc - 0.85); G('quilt', new THREE.BoxGeometry(1.2, 0.05, 1.0), quilt, xo - s * 0.35, Yg + 0.6, zc - 0.85);
+      G('pil', pilG, M.cloth, s * 6.75, Yg + 0.62, zc - 0.85); G('hea', heaG, M.woodD, s * 7.08, Yg + 0.7, zc - 0.85);
+      G('desk', deskG, M.wood, s * 6.8, Yg + 0.76, zc + 1.2); G('dleg', legG, M.woodD, s * 6.8, Yg + 0.37, zc + 1.2);
+      G('chair', chG, M.woodD, s * 6.15, Yg + 0.24, zc + 1.2); G('chb', chbG, M.woodD, s * 5.92, Yg + 0.72, zc + 1.2);
+      G('lamp', lampG, lampM, s * 6.85, Yg + 0.93, zc + 1.5);
+      G('wd', wdG, M.woodD, s * 1.88, Yg + 1.0, zc - 1.35); G('rug', rugG, M.sand, s * 4.1, Yg + 0.05, zc + 0.3);
+      G('port', portG, M.glass, s * 7.13, Yg + 1.75, zc + 0.3, 1); G('portr', portR, M.brass, s * 7.1, Yg + 1.75, zc + 0.3, 2);
+      G('frame', frameG, M.gold, s * 7.12, Yg + 1.75, zc - 0.85);
+      boxes.push({ x0: Math.min(xo - 1.0 * 1, xo + 1.0), x1: Math.max(xo - 1.0, xo + 1.0), z0: zc - 1.4, z1: zc - 0.3, y0: Yg, y1: Yg + 0.65 });
+      boxes.push({ x0: Math.min(s * 6.5, s * 7.1), x1: Math.max(s * 6.5, s * 7.1), z0: zc + 0.7, z1: zc + 1.7, y0: Yg, y1: Yg + 0.8 });
+      boxes.push({ x0: Math.min(s * 1.6, s * 2.16), x1: Math.max(s * 1.6, s * 2.16), z0: zc - 1.85, z1: zc - 0.85, y0: Yg, y1: Yg + 2 });
+      const j = r * 2 + (s > 0 ? 1 : 0), nm = (CV_ROOMS[j] || [''])[0];
+      const sg = cvSign(s * 1.05, Yg + 2.05, zc - 0.5, (j + 1) + '　' + nm, s > 0 ? -Math.PI / 2 : Math.PI / 2); sg.scale.set(0.5, 0.75, 1);
+    }
+    const mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
+    for (const k in I) { const d = I[k], im = new THREE.InstancedMesh(d.geo, d.mat, d.list.length); d.list.forEach((a, i) => { e3.set(a[3] === 2 ? 0 : 0, a[3] === 1 || a[3] === 2 ? Math.PI / 2 : 0, a[3] === 1 ? Math.PI / 2 : 0, 'YXZ'); if (a[3] === 1) e3.set(0, 0, Math.PI / 2); q.setFromEuler(e3); mt.compose(pv.set(a[0], a[1], a[2]), q, one); im.setMatrixAt(i, mt); }); stageRoot.add(im); }
+    // 梯子：大部屋の後ろから客室甲板へ、客室甲板から艦尾遊歩甲板へ
+    cvLad(0, 86.0, 87.1, Y1, Yg); cvLad(0, 66.2, 67.4, Yg, Yh);
+    // 王の間を飾る（天蓋の寝台・シャンデリア・ソファ・肖像画）
+    const KZ = 46.4;
+    cvSlab(-7.1, -1.6, Y1 + 0.02, Y1 + 2.95, 42.4, 42.48, cabin); cvSlab(-7.12, -7.05, Y1 + 0.02, Y1 + 2.95, 42.4, 51.6, cabin);
+    for (const [x, z] of [[-6.5, 44.0], [-6.5, 48.8], [-3.9, 44.0], [-3.9, 48.8]]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 2.5, 8), M.gold); p.position.set(x, Y1 + 1.3, z); stageRoot.add(p); }
+    cvSlab(-6.6, -3.8, Y1 + 2.5, Y1 + 2.6, 43.9, 48.9, M.hin);
+    cvSlab(-6.6, -3.8, Y1 + 1.9, Y1 + 2.5, 43.88, 43.94, M.hin); cvSlab(-6.6, -3.8, Y1 + 1.9, Y1 + 2.5, 48.86, 48.92, M.hin);
+    const ch = new THREE.Group(); ch.position.set(-3.9, Y1 + 2.55, KZ + 1.2); stageRoot.add(ch);
+    const crys = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.06, 0), new THREE.MeshLambertMaterial({ color: 0xfff6dc, emissive: 0x9a8450 }), 36);
+    for (let i = 0; i < 36; i++) { const a = i / 12 * Math.PI * 2, rr = 0.25 + ((i / 12) | 0) * 0.18; mt.makeTranslation(Math.cos(a) * rr, -0.1 - ((i / 12) | 0) * 0.12, Math.sin(a) * rr); crys.setMatrixAt(i, mt); }
+    ch.add(crys); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 6, 20), M.gold); ring.rotation.x = Math.PI / 2; ring.position.y = -0.2; ch.add(ring);
+    cvSlab(-2.6, -1.9, Y1 + 0.02, Y1 + 0.5, 47.2, 50.2, M.hin); cvSlab(-2.1, -1.85, Y1 + 0.5, Y1 + 1.05, 47.2, 50.2, M.hin);
+    const por = canvasTex(128, 160, (g, w, h) => { g.fillStyle = '#2a1c14'; g.fillRect(0, 0, w, h); const gr = g.createRadialGradient(64, 70, 6, 64, 80, 80); gr.addColorStop(0, '#9a7a55'); gr.addColorStop(1, '#2a1c14'); g.fillStyle = gr; g.fillRect(8, 8, w - 16, h - 16); g.fillStyle = '#c6a15a'; g.font = '16px serif'; g.textAlign = 'center'; g.fillText('初代　王', 64, h - 16); });
+    const pm = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.15), new THREE.MeshLambertMaterial({ map: por })); pm.position.set(-5.2, Y1 + 1.8, 42.5); stageRoot.add(pm);
+    cvSlab(-5.72, -4.68, Y1 + 1.18, Y1 + 2.42, 42.44, 42.5, M.gold);
+    boxes.push({ x0: -6.7, x1: -3.7, z0: 43.8, z1: 49, y0: Y1, y1: Y1 + 0.95 }, { x0: -2.7, x1: -1.8, z0: 47.1, z1: 50.3, y0: Y1, y1: Y1 + 0.8 });
+    // 大部屋（侍女の居住）：二段の吊り床とロッカー
+    const lk = new THREE.InstancedMesh(new THREE.BoxGeometry(0.5, 1.9, 0.5), M.steel, 28); let li = 0;
+    for (const s of [-1, 1]) for (let k = 0; k < 14; k++) { mt.makeTranslation(s * 6.85, Y1 + 0.95, 74.3 + k * 0.52); lk.setMatrixAt(li++, mt); }
+    stageRoot.add(lk);
+    const hm2 = new THREE.InstancedMesh(new THREE.BoxGeometry(1.45, 0.07, 0.46), M.cloth, 16); let h2 = 0;
+    for (let i = 0; i < 16; i++) { const x = (i % 2 ? 3.6 : -3.6), z = 76 + (i / 2 | 0) * 1.35; mt.makeRotationZ((i % 2 ? 1 : -1) * 0.1); mt.setPosition(x, Y1 + 1.95, z); hm2.setMatrixAt(h2++, mt); }
+    stageRoot.add(hm2);
+    // 機関室：缶の焚口（火の色）と計器盤、タービンの減速歯車と軸
+    const fire = new THREE.MeshBasicMaterial({ color: 0xff8a3a }), gauge = new THREE.MeshBasicMaterial({ color: 0xf2ecd8 });
+    const fi = new THREE.InstancedMesh(new THREE.BoxGeometry(0.06, 0.22, 0.34), fire, 16), gi = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 12), gauge, 24), ci = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0, 2.5, 1.8), M.gun, 8), up = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.22, 0.22, 1.2, 8), M.pipe || M.steel, 8);
+    let n1 = 0, n2 = 0;
+    for (let i = 0; i < 8; i++) {
+      const s = i < 4 ? -1 : 1, x = s * 3.6, z = -44 + (i % 4) * 4;
+      mt.makeTranslation(x + s * 0.3, Y0 + 1.25, z); ci.setMatrixAt(i, mt); mt.makeTranslation(x, Y0 + 2.9, z); up.setMatrixAt(i, mt);
+      for (const dz of [-0.4, 0.4]) { mt.makeTranslation(x - s * 0.53, Y0 + 0.7, z + dz); fi.setMatrixAt(n1++, mt); }
+      for (const dz of [-0.5, 0, 0.5]) { mt.makeRotationZ(Math.PI / 2); mt.setPosition(x - s * 0.53, Y0 + 1.85, z + dz); gi.setMatrixAt(n2++, mt); }
+    }
+    stageRoot.add(fi, gi, ci, up);
+    for (let i = 0; i < 4; i++) {
+      const x = i % 2 ? 3.4 : -3.4, z = 8 + (i / 2 | 0) * 8;
+      const cas = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.9, 2.6, 14, 1, false, 0, Math.PI), M.gun); cas.rotation.z = Math.PI / 2; cas.rotation.y = Math.PI / 2; cas.position.set(x, Y0 + 1.05, z); stageRoot.add(cas);
+      const gear = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.4), M.steel); gear.position.set(x, Y0 + 0.8, z + 2.4); stageRoot.add(gear);
+      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 30, 8), M.brass); sh.rotation.x = Math.PI / 2; sh.position.set(x * 0.7, Y0 + 0.35, z + 18); stageRoot.add(sh);
+    }
+    cvSign(-3.6, Y0 + 2.4, -46.2, '第一・第二缶室', 0); cvSign(3.4, Y0 + 2.4, 5.4, 'タービン・減速装置', 0);
   }
   cvLad(0, -24.4, -23, Y0, Y1);
   cvLad(0, 6.2, 7.6, Y1, Y2);
@@ -11037,7 +11122,8 @@ function cvRosterBuild() {
   for (let k = 0; k < 5; k++) A('shop', 3.0 + (k % 3) * 1.4, 47 + 9 * 4 + 1.0 + (k > 2 ? 1.6 : 0), Yg, Math.PI / 2);
   for (let k = 0; k < 8; k++) A('kg', k < 4 ? -6.6 : -1.9, 43.6 + (k % 4) * 2.3, Y1, k < 4 ? Math.PI / 2 : -Math.PI / 2);
   grid('kg', 10, 2.0, 6.6, 43, 51, Y1, Math.PI); for (let k = 0; k < 6; k++) A('kg', k % 2 ? 0.6 : -0.6, 48.5 + k * 6.2, Yg, 0); for (let k = 0; k < 6; k++) A('kg', k % 2 ? 0.55 : -0.55, 43 + k * 7.5, Y1, 0, 'walk', 0, 2.5);
-  grid('res', 100, -6.6, 6.6, -55, 40, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel'));
+  grid('res', 24, -6.8, -1.8, 74.4, 87.0, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel')); grid('res', 24, 1.8, 6.8, 74.4, 87.0, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel'));
+  grid('res', 52, -6.6, 6.6, -55, 40, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel'));
   // 王の一行（客室）。名のある人は自分の写真
   for (let j = 0; j < 20; j++) {
     const [name, key] = CV_ROOMS[j]; if (!key) continue;
@@ -11071,7 +11157,7 @@ function cvDespawn(r) {
 function cvStream(dt, force) {
   if (!CV.R) return;
   if (!force && (CV.strT = (CV.strT || 0) - dt) > 0) return; CV.strT = 0.35;
-  const c = camera.position, CAP = LITE ? 64 : 210, RAD = LITE ? 34 : 54, R2 = RAD * RAD, cand = [];
+  const wc = window.__cam, c = wc && wc.p ? { x: wc.p[0], y: wc.p[1], z: wc.p[2] } : camera.position, CAP = LITE ? 64 : 210, RAD = LITE ? 34 : 54, R2 = RAD * RAD, cand = [];
   for (const r of CV.R) {
     r.want = false; if (r.st === 'air' || (r.st !== 'ok' && !r.e)) continue;
     const dx = r.x - c.x, dz = r.z - c.z, dy = (r.y + 1.2 - c.y) * 5, s = dx * dx + dz * dz + dy * dy;

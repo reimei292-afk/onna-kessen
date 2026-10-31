@@ -10633,7 +10633,20 @@ function buildKeiku() {
     // 下甲板：弾薬庫、糧食庫、航空ガソリン庫
     for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const z = -30.6 + i * 3.6; wall(s * 5.2, s * 6.3, z, z + 2.8, Y0, Y0 + 2.0, M.dark); for (let k = 0; k < 3; k++) cvSlab(s * 5.15 - 0.02, s * 5.15 + 0.02, Y0 + 0.3 + k * 0.6, Y0 + 0.36 + k * 0.6, z, z + 2.8, M.brass); }
     cvSign(0, Y0 + 2.5, -31.4, '弾薬庫　二十五粍・十二糎七', 0).scale.set(0.6, 0.6, 1);
-    for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { const z = -14.8 + i * 3.2; wall(s * 4.0, s * 6.1, z, z + 2.2, Y0, Y0 + 0.5 + (i % 3) * 0.35, i % 2 ? Mw : Mfu); }
+    for (const s of [-1, 1]) for (let i = 0; i < 5; i++) { if (s > 0 && i < 3) continue; const z = -14.8 + i * 3.2; wall(s * 4.0, s * 6.1, z, z + 2.2, Y0, Y0 + 0.5 + (i % 3) * 0.35, i % 2 ? Mw : Mfu); }
+    { // 冷蔵の遺体安置室（糧食の冷蔵庫の隣）。戦死した仲間を日本まで連れて帰る
+      const ice = M.iceW || (M.iceW = new THREE.MeshLambertMaterial({ color: 0xdfe9ef })), tile = M.iceT || (M.iceT = new THREE.MeshLambertMaterial({ color: 0xb9c9d3 })), pipe = M.iceP || (M.iceP = new THREE.MeshLambertMaterial({ color: 0xe8f2f8, emissive: 0x1a2a33 }));
+      gapWall(1.8, 2.0, -15.72, -5.6, Y0, Y0 + 3.1, ice, [[-8.0, 0.6]]);
+      wall(1.8, 6.3, -5.8, -5.6, Y0, Y0 + 3.1, ice);
+      cvSlab(2.0, 6.25, Y0 + 0.005, Y0 + 0.02, -15.7, -5.8, tile);
+      cvSlab(6.2, 6.3, Y0, Y0 + 3.1, -15.7, -5.8, ice); cvSlab(2.0, 6.25, Y0 + 3.0, Y0 + 3.1, -15.7, -5.8, ice);
+      for (let k = 0; k < 5; k++) { const pm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 9.8, 8), pipe); pm.rotation.x = Math.PI / 2; pm.position.set(6.05, Y0 + 0.6 + k * 0.45, -10.7); stageRoot.add(pm); }
+      for (const z of [-14, -10, -7]) { const L = new THREE.PointLight(0xcfe6ff, 0.5, 6); L.position.set(4.1, Y0 + 2.6, z); stageRoot.add(L); cvSlab(3.7, 4.5, Y0 + 2.92, Y0 + 3.0, z - 0.15, z + 0.15, M.lamp || pipe); }
+      cvSign(1.75, Y0 + 2.5, -8.0, '冷蔵 遺体安置室', -Math.PI / 2).scale.set(0.55, 0.55, 1);
+      cvSign(4.1, Y0 + 2.3, -5.85, '御遺体 安置　日本まで', Math.PI).scale.set(0.5, 0.5, 1);
+      CV.mgSlots = []; for (let row = 0; row < 5; row++) for (const x of [2.8, 4.0, 5.2]) CV.mgSlots.push([x, -15.0 + row * 1.25]);
+      CV.mgC = [4.1, -10.6]; (CV.steam = CV.steam || []).push && CV.steam.push([4.1, Y0 + 0.3, -12, 'cold']);
+    }
     cvSign(0, Y0 + 2.5, -15.4, '糧食庫　米・味噌・缶詰', 0).scale.set(0.6, 0.6, 1);
     for (let i = 0; i < 5; i++) { const z = 20.6 + i * 3.1; cyl(4.6, z, Y0, 0.85, 2.3, Mred, true); }
     gapWall(2.4, 2.6, 19, 35.6, Y0, Y0 + 3.0, M.bulk, [[27.3, 0.6]]);
@@ -10695,7 +10708,7 @@ function cvSnapFloors() {
   const objs = []; stageRoot.traverse(o => { if (o.isMesh && o.visible && !o.isSprite && !(o.material && o.material.transparent && o.material.opacity < 0.3)) objs.push(o); });
   const rc = new THREE.Raycaster(), dn = new THREE.Vector3(0, -1, 0), o = new THREE.Vector3(); let n = 0;
   for (const f of floors) {
-    if (f.dyn || f.elev || (CV.elevs || []).some(e => e.fl === f || (f.x0 < e.fl.x1 + 1 && f.x1 > e.fl.x0 - 1 && f.z0 < e.fl.z1 + 1 && f.z1 > e.fl.z0 - 1 && Math.abs(f.y - e.fl.y) < 8))) continue;
+    if (f.dyn || f.elev || f.stair || (CV.elevs || []).some(e => e.fl === f || (f.x0 < e.fl.x1 + 1 && f.x1 > e.fl.x0 - 1 && f.z0 < e.fl.z1 + 1 && f.z1 > e.fl.z0 - 1 && Math.abs(f.y - e.fl.y) < 8))) continue;
     const d = [];
     for (const [u, v] of [[0.2, 0.2], [0.8, 0.2], [0.5, 0.5], [0.2, 0.8], [0.8, 0.8], [0.35, 0.65], [0.65, 0.35]]) {
       o.set(f.x0 + (f.x1 - f.x0) * u, f.y + 0.9, f.z0 + (f.z1 - f.z0) * v); rc.set(o, dn); rc.far = 1.6;
@@ -10822,7 +10835,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031j）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031k）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -11693,7 +11706,7 @@ function cvRosterDraw() {
   let rows = ''; for (const [k, lab] of CV_DEPT) { const t = T[k]; if (!t || (!t.n && !t.base)) continue; if (k !== 'fam') { tot += t.n; ok += t.ok; hu += t.hurt; de += t.dead; }
     rows += `<tr data-a="${k}" style="cursor:pointer;${CV.rosSel === k ? 'background:#3a3224' : ''}"><td>${lab}</td><td align=right>${k === 'res' ? 100 : t.base || t.n}</td><td align=right>${t.ok}</td><td align=right style="color:#e8c27a">${t.hurt || ''}</td><td align=right style="color:#c9c3b6">${t.dead || ''}</td><td align=right style="color:#9fd0ff">${k === 'res' ? (CV.resSent || 0) + ' 出動' : t.inn ? '+' + t.inn + ' 予備から' : ''}</td></tr>`; }
   let guns = ''; for (const g of CV.guns) { const m = cvGunMan(g); guns += `<span style="display:inline-block;margin:2px 8px 2px 0;${m ? '' : 'color:#ff9c7a'}">${g.label}(${g.x > 0 ? '右' : '左'}舷${Math.round(-g.z / (CV.S || 1))}) ${m}/${g.need}${m ? '' : ' 沈黙'}</span>`; }
-  let names = ''; if (CV.rosSel) { const L = CV.R.filter(r => r.d === CV.rosSel); names = `<div style="margin:8px 0;padding:8px;background:rgba(255,255,255,.05);columns:4 160px;font-size:12px">${L.map(r => `<div>${r.nm}${r.cap ? '（艦長）' : ''}${r.d0 === 'res' && r.d !== 'res' ? '（予備から）' : ''} <span style="color:${r.st === 'dead' ? '#c9c3b6' : r.st === 'wnd' || r.hurt ? '#e8c27a' : '#9fe0a0'}">${r.st === 'dead' ? '戦死' : r.st === 'wnd' ? '負傷' : r.hurt ? '医務室' : r.task ? '作業中' : '健在'}</span></div>`).join('')}</div>`; }
+  let names = ''; if (CV.rosSel) { const L = CV.R.filter(r => r.d === CV.rosSel); names = `<div style="margin:8px 0;padding:8px;background:rgba(255,255,255,.05);columns:4 160px;font-size:12px">${L.map(r => `<div>${r.nm}${r.cap ? '（艦長）' : ''}${r.d0 === 'res' && r.d !== 'res' ? '（予備から）' : ''} <span style="color:${r.st === 'dead' ? '#c9c3b6' : r.st === 'wnd' || r.hurt ? '#e8c27a' : '#9fe0a0'}">${r.st === 'dead' ? (r.mg ? '戦死・安置室' : '戦死') : r.st === 'wnd' ? '負傷' : r.hurt ? '医務室' : r.task ? '作業中' : '健在'}</span></div>`).join('')}</div>`; }
   const rooms = CV_ROOMS.map((r, j) => `<span style="display:inline-block;width:150px">${j + 1}号室 ${r[0]}</span>`).join('');
   d.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:18px;letter-spacing:.12em">定員表　乗艦 ${tot}（健在 ${ok}・負傷 ${hu}・戦死 ${de}）</div><div><button data-a="res" style="font:inherit;padding:6px 12px;margin-right:8px;background:#9fd0ff;border:0;border-radius:4px">予備員を欠けた持ち場へ</button><button data-a="x" style="font:inherit;padding:6px 14px;background:#e8d9a8;border:0;border-radius:4px">閉じる（R）</button></div></div>
 <table style="width:100%;border-collapse:collapse;margin-top:8px"><tr style="color:#cdb98a"><th align=left>部署（押すと名前）</th><th align=right>定員</th><th align=right>健在</th><th align=right>負傷</th><th align=right>戦死</th><th align=right>予備</th></tr>${rows}</table>${names}
@@ -11718,7 +11731,7 @@ function cvStart() {
   // 収録した声（voices_cv.js）
   CV.vmap = {}; const VL = (window.VOICE_CV || {}).lines || {}; for (const k in VL) { const L = VL[k]; CV.vmap[(L.who || '*') + '|' + L.ja] = L.file; }
   cvStream(0, true);
-  window.__cv = { CV, cvFireStart, cvWaveStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, CV_ZONES, cvTracer, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
+  window.__cv = { CV, cvFireStart, cvWaveStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, CV_ZONES, cvTracer, cvMorgueStep, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
   let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;pointer-events:auto;touch-action:manipulation;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
     const tg = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; CV.rosOpen ? cvRosterClose() : cvRosterOpen(); };
     b.addEventListener('click', tg); b.addEventListener('touchstart', tg, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); }
@@ -11775,6 +11788,60 @@ function cvMapStep(dt) {
   g.fillStyle = 'rgba(10,16,24,.85)'; g.fillRect(0, 0, W, 38); g.fillStyle = '#f6e7c4'; g.font = '600 17px sans-serif'; g.fillText(CV_DECKN[dk] || '', W / 2, 12); g.font = '15px sans-serif'; g.fillText(here || (dk === 'Yb' ? '艦橋' : ''), W / 2, 29);
   g.fillStyle = 'rgba(246,231,196,.7)'; g.font = '12px sans-serif'; g.fillText('艦首', W / 2, 46);
 }
+// ---- 担架班：戦死した仲間を冷蔵の安置室へ。空襲の最中はそのまま、波の合間と空襲の後に運ぶ（海には葬らない） ----
+function cvMorgueStep(dt) {
+  if (!CV.R || !CV.mgSlots) return;
+  const S = CV.S || 1, M = CV.mg || (CV.mg = { n: 0, wait: 2, team: null });
+  // 安置室の中は近くに来たら横たわった姿で見せる
+  if ((M.showT = (M.showT || 0) - dt) <= 0) { M.showT = 0.6;
+    const c = camera.position, near = Math.abs(c.y - (0.72 + 1.5) * S) < 3 * S && Math.hypot(c.x - CV.mgC[0] * S, c.z - CV.mgC[1] * S) < 16 * S;
+    for (const r of CV.R) if (r.mg && r.st === 'dead') {
+      if (near && !r.e) { const e = cvSpawnR(r); if (e) { r.e = e; e.quietDeath = true; killEnemy(e, false, { x: r.x + 1, z: r.z }); } }
+    }
+  }
+  const T = M.team;
+  if (CV.phase === 'raid') { if (T && T.ph !== 'go') cvMgDrop(T); return; }   // 空襲中は倒れた場所のまま
+  if (!T) {
+    if ((M.wait -= dt) > 0) return; M.wait = 1.5;
+    const c = camera.position; let body = null, bd = 1e9;
+    for (const r of CV.R) if (r.st === 'dead' && !r.mg && !r.carry) { const d = Math.hypot(r.x - c.x, r.z - c.z) + Math.abs(r.y - c.y) * 4; if (d < bd) { bd = d; body = r; } }
+    if (!body) return;
+    const pool = CV.R.filter(r => r.st === 'ok' && !r.task && !r.job && !r.stb && (r.d === 'res' || r.d === 'med') && !r.cap);
+    if (pool.length < 2) { cvMgStow(body); return; }
+    pool.sort((a, b) => Math.hypot(a.x - body.x, a.z - body.z) - Math.hypot(b.x - body.x, b.z - body.z));
+    const b = [pool[0], pool[1]]; for (const q of b) { q.stb = { x: q.x, y: q.y, z: q.z, f: q.f, w: q.w }; q.w = 'stand'; q.job = 'stretcher'; }
+    body.carry = true; M.team = { body, b, ph: 'go', t: 0 };
+    if (!M.kingSaid) { M.kingSaid = true; setTimeout(() => { if (!CV.on) return; subtitle('王「腐らないように冷たい部屋に置いて、日本まで持ち帰るぞ」'); const el = $('subtitle'); if (el) el.textContent = '王「腐らないように冷たい部屋に置いて、日本まで持ち帰るぞ」'; }, 600);
+      setTimeout(() => { if (!CV.on) return; const md = CV.R.find(r => r.d === 'med' && r.st === 'ok'); cvSay(md, '担架班、ご遺体を下甲板の安置室へ。顔はきれいにしてあげて', 1.6); }, 4200); }
+    return;
+  }
+  T.t += dt; const B = T.body;
+  if (B.st !== 'dead') { cvMgEnd(T, false); return; }
+  if (T.ph === 'go') {   // 担架を持って駆けつける
+    T.b.forEach((q, i) => { q.x = B.x + (i ? 0.75 : -0.75) * S; q.z = B.z + 0.2 * S; q.y = B.y; q.ySnap = false; q.mv = true; if (q.e && Math.abs(q.e.baseY - B.y) > 0.8) cvDespawn(q); });
+    if (T.t > 3.5) { T.ph = 'carry'; T.t = 0; T.dir = Math.abs(B.x) > 2 * S ? [-Math.sign(B.x), 0] : [0, B.z > CV.mgC[1] * S ? -1 : 1];
+      const st = new THREE.Group(), pm = CV.M.wood || CV.M.deck, cm = CV.M.cloth || CV.M.white;
+      for (const sx of [-0.28, 0.28]) { const pole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 2.3), pm); pole.position.x = sx; st.add(pole); }
+      const can = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.02, 1.8), cm); st.add(can); stageRoot.add(st); T.st = st; }
+  } else if (T.ph === 'carry') {   // 二人で担いで運ぶ（倒れた姿のまま担架に）
+    const sp = 1.1 * S * dt; B.x += T.dir[0] * sp; B.z += T.dir[1] * sp;
+    const yaw = Math.atan2(T.dir[0], T.dir[1]);
+    T.b.forEach((q, i) => { q.x = B.x + T.dir[0] * (i ? 1.0 : -1.0) * S; q.z = B.z + T.dir[1] * (i ? 1.0 : -1.0) * S; q.mv = true; q.f = yaw; });
+    if (T.st) { T.st.position.set(B.x, B.y + 0.75 * S, B.z); T.st.rotation.y = yaw; T.st.scale.setScalar(S); }
+    if (B.e) { B.e.s.position.set(B.x, B.y + 0.8 * S, B.z); B.e.baseY = B.y + 0.8 * S; }
+    if (T.t > 7 || floorUnder(B.x + T.dir[0] * 1.5 * S, B.z + T.dir[1] * 1.5 * S, B.y + 0.3) < B.y - 0.5) { cvMgStow(B); cvMgEnd(T, true); }
+  }
+}
+function cvMgStow(B) {
+  const S = CV.S || 1, M = CV.mg, sl = CV.mgSlots[M.n % CV.mgSlots.length], lay = Math.floor(M.n / CV.mgSlots.length); M.n++;
+  cvDespawn(B); B.x = (sl[0] + lay * 0.12) * S; B.z = (sl[1] + lay * 0.3) * S; B.y = (0.72 + lay * 0.05) * S; B.ySnap = false; B.mg = true; B.carry = false; B.loc = '安置室';
+}
+function cvMgDrop(T) { if (T.body.e) { T.body.e.s.position.y = T.body.y; T.body.e.baseY = T.body.y; } T.body.carry = false; cvMgEnd(T, false); }
+function cvMgEnd(T, ok) {
+  if (T.st && T.st.parent) T.st.parent.remove(T.st);
+  for (const q of T.b) if (q.stb) { Object.assign(q, { x: q.stb.x, y: q.stb.y, z: q.stb.z, f: q.stb.f, w: q.stb.w }); q.stb = null; q.job = null; q.mv = false; q.ySnap = true; if (q.e) cvDespawn(q); }
+  CV.mg.team = null; if (ok) CV.mg.wait = 2.5;
+}
 // 扉は近づけば自分で開く（E／頼む を押さなくても入れる）。押せば閉められる
 function cvDoorAuto(dt) {
   if (CV.ride || state !== 'play') return;
@@ -11801,7 +11868,7 @@ function updateCv(dt) {
   const endBtn = $('bCvEnd'), rosBtn = $('bCvRos');
   if (!CV.on || state !== 'play') { if (!CV.on) { const mp = $('cvMap'); if (mp) mp.style.display = 'none'; if (endBtn) endBtn.style.display = 'none'; if (rosBtn) rosBtn.style.display = 'none'; const d = $('cvRos'); if (d) d.style.display = 'none'; } return; }
   if (endBtn) endBtn.style.display = 'block'; if (rosBtn) rosBtn.style.display = 'block';
-  CV.t += dt; cvMapStep(dt); cvSteamStep(dt); cvDoorAuto(dt);
+  CV.t += dt; cvMapStep(dt); cvSteamStep(dt); cvDoorAuto(dt); cvMorgueStep(dt);
   const S = CV.S || 1;
   if (CV.sea) { const m = CV.sea.material; if (m.map) { m.map.offset.y = (m.map.offset.y + dt * 0.012) % 1; } if (m.normalMap) { m.normalMap.offset.y = (m.normalMap.offset.y + dt * 0.02) % 1; m.normalMap.offset.x = Math.sin(time * 0.05) * 0.1; } }
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
@@ -20385,7 +20452,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

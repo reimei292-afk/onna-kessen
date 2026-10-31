@@ -654,7 +654,7 @@ function abGo(P, x, z, spd) { if (P.st !== 'ok') return; P.tgt = new V3(x, 0, z)
 function abDown(P, dead, sheet) {   // 倒れる／担架に横たえる：体は残る
   if (P.st === 'down') return; P.st = 'down'; P.dead = !!dead; P.tgt = null; P.s.visible = false;
   const m = new THREE.Mesh(AB.flatGeo || (AB.flatGeo = new THREE.PlaneGeometry(1, 1)), abFlatMat(P.gid, true)); m.scale.set(P.h * P.asp, P.h, 1); m.rotation.x = -Math.PI / 2; m.position.set(P.p.x, 0.06, P.p.z); stageRoot.add(m); P.flat = m;
-  if (sheet) abSheet(P);
+  if (P.inPlane) m.visible = false; if (sheet) abSheet(P);
 }
 function abSheet(P) { if (P.sheet || !P.flat) return; const b = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.14, P.h * 0.95), abMat(0xf2f1ec)); b.position.copy(P.flat.position); b.position.y += 0.08; b.rotation.y = P.flat.rotation.z; stageRoot.add(b); P.sheet = b; }
 function abPersonTick(P, dt) {
@@ -665,7 +665,7 @@ function abPersonTick(P, dt) {
 // ---- 担架（二人で運ぶ。横たわる人の上に白布）----
 function abStretcher(P, a, b, to, sheet, then) {
   const g = new THREE.Group(); g.add(new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.05, 2.0), abMat(0x6e5a3a))); g.children[0].position.y = 0.55; g.position.copy(P.p); stageRoot.add(g);
-  if (!P.flat) abDown(P, P.dead, false); P.flat.position.set(0, 0.6, 0); P.flat.rotation.set(-Math.PI / 2, 0, 0); g.add(P.flat); stageRoot.remove(P.flat);
+  if (!P.flat) abDown(P, P.dead, false); if (P.inPlane) { P.inPlane.parent && P.inPlane.parent.remove(P.inPlane); P.inPlane = null; P.flat.visible = true; if (P.plane) P.plane.aboard = Math.max(0, (P.plane.aboard || 0) - 1); } P.flat.position.set(0, 0.6, 0); P.flat.rotation.set(-Math.PI / 2, 0, 0); g.add(P.flat); stageRoot.remove(P.flat);
   if (sheet) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.14, P.h * 0.95), abMat(0xf2f1ec)); b.position.y = 0.68; g.add(b); P.sheet = b; }
   const S = { g, P, a, b, to: to.clone(), then, spd: 2.4 }; for (const q of [a, b]) if (q) { q.busy = S; q.tgt = null; } AB.str.push(S); return S;
 }
@@ -803,7 +803,27 @@ function abSortie() {   // 乗り込み → 穴をよけて滑走 → 離陸。�
   AB.ph = 'tko'; abLine('tko'); const lc = AB.line.slice(); let li = 0;
   AB.sortie.forEach((P, i) => { const n = P.kind === 'g4m' ? 7 : 1; P.crewC = []; for (let k = 0; k < n && li < lc.length; k++) { const C = lc[li++]; P.crewC.push(C); C.spd = 2.4; abGo(C, P.p.x + 3, P.p.z + 2); C.onArrive = () => { C.s.visible = false; C.aboard = P; }; if (AB.talk[C.vk]) P.talk = { gid: C.gid, kind: AB.talk[C.vk], lab: C.talkLab || '搭乗員' }; } });
   for (const C of lc.slice(li)) { abGo(C, C.home.x - 10, C.home.z, 1.2); }   // 残りは見送り
-  AB.sortie.forEach((P, i) => AB.q.push([AB.t + 25 + i * 5, () => { P.run = true; P.st = 'taxi'; const rx = P.kind === 'g4m' ? 0 : 110; P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 660), new V3(rx, 0, 660), new V3(rx, 0, 640)]; P.onTaxiEnd = 1; if (i === 17) { P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 6)]; P.craterHit = true; } }]));
+  AB.sortie.forEach((P, i) => AB.q.push([AB.t + 25 + i * 5, () => { if (P.st !== 'park') return; P.run = true; P.st = 'taxi'; const rx = P.kind === 'g4m' ? 0 : 110; P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 660), new V3(rx, 0, 660), new V3(rx, 0, 640)]; P.onTaxiEnd = 1; if (i === 17) { P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 6)]; P.craterHit = true; } }]));
+  abSkipBtns(true);
+}
+function abSkipBtns(on) {   // 帽振れのあと：二つの「飛ばす」
+  let w = $('abSkip'); if (!on) { if (w) w.remove(); return; } if (w) w.remove();
+  w = document.createElement('div'); w.id = 'abSkip'; w.style.cssText = 'position:fixed;z-index:61;top:calc(68px + var(--sat,0px));left:calc(16px + var(--sal,0px));display:flex;gap:8px;flex-wrap:wrap;max-width:calc(100vw - 260px)';
+  const mk = (tx, fn) => { const b = document.createElement('button'); b.type = 'button'; abBtnCss(b); b.style.fontSize = '14px'; b.style.padding = '6px 12px'; b.textContent = tx; b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); fn(); }; w.appendChild(b); return b; };
+  if (!AB.sortie.some(P => P.st === 'tko' || P.st === 'gone')) mk('① 滑走開始まで飛ばす', () => { abSkipBtns(false); abSkipToRoll(); abSkipBtns(true); });
+  mk('② 帰還直前まで飛ばす', () => { abSkipBtns(false); abSkipToRet(true); });
+  mk('飛ばす', () => { abSkipBtns(false); abSkipToRet(false); });
+  document.body.appendChild(w);
+}
+function abFast(cond, maxT) { AB.fast = true; let t = 0; try { while (t < maxT && !cond()) { abUpdate(0.1); t += 0.1; } } finally { AB.fast = false; } abCaption('……', 1.2); return t; }
+function abSkipToRoll() {   // ① 一番機が滑走路で滑走を始めるまで
+  const first = () => AB.sortie.find(P => P.st === 'tko');
+  abFast(() => !!first(), 400); const P = first(); if (P) { player.pos.x = P.p.x - 30; player.pos.z = P.p.z - 40; }
+}
+function abSkipToRet(near) {   // ② 一番機が帰ってくる少し前まで：残りは発進済みとして扱う
+  for (const P of AB.sortie) { if (P.st === 'gone' || P.st === 'wreck') continue; if (P.craterHit || P.idx === 17) { P.craterHit = false; P.p.set(-40, P.y0, 6); P.g.visible = true; abCraterHit(P); continue; } P.st = 'gone'; P.g.visible = false; P.run = false; P.path = []; }
+  for (const C of AB.line || []) if (C.st === 'ok' && C.tgt && C.onArrive) { C.p.copy(C.tgt); C.tgt = null; const f = C.onArrive; C.onArrive = null; f(C); }
+  AB.ffShown = true; abNextBtn(null); abFF(); if (near) abFast(() => AB.planes.some(P => P.st === 'app'), 60);
 }
 function abCraterHit(P) {   // 穴に脚を取られて前のめりに転覆、火が出る
   P.st = 'wreck'; P.run = false; P.g.rotation.x = 0.9; P.p.y = P.y0 + 0.6; P.burn = true; abNoise(1.2, 0.2, 400); abLine('crater', P.p); AB.fireQ.push(P); P.dmg.crash = 1;
@@ -815,7 +835,7 @@ function abFF() {   // 飛ばす：数時間後、帰還
   AB.planes = AB.planes.filter(P => !P.dead);
   const up = AB.sortie.filter(P => P.st === 'gone'); const L = [];
   for (const P of up) { const lost = Math.random() < (P.kind === 'g4m' ? 0.3 : 0.22); if (lost) { if (P.talk) AB.missT = (AB.missT || []).concat([P]); continue; }
-    const d = {}; const r = Math.random(); if (r < 0.25) d.smoke = 1; if (r < 0.1) d.belly = 1; if (r > 0.85) d.crater = 1; if (P.kind === 'g4m' && Math.random() < 0.2) d.eng = 1; L.push({ kind: P.kind, d, talk: P.talk, lab: P.label }); }
+    const d = {}; const r = Math.random(); if (r < 0.25) d.smoke = 1; if (r < 0.1) d.belly = 1; if (r > 0.85) d.crater = 1; if (P.kind === 'g4m' && Math.random() < 0.2) d.eng = 1; L.push({ kind: P.kind, d, talk: P.talk, lab: P.label, gids: (P.crewC || []).map(c => c.gid) }); }
   AB.n.g4m = 0; AB.n.zero = 0; abHud(); AB.sched = L; AB.next = AB.t + 6;
 }
 function abRetTalk(P, C) {   // 話した子が帰ってきた
@@ -827,7 +847,7 @@ function abUpdate2(dt) {
   if (AB.wrecks) for (const P of AB.wrecks) if (Math.random() < dt * 3) abPx('smoke', P.p.clone().setY(1.5).add(new V3(rand(-2, 2), 0, rand(-2, 2))), new V3(rand(-0.3, 0.3), 2.5, 0.4), 9, [0.2, 0.19, 0.18], [0.5, 0.49, 0.47]);
   if (AB.ph === 'night' && (AB.mT = (AB.mT || 2) - dt) <= 0) { AB.mT = rand(2.5, 5); const q = abNear(player.pos, 14, p => p.hall && p.st === 'ok'); if (q) abSay(q, abPick(AB_LN.party.slice(2)), 0.8); }
   if (AB.ph === 'tko') { for (const P of AB.sortie) { if (P.craterHit && P.st === 'taxi' && !P.path.length) { abCraterHit(P); P.craterHit = false; } if (P.st === 'taxi' && P.onTaxiEnd && !P.path.length) { P.st = 'tko'; P.t2 = 0; } }
-    if (!AB.ffShown && AB.sortie.every(P => P.st === 'gone' || P.st === 'wreck')) { AB.ffShown = true; showBanner('全機発進', '「飛ばす」で帰還まで進む'); abNextBtn('飛ばす', () => abFF()); } }
+    if (!AB.ffShown && AB.sortie.every(P => P.st === 'gone' || P.st === 'wreck')) { AB.ffShown = true; showBanner('全機発進', '「飛ばす」で帰還まで進む'); abSkipBtns(true); } }
   if (AB.ph === 'ret' && AB.sched && !AB.sched.length && !AB.missDone && AB.planes.every(P => P.st !== 'app' && P.st !== 'roll')) { AB.missDone = true; abMissReport(); }
 }
 
@@ -900,15 +920,24 @@ function abRadio3() {   // 数時間後、無線室
 function abRadioNext(i) {
   if (!AB.on) return; if (i >= 12) { abSeq([['fumi', AB_LN.fumi3[0][1]], ['k', '……よく、行った'], ['k', '……作戦を終える']], () => { AB.radioOn = false; showBanner('交信、すべて終わった', '「作戦終了」で終える'); }); return; }
   const C = AB.kami[i], lab = `${i + 1}番機 ${AB_KAMI_N[i]}`, r = Math.random(), kind = r < 0.35 ? 'a' : r < 0.65 ? 'b' : 'c'; const op = AB.ops[i % 6], op2 = AB.ops[(i + 3) % 6];
-  AB.cast.pil = { p: player.pos, label: lab + '（無線）' }; AB.cast.op = op; AB.cast.op2 = op2; AB.cast.fumi = AB.nm.fumi;
+  abPilPanel(C, lab, 'on'); AB.cast.pil = { p: player.pos, label: lab + '（無線）' }; AB.cast.op = op; AB.cast.op2 = op2; AB.cast.fumi = AB.nm.fumi;
   const s = [['pil', abPick(AB_LN.p3_go), 0.8]];
   if (kind === 'c') { s.push(['pil', abPick(AB_LN.p3_c)], ['@tone', ''], ['@pause', '', 4.2], ['op', AB_LN.op3[2]], ['op2', AB_LN.op3[5], 0.6], ['op', AB_LN.op3[3]]); }
   else { s.push(['pil', abPick(kind === 'a' ? AB_LN.p3_a : AB_LN.p3_b)], ['@static', ''], ['op', AB_LN.op3[0]], ['op2', AB_LN.call3[i]], ['op', AB_LN.op3[0], 0.8], ['op', AB_LN.op3[1]], ['op2', AB_LN.op3[4]], ['op', AB_LN.op3[3]]); }
   if (i === 2) s.push(['fumi', AB_LN.fumi3[1][1]]); s.push(['k', ['……', '……すまない', '……忘れない', '……そうか'][i % 4]]);
-  abSeq(s, () => { const ok = kind === 'c'; AB.res3[ok ? 'ok' : 'lost']++; if (ok) AB.n.zero++; abLog3(`${abClock(i)}　${lab}　${ok ? '長符　突入確認' : '信号途絶'}`); AB.q.push([AB.t + 2.5, () => abRadioNext(i + 1)]); });
+  abSeq(s, () => { const ok = kind === 'c'; AB.res3[ok ? 'ok' : 'lost']++; if (ok) AB.n.zero++; abLog3(`${abClock(i)}　${lab}　${ok ? '長符　突入確認' : '信号途絶'}`); abPilPanel(C, lab, ok ? 'hit' : 'lost'); AB.q.push([AB.t + 2.5, () => abRadioNext(i + 1)]); });
+}
+function abImgSrc(gid) { const G = GIRLS[gid], im = G && G.front && G.front.tex && G.front.tex.image; if (!im) return ''; try { return im.toDataURL ? im.toDataURL() : (im.currentSrc || im.src || ''); } catch (e) { return im.src || ''; } }
+function abPilPanel(C, lab, st) {   // 無線室：いま交信している隊員の姿と名前（整列・抱擁と同じ絵）
+  let d = $('abPil'); if (!C) { if (d) d.remove(); return; }
+  if (!d) { d = document.createElement('div'); d.id = 'abPil'; d.style.cssText = 'position:fixed;left:calc(min(46vw,280px) + 28px + var(--sal,0px));top:calc(64px + var(--sat,0px));z-index:60;display:flex;gap:8px;align-items:center;padding:5px 10px 5px 5px;background:rgba(14,14,12,.66);border:1px solid #8a7a50;border-radius:4px;color:#efe6cc;pointer-events:none;transition:opacity .6s,filter .6s;font-size:12px;line-height:1.4';
+    d.innerHTML = '<div style="width:48px;height:min(86px,22vh);display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.3)"><img style="max-height:100%;max-width:100%;object-fit:contain"></div><div><div class="h" style="letter-spacing:.15em;color:#e8d9a8;font-size:11px"></div><div class="n" style="font-weight:bold;white-space:nowrap"></div><div class="s" style="font-size:11px"></div></div>'; document.body.appendChild(d); }
+  if (d.dataset.gid !== C.gid) { d.dataset.gid = C.gid; d.querySelector('img').src = abImgSrc(C.gid); }
+  d.querySelector('.h').textContent = st === 'on' ? '交信中' : '交信終了'; d.querySelector('.n').textContent = lab; d.querySelector('.s').textContent = st === 'on' ? '● 受信' : st === 'hit' ? '長符　突入' : '信号途絶';
+  d.style.filter = st === 'on' ? 'none' : 'grayscale(1) brightness(.5)'; d.style.opacity = st === 'on' ? '1' : '.8'; d.dataset.st = st;
 }
 function abClock(i) { const m = 40 + i * 3 + ((i * 7) % 3); return `${10 + ((m / 60) | 0)}時${String(m % 60).padStart(2, '0')}分`; }
-function abLog3(line) { let d = $('abLog'); if (!d) { d = document.createElement('div'); d.id = 'abLog'; d.style.cssText = 'position:fixed;left:calc(16px + var(--sal,0px));top:calc(64px + var(--sat,0px));z-index:60;max-width:46vw;max-height:52vh;overflow:hidden;font-size:12px;line-height:1.5;color:#efe6cc;background:rgba(14,14,12,.62);border:1px solid #8a7a50;padding:6px 10px;border-radius:4px;pointer-events:none'; d.innerHTML = '<div style="letter-spacing:.2em;color:#e8d9a8">通信記録</div>'; document.body.appendChild(d); }
+function abLog3(line) { let d = $('abLog'); if (!d) { d = document.createElement('div'); d.id = 'abLog'; d.style.cssText = 'position:fixed;left:calc(16px + var(--sal,0px));top:calc(64px + var(--sat,0px));z-index:60;max-width:min(46vw,280px);max-height:52vh;overflow:hidden;font-size:12px;line-height:1.5;color:#efe6cc;background:rgba(14,14,12,.62);border:1px solid #8a7a50;padding:6px 10px;border-radius:4px;pointer-events:none'; d.innerHTML = '<div style="letter-spacing:.2em;color:#e8d9a8">通信記録</div>'; document.body.appendChild(d); }
   if (line) { const r = document.createElement('div'); r.textContent = line; d.appendChild(r); while (d.children.length > 9) d.children[1].remove(); } }
 function abStatic(sec) { abNoise(sec, 0.07, 2600); abNoise(sec * 0.8, 0.04, 900, 0.2); }
 function abRadioFx(dt) {   // 無線の向こうの音：発動機・機銃・高角砲・雑音
@@ -1139,7 +1168,7 @@ function abSched1() {   // 帰ってくる順と傷み方
   return L;
 }
 function abReset() {
-  AB.cast = null; AB.kami = null; AB.gh = null; AB.bulbs = null; AB.radioOn = false; AB.walk = null; AB.docM = null; AB.docK = null; AB.docTo = null; AB.docFrom = null; AB.seals = 0; AB.choice = null; AB.vis = null; AB.visN = 0; AB.hugN = 0; AB.blanket = null; AB.ops = null; AB.res3 = null; for (const id of ['abLog', 'abDoc', 'abChoice']) { const e = $(id); if (e) e.remove(); }
+  AB.cast = null; AB.kami = null; AB.gh = null; AB.bulbs = null; AB.radioOn = false; AB.walk = null; AB.docM = null; AB.docK = null; AB.docTo = null; AB.docFrom = null; AB.seals = 0; AB.choice = null; AB.vis = null; AB.visN = 0; AB.hugN = 0; AB.blanket = null; AB.ops = null; AB.res3 = null; for (const id of ['abLog', 'abDoc', 'abChoice', 'abPil', 'abSkip']) { const e = $(id); if (e) e.remove(); }
   AB.ppl = []; AB.planes = []; AB.veh = []; AB.str = []; AB.q = []; AB.gl = 0; AB.zl = 0; AB.ph = null; AB.ffShown = false; AB.missDone = false; AB.missT = null; AB.talk = {}; AB.sortie = []; AB.line = []; AB.hall = []; AB.alarm = 0; abNextBtn(null); AB.waits = []; AB.dT = 0; AB.sched = null; AB.t = 0; AB.said = {}; AB.log = []; AB.n.g4m = 0; AB.n.zero = 0; AB.bodyN = 0; AB.bedN = 0; AB.slot = 0; AB.alarm = 0; AB.ask = false; AB.over = false; AB.ambT = 4; AB.fuelQ = []; AB.towQ = []; AB.fireQ = [];
   player.pos.set(-58, 0, 40); player.yaw = Math.PI / 2 + 0.25; player.pitch = 0.02; player.hp = CFG.maxHp;
 }
@@ -1153,7 +1182,7 @@ function abStart() {
 }
 // ---- 一機ずつ ----
 function abLaunch(o) {
-  const P = abPlane(o.kind, o.d), rx = o.kind === 'g4m' ? AB_RW[0] + rand(-4, 4) : AB_RW[1] + rand(-4, 4); P.rx = rx; P.st = 'app'; P.t = 0; P.run = true; P.T = o.kind === 'g4m' ? 30 : 24;
+  const P = abPlane(o.kind, o.d), rx = o.kind === 'g4m' ? AB_RW[0] + rand(-4, 4) : AB_RW[1] + rand(-4, 4); P.rx = rx; P.st = 'app'; P.t = 0; P.run = true; P.crewG = o.gids || null; abSeatCrew(P); P.T = o.kind === 'g4m' ? 30 : 24;
   P.a = new V3(rx + rand(-30, 30), 150, 2100); P.b = o.d.crash ? new V3(rx + rand(-20, 20), P.y0 * 0.4, 820 + rand(0, 60)) : new V3(rx, P.y0, 640); P.p.copy(P.a);
   if (o.d.belly || o.d.crash) P.gear.visible = false; P.label = o.lab || ((o.kind === 'g4m' ? '陸攻' : '零戦') + (o.kind === 'g4m' ? ++AB.gl : ++AB.zl) + '番機'); P.talk = o.talk || null;
   if (!AB.said.first) { AB.said.first = 1; setTimeout(() => AB.on && abSay(AB.nm.sumi, AB_LN.named[0][1]), 1500); } else if (Math.random() < 0.5) setTimeout(() => AB.on && abLine('amb'), 2500);
@@ -1173,15 +1202,27 @@ function abPlaneTick(P, dt) {
   if (P.st === 'tko') { P.t2 = (P.t2 || 0) + dt; const v = Math.min(55, P.t2 * 6); P.p.z -= v * dt; if (v > 40) { P.p.y += (v - 40) * 0.5 * dt; P.g.rotation.x = -0.12; } if (P.p.z < -1800) { P.st = 'gone'; P.g.visible = false; P.run = false; } }
 }
 function abCrewN(P) { return P.kind === 'g4m' ? 7 : 1; }
+const AB_SEAT = { g4m: [[-0.4, 0.15, -5.4], [0.4, 0.15, -5.4], [0, -0.1, -8.2], [0, 0.35, -1.6], [-0.5, -0.05, 3.2], [0.5, -0.05, 3.2], [0, -0.05, 9.6]], zero: [[0, 0.22, -0.45]] };
+function abFate(P) { const n = abCrewN(P), d = P.dmg; let dead = 0, wnd = 0;
+  if (d.crash) { dead = P.kind === 'g4m' ? 3 + ((Math.random() * 2) | 0) : 1; wnd = n - dead; } else if (d.grim) { dead = 2; wnd = 2; } else if (d.belly) { dead = Math.random() < 0.5 ? 1 : 0; wnd = 2; } else if (d.smoke) { dead = Math.random() < 0.35 ? 1 : 0; wnd = (Math.random() * 2) | 0; }
+  return { dead, wnd }; }
+function abSeatDead(P, k) { const n = abCrewN(P), f = P.fate; return P.dmg.grim ? k < 2 : k >= n - f.dead; }
+function abSeatCrew(P) {   // 帰ってきた機：席に座った搭乗員が見える。戦死した者は席で崩れたまま
+  P.fate = abFate(P); P.seat = []; const pool = abGids(), base = (AB.planes.length * 5 + 1);
+  AB_SEAT[P.kind].forEach((v, k) => { const gid = (P.crewG && P.crewG[k] && GIRLS[P.crewG[k]] && GIRLS[P.crewG[k]].front) ? P.crewG[k] : pool[(base + k * 3) % pool.length], G = GIRLS[gid], hk = G.front.hk || 1, asp = G.front.aspect || 0.3, h = AB_H * hk * 0.82, dead = abSeatDead(P, k); let m;
+    if (dead) { m = new THREE.Mesh(AB.flatGeo || (AB.flatGeo = new THREE.PlaneGeometry(1, 1)), abFlatMat(gid, true)); m.scale.set(h * asp, h, 1); m.rotation.set(-1.05, k % 2 ? 0.5 : -0.5, k % 2 ? -0.35 : 0.35); m.position.set(v[0] + (k % 2 ? 0.12 : -0.12), v[1] - 0.35, v[2] - 0.2); }
+    else { m = new THREE.Sprite(abSprMat(gid)); m.center.set(0.5, 0); m.scale.set(h * asp, h, 1); m.position.set(v[0], v[1] - h * 0.45 + (P.kind === 'zero' ? 0.25 : 0), v[2]); }
+    m.userData.seat = k; P.g.add(m); P.seat.push({ gid, m, dead }); });
+}
 function abStopped(P) {   // 止まった：人を出す・消火・担架・整備の手配
   if (P.kind === 'g4m') AB.n.g4m++; else AB.n.zero++; abHud();
   if (P.burn) AB.fireQ.push(P);
-  const n = abCrewN(P), d = P.dmg; let dead = 0, wnd = 0;
-  if (d.crash) { dead = P.kind === 'g4m' ? 3 + ((Math.random() * 2) | 0) : 1; wnd = n - dead; } else if (d.grim) { dead = 2; wnd = 2; } else if (d.belly) { dead = Math.random() < 0.5 ? 1 : 0; wnd = 2; } else if (d.smoke) { dead = Math.random() < 0.35 ? 1 : 0; wnd = (Math.random() * 2) | 0; }
+  const n = abCrewN(P), d = P.dmg; if (!P.fate) P.fate = abFate(P); const dead = P.fate.dead, wnd = P.fate.wnd; P.aboard = 0;
   const delay = P.burn ? 16 : 3;
   AB.q.push([AB.t + delay, () => {
     const out = [];
-    for (let k = 0; k < n; k++) { const side = k % 2 ? 1 : -1, x = P.p.x + side * rand(2.5, 4.5), z = P.p.z + rand(-3, 6); const C = abPerson(x, z, '搭乗員', { kind: 'crew', label: (P.label || '') + ' 搭乗員' }); out.push(C);
+    for (let k = 0; k < n; k++) { const side = k % 2 ? 1 : -1, x = P.p.x + side * rand(2.5, 4.5), z = P.p.z + rand(-3, 6), st = P.seat && P.seat[k]; const C = abPerson(x, z, '搭乗員', { kind: 'crew', label: (P.label || '') + ' 搭乗員', gid: st && st.gid }); out.push(C);
+      if (st && st.dead) { C.inPlane = st.m; C.plane = P; P.aboard++; const wp = new V3(); st.m.getWorldPosition(wp); C.p.set(P.p.x + side * 2.2, 0, wp.z); } else if (st) { P.g.remove(st.m); }
       if (d.grim && k === 0) { C.label = P.label + ' 機長'; abDown(C, true); C.need = 'body'; }
       else if (d.grim && k === 1) { C.label = P.label + ' 副操縦手'; abDown(C, true); C.need = 'body'; }
       else if (d.grim && k === 2) { C.label = P.label + ' 機銃手'; C.shock = true; AB.gunner = C; }
@@ -1219,7 +1260,7 @@ function abDispatch() {
   if (AB.fuelQ.length && !AB.fuel.path.length && !AB.fuel.work) { const P = AB.fuelQ.shift(); AB.fuel.work = P; const m = abNear(P.p, 200, q => q.kind === 'arm' && q.st === 'ok' && !q.tgt); if (m) { abGo(m, P.p.x + 4, P.p.z + 3, 2); }
     abDrive(AB.fuel, [[P.p.x + 22, P.p.z + 6]], V => { abSay(m, AB_LN.turn[0], 1.3); AB.q.push([AB.t + 4, () => abSay(m, AB_LN.turn[1], 1.3)]); AB.q.push([AB.t + 14, () => { abSay(m, AB_LN.turn[2], 1.3); P.ready = true; V.work = null; abDrive(V, [[-140, -290]]); if (m) abGo(m, m.home.x, m.home.z); }]); AB.q.push([AB.t + 17, () => Math.random() < 0.5 && abSay(m, AB_LN.turn[3], 1.2)]); }); }
   // 牽引（トラクター）・零戦は手押し
-  if (AB.towQ.length) { const T = AB.tr.find(v => !v.path.length && !v.work); if (T) { const P = AB.towQ.shift(); T.work = P; const slot = P.kind === 'g4m' ? AB.hang.find(h => h.used < 1) || AB.rev.find(r => r.used < 1) : AB.rev.find(r => r.used < 1) || AB.hang.find(h => h.used < 1); if (slot) slot.used++;
+  if (AB.towQ.length) { const T = AB.tr.find(v => !v.path.length && !v.work); const ti = AB.towQ.findIndex(p => !(p.aboard > 0)); if (T && ti >= 0) { const P = AB.towQ.splice(ti, 1)[0]; T.work = P; const slot = P.kind === 'g4m' ? AB.hang.find(h => h.used < 1) || AB.rev.find(r => r.used < 1) : AB.rev.find(r => r.used < 1) || AB.hang.find(h => h.used < 1); if (slot) slot.used++;
       abDrive(T, [[P.p.x - 20, P.p.z - 16], [P.p.x, P.p.z - 14]], V => { abLine('tow', P.p); V.tow = P; P.g.rotation.y = 0; const sx = slot ? slot.x : -150, sz = slot ? slot.z : 300; abDrive(V, [[-40, P.p.z - 14], [sx + 40, sz], [sx + 6, sz]], V2 => { V2.tow = null; V2.work = null; P.st = 'repair'; P.rep = slot; abRepair(P); abDrive(V2, [[V2.home.x, V2.home.z]]); }); }); } }
 }
 function abRepair(P) {   // 格納庫・掩体壕：当て板・溶接・発動機の載せ替え
@@ -1335,7 +1376,7 @@ addEventListener('keydown', ev => {
   if (ev.code === 'KeyQ') { abEndAsk(); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
   if (ev.code === 'KeyE' && $('abTalk') && $('abTalk').style.display !== 'none') { abMenu(); ev.preventDefault(); ev.stopImmediatePropagation(); }
 }, true);
-if (TEST) window.__ab = { AB, x: { abHug, abSortie3, abChose5, abEntrust5, abSignA, abPalaceB, abFarewell6, abPrison6, abEmpty6, abInside4, abGhosts4, abRadio3, abKamiNear }, t: s => { AB.t += s; AB.next -= 0; }, launchAll: () => { while (AB.sched.length) abLaunch(AB.sched.shift()); }, warp: s => { for (let i = 0; i < s * 10; i++) abUpdate(0.1); }, ppl: () => AB.ppl.length, st: () => JSON.stringify({ t: AB.t | 0, n: AB.n, pl: AB.planes.map(P => P.st).join(','), body: AB.bodyN, bed: AB.bedN, str: AB.str.length, log: AB.log.slice(-6) }), menu: () => abMenu(), ans: k => abAnswer(k, AB.near, abGrimNear()), go: (x, z) => player.pos.set(x, 0, z) };
+if (TEST) window.__ab = { AB, x: { abHug, abSortie3, abChose5, abEntrust5, abSignA, abPalaceB, abFarewell6, abPrison6, abEmpty6, abInside4, abGhosts4, abRadio3, abKamiNear, abSortie, abSkipToRoll, abSkipToRet, abRadioNext, abPilPanel, abStopped, abFace, abSkipBtns }, t: s => { AB.t += s; AB.next -= 0; }, launchAll: () => { while (AB.sched.length) abLaunch(AB.sched.shift()); }, warp: s => { for (let i = 0; i < s * 10; i++) abUpdate(0.1); }, ppl: () => AB.ppl.length, st: () => JSON.stringify({ t: AB.t | 0, n: AB.n, pl: AB.planes.map(P => P.st).join(','), body: AB.bodyN, bed: AB.bedN, str: AB.str.length, log: AB.log.slice(-6) }), menu: () => abMenu(), ans: k => abAnswer(k, AB.near, abGrimNear()), go: (x, z) => player.pos.set(x, 0, z) };
 function abLook() {
   for (const m of mountains) m.visible = false; sky.visible = true; ground.visible = false;
   scene.fog.color.setHex(0xb9c4cc); scene.background.setHex(0xa9b9c6); scene.fog.near = 220; scene.fog.far = 1500;
@@ -23590,7 +23631,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zy';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zz';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

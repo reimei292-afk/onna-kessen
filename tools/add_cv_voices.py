@@ -26,6 +26,29 @@ for d, v in o['CV_LN'].items():
 for k, ja in o['CV_EV'].items(): add('*', ja, vw='dc' if k in ('hole', 'holeNo', 'fixed', 'flood') else 'look' if k in ('dive', 'g4m', 'strafe') else 'med' if k in ('treat', 'rinju') else 'brg')
 for who, v in o['CV_FAMLN'].items():
     for ja in (sum(v.values(), []) if isinstance(v, dict) else v): add(who, ja)
+# 幕四（祝勝会・会議室）の台詞。名のある人は自分の声（voice_profiles）、名の無い者は 'c'、その他は '*'
+JS2 = r"""
+const s=require("fs").readFileSync(process.argv[1],"utf8");const a=s.indexOf("const CVF_SEAT"),b=s.indexOf("function cvfStage(");
+const o=new Function(s.slice(a,b)+";return {CVF_VISIT,CVF_CHAT,CVF_EARLY,CVF_GREET,CVF_FUN,CVF_EV,CVF_MEET,CVF_MUR,CVF_BGN,CVF_BG}")();console.log(JSON.stringify(o));"""
+o4 = json.loads(subprocess.check_output(['node', '-e', JS2, os.path.join(ROOT, 'game.js')]).decode())
+def seq(x):
+    if isinstance(x, dict):
+        for v in x.values(): yield from seq(v)
+    elif isinstance(x, list) and len(x) == 2 and all(isinstance(v, str) for v in x):
+        if not x[0].startswith('@'): yield x
+    elif isinstance(x, list):
+        for v in x: yield from seq(v)
+for who, ja in seq([o4['CVF_VISIT'], o4['CVF_EARLY'], o4['CVF_GREET'], o4['CVF_FUN'], o4['CVF_EV'], o4['CVF_MEET']]):
+    if who == 'k' or ja.startswith('（') or '♪' in ja: continue
+    if who in ('c', 'c2'): add('c', ja, vw='din')
+    elif who == '*': add('*', ja, vw='din')
+    else: add(who, ja)
+for ja in o4['CVF_CHAT']: add('*', ja, vw='din')
+for k, ja in o4['CVF_BGN'].items(): add(k, ja)
+for kind, ja in o4['CVF_BG']: add('*', ja, vw='din')
+MV = ['din', 'gal', 'cab', 'bath', 'shop', 'ban', 'med', 'res', 'look', 'sig']   # 客席の反応：いろいろな声で
+for key, arr in o4['CVF_MUR'].items():
+    for i, ja in enumerate(arr): add('*', ja, vw=MV[(i * 3 + len(key)) % len(MV)])
 for ja in [o['CV_EV']['start'], o['CV_EV']['aa'], o['CV_EV']['clear'], o['CV_EV']['sink']] + o['CV_LN'].get('brg', {}).get('raid', []) + o['CV_LN'].get('brg', {}).get('sail', []): add('sumi', ja)
 NUM = o['CV_NUM']
 for t in ['敵機、正面！', '敵機、真後ろ！'] + [f'敵機、{s}{NUM[n]}度！' for s in ('右', '左') for n in range(1, 17)]: add('*', t, vw='look')

@@ -9797,10 +9797,10 @@ function cvStairs(x0, x1, za, zb, y0, y1, label, opt) {
   if (label) { const s = cvSign((x0 + x1) / 2, y0 + 2.0, za - dir * 0.05, label, dir > 0 ? Math.PI : 0); s.scale.set(0.5, 0.5, 1); }
   (CV.stairs = CV.stairs || []).push({ x0, x1, za, zb, y0, y1, label });
 }
-function cvLad(x, z0, z1, y0, y1) {   // 梯子は使わない：幅の広い手すり付き階段に置き換える（通路をふさがない向きを選ぶ）
+function cvLad(x, z0, z1, y0, y1, force) {   // 梯子は使わない：幅の広い手すり付き階段に置き換える（通路をふさがない向きを選ぶ）
   const zc = (z0 + z1) / 2, run = Math.max(2.4, (y1 - y0) * 1.25), w = 0.95;
   const hit = (xa, xb, za, zb) => { let n = 0; for (const b of boxes) if (b.x1 > xa && b.x0 < xb && b.z1 > Math.min(za, zb) && b.z0 < Math.max(za, zb) && b.y1 > y0 + 0.2 && b.y0 < y1) n++; return n; };
-  let best = null; for (const dir of [1, -1]) for (const dx of [0, -0.9, 0.9]) { const xa = x + dx - w, xb = x + dx + w, za = zc - dir * run / 2, zb = zc + dir * run / 2, n = hit(xa, xb, za, zb); if (!best || n < best.n) best = { n, xa, xb, za, zb }; }
+  let best = null; for (const dir of force ? [force.dir] : [1, -1]) for (const dx of force ? [force.dx] : [0, -0.9, 0.9]) { const xa = x + dx - w, xb = x + dx + w, za = zc - dir * run / 2, zb = zc + dir * run / 2, n = hit(xa, xb, za, zb); if (!best || n < best.n) best = { n, xa, xb, za, zb }; }
   (CV.ladAudit = CV.ladAudit || []).push([x, zc, y0, y1, best.n]);
   cvStairs(best.xa, best.xb, best.za, best.zb, y0, y1, null); return;
   for (const s of [-1, 1]) cvSlab(x + s * 0.28, x + s * 0.34, y0, y1 + 0.8, zc - 0.04, zc + 0.04, CV.M.steel);
@@ -10286,7 +10286,7 @@ function cvIsland() {
   // L2 羅針艦橋（前は窓の帯）と後ろの艦長休憩室・信号所
   ring(Yb, Yr, true, {});
   ceil(Yr, [hL2], M.steel);
-  cvLad(15.7, 7.4, 8.8, Yb, Yr);
+  cvLad(15.7, 7.4, 8.8, Yb, Yr, { dx: -1.6, dir: 1 });   // 屋上の手すり（x15.15）に掛からない位置
   cvWall(x0, 13.4, 0.6, 0.76, Yb, Yr, inner); cvWall(14.1, x1, 0.6, 0.76, Yb, Yr, inner); cvSlab(13.4, 14.1, Yb + 1.3, Yr, 0.6, 0.76, inner);
   {
     const box = (x, y, z, w, h, d, mat) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); stageRoot.add(m); return m; };
@@ -10640,6 +10640,7 @@ function cvTheatre() {
   const vel = L(0x6e1820), gold = L(0xc9a24a), carpet = L(0x7a2228), dark = L(0x2a1a18), seatM = L(0x9a1e2a), wood = L(0x5a3620), cream = L(0xe8dcc0);
   // 入口の壁（電機室・航空ガソリン庫側）。真ん中に扉口
   cvWall(T.x0, -1.0, T.z0, T.z0 + 0.25, Y0, Yc, cream); cvWall(1.0, T.x1, T.z0, T.z0 + 0.25, Y0, Yc, cream);
+  cvFloor(-1.0, 1.0, T.z0 - 0.1, T.z0 + 0.35, Y0);   // 扉口の敷居（下甲板の床と劇場の床の隙間）
   cvSign(0, Y0 + 2.6, T.z0 - 0.05, '大劇場 一階バルコニー', Math.PI).scale.set(0.7, 0.7, 1);
   cvSign(0, Y0 + 2.6, T.z0 + 0.3, '大劇場', 0).scale.set(0.8, 0.8, 1);
   // 側壁と奥の壁（赤いビロード、金の縁）
@@ -11039,7 +11040,7 @@ function cvBoardStart() {
   cvEv('off', '輸送機三機、艦尾から！ 甲板に降りる気です！', 1, 2.4); setTimeout(() => cvKing('乗り込みだと……艦橋の扉を閉めろ！'), 3500);
   const I = CV.isl; let bd = 1e9; for (const d of CV.doors || []) { const dd = Math.hypot(d.x - (I.x0 + I.x1) / 2, d.z - (I.z0 + I.z1) / 2) + Math.abs(d.y * S - CV.Yd) * 3; if (dd < bd) { bd = dd; CV.board.door = d; } }
   if (CV.board.door) CV.board.door.open = false;
-  const B = CV.board; for (let i = 0; i < 3; i++) { const g = cvTransportMesh(); g.rotation.y = Math.PI; g.position.set(-3 * S, CV.Yd + (40 + i * 6) * S, (340 + i * 170) * S); B.tr.push({ g, i, ph: 'in', stopZ: [0, -40, 4][i] * S, n: 0, cap: LITE ? 10 : (i ? 24 : 0) }); }
+  const B = CV.board; for (let i = 0; i < 3; i++) { const g = cvTransportMesh(); g.rotation.y = Math.PI; g.position.set(-3 * S, CV.Yd + (40 + i * 6) * S, (340 + i * 170) * S); B.tr.push({ g, i, ph: 'in', stopZ: [0, -40, 4][i] * S, n: 0, cap: LITE ? 10 : (i ? 28 : 0) }); }
   cvDefStart();
 }
 function cvBoarder(x, z, y) {
@@ -11331,7 +11332,7 @@ function buildKeiku() {
     cvSlab(x - 0.08, x + 0.08, Yh + 0.2, Yh + 2.4, z - 1.5, z - 1.35, M.steel);
     cvSlab(x - 0.08, x + 0.08, Yh + 0.2, Yh + 2.4, z + 1.35, z + 1.5, M.steel);
   }
-  cvLad(-9.6, -46.2, -45, Yh, Yd);
+  cvLad(-9.6, -46.2, -45, Yh, Yd, { dx: -0.2, dir: 1 });
   cvLad(0, 71.2, 72.5, Yh, Yd);
   for (let i = 0; i < 5; i++) {
     const w = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 2.2), M.foam);
@@ -11477,7 +11478,7 @@ function buildKeiku() {
     const mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
     for (const k in I) { const d = I[k], im = new THREE.InstancedMesh(d.geo, d.mat, d.list.length); d.list.forEach((a, i) => { e3.set(a[3] === 2 ? 0 : 0, a[3] === 1 || a[3] === 2 ? Math.PI / 2 : 0, a[3] === 1 ? Math.PI / 2 : 0, 'YXZ'); if (a[3] === 1) e3.set(0, 0, Math.PI / 2); q.setFromEuler(e3); mt.compose(pv.set(a[0], a[1], a[2]), q, one); im.setMatrixAt(i, mt); }); stageRoot.add(im); }
     // 梯子：大部屋の後ろから客室甲板へ、客室甲板から艦尾遊歩甲板へ
-    cvLad(0, 86.0, 87.1, Y1, Yg); cvLad(0, 66.2, 67.4, Yg, Yh);
+    cvLad(0, 84.4, 85.0, Y1, Yg, { dx: 0, dir: -1 }); cvLad(0, 66.2, 67.4, Yg, Yh);   // 艦尾の隔壁に突き当たらない向き
     // 王の間を飾る（天蓋の寝台・シャンデリア・ソファ・肖像画）
     const KZ = 46.4;
     cvSlab(-7.1, -1.6, Y1 + 0.02, Y1 + 2.95, 42.4, 42.48, cabin); cvSlab(-7.12, -7.05, Y1 + 0.02, Y1 + 2.95, 42.4, 51.6, cabin);
@@ -11548,7 +11549,7 @@ function buildKeiku() {
     // 応急資材：角材、鉄板、防水マット
     for (let i = 0; i < 4; i++) wall(5.7, 6.9, 9.5 + i * 4, 12 + i * 4, Y2, Y2 + 0.6 + (i % 2) * 0.3, i % 2 ? M.steel : Mw);
     // 士官室：机
-    wall(-2.0, 2.0, 37.6, 38.6, Y2, Y2 + 0.76, Mw);
+    wall(0.4, 4.4, 36.6, 37.6, Y2, Y2 + 0.76, Mw);   // 階段（x -2.9..-0.9）の頭上をふさがない
     // 第二甲板の通路側の仕切り（防水扉の枠だけ開けておく）
     for (const z of [-32, -12, 8, 26]) { wall(-4.2, -1.85, z, z + 0.28, Y2, Y2 + 3.15, M.bulk); wall(1.85, 6.8, z, z + 0.28, Y2, Y2 + 3.15, M.bulk); cvSlab(-7.0, -4.4, Y2 + 2.2, Y2 + 3.15, z, z + 0.28, M.bulk); }
     // 下甲板：弾薬庫、糧食庫、航空ガソリン庫
@@ -11659,15 +11660,21 @@ function buildKeiku() {
     for (const z of [-68, -55]) for (const x of [-3.5, 3.5]) { const l = new THREE.PointLight(0xffe0b0, 0.8, 16, 1.4); l.position.set(x, ceil - 0.8, z); stageRoot.add(l); }
     // 立食の台（後ろの壁沿い）と舞台（一の卓の後ろ）
     for (const x of [-2.4, 4.6]) { wall(x - 1.2, x + 1.2, HZ1 - 0.95, HZ1 - 0.35, Y2, Y2 + 0.56, U.buf); for (let k = 0; k < 4; k++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.04, 12), k % 2 ? U.dishA : U.dishB); d.position.set(x - 0.9 + k * 0.6, Y2 + 0.6, HZ1 - 0.65); stageRoot.add(d); } }
-    wall(-3.0, 3.0, HZ0, HZ0 + 1.6, Y2, Y2 + 0.3, U.wood); CV.hallStage = [0, HZ0 + 0.8, Y2 + 0.3];
+    // 舞台：挨拶・余興は必ずここに上がってやる。正面に二段の踏み段、上に床（人が上に立てる）、後ろに金の幕
+    cvSlab(-3.6, 3.6, Y2, Y2 + 0.36, HZ0 + 0.3, HZ0 + 2.9, U.wood); cvFloor(-3.6, 3.6, HZ0 + 0.3, HZ0 + 2.9, Y2 + 0.36);
+    for (const [z0, z1, h] of [[HZ0 + 2.9, HZ0 + 3.25, 0.24], [HZ0 + 3.25, HZ0 + 3.6, 0.12]]) { cvSlab(-1.4, 1.4, Y2, Y2 + h, z0, z1, U.wood); cvFloor(-1.4, 1.4, z0, z1, Y2 + h); }
+    cvSlab(-3.6, 3.6, Y2 + 0.36, Y2 + 3.0, HZ0 + 0.3, HZ0 + 0.4, new THREE.MeshLambertMaterial({ color: 0x8a1822 })); cvSlab(-3.7, 3.7, Y2 + 3.0, Y2 + 3.3, HZ0 + 0.3, HZ0 + 0.5, U.gold || M.gold);
+    { const sl = new THREE.SpotLight(0xfff0d0, 1.2, 14, 0.6, 0.5); sl.position.set(0, Y2 + 3.4, HZ0 + 6); sl.target.position.set(0, Y2 + 0.4, HZ0 + 1.6); stageRoot.add(sl); stageRoot.add(sl.target); }
+    CV.hallStage = [0, HZ0 + 1.7, Y2 + 0.36];
     // 艦首のテラス（三段上がる）：ここからだけ海が見える。手すり付き
+    cvFloor(-6.2, -4.8, HZ0 - 0.35, HZ0 + 0.05, Y2 + 0.08);   // 扉の敷居（大広間の床と階段の間に隙間があり、テラスへ出られなかった）
     const TY = Y2 + 0.6; cvStairs(-6.2, -4.8, HZ0 - 0.3, HZ0 - 2.3, Y2 + 0.08, TY, null, { noCut: true });
     const terr = [[-7.1, 7.1, -78, HZ0 - 0.3], [-4.7, 4.7, -90, -78], [-1.9, 1.9, -97.5, -90]];
     for (const [x0, x1, z0, z1] of terr) { cvFloor(x0, x1, z0, z1, TY); const d = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 0.1, z1 - z0), M.teakT || (M.teakT = new THREE.MeshLambertMaterial({ color: 0xa07c56 }))); d.position.set((x0 + x1) / 2, TY - 0.05, (z0 + z1) / 2); stageRoot.add(d); }
     const rail = (x0, x1, z0, z1) => { wall(x0, x1, z0, z1, TY, TY + 0.68, M.white); };
     rail(-7.2, -4.75, -78.1, -77.95); rail(4.75, 7.2, -78.1, -77.95); rail(-4.85, -4.7, -90, -78); rail(4.7, 4.85, -90, -78); rail(-4.75, -1.95, -90.1, -89.95); rail(1.95, 4.75, -90.1, -89.95); rail(-2.05, -1.9, -97.6, -90); rail(1.9, 2.05, -97.6, -90); rail(-2, 2, -97.75, -97.6);
     rail(-7.25, -7.1, -78, HZ0 - 0.3); rail(7.1, 7.25, -78, HZ0 - 0.3);
-    for (const z of [-80, -86, -93]) { const l = new THREE.PointLight(0xffd8a0, 1.0, 12, 1.4); l.position.set(0, TY + 2.2, z); stageRoot.add(l); }
+    for (const z of [-80, -86, -93]) { const l = new THREE.PointLight(0xffd8a0, 0.5, 10, 1.6); l.position.set(0, TY + 2.6, z); stageRoot.add(l); }
     CV.hall = { x0: -HX, x1: HX, z0: HZ0, z1: HZ1 };
     // 第二甲板の後端（z 39）と客室甲板（z 46.6）のつなぎ目：床が無く、下の部屋の天井板が見えていた。床を張り、中央に二段の階段
     { const jm = M.lino || M.tile; cvFloor(-7.0, 7.0, 39.0, 45.0, Y2); cvSlab(-7.0, 7.0, Y2 - 0.3, Y2 + 0.08, 39.0, 45.0, jm);
@@ -11770,6 +11777,7 @@ function cvUse() {
     else popup('甲板の上で、速度を落として');
     return true;
   }
+  if (CV.F && cvfAsk()) return true;   // 幕四：近くの人に身の上を聞く
   const ph = cvNearPhone(); if (ph) return cvPhoneUse(ph);
   const xf = cvNearXfer(); if (xf) return cvXferUse(xf);
   const dr = cvNearDoor(); if (dr) { cvDoorToggle(dr); return true; }
@@ -12099,7 +12107,7 @@ const CV_SN = ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山�
 const CV_GN = ['美咲', '結衣', '陽菜', '彩花', '七海', '真由', '莉子', '美月', '葵', 'さくら', '愛美', '優花', '美優', '彩乃', '奈々', '茉優', '杏奈', '千尋', '玲奈', '結菜', '日菜子', '楓', '美羽', 'ひなの', '真央', '未来', '萌', '遥', '菜月', '花音', '瑞希', '明日香', '友梨', '紗希', '絵美', '麻衣', '由佳', '佳奈', '里奈', '実咲', '沙織', '詩織', '彩', '莉央', '心愛', '柚希', '美桜', '琴音', '芽依', '穂乃果'];   // 現代の二十代の女性の名前
 const CV_ROOMS = [   // 客室（上の階・二十室）。王の一行と秘書課だけの航海
   ['西園寺 すみれ', 'ojou'], ['早瀬 ことね', 'sec2'], ['大宮 ひなた', 'omiya'], ['綾瀬 文乃', 'fumi'], ['白石 麗華', 'reika'], ['桜井 ゆかり', 'sec3'], ['宮下 千尋', 'sec4'], ['小日向 ひより', 'sec5'],
-  ['氷室 しのぶ', 'shinobu'], ['一条 千景', 'chikage'], ['夏目 あかり', 'akari'], ['村瀬 碧', 'midori'], ['久遠 静香', 'shizuka'], ['九条 紗英', 'kujo'], ['霧島 怜', 'sysop'], ['遠野 あかり', 'tono'], ['白瀬 澄（艦長）'], ['小鳥遊 ひびき', 'flute'], ['来賓予備'], ['売店・理髪'],
+  ['氷室 しのぶ', 'shinobu'], ['一条 千景', 'chikage'], ['夏目 あかり', 'akari'], ['来賓予備'], ['久遠 静香', 'shizuka'], ['九条 紗英', 'kujo'], ['霧島 怜', 'sysop'], ['遠野 あかり', 'tono'], ['白瀬 澄（艦長）'], ['小鳥遊 ひびき', 'flute'], ['来賓予備'], ['売店・理髪'],
 ];
 function cvRng(seed) { let s = seed >>> 0; return () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296; }
 function cvGid(k) {   // 名のある人の写真の id（無ければ null）
@@ -12111,7 +12119,7 @@ function cvGid(k) {   // 名のある人の写真の id（無ければ null）
 }
 function cvPool() {   // 乗組の写真：日本の侍女（名のある人・外国の娘は除く）
   if (CV.pool && CV.pool.length) return CV.pool;
-  const named = new Set(['sumi', 'sec2', 'ojou', 'fumi', 'omiya', 'reika', 'sec3', 'sec4', 'sec5', 'shinobu', 'chikage', 'akari', 'midori', 'shizuka', 'kujo', 'sysop', 'tono', 'flute', 'hiyori'].map(k => cvGid(k)).filter(Boolean));
+  const named = new Set(['sumi', 'sec2', 'ojou', 'fumi', 'omiya', 'reika', 'sec3', 'sec4', 'shizuka', 'kujo', 'sysop', 'tono', 'flute'].map(k => cvGid(k)).filter(Boolean));   // 小日向・氷室・一条・夏目・村瀬の顔は一般の乗組にも使う（その人だけの顔にしない）
   for (const k of [typeof SEC_ID !== 'undefined' && SEC_ID, typeof SEC2_ID !== 'undefined' && SEC2_ID, typeof FLUTE_ID !== 'undefined' && FLUTE_ID, typeof MEDIC_ID !== 'undefined' && MEDIC_ID, 'girl26', 'surgeon']) if (k) named.add(k);
   CV.pool = Object.values(GIRLS).filter(g => g && g.type === 'mob' && !named.has(g.id) && !/^(uk|us|fr|vn|ru|de|cn)/.test(g.id)).map(g => g.id);
   return CV.pool;
@@ -12304,12 +12312,13 @@ function cvFxStep(dt) {
   for (const em of CV.emit || []) { if (em.off) continue; em.t = (em.t || 0) - dt; if (em.t <= 0) { em.t = em.dt || 0.25; cvSmoke(em.x + rand(-1, 1), em.y, em.z + rand(-1, 1), em.size || 3, em.life || 4.5, em.col, em.vy, 0.8, em.a); } }
 }
 // ---- 台詞 ----
-function cvVoiceFile(who, ja) { const m = CV.vmap; return m ? (m[who + '|' + ja] || m['*|' + ja] || null) : null; }
-function cvSay(r, text, prio) {
+const CV_NAMED_V = new Set(['sumi', 'sec2', 'sec3', 'sec4', 'sec5', 'ojou', 'omiya', 'fumi', 'reika', 'shinobu', 'chikage', 'akari', 'shizuka', 'kujo', 'sysop', 'tono', 'flute']);
+function cvVoiceFile(who, ja) { const m = CV.vmap; if (!m) return null; if (CV_NAMED_V.has(who)) return m[who + '|' + ja] || null; return m[who + '|' + ja] || m['*|' + ja] || null; }   // 名のある人は自分の声だけ（他人の同じ台詞の声に落ちない）
+function cvSay(r, text, prio, whoOv) {
   if (!text) return false;
   if (CV.F && !CV.fOK) return false;   // 幕四は台本の列だけが話す（他の雑談が割り込まない）
   const d = r && r.e ? Math.hypot(r.e.s.position.x - camera.position.x, r.e.s.position.z - camera.position.z) : 6;
-  const who = r ? (r.d === 'fam' ? r.key : r.d) : '*';
+  const who = whoOv || (r ? (r.cap ? 'sumi' : r.d === 'fam' ? r.key : r.d) : '*');
   subtitle(text); const el = $('subtitle'); if (el) el.textContent = r ? `${r.nm}（${r.cap ? '艦長' : CV_DN[r.d] || ''}）「${text}」` : `「${text}」`;
   const f = cvVoiceFile(who, text);
   if (f && typeof VoicePack !== 'undefined' && VoicePack.ok) VoicePack.play(f, Math.min(d, 8), prio || 1.6, 1);
@@ -12855,7 +12864,8 @@ function cvOyReport() {   // 殿が大淀に乗ったとき、西園寺が被害
 // 早瀬 ことね：殿付き。どこへでも付いて歩き、近くにいれば体力を手当てする（間隔あり）。総員退艦では真っ先に殿を内火艇へ、そのあと白瀬を案じる
 function cvHayase() { if (CV.hy && CV.hy.st === 'ok') return CV.hy; return (CV.hy = (CV.R || []).find(r => r.st === 'ok' && (r.gid === 'sec2' || /早瀬/.test(r.nm || ''))) || null); }
 function cvHayaseStep(dt) {
-  const r = cvHayase(); if (!r || r.st !== 'ok' || r.rescued || (CV.esc && CV.esc.ph !== 'done' && CV.esc.es.includes(r))) return; const S = CV.S || 1, P = player.pos, yaw = player.yaw || 0;
+  const r = cvHayase(); if (!r || r.st !== 'ok' || r.rescued || CV.F || (CV.esc && CV.esc.ph !== 'done' && CV.esc.es.includes(r))) return;   // 祝勝会では一の卓の自席に着いたまま
+  const S = CV.S || 1, P = player.pos, yaw = player.yaw || 0;
   const tx = P.x + Math.sin(yaw) * 1.4 * S + Math.cos(yaw) * 0.7 * S, tz = P.z + Math.cos(yaw) * 1.4 * S - Math.sin(yaw) * 0.7 * S;   // 殿の斜め後ろ
   const far = Math.hypot(r.x - P.x, r.z - P.z) > 18 * S || Math.abs(r.y - P.y) > 1.5;
   if (far) { cvDespawn(r); r.x = r.hx = r.ax = tx; r.z = r.hz = r.az = tz; r.y = r.hy = P.y; r.ySnap = false; r.ship = cvOnOyodo() ? ((CV.fleet || []).find(s => s.d.board) || { d: {} }).d.nm : null; r.loc = '殿付き'; }
@@ -12912,14 +12922,16 @@ function cvBoatStepK(dt) {
 }
 // ── 幕四「船旅」：桜鳳の客船区画、食堂を祝勝会場に。立食の丸卓六つ（一の卓に大宮）。西園寺・白石・綾瀬は自分の艦にいるので欠席 ──
 //   台詞は一本の列で順に流す（一行ごとに文字数に応じた間をとり、言い終わる前に次へ進まない）
-const CVF_SEAT = [['omiya', 'sec2', 'sec3', 'sec4', 'sec5', 'sumi'], ['shinobu', 'chikage'], ['akari', 'midori'], ['shizuka', 'kujo'], ['sysop', 'tono'], ['flute']];
+const CVF_SEAT = [['ojou', 'sumi', 'omiya', 'fumi', 'sec2'], ['kujo', 'sec4', 'sec3', 'reika', 'shizuka', 'flute'], ['sysop', 'shinobu', 'chikage']];   // 一の卓は殿が上座（舞台を向く）。四の卓から先は名の無い侍女だけ
+const CVF_OFF = ['akari', 'midori', 'tono', 'sec5', 'hiyori'];   // 幕四の宴には出ない名のある者
 const CVF_VISIT = [
-  [['omiya', '陛下、一の卓へようこそ。お席、空けておきました'], ['k', '大宮、隣に立つだけで落ち着くな'], ['sec2', '陛下、お皿は私が。……今日は私が運びたいんです'], ['sumi', '艦長として一言だけ。……沈まずに、ここまで来られました'], ['k', 'それが一番の手柄だ'], ['sec3', '西園寺さんと白石さんにも、このお料理を見せたかったですね'], ['omiya', 'すみれは大淀の艦橋で、きっと乾パンを齧ってますわ']],
-  [['shinobu', '陛下。西部の早撃ちの話、まだ根に持ってます'], ['k', '根に持つほど負けたか？'], ['shinobu', '抜いたのは私が先でした。ただ、相手の弾の方が先に帽子に届いただけです'], ['chikage', 'それを負けと言うのよ、しのぶ'], ['shinobu', '帽子は負けました。私は負けてません'], ['k', '……帽子に乾杯だな']],
-  [['akari', '陛下、お城、いくつ落とされましたっけ'], ['k', '数えるな。夜眠れなくなる'], ['midori', '平城、山城、それから総構えの外の出丸……'], ['akari', '数えないでって言われたばかりでしょ'], ['midori', 'でも、取り返した城もあります。それは数えていいですよね'], ['k', 'そっちだけ数えろ']],
-  [['shizuka', '空襲の三波目、格納庫で耳がおかしくなりました'], ['kujo', '私は二波目で爆風に飛ばされて、気づいたら医務室でした'], ['k', '二人とも、よく戻った'], ['shizuka', '陛下が早瀬さんに引っ張られて走ってたの、見えましたよ'], ['k', '……あれは引っ張られていたのではない。並走だ'], ['kujo', '足、浮いてましたけど']],
-  [['sysop', '陛下、重巡の夜戦のとき、無線は一度も切れませんでした'], ['tono', '照明弾が上がるたび、通信室の窓が昼みたいになって'], ['k', 'あの夜、遠野の声だけは落ち着いていたな'], ['tono', '手は震えてました。声だけ仕事してたんです'], ['sysop', '輸送機の扉が開いたとき、私の声は裏返りましたけど']],
-  [['flute', '陛下、一曲、吹いてもいいですか。笛はもう禁止じゃないですよね'], ['k', '号笛の代わりに鳴らさなければいい'], ['flute', '戦の合図じゃない曲にします。……故郷の子守唄'], ['k', '頼む']],
+  [['omiya', '陛下、一の卓へようこそ。上座、空けておきました'], ['k', '大宮、隣に立つだけで落ち着くな'], ['ojou', '陛下……今日は、ゆっくり……召し上がって、くださいませ'], ['k', '西園寺、今日はゆっくりでいい'], ['ojou', '……はい。わたくしは、いつも……ゆっくりですわ'],
+   ['sumi', '艦長として一言だけ。……沈まずに、ここまで来られました'], ['k', 'それが一番の手柄だ'], ['fumi', '陛下、弓は置いてきました。今日は箸だけです'], ['sec2', '陛下、お皿は私が。……今日は私が運びたいんです'], ['fumi', '早瀬、それ三皿目よ'], ['sec2', '帳簿には付けないでください']],
+  [['shizuka', '空襲の三波目、格納庫で耳がおかしくなりました'], ['kujo', '私は二波目で爆風に飛ばされて、気づいたら医務室でした'], ['k', '二人とも、よく戻った'], ['shizuka', '陛下が早瀬さんに引っ張られて走ってたの、見えましたよ'], ['k', '……あれは引っ張られていたのではない。並走だ'], ['kujo', '足、浮いてましたけど'],
+   ['reika', '陛下、補給の礼なら、料理で受け取りました'], ['k', '白石、好きなだけ食え'], ['reika', '交渉しなくても出てくる料理って、いいですね'], ['sec3', '桜鳳の針路、明日まで地図に引いておきました'], ['sec4', '今日の分の記録も、もう付けてあります'], ['k', '宮下、今日くらい筆を置け'],
+   ['flute', '陛下、一曲、吹いてもいいですか。笛はもう禁止じゃないですよね'], ['k', '号笛の代わりに鳴らさなければいい'], ['flute', '戦の合図じゃない曲にします。……故郷の子守唄'], ['k', '頼む'], ['@stage', 'flute'], ['*', '（舞台の上で、笛の子守唄が静かに流れる）'], ['@back', 'flute']],
+  [['shinobu', '陛下。西部の早撃ちの話、まだ根に持ってます'], ['k', '根に持つほど負けたか？'], ['shinobu', '抜いたのは私が先でした。ただ、相手の弾の方が先に帽子に届いただけです'], ['chikage', 'それを負けと言うのよ、しのぶ'], ['shinobu', '帽子は負けました。私は負けてません'], ['k', '……帽子に乾杯だな'],
+   ['sysop', '陛下、重巡の夜戦のとき、無線は一度も切れませんでした'], ['k', 'あの夜、霧島の声だけは落ち着いていたな'], ['sysop', '手は震えてました。声だけ仕事してたんです']],
 ];
 const CVF_CHAT = [   // 卓どうしの雑談（台詞が無い間に、近くの誰かが言う）
   '輸送機の一番機、甲板に突っ込んだとき、心臓が止まるかと思った', 'あのとき格納庫の整備場の木箱、本当に盾になったよね', 'カッターで漕いだ三分、一生分くらい長かった', '雪風の綾瀬さん、海から何人も拾ってくれたって',
@@ -12927,30 +12939,101 @@ const CVF_CHAT = [   // 卓どうしの雑談（台詞が無い間に、近く�
   '大宮さん、さっきから陛下のお皿ばかり見てる', '次の港で、手紙を出したい', '整備の人たち、まだ格納庫にいるのかな。持っていこうか', '陛下、また早瀬さんに引っ張られてた',
 ];
 const CVF_EARLY = [   // 先に帰ろうとする者と、止める王（理由はそれぞれ）
-  [['c', '……すみません、明朝四時から見張りなので、そろそろ'], ['k', '待て。一杯だけ飲んでいけ。見張りは目で、腹ではない'], ['c', '……では、一杯だけ'], ['k', 'それでいい']],
-  [['c', 'あの、揺れで少し酔ってしまって……部屋に戻ります'], ['k', '甲板に出て風に当たれ。ここの窓際が一番揺れない'], ['c', '……窓際、本当だ。少し楽です']],
-  [['c', '私、亡くなった班長の席を見ていられなくて……'], ['k', '見ていられないなら、隣に立って話しかけてやれ。帰るのはそれからでいい'], ['c', '……はい。班長、ローストビーフ、硬いですよ'], ['c2', '……一緒に立っていい？']],
-  [['c', '整備がまだ残ってて……零戦の脚が気になるんです'], ['k', '整備長には俺から言っておく。今夜は休め'], ['c', '……陛下に言われたら、断れないじゃないですか']],
+  [['c', '……すみません、明朝四時から見張りなので、そろそろ'], ['k', '（ノリが悪いなぁ）'], ['k', '待て。一杯だけ飲んでいけ。見張りは目で、腹ではない'], ['c', '……では、一杯だけ'], ['k', 'それでいい']],
+  [['c', 'あの、揺れで少し酔ってしまって……部屋に戻ります'], ['k', '（ノリが悪いなぁ）'], ['k', '甲板に出て風に当たれ。ここの窓際が一番揺れない'], ['c', '……窓際、本当だ。少し楽です']],
+  [['c', '私、亡くなった班長の席を見ていられなくて……'], ['k', '（ノリが悪いなぁ）'], ['k', '見ていられないなら、隣に立って話しかけてやれ。帰るのはそれからでいい'], ['c', '……はい。班長、ローストビーフ、硬いですよ'], ['c2', '……一緒に立っていい？']],
+  [['c', '整備がまだ残ってて……零戦の脚が気になるんです'], ['k', '（ノリが悪いなぁ）'], ['k', '整備長には俺から言っておく。今夜は休め'], ['c', '……陛下に言われたら、断れないじゃないですか']],
 ];
+const CVF_GREET = [   // 長い挨拶（桜井が舞台で）。王は途中から上の空
+  ['@stage', 'sec3'], ['sec3', '秘書課の桜井です。僭越ながら、乗員を代表してご挨拶を申し上げます'],
+  ['sec3', '思い返せば出港の朝、格納庫の床はまだ塗りたてで、靴の裏が白くなったものでした'], ['sec3', 'それから空襲が三度、輸送機が三機、夜戦が一度。数えれば、弾薬の消費は予定の四倍に及びます'],
+  ['sec3', '糧食につきましては、烹炊所の皆さんの工夫により、一日も欠かさず温かい食事が出ました。内訳を申しますと、米が……'],
+  ['k', '（……）'], ['sec3', '……以上、簡単ではございますが、ご挨拶とさせていただきます'], ['*', '（拍手）'], ['k', '（……ん？ 終わったか）'], ['@back', 'sec3'],
+];
+const CVF_MUR = {   // 出来事のあとの客席の反応（重ねて小さく鳴らす）
+  kin: ['えっ、これ手挙げるの？', '私もたぶん……', '母方のほうなら、たぶん', 'え、みんな挙げてる', '遠い、すごく遠いけど……', '挙げとこ'],
+  name: ['当然でしょ', '何を今さら……', '言えます言えます', '毎朝、名簿で見てるもの', 'はい', '試験に出たやつ'],
+  said: ['言っちゃった……', '言っちゃったね……', '陛下、それは……', '（くすくす）', '小鳥遊さん……'],
+  slow: ['（くすくす）', 'ふふっ……', '待って、まだ終わってない……', '（笑いをこらえる声）'],
+  magic: ['すごい！', 'いまの、どうやったの？', '袖、見えなかった', 'もう一回！', '小鳥遊さん器用……'],
+  imit: ['似てる似てる', '声、低っ', '艦長が笑ってる', 'それ、明日の朝もやって', 'そっくり！'],
+  fall: ['大丈夫！？', '手、貸して', 'お皿は無事！', '揺れたね……', '座ってて座ってて'],
+  toast: ['乾杯！', 'かんぱーい', '……半分って', '縁起でもない……', '飲も飲も', '乾杯！'],
+};
+// 侍女になる前の話（ukParty の「前職は？」と同じ聞き方）。家の推薦がおよそ六割、自分で志願が三割、その他（腕を買われた・恩返し）が一割
+const CVF_BGQ = '侍女になる前は、何をしていた？ どうしてここに？';
+const CVF_BGN = {
+  sumi: '母方の家の推薦です。陛下のハトコだと知ったのは、上がってからでした', sec2: '白瀬の家の遠縁で、家から推薦されました。……最初の頃は、毎晩泣いてました',
+  omiya: '西園寺の従姉妹として、家の推薦で。陛下のお側は、子どもの頃からの夢でした', sec3: '家は代々の帳場役です。家の推薦で、数字の仕事ならと秘書課に',
+  sec4: '父の家の推薦です。淡々と働くのが向いている、と言われまして', sec5: '自分で志願しました。小さい頃、行列で陛下をお見かけしたのがきっかけです',
+  shinobu: '西園寺家の家臣の家です。家の推薦で、すみれ様付きに', chikage: '一条の家は西園寺の分家筋で、家から推されて参りました',
+  akari: '自分で志願です！ 体力だけは自信があったので', midori: '家の推薦です。城の話が好きで、ずっと憧れていました',
+  shizuka: '家の推薦で上がりました。静かな家で育ったので、最初は格納庫の音が怖くて', kujo: '大学病院から引き抜かれました。外科医が足りない、と言われて',
+  sysop: '自分で志願しました。電算の仕事がしたくて、情報室を選びました', tono: '看護の家の娘で、家から推薦を。手品は祖母に習いました', flute: '笛の腕を見込まれて、楽師として呼ばれました',
+};
+const CVF_BG = [
+  ['fam', '母方の家が代々お城に仕えていて、祖母の推薦でこちらに上がりました'], ['fam', '父の家は旧い家柄で、「一度は奉公に出よ」と送り出されました'],
+  ['fam', '叔父が侍大将の知り合いで、家から推薦状を書いてもらいました'], ['fam', '実家は茶道の家です。行儀見習いのつもりで、家の勧めで来ました'],
+  ['fam', '祖父が昔、先代にお仕えしていたんです。その縁で、家から推されて'], ['fam', '本家の娘は皆ここに上がる決まりで、私も十八で'],
+  ['fam', '母も若い頃に侍女でした。母の推薦で、同じ部屋に入りました'], ['fam', '家は酒蔵です。父が「家の名に恥じぬように」と推薦してくれて'],
+  ['fam', '華道の家元の分家です。親戚一同の推薦で、断れませんでした'], ['fam', '兄が近衛にいて、家から「妹も」と話が来たんです'],
+  ['fam', '大学を出たら家の勧めで、と小さい頃から決まっていました'], ['fam', '曽祖母が奥向きの取締役だったそうで、その縁で推薦を'],
+  ['vol', '自分で志願しました。会社員より、こっちの方が性に合うと思って'], ['vol', '新聞で募集を見て、親に黙って応募しました。あとで怒られました'],
+  ['vol', '看護学校を出て、自分から志願しました。人の役に立ちたくて'], ['vol', '陛下の演説を聞いて、その日のうちに願書を出しました'],
+  ['vol', '田舎で退屈していて……自分で志願しました。後悔はしてません'], ['vol', '弓道部の主将でした。腕を試したくて、自分で'],
+  ['oth', '料理の腕を買われて、烹炊所に引き抜かれたんです'], ['oth', '父が昔、陛下のお家に命を救われたそうで、その恩返しに'],
+];
+function cvfBg(r) {   // 名の無い者：番号から、推薦六・志願三・その他一の割合で決まった話
+  if (r.d === 'fam' || r.cap) return CVF_BGN[r.cap ? 'sumi' : r.key] || null;
+  const h = ((r.i || 0) * 2654435761) >>> 0, t = h % 10, kind = t < 6 ? 'fam' : t < 9 ? 'vol' : 'oth', L = CVF_BG.filter(b => b[0] === kind);
+  return L[(h >>> 8) % L.length][1];
+}
+const CVF_AQ = [['bg', '侍女になる前は？'], ['sc', '出た学校は？'], ['sk', '特技は？'], ['rel', '俺とは親戚なのか？']];
+function cvfProf(r) {   // 身の上話（voices_cvbg.js）：名のある人は自分の話、名の無い者は番号で決まった一人分
+  const V = window.VOICE_CVBG; if (!V) return null;
+  if (r.d === 'fam' || r.cap) return V.named[r.cap ? 'sumi' : r.key] || null;
+  return V.mob.length ? V.mob[(((r.i || 0) * 2654435761) >>> 0) % V.mob.length] : null;
+}
+function cvfAskMenu(r) {   // 四つの問いを別々に選べる（ukParty の「前職は？」「通ってた大学は？」と同じ）
+  let m = $('cvfAskM'); if (m) m.remove(); const P = cvfProf(r);
+  m = document.createElement('div'); m.id = 'cvfAskM'; m.style.cssText = 'position:fixed;z-index:60;left:50%;bottom:150px;transform:translateX(-50%);display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:92vw';
+  const btn = (lab, fn) => { const b = document.createElement('button'); b.textContent = lab; b.style.cssText = 'font:600 15px sans-serif;padding:9px 14px;border-radius:8px;border:1px solid #c6a15a;background:rgba(14,20,30,.88);color:#f6e7c4;touch-action:manipulation'; const go = ev => { ev.preventDefault(); ev.stopPropagation(); m.remove(); fn && fn(); }; b.addEventListener('click', go); b.addEventListener('touchend', go); m.appendChild(b); };
+  for (const [k, q] of CVF_AQ) btn(q, () => { const F = CV.F; if (!F) return; F.q = []; F.lineT = 0; r.f = Math.atan2(player.pos.x - r.x, player.pos.z - r.z); cvfPlay(P && P[k] ? [['k', q], ['@bgx', [r, P[k]]]] : [['k', CVF_BGQ], ['@bg', r]]); });
+  btn('やめておく', null); document.body.appendChild(m); CV.askM = { r, t: time };
+}
+function cvfAsk() {   // 祝勝会で近くの人に話しかける
+  const F = CV.F; if (!F || F.meet) return false; const S = CV.S || 1, p = player.pos; let best = null, bd = 2.6 * S;
+  for (const r of CV.R) { if (!r.e || r.st !== 'ok' || r.away) continue; const d = Math.hypot(r.e.s.position.x - p.x, r.e.s.position.z - p.z); if (d < bd && Math.abs(r.e.s.position.y - p.y) < 1.5) { bd = d; best = r; } }
+  if (!best || (!cvfProf(best) && !cvfBg(best))) return false; cvfAskMenu(best); return true;
+}
 const CVF_FUN = {
-  toast: [['k', '皆、杯を持て。沈まなかった桜鳳と、戻らなかった仲間に'], ['*', '乾杯！'], ['omiya', '……乾杯'], ['sumi', '乾杯。明日も針路そのままで']],
-  song: [['flute', 'では、一曲だけ。……知っている人は一緒に'], ['*', '♪……'], ['sec3', '（小声で）この歌、母がよく歌ってました'], ['k', 'いい声だった。もう一度は、帰ってからだな']],
-  magic: [['tono', '手品なら少しだけ。陛下、このナプキンを見ててください'], ['tono', '……はい、消えました'], ['k', '袖から見えているぞ'], ['tono', '見えてるところまでが手品です'], ['*', '（笑い声）']],
-  imit: [['akari', '物まねします。白瀬艦長の「針路そのまま」'], ['akari', '「……針路、そのまま。見張りを、厳に」'], ['sumi', '……私、そんなに低い声？'], ['*', '似てる！'], ['k', '目を細めるところまで似ている']],
+  toast: [['@kstage'], ['k', '今日生きてここにいる者に乾杯。来年はたぶん半分だ'], ['*', '乾杯！'], ['@mur', 'toast'], ['omiya', '……乾杯'], ['sumi', '乾杯。明日も針路そのままで'], ['@kback']],
+  song: [['@stage', 'flute'], ['flute', 'では、一曲だけ。……知っている人は一緒に'], ['*', '♪……'], ['sec3', '（小声で）この歌、母がよく歌ってました'], ['k', 'いい声だった。もう一度は、帰ってからだな'], ['@back', 'flute']],
+  magic: [['@stage', 'flute'], ['flute', '手品なら少しだけ。陛下、このナプキンを見ててください'], ['flute', '……はい、消えました'], ['*', '（拍手）'], ['@mur', 'magic'], ['k', 'ほう……。うまいものだな'], ['@back', 'flute'], ['k', '早瀬。女の子って器用な子が多いのか？ 髪を結んだり、メイクしたりするからか？'], ['sec2', 'それは、あるかもしれません。毎朝、鏡の前で指を細かく動かしてますから'], ['k', '毎朝か。俺は帯を締めるだけで精一杯だ'], ['sec2', '陛下の帯は、侍女が締めてますよね'], ['k', '……そうだったな'], ['sec2', 'ふふ。手品は、また別の才能だと思いますけど']],
+  sides: [['@kstage'], ['@sides'], ['k', '名前のある者だけ、父方は右、母方は左に分かれてみろ'], ['*', '（名のある者たちが、左右に分かれて並ぶ）'],
+    ['k', 'うーん……母方のほうが可愛い感じの子が多いな。小鳥遊は、うーん、だけど'], ['flute', 'えっ、陛下!?'], ['omiya', '……父方は三人しかいないのですから、比べるのは不公平です'],
+    ['*', '（西園寺は、何も言わずに静かに微笑んでいる）'], ['@mur', 'said'], ['*', '「言っちゃった……」'],
+    ['sec4', '私たちは？'], ['sec3', '私たちは？'], ['k', '君たちは、白瀬とか早瀬とか大宮の靴磨きでもしててよ。あとは西園寺の、あのイライラする遅い話し方の話し相手とか'],
+    ['ojou', '……陛下、わたくしの話し方は、'], ['@mur', 'slow'], ['ojou', 'そんなに……遅い、でしょうか……'],
+    ['sec4', '……忠義を尽くしてきたのに、靴磨き……'], ['k', '宮下も、全体からするとほんの一握りの上層部なんだからさ。上には白瀬たちや西園寺たちしかいないんだぞ。誇りを持てよ'], ['sec4', '……はい、陛下'],
+    ['@unsides'], ['@kback']],
+  kin: [['@kstage'], ['k', 'この中で、家系図的に俺の親戚の者は手を挙げてくれ'], ['@hands'], ['@mur', 'kin'], ['*', '（皆が顔を見合わせ……ほとんど全員が、おずおずと手を挙げる）'], ['k', '……多すぎるだろ'], ['*', '（笑い声）'], ['@unhands']],
+  name: [['@kstage'], ['k', 'この中で、俺の名前をフルネームで言える者は手を挙げろ'], ['@hands', 'fast'], ['@mur', 'name'], ['*', '（ほぼ全員の手が、さっと挙がる）'], ['k', '……まあ、そうか'], ['@unhands']],
+  imit: [['c', '物まねします。三の甲板の烹炊所の班長さんの「おかわりは一回まで」'], ['c', '「……おかわりは、一回、まで」'], ['*', '似てる！'], ['@mur', 'imit'], ['k', '似てるのか？ 元の子を知らんから分からん'], ['c2', '班長さん、本当にこう言うんです']],
 };
 const CVF_EV = {
   spill: [['*', '（艦がぐらりと傾く。グラスが倒れて、白い卓布に葡萄酒が広がる）'], ['sec4', 'あっ、ごめんなさい、袖が……！'], ['sec2', '大丈夫、拭けば落ちます。陛下のお召し物にはかかってません'], ['k', 'かかっても構わん。海の上の宴だ']],
-  slide: [['*', '（大きな横揺れ。皿が卓の端まで滑っていく）'], ['midori', 'お皿が逃げる！'], ['akari', '押さえた！ ……ローストビーフ一枚だけ救出'], ['k', '一枚でも救えたなら上出来だ']],
-  fallen: [['*', '（卓ごとに一つだけ、誰も立たない場所がある。小さな札に名前）'], ['sec5', '……ここ、真由の場所です。ローストビーフ、好きだったから'], ['chikage', 'こっちは結衣。甘いものしか食べなかった子'], ['k', '……皿を置いてやれ。冷めても文句は言わんだろう'], ['omiya', '陛下も、一切れどうぞ。……みんなの分まで']],
-  tipsy: [['c', 'へいか～、陛下ぁ、わたし、輸送機の兵、三人も倒したんですよぉ'], ['k', '……聞いた。よくやった'], ['c', 'ごほうび、ください～。陛下の、その、お皿の苺……'], ['omiya', 'はい、そこまで。あなたは水を飲んで、こちらに座りなさい'], ['c', '大宮さん、こわい～……'], ['omiya', '陛下、失礼しました。……苺はお守りしましたわ'], ['k', '助かった']],
-  phone: [['sumi', '陛下、雪風と補給艦から艦内電話……いえ、無線が入っています'], ['*', '（窓の外、暗い海に雪風と補給艦の灯りが見える）'], ['fumi', 'こちら雪風、綾瀬です。陛下、そちらの灯りがよく見えます。乾杯させてください'], ['reika', '補給艦の白石です。食料はまだ山ほどあります、遠慮なく食べてください'], ['k', '綾瀬、白石。お前たちがいたから、この宴がある。乾杯'], ['fumi', '乾杯。……こちらは冷めたおにぎりで'], ['reika', 'こちらは乾パンで。……すみれさんもきっと乾パンです']],
+  slide: [['*', '（大きな横揺れ。皿が卓の端まで滑っていき、侍女が一人よろけて床に手をつく）'], ['@mur', 'fall'], ['k', 'おい、大丈夫か？'], ['c', '……だ、大丈夫です。膝を少し打っただけです'], ['c2', 'お皿が逃げる！'], ['omiya', '押さえました！ ……ローストビーフ一枚だけ救出'], ['k', '一枚でも救えたなら上出来だ']],
+  fallen: [['*', '（卓ごとに一つだけ、誰も立たない場所がある。小さな札に名前）'], ['k', 'ここ、誰が座ってたっけ……まあいい、料理が余るな'], ['sec2', '……ここ、真由の場所です。ローストビーフ、好きだったから'], ['chikage', 'こっちは結衣。甘いものしか食べなかった子'], ['omiya', '陛下も、一切れどうぞ。……みんなの分まで']],
+  tipsy: [['c', 'へいか～、陛下ぁ、わたし、輸送機の兵、三人も倒したんですよぉ'], ['k', '死ぬ前に沢山飲んでおけ'], ['c', 'ごほうび、ください～。陛下の、その、お皿の苺……'], ['omiya', 'はい、そこまで。あなたは水を飲んで、こちらに座りなさい'], ['c', '大宮さん、こわい～……'], ['omiya', '陛下、失礼しました。……苺はお守りしましたわ'], ['k', '助かった']],
+  phone: [['sumi', '綾瀬さん、白石さん。護衛と補給、本当にありがとう'], ['fumi', '雪風は副長に任せてきました。今夜だけは、こちらで'], ['reika', '補給艦の食料、半分ここに運び込みました。遠慮なく食べてください'], ['k', '綾瀬、白石。お前たちがいたから、この宴がある。乾杯'], ['fumi', '乾杯'], ['reika', '乾杯。……温かいお料理、久しぶりです']],
 };
 // 会議室の場：不正アクセスの騒ぎが広がっていると聞いた王が、全員を集めて確認する（一般的な話。実在の事件の詳細には触れない）
 const CVF_MEET = [
   ['k', '全員、会議室に集まれ。急ぎだ'], ['*', '（ざわめきながら、皆が会議室に入ってくる）'], ['k', '世の中で不正アクセスの騒ぎが広がっていると聞いた。うちのセキュリティは大丈夫か。GMOの二の舞にはならないか'],
   ['sysop', '情報・通信担当の霧島です。結論から言うと、「たぶん大丈夫」は大丈夫ではないので、今日ちゃんと確認しましょう'],
   ['sysop', 'まず合言葉。艦内端末の合言葉が「sakura123」の人、手を挙げてください'], ['*', '（三人が、そっと手を挙げる）'], ['k', '……三人もか'],
-  ['sysop', '長くて、他で使い回さない合言葉に。覚えられなければ合言葉帳の仕組みを使います。付箋で端末に貼るのは禁止です'], ['tono', '付箋、今はがしました'],
+  ['sysop', '長くて、他で使い回さない合言葉に。覚えられなければ合言葉帳の仕組みを使います。付箋で端末に貼るのは禁止です'], ['sec4', '付箋、今はがしました'],
   ['chikage', '二段階の認証も入れます。合言葉のあとに、手元の札に出る数字を打つ方式です'], ['sec3', '数字を誰かに聞かれたら？'], ['chikage', '教えない。艦長でも陛下でも、です'], ['k', '俺にもか'], ['chikage', '陛下にも、です'],
   ['sysop', '次は釣りの文。「陛下からの至急の命令です、この札を開いてください」という電文が来たら、まず疑ってください'], ['sec2', '陛下は電文、送りませんよね？'], ['k', '送らん。字幕しか出ない'],
   ['kujo', '怪しい文が来たら、開かずに通信室へ。間違って開いてしまっても、怒らないので、すぐ言ってください。隠されるのが一番困ります'],
@@ -12965,10 +13048,46 @@ function cvfR(who) {
 }
 function cvfSay(who, text) {
   const F = CV.F; if (who === 'k') { cvKingSay(text); return; }
+  if (who === 'x') who = 'c-any';   // 近くの名の無い者
   if (who === '*') { subtitle(text); const el = $('subtitle'); if (el) el.textContent = text; return; }
-  if (who === 'fumi' || who === 'reika') { const n = who === 'fumi' ? '綾瀬 文乃（雪風・無線）' : '白石 麗華（補給艦・無線）'; subtitle(text); const el = $('subtitle'); if (el) el.textContent = `${n}「${text}」`; return; }
+  if ((who === 'fumi' || who === 'reika') && !cvfR(who)) { const n = who === 'fumi' ? '綾瀬 文乃（雪風・無線）' : '白石 麗華（補給艦・無線）'; subtitle(text); const el = $('subtitle'); if (el) el.textContent = `${n}「${text}」`; const f = cvVoiceFile(who, text); if (f && VoicePack.ok) VoicePack.play(f, 3, 1.8, 1); return; }
   let r = who === 'c' || who === 'c2' ? (F.cur && F.cur[who]) : cvfR(who);
-  if (!r) r = F.crowd[(Math.random() * F.crowd.length) | 0]; CV.fOK = true; cvSay(r, text, 1.6); CV.fOK = false;
+  if (!r) { if (CV_NAMED_V.has(who)) { subtitle(text); return; } r = F.crowd[(Math.random() * F.crowd.length) | 0]; }   // 名のある人を他人に言わせない
+  CV.fOK = true; cvSay(r, text, 1.6, CV_NAMED_V.has(who) ? who : (who === 'c' || who === 'c2' ? 'c' : null)); CV.fOK = false;
+}
+// 挨拶・余興をする人は舞台に歩いて上がり、終わったら自分の卓へ戻る。王の挨拶は舞台の上から
+function cvfMur(key) {   // 客席のざわめきの反応：その場に合った短い声を、ずらして重ねる
+  const L = CVF_MUR[key]; if (!L || !VoicePack.ok || !Sfx.ctx) return; const C = Sfx.ctx, M = u7MurInit(); if (!M) return; CV.murBoost = time + 4;
+  L.forEach((ja, i) => { const f = cvVoiceFile('*', ja); if (!f) return; VoicePack.load(f, true);
+    setTimeout(() => { const b = VoicePack.buf[f]; if (!b) return; const src = C.createBufferSource(); src.buffer = b; src.playbackRate.value = rand(0.95, 1.08); const gn = C.createGain(); gn.gain.value = rand(0.12, 0.22); let node = gn;
+      if (C.createStereoPanner) { const pn = C.createStereoPanner(); pn.pan.value = rand(-0.9, 0.9); gn.connect(pn); node = pn; } src.connect(gn); node.connect(M.g); try { src.start(); } catch (_) {} }, 150 + i * rand(220, 520)); });
+}
+function cvfStage(cmd, who) {
+  const F = CV.F, S = CV.S || 1, st = CV.hallStage; if (!st) return 0.2; const sx = st[0] * S, sz = st[1] * S, sy = st[2] * S;
+  if (cmd === '@kstage') { const T0 = F.tables[0]; F.kRet = [player.pos.x, player.pos.y, player.pos.z]; player.pos.set(sx + 1.0 * S, F.Y + sy - CV.Y2 + 0.1, sz); player.yaw = Math.PI; player.vy = 0; return 0.6; }
+  if (cmd === '@hands') {   // ほぼ全員がおずおずと手を挙げる（腕と手を頭の上に、少しずつ遅れて）
+    const sk = new THREE.MeshLambertMaterial({ color: 0xe8c4a8 }), sl = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 }); F.hands = [];
+    for (const q of CV.R) { if (!q.e || q.st !== 'ok' || q.away || (who !== 'fast' && Math.random() < 0.08)) continue; const e = q.e, h = (e.s.scale && e.s.scale.y) || 1.6 * S;
+      const g = new THREE.Group(), arm = new THREE.Mesh(new THREE.CylinderGeometry(0.035 * S, 0.04 * S, 0.42 * S, 6), sl), hand = new THREE.Mesh(new THREE.SphereGeometry(0.055 * S, 8, 6), sk);
+      arm.position.y = 0.21 * S; hand.position.y = 0.46 * S; g.add(arm, hand); g.rotation.z = 0.15 * (Math.random() < 0.5 ? -1 : 1);
+      g.userData = { e, h, d: Math.random() * (who === 'fast' ? 0.5 : 2.4), sp: who === 'fast' ? 0.3 : 0.9, side: Math.random() < 0.5 ? -1 : 1 }; g.visible = false; stageRoot.add(g); F.hands.push(g); }
+    F.handT = 0; return 2.6; }
+  if (cmd === '@bgx') { const [r, L] = who; CV.fOK = true; cvSay(r, L.text, 1.7, '#bg'); CV.fOK = false; if (VoicePack.ok) VoicePack.play(L.file, 3, 1.8, 1); return cvfDur(L.text); }
+  if (cmd === '@bg') { const t = cvfBg(who); CV.fOK = true; cvSay(who, t, 1.7, (who.d === 'fam' || who.cap) ? null : '*'); CV.fOK = false; return cvfDur(t); }
+  if (cmd === '@mur') { cvfMur(who); return 0.3; }
+  if (cmd === '@unhands') { for (const g of F.hands || []) stageRoot.remove(g); F.hands = null; return 0.4; }
+  if (cmd === '@kback') { if (F.kRet) player.pos.set(...F.kRet); player.yaw = 0; return 0.3; }
+  const r = cvfR(who); if (!r || r.st !== 'ok') return 0.2;
+  if (cmd === '@sides') {   // 名のある者だけ：父方は殿の右、母方は左（舞台の前に一列ずつ）。西園寺・白石・綾瀬もこのときだけ広間へ歩いて来る
+    F.sides = []; const L = [['ojou', -1, 0], ['omiya', -1, 1], ['kujo', -1, 2], ['sumi', 1, 0], ['sec2', 1, 1], ['fumi', 1, 2], ['flute', 1, 3], ['reika', 1, 4], ['sec4', 0, 0], ['sec3', 0, 1], ['sysop', 0, 2], ['shizuka', 0, 3]];
+    for (const [k, sd, i] of L) { const r = cvfR(k); if (!r || r.st !== 'ok') continue; const was = r.away; F.sides.push([r, r.x, r.z, r.f, was]);
+      if (was) { r.away = false; r.x = r.hx = r.ax = sx - 6.5 * S; r.z = r.hz = r.az = sz + 1.5 * S; r.y = r.hy = F.Y; r.ySnap = false; r.loc = '祝勝会'; }
+      r.x = r.ax = sd ? sx - sd * (1.6 + i * 0.85) * S : sx + 5.5 * S + i * 0.8 * S; r.z = r.az = sd ? sz + 2.6 * S : sz + 4.6 * S; r.f = Math.PI; r.mv = true; r.w = 'stand'; }
+    cvStream(0, true); return 7; }
+  if (cmd === '@unsides') { for (const [r, x, z, f, was] of F.sides || []) { if (was) { r.x = r.ax = sx - 6.5 * S; r.z = r.az = sz + 1.5 * S; r.mv = true; setTimeout(() => { if (CV.F) { cvDespawn(r); r.away = true; } }, 6000); } else { r.x = r.ax = x; r.z = r.az = z; r.f = f; r.mv = true; } } F.sides = null; return 1; }
+  if (cmd === '@stage') { F.onStage = F.onStage || {}; F.onStage[who] = [r.x, r.z, r.f]; const tx = sx - 0.6 * S, tz = sz + 0.2 * S; const d = Math.hypot(tx - r.x, tz - r.z); r.x = r.ax = tx; r.z = r.az = tz; r.f = 0; r.mv = true; r.w = 'stand'; if (!r.e) cvStream(0, true); return Math.min(12, d / 2.6 + 1.0); }
+  if (cmd === '@back') { const o = F.onStage && F.onStage[who]; if (!o) return 0.2; const d = Math.hypot(o[0] - r.x, o[1] - r.z); r.x = r.ax = o[0]; r.z = r.az = o[1]; r.f = o[2]; r.mv = true; delete F.onStage[who]; return Math.min(4, d / 2.6); }
+  return 0.2;
 }
 function cvfPlay(lines, front) { const F = CV.F; const L = lines.map(x => x.slice()); if (front) F.q.unshift(...L); else F.q.push(...L); }
 function cvfDur(t) { return Math.max(3.2, Math.min(11, 1.8 + t.length * 0.17)); }   // 字幕が読み終わるまでの時間
@@ -12990,27 +13109,29 @@ function cvFeastStart() {
   const S = CV.S || 1, Y = floorUnder(CV.hallT[0].x, CV.hallT[0].z + 1.2, CV.Y2 + 0.5); CV.phase = 'sail'; CV.feast = true;
   const F = CV.F = { t: 0, q: [], cur: null, lineT: 0, tables: [], visited: {}, ev: {}, crowd: [], chatI: 0, early: 0, meet: false };
   F.tables = CV.hallT; F.Y = Y;
-  // 西園寺・白石・綾瀬は自分の艦にいる：桜鳳の中には出さない（無線でだけ話す）
-  for (const k of ['ojou', 'reika', 'fumi']) { const r = (CV.R || []).find(r => r.d === 'fam' && r.key === k); if (r) { cvDespawn(r); r.away = true; } }
-  const place = (r, T, k, n) => { cvDespawn(r); const a = k / n * Math.PI * 2 + 0.3, rr = T.r; r.x = r.hx = r.ax = T.x + Math.sin(a) * rr; r.z = r.hz = r.az = T.z + Math.cos(a) * rr; r.y = r.hy = Y; r.ySnap = false; r.w = r.hw = 'stand'; r.f = a + Math.PI; r.loc = '祝勝会'; r.mv = false; r.job = 'feast'; };
+  // 西園寺・白石・綾瀬・小鳥遊は、幕四では初めから宴に出る（それぞれの卓で話し、身の上話も聞ける）
+  for (const k of ['ojou', 'reika', 'fumi', 'flute']) { const r = (CV.R || []).find(r => r.d === 'fam' && r.key === k); if (r) { r.away = false; r.ship = null; } }
+  for (const k of CVF_OFF) { const r = (CV.R || []).find(r => r.d === 'fam' && r.key === k); if (r) { cvDespawn(r); r.away = true; } }   // 西園寺・白石・綾瀬・小鳥遊も初めから宴に出る
+  const place = (r, T, k, n, o = 0) => { cvDespawn(r); const a = k / n * Math.PI * 2 + 0.3 + o, rr = T.r; r.x = r.hx = r.ax = T.x + Math.sin(a) * rr; r.z = r.hz = r.az = T.z + Math.cos(a) * rr; r.y = r.hy = Y; r.ySnap = false; r.w = r.hw = 'stand'; r.f = a + Math.PI; r.loc = '祝勝会'; r.mv = false; r.job = 'feast'; };
   const used = new Set();
   F.tables.forEach((T, i) => { const names = (CVF_SEAT[i] || []).map(cvfR).filter(r => r && r.st === 'ok'); names.forEach(r => used.add(r));
-    const fill = CV.R.filter(r => r.st === 'ok' && !r.away && !used.has(r) && !r.capOf && !r.ship && !r.gid && r.d !== 'fam').slice(0, Math.max(0, (LITE ? 3 : 6) - names.length)); fill.forEach(r => used.add(r));
-    const all = [...names, ...fill]; const n = all.length + 1; all.forEach((r, k) => place(r, T, k, n)); F.crowd.push(...fill);
+    const fill = CV.R.filter(r => r.st === 'ok' && !r.away && !used.has(r) && !r.capOf && !r.ship && !r.gid && r.d !== 'fam').slice(0, Math.max(0, (i === 0 ? 5 : 6) - names.length)); fill.forEach(r => used.add(r));
+    const all = [...names, ...fill], k0 = i === 0 ? 1 : 0, n = all.length + 1 + k0; all.forEach((r, k) => place(r, T, k + k0, n, i === 0 ? -0.3 : 0)); F.crowd.push(...fill);   // 一の卓：角0（舞台を向く上座）は殿の場所
     // 戦死した仲間の席（誰も立たない場所に名札と皿）
-    const a = (n - 1) / n * Math.PI * 2 + 0.3, tag = cvSign(T.x + Math.sin(a) * T.r * 0.72, Y + 1.55 * S / 1.62, T.z + Math.cos(a) * T.r * 0.72, CV_GN[(i * 7 + 3) % CV_GN.length] + 'の席', a); tag.scale.set(0.22, 0.22, 1); });
+    const a = (n - 1) / n * Math.PI * 2 + 0.3 + (i === 0 ? -0.3 : 0), tag = cvSign(T.x + Math.sin(a) * T.r * 0.72, Y + 1.55 * S / 1.62, T.z + Math.cos(a) * T.r * 0.72, CV_GN[(i * 7 + 3) % CV_GN.length] + 'の席', a); tag.scale.set(0.22, 0.22, 1); });
   // 窓の外に雪風と補給艦の灯り
   for (const sh of CV.fleet || []) if (/yukikaze|hokyu/.test(sh.d.id)) for (let k = 0; k < 6; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffd890 })); b.position.set(sh.d.x * S + rand(-3, 3), 6 + k * 1.2, sh.d.z * S + (k - 2.5) * 8); stageRoot.add(b); }
   const P = player.pos, T0 = F.tables[0]; P.set(T0.x, Y + 0.1, T0.z + T0.r + 1.2 * S); player.yaw = 0; player.vy = 0;
-  showBanner('幕四　船旅', '祝勝会。卓を回って皆と話せ。下の釦で乾杯・歌・手品・物まね、会議室への招集');
-  cvfPlay([['sumi', '皆、杯を。……陛下から一言'], ...CVF_FUN.toast]);
+  showBanner('幕四　船旅', '祝勝会。卓を回って皆と話せ（話す／E で、近くの人に侍女になる前の話を聞く）。下の釦で乾杯・歌・手品・物まね、舞台での呼びかけ、会議室への招集');
+  cvfPlay([['@stage', 'sumi'], ['sumi', '皆、杯を。……陛下から一言'], ...CVF_FUN.toast, ['@back', 'sumi'], ...CVF_GREET]);
   cvfButtons(true);
+  for (const k in CVF_MUR) for (const ja of CVF_MUR[k]) { const f = cvVoiceFile('*', ja); if (f) VoicePack.load(f, true); }
 }
 function cvfButtons(on) {
   let bar = $('cvfBar'); if (!on) { if (bar) bar.remove(); return; }
   if (bar) return; bar = document.createElement('div'); bar.id = 'cvfBar'; bar.style.cssText = 'position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:auto';
-  for (const [k, l] of [['toast', '乾杯'], ['song', '歌を'], ['magic', '手品を'], ['imit', '物まねを'], ['meet', '会議室に招集']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.style.cssText = 'padding:7px 12px;font:600 13px sans-serif;border-radius:8px;border:1px solid rgba(198,161,90,.7);background:rgba(20,24,32,.82);color:#f6e7c4;touch-action:manipulation';
-    const go = ev => { ev.preventDefault(); ev.stopPropagation(); const F = CV.F; if (!F) return; if (k === 'meet') { if (!F.meet) cvfMeet(); return; } if (F.q.length > 3) { popup('話が終わってから'); return; } cvfPlay(CVF_FUN[k]); };
+  for (const [k, l] of [['toast', '乾杯'], ['song', '歌を'], ['magic', '手品を'], ['imit', '物まねを'], ['kin', '舞台で「親戚は挙手」'], ['name', '舞台で「名前を言える者」'], ['sides', '舞台で「父方・母方」'], ['meet', '会議室に招集']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.style.cssText = 'padding:7px 12px;font:600 13px sans-serif;border-radius:8px;border:1px solid rgba(198,161,90,.7);background:rgba(20,24,32,.82);color:#f6e7c4;touch-action:manipulation';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); const F = CV.F; if (!F) return; if (k === 'meet') { if (!F.meet) cvfMeet(); return; } if (k === 'kin' || k === 'name' || k === 'sides') { const st = CV.hallStage, S = CV.S || 1; if (st && Math.hypot(player.pos.x - st[0] * S, player.pos.z - st[1] * S) > 9 * S) { popup('舞台の近くへ行ってから'); return; } } if (F.q.length > 3) { popup('話が終わってから'); return; } if (k === 'imit') { const P = player.pos, cr = F.crowd.filter(r => r.e && r.st === 'ok').sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z)); F.cur = { c: cr[0], c2: cr[1] }; } cvfPlay(CVF_FUN[k]); };
     b.addEventListener('click', go); b.addEventListener('touchstart', go, { passive: false }); bar.appendChild(b); }
   document.body.appendChild(bar);
 }
@@ -13029,11 +13150,13 @@ function cvFeastStep(dt) {
   const F = CV.F; if (!F) return; const S = CV.S || 1, P = player.pos; F.t += dt;
   // 台詞の列：一行ずつ、言い終わるまで待つ
   if ((F.lineT -= dt) <= 0) {
-    if (F.q.length) { const [w, t] = F.q.shift(); cvfSay(w, t); F.lineT = cvfDur(t); }
+    if (F.q.length) { const [w, t] = F.q.shift(); if (w[0] === '@') F.lineT = cvfStage(w, t); else { cvfSay(w, t); F.lineT = cvfDur(t); } }
     else if (F.backAfter) { F.backAfter = false; const T0 = F.tables[0]; P.set(T0.x, F.Y + 0.1, T0.z + T0.r + 1.2 * S); }
     else if (F.t > 20) { let r = F.crowd.filter(r => r.e && Math.hypot(r.e.s.position.x - P.x, r.e.s.position.z - P.z) < 9 * S); if (!r.length) r = F.crowd; if (r.length) { CV.fOK = true; cvSay(r[(Math.random() * r.length) | 0], CVF_CHAT[F.chatI++ % CVF_CHAT.length], 1.3); CV.fOK = false; F.lineT = 6.5; } else F.lineT = 2; }
     else F.lineT = 2.5;
   }
+  if (F.hands) { F.handT += dt; for (const g of F.hands) { const u = g.userData, p = u.e.s.position, k = Math.max(0, Math.min(1, (F.handT - u.d) / u.sp)); g.visible = k > 0;   // ためらいながら、ゆっくり上がる
+      const rx = camera.position.x - p.x, rz = camera.position.z - p.z, L = Math.hypot(rx, rz) || 1; g.position.set(p.x - rz / L * 0.17 * S * u.side, p.y + u.h * (0.62 + 0.26 * k), p.z + rx / L * 0.17 * S * u.side); g.scale.setScalar(0.4 + 0.6 * k); } }
   if (F.meet && F.q.length) return;
   // 卓を回る：初めて近づいた卓で、その卓の話
   F.tables.forEach((T, i) => { if (CVF_VISIT[i] && !F.visited[i] && Math.hypot(P.x - T.x, P.z - T.z) < T.r + 1.6 * S && F.q.length < 2) { F.visited[i] = true; cvfPlay(CVF_VISIT[i]); } });
@@ -13043,7 +13166,7 @@ function cvFeastStep(dt) {
   ev('fallen', 120, () => cvfPlay(CVF_EV.fallen));
   ev('tipsy', 175, () => { const c = F.crowd.find(r => r.st === 'ok'); F.cur = { c, c2: null }; if (c) { cvDespawn(c); c.x = c.ax = P.x + 0.8 * S; c.z = c.az = P.z - 0.4 * S; } cvfPlay(CVF_EV.tipsy); });
   ev('phone', 235, () => cvfPlay(CVF_EV.phone));
-  ev('slide', 290, () => { cvfPlay(CVF_EV.slide); F.slide = { T: F.tables[2], t: 0 }; F.roll = 2; });
+  ev('slide', 290, () => { { const cr = F.crowd.filter(r => r.e && r.st === 'ok'); F.cur = { c: cr[0], c2: cr[1] }; } cvfPlay(CVF_EV.slide); F.slide = { T: F.tables[2], t: 0 }; F.roll = 2; });
   for (let k = 0; k < CVF_EARLY.length; k++) ev('early' + k, 330 + k * 75, () => { const c = F.crowd[(k * 5 + 2) % F.crowd.length], c2 = F.crowd[(k * 5 + 3) % F.crowd.length]; F.cur = { c, c2 };
     if (c) { c.ax = 0; c.az = 64.6 * S; c.w = 'walk'; }   // 出口の方へ歩きかけて、王に止められる
     cvfPlay(CVF_EARLY[k]); cvfPlay([['*', '']]); setTimeout(() => { if (c) { c.ax = c.hx; c.az = c.hz; c.w = 'stand'; } }, 9000); });
@@ -13157,20 +13280,23 @@ function cvMurPools() {
   return (CV.murP = { panic, fear: fear.concat(calm.slice(0, 20)), chat });
 }
 function cvMurTick(dt) {
+  if (CV.askM) { const r = CV.askM.r, m = $('cvfAskM'); if (!m || !CV.F || !r.e || Math.hypot(r.e.s.position.x - player.pos.x, r.e.s.position.z - player.pos.z) > 4 * (CV.S || 1)) { if (m) m.remove(); CV.askM = null; } }   // 問いの選択肢：離れたら閉じる
   if (!VoicePack.ok || !Sfx.ctx || Sfx.ctx.state !== 'running') return; const M = u7MurInit(); if (!M) return; const P = cvMurPools(), S = CV.S || 1, p = player.pos;
   const ab = CV.sinkPh === 'abandon' && !cvOnOyodo(), cruise = (CV.phase === 'raid' || CV.phase === 'board') && p.z > 36 * S && p.y < CV.Yd - 0.6;
   let near = 0; for (const r of CV.R || []) if (r.e && r.st === 'ok' && Math.hypot(r.e.s.position.x - p.x, r.e.s.position.z - p.z) < 16 * S) near++;
-  const peace = (CV.phase === 'sail' || CV.phase === 'end' || CV.daily) && near >= 6;
-  const mode = ab ? 'panic' : cruise ? 'fear' : peace ? 'chat' : null, lvl = ab ? 1 : cruise ? 0.6 : peace ? Math.min(0.7, 0.2 + near * 0.03) : 0;
+  const peace = (CV.phase === 'sail' || CV.phase === 'end' || CV.daily) && near >= 6, feast = !!CV.F && !ab;   // 幕四の祝勝会：ukParty と同じ重ね声を、近くの人数に関係なく絶えず
+  const mode = ab ? 'panic' : feast ? 'party' : cruise ? 'fear' : peace ? 'chat' : null, lvl = ab ? 1 : feast ? (CV.F.meet ? 0.25 : CV.murBoost > time ? 1 : 0.9) : cruise ? 0.6 : peace ? Math.min(0.7, 0.2 + near * 0.03) : 0;
   M.g.gain.value += ((mode ? 1 : 0) - M.g.gain.value) * Math.min(1, dt * 2); if (!mode) return;
-  const pool = P[mode]; if (!pool.length) return; if (!M.cvLd) { M.cvLd = true; for (const f of [...P.panic, ...P.chat].slice(0, 160)) VoicePack.load(f, false); }
-  M.acc += dt * (0.3 + lvl * (ab ? 7 : 4)); const C = Sfx.ctx;
-  while (M.acc >= 1) { M.acc -= 1; if (M.n >= 6 + lvl * (ab ? 30 : 18)) continue;
+  if (mode === 'party' && !P.party) P.party = u7MurPool();
+  const pool = P[mode]; if (!pool || !pool.length) return; M.cvLd = M.cvLd || {}; if (!M.cvLd[mode]) { M.cvLd[mode] = true; const sh = pool.slice().sort(() => Math.random() - 0.5); sh.slice(0, MOBILE || LITE ? 24 : 48).forEach(f => VoicePack.load(f, true)); sh.slice(48, 220).forEach(f => VoicePack.load(f, false)); }   // 最初の数十は急ぎ（キャッシュが満杯でも読む。スマホ・軽量でも鳴る）   // 使う種類の声だけ、先に読み込む（以前は叫び声で枠が埋まり、宴の声が読まれず無音だった）
+  CV.murDbg = { mode, n: M.n, st: M.cvSt | 0, acc: +M.acc.toFixed(2), g: +M.g.gain.value.toFixed(2), pool: pool.length, ok: pool.filter(f => VoicePack.buf[f]).length };
+  M.acc += dt * (0.3 + lvl * (ab ? 7 : feast ? 4.2 : 4)); const C = Sfx.ctx;
+  while (M.acc >= 1) { M.acc -= 1; if (M.n >= (feast ? 8 + lvl * 22 : 6 + lvl * (ab ? 30 : 18))) continue;
     const b = VoicePack.buf[pool[(Math.random() * pool.length) | 0]]; if (!b) continue;
     const src = C.createBufferSource(); src.buffer = b; src.playbackRate.value = ab ? rand(1.0, 1.16) : rand(0.93, 1.08);
     const gn = C.createGain(); gn.gain.value = rand(0.025, 0.07) * (0.7 + lvl * (ab ? 1.1 : 0.7)); let node = gn;
     if (C.createStereoPanner) { const pn = C.createStereoPanner(); pn.pan.value = rand(-0.95, 0.95); gn.connect(pn); node = pn; }
-    src.connect(gn); node.connect(M.g); try { src.start(C.currentTime + Math.random() * (ab ? 0.2 : 0.5)); } catch (_) { continue; } M.n++; src.onended = () => { M.n--; }; }
+    src.connect(gn); node.connect(M.g); try { src.start(C.currentTime + Math.random() * (ab ? 0.2 : 0.5)); } catch (_) { continue; } M.n++; M.cvSt = (M.cvSt | 0) + 1; src.onended = () => { M.n--; }; }
 }
 function cvMapOy(c, g, W, H) {   // 大淀に乗っているとき：角の図を大淀の上甲板に
   const oy = (CV.fleet || []).find(s => s.d.board); if (!oy) return false; const S = CV.S || 1, p = player.pos, hl = oy.hl, hb = oy.hb, ox = oy.x, oz = oy.z;
@@ -15695,7 +15821,7 @@ function fbSpawn() {
   for (let i = 0; i < FB_DRAW.port; i++) { const e = fbSp(rand(-3, 3), z0 + 14 + i * 0.4, 'mob', 'blue'); if (!e) continue; e.fbPort = true; e.passive = true; const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); FB.col.push(e); }
   FB.col.forEach((e, i) => { e.fbSlot = i; });
   // 綾瀬のしんがり（荷の大半も背負う）
-  const f = fbSp(0, z0 + 40, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 157, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.fbRg = true; f.ukTag = FB_NAME.fumi; f.hp = f.hpMax = 12; FB.by.fumi = f; FB.rg.push(f); }
+  const f = fbSp(0, z0 + 40, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 159, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.fbRg = true; f.ukTag = FB_NAME.fumi; f.hp = f.hpMax = 12; FB.by.fumi = f; FB.rg.push(f); }
   for (let i = 0; i < FB_DRAW.rg; i++) { const e = fbSp(rand(-8, 8), z0 + 38 + rand(0, 8), Math.random() < 0.4 ? 'archer' : 'mob', 'blue'); if (!e) continue; e.fbRg = true; if (i % 3 === 0) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); } FB.rg.push(e); }
 }
 // ロシアのスキー兵：分隊（10）ずつ。from: 'rear' | 'left' | 'right' | 'front'
@@ -15793,7 +15919,7 @@ function fbArrive() {
 }
 function fbFumiBack() {   // 下の沢を回ってきた綾瀬と、しんがりの半分
   FB.lostRg = Math.round(FB_NOM.rg * 0.55);
-  const f = fbSp(-2, FB_Z.fort + 14, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 157, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.ukTag = FB_NAME.fumi; f.home = [-2, FB_Z.fort - 3]; FB.by.fumi = f; FB.col.push(f); }
+  const f = fbSp(-2, FB_Z.fort + 14, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 159, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.ukTag = FB_NAME.fumi; f.home = [-2, FB_Z.fort - 3]; FB.by.fumi = f; FB.col.push(f); }
   for (let i = 0; i < Math.round(8 * FB_K) + 2; i++) { const e = fbSp(rand(-5, 5), FB_Z.fort + 16 + rand(0, 6), 'mob', 'blue'); if (e) { e.home = [rand(-6, 6), FB_Z.fort - 4 - rand(0, 6)]; FB.col.push(e); } }
 }
 // ---- 毎フレーム ----
@@ -16963,7 +17089,7 @@ function campJp(x, z, kind, opt) {
   return e;
 }
 const CAMP_GIRL = { sumi: () => SEC_ID, fumi: () => FUMI_ID, ojou: () => OJOU_ID, omiya: () => 'omiya', shizuka: () => 'girl31', reika: () => 'girl26', shinobu: () => 'sec6', chikage: () => 'girl34', hiyori: () => 'sec5', akari: () => 'sec7' };
-const CAMP_PROF = { sumi: { name: '白瀬 澄', pers: '冷静', cm: 156, vv: 1 }, fumi: { name: '綾瀬 文乃', pers: '冷静', cm: 160, vv: 1 }, ojou: { name: '西園寺 すみれ', pers: '冷静', cm: 158, vv: 0 }, omiya: { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 },
+const CAMP_PROF = { sumi: { name: '白瀬 澄', pers: '冷静', cm: 156, vv: 1 }, fumi: { name: '綾瀬 文乃', pers: '冷静', cm: 159, vv: 1 }, ojou: { name: '西園寺 すみれ', pers: '冷静', cm: 158, vv: 0 }, omiya: { name: '大宮 ひなた', pers: '陽気', cm: 147, vv: 2 },
   shizuka: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0 }, reika: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1 }, shinobu: { name: '氷室 しのぶ', pers: '冷静', cm: 162, vv: 1 },
   chikage: { name: '一条 千景', pers: '冷静', cm: 159, vv: 0 }, hiyori: { name: '小日向 ひより', pers: '陽気', cm: 152, vv: 2 }, akari: { name: '夏目 あかり', pers: '陽気', cm: 155, vv: 2 } };
 function campNamed(key, x, z, kind, cmdr) {
@@ -18551,7 +18677,7 @@ function u3SpawnBlue() {
     if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; e.figH = (prof.cm || 160) / 100; }
     e.uk3Ride = true; e.uk3Loc = [lx, lz]; e.uk3Boat = K; e.sq = null; e.mk.visible = false; K.ride.push(e); return e;
   };
-  UK3.sai = stand(0.45, -3.0, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk3Sai: true, uk3Bd: K }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 163, vv: 1 });
+  UK3.sai = stand(0.45, -3.0, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk3Sai: true, uk3Bd: K }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 158, vv: 1 });
   if (UK3.sai) { UK3.sai.hp = UK3.sai.hpMax = 5; UK3.sai.ukTag = '侍大将 西園寺 すみれ'; }
   UK3.esc = [stand(-0.45, -3.2, undefined, { uk3Esc: true, uk3Bd: K }), stand(0.4, -3.8, undefined, { uk3Esc: true, uk3Bd: K })].filter(Boolean);
   for (const e of UK3.esc) { e.hp = e.hpMax = e.hpMax + 2; e.ukTag = '護衛 ' + e.prof.name; }
@@ -19422,7 +19548,7 @@ function u4SpawnBlue() {
   const K = mk('K', U4.KPTS.map(([x, z]) => [x, z]), U4.STARTK, 34, 8, 2.4);
   // 西園寺（侍大将）が正面の主力の先頭に立つ。護衛 2 人
   const sp = (x, z, girl, set, prof) => { const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: Object.assign({ state: 'idle' }, set) }); if (!e) return null; if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; e.figH = (prof.cm || 160) / 100; } e.sq = null; e.s.rotation.y = e.face = e.faceWant = Math.PI; return e; };
-  UK4.sai = sp(U4.STARTF[0], U4.STARTF[1] - 1.5, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk4Sai: true, uk4G: 'F' }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 163, vv: 1 });
+  UK4.sai = sp(U4.STARTF[0], U4.STARTF[1] - 1.5, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk4Sai: true, uk4G: 'F' }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 158, vv: 1 });
   if (UK4.sai) { UK4.sai.hp = UK4.sai.hpMax = 6; UK4.sai.ukTag = '侍大将 西園寺 すみれ'; UK4.sai.uk4Off = [0, -2.2]; F.units.push(UK4.sai); F.lead = UK4.sai; }
   UK4.esc = [sp(-1.4, U4.STARTF[1] - 1, undefined, { uk4Esc: true, uk4G: 'F' }), sp(1.4, U4.STARTF[1] - 1, undefined, { uk4Esc: true, uk4G: 'F' })].filter(Boolean);
   UK4.esc.forEach((e, i) => { e.hp = e.hpMax = e.hpMax + 2; e.ukTag = '護衛 ' + e.prof.name; e.uk4Off = [i ? 1.5 : -1.5, -1.3]; F.units.push(e); });
@@ -20006,7 +20132,7 @@ function u5SpawnBlue() {
   mk('W', [[-18, -3.5], [-15, 12], [-15, 26], [-6, 30]], [-18, -8], 28, 9, '艦長 桜井');
   mk('E', [[22, -3.5], [30, 0], [38, 2], [44, 4]], [22, -8], 26, 8, '艦長 宮下');
   const sp = (x, z, girl, set, prof) => { const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, set: Object.assign({ state: 'idle' }, set) }); if (!e) return null; if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; e.figH = (prof.cm || 160) / 100; } e.sq = null; e.s.rotation.y = e.face = e.faceWant = 0; return e; };
-  UK4.sai = sp(0, -6.5, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk4Sai: true, uk4G: 'F' }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 163, vv: 1 });
+  UK4.sai = sp(0, -6.5, GIRLS[OJOU_ID] ? OJOU_ID : undefined, { uk4Sai: true, uk4G: 'F' }, { name: '秘書課 西園寺 すみれ', pers: '冷静', cm: 158, vv: 1 });
   if (UK4.sai) { UK4.sai.hp = UK4.sai.hpMax = 6; UK4.sai.ukTag = '侍大将 西園寺 すみれ'; UK4.sai.uk4Off = [0, 2.2]; F.units.push(UK4.sai); F.lead = UK4.sai; }
   UK4.esc = [sp(-1.4, -7, undefined, { uk4Esc: true, uk4G: 'F' }), sp(1.4, -7, undefined, { uk4Esc: true, uk4G: 'F' })].filter(Boolean);
   UK4.esc.forEach((e, i) => { e.hp = e.hpMax = e.hpMax + 2; e.ukTag = '護衛 ' + e.prof.name; e.uk4Off = [i ? 1.5 : -1.5, 1.3]; F.units.push(e); });
@@ -20123,8 +20249,8 @@ const PAL_NAMED = {
   sec2: { girl: () => SEC2_ID, name: '秘書課 早瀬 ことね', pers: '陽気', cm: 156, at: ['secr', 'manga', 'beauty', 'manga'] },
   sec3: { girl: () => 'sec3', name: '秘書課 桜井 ゆかり', pers: '冷静', cm: 158, at: ['zaimu', 'zaimu', 'cafe', 'lounge'] },
   sec4: { girl: () => 'sec4', name: '秘書課 宮下 千尋', pers: '慎重', cm: 161, at: ['seimu', 'seimu', 'rest_r', 'av'] },
-  fumi: { girl: () => FUMI_ID, name: '秘書課 綾瀬 文乃', pers: '慎重', cm: 159, at: ['kyudo', 'secr', 'book', 'fumi_r'] },
-  ojou: { girl: () => OJOU_ID, name: '西園寺 すみれ', pers: '冷静', cm: 163, at: ['budokan', 'ojou_r', 'ojou_r', 'ojou_r'] },
+  fumi: { girl: () => FUMI_ID, name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 159, at: ['kyudo', 'secr', 'book', 'fumi_r'] },
+  ojou: { girl: () => OJOU_ID, name: '西園寺 すみれ', pers: '冷静', cm: 158, at: ['budokan', 'ojou_r', 'ojou_r', 'ojou_r'] },
   omiya: { girl: () => 'omiya', name: '大宮 ひなた', pers: '陽気', cm: 147, at: ['gym', 'tennis', 'yuagari', 'omiya_r'] },
   shizuka: { girl: () => 'girl31', name: '久遠 静香', pers: '冷静', cm: 167, at: ['budokan', 'av', 'av', 'av'] },
   reika: { girl: () => 'girl26', name: '白石 麗華', pers: '好戦的', cm: 165, at: ['beauty', 'beauty', 'dance', 'bar'] },
@@ -22418,7 +22544,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zk';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zm';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -28938,7 +29064,7 @@ const RK_PAX = [   // 殿の機にだけ乗る秘書課・救護班（元の写�
   { id: 'sumi', gid: () => SEC_ID, name: '白瀬 澄', role: '秘書課', cm: 160, p: [-0.45, -0.9, -3.2], f: -Math.PI / 2, kind: 'sec', take: 'x_sumi_take' },
   { id: 'sec3', gid: () => 'sec3', name: '桜井 ゆかり', role: '秘書課（通信補助）', cm: 158, p: [0.45, -0.9, -0.3], f: Math.PI / 2, kind: 'sec', take: 's_take2' },
   { id: 'sec2', gid: () => SEC2_ID, name: '早瀬 ことね', role: '秘書課', cm: 156, p: [-0.45, -0.9, -0.7], f: -Math.PI / 2, kind: 'sec', take: 'x_sec2_take' },
-  { id: 'ojou', gid: () => OJOU_ID, name: '西園寺 すみれ', role: '秘書課', cm: 163, p: [-0.45, -0.9, 1.0], f: -Math.PI / 2, kind: 'sec', take: 'x_ojou_take' },
+  { id: 'ojou', gid: () => OJOU_ID, name: '西園寺 すみれ', role: '秘書課', cm: 158, p: [-0.45, -0.9, 1.0], f: -Math.PI / 2, kind: 'sec', take: 'x_ojou_take' },
   { id: 'omiya', gid: () => 'omiya', name: '大宮 ひなた', role: '秘書課', cm: 147, p: [0.45, -0.9, 1.4], f: Math.PI / 2, kind: 'sec', take: 'x_omiya_take' },
   { id: 'hiyori', gid: () => 'sec5', name: '小日向 ひより', role: '側近付き秘書（弾薬）', cm: 152, p: [-0.38, -0.9, 2.3], f: 0, kind: 'sec', take: 's_take3', ammo: 1 },
   { id: 'reika', gid: () => 'girl26', name: '白石 麗華', role: '秘書課', cm: 165, p: [0.45, -0.9, 4.5], f: Math.PI / 2, kind: 'sec', take: 'x_reika_take' },
@@ -30751,5 +30877,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get CV(){return typeof CV!=="undefined"?CV:null;}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

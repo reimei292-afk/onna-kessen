@@ -51,6 +51,13 @@ for key, arr in o4['CVF_MUR'].items():
     for i, ja in enumerate(arr): add('*', ja, vw=MV[(i * 3 + len(key)) % len(MV)])
 for ja in [o['CV_EV']['start'], o['CV_EV']['aa'], o['CV_EV']['clear'], o['CV_EV']['sink']] + o['CV_LN'].get('brg', {}).get('raid', []) + o['CV_LN'].get('brg', {}).get('sail', []): add('sumi', ja)
 NUM = o['CV_NUM']
+import re as _re
+_g = open(os.path.join(ROOT, 'game.js'), encoding='utf8').read()
+_t = json.loads(_re.search(r'const CV3_TALK = (\{.*?\});\n', _g).group(1))
+for i, ja in enumerate(_t['body'] + _t['beauty']): add('*', ja, vw=f'ext{i * 7 + 3}')   # 答えごとに別の侍女の声
+_p = _re.findall(r"\['\w+', '([^']+)'\]", _re.search(r'const CV3_PHOTO = (\[.*?\]);\n', _g).group(1))
+for i, ja in enumerate(_p + ['陛下……ポケットに、これが', 'はい。布の下に、戻しておきます']): add('*', ja, vw='ext90' if i < len(_p) else 'ext90')
+for i, ja in enumerate(['逃げろ！', '逃げろ！ 機体が来る！', '艦橋に突っ込んだ！', '消火急げ！ ホースを艦橋へ！', '残骸から兵が出てくる！', '敵兵とはいえ丁重に扱え。米兵の子たちに白布をかけて、担架で舷側に並べろ', '……重いですね', 'トラクターを上げろ！ 機体を舷側へ曳く', '曳くよ！ ゆっくり！', '手の空いてる者は全員集まれ！ 押して落とす！', 'せーのっ！', 'よいしょっ！', 'もう少し！']): add('*', ja, vw=['look', 'deck', 'brg', 'dc', 'look', 'brg', 'ext55', 'brg', 'ext61', 'brg', 'ext70', 'ext77', 'ext83'][i])
 for t in ['敵機、正面！', '敵機、真後ろ！'] + [f'敵機、{s}{NUM[n]}度！' for s in ('右', '左') for n in range(1, 17)]: add('*', t, vw='look')
 USV = [('en-US-AvaNeural', 4, 0), ('en-US-EmmaNeural', -4, -4), ('en-US-JennyNeural', 6, 4)]
 for ja_e, en_e in o['US']:

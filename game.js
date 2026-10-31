@@ -10688,7 +10688,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031e）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031f）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -10769,12 +10769,12 @@ function cvLaunchStep(dt) {
       if (cvTaxi(L, elv.x, elv.z, 2.4 * S, dt) && el.y <= 0.02 && el.dir === 0) { L.ph = 'onElev'; el.dir = 1; }
       continue;
     }
-    if (L.ph === 'onElev') { g.position.set(el.m.position.x, el.m.position.y + 1.05, el.m.position.z); if (el.y >= 0.99 && el.dir === 0) { L.ph = 'spot'; el.busy = null; L.el = null; L.spotZ = el.m.position.z + 22 * S; L.t = 0; cvEv('deck', '押せー！ 発艦位置へ！', 8, 1.6); } continue; }
+    if (L.ph === 'onElev') { g.position.set(el.m.position.x, el.m.position.y + 1.05, el.m.position.z); if (el.y >= 0.99 && el.dir === 0) { L.ph = 'spot'; el.busy = null; L.el = null; L.spotZ = el.m.position.z + 14 * S; L.t = 0; cvEv('deck', '押せー！ 発艦位置へ！', 8, 1.6); } continue; }
     if (L.ph === 'spot') {   // 甲板員が翼と尾を押して、昇降機の後ろの発艦位置へ。最後に機首を艦首へ向ける
       cvCrewOn(L, ['wingL', 'wingR', 'chockL', 'chockR', 'guide']); g.position.y = deckY;
       const leg = L.leg || 0;
-      if (leg === 0 && cvTaxi(L, -2.4 * S, g.position.z + 0.0001 + (L.spotZ - g.position.z) * 0.6, 1.3 * S, dt)) L.leg = 1;
-      else if (leg === 1 && cvTaxi(L, -2.4 * S, L.spotZ, 1.1 * S, dt)) L.leg = 2;
+      if (leg === 0 && cvTaxi(L, -2.4 * S, g.position.z + 0.0001 + (L.spotZ - g.position.z) * 0.6, 2.2 * S, dt)) L.leg = 1;
+      else if (leg === 1 && cvTaxi(L, -2.4 * S, L.spotZ, 1.8 * S, dt)) L.leg = 2;
       else if (leg === 2) { L.yaw += angDiff(L.yaw, Math.PI) * Math.min(1, dt * 1.5); cvPlanePose(g, L.yaw, 0, 0); if (Math.abs(angDiff(L.yaw, Math.PI)) < 0.02) { L.ph = 'start'; L.t = 0; L.spin = 0; cvEv('mnt', '慣性始動機、回せ！', 6, 1.6); } }
       continue;
     }
@@ -11073,7 +11073,7 @@ function cvStream(dt, force) {
   for (const r of CV.R) {
     r.want = false; if (r.st === 'air' || (r.st !== 'ok' && !r.e)) continue;
     const dx = r.x - c.x, dz = r.z - c.z, dy = (r.y + 1.2 - c.y) * 5, s = dx * dx + dz * dz + dy * dy;
-    r.sc = s; if (s < R2 * 1.7) cand.push(r);
+    r.sc = (r.job || r.task) ? s * 0.25 : s; if (r.sc < R2 * 1.7) cand.push(r);   // 消火・応急に動く人を優先して見せる
   }
   cand.sort((a, b) => a.sc - b.sc);
   for (let i = 0; i < cand.length && i < CAP; i++) if (cand[i].sc < R2) cand[i].want = true;
@@ -11376,7 +11376,7 @@ function cvSpawnFoe() {
   const ang = rand(-Math.PI, Math.PI), R0 = 470;
   let p, g, spd, hp;
   if (kind === 'g4m') { const dir = Math.random() < 0.5 ? 1 : -1; p = new V3(rand(-10, 10), Yd + 78, -dir * 560); g = cvG4m(); spd = 40; hp = 34; cvPilot(g, who.id, 1.15 * 1, 7.0, 1.05); }
-  else { p = new V3(Math.sin(ang) * R0, Yd + (kind === 'usb' ? rand(115, 135) : rand(45, 70)), Math.cos(ang) * R0); g = cvAir(p.x, p.y, p.z, 0, kind); g.scale.multiplyScalar(S); spd = kind === 'usb' ? 50 : 64; hp = kind === 'usb' ? 20 : 18;   // 頑丈（F6F・SBD は防弾が厚い）
+  else { p = new V3(Math.sin(ang) * R0, Yd + (kind === 'usb' ? rand(115, 135) : rand(45, 70)), Math.cos(ang) * R0); g = cvAir(p.x, p.y, p.z, 0, kind); g.scale.multiplyScalar(S); spd = kind === 'usb' ? 50 : 64; hp = kind === 'usb' ? 26 : 18;   // 頑丈（F6F・SBD は防弾が厚い）
     cvPilot(g, who.id, kind === 'usb' ? 0.72 : 0.62, kind === 'usb' ? 0.2 : 0.35, kind === 'usb' ? 1.15 : 1.05); if (kind === 'usb') { const b = cvUsGirl(); cvPilot(g, b.id, 0.35, 2.5, 0.95); } }
   const v = new V3(-p.x, 0, -p.z).normalize().multiplyScalar(spd);
   const f = { g, kind, who: who.name, pitch: who.pitch, p, v, spd, hp, dead: false, gone: false, ph: 'in', t: 0, runs: 0, prop: g.userData.prop, x: p.x, y: p.y, z: p.z, seed: Math.random() * 6.28, brk: 0 };
@@ -11464,11 +11464,11 @@ function cvUsSay(name, ja, en, pitch) {
 function cvZeroGun(g, f) {
   const dx = f.x - g.position.x, dy = f.y - g.position.y, dz = f.z - g.position.z, d = Math.hypot(dx, dy, dz) || 1;
   cvTracer(g.position.x, g.position.y, g.position.z, dx / d * 300, dy / d * 300, dz / d * 300, d / 300, CV_TC.zero, 3);
-  if (Math.random() < (f.brk > 0 ? 0.08 : 0.22)) { f.hp -= 1; if (f.hp <= 0) cvKillFoe(f); }
+  if (Math.random() < (f.brk > 0 ? 0.08 : f.kind === 'usb' ? 0.14 : 0.22)) { f.hp -= 1; if (f.hp <= 0) cvKillFoe(f); }
 }
 function cvBurstAt(x, y, z, dmg) {
   puff(new V3(x, y, z), 0xffe0a0, 3, 1.4, 3, 0.25); cvSmoke(x, y, z, 5, 3.5, [0.08, 0.08, 0.08], 0.2, 0.5, 0.8); cvSmoke(x + 1, y, z, 4, 3, [0.12, 0.12, 0.12], 0.2, 0.5, 0.7);
-  for (const f of CV.foe) if (!f.dead && !f.gone) { const d = Math.hypot(f.x - x, f.y - y, f.z - z); if (d < 30) f.flakT = time; if (d < 9) { f.hp -= dmg; if (f.hp <= 0) cvKillFoe(f); } }
+  for (const f of CV.foe) if (!f.dead && !f.gone) { const d = Math.hypot(f.x - x, f.y - y, f.z - z); if (d < 30) f.flakT = time; if (d < 9) { f.hp -= dmg * (f.kind === 'usb' && (f.ph === 'in' || f.ph === 'dive') ? 0.45 : 1); if (f.hp <= 0) cvKillFoe(f); } }   // 急降下に入った艦爆はなかなか落ちない
 }
 function cvFire(g, manual) {
   if (!g || g.cd > 0 || CV.phase !== 'raid') return;
@@ -11659,9 +11659,9 @@ function cvFireStep(dt) {
     let alive = 0; for (const r of f.crew) if (r.st === 'ok' && r.job === f) alive++;
     if (alive < 8 && (f.askT = (f.askT || 0) - dt) <= 0) { f.askT = 0.6;
       const pick = CV.R.find(r => r.d === 'fire' && r.st === 'ok' && !r.job && !r.task && !r.hurt) || (alive < 4 && CV.R.find(r => (r.d === 'dc' || r.d === 'res') && r.st === 'ok' && !r.job && !r.task && !r.hurt));
-      if (pick) { const a = f.crew.length * 0.78 + 0.4, rad = 4.2 * S; pick.job = f; pick.x = clamp(f.x + Math.cos(a) * rad, -8.0 * S, 8.0 * S); pick.z = f.z + Math.sin(a) * rad; pick.w = f.crew.length % 3 === 1 ? 'kneel' : 'stand'; pick.ax = pick.az = undefined; pick.f = Math.atan2(f.x - pick.x, f.z - pick.z); if (Math.abs(pick.y - f.y) > 1) { pick.y = f.y; cvDespawn(pick); } pick.mv = true; f.crew.push(pick); }
+      if (pick) { const a = f.crew.length * 0.78 + 0.4, rad = 4.2 * S; pick.job = f; pick.x = clamp(f.x + Math.cos(a) * rad, -8.0 * S, 8.0 * S); pick.z = f.z + Math.sin(a) * rad; pick.w = f.crew.length % 3 === 1 ? 'kneel' : 'stand'; pick.ax = pick.az = undefined; pick.f = Math.atan2(f.x - pick.x, f.z - pick.z); if (Math.abs(pick.y - f.y) > 1) { pick.y = f.y; cvDespawn(pick); } pick.mv = true; pick.jt = f.t; f.crew.push(pick); }
     }
-    let work = 0; for (const r of f.crew) if (r.st === 'ok' && r.job === f && r.e && Math.hypot(r.e.s.position.x - r.x, r.e.s.position.z - r.z) < 1.2) work++; else if (r.st === 'ok' && r.job === f && !r.e && !r.mv) work++;
+    let work = 0; for (const r of f.crew) if (r.st === 'ok' && r.job === f && r.e && Math.hypot(r.e.s.position.x - r.x, r.e.s.position.z - r.z) < 1.2) work++; else if (r.st === 'ok' && r.job === f && !r.e && (!r.mv || f.t - (r.jt || 0) > 4)) work++;
     f.I += dt * (0.03 - work * 0.0105) * (LITE ? 1.2 : 1); f.I = Math.min(3, f.I);
     if (f.light) f.light.intensity = (1.2 + f.I * 1.2) * (0.8 + Math.random() * 0.4);
     if ((f.emT -= dt) <= 0) { f.emT = LITE ? 0.22 : 0.12;
@@ -20158,7 +20158,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -25840,7 +25840,7 @@ function updatePlayer(dt) {
     if (keys.Space) { player.climbing = false; player.vy = 3; player.onGround = false; player.pos.x += Math.sin(player.yaw) * 0.6; player.pos.z += Math.cos(player.yaw) * 0.6; }
   } else {
     if (keys.Space && player.onGround) { player.vy = PLANE.on ? 2.6 : 5.2; player.onGround = false; player.seated = false; }   // 機内は天井が低い
-    player.vy -= 14 * dt; player.pos.y += player.vy * dt;
+    player.vy -= 14 * dt; player.yPre = player.pos.y; player.pos.y += player.vy * dt;
   }
   player.pos.x = clamp(player.pos.x, -(MECH.on ? MECH.lim : CFG.field), MECH.on ? MECH.lim : CFG.field); player.pos.z = clamp(player.pos.z, -(MECH.on ? MECH.lim : CFG.field), MECH.on ? MECH.lim : CFG.field);
   for (const c of colliders) {
@@ -25866,7 +25866,8 @@ function updatePlayer(dt) {
   if (UK.on || UK3.on) ukPlayerClamp();   // 英国淑女編：甲板・舟・舷梯の上だけ
   if (BEACH.on && !player.kei) keiPushAll(player.pos, 0.35);
   if (TERR.move) { const o = player.terrOk || [player.pos.x, player.pos.z]; if (TERR.move(o[0], o[1], player.pos.x, player.pos.z) <= 0) { player.pos.x = o[0]; player.pos.z = o[1]; } player.terrOk = [player.pos.x, player.pos.z]; }
-  let gh = floorUnder(player.pos.x, player.pos.z, player.pos.y);
+  let gh = floorUnder(player.pos.x, player.pos.z, CV.on && player.yPre != null && player.yPre > player.pos.y ? Math.min(player.yPre, player.pos.y + 1.2) : player.pos.y);   // 一コマで落ちすぎても床を抜けない
+  player.yPre = null;
   if (TERR.fn) { const th = TERR.fn(player.pos.x, player.pos.z); gh = Math.max(gh, th); if (player.onGround && player.vy <= 0 && player.pos.y > th && player.pos.y - th < 0.8) player.pos.y = th; }
   if (PLANE.on) {   // 倒れた娘の上に乗る（なめらかに）・天井に頭をぶつけない
     const ph = bodies.length ? pileAt(player.pos.x, player.pos.z) * 0.8 : 0;
@@ -28484,5 +28485,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

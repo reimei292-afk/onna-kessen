@@ -2808,7 +2808,8 @@ function stageLook(name) {
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 
-  if (name !== 'keiku' && CV.on && CV.sky0) {
+  if (!/^keiku/.test(name) && $('cvGunBtns')) $('cvGunBtns').style.display = 'none';
+  if (!/^keiku/.test(name) && CV.on && CV.sky0) {
     CV.on = false; const u = sky.material.uniforms;
     u.top.value.setHex(CV.sky0.top); u.mid.value.setHex(CV.sky0.mid); u.bot.value.setHex(CV.sky0.bot);
   }
@@ -2823,7 +2824,7 @@ function stageLook(name) {
     NB.on = false;
     if (NB.sky0) { const u = sky.material.uniforms; u.top.value.setHex(NB.sky0.top); u.mid.value.setHex(NB.sky0.mid); u.bot.value.setHex(NB.sky0.bot); }
   }
-  if (name === 'keiku') {
+  if (/^keiku/.test(name)) {
     CV.on = true; CV.launchOn = false; CV.launches = null; ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false;
     const u = sky.material.uniforms;
     if (!CV.sky0) CV.sky0 = { top: u.top.value.getHex(), mid: u.mid.value.getHex(), bot: u.bot.value.getHex() };
@@ -10725,7 +10726,7 @@ function cvDmgStep(dt) {   // 機関の被害で速力（波の流れ）、停�
   for (const f of CV.fires || []) { if (f.out || f.I < 1.6) continue; if ((f.spT = (f.spT == null ? 12 : f.spT) - dt) > 0) continue; f.spT = rand(14, 24);
     if ((CV.fires.filter(q => !q.out).length) < (LITE ? 6 : 10)) cvFireStart(clamp(f.x + rand(-6, 6) * S, -7.5 * S, 7.5 * S), f.z + rand(-7, 7) * S, f.y, 'spread'); }
 }
-function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.ammo = null; CV.carts = null; CV.sinkObjs = null; CV.carrierGone = false; CV.sunkDone = false; CV.sinkPh = null; CV.rboats = []; CV.brgBroken = false; CV.abWarn = false; CV.board = null; CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
+function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.ammo = null; CV.carts = null; CV.sinkObjs = null; CV.carrierGone = false; CV.sunkDone = false; CV.sinkPh = null; CV.rboats = []; CV.brgBroken = false; CV.abWarn = false; CV.board = null; CV.ca = null; CV.esc = null; CV.cyT = null; CV.lbN = null; CV.lbOut = false; CV.rafts = []; CV.escWd = false; CV.jmT = null; CV.puT = null; CV.lastSaid = false; CV.listA = 0; CV.settle = 0; CV.debT = null; CV.listSd = 0; if ($('cvGunBtns')) $('cvGunBtns').style.display = 'none'; CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
 // 殿の回復：軍医のそばで手当て、王の間で休む、秘書のおにぎり
 function cvKingHeal(dt) {
   if (player.hp >= CFG.maxHp || player.hp <= 0) return; const S = CV.S || 1, P = player.pos, H = CV.heal || (CV.heal = { med: 0, oni: 60, rest: 0 });
@@ -10750,35 +10751,42 @@ function cvDailyToggle() {
   showBanner(CV.daily ? '日常の航海' : '戦闘ありの航海', CV.daily ? '敵は来ない。朝の体操、艦内放送、大劇場、食事。作戦終了ボタンか Q で終える' : '約三十秒後に空襲が来る');
 }
 // ── 沈没：総員退艦。護衛艦が生存者を拾い、殿は内火艇で大淀へ。間に合わなければ殿の死と同じ ──
+function cvListStep(dt) {   // 傾斜と沈下はゆっくり（見た目だけ。足場はそのまま）
+  const S = CV.S || 1, u = 1 - Math.max(0, CV.abT) / (CV.abT0 || 1); CV.listA = (CV.listSd || 1) * 0.07 * u * u; CV.settle = 0.7 * S * u;
+  if (!CV.sinkObjs) { CV.sinkObjs = []; const ships = new Set((CV.fleet || []).map(s => s.g)); for (const o of stageRoot.children) if (!ships.has(o) && o !== CV.sea && !(CV.wake || []).includes(o) && !(CV.rboats || []).some(b => b.m === o) && !(CV.esc && CV.esc.b === o)) CV.sinkObjs.push([o, o.position.y, o.rotation.z]); }
+  if (CV.carrierGone) return; for (const [o, y0, rz] of CV.sinkObjs) { o.position.y = y0 - CV.settle; o.rotation.z = rz + CV.listA; }
+}
 function cvOnOyodo() { const S = CV.S || 1, p = player.pos; return (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S); }
-function cvAbandonStart() {
-  CV.hp = 0; CV.sunkSaid = true; CV.sinkT = 0; CV.phase = 'sink'; CV.abT = LITE ? 150 : 180; CV.sinkPh = 'abandon';
-  showBanner('総員退艦', '艦尾テラスか舷側の救命艇へ。E で大淀に移る。急げ');
+function cvAbandonStart() {   // 軽空母の退艦から沈没まで：祥鳳で約十分、瑞鳳は数時間。既定は十五〜二十分、被害で縮む
+  CV.hp = 0; CV.sunkSaid = true; CV.sinkT = 0; CV.phase = 'sink'; CV.abT = CV.abT0 = (LITE ? 840 : 1080) * Math.max(0.55, Math.min(1.1, 1.1 - ((CV.fires || []).filter(f => !f.out).length) * 0.04 - (CV.holes || []).length * 0.01)); CV.sinkPh = 'abandon';
+  showBanner('総員退艦', `沈むまでおよそ ${Math.round(CV.abT / 60)} 分。護衛が殿を内火艇へ。舷側の救命艇は E で大淀へ`);
   const cap = (CV.R || []).find(r => r.cap && r.st === 'ok'); cvEv('off', CV_EV.sink, 1, 2.2);
   const seq = [[1500, () => cap && cvSay(cap, '総員退艦。……艦長は艦と運命を共にします', 2.4)], [5200, () => cvKing('馬鹿を言うな、生きて戻れ。命令だ')],
     [8800, () => { if (!cap) return; cvSay(cap, '……はい。命令に従います。殿もお早く', 2.4); cap.capOff = true; }], [12000, () => cvShipSay('yukikaze', '雪風より。生存者の収容を始めます。海に落ちた者から拾います')],
     [16000, () => cvShipSay('hokyu', '補給艦、舷側に網を下ろしました。登れる人は登って')], [20000, () => cvKing('急げ、俺も降りる……艦尾へ')]];
   for (const [t, f] of seq) setTimeout(() => { if (CV.on && CV.phase === 'sink') f(); }, t);
-  CV.rescued = 0; CV.rboats = [];
+  CV.rescued = 0; CV.rboats = []; cvFoesLeave(); cvKingEscort();
 }
 function cvShipSay(id, line) { const sh = (CV.fleet || []).find(s => s.d.id === id); const nm = sh ? (sh.d.capNm || sh.d.nm) : id; const s = nm + '「' + line + '」'; subtitle(s); const el = $('subtitle'); if (el) el.textContent = s; }
 function cvSinkPhaseStep(dt) {
   if (CV.phase !== 'sink') return; const S = CV.S || 1;
   const onOy = cvOnOyodo();
+  if (CV.sinkPh === 'abandon' || CV.sinkPh === 'going') cvListStep(dt);
   if (CV.sinkPh === 'abandon') {
     CV.abT -= dt;
     if ((CV.boatT = (CV.boatT || 0) - dt) <= 0) { CV.boatT = LITE ? 3 : 1.8; cvRescueBoat(); }
     if ((CV.abSay = (CV.abSay || 4) - dt) <= 0) { CV.abSay = rand(4, 7); const L = CV_LINES.sink; cvEv(['deck', 'res', 'cab', 'din', 'med'][(Math.random() * 5) | 0], L[(Math.random() * L.length) | 0], 3, 1.6); }
-    if (CV.abT < 60 && !CV.abWarn) { CV.abWarn = true; showBanner('傾斜が増している', 'あと一分。艦尾の内火艇へ'); cvKing('傾いてきた……もう時間がない'); }
+    if (CV.abT < 120 && !CV.abWarn) { CV.abWarn = true; showBanner('傾斜が増している', 'あと二分。舷側の救命艇へ'); cvKing('傾いてきた……もう時間がない'); }
     if (onOy) { CV.sinkPh = 'going'; CV.goT = 0; cvKing(CV_LINES.kingOy[(Math.random() * CV_LINES.kingOy.length) | 0]); cvCapToOyodo(); showBanner('大淀に移乗', '空母が沈んでいく。大淀の上は自由に歩ける。作戦終了ボタンか Q で終える'); }
     else if (CV.abT <= 0) { CV.sinkPh = 'lost'; cvKing('……間に合わなかったか'); setTimeout(() => { if (CV.on) cvKingDown(); }, 1800); }
   }
-  if (CV.sinkPh === 'going') {   // 空母の船体を沈める（大淀などの艦はそのまま）
-    CV.goT += dt; const k = Math.min(1, CV.goT / 70);
-    if (!CV.sinkObjs) { CV.sinkObjs = []; const ships = new Set((CV.fleet || []).map(s => s.g)); for (const o of stageRoot.children) if (!ships.has(o) && o !== CV.sea && !(CV.wake || []).includes(o)) CV.sinkObjs.push([o, o.position.y, o.rotation.z]);
+  if (CV.sinkPh === 'going') {   // 殿が大淀に移ったあとも、空母はゆっくり傾き沈下を続け、時間が来て最後に沈む
+    if (CV.abT > 0) { CV.abT -= dt; if (CV.abT < 90 && !CV.lastSaid) { CV.lastSaid = true; cvShipSay('oyodo', '空母、最期です……総員、帽振れ'); } return; }
+    CV.goT += dt; const k = Math.min(1, CV.goT / 50);
+    if (!CV.carrierGone) {
       if (CV.seaPlain) CV.sea.material = CV.seaPlain; for (const r of CV.R) if (r.e && !r.capOf && !r.capOff) cvDespawn(r); CV.carrierGone = true; }
-    for (const [o, y0, rz] of CV.sinkObjs) { o.position.y = y0 - k * k * 40 * S; o.rotation.z = rz + k * 0.25; }
-    if (k >= 1 && !CV.sunkDone) { CV.sunkDone = true; for (const [o] of CV.sinkObjs) o.visible = false; cvKing('……沈んだか。皆、よく戦った'); setTimeout(() => cvShipSay('yukikaze', '収容、終わりました。生存者 ' + (CV.rescued + cvAliveN()) + ' 名'), 3500); }
+    for (const [o, y0, rz] of CV.sinkObjs) { o.position.y = y0 - CV.settle - k * k * 40 * S; o.rotation.z = rz + CV.listA + k * 0.25; }
+    if (k >= 1 && !CV.sunkDone) { CV.sunkDone = true; for (const [o] of CV.sinkObjs) o.visible = false; cvKing('……沈んだか。皆、よく戦った'); { const mis = cvMissingN(); showBanner('桜鳳、沈没', `救助 ${CV.rescued} 名・行方不明 ${mis} 名・戦死 ${CV.R.filter(r => r.st === 'dead').length} 名`); cvShipSay('yukikaze', `収容、終わりました。救助 ${CV.rescued} 名、行方不明 ${mis} 名`); } }
   }
 }
 function cvCapToOyodo() {
@@ -10787,15 +10795,35 @@ function cvCapToOyodo() {
   const p = sh.capPos || [sh.x, sh.fbU, sh.z]; cap.x = cap.hx = cap.ax = (p[0] - 1.5) * S; cap.y = cap.hy = p[1] * S; cap.z = cap.hz = cap.az = (p[2] + 1.5) * S; cap.ySnap = false; cap.w = 'stand';
   setTimeout(() => { if (CV.on) cvSay(cap, '殿……ご命令どおり、生きて戻りました', 2.2); }, 4000);
 }
-function cvRescueBoat() {   // 救命艇と機銃艇が空母の舷側から護衛艦へ（生存者を運ぶ）
-  const S = CV.S || 1, to = (CV.fleet || [])[(Math.random() * (CV.fleet || []).length) | 0]; if (!to) return;
+function cvRescueBoat() {   // 救命艇は足りない。焼けた艇、傾斜で降ろせない艇、降ろした途端に転覆する艇もある
+  const S = CV.S || 1; CV.lbN = CV.lbN == null ? (LITE ? 12 : 22) : CV.lbN; if (CV.lbN <= 0) { if (!CV.lbOut) { CV.lbOut = true; cvEv('deck', '救命艇がもう無い！ 筏と浮き輪で飛び込んで！', 1, 2.4); } return; }
+  CV.lbN--; const u = 1 - Math.max(0, CV.abT) / (CV.abT0 || 1), roll = Math.random();
+  const L = CV_LINES.boatFail;
+  if (roll < 0.18) { cvEv('deck', L[0], 4, 2.2); return; }
+  if (roll < 0.18 + 0.1 + u * 0.3) { cvEv('deck', L[1 + ((Math.random() * 2) | 0)], 4, 2.2); return; }
+  const to = (CV.fleet || [])[(Math.random() * (CV.fleet || []).length) | 0]; if (!to) return;
   const side = Math.random() < 0.5 ? -1 : 1, z = rand(-60, 60) * S, m = new THREE.Group();
   const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2 * S, 0.7 * S, 6.5 * S), CV.M.wood || CV.M.deck); hull.position.y = 0.2 * S; m.add(hull);
   for (let i = 0; i < 6; i++) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.22 * S, 8, 6), new THREE.MeshLambertMaterial({ color: 0x1a1410 })); h.position.set(rand(-0.6, 0.6) * S, 0.85 * S, rand(-2.4, 2.4) * S); m.add(h); }
-  m.position.set(side * 13 * S, 0, z); stageRoot.add(m); const n = 8 + ((Math.random() * 10) | 0);
-  CV.rboats.push({ m, tx: to.x * S, tz: to.z * S, n, t: 0 });
-  let k = 0; for (const r of CV.R) { if (k >= n) break; if (r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued) { r.rescued = true; r.ship = to.d.nm; k++; } } CV.rescued += k;
+  m.position.set(side * 13 * S, 0, z); stageRoot.add(m); const n = 10 + ((Math.random() * 12) | 0);
+  const cap = Math.random() < 0.12; const sel = CV.R.filter(r => r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued && !r.swim).slice(0, n);
+  if (cap) { m.rotation.z = 2.6; cvEv('deck', L[3], 3, 2.3); for (const r of sel) r.swim = true; setTimeout(() => stageRoot.remove(m), 20000); cvRaft(side * 15 * S, z, 4); return; }
+  CV.rboats.push({ m, tx: to.x * S, tz: to.z * S, n, t: 0 }); for (const r of sel) { r.rescued = true; r.ship = to.d.nm; } CV.rescued += sel.length;
 }
+function cvRaft(x, z, n) { const S = CV.S || 1; CV.rafts = CV.rafts || []; if (CV.rafts.length > (LITE ? 14 : 40)) return;
+  for (let k = 0; k < n; k++) { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(rand(1, 2.2) * S * 0.6, 0.25, rand(1, 2.2) * S * 0.6), CV.M.wood || CV.M.deck); g.add(b);
+    for (let i = 0; i < 2 + ((Math.random() * 3) | 0); i++) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.14 * S, 8, 6), new THREE.MeshLambertMaterial({ color: 0x15110e })); h.position.set(rand(-0.8, 0.8), 0.15, rand(-0.8, 0.8)); g.add(h); }
+    g.position.set(x + rand(-14, 14), 0.1, z + rand(-14, 14)); g.rotation.y = rand(0, 6); stageRoot.add(g); CV.rafts.push(g); } }
+function cvSwimStep(dt) {   // 海に入った者：筏や浮いた残骸につかまる。護衛艦が拾えるだけ拾い、空からの脅威で退く
+  if (CV.sinkPh !== 'abandon' && CV.sinkPh !== 'going' && CV.sinkPh !== 'lost') return; const S = CV.S || 1;
+  if ((CV.jmT = (CV.jmT || 3) - dt) <= 0 && !CV.carrierGone) { CV.jmT = rand(4, 8); const a = CV.R.filter(r => r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued && !r.swim); for (let k = 0; k < 6 + ((Math.random() * 10) | 0) && a.length; k++) a.splice((Math.random() * a.length) | 0, 1)[0].swim = true; cvRaft((Math.random() < 0.5 ? -1 : 1) * rand(16, 40) * S, rand(-80, 80) * S, 1); }
+  for (const g of CV.rafts || []) g.position.y = 0.1 + Math.sin(time * 1.3 + g.position.x) * 0.08;
+  if (!CV.escWd && CV.abT < (CV.abT0 || 1) * 0.15 && CV.sinkPh === 'going') { CV.escWd = true; cvShipSay('yukikaze', 'これ以上は待てない……敵機の第二群が来ます。収容やめ、離脱します'); setTimeout(() => cvKing('……すまん。残った者たち'), 2600); }
+  if (CV.escWd) return;
+  if ((CV.puT = (CV.puT || 3) - dt) <= 0) { CV.puT = rand(2.5, 4); const sw = CV.R.filter(r => r.swim && !r.rescued && r.st === 'ok'); const k = Math.min(sw.length, 2 + ((Math.random() * 4) | 0)); for (let i = 0; i < k; i++) { const r = sw[i]; r.rescued = true; r.ship = Math.random() < 0.5 ? '雪風' : '駆潜艇'; CV.rescued++; }
+    if (k && Math.random() < 0.25) cvShipSay(Math.random() < 0.5 ? 'yukikaze' : 'kusen', ['網を下ろせ、つかまって！', '筏の人、こっちへ！', '引き上げる、手を伸ばして！', '生存者を収容中'][(Math.random() * 4) | 0]); }
+}
+function cvMissingN() { return CV.R.filter(r => r.st === "ok" && !r.rescued && !r.ship && !r.capOf && !r.capOff && r !== CV.capR).length; }
 function cvBoatStep(dt) { for (const b of CV.rboats || []) { if (b.done) continue; b.t += dt; const dx = b.tx - b.m.position.x, dz = b.tz - b.m.position.z, d = Math.hypot(dx, dz); if (d < 12) { b.done = true; stageRoot.remove(b.m); continue; } const v = Math.min(d, 9 * dt * (CV.S || 1)); b.m.position.x += dx / d * v; b.m.position.z += dz / d * v; b.m.rotation.y = Math.atan2(dx, dz); } }
 // ── 艦橋への掃射：窓が割れ、艦橋の要員が倒れる。殿も当たりうる ──
 function cvBridgeGlass() {
@@ -10818,6 +10846,9 @@ const CV_LINES = {
   kingOy: ['大淀か……世話になる', '生き残った者は全員拾え', '振り返るな……前を見ろ'],
   cruiseWar: ['また揺れた……怖い', 'テーブルの下に！', '甲板のみんな、大丈夫かな……', 'あの子、機銃の弾運びなの。無事でいて', '音が近い……', '灯りが消えたらどうしよう', '泣かないで、ここは艦の真ん中だから', 'お客様の皆さん、窓から離れて'],
   cruiseReply: ['……はい、ありがたいことです', '甲板の子たちに申し訳なくて……', 'そう……ですね。でも友達が上に', '殿、それは少し意地悪です', 'お湯加減、ちょうどよろしいですか'],
+  shell: ['重巡の弾だ、甲板を抜けた！', '二十センチ……穴が大きすぎる！', '下の区画に火！', '揺れる、つかまって！'],
+  carry: ['先にこの子を！', '私はいい、この子を先に！', '足をやられてる、肩を貸して！', '担架！ こっち！', '置いていかない、絶対に！'],
+  boatFail: ['この救命艇、焼けてる！ 使えない！', '傾いてダビットが回らない！ 降ろせない！', 'ダビットが歪んで動かない！ 次の艇へ！', '転覆した！ 皆、艇につかまって！'],
   kingSail: ['いい天気だ', '皆、よく働いてくれる', '今夜は劇場をのぞいてみるか'],
   kingWave: ['来るぞ……落ち着いて撃て', 'まだ沈まんぞ', '持ちこたえろ！'],
 };
@@ -10922,6 +10953,76 @@ function cvBoardStep(dt) {
   if (B.prog > 40 && B.tgt === 'eng') { B.tgt = 'mag'; B.prog = 0; CV.dmg.eng = Math.max(0.25, CV.dmg.eng - 0.4); cvEv('boil', '機関室に入られた！ 速力が落ちる！', 1, 2.4); }
   if (B.prog > 50 && B.tgt === 'mag') { B.prog = 0; B.tgt = 'done'; cvSecondary(0, 30 * S, CV.Y1, '弾薬庫で爆発', 20); }
   if (B.t > 25 && B.tr2 && B.tr2.down && alive === 0 && !B.q.length && B.troops.length >= Math.min(B.want, 1) && B.lc.every(L => L.ph !== 'in') && !B.over) { B.over = true; CV.phase = 'end'; showBanner('乗り込みを撃退', '艦は守られた。作戦終了ボタンか Q で終える'); cvKing('よくやった……皆、よく守った'); setTimeout(() => cvEv('off', '総員、損害を報告せよ', 1, 2), 2500); }
+}
+// ── 幕二「レトロ砲戦」：米重巡（ボルチモア級：全長 205、幅 21.6、20.3 cm 三連装 ×3、12.7 cm 連装 ×6）と近距離の砲戦 ──
+function cvCaMesh() {
+  const g = new THREE.Group(), k = 1, gy = new THREE.MeshLambertMaterial({ color: 0x6f7780 }), dk = new THREE.MeshLambertMaterial({ color: 0x4b5157 }), L = 205 * k, B = 21.6 * k;
+  const hs = new THREE.Shape(); hs.moveTo(0, L / 2); hs.quadraticCurveTo(B / 2, L / 4, B / 2, 0); hs.lineTo(B / 2, -L / 2 + 8); hs.quadraticCurveTo(B / 2, -L / 2, 0, -L / 2); hs.quadraticCurveTo(-B / 2, -L / 2, -B / 2, -L / 2 + 8); hs.lineTo(-B / 2, 0); hs.quadraticCurveTo(-B / 2, L / 4, 0, L / 2);
+  const hull = new THREE.Mesh(new THREE.ExtrudeGeometry(hs, { depth: 9 * k, bevelEnabled: false }), gy); hull.rotation.x = -Math.PI / 2; hull.position.y = -3 * k; g.add(hull);
+  const sup = new THREE.Mesh(new THREE.BoxGeometry(11 * k, 10 * k, 30 * k), gy); sup.position.set(0, 11 * k, 28 * k); g.add(sup);
+  const brg = new THREE.Mesh(new THREE.BoxGeometry(8 * k, 5 * k, 10 * k), gy); brg.position.set(0, 18 * k, 36 * k); g.add(brg);
+  const aft = new THREE.Mesh(new THREE.BoxGeometry(10 * k, 7 * k, 22 * k), gy); aft.position.set(0, 9.5 * k, -24 * k); g.add(aft);
+  for (const z of [14, -6]) { const f = new THREE.Mesh(new THREE.CylinderGeometry(2.6 * k, 3 * k, 12 * k, 12), dk); f.position.set(0, 18 * k, z * k); g.add(f); }
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.5, 18 * k, 6), dk); mast.position.set(0, 27 * k, 30 * k); g.add(mast);
+  const tur = []; for (const [z, y] of [[68, 7.5], [52, 10.5], [-62, 7.5]]) { const t = new THREE.Group(); t.position.set(0, y * k, z * k); const h = new THREE.Mesh(new THREE.BoxGeometry(9 * k, 3.4 * k, 10 * k), gy); t.add(h);
+    for (const bx of [-2.4, 0, 2.4]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * k, 0.45 * k, 15 * k, 8), dk); b.rotation.x = Math.PI / 2; b.position.set(bx * k, 0.4 * k, (z > 0 ? 9 : -9) * k); t.add(b); }
+    if (z < 0) t.rotation.y = Math.PI; g.add(t); tur.push(t); }
+  for (const z of [36, 20, -16]) for (const sx of [-1, 1]) { const t = new THREE.Mesh(new THREE.BoxGeometry(3.4 * k, 2.4 * k, 4 * k), gy); t.position.set(sx * 7 * k, 9.5 * k, z * k); g.add(t); }
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(4, 2.4), new THREE.MeshBasicMaterial({ color: 0x2b3a6e, side: THREE.DoubleSide })); flag.position.set(0, 36 * k, 30 * k); g.add(flag);
+  stageRoot.add(g); return { g, tur };
+}
+function cvSplash(x, z, big) { const h = big ? 38 : 24; for (let i = 0; i < 3; i++) puff(new V3(x + rand(-2, 2), 2 + i * h / 3, z + rand(-2, 2)), 0xf4f8fb, big ? 7 : 5, h / 6, 3.5, 1.2); cvSmoke(x, 4, z, 6, h, [0.92, 0.95, 0.97], 1, 1.6, 2.2); }
+function cvGunStart() {
+  const S = CV.S || 1; CV.phase = 'gun'; scene.fog.far = Math.max(scene.fog.far, 1150);
+  const C = cvCaMesh(); C.g.position.set(520, 0, -200); C.g.rotation.y = 0;
+  CV.ca = { ...C, hp: 100, salvo: 0, T: 6, err: 140, shells: [], ourT: 4, torp: null, list: 0, said: {} };
+  showBanner('幕二　米重巡、右舷に！', 'ボルチモア級、距離およそ八千。大淀は撃ち返し、雪風は魚雷と煙幕。下の「煙幕」「雷撃」で殿が命じる');
+  cvEv('look', '右舷、艦影！ 重巡です、三連装が三基！', 1, 2.5); setTimeout(() => cvKing('重巡か……近すぎる。大淀、撃ち返せ'), 2600); setTimeout(() => cvShipSay('oyodo', '大淀、砲戦用意。目標、右の重巡'), 5200);
+  cvGunBtns();
+}
+function cvGunBtns() {
+  if ($('cvGunBtns')) { $('cvGunBtns').style.display = 'flex'; return; }
+  const d = document.createElement('div'); d.id = 'cvGunBtns'; d.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:142px;display:flex;gap:10px;z-index:30';
+  for (const [id, tx, f] of [['smoke', '煙幕', cvOrderSmoke], ['torp', '雷撃', cvOrderTorp]]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = tx; b.style.cssText = 'font:700 16px serif;padding:8px 18px;border-radius:8px;border:1px solid #c9b98a;background:rgba(30,34,40,.82);color:#f3ead2'; b.addEventListener('click', e => { e.stopPropagation(); f(); }); b.addEventListener('touchstart', e => e.stopPropagation(), { passive: true }); d.appendChild(b); }
+  document.body.appendChild(d);
+}
+function cvOrderSmoke() { const C = CV.ca; if (!C || C.smoke > 0) return; C.smoke = 70; cvKing('雪風、煙幕を張れ！'); setTimeout(() => cvShipSay('yukikaze', '煙幕展張、始めます！'), 1500); }
+function cvOrderTorp() { const C = CV.ca; if (!C || C.torp) return; cvKing('雪風、雷撃せよ。近づいて撃て'); setTimeout(() => cvShipSay('yukikaze', '雪風、突撃します！ 魚雷戦用意！'), 1500);
+  const y = (CV.fleet || []).find(s => s.d.id === 'yukikaze'); C.torp = { ph: 'run', sh: y, t: 0, fish: [] }; }
+function cvGunStep(dt) {
+  const C = CV.ca; if (!C || CV.phase !== 'gun' && CV.phase !== 'sink') return; const S = CV.S || 1, cg = C.g.position;
+  cg.z += dt * 4; C.g.rotation.z = C.list;   // 並走しながらゆっくり
+  if (C.smoke > 0) { C.smoke -= dt; if ((C.smT = (C.smT || 0) - dt) <= 0) { C.smT = 0.5; const y = (CV.fleet || []).find(s => s.d.id === 'yukikaze'); const yx = y ? y.g.position.x : 150, yz = y ? y.g.position.z : 0; cvSmoke(rand(160, 260), 6, rand(-200, 150) + (yz * 0.1), 24, 30, [0.32, 0.33, 0.34], 1, 10, 14); } }
+  // 敵の斉射：夾叉が詰まる。煙幕と損傷で散る
+  if (C.hp > 0 && CV.phase === 'gun') { C.T -= dt;
+    if (C.T <= 0) { C.salvo++; C.T = (C.hp < 35 ? 26 : 16) + rand(-2, 2); C.err = Math.max(10, C.err * 0.68); const e = C.err * (C.smoke > 0 ? 3.2 : 1) * (C.hp < 50 ? 1.6 : 1);
+      const toOy = Math.random() < 0.25, oy = (CV.fleet || []).find(s => s.d.board), tx = toOy && oy ? oy.g.position.x : rand(-6, 6) * S, tz = toOy && oy ? oy.g.position.z : rand(-60, 60) * S;
+      for (const t of C.tur) { const w = new V3(); t.getWorldPosition(w); puff(w.clone().add(new V3(-12, 2, 0)), 0xffc878, 4, 3, 2.5, 0.25); cvSmoke(w.x - 14, w.y + 2, w.z, 8, 6, [0.5, 0.48, 0.45], 1, 3, 3); }
+      for (let i = 0; i < 9; i++) C.shells.push({ x: tx + rand(-e, e), z: tz + rand(-e, e) * 1.4, t: 5.5 + rand(0, 0.6) });
+      if (C.salvo === 1) cvEv('look', '発砲炎！ 来ます！', 1, 2.3); else if (e < 30 && !C.said.kyo) { C.said.kyo = true; cvEv('brg', '夾叉されました！ 次は当たります！', 1, 2.5); setTimeout(() => cvKing('転舵しろ……いや、煙幕だ！'), 2000); } }
+  }
+  C.shells = C.shells.filter(sh => { sh.t -= dt; if (sh.t > 0) return true;
+    const onCv = !CV.carrierGone && Math.abs(sh.x) < 11 * S && Math.abs(sh.z) < 90 * S;
+    if (onCv) { cvBoom(sh.x, sh.z, CV.Yd, Math.random() < 0.45, true); CV.hp -= 2.2; if (Math.random() < 0.3) cvEv('dc', CV_LINES.shell[(Math.random() * CV_LINES.shell.length) | 0], 4, 2); }
+    else { cvSplash(sh.x, sh.z, true); if (Math.abs(sh.x) < 30 * S && Math.abs(sh.z) < 110 * S) { CV.hp -= 0.4; player.shake = Math.max(player.shake || 0, 0.3); } }
+    return false; });
+  // 大淀の 15.5 cm（三連装 ×2）
+  if (CV.phase === 'gun' && C.hp > 0 && (C.ourT -= dt) <= 0) { C.ourT = 11 + rand(-1, 2); const oy = (CV.fleet || []).find(s => s.d.board); if (oy) { const p = oy.g.position; puff(new V3(p.x + 8, 12, p.z + 30), 0xffc070, 3, 2, 2, 0.2); cvSmoke(p.x + 10, 12, p.z + 30, 5, 4, [0.5, 0.48, 0.45], 1, 2, 2); }
+    C.ourN = (C.ourN || 0) + 1; const hitP = Math.min(0.5, 0.08 + C.ourN * 0.05);
+    setTimeout(() => { if (!CV.ca) return; for (let i = 0; i < 6; i++) { const h = Math.random() < hitP / 2; if (h) { C.hp -= 3.5; puff(cg.clone().add(new V3(rand(-6, 6), rand(8, 16), rand(-60, 60))), 0xffa040, 5, 4, 3, 0.4); cvSmoke(cg.x, 14, cg.z + rand(-50, 50), 6, 14, [0.25, 0.24, 0.23], 1, 4, 4); } else cvSplash(cg.x + rand(-40, 40), cg.z + rand(-80, 80), false); }
+      if (C.hp < 70 && !C.said.h70) { C.said.h70 = true; cvShipSay('oyodo', '命中！ 敵重巡、中央に火災！'); } if (C.hp < 35 && !C.said.h35) { C.said.h35 = true; cvShipSay('oyodo', '敵の射撃が衰えました！'); cvKing('よし、押し返している'); } }, 4500); }
+  // 雪風の雷撃：突撃 → 発射（61 cm 酸素魚雷 8 本）→ 航走 → 命中
+  const T = C.torp; if (T && T.sh) { const g = T.sh.g; T.t += dt;
+    if (T.ph === 'run') { const dx = cg.x - 300 - g.position.x, dz = cg.z - g.position.z, d = Math.hypot(dx, dz); g.position.x += dx / d * 18 * dt; g.position.z += dz / d * 18 * dt; g.rotation.y = Math.atan2(dx, dz);
+      if (Math.random() < dt * 0.4) cvSplash(g.position.x + rand(-30, 30), g.position.z + rand(-30, 30), false);
+      if (d < 30 || T.t > 40) { T.ph = 'fire'; T.t = 0; cvShipSay('yukikaze', '魚雷、発射！ 八本、走ります！'); const m = new THREE.MeshBasicMaterial({ color: 0xe6f2f6, transparent: true, opacity: 0.7 });
+        for (let i = 0; i < 8; i++) { const w = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 14), m); w.rotation.x = -Math.PI / 2; w.position.set(g.position.x + 6, 0.3, g.position.z + (i - 3.5) * 4); stageRoot.add(w); T.fish.push({ w, vz: (i - 3.5) * 0.9 }); } } }
+    else if (T.ph === 'fire') { for (const f of T.fish) { f.w.position.x += 26 * dt; f.w.position.z += (f.vz + 4) * dt; f.w.rotation.z = -Math.atan2(f.vz + 4, 26); }
+      if (T.fish.length && T.fish[0].w.position.x > cg.x - 6) { T.ph = 'done'; let hits = 0; for (const f of T.fish) { if (Math.abs(f.w.position.z - cg.z) < 100 && Math.random() < 0.3) { hits++; const hz = f.w.position.z; puff(new V3(cg.x, 6, hz), 0xffffff, 10, 6, 4, 1.5); cvSplash(cg.x - 4, hz, true); } stageRoot.remove(f.w); }
+        if (hits) { C.hp -= hits * 22; C.list = Math.min(0.22, C.list + hits * 0.06); cvShipSay('yukikaze', `命中 ${hits}！ 敵重巡、傾いています！`); setTimeout(() => cvKing('見事だ、雪風'), 2200); } else cvShipSay('yukikaze', '……全部外れました。次発装填に時間がかかります');
+        setTimeout(() => { if (CV.ca) CV.ca.torp = null; }, 90000); } } }
+  if (C.hp <= 0 && !C.said.dead) { C.said.dead = true; C.hp = 0; showBanner('米重巡、沈黙', '火と煙を上げて止まった。作戦終了ボタンか Q で終える'); cvKing('撃ち方やめ。……溺れている者は拾ってやれ'); setTimeout(() => cvShipSay('oyodo', '敵重巡、行き足止まりました'), 2500); }
+  if (C.hp <= 0) { C.list = Math.min(0.3, C.list + dt * 0.002); if (Math.random() < dt * 2) cvSmoke(cg.x + rand(-5, 5), 14, cg.z + rand(-60, 60), 6, 18, [0.18, 0.17, 0.16], 1, 5, 5); }
 }
 const CV_SPON = [[-1, -66], [-1, 30], [1, -66], [1, 52]];   // 12.7cm連装高角砲のスポンソン（舷・z）
 function buildKeiku() {
@@ -11523,7 +11624,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031w）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031x）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -12272,6 +12373,7 @@ function cvPose(f, dt) {
 function cvPickStrafe(f) {
   const S = CV.S || 1; const gs = CV.guns.filter(g => cvGunMan(g) > 0 && Math.abs(g.x) < 26 * S);
   f.brg = false; const I = CV.isl;
+  if (CV.phase === 'sink') { const bs = (CV.rboats || []).filter(b => !b.done); if (bs.length && Math.random() < 0.6) { const b = bs[(Math.random() * bs.length) | 0]; f.tx = b.m.position.x; f.tz = b.m.position.z; f.ty = 0.6; cvEv('pb', '救命艇が撃たれてる！ 伏せて！', 6, 2.3); return; } f.tx = rand(-30, 30) * S; f.tz = rand(-60, 60) * S; f.ty = 0.5; return; }
   if (I && Math.random() < 0.22) { f.brg = true; f.tx = ((I.x0 + I.x1) / 2) * S; f.tz = ((I.z0 + I.z1) / 2) * S; f.ty = CV.Yb + 0.3 * S; return; }   // 艦橋を狙う
   if (gs.length && Math.random() < 0.7) { const g = gs[(Math.random() * gs.length) | 0]; f.tx = g.x; f.tz = g.z; f.ty = g.y; }
   else { f.tx = rand(-4, 4) * S; f.tz = (Math.random() < 0.5 ? -70 : 50) * S; f.ty = CV.Yd; }   // 甲板の縦方向に低空で舐める
@@ -12392,17 +12494,55 @@ function cvFire(g, manual) {
 function cvSinkStart() {
   if (CV.phase === 'sink') return; cvAbandonStart();
 }
+// 沈む艦の犠牲は一人ずつではなく、出来事ごとにまとまって：誘爆・艦橋やマストの落下・傾いた甲板から海へ・下の区画の浸水
 function cvSinkStep(dt) {
-  if (!CV.sunkSaid) return; CV.sinkT += dt;
-  if ((CV.debT = (CV.debT || 1) - dt) > 0) return; CV.debT = rand(1.2, 2.2);
-  if (CV.lost > CV.total0 * 0.4) return;
-  const c = camera.position, near = CV.R.filter(r => r.e && r.st === 'ok' && r.d !== 'fam' && Math.hypot(r.x - c.x, r.z - c.z) < 20);
-  const r = near.length ? near[(Math.random() * near.length) | 0] : null; if (!r) { for (let k = 0; k < 3; k++) { const q = CV.R[(Math.random() * CV.R.length) | 0]; if (q.st === 'ok' && !q.e && q.d !== 'fam') cvDownR(q, Math.random() < 0.6, null, null, 'debris'); } return; }
-  const b = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, rand(1.6, 3)), Math.random() < 0.5 ? (CV.M.wood || CV.M.deck) : (CV.M.bulk || CV.M.hull)); b.position.set(r.x, r.y + 7, r.z); b.rotation.set(rand(0, 3), rand(0, 3), 0); stageRoot.add(b);
-  CV.debris.push({ m: b, r, vy: 0 });
+  if (!CV.sunkSaid || CV.carrierGone) return; CV.sinkT += dt;
+  if ((CV.debT = (CV.debT == null ? rand(4, 8) : CV.debT) - dt) > 0) return; CV.debT = rand(5, 17) * (Math.random() < 0.25 ? 0.35 : 1);
+  if (CV.lost > CV.total0 * 0.4) return; const S = CV.S || 1, I = CV.isl;
+  const pick = (f, n) => { const a = CV.R.filter(r => r.st === 'ok' && !r.cap && !r.capOf && !r.rescued && r.d !== 'fam' && r.d !== 'kg' && f(r)); const out = []; while (a.length && out.length < n) out.push(a.splice((Math.random() * a.length) | 0, 1)[0]); return out; };
+  const ev = ['sec', 'mast', 'slide', 'flood'][(Math.random() * 4) | 0], n = 3 + ((Math.random() * 6) | 0);
+  if (ev === 'sec') { const spots = [[0, 30, CV.Yh, '格納庫の爆弾に火が回った'], [0, -20, CV.Y1, '燃料庫に火が届いた'], [0, 30, CV.Y1, '弾薬庫が誘爆']]; const [x, z, y, why] = spots[(Math.random() * spots.length) | 0];
+    cvBoom(x, z * S, y, true, false); puff(new V3(x, y + 4, z * S), 0xffa040, 12, 5, 4, 1); player.shake = Math.max(player.shake || 0, 1.0); cvEv('dc', why + '！ 離れて！', 2, 2.4);
+    for (const r of pick(r => Math.hypot(r.x - x, r.z - z * S) < 22 * S, n)) cvDownR(r, Math.random() < 0.6, x, z * S, 'sinkfire'); }
+  else if (ev === 'mast' && I) { const cx = ((I.x0 + I.x1) / 2) * S, cz = ((I.z0 + I.z1) / 2) * S; cvEv('deck', 'マストが倒れる！ 艦橋の下から離れて！', 2, 2.4);
+    const vs = pick(r => Math.hypot(r.x - cx, r.z - cz) < 20 * S && Math.abs(r.y - CV.Yd) < 3, n);
+    for (let k = 0; k < Math.max(4, vs.length); k++) { const r = vs[k], x = r ? r.x : cx + rand(-12, 2) * S, z = r ? r.z : cz + rand(-14, 14) * S; const b = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, rand(2, 5)), CV.M.bulk || CV.M.hull); b.position.set(x, CV.Yd + rand(10, 18), z); b.rotation.set(rand(0, 3), rand(0, 3), 0); stageRoot.add(b); CV.debris.push({ m: b, r: r || { x, y: CV.Yd, z, st: 'none' }, vy: -rand(0, 3) }); } }
+  else if (ev === 'slide') { const sd = CV.listSd || (CV.listSd = Math.random() < 0.5 ? -1 : 1); cvEv('deck', '甲板が傾く！ 滑る、つかまって！', 2, 2.4);
+    for (const r of pick(r => Math.abs(r.y - CV.Yd) < 3 && r.x * sd > 0, n)) { if (Math.random() < 0.55) r.swim = true; else cvDownR(r, false, r.x - sd, r.z, 'sea'); if (r.e) { const e = r.e; let t = 0; const iv = setInterval(() => { t += 0.05; if (!e.s || t > 1.6) { clearInterval(iv); if (r.e === e) cvDespawn(r); return; } e.s.position.x += sd * 0.35; e.s.position.y -= t * 0.5; }, 50); } } }
+  else { cvEv('dc', '下の区画が浸水！ 扉の向こうに人が！', 2, 2.4); for (const r of pick(r => r.y < CV.Y1 + 1 && !r.e, n)) cvDownR(r, Math.random() < 0.7, null, null, 'flood'); }
 }
 function cvDebrisStep(dt) {
-  for (let i = (CV.debris || []).length - 1; i >= 0; i--) { const d = CV.debris[i]; d.vy -= 9.8 * dt; d.m.position.y += d.vy * dt; d.m.rotation.x += dt * 3; if (d.m.position.y <= d.r.y + 0.3) { d.m.position.y = d.r.y + 0.15; d.m.rotation.x = 0; puff(d.m.position.clone(), 0xa8a196, 5, 1, 1.4, 0.8); cvDownR(d.r, Math.random() < 0.7, d.r.x + 0.5, d.r.z, 'debris'); CV.debris.splice(i, 1); } }
+  for (let i = (CV.debris || []).length - 1; i >= 0; i--) { const d = CV.debris[i]; d.vy -= 9.8 * dt; d.m.position.y += d.vy * dt; d.m.rotation.x += dt * 3; if (d.m.position.y <= d.r.y + 0.3) { d.m.position.y = d.r.y + 0.15; d.m.rotation.x = 0; puff(d.m.position.clone(), 0xa8a196, 5, 1, 1.4, 0.8); if (d.r.st === 'ok') cvDownR(d.r, Math.random() < 0.6, d.r.x + 0.5, d.r.z, 'debris'); CV.debris.splice(i, 1); } }
+}
+// 総員退艦の号令のあと：米機の多くは去り、何機かは沈む艦・艇・泳ぐ者を一度掃射してから去る（空中で止まる機はない）
+function cvFoesLeave() { for (const f of CV.foe || []) { if (f.dead || f.gone) continue; if (f.kind === 'usf' && Math.random() < 0.3) { f.runs = Math.max(f.runs || 0, 6); f.lastRun = true; } else { f.ph = 'out'; f.t = 0; f.ox = f.p.x * 3 + rand(-300, 300); f.oz = f.p.z * 3 + (Math.random() < 0.5 ? 900 : -900); } } }
+// 殿の退艦：護衛と秘書が囲んで押し、すぐそばの内火艇へ。少しだけ逆らえる
+// 負傷者を担架や肩で運ぶ。自分より先に仲間を。運ぶ途中で倒れる者もいる
+function cvCarryStep(dt) {
+  if (CV.sinkPh !== 'abandon' && CV.sinkPh !== 'going') return; if ((CV.cyT = (CV.cyT == null ? 6 : CV.cyT) - dt) > 0) return; CV.cyT = rand(6, 14);
+  const S = CV.S || 1, w = CV.R.filter(r => r.st === 'wnd' && !r.rescued); if (!w.length) return;
+  const c = camera.position; w.sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)); const v = w[0];
+  const h = CV.R.filter(r => r.st === 'ok' && !r.rescued && !r.cap && !r.capOf && r.d !== 'kg' && Math.hypot(r.x - v.x, r.z - v.z) < 25 * S).slice(0, Math.random() < 0.5 ? 2 : 1); if (!h.length) return;
+  const L = CV_LINES.carry; cvSay(h[0], L[(Math.random() * L.length) | 0], 2.2); if (h[1]) setTimeout(() => h[1].st === 'ok' && cvSay(h[1], '担架、持ちます！ せーの！', 1.8), 1500);
+  const sd = v.x >= 0 ? 1 : -1, all = [v, ...h];
+  for (const r of h) if (r.e) { const e = r.e; let t = 0; const iv = setInterval(() => { t += 0.05; if (!e.s || t > 5 || r.e !== e) { clearInterval(iv); return; } e.s.position.x += (sd * 10.5 * S - e.s.position.x) * 0.02; e.s.position.z += (v.z - e.s.position.z) * 0.03; }, 50); }
+  setTimeout(() => { if (!CV.on) return; const lost = Math.random() < 0.15; for (const r of all) { if (r.st === 'dead') continue; if (lost && r !== v && Math.random() < 0.6) { cvDownR(r, false, r.x, r.z, 'carry'); continue; } r.rescued = true; CV.rescued++; if (r.e) cvDespawn(r); } if (lost) cvEv('deck', '運んでいた子が倒れた！ 誰か手を！', 3, 2.2); }, 5500);
+}
+function cvKingEscort() {
+  const S = CV.S || 1, p = player.pos, sd = p.x >= 0 ? 1 : -1, es = CV.R.filter(r => r.st === 'ok' && (r.d === 'kg' || r.gid === 'sec2' || r.gid === 'sec5')).slice(0, 3);
+  es.forEach((r, i) => { cvDespawn(r); r.x = r.hx = r.ax = p.x + (i - 1) * 0.9; r.z = r.hz = r.az = p.z - 0.9; r.y = r.hy = p.y; r.ySnap = true; r.w = 'stand'; });
+  const b = new THREE.Group(), h = new THREE.Mesh(new THREE.BoxGeometry(2.4 * S, 0.8 * S, 7 * S), CV.M.wood || CV.M.deck); h.position.y = 0.3 * S; b.add(h); b.position.set(sd * 12.5 * S, 0, p.z); stageRoot.add(b);
+  CV.esc = { es, b, sd, t: 0, ph: 'push' };
+  setTimeout(() => es[0] && cvSay(es[0], '陛下、早く！ 内火艇がすぐそこに！', 2.5), 300); setTimeout(() => es[1] && cvSay(es[1], '失礼します！ お連れします！', 2.4), 2200);
+}
+function cvEscortStep(dt) {
+  const E = CV.esc; if (!E || CV.sinkPh !== 'abandon') return; const S = CV.S || 1, p = player.pos; E.t += dt;
+  if (E.ph === 'push') { if (E.t > 2.5) { const gx = E.sd * 10.5 * S, gz = E.b.position.z, d = Math.hypot(gx - p.x, gz - p.z), v = Math.min(d, 4.2 * dt); if (d > 0.1) { p.x += (gx - p.x) / d * v; p.z += (gz - p.z) / d * v; }
+      E.es.forEach((r, i) => { if (r.e) r.e.s.position.set(p.x + (i - 1) * 0.8 - E.sd * 0.6, r.e.s.position.y, p.z - 0.8); });
+      if (d < 1.4 * S || E.t > 12) { E.ph = 'boat'; E.t = 0; popup('護衛に抱えられて内火艇へ'); cvKing('わかった、わかった……押すな'); } } }
+  if (E.ph === 'boat') { const oy = (CV.fleet || []).find(s => s.d.board), to = CV.xfer && CV.xfer[0] && CV.xfer[0].to; if (!oy || !to) return; const bp = E.b.position, gx = to[0] * S, gz = to[2] * S, d = Math.hypot(gx - bp.x, gz - bp.z);
+    if (d > 12) { const v = Math.min(d, 14 * dt); bp.x += (gx - bp.x) / d * v; bp.z += (gz - bp.z) / d * v; E.b.rotation.y = Math.atan2(gx - bp.x, gz - bp.z); p.set(bp.x, 1.4 * S, bp.z); player.vy = 0; }
+    else { cvXferUse(CV.xfer[0]); E.ph = 'done'; } }
 }
 function cvKingDown() {
   if (CV.endWhy === 'king' || CV.ended) return; CV.endWhy = 'king';
@@ -12454,7 +12594,7 @@ function cvStart() {
   // 収録した声（voices_cv.js）
   CV.vmap = {}; const VL = (window.VOICE_CV || {}).lines || {}; for (const k in VL) { const L = VL[k]; CV.vmap[(L.who || '*') + '|' + L.ja] = L.file; }
   cvStream(0, true);
-  window.__cv = { CV, cvSinkStart, cvBoardStart, cvBridgeGlass, cvFireStart, cvWaveStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, CV_ZONES, cvTracer, cvMorgueStep, updateCv: (dt) => updateCv(dt), cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
+  window.__cv = { CV, cvGunStart, cvOrderTorp, cvOrderSmoke, cvSinkStart, cvBoardStart, cvBridgeGlass, cvFireStart, cvWaveStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, CV_ZONES, cvTracer, cvMorgueStep, updateCv: (dt) => updateCv(dt), cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
   let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;pointer-events:auto;touch-action:manipulation;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
     const tg = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; CV.rosOpen ? cvRosterClose() : cvRosterOpen(); };
     b.addEventListener('click', tg); b.addEventListener('touchstart', tg, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); }
@@ -12607,9 +12747,10 @@ function updateCv(dt) {
   const onOy = CV.carrierGone || (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
   const inTh = Math.abs(p.x) < 6.0 * S && p.z > 36 * S && p.z < 74.3 * S && p.y > -1.8 * S;   // 大劇場は水線の下
   if (CV.back && ((p.y < -0.4 && !inTh) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
-  cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvBoatStep(dt); cvLinesStep(dt); cvAmmoStep(dt); cvCruiseWarStep(dt); cvBoardStep(dt);
+  cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvEscortStep(dt); cvCarryStep(dt); cvSwimStep(dt); cvBoatStep(dt); cvLinesStep(dt); cvAmmoStep(dt); cvCruiseWarStep(dt); cvBoardStep(dt); cvGunStep(dt);
   if (CV.rosOpen && (CV.rosT = (CV.rosT || 0) - dt) <= 0) { CV.rosT = 1; cvRosterDraw(); }
-  if (CV.phase === 'sail' && CV.t > 26 && !CV.daily) cvWaveStart(0);
+  if (CV.phase === 'sail' && CV.t > 26 && !CV.daily && CV.act !== 2) cvWaveStart(0);
+  if (CV.phase === 'sail' && CV.t > 20 && !CV.daily && CV.act === 2 && !CV.ca) cvGunStart();
   if (CV.phase === 'lull' && !CV.ended) cvLullStep(dt);
   cvFireStep(dt);
   if ((CV.phase !== 'raid' && CV.phase !== 'lull') || CV.ended) return;
@@ -12784,6 +12925,7 @@ const STAGES = {
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  keiku2: { name: '近代海戦 幕二「レトロ砲戦」', desc: '第一艦隊が米重巡（ボルチモア級、20.3 cm 三連装三基）と近距離で出会う。夾叉、命中、火災。大淀は 15.5 cm 砲、雪風は 61 cm 魚雷と煙幕で反撃する。終わるのは終了ボタンか殿の死だけ。' },
   keiku: { name: '近代海戦 幕一「桜鳳」', desc: '空母兼客船「桜鳳」。瑞鳳（全長二百五、飛行甲板百八十）より長くして、全長およそ三百メートル。千百人を砲・操縦席・格納庫・機関・艦橋・大部屋に配置する。甲板の戦闘機は、脇で E を押すと操縦席に入れる。終わるのは終了ボタンだけ。' },
 };
 
@@ -20989,7 +21131,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (name === 'keiku') buildKeiku(); else buildPlains();
+  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : 1; buildKeiku(); } else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -21185,7 +21327,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -26095,7 +26237,7 @@ function updateHud(dt) {
   if (CAMP.on) setText('remain', campRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
-  if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
+  if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'gun' ? '第一艦隊・桜鳳　砲戦' : CV.phase === 'board' ? '第一艦隊・桜鳳　乗り込み' : CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);
@@ -26589,7 +26731,7 @@ function resetGame() {
   else if (builtStage === 'nightRaid') { player.pos.set(0, 0, 49); player.yaw = 0; }
   else if (builtStage === 'twofront') { player.pos.set(DUAL_COX - 1, 0, 64.5); player.yaw = 0; }
   else if (builtStage === 'nanban') { player.pos.set(0, 0, 16); player.yaw = 0; }
-  else if (builtStage === 'keiku') { player.pos.set(0, (CV.Yd || 12.35) + 0.35, 13 * (CV.S || 1)); player.yaw = 0; }
+  else if (/^keiku/.test(builtStage)) { player.pos.set(0, (CV.Yd || 12.35) + 0.35, 13 * (CV.S || 1)); player.yaw = 0; }
   else if (builtStage === 'snow') { player.pos.set(0, 0, 88); player.yaw = 0; }
   else if (builtStage === 'mtn') { player.pos.set(0, 0, 80); player.yaw = 0; }
   else if (builtStage === 'fort' && FORT.atk) { player.pos.set(0, 0, -80); player.yaw = Math.PI; }   // 攻める：門の外の陣幕から
@@ -26620,7 +26762,7 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
   if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || stageName === 'keiku' || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -26655,7 +26797,7 @@ function startGame() {
   else if (builtStage === 'ukNight') uk3Start();   // 第三幕：語り→接近→乗り移り→甲板戦→退く英国の船   // 第二幕：語り→砲撃→上陸→斬り込み（波は使わない）
   else if (builtStage === 'island') { islandStart(); }
   else if (builtStage === 'nanban') nbStart();
-  else if (builtStage === 'keiku') cvStart();
+  else if (/^keiku/.test(builtStage)) cvStart();
   else if (builtStage === 'airport') { airportSpawnForces(); startWave(1); }
   else if (builtStage === 'trench') {
     trenchStartBattle();
@@ -29355,7 +29497,7 @@ function frame(now) {
     else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
     else if (builtStage === 'usRaid') rkTitleCam();
     else if (builtStage === 'nanban') { camera.position.set(0, 7.5, 38); camera.lookAt(0, 1.2, -8); }
-    else if (builtStage === 'keiku') { if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = time * 0.012; camera.position.set(Math.sin(time * 0.05) * 10 + 42, 24, 86); camera.lookAt(0, 8, -16); }
+    else if (/^keiku/.test(builtStage)) { if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = time * 0.012; camera.position.set(Math.sin(time * 0.05) * 10 + 42, 24, 86); camera.lookAt(0, 8, -16); }
     else if (builtStage === 'usDrop') udTitleCam();
     else if (builtStage === 'palace') { camera.position.set(0, 1.7, -8); camera.lookAt(Math.sin(time * 0.1) * 3, 1.5, 20); }
     else if (builtStage === 'ukLanding') { if (UK4.on) updateUk4(0); camera.position.set(40 + Math.sin(time * 0.04) * 10, 16, -40); camera.lookAt(0, 3, 24); }

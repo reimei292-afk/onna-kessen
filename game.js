@@ -10726,7 +10726,7 @@ function cvDmgStep(dt) {   // 機関の被害で速力（波の流れ）、停�
   for (const f of CV.fires || []) { if (f.out || f.I < 1.6) continue; if ((f.spT = (f.spT == null ? 12 : f.spT) - dt) > 0) continue; f.spT = rand(14, 24);
     if ((CV.fires.filter(q => !q.out).length) < (LITE ? 6 : 10)) cvFireStart(clamp(f.x + rand(-6, 6) * S, -7.5 * S, 7.5 * S), f.z + rand(-7, 7) * S, f.y, 'spread'); }
 }
-function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.ammo = null; CV.carts = null; CV.sinkObjs = null; CV.carrierGone = false; CV.sunkDone = false; CV.sinkPh = null; CV.rboats = []; CV.brgBroken = false; CV.abWarn = false; CV.board = null; CV.ca = null; CV.esc = null; CV.cyT = null; CV.lbN = null; CV.lbOut = false; CV.rafts = []; CV.floats = []; CV.drT = null; CV.escWd = false; CV.jmT = null; CV.puT = null; CV.lastSaid = false; CV.listA = 0; CV.settle = 0; CV.debT = null; CV.listSd = 0; if ($('cvGunBtns')) $('cvGunBtns').style.display = 'none'; CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
+function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.ammo = null; CV.carts = null; CV.sinkObjs = null; CV.carrierGone = false; CV.sunkDone = false; CV.sinkPh = null; CV.rboats = []; CV.brgBroken = false; CV.abWarn = false; CV.board = null; CV.ca = null; CV.esc = null; CV.cyT = null; CV.lbN = null; CV.lbOut = false; CV.rafts = []; CV.floats = []; CV.drT = null; CV.sdT = null; CV.oil = null; CV.escWd = false; CV.jmT = null; CV.puT = null; CV.lastSaid = false; CV.listA = 0; CV.settle = 0; CV.debT = null; CV.listSd = 0; if ($('cvGunBtns')) $('cvGunBtns').style.display = 'none'; CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
 // 殿の回復：軍医のそばで手当て、王の間で休む、秘書のおにぎり
 function cvKingHeal(dt) {
   if (player.hp >= CFG.maxHp || player.hp <= 0) return; const S = CV.S || 1, P = player.pos, H = CV.heal || (CV.heal = { med: 0, oni: 60, rest: 0 });
@@ -11624,7 +11624,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031y）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031z）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -12543,6 +12543,7 @@ function cvDriftItem(kind) {   // ティアラ（銀と石）・パンプス（�
   const p = oy.g.position, sd = Math.random() < 0.5 ? -1 : 1; g.position.set(p.x + sd * (oy.hb + 3) * S, 0.05, p.z - 120); stageRoot.add(g); (CV.floats = CV.floats || []).push({ g, kind, ph: rand(0, 6), vz: rand(2.2, 3.2) });
 }
 function cvAftermathStep(dt) {
+  if ((CV.sinkPh === 'abandon' || CV.sinkPh === 'going') && (CV.sdT = (CV.sdT == null ? 2 : CV.sdT) - dt) <= 0) { CV.sdT = rand(8, 16); cvSeaDebris(LITE ? 2 : 5); } cvOilStep(dt);
   const F = CV.floats || []; const p = player.pos;
   for (const f of F) { f.g.position.y = 0.03 + Math.sin(time * 1.1 + f.ph) * 0.05; if (f.vz) f.g.position.z += f.vz * dt; else f.g.position.x += Math.sin(time * 0.1 + f.ph) * 0.1 * dt;
     if (f.kind && !f.said && Math.hypot(f.g.position.x - p.x, f.g.position.z - p.z) < 22) { f.said = true; const L = f.kind === 'tiara' ? 'これは誰のだろうな' : '誰のかは知らんが、艦内を歩き回って臭かったであろうパンプスも、塩で無臭になったんだろうな'; cvKing(L);
@@ -12550,6 +12551,16 @@ function cvAftermathStep(dt) {
       if (r) setTimeout(() => r.st === 'ok' && cvSay(r, R[(Math.random() * R.length) | 0], 2), 3200); } }
   if (CV.sinkPh === 'going' && cvOnOyodo() && (CV.drT = (CV.drT == null ? 20 : CV.drT) - dt) <= 0) { CV.drT = rand(25, 45); cvDriftItem(Math.random() < 0.55 ? 'tiara' : 'pump'); }
 }
+function cvSeaDebris(n) {   // 焦げた木材・救命胴衣・広がる重油（帽子・ベルト・キャミソールは流さない）
+  const S = CV.S || 1; CV.floats = CV.floats || []; if (CV.floats.length > (LITE ? 50 : 120)) return;
+  const wood = CV.M.char || (CV.M.char = new THREE.MeshLambertMaterial({ color: 0x2a211b })), vest = CV.M.vest || (CV.M.vest = new THREE.MeshLambertMaterial({ color: 0xc9b27a }));
+  for (let i = 0; i < n; i++) { const sd = Math.random() < 0.5 ? -1 : 1, x = sd * rand(12, 55) * S, z = rand(-90, 90) * S; let m;
+    if (Math.random() < 0.6) { m = new THREE.Mesh(new THREE.BoxGeometry(rand(0.15, 0.3) * S, 0.12, rand(0.8, 2.6) * S), wood); }
+    else { m = new THREE.Group(); for (const sx of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.22 * S, 0.1, 0.4 * S), vest); b.position.x = sx * 0.13 * S; m.add(b); } }
+    m.position.set(x, 0.03, z); m.rotation.y = rand(0, 6); stageRoot.add(m); CV.floats.push({ g: m, ph: rand(0, 6) }); }
+  if (!CV.oil) { const mat = new THREE.MeshBasicMaterial({ color: 0x0b0a09, transparent: true, opacity: 0.55, depthWrite: false }); CV.oil = new THREE.Mesh(new THREE.CircleGeometry(1, 40), mat); CV.oil.rotation.x = -Math.PI / 2; CV.oil.position.set(0, 0.04, 0); CV.oil.scale.set(10, 10, 1); stageRoot.add(CV.oil); }
+}
+function cvOilStep(dt) { if (!CV.oil) return; const S = CV.S || 1, k = Math.min(1, (CV.sinkT || 0) / 600); CV.oil.scale.set((18 + k * 70) * S, (60 + k * 120) * S, 1); CV.oil.material.opacity = 0.35 + k * 0.25; }
 function cvKingEscort() {
   const S = CV.S || 1, p = player.pos, sd = p.x >= 0 ? 1 : -1, es = CV.R.filter(r => r.st === 'ok' && (r.d === 'kg' || r.gid === 'sec2' || r.gid === 'sec5')).slice(0, 3);
   es.forEach((r, i) => { cvDespawn(r); r.x = r.hx = r.ax = p.x + (i - 1) * 0.9; r.z = r.hz = r.az = p.z - 0.9; r.y = r.hy = p.y; r.ySnap = true; r.w = 'stand'; });
@@ -21349,7 +21360,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

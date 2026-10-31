@@ -15760,7 +15760,7 @@ function buildFubuki() {
     g.position.set(x, 0, z); stageRoot.add(g); colliders.push({ x, z, r: 0.45 });
   }
   // 谷の裂け目と吊り橋
-  const ch = new THREE.Mesh(new THREE.BoxGeometry(70, 0.2, FB_Z.bridge1 - FB_Z.bridge0), dark); ch.position.set(0, -14, (FB_Z.bridge0 + FB_Z.bridge1) / 2); stageRoot.add(ch);
+  const ch = new THREE.Mesh(new THREE.BoxGeometry(70, 0.2, FB_Z.bridge1 - FB_Z.bridge0), fbMat(0xd3dbe3)); ch.position.set(0, -14, (FB_Z.bridge0 + FB_Z.bridge1) / 2); stageRoot.add(ch);
   for (const sd of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(70, 14, 0.6), fbMat(0x4b5763)); w.position.set(0, -7, sd < 0 ? FB_Z.bridge0 : FB_Z.bridge1); stageRoot.add(w); }
   const br = new THREE.Group(), L = FB_Z.bridge1 - FB_Z.bridge0; FB.planks = [];
   for (let i = 0; i < 40; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.32), wood); const z = FB_Z.bridge0 + (i + 0.5) * L / 40; p.position.set(rand(-0.05, 0.05), -0.05 - Math.sin(Math.PI * (i + 0.5) / 40) * 0.9, z); p.rotation.y = rand(-0.04, 0.04); br.add(p); FB.planks.push({ m: p, v: 0, fall: false }); }
@@ -15801,7 +15801,9 @@ function fbLook() {
   hemiL.color.setHex(0xe8f2ff); hemiL.groundColor.setHex(0x8a9aaa); hemiL.intensity = 1.35; ambL.intensity = 0.85; sun.intensity = 0.55;
 }
 // ---- 人 ----
+const FB_RESERVED = () => new Set([SEC_ID, SEC2_ID, 'omiya', 'girl35', 'girl37', 'girl39', 'girl43', FUMI_ID, OJOU_ID]);
 function fbSp(x, z, kind, team, gid, prof) {
+  if (!gid) { const res = FB_RESERVED(); for (let k = 0; k < 12; k++) { const g = pickGirl(kind); const id = g && Object.keys(GIRLS).find(i => GIRLS[i] === g); if (id && !res.has(id)) { gid = id; break; } } }   // 一般の侍女・兵に名前付きの写真を使わない
   const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: {} });
   if (!e) return null;
   if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = EXTRA_GIRLS[gid].prof.cm / 100;
@@ -15839,7 +15841,7 @@ function fbSquad(from, n, cz) {
 }
 // ---- 進行 ----
 function fbReset() {
-  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, ft: 0, sally: false, nomRu: FB_NOM.ru });
+  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, ft: 0, sally: false, falling: [], dmgWin: 0, nomRu: FB_NOM.ru });
   CFG.maxBodies = LITE ? 220 : 600;
   player.pos.set(0, 0, FB_Z.start); player.yaw = 0; player.pitch = -0.02;
   UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
@@ -15873,7 +15875,7 @@ function fbOnBridge(e) { const z = e.s.position.z; return z > FB_Z.bridge0 && z 
 function fbCollapse(fallers) {
   FB.bridgeDown = true; FB.shake = 1.2; Sfx.noiseBurst(1.4, 'lowpass', 900, 80, 0.8);
   for (const P of FB.planks) { P.fall = true; P.v = rand(-1, 0); }
-  for (const e of fallers) { e.fbFallT = 0; e.fbFall = true; e.passive = true; Sfx.noiseBurst(0.3, 'bandpass', 1300, 900, 0.25); }
+  FB.falling = (FB.falling || []).concat(fallers); for (const e of fallers) { e.fbFallT = 0; e.fbFall = true; e.passive = true; Sfx.noiseBurst(0.3, 'bandpass', 1300, 900, 0.25); }
   for (const e of fallers) { const i = FB.col.indexOf(e); if (i >= 0) FB.col.splice(i, 1); }
 }
 function fbHut() {
@@ -15923,10 +15925,15 @@ function fbFumiBack() {   // 下の沢を回ってきた綾瀬と、しんがり
   for (let i = 0; i < Math.round(8 * FB_K) + 2; i++) { const e = fbSp(rand(-5, 5), FB_Z.fort + 16 + rand(0, 6), 'mob', 'blue'); if (e) { e.home = [rand(-6, 6), FB_Z.fort - 4 - rand(0, 6)]; FB.col.push(e); } }
 }
 // ---- 毎フレーム ----
+function fbFallTick(e, dt) {   // 橋から落ちる：谷底の雪の上に倒れて残る（会話中も落ちる）
+  const p = e.s.position; e.fbFallT += dt; p.y -= dt * (4 + e.fbFallT * 9); e.baseY = p.y; e.knock.set(0, 0, 0);
+  if (p.y > -13.8) return true;
+  p.y = e.baseY = -13.8; e.fbFall = false; p.x = clamp(p.x + rand(-2, 2), -20, 20); e.hp = 0; killEnemy(e, false); return false;
+}
 function fbBrain(e, dt) {
   if (!e.fb) return false;
   const p = e.s.position;
-  if (e.fbFall) { e.fbFallT += dt; p.y -= dt * (4 + e.fbFallT * 9); e.knock.set(0, 0, 0); if (p.y < -16) { e.s.visible = false; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); } return true; }
+  if (e.fbFall) return true;   // fbFallTick が動かす
   if (e.fbRu && e.fbFlee && isUp(e)) { p.z += dt * 7; p.x += (p.x < 0 ? -1 : 1) * dt * 1.5; e.s.rotation.y = 0; return true; }   // 砦の出撃で退く
   if (e.fbRu) {   // スキーで素早く寄せ、近づいたら普段の戦い方
     if (e.fbSki > 0) { e.fbSki -= dt; const d = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (d < 20) e.fbSki = 0; }
@@ -15983,6 +15990,8 @@ function updateFb(dt) {
   if (FB.bridgeDown) for (const P of FB.planks) if (P.m.position.y > -30) { P.v -= 18 * dt; P.m.position.y += P.v * dt; P.m.rotation.x += dt * 1.3; }
   medPost.blue = [player.pos.x + 3, player.pos.z + 8, 0];
   if (state !== 'play') return;
+  FB.dmgWin = Math.max(0, (FB.dmgWin || 0) - dt * 8);
+  if (FB.falling && FB.falling.length) FB.falling = FB.falling.filter(e => fbFallTick(e, dt));
   fbCold(dt); fbPits(dt); fbAvTick(dt);
   // 殿の足場
   const px = player.pos.x, pz = player.pos.z;
@@ -16025,7 +16034,7 @@ function updateFb(dt) {
   if (FB.ph === 'slopeRush') { FB.st += dt; if (FB.st > 5 && !FB.rushAv) { FB.rushAv = true; fbAvalanche((FB_Z.slope0 + FB_Z.slope1) / 2, false); setTimeout(() => FB.on && ukDlg([fbS('ru_after')]), 6000); FB.ph = 'march2b'; } }
   if (FB.ph === 'march2b' && pz < FB_Z.coat + 8) fbCoat();
   if (FB.ph === 'march3' && pz < FB_Z.fort + 45) fbFort();
-  if (FB.ph === 'fortFight' && !UK.dlg) { FB.ft = (FB.ft || 0) + dt; if (FB.ft > 35 && !FB.sally) { FB.sally = true; for (const e of FB.ru) if (isUp(e)) e.fbFlee = true; popup('砦の門が開き、守備隊が打って出た！ ロシアのスキー部隊が退いていく'); popupTimer = 4; } }
+  if (FB.ph === 'fortFight' && !UK.dlg) { FB.ft = (FB.ft || 0) + dt; if (FB.ft > (FB.ch.bridge === 'send' ? 14 : 35) && !FB.sally) { FB.sally = true; for (const e of FB.ru) if (isUp(e)) e.fbFlee = true; popup('砦の門が開き、守備隊が打って出た！ ロシアのスキー部隊が退いていく'); popupTimer = 4; } }
   if (FB.ph === 'fortFight') { const near = FB.ru.filter(e => isUp(e) && !e.fbFlee && e.s.position.z < FB_Z.fort + 50).length; if (!UK.dlg && (near === 0 || (pz < FB_Z.fort + 4 && near < 3))) fbArrive(); }
   for (const e of FB.col) if (e.fbToHut && isUp(e) && Math.hypot(e.s.position.x - 9, e.s.position.z - FB_Z.hut) < 1.5 && !e.fbHidden) { e.fbHidden = true; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } }
   // 数（名目）
@@ -16099,7 +16108,7 @@ addEventListener('keydown', ev => {
 }, true);
 function fbLabel() { return { intro: '吹雪の山岳行軍', march: '峠道：吊り橋へ', bridgeTalk: '吊り橋', bridgeWait: '吊り橋：綾瀬を待つ', bridgeSend: '吊り橋：十人を渡す', march1: '峠道：山小屋へ', hutTalk: '山小屋', march2: '峠道：雪庇の斜面へ', slopeTalk: '雪庇の斜面', slopeWait: '斜面：一人ずつ', slopeRush: '斜面：駆け抜ける', march2b: '峠道：砦へ', coatTalk: '谷口が倒れた', march3: '峠道：砦へ', fortFight: '砦の門前：包囲を破る', fort: '砦', done: '砦（作戦終了は Q）' }[FB.ph] || ''; }
 function fbRemain() { const ru = FB.ru.filter(isUp).length, nom = Math.max(0, Math.round(FB.ruPool + ru * FB_NOM.ru / 120)); return `ロシア スキー部隊 約${nom}　本隊 約${FB.colNom || 0}　しんがり ${FB.rgGone ? '向こう岸' : FB.rg.length ? '約' + Math.round(FB.rg.filter(isUp).length * FB_NOM.rg / (FB_DRAW.rg + 1)) : '合流'}`; }
-if (TEST) window.__fb = { FB, pick: i => ukPick(i), skip: () => ukDlgSkip(), squad: (f, n) => fbSquad(f, n), pl: () => player, cnt: () => { const c = {}; for (const e of enemies) { const k = e.team + (e.dead ? "D" : ""); c[k] = (c[k] || 0) + 1; } return c; }, dlg: () => !!UK.dlg, ud: () => UK.dlg ? JSON.stringify({ cur: UK.dlg.cur, ch: !!UK.choice, n: (UK.dlg.q || UK.dlg.steps || []).length }) : "", over: () => state, av: z => fbAvalanche(z == null ? player.pos.z : z, false) };
+if (TEST) window.__fb = { FB, pick: i => ukPick(i), skip: () => ukDlgSkip(), squad: (f, n) => fbSquad(f, n), pl: () => player, cnt: () => { const c = {}; for (const e of enemies) { const k = e.team + (e.dead ? "D" : ""); c[k] = (c[k] || 0) + 1; } return c; }, dlg: () => !!UK.dlg, ud: () => UK.dlg ? JSON.stringify({ cur: UK.dlg.cur, ch: !!UK.choice, n: (UK.dlg.q || UK.dlg.steps || []).length }) : "", over: () => state, names: () => { const ids = Object.keys(GIRLS), nm = {}; for (const k in FB.by) { const e = FB.by[k]; nm[k] = e ? ids.find(i => GIRLS[i] === e.girl) : null; } const dup = enemies.filter(e => !e.fbNamed && Object.values(FB.by).some(n => n && n !== e && n.girl === e.girl)).length; return JSON.stringify({ nm, dup }); }, fall: n => fbCollapse(FB.col.filter(e => !e.fbNamed).slice(20, 20 + n).map(e => { e.s.position.set(rand(-1, 1), 0, 20); return e; })), fallen: () => enemies.filter(e => e.baseY < -10).map(e => e.state + '@' + e.s.position.y.toFixed(1) + (e.s.visible ? '' : ':HIDDEN')).join(','), av: z => fbAvalanche(z == null ? player.pos.z : z, false) };
 
 // ====================================================================
 //  アメリカ西部編 第一幕「荒野の決闘」（?stage=usDuel）
@@ -22544,7 +22553,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zm';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zn';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -27144,8 +27153,9 @@ function hurtPlayer(dmg) {
   if (state !== 'play' || inHQ()) return;
   if (CAMP.on && (CAMP.frozen || CAMP.ending)) return;
   if (CAMP.on && CAMP.ph === 4 && !CAMP.solo && player.hp - dmg <= 0) { player.hp = 1; yjEnding(); return; }   // 山城：殿は討たれず、自ら幕を引く（何も見せない）
+  if (FB.on) { dmg = Math.min(dmg, FB.ch.bridge === 'send' ? 9 : 14, Math.max(1, 28 - (FB.dmgWin || 0))); FB.dmgWin = (FB.dmgWin || 0) + dmg; }   // 吹雪：殿は一撃でも、囲まれても一気には崩れない
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
-  puff(player.pos.clone().setY(CV.on ? player.pos.y + 1 : 1), CV.on ? 0xffffff : 0xb10f25, CV.on ? 3 : 7, 0.16, 1.6, 0.3);
+  puff(player.pos.clone().setY(CV.on ? player.pos.y + 1 : 1), CV.on || FB.on ? 0xffffff : 0xb10f25, CV.on ? 3 : 7, 0.16, 1.6, 0.3);
   Sfx.hurt();
   if (player.hp <= 0) {
     if (CV.on) { player.hp = 0; cvKingDown(); return; }

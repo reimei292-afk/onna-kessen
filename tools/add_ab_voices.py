@@ -24,7 +24,12 @@ async def gen(k, who, ja):
     f = os.path.join(D, k + '.mp3')
     if not os.path.exists(f):
         v, r, p = vo(who)[:3]
-        await edge_tts.Communicate(ja, v, rate=f'{r:+d}%', pitch=f'{p:+d}Hz').save(f)
+        for i in range(4):   # 混み合うと音が返らないことがある：消してやり直す
+            try: await edge_tts.Communicate(ja, v, rate=f'{r:+d}%', pitch=f'{p:+d}Hz').save(f); break
+            except Exception:
+                if os.path.exists(f): os.remove(f)
+                if i == 3: print('FAIL', who, v, r, p, ja); raise
+                await asyncio.sleep(2 + i * 3)
     d = float(subprocess.check_output(['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', f]).decode().strip() or 0)
     return k, {'who': who, 'ja': ja, 'file': f'ab/{k}.mp3', 'dur': round(d, 2)}
 async def main():

@@ -10272,6 +10272,7 @@ function cvIsland() {
   { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.48, 1.0, 10), M.gun); d.position.set(13.6, Yr + 0.5, 1.8); stageRoot.add(d); boxes.push({ x0: 13.2, x1: 14.0, z0: 1.4, z1: 2.2, y0: Yr, y1: Yr + 1.1 }); }
   CV.isl = { x0, x1, z0, z1, L1, Yr };
 }
+const CV_SPON = [[-1, -66], [-1, 30], [1, -66], [1, 52]];   // 12.7cm連装高角砲のスポンソン（舷・z）
 function buildKeiku() {
   CV.doors = []; CV.dirs = []; CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
   const M = cvMats();
@@ -10343,11 +10344,39 @@ function buildKeiku() {
   };
   elev(-6.2, 4.4, -50, -36, '前部エレベーター');
   elev(-6.2, 4.4, 16, 30, '後部エレベーター');
-  cvSlab(-0.07, 0.07, Yd + 0.03, Yd + 0.08, -86, 72, M.gold);
-  for (const z of [-20, 8, 36, 58]) cvSlab(-10.2, 10.2, Yd + 0.03, Yd + 0.07, z, z + 0.12, M.dark);
+  // 瑞鳳型の写真どおり：甲板上には何も置かない。白い中心線と横線、鋼の押さえ金、艦尾の紅白の縞（ラウンドダウン）
+  { const wm = CV.M.paint || (CV.M.paint = new THREE.MeshLambertMaterial({ color: 0xf4f2ea })), rm = CV.M.red || (CV.M.red = new THREE.MeshLambertMaterial({ color: 0xc8231e }));
+    cvSlab(-0.22, 0.22, Yd + 0.03, Yd + 0.06, -86, 72, wm);
+    for (const z of [-62, -20, 8, 40, 58]) cvSlab(-10.6, 10.6, Yd + 0.03, Yd + 0.055, z, z + 0.3, wm);
+    for (let x = -10; x <= 10; x += 2.5) if (Math.abs(x) > 0.5) cvSlab(x - 0.03, x + 0.03, Yd + 0.025, Yd + 0.045, -88, 72, M.dark);
+    for (let i = 0; i < 12; i++) cvSlab(-11.35 + i * 1.89, -11.35 + (i + 1) * 1.89, Yd + 0.03, Yd + 0.06, 72.2, 73.9, i % 2 ? wm : rm);
+    cvSlab(-11.35, 11.35, Yd - 0.5, Yd + 0.0, 73.9, 74.3, M.steel); }
   cvSlab(-6.2, 6.2, Yd + 0.03, Yd + 0.06, -48, -36, M.dark);
   cvSlab(-6.2, 6.2, Yd + 0.03, Yd + 0.06, 22, 34, M.dark);
-  rail(-11.55, -11.4, -86, 72, Yd); rail(11.4, 11.55, -86, -16, Yd); rail(11.4, 11.55, 30, 72, Yd);   // 右舷は艦橋のスポンソンで切れる
+  // 甲板の縁の低い柵。舷外の機銃ギャラリーへ降りる口だけ切る
+  const GAP = { '-1': [[-58.2, -56.4], [38.0, 39.8]], '1': [[-58.2, -56.4], [46.0, 47.8]] };
+  const railCut = (s0, z0, z1) => { let a = z0; for (const [g0, g1] of GAP[s0].filter(g => g[0] > z0 && g[1] < z1)) { rail(s0 * 11.4, s0 * 11.55, a, g0, Yd, 0.5); a = g1; } rail(s0 * 11.4, s0 * 11.55, a, z1, Yd, 0.5); };
+  railCut(-1, -86, 72); railCut(1, -86, -16); railCut(1, 30, 72);   // 右舷は艦橋のスポンソンで切れる
+  // 舷外ギャラリー（飛行甲板の縁より一段下）：25mm機銃と12.7cm連装高角砲のスポンソン
+  CV.galY = Yd - 1.9;
+  const gallery = (s0, z0, z1) => { const yg = CV.galY, xa = s0 * 11.35, xb = s0 * 13.5;
+    cvSlab(Math.min(xa, xb), Math.max(xa, xb), yg - 0.22, yg, z0, z1, M.steel); cvFloor(Math.min(xa, xb), Math.max(xa, xb), z0, z1, yg);
+    { let a = z0; for (const [ss, zz] of CV_SPON) if (ss === s0 && zz > z0 && zz < z1) { rail(s0 * 13.4, s0 * 13.52, a, zz - 2.4, yg, 1.0); a = zz + 2.4; } rail(s0 * 13.4, s0 * 13.52, a, z1, yg, 1.0); } rail(Math.min(xa, xb), Math.max(xa, xb), z0 - 0.12, z0, yg, 1.0); rail(Math.min(xa, xb), Math.max(xa, xb), z1, z1 + 0.12, yg, 1.0);
+    for (let z = z0 + 1; z < z1; z += 4) cvSlab(Math.min(s0 * 9.2, xb), Math.max(s0 * 9.2, xb) - (s0 > 0 ? 0.9 : 0) + (s0 < 0 ? 0.9 : 0), yg - 1.2, yg - 0.22, z, z + 0.16, M.steel);   // 腕木
+  };
+  gallery(-1, -88, 70); gallery(1, -88, -17); gallery(1, 31, 70);
+  // 舷側に倒せる無線檣（左舷4本・右舷2本）。発着艦中は水平に倒してある
+  for (const [s0, z] of [[-1, -52], [-1, -28], [-1, 2], [-1, 46], [1, -40], [1, 58]]) {
+    const g = new THREE.Group(); g.position.set(s0 * 13.45, CV.galY + 0.4, z);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.12, 9, 6), M.dark); m.position.y = 4.5; g.add(m);
+    for (const h of [3, 6, 8.6]) { const y2 = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.05, 0.05), M.dark); y2.position.y = h; g.add(y2); }
+    g.rotation.z = -s0 * 1.35; stageRoot.add(g); (CV.masts = CV.masts || []).push(g);
+  }
+  for (const s0 of [-1, 1]) for (const [g0, g1] of GAP[String(s0)]) {   // 甲板の縁から手すり付きの短い階段
+    cvFloor(Math.min(s0 * 11.3, s0 * 12.7), Math.max(s0 * 11.3, s0 * 12.7), g0, g1, Yd);
+    cvSlab(Math.min(s0 * 11.35, s0 * 12.7), Math.max(s0 * 11.35, s0 * 12.7), Yd - 0.22, Yd, g0, g1, M.steel);
+    cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
+  }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
   rail(-11.4, 11.4, 73.85, 74.05, Yd);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -10685,15 +10714,15 @@ function buildKeiku() {
     CV.boats.push({ x, z, y: Yh, patrol });
   }
   // 高角砲4基、三連装10基、単装12基。艦橋の中には置かない
-  cvGun(-10.2, -62, Yd, true); cvGun(-10.2, 42, Yd, true);
-  cvGun(10.2, -62, Yd, true); cvGun(10.2, 52, Yd, true);
-  for (const z of [-80, -46, -22, 6, 24]) cvGun(-10.55, z, Yd, false, true);
-  for (const z of [-80, -46]) cvGun(10.55, z, Yd, false, true);
-  for (const z of [-12, 24]) cvGun(15.4, z, Yd, false, true);
-  cvGun(10.55, 54, Yd, false, true);
-  for (const z of [-88, -70, -34, -4, 16, 66]) cvGun(-10.85, z, Yd, false);
-  for (const z of [-88, -70, 50, 68]) cvGun(10.85, z, Yd, false);
-  cvGun(12.8, -14, Yd, false); cvGun(12.8, 28, Yd, false);
+  // 実艦どおり甲板上には置かず、舷外ギャラリー（12.7cm連装は外へ張り出したスポンソン）に並べる
+  const gy = CV.galY;
+  const spon = (s0, z) => { const xa = s0 * 13.4, xb = s0 * 15.6; cvSlab(Math.min(xa, xb), Math.max(xa, xb), gy - 0.22, gy, z - 2.6, z + 2.6, M.steel); cvFloor(Math.min(xa, xb), Math.max(xa, xb), z - 2.6, z + 2.6, gy); rail(s0 * 15.5, s0 * 15.62, z - 2.6, z + 2.6, gy, 1.0); };
+  for (const [s0, z] of CV_SPON) { spon(s0, z); cvGun(s0 * 14.3, z, gy, true); }
+  for (const z of [-80, -46, -24, 8, 22, 60]) cvGun(-12.5, z, gy, false, true);
+  for (const z of [-80, -46, 40, 62]) cvGun(12.5, z, gy, false, true);
+  for (const z of [-12, 24]) cvGun(15.4, z, Yd, false, true);   // 艦橋脇の張り出し
+  for (const z of [-86, -72, -36, -6, 50, 68]) cvGun(-12.6, z, gy, false);
+  for (const z of [-86, -72, 36, 66]) cvGun(12.6, z, gy, false);
   // 甲板どうしをつなぐ手すり付きの階段（梯子は予備として残す）。下の床の高さ→上の床の高さ
   cvStairs(-0.7, 0.7, -3.0, -9.0, 0.72, 4.12, '階段　上 中甲板（侍女大部屋）');
   cvStairs(-0.7, 0.7, 10.5, 4.5, 4.12, 7.72, '階段　上 第二甲板（医務室・食堂）');
@@ -10835,7 +10864,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031m）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031n）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -20483,7 +20512,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

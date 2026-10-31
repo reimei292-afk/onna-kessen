@@ -447,3 +447,12 @@
 - 幕二 cruiser:
   - Moved to x 210, about twice as close (banner says 距離およそ四千).
   - Added a sweeping searchlight cone, a bow wave, and a muzzle-flash PointLight on each salvo.
+
+## zd
+- Murmur ambience (cvMurTick) reuses the ukParty mixing chain u7MurInit (overlapping clips + reverb). Pools:
+  - panic: VOICE_CV lines matching urgent words, plus short RK/USD/FRS shouts. Used during abandon ship on the carrier: dense, up to ~36 voices, slightly sped up.
+  - fear: CV urgent lines only (no RK/USD/FRS shouts) plus calm ones. Used in the cruise section during raid/boarding.
+  - chat: CV calm lines plus uk7 talk/laugh. Used in peacetime when 6 or more crew are nearby.
+- Flute (笛) and fluteCall are silenced in keiku.
+- 日常 training: every 40–75 s, a Zero sortie (at most 2 airborne). Fuel is 45–80 s, and the landing-failure chance is +0.06 (trainees). Bolter, barrier and island crash with the King's line all apply. The dead-pilot-after-trap case needs combat wounds, so it never happens in training.
+- Corner map: cvMapOy draws 大淀's deck when the player is on her.

@@ -170,6 +170,9 @@
     background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(235,235,235,.6) 100%)}
   .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
     background:radial-gradient(ellipse at center,rgba(10,10,20,.35),rgba(0,0,0,.8));text-align:center}
+  /* 段が増えて縦に収まらないとき、中央寄せだと上が画面外に出て押せなかった：上から並べ、余白は上下の auto で（収まるときは中央、溢れるときは上からスクロール） */
+  .screen{justify-content:flex-start;height:100%;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding-top:max(8px,var(--sat,0px));padding-bottom:12px;box-sizing:border-box} .screen > :first-child{margin-top:auto} .screen > :last-child{margin-bottom:auto}
+  @media (max-height:500px){ #stagesel .srow button{padding-top:3px;padding-bottom:3px} }
   .screen h1{font-size:72px;margin:0;letter-spacing:.2em;text-shadow:0 4px 16px #000,0 0 40px rgba(255,190,80,.35)}
   .screen h2{font-size:24px;margin:8px 0 28px;font-weight:normal;letter-spacing:.4em;color:#e8d9a8}
   .screen p{margin:4px;font-size:16px;line-height:1.7;text-shadow:0 1px 3px #000}
@@ -178,6 +181,7 @@
   .btn:hover{filter:brightness(1.25)}
   .help{margin-top:26px;padding:12px 24px;background:rgba(0,0,0,.45);border:1px solid rgba(232,217,168,.4);border-radius:4px}
   #pause,#over{display:none}
+  #pause{z-index:60} body.paused #cvfBar,body.paused #cvfTalk,body.paused #cvfAskM,body.paused #subtitle{display:none!important}   /* 一時停止中は宴の釦・字幕を隠す（再開ボタンと重ならない） */
   /* ---- タッチ操作 ---- */
   #touchui{display:none;position:absolute;inset:0;z-index:5}
   html.touch body.playing #touchui{display:block}

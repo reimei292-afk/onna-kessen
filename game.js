@@ -232,6 +232,7 @@ const AudioGuard = {
   t: 0, resumes: 0, fixes: 0,
   kick() { const c = Sfx.ctx; if (c && c.state !== 'running' && c.state !== 'closed') { c.resume().then(() => { this.resumes++; }, () => {}); } },
   tick(dt) {
+    if (typeof CV !== 'undefined' && CV && (CV.feast || CV.F || CV.daily)) return false;   // 祝勝会・会議室・日常：戦いの掛け声（射線など）は出さない
     if ((this.t -= dt) > 0) return; this.t = 1;
     this.kick();
     if (Sfx.master && Sfx.master.gain.value < 0.49) { Sfx.master.gain.cancelScheduledValues(0); Sfx.master.gain.value = 0.5; this.fixes++; }
@@ -451,6 +452,7 @@ const SITU = {
   ok(e) { return e && e.team === 'blue' && isUp(e) && e.prof && SITU_ROM[e.prof.pers] && !e.silenced && !e.role && !e.secretary && !e.sec2 && !e.ojou && !e.fumi && !e.sysop
     && !(e.hurtAt && time - e.hurtAt < 4) && !Talk.speaking(e) && !(e.situAt && time - e.situAt < 18); },
   say(e, cat, force) {
+    if (typeof CV !== 'undefined' && CV && (CV.feast || CV.F || CV.daily)) return false;   // 祝勝会・会議室・日常：戦いの掛け声（射線など）は出さない
     const C = this.man && this.man[cat], L = C && C[SITU_ROM[e.prof.pers]];
     if (!L || !L.length || !VoicePack.ok) return false;
     if (!force && (time - this.last < 4.5 || (this.catAt[cat] && time - this.catAt[cat] < 16))) return false;
@@ -13088,6 +13090,9 @@ function cvfSay(who, text) {
   if (who === 'x' || who === 'x2') {   // 殿のいちばん近くにいる名の無い者（x）と、その次（x2）
     const p = player.pos, L = F.crowd.filter(q => q.e && q.st === 'ok').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)); const r = L[who === 'x' ? 0 : 1] || L[0];
     if (r) { CV.fOK = true; cvSay(r, text, 1.6, 'c'); CV.fOK = false; } else subtitle(text); return; }
+  if (who === 'x' || who === 'x2') {   // 殿のいちばん近くにいる名の無い者（x）と、その次（x2）
+    const p = player.pos, L = F.crowd.filter(q => q.e && q.st === 'ok').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)); const r = L[who === 'x' ? 0 : 1] || L[0];
+    if (r) { CV.fOK = true; cvSay(r, text, 1.6, 'c'); CV.fOK = false; } else subtitle(text); return; }
   let r = who === 'c' || who === 'c2' ? (F.cur && F.cur[who]) : cvfR(who);
   if (!r) { if (CV_NAMED_V.has(who)) { subtitle(text); return; } r = F.crowd[(Math.random() * F.crowd.length) | 0]; }   // 名のある人を他人に言わせない
   CV.fOK = true; cvSay(r, text, 1.6, CV_NAMED_V.has(who) ? who : (who === 'c' || who === 'c2' ? 'c' : null)); CV.fOK = false;
@@ -13165,9 +13170,9 @@ function cvFeastStart() {
   for (const k in CVF_MUR) for (const ja of CVF_MUR[k]) { const f = cvVoiceFile('*', ja); if (f) VoicePack.load(f, true); }
 }
 function cvfButtons(on) {
-  let bar = $('cvfBar'); if (!on) { if (bar) bar.remove(); return; }
-  if (bar) return; bar = document.createElement('div'); bar.id = 'cvfBar'; bar.style.cssText = 'position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:auto';
-  for (const [k, l] of [['toast', '乾杯'], ['song', '歌を'], ['magic', '手品を'], ['imit', '物まねを'], ['kin', '舞台で「親戚は挙手」'], ['name', '舞台で「名前を言える者」'], ['sides', '舞台で「父方・母方」'], ['meet', '会議室に招集']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.style.cssText = 'padding:7px 12px;font:600 13px sans-serif;border-radius:8px;border:1px solid rgba(198,161,90,.7);background:rgba(20,24,32,.82);color:#f6e7c4;touch-action:manipulation';
+  let bar = $('cvfBar'); if (!on) { if (bar) bar.remove(); for (const id of ['cvfTalk', 'cvfAskM']) if ($(id)) $(id).remove(); const su = $('subtitle'); if (su) su.style.bottom = ''; return; }
+  if (bar) return; bar = document.createElement('div'); bar.id = 'cvfBar'; bar.style.cssText = 'position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:auto;width:max-content;max-width:96vw';
+  for (const [k, l] of [['toast', '乾杯'], ['song', '歌を'], ['magic', '手品を'], ['imit', '物まねを'], ['kin', '舞台で「親戚は挙手」'], ['name', '舞台で「名前を言える者」'], ['sides', '舞台で「父方・母方」'], ['meet', '会議室に招集']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.style.cssText = '' + (MOBILE || innerWidth < 600 ? 'padding:6px 8px;font:600 12px sans-serif;' : 'padding:7px 12px;font:600 13px sans-serif;') + 'border-radius:8px;border:1px solid rgba(198,161,90,.7);background:rgba(20,24,32,.82);color:#f6e7c4;touch-action:manipulation';
     const go = ev => { ev.preventDefault(); ev.stopPropagation(); const F = CV.F; if (!F) return; if (k === 'meet') { if (!F.meet) cvfMeet(); return; } if (k === 'kin' || k === 'name' || k === 'sides') { const st = CV.hallStage, S = CV.S || 1; if (st && Math.hypot(player.pos.x - st[0] * S, player.pos.z - st[1] * S) > 9 * S) { popup('舞台の近くへ行ってから'); return; } } if (F.q.length > 3) { popup('話が終わってから'); return; } if (k === 'imit') { const P = player.pos, cr = F.crowd.filter(r => r.e && r.st === 'ok').sort((a, b) => Math.hypot(a.x - P.x, a.z - P.z) - Math.hypot(b.x - P.x, b.z - P.z)); F.cur = { c: cr[0], c2: cr[1] }; } cvfPlay(CVF_FUN[k]); };
     b.addEventListener('click', go); b.addEventListener('touchstart', go, { passive: false }); bar.appendChild(b); }
   document.body.appendChild(bar);
@@ -13316,7 +13321,18 @@ function cvMurPools() {
   for (const W of [window.VOICE_RK, window.VOICE_USD, window.VOICE_FRS]) { const L2 = (W && W.lines) || {}; for (const k in L2) { const L = L2[k]; if (L && L.file && L.dur && L.dur < 2.6 && (!L.ja || CV_MUR_PANIC.test(L.ja) || /！/.test(L.ja))) panic.push(L.file); } }   // 短い叫び声を足す
   return (CV.murP = { panic, fear: fear.concat(calm.slice(0, 20)), chat });
 }
+function cvfLayout() {   // 祝勝会：字幕と問いの選択肢を、下の釦の列の上に置く（携帯の縦画面でも重ならない）＋近くの人に「話す」釦と名札
+  const F = CV.F, bar = $('cvfBar'), su = $('subtitle'); if (!F || !bar) return; const bh = bar.getBoundingClientRect().height + 16;
+  let tb = $('cvfTalk'); if (!tb) { tb = document.createElement('button'); tb.id = 'cvfTalk'; tb.style.cssText = 'position:fixed;z-index:36;left:50%;transform:translateX(-50%);padding:9px 18px;font:700 15px sans-serif;border-radius:10px;border:2px solid #e8c47a;background:rgba(60,40,20,.92);color:#fff3d6;touch-action:manipulation;display:none;max-width:90vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (tb.r && CV.F && !CV.F.meet) cvfAskMenu(tb.r); }; tb.addEventListener('click', go); tb.addEventListener('touchend', go, { passive: false }); document.body.appendChild(tb); }
+  const S = CV.S || 1, p = player.pos; let best = null, bd = 2.8 * S;
+  if (!F.meet) for (const r of CV.R) { if (!r.e || r.st !== 'ok' || r.away) continue; const d = Math.hypot(r.e.s.position.x - p.x, r.e.s.position.z - p.z); if (d < bd && Math.abs(r.e.s.position.y - p.y) < 1.5) { bd = d; best = r; } }
+  const am = $('cvfAskM'); tb.r = best; tb.style.display = best && !am ? 'block' : 'none'; if (best) tb.textContent = `話す：${best.nm}`; tb.style.bottom = bh + 'px';
+  const th = best && !am ? tb.getBoundingClientRect().height + 8 : 0; if (am) am.style.bottom = (bh + 4) + 'px';
+  const ah = am ? am.getBoundingClientRect().height + 8 : 0; if (su) { su.style.bottom = (bh + th + ah + 6) + 'px'; su.style.maxWidth = '92vw'; }
+}
 function cvMurTick(dt) {
+  cvfLayout();
   if (CV.askM) { const r = CV.askM.r, m = $('cvfAskM'); if (!m || !CV.F || !r.e || Math.hypot(r.e.s.position.x - player.pos.x, r.e.s.position.z - player.pos.z) > 4 * (CV.S || 1)) { if (m) m.remove(); CV.askM = null; } }   // 問いの選択肢：離れたら閉じる
   if (!VoicePack.ok || !Sfx.ctx || Sfx.ctx.state !== 'running') return; const M = u7MurInit(); if (!M) return; const P = cvMurPools(), S = CV.S || 1, p = player.pos;
   const ab = CV.sinkPh === 'abandon' && !cvOnOyodo(), cruise = (CV.phase === 'raid' || CV.phase === 'board') && p.z > 36 * S && p.y < CV.Yd - 0.6;
@@ -28049,7 +28065,7 @@ function startGame() {
   }
   GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
-  $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
+  $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none'; document.body.classList.remove('paused');
   $('hud').style.display = 'block';
   SITU.reset(); SITU.preload(); saiDownPreload();
   state = 'play'; lock();
@@ -28105,7 +28121,7 @@ function rkCountLine() { const c = battleCounts(); return `味方 ${c.ally}　�
 function pauseGame() {
   if (state !== 'play') return;
   if (menuOpen) closeSecMenu(false);
-  state = 'pause'; player.drawing = false; $('pause').style.display = 'flex';
+  state = 'pause'; player.drawing = false; $('pause').style.display = 'flex'; document.body.classList.add('paused');
   const ro = $('roster'); if (!ro) return;
   const c = battleCounts();
   const h1 = document.querySelector('#pause h1');
@@ -28116,7 +28132,7 @@ function pauseGame() {
 }
 function resumeGame() {
   if (MOBILE && innerHeight > innerWidth) return;   // 縦向きのままでは再開しない
-  state = 'play'; $('pause').style.display = 'none'; unlockAudio(); goFullscreen(); resetTouch(); lock();
+  state = 'play'; $('pause').style.display = 'none'; document.body.classList.remove('paused'); unlockAudio(); goFullscreen(); resetTouch(); lock();
   if (UD.on) udHud(true);
 }
 function toTitle() {

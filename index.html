@@ -5,7 +5,7 @@
 <script>
 /* 公開版が古いまま残らないように、v.txt が違えば取り直す（GitHub Pages は HTML を約10分キャッシュする） */
 (function () {
-  var V = "20261031q";
+  var V = "20261031r";
   if (!/^https?:/.test(location.protocol)) return;
   var qv = (location.search.match(/[?&]gv=([^&]+)/) || [])[1];
   fetch("v.txt", { cache: "no-store" }).then(function (r) { return r.ok ? r.text() : ""; }).then(function (t) {
@@ -78,6 +78,7 @@
   #sqrep table,#roster table{border-collapse:collapse;margin:2px 0 6px}
   #sqrep td,#roster td{padding:1px 8px 1px 0;white-space:nowrap}
   #roster{display:none;gap:22px;flex-wrap:wrap;justify-content:center;margin:6px 0 14px;padding:8px 14px;border-radius:8px;background:rgba(14,18,26,.55);color:#f2ead2;font-size:13px;text-align:left}
+  html.touch #ladhint{top:auto;bottom:calc(150px + var(--sab));font-size:14px;padding:5px 12px;max-width:60vw}
   html.touch #sqrep{top:118px;left:10px;right:auto;font-size:11px;max-height:52vh}
   #bLad{display:none;left:calc(50% + 70px);bottom:calc(24px + var(--sab));width:84px;height:84px;font-size:18px;background:rgba(120,80,20,.55)} html.touch.canlad #bLad{display:flex}
   #bFix{display:none;position:fixed;z-index:32;left:calc(50% - 168px);bottom:calc(24px + var(--sab));width:84px;height:84px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(30,90,40,.72);color:#fff;align-items:center;justify-content:center;flex-direction:column;font-size:18px;pointer-events:auto;cursor:pointer;font-family:inherit}
@@ -318,7 +319,7 @@
 <div id="title" class="screen">
   <h1 class="serif">孤影の弓</h1>
   <h2 class="serif">― 模擬戦 ―</h2>
-  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261031q</p>
+  <p id="buildtag" class="serif" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">版 20261031r</p>
   <p class="serif" style="color:#e8d9a8">姿は一人。山城の門は、破城隊が担いで突く。</p>
   <p>青組のあなたは、侍女たちと共に山城を攻め上る。頭上の味方と敵の数は、戦闘員だけでなく医務班や本陣の者も含む。橙組にも救護班がいる。</p>
   <p>武器はすべて練習用（たんぽ矢・刃引きの懐刀）。当てれば「戦死判定」だ。</p>
@@ -436,34 +437,34 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <script src="lib/three.min.js"></script>
-<script src="motion_sprite.js?v=20261031q"></script>
-<script src="assets/sprites.js?v=20261031q"></script>
-<script src="assets/frames/frames.js?v=20261031q"></script>
-<script src="assets/frames/frames_fr.js?v=20261031q"></script>
-<script src="assets/frames/frames_omiya.js?v=20261031q"></script>
-<script src="assets/frames/frames_us.js?v=20261031q"></script>
-<script src="assets/frames/frames_vn.js?v=20261031q"></script>
-<script src="assets/frames/frames_props.js?v=20261031q"></script>
-<script src="assets/frames/cycles.js?v=20261031q"></script>
+<script src="motion_sprite.js?v=20261031r"></script>
+<script src="assets/sprites.js?v=20261031r"></script>
+<script src="assets/frames/frames.js?v=20261031r"></script>
+<script src="assets/frames/frames_fr.js?v=20261031r"></script>
+<script src="assets/frames/frames_omiya.js?v=20261031r"></script>
+<script src="assets/frames/frames_us.js?v=20261031r"></script>
+<script src="assets/frames/frames_vn.js?v=20261031r"></script>
+<script src="assets/frames/frames_props.js?v=20261031r"></script>
+<script src="assets/frames/cycles.js?v=20261031r"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261031q"></script>
-<script src="assets/voices/voices_situ.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk2.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk3.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk4.js?v=20261031q"></script>
-<script src="assets/voices/voices_saidown.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk5.js?v=20261031q"></script>
-<script src="assets/voices/voices_uk7.js?v=20261031q"></script>
-<script src="assets/voices/voices_frs.js?v=20261031q"></script>
-<script src="assets/voices/voices_usd.js?v=20261031q"></script>
-<script src="assets/voices/voices_rk.js?v=20261031q"></script>
-<script src="assets/voices/voices_cv.js?v=20261031q"></script>
-<script src="assets/voices/voices_pal.js?v=20261031q"></script>
+<script src="assets/voices/voices.js?v=20261031r"></script>
+<script src="assets/voices/voices_situ.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk2.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk3.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk4.js?v=20261031r"></script>
+<script src="assets/voices/voices_saidown.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk5.js?v=20261031r"></script>
+<script src="assets/voices/voices_uk7.js?v=20261031r"></script>
+<script src="assets/voices/voices_frs.js?v=20261031r"></script>
+<script src="assets/voices/voices_usd.js?v=20261031r"></script>
+<script src="assets/voices/voices_rk.js?v=20261031r"></script>
+<script src="assets/voices/voices_cv.js?v=20261031r"></script>
+<script src="assets/voices/voices_pal.js?v=20261031r"></script>
 <script src="lib/motion_data.js"></script>
-<script src="lib/death_clips.js?v=20261031q"></script>
-<script src="lib/death_fbx.js?v=20261031q"></script>
-<script src="game.js?v=20261031q"></script>
+<script src="lib/death_clips.js?v=20261031r"></script>
+<script src="lib/death_fbx.js?v=20261031r"></script>
+<script src="game.js?v=20261031r"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>

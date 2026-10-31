@@ -598,7 +598,7 @@ road.rotation.x = -Math.PI / 2; road.position.set(8, 0.01, -60); road.rotation.z
 // ====================================================================
 const AB = { on: false, act: 1, built: false, ppl: [], planes: [], veh: [], str: [], fx: [], q: [], t: 0, said: {}, log: [], ui: null, near: null, ask: false, mats: {}, n: { g4m: 0, zero: 0, g4mOut: 27, zeroOut: 18 } };
 /*ABLN*/
-const AB_LN = {"amb": ["来た！ 一機見える！", "煙を吐いてる……", "脚が出てない！", "何機帰ってきたの？", "まだ数が足りない……", "担架、もっと持ってきて！", "誘導、こっち！ 左へ寄せて！", "燃料車、三番へ！", "あの機、片発だ……", "がんばって……あと少し……", "降りた！ 降りたよ！", "水、まわして！"], "fire": ["消火急げ！", "泡を回して！ 風上から！", "火が消えた！ 中を確かめて！"], "crashShort": ["手前に落ちた！", "救急車、出して！", "走って！ 間に合って！"], "belly": ["胴体着陸！ 離れて！", "火花が出てる！ 消火班！"], "rescue": ["出せる人から出して！", "意識あります！ こっちへ！", "担架！ 二人で、頭の方を持って！", "……この人はもう……白い布を"], "triage": ["重い人はこっちの天幕へ！", "歩ける人は待機、水を飲ませて", "……運んで、並べてあげて"], "turn": ["点検よし！", "給油、始めます！", "弾薬、積み込み終わり！", "待機線へ回して！"], "repair": ["ジー！", "エンジン吊るよ！ せーの！", "穴は当て板で塞いで！", "溶接、離れて！", "この機はもう飛べない……部品取りに"], "tow": ["トラクター、つないで！", "押して！ 格納庫へ！", "掩体壕の三番へ入れて！"], "alarm": ["敵機接近！ 空襲警報！", "搭乗員、走れ！", "零戦、回して！ 上がれる機から上がって！", "発進！ 発進！", "敵機、引き返した模様！ 警報解除！"], "key": ["副操縦手が機銃手に操縦を教えながらここまで来たようで、副操縦手はたった今事切れました。機長はすでに死んでいます！"], "gunner": ["……着いた……着いたんですか……", "手が……離れないんです……", "副操縦手さんが……ずっと、声を……"], "medic": ["もう大丈夫。手を離して、ゆっくり", "深呼吸して。あなたが降ろしたのよ"], "rep_bloody": ["はい……機内はひどい有様です", "身元を確かめてから運び出します", "掃除には時間がかかりそうです", "この機、また飛べるようにします"], "rep_good": ["はい、陛下！", "まだ戻らない機を待っています", "手が足りませんが、やります"], "rep_crew": ["……はい。帰ってきました", "仲間が、まだ……", "陛下……ただいま戻りました"], "rep_mech": ["一晩あれば直します", "発動機を載せ替えます", "この機はもう……部品取りにします"], "rep_rest": ["大丈夫です、動いていたほうが楽なんです", "はい……少しだけ"], "named": [["sumi", "陛下、一番機が見えました"], ["kujo", "重い者は天幕へ。順番は私が決めます"], ["fumi", "各機へ。滑走路は二本とも使えます"], ["omiya", "数えてます……まだ、足りません"], ["ojou", "……皆さん、よくお戻りに"], ["sumi", "陛下、あまり滑走路に近づかれませんように"], ["omiya", "零戦、まだ戻ってない子がいます……"]], "party": ["皆さん、盃を。明日の無事を祈って", "……乾杯", "明日は何番機？", "私、七番機", "お母さんに手紙、書いた？", "眠れそうにないね", "お酒、苦い……", "明日も晴れるといいな", "帰ったら、甘いもの食べたい", "しっ、陛下がいらしてる"], "p_date": ["えっ……は、はい！必ず帰ります", "約束ですよ、陛下", "……はい。生きて帰れたら", "デ、デート……ですか？ はい、帰ります！", "じゃあ、何を着ていくか考えておきます"], "p_choco": ["チョコは帰ってからのお楽しみです", "えっ、私が作るんですか？ ……はい！", "……はい。生きて帰れたら", "約束ですよ、陛下。甘いのにします", "下手でも、食べてくださいね"], "p_by": ["いいなぁ", "ずるい", "陛下、私にも言ってください！", "……いいな、あの子"], "p_cup": ["私はお水で乾杯します", "形だけ口をつけます"], "p_hair": ["はい、封筒に入れて実家宛てに", "まだです……今夜切ります"], "p_hairS": ["短いので、爪だけ渡しました", "妹に少しだけ"], "lineup": ["搭乗員、整列！ 陛下の御前です", "滑走路は穴だらけです。誘導に従って、穴をよけて"], "tko": ["搭乗開始！", "右の穴に寄りすぎないで！", "一番機、出ます！", "帽振れー！", "行ってらっしゃい！"], "crater": ["穴にはまった！ 機首が！", "転覆した！ 消火班！", "引き出して！ 早く！"], "ret_date": ["陛下、帰りました。デートの約束、覚えてますよね？", "……帰ってきました。約束、ですよ", "ただいま戻りました。デート、どこへ連れていってくれます？"], "ret_choco": ["陛下、帰りました。チョコ、作りますね", "……生きて帰れました。チョコ、約束どおりに", "帰りました！ 甘いの、作ります"]};
+const AB_LN = {"amb": ["来た！ 一機見える！", "煙を吐いてる……", "脚が出てない！", "何機帰ってきたの？", "まだ数が足りない……", "担架、もっと持ってきて！", "誘導、こっち！ 左へ寄せて！", "燃料車、三番へ！", "あの機、片発だ……", "がんばって……あと少し……", "降りた！ 降りたよ！", "水、まわして！"], "fire": ["消火急げ！", "泡を回して！ 風上から！", "火が消えた！ 中を確かめて！"], "crashShort": ["手前に落ちた！", "救急車、出して！", "走って！ 間に合って！"], "belly": ["胴体着陸！ 離れて！", "火花が出てる！ 消火班！"], "rescue": ["出せる人から出して！", "意識あります！ こっちへ！", "担架！ 二人で、頭の方を持って！", "……この人はもう……白い布を"], "triage": ["重い人はこっちの天幕へ！", "歩ける人は待機、水を飲ませて", "……運んで、並べてあげて"], "turn": ["点検よし！", "給油、始めます！", "弾薬、積み込み終わり！", "待機線へ回して！"], "repair": ["ジー！", "エンジン吊るよ！ せーの！", "穴は当て板で塞いで！", "溶接、離れて！", "この機はもう飛べない……部品取りに"], "tow": ["トラクター、つないで！", "押して！ 格納庫へ！", "掩体壕の三番へ入れて！"], "alarm": ["敵機接近！ 空襲警報！", "搭乗員、走れ！", "零戦、回して！ 上がれる機から上がって！", "発進！ 発進！", "敵機、引き返した模様！ 警報解除！"], "key": ["副操縦手が機銃手に操縦を教えながらここまで来たようで、副操縦手はたった今事切れました。機長はすでに死んでいます！"], "gunner": ["……着いた……着いたんですか……", "手が……離れないんです……", "副操縦手さんが……ずっと、声を……"], "medic": ["もう大丈夫。手を離して、ゆっくり", "深呼吸して。あなたが降ろしたのよ"], "rep_bloody": ["はい……機内はひどい有様です", "身元を確かめてから運び出します", "掃除には時間がかかりそうです", "この機、また飛べるようにします"], "rep_good": ["はい、陛下！", "まだ戻らない機を待っています", "手が足りませんが、やります"], "rep_crew": ["……はい。帰ってきました", "仲間が、まだ……", "陛下……ただいま戻りました"], "rep_mech": ["一晩あれば直します", "発動機を載せ替えます", "この機はもう……部品取りにします"], "rep_rest": ["大丈夫です、動いていたほうが楽なんです", "はい……少しだけ"], "named": [["sumi", "陛下、一番機が見えました"], ["kujo", "重い者は天幕へ。順番は私が決めます"], ["fumi", "各機へ。滑走路は二本とも使えます"], ["omiya", "数えてます……まだ、足りません"], ["ojou", "……皆さん、よくお戻りに"], ["sumi", "陛下、あまり滑走路に近づかれませんように"], ["omiya", "零戦、まだ戻ってない子がいます……"]], "party": ["皆さん、盃を。明日の無事を祈って", "……乾杯", "明日は何番機？", "私、七番機", "お母さんに手紙、書いた？", "眠れそうにないね", "お酒、苦い……", "明日も晴れるといいな", "帰ったら、甘いもの食べたい", "しっ、陛下がいらしてる"], "p_date": ["えっ……は、はい！必ず帰ります", "約束ですよ、陛下", "……はい。生きて帰れたら", "デ、デート……ですか？ はい、帰ります！", "じゃあ、何を着ていくか考えておきます"], "p_choco": ["チョコは帰ってからのお楽しみです", "えっ、私が作るんですか？ ……はい！", "……はい。生きて帰れたら", "約束ですよ、陛下。甘いのにします", "下手でも、食べてくださいね"], "p_by": ["いいなぁ", "ずるい", "陛下、私にも言ってください！", "……いいな、あの子"], "p_cup": ["私はお水で乾杯します", "形だけ口をつけます"], "p_hair": ["はい、封筒に入れて実家宛てに", "まだです……今夜切ります"], "p_hairS": ["短いので、爪だけ渡しました", "妹に少しだけ"], "lineup": ["搭乗員、整列！ 陛下の御前です", "滑走路は穴だらけです。誘導に従って、穴をよけて"], "tko": ["搭乗開始！", "右の穴に寄りすぎないで！", "一番機、出ます！", "帽振れー！", "行ってらっしゃい！"], "crater": ["穴にはまった！ 機首が！", "転覆した！ 消火班！", "引き出して！ 早く！"], "ret_date": ["陛下、帰りました。デートの約束、覚えてますよね？", "……帰ってきました。約束、ですよ", "ただいま戻りました。デート、どこへ連れていってくれます？"], "ret_choco": ["陛下、帰りました。チョコ、作りますね", "……生きて帰れました。チョコ、約束どおりに", "帰りました！ 甘いの、作ります"], "line3": [["sumi", "特攻隊員、整列。陛下の御前です"], ["sumi", "……陛下、一人ずつ、お声を"]], "h3": ["……ありがとうございます", "向こうで待ってます"], "p3_go": ["敵艦隊、視認。これより突入します", "目標、見えました。高度を下げます", "こちら特攻、目標上空。行きます"], "p3_a": ["対空砲火、激しい……まだ、行けます……うっ—", "機体、被弾……でも、まだ……うっ—", "あと少しで……うっ—"], "p3_b": ["被弾！ 火が—あっ—", "右翼が—きゃっ—", "燃料タンクに—あっ—"], "p3_c": ["天皇……いえ、陛下、行きます！", "突入する！"], "op3": ["応答せよ……応答せよ", "……信号、途絶えました", "……長符です。突入、確認しました", "時刻、記録しました", "……っ……ごめんなさい……", "……う……っ", "……通信、続けます"], "call3": ["みさきさん、応答してください……", "はるかさん、応答してください……", "あおいさん、応答してください……", "ゆいなさん、応答してください……", "ななみさん、応答してください……", "さくらさん、応答してください……", "りこさん、応答してください……", "かえでさん、応答してください……", "しおりさん、応答してください……", "まどかさん、応答してください……", "ちはるさん、応答してください……", "ゆずはさん、応答してください……"], "fumi3": [["fumi", "全機……交信、終わりました"], ["fumi", "泣いていい。でも、記録は止めないで"], ["fumi", "各機、交信を始めました"]], "walk4": [["sumi", "今夜は風がありませんね"], ["omiya", "……静かすぎます"], ["ojou", "陛下、足元にお気をつけて"], ["fumi", "兵舎の灯り、消し忘れでしょうか"], ["sec2", "陛下、寒くないですか？"], ["kujo", "……あの子たちの寝台、まだそのままです"]], "ghost4": [["omiya", "……今の、見ました？"], ["sec2", "あの子たち……"], ["sumi", "……兵舎へ、入っていきました"], ["fumi", "足音が、しませんでした"], ["ojou", "……追いましょう"]], "in4": [["sumi", "……誰もいない"], ["sec2", "帰ってきたんですね"], ["k", "……おかえり"], ["kujo", "寝台、きちんと整えてあります……"], ["omiya", "この六文銭……陛下が渡した……"], ["ojou", "……ここが、あの子たちの家でしたから"], ["fumi", "……灯り、消さずにおきましょう"]], "s5c": [["staff", "陛下、戦況をご報告します"], ["staff", "南方の島々は、ほぼ失陥しました"], ["staff", "稼働機は数百、燃料はあとわずかです"], ["staff", "空母は、もう……"], ["k", "……降伏したほうがいいか？"], ["ojouS", "……陛下。今なら、まだ講和の席につけます。これ以上、若い子を空へ送らずに済みます"], ["omiya", "まだ戦えます！ 本土には、まだ人がいます"], ["fumi", "数字で申し上げます。稼働機三百十二、燃料はひと月分を切りました。補充の見込みは、ありません"], ["sumi", "……特攻の子たちは、一人も帰ってきませんでした"], ["sec2", "もう、六文銭を渡すのは嫌です……"], ["kujo", "医務室は、もう寝台が足りません"]], "s5p": [["k", "……講和を探れ"], ["ojouS", "……承知いたしました。必ず、まとめます"], ["omiya", "……陛下がそうおっしゃるなら"]], "s5w": [["k", "……もう少しだけ、戦う"], ["omiya", "はい！ 必ず押し返します"], ["ojouS", "……御意。ただ、ご無理だけは"], ["fumi", "では、残りの燃料の割り振りを考えます"]], "s5e": [["sec2", "陛下、お呼びですか？ こんな夜中に"], ["k", "ことね。誰にも言うな"], ["sec2", "……はい"], ["k", "おばさんになった頃でいい。俺の遺志を継いで、今度こそアメリカに勝ってくれ", 1.5], ["sec2", "えっ……"], ["sec2", "……おばさんって、ひどいですね"], ["@pause", "", 1.2], ["sec2", "……はい。必ず"], ["k", "……頼んだ。もう寝ろ"]], "s5a": [["ojouS", "これより、講和調印文書に署名と血判をいただきます。陛下から"], ["@doc", ""], ["k", "……痛そうだな。ことね、代わりにやって"], ["sec2", "もう、陛下ったら……"], ["@seal", "0"], ["sec2", "……押しました。陛下の分です"], ["ojouS", "……謹んで"], ["@seal", "1"], ["omiya", "……っ。押しました"], ["@seal", "2"], ["sumi", "押します"], ["@seal", "3"], ["fumi", "……これで、数字が止まります"], ["@seal", "4"], ["sec2", "私の分も……えいっ"], ["@seal", "5"], ["kujo", "針は消毒してあります。次の方"], ["@seal", "6"], ["sec4", "……押しました"], ["@seal", "7"], ["sec3", "はい、確かに"], ["@seal", "8"], ["reika", "……これで終わるのなら"], ["@seal", "9"], ["shizuka", "押します"], ["@seal", "10"], ["flute", "……指、震えちゃいました"], ["@seal", "11"], ["sysop", "確認しました。全員分、揃っています"], ["@seal", "12"], ["@docoff", ""], ["shinobu", "写しは二通です。双方一通ずつお持ちください"], ["del1", "承知しました。こちらでも確認します"], ["chikage", "受け渡しの場所は、宮殿の広間でよろしいですか"], ["del2", "はい。それで結構です"], ["akari", "停戦は、本日正午からとします"], ["del1", "正午。各部隊に伝えます"], ["hiyori", "捕虜の名簿はこちらです。名前と所属、全員分あります"], ["del2", "ありがとうございます。こちらの名簿も、明日お渡しします"]], "s5b": [["@give", "shinobu"], ["shinobu", "陛下、調印済みの文書をお持ちしました"], ["@give", "sumi"], ["sumi", "念のため……相違ありません"], ["@give", "omiya"], ["omiya", "……お預かりします"], ["@give", "ojou"], ["ojouS", "……陛下……どうぞ……お納めください"], ["@give", "k"], ["k", "……切腹しようと思うが、ついてくる者は？", 2.5], ["ojouS", "陛下、生きて……責任を果たしてください"], ["omiya", "お供したい気持ちはあります。でも今はだめです"], ["fumi", "ここで死なれたら、死んだ子たちが無駄になります"], ["sec2", "誰もついていきませんよ。だからやめてください"], ["@pause", "", 3], ["k", "……そうか"], ["@give", "del1"], ["del1", "……確かに、お受けしました"]]};
 /*ABLN_END*/
 const AB_KING = { morning: '……ひどくやられたな。それでも、行くのか', retDate: '……ああ。約束だ', retChoco: '……楽しみにしてる', miss: '……そうか', start: '……帰ってくるのを待とう', key: '……よく、降ろした', alarm: '慌てるな。上がれる機から上げろ', clear: '……戻った者を、休ませろ' };
 const AB_ASK = { date: '生きて帰ってきたらデートしよう', choco: 'バレンタインデーが近いから、チョコ作ってよ', cup: '飲めない人もいるよね', hair: '髪の毛とか爪とか残した？', hairS: '死ぬ前に髪の毛、誰かに渡したの？', good: 'ご苦労', stat: '状況は？', crew: 'よく帰った', mech: '直りそうか？', rest: '無理するなよ', bloody: '血だらけだ' };
@@ -750,7 +750,7 @@ function abBuild(name) {
   for (let i = 0; i < 24; i++) abBox(1.2, 0.8, 0.8, 0x7a6038, -150 + (i % 6) * 1.4, 0.4 + ((i / 6) | 0) % 2 * 0.8, -330 + ((i / 12) | 0) * 2);
   // 遠くの林
   for (let i = 0; i < 160; i++) { const a = i / 160 * Math.PI * 2, R = rand(900, 1300); const t = new THREE.Mesh(AB.treeGeo || (AB.treeGeo = new THREE.ConeGeometry(4, 14, 7)), abMat(0x2e3f26)); t.position.set(Math.cos(a) * R, 7, Math.sin(a) * R); stageRoot.add(t); }
-  abPxInit(); AB.hint = null; if (AB.act === 2) abBuild2();
+  abPxInit(); AB.hint = null; if (AB.act === 2) abBuild2(); else if (AB.act === 3) abBuild3(); else if (AB.act === 4) abBuild4(); else if (AB.act === 5) abBuild5();
 }
 // ==== 第二幕：壮行式（前夜の兵舎）→ 翌朝 空襲のあと → 搭乗員整列 → 発進 → 飛ばす → 帰還 ====
 const AB_HALL = [-700, 0];   // 兵舎の広間（基地から離して置く）
@@ -832,6 +832,222 @@ function abUpdate2(dt) {
 }
 
 
+// ==== 第三幕「特攻」〜第五幕（軍議・講和）：共通の台本と部屋 ====
+function abCastGet(w) { if (!AB.cast) return null; return AB.cast[w] || AB.cast[w.replace(/S$/, '')] || null; }
+function abSeq(arr, then) {   // 台本を順に流す：['k',台詞] は殿の字幕、['@名',引数] は動き、それ以外は声
+  let acc = 0.4; const t0 = AB.t; AB.seqEnd = null;
+  for (const it of arr) { const [w, tx, ex] = it; let dur;
+    if (w[0] === '@') { dur = (w === '@pause' ? 0 : 0.8); AB.q.push([t0 + acc, () => abSeqAct(w, tx)]); }
+    else if (w === 'k') { dur = 1.4 + tx.length * 0.13; AB.q.push([t0 + acc, () => abKing(tx)]); }
+    else { const v = abVoice(tx); dur = (v && v.dur ? v.dur : 0.6 + tx.length * 0.16) + 0.7; AB.q.push([t0 + acc, () => abSay(abCastGet(w), tx, 2)]); }
+    acc += dur + (ex || 0); }
+  AB.seqEnd = t0 + acc; if (then) AB.q.push([t0 + acc + 0.4, then]); return acc;
+}
+function abSeqAct(w, a) { if (w === '@seal') abSeal(+a); else if (w === '@doc') abDoc(true); else if (w === '@docoff') abDoc(false); else if (w === '@give') abGive(a); else if (w === '@tone') abTone('sine', 1000, 1000, 4, 0.05); else if (w === '@static') abStatic(3.5); }
+function abRoom(cx, cz, w, d, h, wall, floor, ceil) {
+  abBox(w, 0.1, d, floor, cx, 0.05, cz); abBox(w, 0.3, d, ceil || 0x2a241c, cx, h + 0.15, cz);
+  abBox(0.4, h, d, wall, cx - w / 2, h / 2, cz, 0, true); abBox(0.4, h, d, wall, cx + w / 2, h / 2, cz, 0, true); abBox(w, h, 0.4, wall, cx - 0, h / 2, cz - d / 2, 0, true); abBox(w, h, 0.4, wall, cx, h / 2, cz + d / 2, 0, true);
+}
+function abCastAdd(k, x, z, label) { const P = abNamed(k, x, z, label); (AB.cast = AB.cast || {})[k] = P; return P; }
+function abExtra(k, x, z, label, gid) { const P = abPerson(x, z, label, { gid, label, kind: 'named' }); (AB.cast = AB.cast || {})[k] = P; return P; }
+function abKamiGids() { const P = abGids(); const out = []; for (let i = 0; i < 12; i++) out.push(P[(i * 11 + 5) % P.length]); return out; }
+const AB_KAMI_N = ['みさき', 'はるか', 'あおい', 'ゆいな', 'ななみ', 'さくら', 'りこ', 'かえで', 'しおり', 'まどか', 'ちはる', 'ゆずは'];
+function abLookDim(far) { scene.background.setHex(0x0b0e14); scene.fog.color.setHex(0x0b0e14); scene.fog.near = 20; scene.fog.far = far || 90; hemiL.intensity = 0.5; ambL.intensity = 0.6; sun.intensity = 0.12; }
+function abLookIn() { scene.background.setHex(0x1a1612); scene.fog.color.setHex(0x1a1612); scene.fog.near = 30; scene.fog.far = 160; hemiL.intensity = 0.9; ambL.intensity = 0.8; sun.intensity = 0.5; }
+function abFace(x, z) { player.yaw = Math.atan2(-(x - player.pos.x), -(z - player.pos.z)); }
+function abBuild3() {   // 無線室（基地から離して置く）
+  const [rx, rz] = AB_RADIO; abRoom(rx, rz, 18, 14, 4, 0x6f6758, 0x4a4238);
+  for (let i = 0; i < 6; i++) { const x = rx - 6 + (i % 3) * 6, z = rz - 4 + ((i / 3) | 0) * 7; abBox(3.2, 0.8, 1.2, 0x5a4630, x, 0.4, z); abBox(1.4, 0.7, 0.6, 0x2e3a30, x, 1.15, z - 0.3); for (let k = 0; k < 3; k++) abBox(0.14, 0.14, 0.05, 0xd8c890, x - 0.4 + k * 0.4, 1.2, z + 0.02); abBox(0.5, 0.45, 0.5, 0x3a2a1c, x, 0.25, z + 1.1); }
+  abBox(4, 2.4, 0.1, 0xe8e0c8, rx, 2.2, rz - 6.75); { const c = new THREE.Mesh(new THREE.CircleGeometry(0.45, 24), abMat(0xf4f0e2)); c.position.set(rx + 5, 3, rz - 6.74); stageRoot.add(c); }
+  for (let i = 0; i < 4; i++) abBox(0.4, 0.3, 0.4, 0xffe6a8, rx - 6 + i * 4, 3.8, rz);
+}
+const AB_RADIO = [-700, 400], AB_COUNCIL = [-600, -450], AB_KROOM = [-560, -620], AB_SIGN = [-430, -660], AB_PAL = [-740, 300];
+function abStart3() {
+  abPopulate1(); abVehicles(); AB.ph = 'line3'; AB.n.g4mOut = 0; AB.n.zeroOut = 12; AB.cast = { sumi: AB.nm.sumi, fumi: AB.nm.fumi };
+  const G = abKamiGids(); AB.kami = [];
+  for (let i = 0; i < 12; i++) { const P = abPlane('zero', {}); P.p.set(-110, P.y0, -40 + i * 12); P.g.rotation.y = -Math.PI / 2; P.st = 'park'; P.label = (i + 1) + '番機'; 
+    const C = abPerson(-74, -30 + i * 2.2, '特攻隊員', { gid: G[i], kind: 'kami', label: `${i + 1}番機 ${AB_KAMI_N[i]}` }); C.i = i; C.plane = P; C.hug = false; AB.kami.push(C); P.pilot = C; }
+  AB.nm.sumi.p.set(-70, 0, -36); player.pos.set(-66, 0, -16); abFace(-74, -16);
+  showBanner('幕五 第三幕「特攻」', '十二人の隊員が整列している。近づいて「抱きしめる」。全員を見送ったら「出撃」');
+  AB.q.push([AB.t + 2.5, () => abSay(AB.nm.sumi, AB_LN.line3[0][1], 2)]); AB.q.push([AB.t + 7, () => abSay(AB.nm.sumi, AB_LN.line3[1][1], 2)]);
+  abUi(true); abHud();
+}
+function abKamiNear() { let b = null, bd = 3.2; for (const C of AB.kami || []) { if (C.hug || C.busy3 || !C.s.visible) continue; const d = Math.hypot(C.p.x - player.pos.x, C.p.z - player.pos.z); if (d < bd) { bd = d; b = C; } } return b; }
+function abHug(C) {
+  if (!C || C.hug || C.busy3) return; C.busy3 = true; const hx = C.p.x, hz = C.p.z; abGo(C, player.pos.x - 0.7, player.pos.z, 1.2); abFace(C.p.x, C.p.z);
+  const t = AB.t; AB.q.push([t + 1.2, () => { subtitle('（殿は隊員を抱きしめ、六文銭を握らせた）'); abCoin(); }]); AB.q.push([t + 3.6, () => abKing('三途の川の渡し賃だ')]); AB.q.push([t + 6.2, () => abKing('お前のことは忘れない')]);
+  AB.q.push([t + 8.8, () => abSay(C, AB_LN.h3[C.i % 2], 2)]); AB.q.push([t + 11.5, () => { C.hug = true; C.busy3 = false; abGo(C, hx, hz, 1.2);
+    if (AB.kami.every(q => q.hug) && AB.ph === 'line3') { showBanner('全員を見送った', '「出撃」で離陸'); abNextBtn('出撃', () => abSortie3()); } }]);
+}
+function abCoin() { const el = document.createElement('div'); el.style.cssText = 'position:fixed;left:50%;bottom:28%;transform:translateX(-50%);z-index:62;display:flex;gap:4px;pointer-events:none;transition:opacity 1s';
+  for (let i = 0; i < 6; i++) { const c = document.createElement('div'); c.style.cssText = 'width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#c9a46a,#7a5a2a 70%);box-shadow:inset 0 0 0 2px #5a3e1a;position:relative'; const h = document.createElement('div'); h.style.cssText = 'position:absolute;left:8px;top:8px;width:6px;height:6px;background:#1a140c'; c.appendChild(h); el.appendChild(c); }
+  document.body.appendChild(el); setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.remove(), 1100); }, 2200); }
+function abSortie3() {
+  AB.ph = 'tko3'; abSay(AB.nm.sumi, AB_LN.tko[0], 2);
+  for (const C of AB.kami) { C.spd = 2.2; abGo(C, C.plane.p.x + 3, C.plane.p.z + 2); C.onArrive = () => { C.s.visible = false; C.aboard = true; }; }
+  AB.kami.forEach((C, i) => AB.q.push([AB.t + 16 + i * 4, () => { const P = C.plane; P.run = true; P.st = 'taxi'; P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 420), new V3(110, 0, 420), new V3(110, 0, 400)]; P.onTaxiEnd = 1; }]));
+  AB.q.push([AB.t + 26, () => abSay(abNear(player.pos, 40, q => q.st === 'ok' && q.kind !== 'kami' && q.kind !== 'named'), AB_LN.tko[3], 1.6)]);
+}
+function abRadio3() {   // 数時間後、無線室
+  AB.ph = 'radio'; abCaption('数時間後……', 3);
+  AB.q.push([AB.t + 2.5, () => { const [rx, rz] = AB_RADIO; abLookIn(); player.pos.set(rx + 7.8, 0, rz + 6.2); abFace(rx - 3, rz - 3);
+    AB.ops = []; for (let i = 0; i < 6; i++) { const x = rx - 6 + (i % 3) * 6, z = rz - 4 + ((i / 3) | 0) * 7; AB.ops.push(abPerson(x, z + 1.2, '通信士', { kind: 'op', label: '通信士' })); }
+    AB.nm.fumi.p.set(rx + 5.5, 0, rz - 5.6); AB.nm.fumi.label = '綾瀬 文乃（通信）'; AB.nm.fumi.tgt = null; AB.cast.fumi = AB.nm.fumi;
+    abLog3(null); showBanner('無線室', '十二機の交信を待つ'); AB.radioOn = true; AB.res3 = { ok: 0, lost: 0 };
+    const seq = []; seq.push(['fumi', AB_LN.fumi3[2][1], 1]);
+    abSeq(seq, () => abRadioNext(0)); }]);
+}
+function abRadioNext(i) {
+  if (!AB.on) return; if (i >= 12) { abSeq([['fumi', AB_LN.fumi3[0][1]], ['k', '……よく、行った'], ['k', '……作戦を終える']], () => { AB.radioOn = false; showBanner('交信、すべて終わった', '「作戦終了」で終える'); }); return; }
+  const C = AB.kami[i], lab = `${i + 1}番機 ${AB_KAMI_N[i]}`, r = Math.random(), kind = r < 0.35 ? 'a' : r < 0.65 ? 'b' : 'c'; const op = AB.ops[i % 6], op2 = AB.ops[(i + 3) % 6];
+  AB.cast.pil = { p: player.pos, label: lab + '（無線）' }; AB.cast.op = op; AB.cast.op2 = op2; AB.cast.fumi = AB.nm.fumi;
+  const s = [['pil', abPick(AB_LN.p3_go), 0.8]];
+  if (kind === 'c') { s.push(['pil', abPick(AB_LN.p3_c)], ['@tone', ''], ['@pause', '', 4.2], ['op', AB_LN.op3[2]], ['op2', AB_LN.op3[5], 0.6], ['op', AB_LN.op3[3]]); }
+  else { s.push(['pil', abPick(kind === 'a' ? AB_LN.p3_a : AB_LN.p3_b)], ['@static', ''], ['op', AB_LN.op3[0]], ['op2', AB_LN.call3[i]], ['op', AB_LN.op3[0], 0.8], ['op', AB_LN.op3[1]], ['op2', AB_LN.op3[4]], ['op', AB_LN.op3[3]]); }
+  if (i === 2) s.push(['fumi', AB_LN.fumi3[1][1]]); s.push(['k', ['……', '……すまない', '……忘れない', '……そうか'][i % 4]]);
+  abSeq(s, () => { const ok = kind === 'c'; AB.res3[ok ? 'ok' : 'lost']++; if (ok) AB.n.zero++; abLog3(`${abClock(i)}　${lab}　${ok ? '長符　突入確認' : '信号途絶'}`); AB.q.push([AB.t + 2.5, () => abRadioNext(i + 1)]); });
+}
+function abClock(i) { const m = 40 + i * 3 + ((i * 7) % 3); return `${10 + ((m / 60) | 0)}時${String(m % 60).padStart(2, '0')}分`; }
+function abLog3(line) { let d = $('abLog'); if (!d) { d = document.createElement('div'); d.id = 'abLog'; d.style.cssText = 'position:fixed;left:calc(16px + var(--sal,0px));top:calc(64px + var(--sat,0px));z-index:60;max-width:46vw;max-height:52vh;overflow:hidden;font-size:12px;line-height:1.5;color:#efe6cc;background:rgba(14,14,12,.62);border:1px solid #8a7a50;padding:6px 10px;border-radius:4px;pointer-events:none'; d.innerHTML = '<div style="letter-spacing:.2em;color:#e8d9a8">通信記録</div>'; document.body.appendChild(d); }
+  if (line) { const r = document.createElement('div'); r.textContent = line; d.appendChild(r); while (d.children.length > 9) d.children[1].remove(); } }
+function abStatic(sec) { abNoise(sec, 0.07, 2600); abNoise(sec * 0.8, 0.04, 900, 0.2); }
+function abRadioFx(dt) {   // 無線の向こうの音：発動機・機銃・高角砲・雑音
+  if (!AB.radioOn) return; AB.rfx = (AB.rfx || 0) - dt; if (AB.rfx > 0) return; AB.rfx = rand(0.5, 1.1);
+  abTone('sawtooth', 95, 92, 1.2, 0.012); abNoise(0.6, 0.012, 3000);
+  const r = Math.random(); if (r < 0.3) for (let k = 0; k < 8; k++) abNoise(0.04, 0.05, 1800, k * 0.07);   // 機銃
+  else if (r < 0.5) abNoise(0.5, 0.09, 220);   // 高角砲
+  else if (r < 0.6) { abNoise(0.3, 0.07, 400); abNoise(0.3, 0.05, 300, 0.4); }   // 対空の炸裂
+}
+function abUpdate3(dt) {
+  if (AB.ph === 'tko3') { for (const P of AB.planes) if (P.st === 'taxi' && P.onTaxiEnd && !P.path.length) { P.st = 'tko'; P.t2 = 0; }
+    if (AB.kami.every(C => C.plane.st === 'gone' || (C.plane.st === 'tko' && C.plane.p.y > 25)) && !AB.said.r3) { AB.said.r3 = 1; AB.q.push([AB.t + 4, () => abRadio3()]); } }
+  abRadioFx(dt);
+}
+// ---- 第四幕「夜」：死んだ特攻の子たちが兵舎へ帰ってくる ----
+function abStart4() {
+  AB.ph = 'walk4'; AB.cast = {}; const ps = [['sumi', '白瀬 澄'], ['ojou', '西園寺 すみれ'], ['omiya', '大宮 ひなた'], ['fumi', '綾瀬 文乃'], ['sec2', '早瀬 ことね'], ['kujo', '九条 紗英']];
+  AB.walk = ps.map(([k, l], i) => { const P = abCastAdd(k, -180 + (i % 3) * 1.5, -60 + ((i / 3) | 0) * 2, l); P.off = [[1.6, 1.2], [-1.6, 1.2], [2.6, 2.6], [-2.6, 2.6], [0.9, 2.2], [-0.9, 3.4]][i]; return P; });
+  player.pos.set(-180, 0, -64); abFace(-260, -150); abLookDim(110); AB.n.zeroOut = 12;
+  showBanner('幕五 第四幕「夜」', '夜の基地を、皆で歩く。兵舎の方へ');
+  AB.q.push([AB.t + 3, () => abSeq([AB_LN.walk4[0], AB_LN.walk4[4], AB_LN.walk4[2]])]); AB.q.push([AB.t + 18, () => abGhosts4()]);
+  abUi(true);
+}
+function abGhostMat(gid) { const k = 'gh_' + gid; if (AB.mats[k]) return AB.mats[k]; return (AB.mats[k] = new THREE.SpriteMaterial({ map: GIRLS[gid].front.tex, transparent: true, opacity: 0.34, color: 0xc8dcff, depthWrite: false, alphaTest: 0.05 })); }
+function abGhosts4() {
+  if (!AB.on || AB.gh) return; const G = abKamiGids(); AB.gh = []; const bz = -150;
+  for (let i = 0; i < 12; i++) { const gid = G[i]; const g = GIRLS[gid]; if (!g || !g.front) continue; const s = new THREE.Sprite(abGhostMat(gid)); s.center.set(0.5, 0); const h = AB_H * (g.front.hk || 1); s.scale.set(h * (g.front.aspect || 0.3), h, 1);
+    s.position.set(player.pos.x + 30 + (i % 4) * 2.2, 0.15, player.pos.z - 20 - ((i / 4) | 0) * 2.4); stageRoot.add(s); AB.gh.push({ s, t: -i * 0.9, to: new V3(-312, 0.15, bz + (i % 4) * 1.2 - 2), a: 0.34 }); }
+  AB.ph = 'ghost4'; AB.q.push([AB.t + 5, () => abSeq([AB_LN.ghost4[0], AB_LN.ghost4[1], ['@pause', '', 2], AB_LN.ghost4[3]])]);
+}
+function abGhostTick(dt) { if (!AB.gh) return; let left = 0;
+  for (const G of AB.gh) { G.t += dt; if (G.t < 0) { G.s.visible = false; left++; continue; } G.s.visible = true; const p = G.s.position, dx = G.to.x - p.x, dz = G.to.z - p.z, d = Math.hypot(dx, dz);
+    if (d > 0.5) { const v = Math.min(d, 3.2 * dt); p.x += dx / d * v; p.z += dz / d * v; p.y = 0.15 + Math.sin(G.t * 1.7) * 0.05; left++; } else if (G.a > 0) { G.a = Math.max(0, G.a - dt * 0.25); if (!G.own) { G.s.material = G.s.material.clone(); G.own = 1; } G.s.material.opacity = G.a; left++; if (G.a <= 0) G.s.visible = false; } }
+  if (!left && !AB.said.gh) { AB.said.gh = 1; abSay(AB.cast.sumi, AB_LN.ghost4[2][1], 2); AB.q.push([AB.t + 3, () => { abSay(AB.cast.ojou, AB_LN.ghost4[4][1], 2); abNextBtn('兵舎へ入る', () => abInside4()); }]); } }
+function abBuild4() {   // 空の兵舎（中）
+  const [hx, hz] = AB_HALL; abRoom(hx, hz, 16, 44, 4.2, 0x6e5a40, 0x5e4a32);
+  AB.bulbs = []; for (let i = 0; i < 9; i++) for (const s of [-1, 1]) { const z = hz - 19 + i * 4.6; abBox(2, 0.45, 0.95, 0x5a4a34, hx + s * 6.4, 0.4, z); abBox(1.95, 0.1, 0.9, 0xe8e2d0, hx + s * 6.4, 0.68, z); abBox(0.5, 0.12, 0.85, 0xd8d2bf, hx + s * 6.4 + s * 0.65, 0.78, z); abBox(0.7, 0.08, 0.6, 0x4a5230, hx + s * 6.4 - s * 0.3, 0.76, z); }   // きちんと畳んだ毛布と枕
+  { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 0.06, 12), abMat(0xf0ece2)); c.position.set(hx - 6.2, 0.76, hz - 5.2); stageRoot.add(c); }   // 盃
+  for (let k = 0; k < 6; k++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.012, 14), abMat(0x9a7a44)); m.position.set(hx + 6.0 + (k % 3) * 0.12, 0.74, hz + 4 + ((k / 3) | 0) * 0.12); stageRoot.add(m); }   // 六文銭
+  for (let i = 0; i < 4; i++) { const b = abBox(0.3, 0.3, 0.3, 0xffe6a8, hx, 3.9, hz - 15 + i * 10); const L = new THREE.PointLight(0xffd9a0, 0.9, 16); L.position.set(hx, 3.6, hz - 15 + i * 10); stageRoot.add(L); AB.bulbs.push({ b, L }); }
+}
+function abInside4() {
+  abCaption('兵舎', 1.6); AB.ph = 'in4';
+  AB.q.push([AB.t + 2.5, () => { const [hx, hz] = AB_HALL; abLookDim(60); player.pos.set(hx, 0, hz + 18); abFace(hx, hz - 10);
+    AB.walk.forEach((P, i) => { P.p.set(hx + P.off[0], 0, hz + 19.5 + P.off[1] * 0.6); P.tgt = null; });
+    abSeq([AB_LN.in4[0], ['@pause', '', 1.5], AB_LN.in4[1], ['@pause', '', 1.2], AB_LN.in4[2], AB_LN.in4[3], AB_LN.in4[4], AB_LN.in4[5], AB_LN.in4[6]], () => showBanner('……おかえり', '「作戦終了」で終える'));
+    showBanner('兵舎の中', '寝台はきちんと整えられている'); }]);
+}
+function abUpdate4(dt) {
+  if (AB.ph === 'walk4' || AB.ph === 'ghost4') for (const P of AB.walk) { const tx = player.pos.x + P.off[0], tz = player.pos.z + P.off[1]; if (Math.hypot(tx - P.p.x, tz - P.p.z) > 1.2) abGo(P, tx, tz, 1.7); }
+  if (AB.ph === 'walk4' && (AB.wT = (AB.wT || 9) - dt) <= 0) { AB.wT = rand(8, 13); const L = abPick([AB_LN.walk4[1], AB_LN.walk4[3], AB_LN.walk4[5]]); abSay(abCastGet(L[0]), L[1], 1.2); }
+  abGhostTick(dt);
+  if (AB.bulbs) for (const B of AB.bulbs) { const f = Math.random() < 0.06 ? 0.15 : 0.8 + Math.random() * 0.25; B.L.intensity = f; }
+}
+// ---- 第五幕：軍議 → （講和）前夜の託し → 調印と血判 → 宮殿での受け渡し ----
+function abBuild5() {
+  { const [x, z] = AB_COUNCIL; abRoom(x, z, 20, 16, 4.5, 0x6a5e4c, 0x4a3a2a); abBox(8, 0.9, 3, 0x5a3f26, x, 0.45, z); abBox(7.6, 0.05, 2.6, 0x2e3a2a, x, 0.92, z);
+    const map = new THREE.Mesh(new THREE.PlaneGeometry(6, 3.2), new THREE.MeshLambertMaterial({ map: canvasTex(512, 272, (g, W, H) => { g.fillStyle = '#9fb7c4'; g.fillRect(0, 0, W, H); g.fillStyle = '#c9b98a'; for (const [a, b, r] of [[80, 60, 26], [170, 120, 14], [260, 170, 18], [330, 90, 12], [410, 210, 22], [120, 210, 10], [450, 70, 30]]) { g.beginPath(); g.ellipse(a, b, r * 1.4, r, 0.4, 0, 7); g.fill(); }
+      g.strokeStyle = '#8a1a1a'; g.lineWidth = 4; for (const [a, b] of [[170, 120], [260, 170], [330, 90], [410, 210], [120, 210]]) { g.beginPath(); g.moveTo(a - 9, b - 9); g.lineTo(a + 9, b + 9); g.moveTo(a + 9, b - 9); g.lineTo(a - 9, b + 9); g.stroke(); } g.strokeStyle = '#333'; g.lineWidth = 1; for (let i = 0; i < W; i += 64) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, H); g.stroke(); } }, 1) }));
+    map.position.set(x, 2.3, z - 7.75); stageRoot.add(map); abBox(6.4, 3.6, 0.1, 0x3a2a1a, x, 2.3, z - 7.82); }
+  { const [x, z] = AB_KROOM; abRoom(x, z, 10, 9, 3.6, 0x7a6a52, 0x5a4630); abBox(3, 0.8, 1.4, 0x4a3220, x - 2, 0.4, z - 3); const L = new THREE.PointLight(0xffc880, 1.1, 10); L.position.set(x - 2, 1.6, z - 3); stageRoot.add(L); abBox(0.3, 0.4, 0.3, 0xffd9a0, x - 2, 1.0, z - 3); abBox(2.2, 0.5, 4, 0x6b5a48, x + 3, 0.25, z - 1.5); abBox(2.1, 0.12, 3.9, 0xe8e0cc, x + 3, 0.55, z - 1.5); }
+  { const [x, z] = AB_SIGN; abRoom(x, z, 22, 16, 4.5, 0x8a7a60, 0x5a4630, 0x3a2e22); abBox(12, 0.9, 2.4, 0x4a3020, x, 0.45, z); abBox(11.6, 0.04, 2.2, 0xe8e2cf, x, 0.92, z); abBox(0.5, 0.02, 0.7, 0xf6f0de, x, 0.95, z); }
+  { const [x, z] = AB_PAL; abRoom(x, z, 30, 40, 7, 0xb8923a, 0x6a3a20, 0x5a3a1c);   // 宮殿の一番よい広間
+    abBox(4, 0.03, 34, 0x8a1a1c, x, 0.11, z); for (let i = 0; i < 8; i++) for (const s of [-1, 1]) abBox(0.15, 2.6, 3.6, 0xd8b04a, x + s * 14.7, 1.6, z - 16 + i * 4.6);   // 金屏風
+    for (let i = 0; i < 4; i++) { const c = abBox(1.4, 0.8, 1.4, 0xffeab0, x, 6.2, z - 14 + i * 9); const L = new THREE.PointLight(0xffe2a0, 0.8, 26); L.position.set(x, 5.6, z - 14 + i * 9); stageRoot.add(L); }
+    for (let i = 0; i < 6; i++) for (const s of [-1, 1]) abBox(0.7, 7, 0.7, 0x5a2a14, x + s * 10, 3.5, z - 17 + i * 7);
+    abBox(3, 1, 1.4, 0x3a1e10, x, 0.5, z - 15); abBox(2.6, 0.04, 1.1, 0xd8c070, x, 1.02, z - 15); abBox(10, 0.3, 4, 0x6a2a1a, x, 0.15, z - 17); }
+}
+const AB_SIGNERS = ['王', '宮家・西園寺すみれ', '宮家・大宮ひなた', '女伯爵・白瀬澄', '女侯爵・綾瀬文乃', '女子爵・早瀬ことね', '軍医中将・九条紗英', '大佐・宮下千尋', '大佐・桜井ゆかり', '大佐・白石麗華', '中佐・久遠静香', '器楽中佐・小鳥遊ひびき', '中佐・霧島怜'];
+const AB_SIGN_K = [null, 'ojou', 'omiya', 'sumi', 'fumi', 'sec2', 'kujo', 'sec4', 'sec3', 'reika', 'shizuka', 'flute', 'sysop'];
+const AB_SIGN_L = ['西園寺 すみれ', '大宮 ひなた', '白瀬 澄', '綾瀬 文乃', '早瀬 ことね', '九条 紗英', '宮下 千尋', '桜井 ゆかり', '白石 麗華', '久遠 静香', '小鳥遊 ひびき', '霧島 怜'];
+function abCast5(cx, cz, majors, del) {   // 名のある人を並べる
+  AB.cast = {}; for (let i = 1; i < 13; i++) abCastAdd(AB_SIGN_K[i], cx - 8 + ((i - 1) % 6) * 3.2, cz + 2.6 + (((i - 1) / 6) | 0) * 2.2, AB_SIGN_L[i - 1]);
+  if (majors) [['shinobu', '少佐 氷室 しのぶ'], ['chikage', '少佐 一条 千景'], ['akari', '少佐 夏目 あかり'], ['hiyori', '少佐 小日向 ひより']].forEach(([k, l], i) => abCastAdd(k, cx - 7 + i * 2.2, cz - 2.6, l));
+  if (del) { const us = ['us01', 'us19', 'us05'].filter(g => GIRLS[g] && GIRLS[g].front); ['del1', 'del2', 'del3'].forEach((k, i) => abExtra(k, cx + 3 + i * 2.2, cz - 2.6, ['相手方 代表', '相手方 随員', '相手方 随員'][i], us[i] || null)); }
+}
+function abDoc(on) {
+  let d = $('abDoc'); if (!on) { if (d) { d.style.opacity = 0; setTimeout(() => d.remove(), 900); } return; }
+  if (d) return; d = document.createElement('div'); d.id = 'abDoc';
+  d.style.cssText = 'position:fixed;left:50%;top:calc(6px + var(--sat,0px));transform:translateX(-50%);z-index:62;background:#f3ead2;color:#1c1712;border:1px solid #8a7a50;box-shadow:0 4px 18px rgba(0,0,0,.5);padding:10px 14px;writing-mode:vertical-rl;font-family:"Yuji Syuku","HG行書体","YuMincho","Hiragino Mincho ProN","Noto Serif JP",serif;font-size:min(14px,3.6vh);line-height:1.55;height:min(300px,64vh);max-width:94vw;overflow:hidden;transition:opacity .8s;pointer-events:none';
+  const arts = ['講和調印文書', '一、両国ハ本書調印ノ時ヲ以テ一切ノ戦闘行為ヲ停止ス', '一、両国ハ捕虜ヲ速ヤカニ交換ス', '一、戦没者ノ遺骸及ビ遺品ハ之ヲ相互ニ返還ス', '一、両軍ハ別ニ定ムル線マデ撤退ス', '一、爾余ノ事項ハ追ツテ両国ノ交渉ニ依リ之ヲ定ム', '右ノ証トシテ茲ニ署名シ血判ヲ押ス'];
+  d.innerHTML = arts.map((a, i) => `<div style="${i ? '' : 'font-size:1.25em;letter-spacing:.3em;margin-left:.6em'}">${a}</div>`).join('') + '<div style="margin-left:.8em"></div>' + AB_SIGNERS.map((n, i) => `<div style="position:relative;padding-bottom:1.6em">${n}<span id="abSeal${i}" style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:11px;height:14px;border-radius:50%;opacity:0;transition:opacity 1.2s;background:repeating-radial-gradient(ellipse at 50% 55%,rgba(110,16,16,.9) 0 1px,rgba(140,30,30,.55) 1px 2px);"></span></div>`).join('');
+  document.body.appendChild(d);
+}
+function abSeal(i) { const s = $('abSeal' + i); if (s) s.style.opacity = 1; AB.seals = (AB.seals || 0) + 1; }
+function abGive(k) {   // 文書を手渡す
+  const D = AB.docM; if (!D) return; const P = k === 'k' ? null : AB.cast[k]; AB.docTo = P; AB.docK = k;
+  const prev = AB.docFrom; if (P && prev && k !== 'shinobu') abGo(prev, P.p.x + 0.8, P.p.z + 0.4, 1); if (!P && prev) abGo(prev, player.pos.x - 0.9, player.pos.z + 0.5, 1); if (k === 'del1' && P) abGo(P, player.pos.x + 1, player.pos.z + 0.7, 1);
+  AB.docFrom = P; AB.log.push('give:' + k);
+}
+function abDocTick(dt) { const D = AB.docM; if (!D) return; let tx, ty = 1.15, tz; if (AB.docK === 'k') { tx = player.pos.x - Math.sin(player.yaw) * 0.6; tz = player.pos.z - Math.cos(player.yaw) * 0.6; ty = 1.25; } else if (AB.docTo) { tx = AB.docTo.p.x; tz = AB.docTo.p.z + 0.25; } else return;
+  D.position.x += (tx - D.position.x) * Math.min(1, dt * 2); D.position.z += (tz - D.position.z) * Math.min(1, dt * 2); D.position.y += (ty - D.position.y) * Math.min(1, dt * 2); }
+function abStart5() {
+  AB.ph = 'council'; const [x, z] = AB_COUNCIL; abLookIn(); AB.cast = {};
+  [['ojou', '西園寺 すみれ', -3, 2], ['omiya', '大宮 ひなた', -1, 2.4], ['fumi', '綾瀬 文乃', 1, 2.4], ['sumi', '白瀬 澄', 3, 2], ['sec2', '早瀬 ことね', -4.5, 0.6], ['kujo', '九条 紗英', 4.5, 0.6]].forEach(([k, l, dx, dz]) => abCastAdd(k, x + dx, z + dz, l));
+  abExtra('staff', x + 2.2, z - 6.6, '作戦参謀（女性）', null);
+  player.pos.set(x, 0, z + 5.5); abFace(x, z - 7); abUi(true);
+  showBanner('幕五 第五幕「軍議」', '地図の前で戦況の報告');
+  AB.q.push([AB.t + 2, () => abSeq(AB_LN.s5c, () => abChoice5())]);
+}
+function abChoice5() {
+  if (document.exitPointerLock) document.exitPointerLock(); const d = document.createElement('div'); d.id = 'abChoice'; d.style.cssText = 'position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);z-index:70;display:flex;gap:14px;background:rgba(14,16,20,.88);border:1px solid #e8d9a8;padding:14px 18px;border-radius:8px';
+  for (const [k, t] of [['p', '講和を探る'], ['w', '戦い続ける']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = t; b.style.cssText = 'font:inherit;font-size:17px;padding:8px 18px;background:#e8d9a8;color:#1a1410;border:0;border-radius:4px;cursor:pointer'; b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); d.remove(); abChose5(k); }; d.appendChild(b); }
+  document.body.appendChild(d);
+}
+function abChose5(k) {
+  AB.choice = k; AB.log.push('choice:' + k); if (k === 'w') { abSeq(AB_LN.s5w, () => showBanner('戦いは続く', '「作戦終了」で終える')); return; }
+  abSeq(AB_LN.s5p, () => abNextBtn('進む', () => abEntrust5()));
+}
+function abMove(cx, cz, k, l, dx, dz) { const P = AB.cast[k] || abCastAdd(k, cx + dx, cz + dz, l); P.p.set(cx + dx, 0, cz + dz); P.tgt = null; P.s.visible = true; return P; }
+function abHideCast() { for (const k in AB.cast) { const P = AB.cast[k]; if (P && P.s) P.s.visible = false; } }
+function abEntrust5() {
+  abCaption('講和の前夜', 2.4); AB.ph = 'entrust';
+  AB.q.push([AB.t + 2.5, () => { const [x, z] = AB_KROOM; abHideCast(); abLookDim(40); player.pos.set(x - 1, 0, z + 1); const C = abMove(x, z, 'sec2', '早瀬 ことね', 0.6, 3.2); C.label = '早瀬 ことね'; abFace(C.p.x, C.p.z);
+    showBanner('殿の部屋', '夜更け。ことねだけを呼んだ'); abSeq(AB_LN.s5e, () => abNextBtn('進む', () => abSignA())); }]);
+}
+function abSignA() {
+  abCaption('講和調印', 2.4); AB.ph = 'signA';
+  AB.q.push([AB.t + 2.5, () => { const [x, z] = AB_SIGN; abHideCast(); abLookIn(); abCast5(x, z, true, true); for (const k in AB.cast) AB.cast[k].s.visible = true;
+    player.pos.set(x - 1, 0, z + 1.8); abFace(x, z - 2); showBanner('調印の間', '署名と血判');
+    abSeq(AB_LN.s5a, () => { showBanner('調印、終わり', '「進む」で宮殿へ'); abNextBtn('進む', () => abPalaceB()); }); }]);
+}
+function abPalaceB() {
+  abCaption('宮殿', 2.4); AB.ph = 'palB'; abDoc(false);
+  AB.q.push([AB.t + 2.5, () => { const [x, z] = AB_PAL; abHideCast(); abLookIn(); abCast5(x, z, true, true);
+    const L = AB.cast; for (const k in L) L[k].s.visible = true;
+    // 並び：殿は奥の卓の前、左に日本側、右に相手方
+    let i = 0; for (const k of AB_SIGN_K.slice(1)) { L[k].p.set(x - 9 + (i % 2) * 2, 0, z - 10 + ((i / 2) | 0) * 2.4); i++; }
+    ['shinobu', 'chikage', 'akari', 'hiyori'].forEach((k, j) => L[k].p.set(x - 4, 0, z + 2 + j * 2));
+    ['del1', 'del2', 'del3'].forEach((k, j) => L[k].p.set(x + 4 + j * 1.8, 0, z - 11));
+    L.shinobu.p.set(x - 2, 0, z - 6); L.sumi.p.set(x - 2.5, 0, z - 9); L.omiya.p.set(x - 2.5, 0, z - 11); L.ojou.p.set(x - 1.6, 0, z - 13);
+    player.pos.set(x, 0, z - 13.5); abFace(x - 3, z - 8);
+    const D = new THREE.Group(); const p = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.46), abMat(0xf3ead2)); D.add(p); const c = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.035, 0.47), abMat(0x9a1a1a)); D.add(c); D.position.set(L.shinobu.p.x, 1.15, L.shinobu.p.z); stageRoot.add(D); AB.docM = D;
+    showBanner('宮殿の広間', '調印済みの文書が、手から手へ');
+    abSeq(AB_LN.s5b, () => showBanner('文書は相手方へ渡った', '「作戦終了」で終える')); }]);
+}
+function abUpdate5(dt) { abDocTick(dt); }
+function abTalk3Hud() { const t = $('abTalk'); if (!t) return; const q = AB.act === 3 && AB.ph === 'line3' ? abKamiNear() : null; t.style.display = q && state === 'play' && !AB.ask ? '' : 'none'; if (q) t.textContent = `抱きしめる：${q.label}` + (MOBILE ? '' : '（E）'); }
+
 // ---- 第一幕「帰還」：陸攻十八・零戦十二が順に戻る。地上の仕事を見守る ----
 function abNamed(k, x, z, label) { const gid = cvGid(k); return abPerson(x, z, label, { gid, key: k, label, kind: 'named' }); }
 function abPopulate1() {
@@ -861,12 +1077,12 @@ function abSched1() {   // 帰ってくる順と傷み方
   return L;
 }
 function abReset() {
-  for (const k of ['ui']) { }
+  AB.cast = null; AB.kami = null; AB.gh = null; AB.bulbs = null; AB.radioOn = false; AB.walk = null; AB.docM = null; AB.docK = null; AB.docTo = null; AB.docFrom = null; AB.seals = 0; AB.choice = null; AB.ops = null; AB.res3 = null; for (const id of ['abLog', 'abDoc', 'abChoice']) { const e = $(id); if (e) e.remove(); }
   AB.ppl = []; AB.planes = []; AB.veh = []; AB.str = []; AB.q = []; AB.gl = 0; AB.zl = 0; AB.ph = null; AB.ffShown = false; AB.missDone = false; AB.missT = null; AB.talk = {}; AB.sortie = []; AB.line = []; AB.hall = []; AB.alarm = 0; abNextBtn(null); AB.waits = []; AB.dT = 0; AB.sched = null; AB.t = 0; AB.said = {}; AB.log = []; AB.n.g4m = 0; AB.n.zero = 0; AB.bodyN = 0; AB.bedN = 0; AB.slot = 0; AB.alarm = 0; AB.ask = false; AB.over = false; AB.ambT = 4; AB.fuelQ = []; AB.towQ = []; AB.fireQ = [];
   player.pos.set(-58, 0, 40); player.yaw = Math.PI / 2 + 0.25; player.pitch = 0.02; player.hp = CFG.maxHp;
 }
 function abStart() {
-  if (AB.act === 2) { abStart2(); return; }
+  if (AB.act === 2) { abStart2(); return; } if (AB.act === 3) { abStart3(); return; } if (AB.act === 4) { abStart4(); return; } if (AB.act === 5) { abStart5(); return; }
   abPopulate1(); AB.sched = abSched1(); AB.next = 18;
   abVehicles();
   showBanner('近代海戦 幕五「帰還」', '出撃した陸攻二十七・零戦十八が戻ってくる。殿は地上で待つ。歩いて話せる。作戦終了ボタンで終える');
@@ -970,8 +1186,9 @@ function abAlarm() {
 // ---- 毎フレーム ----
 function abUpdate(dt) {
   if (!AB.on) return; AB.t += dt;
-  AB.q = AB.q.filter(([t, f]) => { if (AB.t >= t) { try { f(); } catch (e) { console.warn(e); } return false; } return true; });
+  { const cur = AB.q; AB.q = []; const keep = cur.filter(([t, f]) => { if (AB.t >= t) { try { f(); } catch (e) { console.warn(e); } return false; } return true; }); AB.q = keep.concat(AB.q); }   // 実行中に足された予定も落とさない
   if (AB.sched && AB.sched.length && AB.t >= AB.next) { abLaunch(AB.sched.shift()); AB.next = AB.t + rand(9, 14); }
+  if (AB.act >= 3) { for (const P of AB.planes) abPlaneTick(P, dt); if (AB.act === 3) abUpdate3(dt); else if (AB.act === 4) abUpdate4(dt); else abUpdate5(dt); for (const p of AB.ppl) abPersonTick(p, dt); abPxTick(dt); abEngTick(dt); abTalk3Hud(); return; }
   if (AB.act === 2) abUpdate2(dt);
   if (AB.act === 1 && !AB.alarm && AB.n.g4m + AB.n.zero >= 16) abAlarm();
   if (AB.sched && !AB.sched.length && !AB.said.allIn && AB.planes.every(P => P.st !== 'app' && P.st !== 'roll')) { AB.said.allIn = 1; AB.q.push([AB.t + 20, () => { abSay(AB.nm.omiya, `陸攻${AB.n.g4m}、零戦${AB.n.zero - 0}……これで全部です`, 1.8); abKing(AB_KING.clear); showBanner('帰還、これまで', `陸攻 ${AB.n.g4m}／${AB.n.g4mOut}・零戦 ${AB.n.zero}／${AB.n.zeroOut}。作戦終了ボタンで終える`); }]); }
@@ -990,7 +1207,7 @@ function abUpdate(dt) {
 function abBtnCss(b) { b.style.cssText = 'font:inherit;font-size:14px;padding:6px 12px;background:rgba(20,24,30,.78);color:#f4ecd6;border:1px solid #e8d9a8;border-radius:6px;cursor:pointer'; }
 function abUi(on) {
   for (const id of ['wavetxt', 'remain']) { const e = $(id); if (e) e.style.visibility = on ? 'hidden' : ''; }
-  for (const id of ['abEnd', 'abHud', 'abTalk', 'abMenu', 'abCabin']) { const e = $(id); if (e && !on) e.remove(); }
+  for (const id of ['abEnd', 'abHud', 'abTalk', 'abMenu', 'abCabin', 'abLog', 'abDoc', 'abChoice']) { const e = $(id); if (e && !on) e.remove(); }
   if (!on) return; if ($('abEnd')) return;
   const b = document.createElement('button'); b.id = 'abEnd'; b.type = 'button'; b.textContent = (MOBILE ? '' : 'Q ') + '作戦終了'; abBtnCss(b); b.style.position = 'fixed'; b.style.top = 'calc(8px + var(--sat,0px))'; b.style.right = '240px'; b.style.zIndex = 60;
   b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); abEndAsk(); }); document.body.appendChild(b);
@@ -998,7 +1215,7 @@ function abUi(on) {
   const t = document.createElement('button'); t.id = 'abTalk'; t.type = 'button'; abBtnCss(t); t.style.position = 'fixed'; t.style.zIndex = 61; t.style.left = '50%'; t.style.transform = 'translateX(-50%)'; t.style.bottom = MOBILE ? '150px' : '70px'; t.style.display = 'none';
   t.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); abMenu(); }); document.body.appendChild(t); abHud();
 }
-function abHud() { const h = $('abHud'); if (h) h.textContent = `帰還 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut}`; }
+function abHud() { const h = $('abHud'); if (h && AB.act >= 3) { h.textContent = ''; return; } if (h) h.textContent = `帰還 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut}`; }
 function abTalkTarget() { return abNear(player.pos, 4.5, q => q.st === 'ok' && !q.busy && q.kind !== 'radio'); }
 function abGrimNear() { return AB.planes.find(P => P.grimArea && Math.hypot(P.p.x - player.pos.x, P.p.z - player.pos.z) < 25); }
 function abTalkHud() {
@@ -1007,6 +1224,7 @@ function abTalkHud() {
   if (show) t.textContent = (MOBILE ? '' : 'E ') + (q ? `${q.label}と話す` : '機内をのぞく');
 }
 function abMenu() {
+  if (AB.act === 3) { abHug(abKamiNear()); return; } if (AB.act >= 4) return;
   if ($('abMenu') || state !== 'play') return; const q = AB.near, g = abGrimNear(); if (document.exitPointerLock) document.exitPointerLock();
   const m = document.createElement('div'); m.id = 'abMenu'; m.style.cssText = `position:fixed;z-index:62;left:50%;transform:translateX(-50%);bottom:${MOBILE ? 150 : 70}px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:94vw`;
   const opts = []; if (q && AB.act === 2 && q.kind === 'crew' && (q.hall || q.line)) { opts.push(['date', AB_ASK.date], ['choco', AB_ASK.choco]); if (q.hall) { opts.push(['cup', AB_ASK.cup], ['hair', AB_ASK.hair]); if (q.short) opts.push(['hairS', AB_ASK.hairS]); } }
@@ -1046,7 +1264,7 @@ function abEndAsk() {
 function abEndAns(yes) { AB.ask = false; const d = $('abAsk'); if (d) d.style.display = 'none'; if (yes) gameOver(true); else lock(); }
 function abOverText(win) {
   abUi(false); const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
-  if (h1) h1.textContent = '作戦終了'; if (h2) h2.textContent = `幕五 ${['', '「帰還」', '「出撃」', '「特攻」', '「夜」'][AB.act] || ''} ── 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut} が戻った　並べた者 ${AB.bodyN}・手当て ${AB.bedN}`;
+  if (h1) h1.textContent = '作戦終了'; if (h2 && AB.act >= 3) { h2.textContent = AB.act === 3 ? `幕五「特攻」 ── 十二機 出撃　突入確認 ${AB.res3 ? AB.res3.ok : 0}・信号途絶 ${AB.res3 ? AB.res3.lost : 0}` : AB.act === 4 ? '幕五「夜」 ── あの子たちは、帰ってきた' : `幕五「軍議・講和」 ── ${AB.choice === 'p' ? '講和' + (AB.seals ? '　血判 ' + AB.seals : '') : AB.choice === 'w' ? '戦いは続く' : '軍議の途中'}`; return; } if (h2) h2.textContent = `幕五 ${['', '「帰還」', '「出撃」', '「特攻」', '「夜」'][AB.act] || ''} ── 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut} が戻った　並べた者 ${AB.bodyN}・手当て ${AB.bedN}`;
 }
 addEventListener('keydown', ev => {
   if (!AB.on || state !== 'play') return;
@@ -1055,7 +1273,7 @@ addEventListener('keydown', ev => {
   if (ev.code === 'KeyQ') { abEndAsk(); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
   if (ev.code === 'KeyE' && $('abTalk') && $('abTalk').style.display !== 'none') { abMenu(); ev.preventDefault(); ev.stopImmediatePropagation(); }
 }, true);
-if (TEST) window.__ab = { AB, t: s => { AB.t += s; AB.next -= 0; }, launchAll: () => { while (AB.sched.length) abLaunch(AB.sched.shift()); }, warp: s => { for (let i = 0; i < s * 10; i++) abUpdate(0.1); }, ppl: () => AB.ppl.length, st: () => JSON.stringify({ t: AB.t | 0, n: AB.n, pl: AB.planes.map(P => P.st).join(','), body: AB.bodyN, bed: AB.bedN, str: AB.str.length, log: AB.log.slice(-6) }), menu: () => abMenu(), ans: k => abAnswer(k, AB.near, abGrimNear()), go: (x, z) => player.pos.set(x, 0, z) };
+if (TEST) window.__ab = { AB, x: { abHug, abSortie3, abChose5, abEntrust5, abSignA, abPalaceB, abInside4, abGhosts4, abRadio3, abKamiNear }, t: s => { AB.t += s; AB.next -= 0; }, launchAll: () => { while (AB.sched.length) abLaunch(AB.sched.shift()); }, warp: s => { for (let i = 0; i < s * 10; i++) abUpdate(0.1); }, ppl: () => AB.ppl.length, st: () => JSON.stringify({ t: AB.t | 0, n: AB.n, pl: AB.planes.map(P => P.st).join(','), body: AB.bodyN, bed: AB.bedN, str: AB.str.length, log: AB.log.slice(-6) }), menu: () => abMenu(), ans: k => abAnswer(k, AB.near, abGrimNear()), go: (x, z) => player.pos.set(x, 0, z) };
 function abLook() {
   for (const m of mountains) m.visible = false; sky.visible = true; ground.visible = false;
   scene.fog.color.setHex(0xb9c4cc); scene.background.setHex(0xa9b9c6); scene.fog.near = 220; scene.fog.far = 1500;
@@ -14286,6 +14504,9 @@ const STAGES = {
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
   keiku4: { name: '近代海戦 幕四「船旅」', desc: '戦いを終えた夜。桜鳳の客船区画の食堂で祝勝会。卓を回って皆と話し、乾杯・歌・手品・物まねを頼める。艦の揺れ、戦死した仲間の席、酔った侍女、雪風と補給艦からの無線の乾杯。途中で王が会議室に皆を集め、セキュリティを確かめる。終わるのは終了ボタンか Q。' },
+  ab3: { name: '近代海戦 幕五 第三幕「特攻」', desc: '十二人の特攻隊員を一人ずつ抱きしめ、六文銭を渡して見送る。数時間後、無線室で交信を待つ。作戦終了ボタンで終える。' },
+  ab4: { name: '近代海戦 幕五 第四幕「夜」', desc: '夜の基地を側近たちと歩く。帰らなかった隊員たちが、兵舎へ帰ってくる。' },
+  ab5: { name: '近代海戦 幕五 第五幕「軍議・講和」', desc: '地図の前の軍議。講和を探れば、前夜の託し、調印と血判、宮殿での受け渡しへ。' },
   ab2: { name: '近代海戦 幕五 第二幕「出撃」', desc: '前夜の兵舎で壮行式。翌朝、米軍の反撃で穴だらけの基地から陸攻十二・零戦十五が発進する。「飛ばす」で帰還へ。話した子が帰れば約束の一言、帰らなければ侍女が静かに告げる。作戦終了ボタンで終える。' },
   ab1: { name: '近代海戦 幕五「帰還」', desc: '陸の航空基地。出撃した一式陸攻二十七・零戦十八のうち、傷ついた機が次々と戻ってくる。殿は地上で見守り、歩いて話せる。消火・救出・担架・給油・修理。作戦終了ボタンで終える。' },
   keiku3: { name: '近代海戦 幕三「輸送機強襲」', desc: '修理を終えた桜鳳に、米軍の C-47 輸送機三機が艦尾から強行着艦を試みる。一番機は甲板に激突して大破、二・三番機から空挺兵が降りて艦橋・機関室・弾薬庫を狙う。近衛は王を囲み、迎撃班は弓と懐刀で迎え撃つ。終わるのは終了ボタンか殿の死だけ。' },
@@ -23220,7 +23441,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zt';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zu';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

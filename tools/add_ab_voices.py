@@ -8,6 +8,7 @@ N = 'ja-JP-NanamiNeural'
 JS = r'''const s=require("fs").readFileSync(process.argv[1],"utf8");const a=s.indexOf("/*ABLN*/"),b=s.indexOf("/*ABLN_END*/");console.log(JSON.stringify(new Function(s.slice(a,b)+";return AB_LN")()));'''
 o = json.loads(subprocess.check_output(['node', '-e', JS, os.path.join(ROOT, 'game.js')]).decode())
 def vo(who):
+    if who.endswith('S') and who[:-1] in PROFILES: v = PROFILES[who[:-1]]; return (v[0], v[1] - 16, v[2])   # ゆっくり話す
     if who in PROFILES: return PROFILES[who]
     h = int(hashlib.md5(who.encode()).hexdigest(), 16); return (N, (h % 19) - 9, ((h >> 5) % 23) - 9)
 L = {}
@@ -16,7 +17,8 @@ def add(who, ja):
     if k not in L: L[k] = (who, ja)
 for cat, arr in o.items():
     for x in arr:
-        if isinstance(x, list): add(x[0], x[1])
+        if isinstance(x, list):
+            if x[0] != 'k' and not x[0].startswith('@'): add(x[0], x[1])
         else: add('ext' + str(int(hashlib.md5(x.encode()).hexdigest(), 16) % 9), x)
 async def gen(k, who, ja):
     f = os.path.join(D, k + '.mp3')

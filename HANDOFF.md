@@ -373,3 +373,12 @@
 - 客室甲板（家族用約20室・王の御寝所・大部屋・機関室/タービン）は buildKeiku 内 cruise ブロック。
 - 定員 1107（予備 100 は後部/前部大部屋で休養→戦死砲員を交代）。voices: assets/voices/voices_cv.js（tools/add_cv_voices.py で再生成）。
 - テスト hook: window.__cv / window.__cam。cvBoom(x,z,y,inHull=true,onDeck=true) で甲板穴。
+
+## keiku 改修 (20261031h)
+- 空襲は三波：第一波＝戦闘機の掃射のみ、第二波＝急降下爆撃機（通常爆弾）、第三波＝混成＋一式陸攻。合間（cvLullStart/cvLullStep）は応急の穴埋め×1.8、補給・発艦、医務、電探→見張りの予告。
+- 直掩は零戦3機だけ。残りは cvLaunchStep の発艦サイクル（後部昇降機→押し出し→慣性始動→試運転→旗→滑走→上昇）。着艦は home→final→trap→unhook→park→elDown。甲板に穴・格納庫火災・着艦中は発艦しない。
+- 燃料火災：cvFireStart/cvFireStep。消火班（CV_DEPT 'fire' 20人、予備から）が輪になって泡をかける。強さ I>1.7 で誘爆（閃光・煙・人が倒れる）。
+- 艦内図：CV_ZONES（縮尺前座標）と cvMapStep。M で表示切替、タップで拡大。
+- 部屋：第二甲板の左舷通路（x -7..-4.4）と烹炊所・兵員食堂・医務室・応急・士官室、中甲板の侍女大部屋一〜四・洗濯所・兵員浴場、下甲板の弾薬庫・糧食庫・航空ガソリン庫、艦尾の御膳所。
+- 床：cvSnapFloors が見える床に論理床を合わせる。人の足は cvActStep で床に合わせる。プレイヤーは一コマで床を抜けない（player.yPre）。
+- テスト：/workspace/pwt/play.js（手順は /tmp/*.json）、/workspace/pwt/audit.js（見えない床・箱）。

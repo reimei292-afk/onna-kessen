@@ -10746,7 +10746,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031g）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031h）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -11388,7 +11388,7 @@ function cvBoom(x, z, y, inHull, onDeck) {
     if (Math.abs(x) < 26 * S) { CV.hp -= 2; if (Math.random() < 0.45) cvEv('dc', CV_EV.flood, 8, 2); cvHitR(x, z, CV.Yh, 5 * S, 0.12, 0.25, 'near', x, z, 3); }
     return;
   }
-  CV.hp -= onDeck ? 7 : 6;
+  CV.hp -= onDeck ? 4 : 3.5;
   cvHitR(x, z, y, 7.5 * S, 0.55, 0.3, 'bomb', x, z);
   if (pd < 3.5 * S && pdy < 3) hurtPlayer(60); else if (pd < 8 * S && pdy < 3) hurtPlayer(18);
   if (onDeck) {
@@ -11614,7 +11614,7 @@ function cvStart() {
   // 収録した声（voices_cv.js）
   CV.vmap = {}; const VL = (window.VOICE_CV || {}).lines || {}; for (const k in VL) { const L = VL[k]; CV.vmap[(L.who || '*') + '|' + L.ja] = L.file; }
   cvStream(0, true);
-  window.__cv = { CV, cvFireStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, cvTracer, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
+  window.__cv = { CV, cvFireStart, cvWaveStart, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, cvTracer, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
   let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;pointer-events:auto;touch-action:manipulation;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
     const tg = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; CV.rosOpen ? cvRosterClose() : cvRosterOpen(); };
     b.addEventListener('click', tg); b.addEventListener('touchstart', tg, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); }
@@ -11748,7 +11748,7 @@ function cvLullStart() {
   setTimeout(() => { if (CV.on && CV.phase === 'lull') cvEv('med', '負傷者、医務室へ運びます！', 1, 2); }, 7000);
 }
 function cvLullStep(dt) {
-  CV.lullT -= dt;
+  CV.lullT -= dt; if (!cvHangarFire() && CV.hp > 0) CV.hp = Math.min(100, CV.hp + dt * 0.25);   // 合間に応急班が排水・補強して少し持ち直す
   if (CV.lullT < 14 && !CV.lullSaid) { CV.lullSaid = 1; cvEv('sig', '電探、感あり！ 大編隊、接近中！', 1, 2.2); }
   if (CV.lullT < 6 && CV.lullSaid === 1) { CV.lullSaid = 2; cvEv('look', cvBearing(rand(-300, 300), -400) + '　次の波です！', 1, 2.2); }
   if (CV.lullT <= 0) cvWaveStart(CV.wv + 1);
@@ -11789,7 +11789,7 @@ function cvFireStep(dt) {
       const bx = f.x + rand(-5, 5) * S, bz = f.z + rand(-5, 5) * S, P = new V3(bx, f.y + 1, bz);
       if (typeof uk2Flash === 'function') uk2Flash(P, 8, 0.2); puff(P, 0xffffff, 6, 2.4, 4, 0.25); puff(P, 0x6a655c, 8, 3.2, 2.4, 1.2);
       for (let k = 0; k < (LITE ? 5 : 10); k++) cvSmoke(bx + rand(-2, 2), f.y + rand(0, 3), bz + rand(-2, 2), rand(4, 7), rand(3, 5), [0.16, 0.15, 0.14], rand(2, 5), 2, 0.75);
-      cvHitR(bx, bz, f.y, 6.5 * S, 0.4, 0.35, 'bomb', bx, bz); CV.hp -= 3; player.shake = Math.max(player.shake || 0, 0.4);
+      cvHitR(bx, bz, f.y, 6.5 * S, 0.4, 0.35, 'bomb', bx, bz); CV.hp -= 2; player.shake = Math.max(player.shake || 0, 0.4);
       if (Math.abs(player.pos.y - f.y) < 3 && Math.hypot(player.pos.x - bx, player.pos.z - bz) < 5 * S) hurtPlayer(30);
       cvEv('fire', CV_EV.boom2, 3, 2.2); if (Math.random() < 0.55) cvFireStart(clamp(bx + rand(-10, 10) * S, -7.5 * S, 7.5 * S), clamp(bz + rand(-12, 12) * S, -64 * S, 42 * S), f.y, 'boom2');
       if (CV.hp <= 0 && !CV.sunkSaid) cvSinkStart();
@@ -20271,7 +20271,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

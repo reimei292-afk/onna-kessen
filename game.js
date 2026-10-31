@@ -2832,11 +2832,11 @@ function stageLook(name) {
     scene.fog.near = 80; scene.fog.far = 520; scene.fog.color.setHex(0x8ec5d6); scene.background.setHex(0x7ebbd2);
     hemiL.color.setHex(0xf5fbff); hemiL.groundColor.setHex(0x1a4a60); hemiL.intensity = 1.2; ambL.intensity = 0.62; sun.intensity = 1.45; sun.color.setHex(0xfff4d8);
     camera.far = 2400; camera.updateProjectionMatrix();
-    if (name === 'keiku2') {   // 幕二は日没後の薄暮：西の空だけ赤く、海は暗い。照明弾が要る
+    if (name === 'keiku2' || name === 'keiku4') {   // 幕二は日没後の薄暮：西の空だけ赤く、海は暗い。照明弾が要る
       u.top.value.setHex(0x0d1530); u.mid.value.setHex(0xc8643a); u.bot.value.setHex(0x0a1622);
       scene.fog.near = 120; scene.fog.far = 1300; scene.fog.color.setHex(0x3a3a4c); scene.background.setHex(0x2a2c40);
       hemiL.color.setHex(0x8090c0); hemiL.groundColor.setHex(0x0a1420); hemiL.intensity = 0.55; ambL.intensity = 0.32; sun.intensity = 0.55; sun.color.setHex(0xff9a60); }
-  } else if (name !== 'nanban') { CV.on = false; const endBtn = $('bCvEnd'); if (endBtn) endBtn.style.display = 'none'; }
+  } else if (name !== 'nanban') { CV.on = false; if (typeof cvfButtons === 'function') cvfButtons(false); const endBtn = $('bCvEnd'); if (endBtn) endBtn.style.display = 'none'; }
 }
 // ====================================================================
 //  ステージ「城の戦い」（v7）：青組が城を守り、橙組が攻める。三つの区域が順に開く
@@ -10588,14 +10588,14 @@ const CV_PA = [   // 平時の艦内放送。朝は体操（自作のピアノ�
 ];
 const CV_PA_WAR = { raid: '対空戦闘用意。対空戦闘用意', launch: '発艦作業急げ', hangar: '応急班は格納庫へ', lull: '撃ち方止め。負傷者を医務室へ、消火を続けよ',
   fire: { Yd: '飛行甲板火災、消火班急げ', Yh: '格納庫火災、消火班急げ', Y2: '第二甲板火災、消火班急げ', Y1: '中甲板火災、消火班急げ', Y0: '下甲板火災、消火班急げ' } };
-function cvPaWar(k, y) {   // 戦闘中は作戦の放送だけ（平時の番組は流さない）
+function cvPaWar(k, y) { if (CV.F) return;   // 戦闘中は作戦の放送だけ（平時の番組は流さない）
   const t = performance.now() / 1000; if (t - (CV.paWarT || -99) < 7) return; CV.paWarT = t;
   let txt = CV_PA_WAR[k]; if (k === 'fire') { const S = CV.S || 1, yy = (y == null ? CV.Yd * S : y) / S; txt = txt[yy > 15 ? 'Yd' : yy > 10 ? 'Yh' : yy > 6.5 ? 'Y2' : yy > 3 ? 'Y1' : 'Y0']; }
   if (!txt) return; if (CV.paSnd) { try { CV.paSnd.stop(); } catch (e) {} CV.paSnd = null; }
   const s = '艦内放送「' + txt + '」'; subtitle(s); const el = $('subtitle'); if (el) el.textContent = s;
   if (typeof speechSynthesis !== 'undefined' && !window.__noTTS) { try { const u = new SpeechSynthesisUtterance(txt); u.lang = 'ja-JP'; u.rate = 1.15; u.volume = 0.7; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
 }
-function cvPaStep(dt) {
+function cvPaStep(dt) { if (CV.F) return;
   if (CV.phase !== 'sail' && CV.phase !== 'end' && !CV.daily) { if (CV.paSnd) { try { CV.paSnd.stop(); } catch (e) {} CV.paSnd = null; } return; }
   if ((CV.paT = (CV.paT == null ? 12 : CV.paT) - dt) > 0) return; CV.paT = 95;
   if (CV.paI == null) CV.paI = -1; CV.paI++; const i = CV.paN === undefined || CV.paI % 4 === 0 ? 0 : 1 + ((CV.paI * 5) % (CV_PA.length - 1));   // 体操は時々、ほかは順不同に
@@ -10904,6 +10904,7 @@ const CV_LINES = {
   kingWave: ['来るぞ……落ち着いて撃て', 'まだ沈まんぞ', '持ちこたえろ！'],
 };
 function cvLinesStep(dt) {   // 普通の侍女・乗員と殿の一言を、場面に合わせて時々
+  if (CV.F) return;   // 幕四は台本の列だけ
   if ((CV.lnT = (CV.lnT == null ? 9 : CV.lnT) - dt) > 0) return; CV.lnT = rand(9, 16);
   const ph = CV.phase; let L = null;
   if (ph === 'sail' || ph === 'end') L = CV_LINES.sail; else if (ph === 'raid') L = CV_LINES['wave' + Math.min(2, CV.wv || 0)]; else if (ph === 'lull') L = CV_LINES.lull; else if (ph === 'sink' && CV.sinkPh === 'going') L = CV_LINES.oy;
@@ -11762,7 +11763,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031zg）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031zh）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -12241,6 +12242,7 @@ function cvFxStep(dt) {
 function cvVoiceFile(who, ja) { const m = CV.vmap; return m ? (m[who + '|' + ja] || m['*|' + ja] || null) : null; }
 function cvSay(r, text, prio) {
   if (!text) return false;
+  if (CV.F && !CV.fOK) return false;   // 幕四は台本の列だけが話す（他の雑談が割り込まない）
   const d = r && r.e ? Math.hypot(r.e.s.position.x - camera.position.x, r.e.s.position.z - camera.position.z) : 6;
   const who = r ? (r.d === 'fam' ? r.key : r.d) : '*';
   subtitle(text); const el = $('subtitle'); if (el) el.textContent = r ? `${r.nm}（${r.cap ? '艦長' : CV_DN[r.d] || ''}）「${text}」` : `「${text}」`;
@@ -12843,6 +12845,146 @@ function cvBoatStepK(dt) {
     return true; }
   return false;
 }
+// ── 幕四「船旅」：桜鳳の客船区画、食堂を祝勝会場に。立食の丸卓六つ（一の卓に大宮）。西園寺・白石・綾瀬は自分の艦にいるので欠席 ──
+//   台詞は一本の列で順に流す（一行ごとに文字数に応じた間をとり、言い終わる前に次へ進まない）
+const CVF_T = [[0, 66.4], [-4.4, 66.6], [4.4, 66.6], [-4.4, 71.4], [0, 71.6], [4.4, 71.4]];   // 卓の位置（縮尺前）。0 が一の卓
+const CVF_SEAT = [['omiya', 'sec2', 'sec3', 'sec4', 'sec5', 'sumi'], ['shinobu', 'chikage'], ['akari', 'midori'], ['shizuka', 'kujo'], ['sysop', 'tono'], ['flute']];
+const CVF_VISIT = [
+  [['omiya', '陛下、一の卓へようこそ。お席、空けておきました'], ['k', '大宮、隣に立つだけで落ち着くな'], ['sec2', '陛下、お皿は私が。……今日は私が運びたいんです'], ['sumi', '艦長として一言だけ。……沈まずに、ここまで来られました'], ['k', 'それが一番の手柄だ'], ['sec3', '西園寺さんと白石さんにも、このお料理を見せたかったですね'], ['omiya', 'すみれは大淀の艦橋で、きっと乾パンを齧ってますわ']],
+  [['shinobu', '陛下。西部の早撃ちの話、まだ根に持ってます'], ['k', '根に持つほど負けたか？'], ['shinobu', '抜いたのは私が先でした。ただ、相手の弾の方が先に帽子に届いただけです'], ['chikage', 'それを負けと言うのよ、しのぶ'], ['shinobu', '帽子は負けました。私は負けてません'], ['k', '……帽子に乾杯だな']],
+  [['akari', '陛下、お城、いくつ落とされましたっけ'], ['k', '数えるな。夜眠れなくなる'], ['midori', '平城、山城、それから総構えの外の出丸……'], ['akari', '数えないでって言われたばかりでしょ'], ['midori', 'でも、取り返した城もあります。それは数えていいですよね'], ['k', 'そっちだけ数えろ']],
+  [['shizuka', '空襲の三波目、格納庫で耳がおかしくなりました'], ['kujo', '私は二波目で爆風に飛ばされて、気づいたら医務室でした'], ['k', '二人とも、よく戻った'], ['shizuka', '陛下が早瀬さんに引っ張られて走ってたの、見えましたよ'], ['k', '……あれは引っ張られていたのではない。並走だ'], ['kujo', '足、浮いてましたけど']],
+  [['sysop', '陛下、重巡の夜戦のとき、無線は一度も切れませんでした'], ['tono', '照明弾が上がるたび、通信室の窓が昼みたいになって'], ['k', 'あの夜、遠野の声だけは落ち着いていたな'], ['tono', '手は震えてました。声だけ仕事してたんです'], ['sysop', '輸送機の扉が開いたとき、私の声は裏返りましたけど']],
+  [['flute', '陛下、一曲、吹いてもいいですか。笛はもう禁止じゃないですよね'], ['k', '号笛の代わりに鳴らさなければいい'], ['flute', '戦の合図じゃない曲にします。……故郷の子守唄'], ['k', '頼む']],
+];
+const CVF_CHAT = [   // 卓どうしの雑談（台詞が無い間に、近くの誰かが言う）
+  '輸送機の一番機、甲板に突っ込んだとき、心臓が止まるかと思った', 'あのとき格納庫の整備場の木箱、本当に盾になったよね', 'カッターで漕いだ三分、一生分くらい長かった', '雪風の綾瀬さん、海から何人も拾ってくれたって',
+  '西部の決闘、早撃ちって一瞬なんだね。瞬きしたら終わってた', '城を落とされた夜より、取り返した朝の方をよく覚えてる', 'このローストビーフ、揺れで寄ってくる', '照明弾の光って、綺麗だったのが悔しい',
+  '大宮さん、さっきから陛下のお皿ばかり見てる', '次の港で、手紙を出したい', '整備の人たち、まだ格納庫にいるのかな。持っていこうか', '陛下、また早瀬さんに引っ張られてた',
+];
+const CVF_EARLY = [   // 先に帰ろうとする者と、止める王（理由はそれぞれ）
+  [['c', '……すみません、明朝四時から見張りなので、そろそろ'], ['k', '待て。一杯だけ飲んでいけ。見張りは目で、腹ではない'], ['c', '……では、一杯だけ'], ['k', 'それでいい']],
+  [['c', 'あの、揺れで少し酔ってしまって……部屋に戻ります'], ['k', '甲板に出て風に当たれ。ここの窓際が一番揺れない'], ['c', '……窓際、本当だ。少し楽です']],
+  [['c', '私、亡くなった班長の席を見ていられなくて……'], ['k', '見ていられないなら、隣に立って話しかけてやれ。帰るのはそれからでいい'], ['c', '……はい。班長、ローストビーフ、硬いですよ'], ['c2', '……一緒に立っていい？']],
+  [['c', '整備がまだ残ってて……零戦の脚が気になるんです'], ['k', '整備長には俺から言っておく。今夜は休め'], ['c', '……陛下に言われたら、断れないじゃないですか']],
+];
+const CVF_FUN = {
+  toast: [['k', '皆、杯を持て。沈まなかった桜鳳と、戻らなかった仲間に'], ['*', '乾杯！'], ['omiya', '……乾杯'], ['sumi', '乾杯。明日も針路そのままで']],
+  song: [['flute', 'では、一曲だけ。……知っている人は一緒に'], ['*', '♪……'], ['sec3', '（小声で）この歌、母がよく歌ってました'], ['k', 'いい声だった。もう一度は、帰ってからだな']],
+  magic: [['tono', '手品なら少しだけ。陛下、このナプキンを見ててください'], ['tono', '……はい、消えました'], ['k', '袖から見えているぞ'], ['tono', '見えてるところまでが手品です'], ['*', '（笑い声）']],
+  imit: [['akari', '物まねします。白瀬艦長の「針路そのまま」'], ['akari', '「……針路、そのまま。見張りを、厳に」'], ['sumi', '……私、そんなに低い声？'], ['*', '似てる！'], ['k', '目を細めるところまで似ている']],
+};
+const CVF_EV = {
+  spill: [['*', '（艦がぐらりと傾く。グラスが倒れて、白い卓布に葡萄酒が広がる）'], ['sec4', 'あっ、ごめんなさい、袖が……！'], ['sec2', '大丈夫、拭けば落ちます。陛下のお召し物にはかかってません'], ['k', 'かかっても構わん。海の上の宴だ']],
+  slide: [['*', '（大きな横揺れ。皿が卓の端まで滑っていく）'], ['midori', 'お皿が逃げる！'], ['akari', '押さえた！ ……ローストビーフ一枚だけ救出'], ['k', '一枚でも救えたなら上出来だ']],
+  fallen: [['*', '（卓ごとに一つだけ、誰も立たない場所がある。小さな札に名前）'], ['sec5', '……ここ、真由の場所です。ローストビーフ、好きだったから'], ['chikage', 'こっちは結衣。甘いものしか食べなかった子'], ['k', '……皿を置いてやれ。冷めても文句は言わんだろう'], ['omiya', '陛下も、一切れどうぞ。……みんなの分まで']],
+  tipsy: [['c', 'へいか～、陛下ぁ、わたし、輸送機の兵、三人も倒したんですよぉ'], ['k', '……聞いた。よくやった'], ['c', 'ごほうび、ください～。陛下の、その、お皿の苺……'], ['omiya', 'はい、そこまで。あなたは水を飲んで、こちらに座りなさい'], ['c', '大宮さん、こわい～……'], ['omiya', '陛下、失礼しました。……苺はお守りしましたわ'], ['k', '助かった']],
+  phone: [['sumi', '陛下、雪風と補給艦から艦内電話……いえ、無線が入っています'], ['*', '（窓の外、暗い海に雪風と補給艦の灯りが見える）'], ['fumi', 'こちら雪風、綾瀬です。陛下、そちらの灯りがよく見えます。乾杯させてください'], ['reika', '補給艦の白石です。食料はまだ山ほどあります、遠慮なく食べてください'], ['k', '綾瀬、白石。お前たちがいたから、この宴がある。乾杯'], ['fumi', '乾杯。……こちらは冷めたおにぎりで'], ['reika', 'こちらは乾パンで。……すみれさんもきっと乾パンです']],
+};
+// 会議室の場：不正アクセスの騒ぎが広がっていると聞いた王が、全員を集めて確認する（一般的な話。実在の事件の詳細には触れない）
+const CVF_MEET = [
+  ['k', '全員、会議室に集まれ。急ぎだ'], ['*', '（ざわめきながら、皆が会議室に入ってくる）'], ['k', '世の中で不正アクセスの騒ぎが広がっていると聞いた。うちのセキュリティは大丈夫か。GMOの二の舞にはならないか'],
+  ['sysop', '情報・通信担当の霧島です。結論から言うと、「たぶん大丈夫」は大丈夫ではないので、今日ちゃんと確認しましょう'],
+  ['sysop', 'まず合言葉。艦内端末の合言葉が「sakura123」の人、手を挙げてください'], ['*', '（三人が、そっと手を挙げる）'], ['k', '……三人もか'],
+  ['sysop', '長くて、他で使い回さない合言葉に。覚えられなければ合言葉帳の仕組みを使います。付箋で端末に貼るのは禁止です'], ['tono', '付箋、今はがしました'],
+  ['chikage', '二段階の認証も入れます。合言葉のあとに、手元の札に出る数字を打つ方式です'], ['sec3', '数字を誰かに聞かれたら？'], ['chikage', '教えない。艦長でも陛下でも、です'], ['k', '俺にもか'], ['chikage', '陛下にも、です'],
+  ['sysop', '次は釣りの文。「陛下からの至急の命令です、この札を開いてください」という電文が来たら、まず疑ってください'], ['sec2', '陛下は電文、送りませんよね？'], ['k', '送らん。字幕しか出ない'],
+  ['kujo', '怪しい文が来たら、開かずに通信室へ。間違って開いてしまっても、怒らないので、すぐ言ってください。隠されるのが一番困ります'],
+  ['sysop', '更新もためないこと。「後で再起動」を三週間押し続けている端末が、格納庫に二台あります'], ['*', '（整備の二人が目をそらす）'],
+  ['chikage', '大事な記録は、艦の外にも写しを置きます。桜鳳が沈みかけたとき、名簿の写しが大淀にあって助かりました'], ['sumi', 'あれは本当に助かった'],
+  ['sysop', '最後に。権限は必要な人に必要な分だけ。全部の扉を開けられる鍵は、少ないほど安全です'], ['k', '俺の鍵は？'], ['sysop', '陛下の鍵は、一番厳重にお預かりします'],
+  ['k', 'よくわかった。……大丈夫かと聞いたが、大丈夫にするのは皆だな。霧島、毎月この会をやれ'], ['sysop', '毎月やります。次回は抜き打ちの釣り文の訓練です'], ['*', '（悲鳴まじりの笑い声）'], ['k', '解散。宴に戻れ'],
+];
+function cvfR(who) {
+  if (who === 'sumi') return (CV.R || []).find(r => r.cap);
+  return (CV.R || []).find(r => r.d === 'fam' && r.key === who) || null;
+}
+function cvfSay(who, text) {
+  const F = CV.F; if (who === 'k') { cvKingSay(text); return; }
+  if (who === '*') { subtitle(text); const el = $('subtitle'); if (el) el.textContent = text; return; }
+  if (who === 'fumi' || who === 'reika') { const n = who === 'fumi' ? '綾瀬 文乃（雪風・無線）' : '白石 麗華（補給艦・無線）'; subtitle(text); const el = $('subtitle'); if (el) el.textContent = `${n}「${text}」`; return; }
+  let r = who === 'c' || who === 'c2' ? (F.cur && F.cur[who]) : cvfR(who);
+  if (!r) r = F.crowd[(Math.random() * F.crowd.length) | 0]; CV.fOK = true; cvSay(r, text, 1.6); CV.fOK = false;
+}
+function cvfPlay(lines, front) { const F = CV.F; const L = lines.map(x => x.slice()); if (front) F.q.unshift(...L); else F.q.push(...L); }
+function cvfDur(t) { return Math.max(3.2, Math.min(11, 1.8 + t.length * 0.17)); }   // 字幕が読み終わるまでの時間
+function cvfTable(x, y, z, king) {
+  const M = u7Mats(), R = king ? 0.72 : 0.6, S = CV.S || 1, g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(S / 1.62 * 1.3); stageRoot.add(g);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.05, 24), M.cloth); top.position.y = 1.05; g.add(top);
+  const sk = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.02, R + 0.12, 1.02, 24, 1, true), M.cloth); sk.position.y = 0.53; g.add(sk);
+  const cd = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), M.gold); cd.position.y = 1.2; g.add(cd);
+  const fl = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffd080 })); fl.position.y = 1.35; g.add(fl);
+  const plate = new THREE.MeshLambertMaterial({ color: 0xf4f2ea }), meat = new THREE.MeshLambertMaterial({ color: 0x8a4a3a }), wine = new THREE.MeshLambertMaterial({ color: 0x6a1a2a, transparent: true, opacity: 0.85 }), gl = new THREE.MeshLambertMaterial({ color: 0xdfe8ee, transparent: true, opacity: 0.45 });
+  const dishes = []; for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const p = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.02, 14), plate); p.position.set(Math.sin(a) * R * 0.66, 1.09, Math.cos(a) * R * 0.66); g.add(p); if (i % 2) { const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.025, 0.07), meat); m2.position.set(0, 0.02, 0); p.add(m2); } dishes.push(p);
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.1, 8), gl); c.position.set(Math.sin(a + 0.4) * R * 0.45, 1.13, Math.cos(a + 0.4) * R * 0.45); g.add(c); if (i % 3 === 0) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.018, 0.05, 8), wine); w.position.y = -0.02; c.add(w); } }
+  const wx = x, wz = z; colliders.push({ x: wx, z: wz, r: (R + 0.12) * S / 1.62 * 1.3 });
+  return { g, dishes, x, z, r: (R + 0.55) * S / 1.62 * 1.3 };
+}
+function cvFeastStart() {
+  const S = CV.S || 1, Y = 4.08 * S; CV.phase = 'sail'; CV.feast = true;
+  const F = CV.F = { t: 0, q: [], cur: null, lineT: 0, tables: [], visited: {}, ev: {}, crowd: [], chatI: 0, early: 0, meet: false };
+  F.tables = CVF_T.map(([x, z], i) => cvfTable(x * S, Y, z * S, i === 0));
+  const place = (r, T, k, n) => { cvDespawn(r); const a = k / n * Math.PI * 2 + 0.3, rr = T.r; r.x = r.hx = r.ax = T.x + Math.sin(a) * rr; r.z = r.hz = r.az = T.z + Math.cos(a) * rr; r.y = r.hy = Y; r.ySnap = false; r.w = r.hw = 'stand'; r.f = a + Math.PI; r.loc = '祝勝会'; r.mv = false; r.job = 'feast'; };
+  const used = new Set();
+  F.tables.forEach((T, i) => { const names = CVF_SEAT[i].map(cvfR).filter(r => r && r.st === 'ok'); names.forEach(r => used.add(r));
+    const fill = CV.R.filter(r => r.st === 'ok' && !used.has(r) && !r.capOf && !r.ship && !r.gid && r.d !== 'fam').slice(0, (LITE ? 4 : 7) - names.length); fill.forEach(r => used.add(r));
+    const all = [...names, ...fill]; const n = all.length + 1; all.forEach((r, k) => place(r, T, k, n)); F.crowd.push(...fill);
+    // 戦死した仲間の席（誰も立たない場所に名札と皿）
+    const a = (n - 1) / n * Math.PI * 2 + 0.3, tag = cvSign(T.x + Math.sin(a) * T.r * 0.72, Y + 1.55 * S / 1.62, T.z + Math.cos(a) * T.r * 0.72, CV_GN[(i * 7 + 3) % CV_GN.length] + 'の席', a); tag.scale.set(0.22, 0.22, 1); });
+  // 窓の外に雪風と補給艦の灯り
+  for (const sh of CV.fleet || []) if (/yukikaze|hokyu/.test(sh.d.id)) for (let k = 0; k < 6; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.5, 6, 5), new THREE.MeshBasicMaterial({ color: 0xffd890 })); b.position.set(sh.d.x * S + rand(-3, 3), 6 + k * 1.2, sh.d.z * S + (k - 2.5) * 8); stageRoot.add(b); }
+  const P = player.pos, T0 = F.tables[0]; P.set(T0.x, Y + 0.1, T0.z + T0.r + 1.2 * S); player.yaw = 0; player.vy = 0;
+  showBanner('幕四　船旅', '祝勝会。卓を回って皆と話せ。下の釦で乾杯・歌・手品・物まね、会議室への招集');
+  cvfPlay([['sumi', '皆、杯を。……陛下から一言'], ...CVF_FUN.toast]);
+  cvfButtons(true);
+}
+function cvfButtons(on) {
+  let bar = $('cvfBar'); if (!on) { if (bar) bar.remove(); return; }
+  if (bar) return; bar = document.createElement('div'); bar.id = 'cvfBar'; bar.style.cssText = 'position:fixed;z-index:35;left:50%;transform:translateX(-50%);bottom:10px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:auto';
+  for (const [k, l] of [['toast', '乾杯'], ['song', '歌を'], ['magic', '手品を'], ['imit', '物まねを'], ['meet', '会議室に招集']]) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; b.style.cssText = 'padding:7px 12px;font:600 13px sans-serif;border-radius:8px;border:1px solid rgba(198,161,90,.7);background:rgba(20,24,32,.82);color:#f6e7c4;touch-action:manipulation';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); const F = CV.F; if (!F) return; if (k === 'meet') { if (!F.meet) cvfMeet(); return; } if (F.q.length > 3) { popup('話が終わってから'); return; } cvfPlay(CVF_FUN[k]); };
+    b.addEventListener('click', go); b.addEventListener('touchstart', go, { passive: false }); bar.appendChild(b); }
+  document.body.appendChild(bar);
+}
+function cvfMeet() {   // 会議室（客船区画のラウンジを会議室に）：長机・椅子・黒板
+  const F = CV.F, S = CV.S || 1, Y = 4.08 * S; F.meet = true; F.q = []; const x0 = 1.6 * S, x1 = 6.9 * S, zc = 47 * S, xc = (x0 + x1) / 2;
+  const wd = new THREE.MeshLambertMaterial({ color: 0x5a3a24 }), bk = new THREE.MeshLambertMaterial({ color: 0x1e2a22 });
+  const tb = new THREE.Mesh(new THREE.BoxGeometry(1.4 * S, 0.06 * S, 6 * S), wd); tb.position.set(xc, Y + 0.74 * S, zc); stageRoot.add(tb); boxes.push({ x0: xc - 0.7 * S, x1: xc + 0.7 * S, z0: zc - 3 * S, z1: zc + 3 * S, y0: Y, y1: Y + 0.8 * S });
+  const bd = new THREE.Mesh(new THREE.BoxGeometry(0.05 * S, 1.2 * S, 2.6 * S), bk); bd.position.set(x1 - 0.05 * S, Y + 1.5 * S, zc); stageRoot.add(bd);
+  cvSign(xc, Y + 2.5 * S, 42.3 * S, '会議室', Math.PI).scale.set(0.45, 0.45, 1); cvSign(x1 - 0.1 * S, Y + 1.6 * S, zc, '合言葉・二段階認証・釣り文', -Math.PI / 2).scale.set(0.3, 0.3, 1);
+  const who = ['sysop', 'chikage', 'kujo', 'tono', 'sec2', 'sec3', 'omiya', 'sumi'].map(cvfR).filter(Boolean);
+  who.forEach((r, i) => { cvDespawn(r); const sd = i % 2 ? 1 : -1; r.x = r.hx = r.ax = xc + sd * 1.15 * S; r.z = r.hz = r.az = zc - 2.4 * S + ((i / 2) | 0) * 1.4 * S; r.y = r.hy = Y; r.f = sd > 0 ? -Math.PI / 2 : Math.PI / 2; r.w = 'stand'; r.loc = '会議室'; });
+  player.pos.set(xc, Y + 0.1, zc + 3.6 * S); player.yaw = 0; cvStream(0, true);
+  showBanner('会議室', '王が全員を招集した'); cvfPlay(CVF_MEET);
+  cvfPlay([['*', '（皆、宴の食堂へ戻っていく）']]); F.backAfter = true;
+}
+function cvFeastStep(dt) {
+  const F = CV.F; if (!F) return; const S = CV.S || 1, P = player.pos; F.t += dt;
+  // 台詞の列：一行ずつ、言い終わるまで待つ
+  if ((F.lineT -= dt) <= 0) {
+    if (F.q.length) { const [w, t] = F.q.shift(); cvfSay(w, t); F.lineT = cvfDur(t); }
+    else if (F.backAfter) { F.backAfter = false; const T0 = F.tables[0]; P.set(T0.x, 4.08 * S + 0.1, T0.z + T0.r + 1.2 * S); }
+    else if (F.t > 20) { let r = F.crowd.filter(r => r.e && Math.hypot(r.e.s.position.x - P.x, r.e.s.position.z - P.z) < 9 * S); if (!r.length) r = F.crowd; if (r.length) { CV.fOK = true; cvSay(r[(Math.random() * r.length) | 0], CVF_CHAT[F.chatI++ % CVF_CHAT.length], 1.3); CV.fOK = false; F.lineT = 6.5; } else F.lineT = 2; }
+    else F.lineT = 2.5;
+  }
+  if (F.meet && F.q.length) return;
+  // 卓を回る：初めて近づいた卓で、その卓の話
+  F.tables.forEach((T, i) => { if (!F.visited[i] && Math.hypot(P.x - T.x, P.z - T.z) < T.r + 1.6 * S && F.q.length < 2) { F.visited[i] = true; cvfPlay(CVF_VISIT[i]); } });
+  // 時間で起きること（列が空いているときだけ足す）
+  const ev = (k, at, f) => { if (!F.ev[k] && F.t > at && F.q.length === 0) { F.ev[k] = true; f(); } };
+  ev('spill', 70, () => { cvfPlay(CVF_EV.spill); F.roll = 1.2; });
+  ev('fallen', 120, () => cvfPlay(CVF_EV.fallen));
+  ev('tipsy', 175, () => { const c = F.crowd.find(r => r.st === 'ok'); F.cur = { c, c2: null }; if (c) { cvDespawn(c); c.x = c.ax = P.x + 0.8 * S; c.z = c.az = P.z - 0.4 * S; } cvfPlay(CVF_EV.tipsy); });
+  ev('phone', 235, () => cvfPlay(CVF_EV.phone));
+  ev('slide', 290, () => { cvfPlay(CVF_EV.slide); F.slide = { T: F.tables[2], t: 0 }; F.roll = 2; });
+  for (let k = 0; k < CVF_EARLY.length; k++) ev('early' + k, 330 + k * 75, () => { const c = F.crowd[(k * 5 + 2) % F.crowd.length], c2 = F.crowd[(k * 5 + 3) % F.crowd.length]; F.cur = { c, c2 };
+    if (c) { c.ax = 0; c.az = 64.6 * S; c.w = 'walk'; }   // 出口の方へ歩きかけて、王に止められる
+    cvfPlay(CVF_EARLY[k]); cvfPlay([['*', '']]); setTimeout(() => { if (c) { c.ax = c.hx; c.az = c.hz; c.w = 'stand'; } }, 9000); });
+  ev('meetAuto', 640, () => { if (!F.meet) cvfMeet(); });
+  // 艦の揺れ：視点を少し傾け、皿を滑らせる
+  if (F.roll > 0) { F.roll -= dt; camera.rotation.z += Math.sin(F.t * 3) * 0.02 * Math.min(1, F.roll); }
+  if (F.slide && F.slide.t < 1.6) { F.slide.t += dt; for (const d of F.slide.T.dishes) d.position.x += dt * 0.25; }
+}
 function cvKingEscort() {
   const S = CV.S || 1, p = player.pos, sd = p.x >= 0 ? 1 : -1, hy = cvHayase(), es = [...(hy ? [hy] : []), ...CV.R.filter(r => r !== hy && r.st === 'ok' && (r.d === 'kg' || r.gid === 'sec5'))].slice(0, 3);   // 早瀬が先頭
   es.forEach((r, i) => { cvDespawn(r); r.x = r.hx = r.ax = p.x + (i - 1) * 0.9; r.z = r.hz = r.az = p.z - 0.9; r.y = r.hy = p.y; r.ySnap = true; r.w = 'stand'; });
@@ -13105,6 +13247,8 @@ function updateCv(dt) {
   cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvEscortStep(dt); cvRushStep(dt); cvCarryStep(dt); cvSwimStep(dt); cvAftermathStep(dt); cvOyHitStep(dt); cvBoatStep(dt); cvLinesStep(dt); cvAmmoStep(dt); cvCruiseWarStep(dt); cvBoardStep(dt); cvGunStep(dt);
   if (CV.rosOpen && (CV.rosT = (CV.rosT || 0) - dt) <= 0) { CV.rosT = 1; cvRosterDraw(); }
   if (CV.phase === 'sail' && CV.t > 26 && !CV.daily && CV.act === 1) cvWaveStart(0);
+  if (CV.act === 4 && CV.t > 1.5 && !CV.F) cvFeastStart();
+  if (CV.act === 4 && CV.F) cvFeastStep(dt);
   if (CV.act === 3 && CV.t > 3 && !CV.a3Said) { CV.a3Said = true; showBanner('幕三　輸送機強襲', '空襲で受けた傷は内地で直した。修理を終えた桜鳳、再び出撃'); }
   if (CV.phase === 'sail' && CV.t > 24 && !CV.daily && CV.act === 3 && !CV.board) cvBoardStart();
   if (CV.phase === 'sail' && CV.t > 20 && !CV.daily && CV.act === 2 && !CV.ca) cvGunStart();
@@ -13282,6 +13426,7 @@ const STAGES = {
   nightRaid: { name: '月影の関所', desc: '月のない夜、谷川に架かる細い木橋を渡り、松明の灯る関所を突破せよ。両側は岩壁、門楼には弓兵、奥には敵の野営地。夜霧と火の粉に照らされた細い道で、波状攻撃を切り抜けろ。' },
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
+  keiku4: { name: '近代海戦 幕四「船旅」', desc: '戦いを終えた夜。桜鳳の客船区画の食堂で祝勝会。卓を回って皆と話し、乾杯・歌・手品・物まねを頼める。艦の揺れ、戦死した仲間の席、酔った侍女、雪風と補給艦からの無線の乾杯。途中で王が会議室に皆を集め、セキュリティを確かめる。終わるのは終了ボタンか Q。' },
   keiku3: { name: '近代海戦 幕三「輸送機強襲」', desc: '修理を終えた桜鳳に、米軍の C-47 輸送機三機が艦尾から強行着艦を試みる。一番機は甲板に激突して大破、二・三番機から空挺兵が降りて艦橋・機関室・弾薬庫を狙う。近衛は王を囲み、迎撃班は弓と懐刀で迎え撃つ。終わるのは終了ボタンか殿の死だけ。' },
   keiku2: { name: '近代海戦 幕二「レトロ砲戦」', desc: '第一艦隊が米重巡（ボルチモア級、20.3 cm 三連装三基）と近距離で出会う。夾叉、命中、火災。大淀は 15.5 cm 砲、雪風は 61 cm 魚雷と煙幕で反撃する。終わるのは終了ボタンか殿の死だけ。' },
   keiku: { name: '近代海戦 幕一「桜鳳」', desc: '空母兼客船「桜鳳」。瑞鳳（全長二百五、飛行甲板百八十）より長くして、全長およそ三百メートル。千百人を砲・操縦席・格納庫・機関・艦橋・大部屋に配置する。甲板の戦闘機は、脇で E を押すと操縦席に入れる。終わるのは終了ボタンだけ。' },
@@ -21489,7 +21634,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : 1; buildKeiku(); } else buildPlains();
+  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -21685,7 +21830,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zg';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zh';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -456,3 +456,10 @@
 - Flute (笛) and fluteCall are silenced in keiku.
 - 日常 training: every 40–75 s, a Zero sortie (at most 2 airborne). Fuel is 45–80 s, and the landing-failure chance is +0.06 (trainees). Bolter, barrier and island crash with the King's line all apply. The dead-pilot-after-trap case needs combat wounds, so it never happens in training.
 - Corner map: cvMapOy draws 大淀's deck when the player is on her.
+
+## ze
+- 早瀬（sec2）が王に随行・回復、総員退艦で先導、白瀬の安否と再会の台詞。
+- カッター：降ろす約40s → 満員(40)まで待ち海から引き上げ約60s → 手漕ぎ（オール12本）約3分、CV_ROW 24台詞。cvBoatStepK。
+- 梯子 cvLad は全て幅広の階段（向きは衝突箱の少ない方を自動選択、CV.ladAudit）。
+- 遺体が消える原因：cvStream が倒れた者を再出現させなかった／CFG.maxBodies 上限で古い順に消去／担架班が7秒で瞬間移動・担ぎ手不足で即収容。全て修正。
+- 安置室：下甲板 Y0 右舷中央 x2–6 z−15.7〜−5.8。各甲板に案内板、ミニマップに常時マーカー。

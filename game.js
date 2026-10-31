@@ -11366,19 +11366,20 @@ function buildKeiku() {
   cvSlab(-3.6, -2.6, Y1 + 0.66, Y1 + 0.9, 47.6, 48.4, M.cloth);
   for (const x of [-6.4, -1.6]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.12, 2.4, 6), M.gold); p.position.set(x, Y1 + 1.3, 46); stageRoot.add(p); }
   cvSign(-3.6, Y1 + 2.15, 42.3, '王の間', 0);
-  cvSlab(1.4, 6.8, Y1 + 0.7, Y1 + 0.82, 44.5, 50.2, M.wood);
-  for (const x of [2.2, 6.0]) for (const z of [44.8, 49.8]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.7, 0.08), M.woodD); leg.position.set(x, Y1 + 0.38, z); stageRoot.add(leg); }
+  // 机・椅子の高さは縮尺後の実寸（×1.62）で決める：天板 0.46 → 約 75cm（以前は 0.82 → 1.33m で、人が机に埋もれて見えた）
+  wall(2.7, 5.5, 44.8, 49.9, Y1, Y1 + 0.46, M.wood);
+  for (const x of [2.8, 5.4]) for (const z of [44.9, 49.8]) { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.42, 0.06), M.woodD); leg.position.set(x, Y1 + 0.21, z); stageRoot.add(leg); }
   cvSign(3.4, Y1 + 2.15, 42.3, 'サロン', 0);
   cvSlab(-6.8, -1.3, Y1 + 0.02, Y1 + 0.06, 52.4, 63.6, M.tile);
   cvSlab(-5.6, -2.6, Y1 + 0.06, Y1 + 0.7, 56.2, 60.4, M.white);
   cvSlab(-5.4, -2.8, Y1 + 0.62, Y1 + 0.78, 56.5, 60.1, M.pool);
   cvSign(-3.8, Y1 + 2.15, 52.3, '浴室', 0);
   for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.55, 0.55), r === 0 ? M.boot : M.gold);
-    s.position.set(2.0 + c * 0.95, Y1 + 0.35, 54.2 + r * 1.3); stageRoot.add(s);
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.28, 0.36), r === 0 ? M.boot : M.gold);   // 座面 約 45cm
+    s.position.set(2.0 + c * 0.95, Y1 + 0.14, 54.2 + r * 1.3); stageRoot.add(s); boxes.push({ x0: 1.75 + c * 0.95, x1: 2.25 + c * 0.95, z0: 54.02 + r * 1.3, z1: 54.38 + r * 1.3, y0: Y1, y1: Y1 + 0.28 });
   }
   cvSign(4.2, Y1 + 2.15, 52.3, '小劇場', 0);
-  for (const x of [-3.6, 3.4]) cvSlab(x - 1.3, x + 1.3, Y1 + 0.72, Y1 + 0.82, 66.2, 71.6, M.wood);
+  for (const x of [-3.6, 3.4]) wall(x - 1.0, x + 1.0, 66.6, 71.2, Y1, Y1 + 0.46, M.wood);
   cvSign(0, Y1 + 2.2, 64.2, '食堂', 0);
   buildMedPost(5.2, 68.5, 'blue', Y1);
   cvSign(5.4, Y1 + 2.05, 66.2, '医務', Math.PI / 2);
@@ -11626,8 +11627,58 @@ function buildKeiku() {
     cvEdwRoom(1.3, 7.2, 42, 52, yA, hA, 'lounge', boxes); cvEdwRoom(-7.2, -1.3, 42, 52, yA, hA, 'library', boxes);
     cvEdwRoom(-1.3, 1.3, 42, 64, yA, hA, 'hall', boxes); cvEdwRoom(-7.2, 7.2, 64, 74, yA, hA, 'dine', boxes);
     cvTerrace(-8, 8, 66, 87, 11.28, boxes); }
+  // ── 艦首の大広間（祝勝会場）：英国淑女編 第七幕の大広間と同じ赤い渦巻きの絨毯・シャンデリア・白い丸卓 22。烹炊所の前（艦首側）──
+  //   以前は烹炊所より前が空洞で、船体の中に海面が見えていた。床・壁・天井で塞ぎ、海が見えるのは艦首のテラスだけにする
+  { const Yg0 = Y1 + 3.2, U = u7Mats(), HZ0 = -74.4, HZ1 = -50.0, HX = 7.0, ceil = Yh - 0.06;
+    for (const [hw, z0, z1] of hulls) if (z1 <= 36 || z0 >= 76) cvSlab(-hw + 0.42, hw - 0.42, 0.12, 0.3, Math.max(z0, -97.6), z1, M.dark);   // 船底の内張り（中の海面を隠す）
+    cvSlab(-6.4, 6.4, -0.6, 0.3, 36, 76, M.dark);
+    wall(-7.2, 7.2, -56.42, -56.0, Y1, Y1 + 3.15, M.bulk); wall(-6.4, 6.4, -48.42, -48.0, Y0, Y0 + 3.15, M.bulk);   // 中甲板・下甲板の前端の隔壁
+    cvFloor(-HX, HX, HZ0, HZ1, Y2); cvSlab(-7.18, 7.18, Y2 - 0.35, Y2 + 0.06, HZ0, HZ1, M.steel);
+    const cp = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#6e1420'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(214,170,80,.55)'; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(w / 2, h / 2, 12 + i * 16, 0, 6.3); g.stroke(); } g.fillStyle = 'rgba(214,170,80,.5)'; for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) { g.beginPath(); g.arc(x, y, 10, 0, 6.3); g.fill(); } }, 24);
+    if (cp.repeat) cp.repeat.set(9, 15);
+    const car = new THREE.Mesh(new THREE.PlaneGeometry(2 * HX, HZ1 - HZ0), new THREE.MeshLambertMaterial({ map: cp })); car.rotation.x = -Math.PI / 2; car.position.set(0, Y2 + 0.08, (HZ0 + HZ1) / 2); stageRoot.add(car);
+    const ce = new THREE.Mesh(new THREE.PlaneGeometry(2 * HX, HZ1 - HZ0), U.ceil); ce.rotation.x = Math.PI / 2; ce.position.set(0, ceil, (HZ0 + HZ1) / 2); stageRoot.add(ce);
+    cvSlab(-7.18, 7.18, ceil, ceil + 0.1, HZ0 - 0.4, HZ1, M.steel);
+    for (const sx of [-1, 1]) wall(sx * HX, sx * (HX + 0.2), HZ0, HZ1, Y2, ceil, U.wall);
+    // 前の壁（テラスへの扉 x -6.2〜-4.8）と、後ろの壁（左舷通路と烹炊所への扉）
+    wall(-HX, -6.2, HZ0 - 0.3, HZ0, Y2, ceil, U.wall); wall(-4.8, HX, HZ0 - 0.3, HZ0, Y2, ceil, U.wall); cvSlab(-6.2, -4.8, Y2 + 2.1, ceil, HZ0 - 0.3, HZ0, U.wall);
+    wall(-4.3, 1.1, HZ1 - 0.25, HZ1, Y2, ceil, U.wall); wall(2.7, HX, HZ1 - 0.25, HZ1, Y2, ceil, U.wall); wall(-HX, -6.6, HZ1 - 0.25, HZ1, Y2, ceil, U.wall);
+    for (const [a, b] of [[-6.6, -4.3], [1.1, 2.7]]) cvSlab(a, b, Y2 + 2.1, ceil, HZ1 - 0.25, HZ1, U.wall);
+    cvSign(1.9, Y2 + 2.45, HZ1 - 0.3, '大広間（祝勝会場）', Math.PI).scale.set(0.5, 0.5, 1); cvSign(1.9, Y2 + 2.45, HZ1 + 0.05, '大広間（祝勝会場）', 0).scale.set(0.5, 0.5, 1);
+    cvSign(-5.5, Y2 + 2.4, HZ0 + 0.05, 'テラス', Math.PI).scale.set(0.4, 0.4, 1);
+    // 腰板・金の額縁・壁の灯（窓は無い）
+    for (const sx of [-1, 1]) { cvSlab(sx * (HX - 0.04) - 0.02, sx * (HX - 0.04) + 0.02, Y2, Y2 + 0.62, HZ0 + 0.2, HZ1 - 0.3, U.wood);
+      for (let z = HZ0 + 2.5; z < HZ1 - 1.5; z += 4.4) { cvSlab(sx * (HX - 0.05) - 0.02, sx * (HX - 0.05) + 0.02, Y2 + 1.0, Y2 + 2.3, z - 1.1, z + 1.1, U.gold); cvSlab(sx * (HX - 0.07) - 0.02, sx * (HX - 0.07) + 0.02, Y2 + 1.06, Y2 + 2.24, z - 1.04, z + 1.04, U.frame);
+        const sc = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), U.glow); sc.position.set(sx * (HX - 0.15), Y2 + 2.45, z + 2.2); stageRoot.add(sc); } }
+    // シャンデリア（第七幕と同じ形を縮めて）と灯り
+    for (const z of [-71, -64, -57, -52]) for (const x of [-4, 4]) { const g = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.03, 6, 24), U.gold); ring.rotation.x = Math.PI / 2; g.add(ring);
+      const r2 = new THREE.Mesh(new THREE.TorusGeometry(0.43, 0.025, 6, 18), U.gold); r2.rotation.x = Math.PI / 2; r2.position.y = -0.3; g.add(r2);
+      for (let i = 0; i < 12; i++) { const an = i / 12 * 6.283, b = new THREE.Mesh(UK7.bulbG || (UK7.bulbG = new THREE.SphereGeometry(0.09, 8, 6)), U.glow); b.scale.setScalar(0.6); b.position.set(Math.sin(an) * 0.8, 0.06, Math.cos(an) * 0.8); g.add(b); }
+      const dr = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.7, 12), new THREE.MeshLambertMaterial({ color: 0xf6efe0, emissive: 0x6a5a38, transparent: true, opacity: 0.85 })); dr.position.y = -0.55; dr.rotation.x = Math.PI; g.add(dr);
+      const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 6), U.gold); rod.position.y = 0.28; g.add(rod); g.position.set(x, ceil - 0.55, z); stageRoot.add(g); }
+    for (const z of [-68, -55]) for (const x of [-3.5, 3.5]) { const l = new THREE.PointLight(0xffe0b0, 0.8, 16, 1.4); l.position.set(x, ceil - 0.8, z); stageRoot.add(l); }
+    // 立食の台（後ろの壁沿い）と舞台（一の卓の後ろ）
+    for (const x of [-2.4, 4.6]) { wall(x - 1.2, x + 1.2, HZ1 - 0.95, HZ1 - 0.35, Y2, Y2 + 0.56, U.buf); for (let k = 0; k < 4; k++) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.04, 12), k % 2 ? U.dishA : U.dishB); d.position.set(x - 0.9 + k * 0.6, Y2 + 0.6, HZ1 - 0.65); stageRoot.add(d); } }
+    wall(-3.0, 3.0, HZ0, HZ0 + 1.6, Y2, Y2 + 0.3, U.wood); CV.hallStage = [0, HZ0 + 0.8, Y2 + 0.3];
+    // 艦首のテラス（三段上がる）：ここからだけ海が見える。手すり付き
+    const TY = Y2 + 0.6; cvStairs(-6.2, -4.8, HZ0 - 0.3, HZ0 - 2.3, Y2 + 0.08, TY, null, { noCut: true });
+    const terr = [[-7.1, 7.1, -78, HZ0 - 0.3], [-4.7, 4.7, -90, -78], [-1.9, 1.9, -97.5, -90]];
+    for (const [x0, x1, z0, z1] of terr) { cvFloor(x0, x1, z0, z1, TY); const d = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, 0.1, z1 - z0), M.teakT || (M.teakT = new THREE.MeshLambertMaterial({ color: 0xa07c56 }))); d.position.set((x0 + x1) / 2, TY - 0.05, (z0 + z1) / 2); stageRoot.add(d); }
+    const rail = (x0, x1, z0, z1) => { wall(x0, x1, z0, z1, TY, TY + 0.68, M.white); };
+    rail(-7.2, -4.75, -78.1, -77.95); rail(4.75, 7.2, -78.1, -77.95); rail(-4.85, -4.7, -90, -78); rail(4.7, 4.85, -90, -78); rail(-4.75, -1.95, -90.1, -89.95); rail(1.95, 4.75, -90.1, -89.95); rail(-2.05, -1.9, -97.6, -90); rail(1.9, 2.05, -97.6, -90); rail(-2, 2, -97.75, -97.6);
+    rail(-7.25, -7.1, -78, HZ0 - 0.3); rail(7.1, 7.25, -78, HZ0 - 0.3);
+    for (const z of [-80, -86, -93]) { const l = new THREE.PointLight(0xffd8a0, 1.0, 12, 1.4); l.position.set(0, TY + 2.2, z); stageRoot.add(l); }
+    CV.hall = { x0: -HX, x1: HX, z0: HZ0, z1: HZ1 };
+    // 第二甲板の後端（z 39）と客室甲板（z 46.6）のつなぎ目：床が無く、下の部屋の天井板が見えていた。床を張り、中央に二段の階段
+    { const jm = M.lino || M.tile; cvFloor(-7.0, 7.0, 39.0, 45.0, Y2); cvSlab(-7.0, 7.0, Y2 - 0.3, Y2 + 0.08, 39.0, 45.0, jm);
+      for (const [x0, x1] of [[-7.0, -1.15], [1.15, 7.0]]) { cvFloor(x0, x1, 45.0, 46.6, Y2); cvSlab(x0, x1, Y2 - 0.3, Y2 + 0.08, 45.0, 46.6, jm); }
+      cvStairs(-1.1, 1.1, 46.6, 45.0, Yg0, Y2 + 0.08, null, { noCut: true });
+      for (const [x0, x1] of [[-7.0, -1.7], [1.7, 7.0]]) cvSlab(x0, x1, Yh - 0.12, Yh, 43.0, 46.6, M.bulk); }
+    // 卓の位置（縮尺前）。0 が一の卓（大宮）、1 が隣の卓。ほか 5 列 × 4 行
+    CV.hallTP = [[-1.6, -70.2], [2.4, -69.8]]; for (const z of [-65.4, -61.0, -56.6, -52.6]) for (const x of [-5.4, -2.7, 0, 2.7, 5.4]) CV.hallTP.push([x, z]); }
   cvBuildFleet(); cvLifeMarks(); cvTheatre(); cvBunks();
   CV.Yg = Y1 + 3.2; cvScaleShip(1.62); cvSnapFloors();
+  { const S = CV.S, Y = CV.Y2 + 0.08 * S; CV.hallT = CV.hallTP.map(([x, z], i) => cvfTable(x * S, Y, z * S, i === 0, i)); }
 }
 // 当たりの床を、見えている床板の上面に合わせる（人が床にめり込む・浮くのを防ぐ）
 function cvSnapFloors() {
@@ -11764,7 +11815,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031zi）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031zj）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -12151,10 +12202,23 @@ function cvRosterBuild() {
 }
 function cvAliveN() { let n = 0; for (const r of CV.R || []) if (r.d !== 'fam' && r.st !== 'dead') n++; return n; }
 // ---- 近くの人だけ出す ----
+// 立ち位置が机・座席・台の中なら、すぐ脇の空いた床へずらす（人が机や床に埋もれて見える不具合の根本対策）
+function cvSolidAt(x, z, y) {
+  if (!CV.aabb) { CV.aabb = []; stageRoot.updateMatrixWorld(true); const b = new THREE.Box3();
+    stageRoot.traverse(o => { if (!o.isMesh || o.isSprite || !o.visible || (o.material && o.material.transparent && o.material.opacity < 0.5) || !o.geometry) return; if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); b.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld); if (b.max.y - b.min.y > 6 || b.max.x - b.min.x > 30 || b.max.z - b.min.z > 30) return; CV.aabb.push([b.min.x, b.max.x, b.min.y, b.max.y, b.min.z, b.max.z]); }); }
+  for (const a of CV.aabb) if (x > a[0] - 0.12 && x < a[1] + 0.12 && z > a[4] - 0.12 && z < a[5] + 0.12 && a[3] > y + 0.15 && a[2] < y + 1.2) return true;
+  for (const b of boxes) if (!b.stairRail && x > b.x0 - 0.12 && x < b.x1 + 0.12 && z > b.z0 - 0.12 && z < b.z1 + 0.12 && b.y1 > y + 0.15 && b.y0 < y + 1.2) return true;
+  return false;
+}
+function cvClearSpot(r) {
+  if (!cvSolidAt(r.x, r.z, r.y)) return;
+  for (let rr = 0.35; rr <= 2.6; rr += 0.3) for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2, x = r.x + Math.sin(a) * rr, z = r.z + Math.cos(a) * rr, fy = floorUnder(x, z, r.y + 0.3);
+    if (Math.abs(fy - r.y) < 0.2 && !cvSolidAt(x, z, r.y)) { const dx = x - r.x, dz = z - r.z; r.x += dx; r.z += dz; if (r.hx != null) { r.hx += dx; r.hz += dz; } if (r.ax != null) { r.ax += dx; r.az += dz; } return; } }
+}
 function cvSpawnR(r) {
   const opt = { yari: -1, y: r.y, cv: true, set: { special: true, cvWalk: true, passive: true } };
   const gid = r.gid || r.girl; if (gid && GIRLS[gid]) opt.girl = gid;
-  if (!r.ySnap) { const fy = floorUnder(r.x, r.z, r.y + 0.3); if (fy > r.y - 0.6 && fy < r.y + 1.4) r.y = fy; r.ySnap = true; opt.y = r.y; }
+  if (!r.ySnap) { const fy = floorUnder(r.x, r.z, r.y + 0.3); if (fy > r.y - 0.6 && fy < r.y + 1.4) r.y = fy; r.ySnap = true; if (r.st === 'ok' && r.w !== 'kneel') cvClearSpot(r); opt.y = r.y; }
   const e = spawnEnemy(r.x, r.z, 'mob', false, 'blue', opt); if (!e) return null;
   if (!r.gid && e.girl) r.girl = e.girl.id;
   e.state = 'idle'; e.baseY = r.y; e.s.position.set(r.x, r.y, r.z); e.hold = { face: r.f }; e.faceWant = e.face = r.f; e.s.rotation.y = r.f;
@@ -12174,7 +12238,7 @@ function cvStream(dt, force) {
   if (!force && (CV.strT = (CV.strT || 0) - dt) > 0) return; CV.strT = 0.35;
   const wc = window.__cam, c = wc && wc.p ? { x: wc.p[0], y: wc.p[1], z: wc.p[2] } : camera.position, CAP = LITE ? 64 : 210, RAD = LITE ? 34 : 54, R2 = RAD * RAD, cand = [];
   for (const r of CV.R) {
-    r.want = false; if (r.st === 'air' || r.swim || (r.st !== 'ok' && (r.mg || r.carry) && !r.e)) continue;
+    r.want = false; if (r.away || r.st === 'air' || r.swim || (r.st !== 'ok' && (r.mg || r.carry) && !r.e)) continue;
     const dx = r.x - c.x, dz = r.z - c.z, dy = (r.y + 1.2 - c.y) * 5, s = dx * dx + dz * dz + dy * dy;
     r.sc = (r.job || r.task || r.st !== 'ok') ? s * 0.25 : s; if (r.sc < R2 * 1.7) cand.push(r);   // 消火・応急に動く人を優先して見せる
   }
@@ -12848,7 +12912,6 @@ function cvBoatStepK(dt) {
 }
 // ── 幕四「船旅」：桜鳳の客船区画、食堂を祝勝会場に。立食の丸卓六つ（一の卓に大宮）。西園寺・白石・綾瀬は自分の艦にいるので欠席 ──
 //   台詞は一本の列で順に流す（一行ごとに文字数に応じた間をとり、言い終わる前に次へ進まない）
-const CVF_T = [[0, 66.4], [-4.4, 66.6], [4.4, 66.6], [-4.4, 71.4], [0, 71.6], [4.4, 71.4]];   // 卓の位置（縮尺前）。0 が一の卓
 const CVF_SEAT = [['omiya', 'sec2', 'sec3', 'sec4', 'sec5', 'sumi'], ['shinobu', 'chikage'], ['akari', 'midori'], ['shizuka', 'kujo'], ['sysop', 'tono'], ['flute']];
 const CVF_VISIT = [
   [['omiya', '陛下、一の卓へようこそ。お席、空けておきました'], ['k', '大宮、隣に立つだけで落ち着くな'], ['sec2', '陛下、お皿は私が。……今日は私が運びたいんです'], ['sumi', '艦長として一言だけ。……沈まずに、ここまで来られました'], ['k', 'それが一番の手柄だ'], ['sec3', '西園寺さんと白石さんにも、このお料理を見せたかったですね'], ['omiya', 'すみれは大淀の艦橋で、きっと乾パンを齧ってますわ']],
@@ -12909,8 +12972,10 @@ function cvfSay(who, text) {
 }
 function cvfPlay(lines, front) { const F = CV.F; const L = lines.map(x => x.slice()); if (front) F.q.unshift(...L); else F.q.push(...L); }
 function cvfDur(t) { return Math.max(3.2, Math.min(11, 1.8 + t.length * 0.17)); }   // 字幕が読み終わるまでの時間
-function cvfTable(x, y, z, king) {
-  const M = u7Mats(), R = king ? 0.72 : 0.6, S = CV.S || 1, g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(S / 1.62 * 1.3); stageRoot.add(g);
+const CVF_KN = n => { const d = '〇一二三四五六七八九'; return n <= 10 ? (n === 10 ? '十' : d[n]) : n < 20 ? '十' + d[n - 10] : d[(n / 10) | 0] + '十' + (n % 10 ? d[n % 10] : ''); };
+function cvfTable(x, y, z, king, idx) {   // 第七幕と同じ実寸の立食卓（天板 1.05m）。縮尺 S を掛けない（掛けると 1.4m の卓に人が埋もれる）
+  const M = u7Mats(), R = king ? 0.72 : 0.6, g = new THREE.Group(); g.position.set(x, y, z); stageRoot.add(g);
+  if (idx != null) { const t = cvSign(x, y + 1.95, z, CVF_KN(idx + 1) + 'の卓', 0); t.scale.set(0.3, 0.3, 1); }
   const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.05, 24), M.cloth); top.position.y = 1.05; g.add(top);
   const sk = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.02, R + 0.12, 1.02, 24, 1, true), M.cloth); sk.position.y = 0.53; g.add(sk);
   const cd = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), M.gold); cd.position.y = 1.2; g.add(cd);
@@ -12918,17 +12983,19 @@ function cvfTable(x, y, z, king) {
   const plate = new THREE.MeshLambertMaterial({ color: 0xf4f2ea }), meat = new THREE.MeshLambertMaterial({ color: 0x8a4a3a }), wine = new THREE.MeshLambertMaterial({ color: 0x6a1a2a, transparent: true, opacity: 0.85 }), gl = new THREE.MeshLambertMaterial({ color: 0xdfe8ee, transparent: true, opacity: 0.45 });
   const dishes = []; for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; const p = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.02, 14), plate); p.position.set(Math.sin(a) * R * 0.66, 1.09, Math.cos(a) * R * 0.66); g.add(p); if (i % 2) { const m2 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.025, 0.07), meat); m2.position.set(0, 0.02, 0); p.add(m2); } dishes.push(p);
     const c = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.02, 0.1, 8), gl); c.position.set(Math.sin(a + 0.4) * R * 0.45, 1.13, Math.cos(a + 0.4) * R * 0.45); g.add(c); if (i % 3 === 0) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.018, 0.05, 8), wine); w.position.y = -0.02; c.add(w); } }
-  const wx = x, wz = z; colliders.push({ x: wx, z: wz, r: (R + 0.12) * S / 1.62 * 1.3 });
-  return { g, dishes, x, z, r: (R + 0.55) * S / 1.62 * 1.3 };
+  colliders.push({ x, z, r: R + 0.12 }); boxes.push({ x0: x - R, x1: x + R, z0: z - R, z1: z + R, y0: y, y1: y + 1.08, table: true });
+  return { g, dishes, x, z, r: R + 0.5 };
 }
 function cvFeastStart() {
-  const S = CV.S || 1, Y = 4.08 * S; CV.phase = 'sail'; CV.feast = true;
+  const S = CV.S || 1, Y = floorUnder(CV.hallT[0].x, CV.hallT[0].z + 1.2, CV.Y2 + 0.5); CV.phase = 'sail'; CV.feast = true;
   const F = CV.F = { t: 0, q: [], cur: null, lineT: 0, tables: [], visited: {}, ev: {}, crowd: [], chatI: 0, early: 0, meet: false };
-  F.tables = CVF_T.map(([x, z], i) => cvfTable(x * S, Y, z * S, i === 0));
+  F.tables = CV.hallT; F.Y = Y;
+  // 西園寺・白石・綾瀬は自分の艦にいる：桜鳳の中には出さない（無線でだけ話す）
+  for (const k of ['ojou', 'reika', 'fumi']) { const r = (CV.R || []).find(r => r.d === 'fam' && r.key === k); if (r) { cvDespawn(r); r.away = true; } }
   const place = (r, T, k, n) => { cvDespawn(r); const a = k / n * Math.PI * 2 + 0.3, rr = T.r; r.x = r.hx = r.ax = T.x + Math.sin(a) * rr; r.z = r.hz = r.az = T.z + Math.cos(a) * rr; r.y = r.hy = Y; r.ySnap = false; r.w = r.hw = 'stand'; r.f = a + Math.PI; r.loc = '祝勝会'; r.mv = false; r.job = 'feast'; };
   const used = new Set();
-  F.tables.forEach((T, i) => { const names = CVF_SEAT[i].map(cvfR).filter(r => r && r.st === 'ok'); names.forEach(r => used.add(r));
-    const fill = CV.R.filter(r => r.st === 'ok' && !used.has(r) && !r.capOf && !r.ship && !r.gid && r.d !== 'fam').slice(0, (LITE ? 4 : 7) - names.length); fill.forEach(r => used.add(r));
+  F.tables.forEach((T, i) => { const names = (CVF_SEAT[i] || []).map(cvfR).filter(r => r && r.st === 'ok'); names.forEach(r => used.add(r));
+    const fill = CV.R.filter(r => r.st === 'ok' && !r.away && !used.has(r) && !r.capOf && !r.ship && !r.gid && r.d !== 'fam').slice(0, Math.max(0, (LITE ? 3 : 6) - names.length)); fill.forEach(r => used.add(r));
     const all = [...names, ...fill]; const n = all.length + 1; all.forEach((r, k) => place(r, T, k, n)); F.crowd.push(...fill);
     // 戦死した仲間の席（誰も立たない場所に名札と皿）
     const a = (n - 1) / n * Math.PI * 2 + 0.3, tag = cvSign(T.x + Math.sin(a) * T.r * 0.72, Y + 1.55 * S / 1.62, T.z + Math.cos(a) * T.r * 0.72, CV_GN[(i * 7 + 3) % CV_GN.length] + 'の席', a); tag.scale.set(0.22, 0.22, 1); });
@@ -12947,30 +13014,29 @@ function cvfButtons(on) {
     b.addEventListener('click', go); b.addEventListener('touchstart', go, { passive: false }); bar.appendChild(b); }
   document.body.appendChild(bar);
 }
-function cvfMeet() {   // 会議室（客船区画のラウンジを会議室に）：長机・椅子・黒板
-  const F = CV.F, S = CV.S || 1, Y = 4.08 * S; F.meet = true; F.q = []; const x0 = 1.6 * S, x1 = 6.9 * S, zc = 47 * S, xc = (x0 + x1) / 2;
-  const wd = new THREE.MeshLambertMaterial({ color: 0x5a3a24 }), bk = new THREE.MeshLambertMaterial({ color: 0x1e2a22 });
-  const tb = new THREE.Mesh(new THREE.BoxGeometry(1.4 * S, 0.06 * S, 6 * S), wd); tb.position.set(xc, Y + 0.74 * S, zc); stageRoot.add(tb); boxes.push({ x0: xc - 0.7 * S, x1: xc + 0.7 * S, z0: zc - 3 * S, z1: zc + 3 * S, y0: Y, y1: Y + 0.8 * S });
-  const bd = new THREE.Mesh(new THREE.BoxGeometry(0.05 * S, 1.2 * S, 2.6 * S), bk); bd.position.set(x1 - 0.05 * S, Y + 1.5 * S, zc); stageRoot.add(bd);
-  cvSign(xc, Y + 2.5 * S, 42.3 * S, '会議室', Math.PI).scale.set(0.45, 0.45, 1); cvSign(x1 - 0.1 * S, Y + 1.6 * S, zc, '合言葉・二段階認証・釣り文', -Math.PI / 2).scale.set(0.3, 0.3, 1);
+function cvfMeet() {   // 会議室（客船区画のサロンを会議室に）：サロンの机（天板 75cm）を囲んで立つ・黒板
+  const F = CV.F, S = CV.S || 1, xc = 4.1 * S, zc = 47.35 * S, Y = floorUnder(xc, zc + 3.4 * S, CV.Y1 + 0.6); F.meet = true; F.q = []; const x1 = 6.9 * S;
+  const bk = new THREE.MeshLambertMaterial({ color: 0x1e2a22 });
+  if (!F.board) { F.board = true; const bd = new THREE.Mesh(new THREE.BoxGeometry(0.05 * S, 1.2 * S, 2.6 * S), bk); bd.position.set(x1 - 0.05 * S, Y + 1.5 * S, zc); stageRoot.add(bd);
+    cvSign(xc, Y + 2.5 * S, 42.3 * S, '会議室', Math.PI).scale.set(0.45, 0.45, 1); cvSign(x1 - 0.1 * S, Y + 1.6 * S, zc, '合言葉・二段階認証・釣り文', -Math.PI / 2).scale.set(0.3, 0.3, 1); }
   const who = ['sysop', 'chikage', 'kujo', 'tono', 'sec2', 'sec3', 'omiya', 'sumi'].map(cvfR).filter(Boolean);
-  who.forEach((r, i) => { cvDespawn(r); const sd = i % 2 ? 1 : -1; r.x = r.hx = r.ax = xc + sd * 1.15 * S; r.z = r.hz = r.az = zc - 2.4 * S + ((i / 2) | 0) * 1.4 * S; r.y = r.hy = Y; r.f = sd > 0 ? -Math.PI / 2 : Math.PI / 2; r.w = 'stand'; r.loc = '会議室'; });
+  who.forEach((r, i) => { cvDespawn(r); const sd = i % 2 ? 1 : -1; r.x = r.hx = r.ax = xc + sd * 1.95 * S; r.z = r.hz = r.az = zc - 2.0 * S + ((i / 2) | 0) * 1.3 * S; r.y = r.hy = Y; r.ySnap = false; r.f = sd > 0 ? -Math.PI / 2 : Math.PI / 2; r.w = 'stand'; r.loc = '会議室'; });
   player.pos.set(xc, Y + 0.1, zc + 3.6 * S); player.yaw = 0; cvStream(0, true);
   showBanner('会議室', '王が全員を招集した'); cvfPlay(CVF_MEET);
-  cvfPlay([['*', '（皆、宴の食堂へ戻っていく）']]); F.backAfter = true;
+  cvfPlay([['*', '（皆、艦首の大広間へ戻っていく）']]); F.backAfter = true;
 }
 function cvFeastStep(dt) {
   const F = CV.F; if (!F) return; const S = CV.S || 1, P = player.pos; F.t += dt;
   // 台詞の列：一行ずつ、言い終わるまで待つ
   if ((F.lineT -= dt) <= 0) {
     if (F.q.length) { const [w, t] = F.q.shift(); cvfSay(w, t); F.lineT = cvfDur(t); }
-    else if (F.backAfter) { F.backAfter = false; const T0 = F.tables[0]; P.set(T0.x, 4.08 * S + 0.1, T0.z + T0.r + 1.2 * S); }
+    else if (F.backAfter) { F.backAfter = false; const T0 = F.tables[0]; P.set(T0.x, F.Y + 0.1, T0.z + T0.r + 1.2 * S); }
     else if (F.t > 20) { let r = F.crowd.filter(r => r.e && Math.hypot(r.e.s.position.x - P.x, r.e.s.position.z - P.z) < 9 * S); if (!r.length) r = F.crowd; if (r.length) { CV.fOK = true; cvSay(r[(Math.random() * r.length) | 0], CVF_CHAT[F.chatI++ % CVF_CHAT.length], 1.3); CV.fOK = false; F.lineT = 6.5; } else F.lineT = 2; }
     else F.lineT = 2.5;
   }
   if (F.meet && F.q.length) return;
   // 卓を回る：初めて近づいた卓で、その卓の話
-  F.tables.forEach((T, i) => { if (!F.visited[i] && Math.hypot(P.x - T.x, P.z - T.z) < T.r + 1.6 * S && F.q.length < 2) { F.visited[i] = true; cvfPlay(CVF_VISIT[i]); } });
+  F.tables.forEach((T, i) => { if (CVF_VISIT[i] && !F.visited[i] && Math.hypot(P.x - T.x, P.z - T.z) < T.r + 1.6 * S && F.q.length < 2) { F.visited[i] = true; cvfPlay(CVF_VISIT[i]); } });
   // 時間で起きること（列が空いているときだけ足す）
   const ev = (k, at, f) => { if (!F.ev[k] && F.t > at && F.q.length === 0) { F.ev[k] = true; f(); } };
   ev('spill', 70, () => { cvfPlay(CVF_EV.spill); F.roll = 1.2; });
@@ -22349,7 +22415,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zi';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zj';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -30682,5 +30748,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get CV(){return typeof CV!=="undefined"?CV:null;}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

@@ -598,28 +598,10 @@ road.rotation.x = -Math.PI / 2; road.position.set(8, 0.01, -60); road.rotation.z
 // ====================================================================
 const AB = { on: false, act: 1, built: false, ppl: [], planes: [], veh: [], str: [], fx: [], q: [], t: 0, said: {}, log: [], ui: null, near: null, ask: false, mats: {}, n: { g4m: 0, zero: 0, g4mOut: 27, zeroOut: 18 } };
 /*ABLN*/
-const AB_LN = {"amb": ["来た！ 一機見える！", "煙を吐いてる……", "脚が出てない！", "何機帰ってきたの？", "まだ数が足りない……", "担架、もっと持ってきて！", "誘導、こっち！ 左へ寄せて！", "燃料車、三番へ！", "あの機、片発だ……", "がんばって……あと少し……", "降りた！ 降りたよ！", "水、まわして！"],
- "fire": ["消火急げ！", "泡を回して！ 風上から！", "火が消えた！ 中を確かめて！"],
- "crashShort": ["手前に落ちた！", "救急車、出して！", "走って！ 間に合って！"],
- "belly": ["胴体着陸！ 離れて！", "火花が出てる！ 消火班！"],
- "rescue": ["出せる人から出して！", "意識あります！ こっちへ！", "担架！ 二人で、頭の方を持って！", "……この人はもう……白い布を"],
- "triage": ["重い人はこっちの天幕へ！", "歩ける人は待機、水を飲ませて", "……運んで、並べてあげて"],
- "turn": ["点検よし！", "給油、始めます！", "弾薬、積み込み終わり！", "待機線へ回して！"],
- "repair": ["ジー！", "エンジン吊るよ！ せーの！", "穴は当て板で塞いで！", "溶接、離れて！", "この機はもう飛べない……部品取りに"],
- "tow": ["トラクター、つないで！", "押して！ 格納庫へ！", "掩体壕の三番へ入れて！"],
- "alarm": ["敵機接近！ 空襲警報！", "搭乗員、走れ！", "零戦、回して！ 上がれる機から上がって！", "発進！ 発進！", "敵機、引き返した模様！ 警報解除！"],
- "key": ["副操縦手が機銃手に操縦を教えながらここまで来たようで、副操縦手はたった今事切れました。機長はすでに死んでいます！"],
- "gunner": ["……着いた……着いたんですか……", "手が……離れないんです……", "副操縦手さんが……ずっと、声を……"],
- "medic": ["もう大丈夫。手を離して、ゆっくり", "深呼吸して。あなたが降ろしたのよ"],
- "rep_bloody": ["はい……機内はひどい有様です", "身元を確かめてから運び出します", "掃除には時間がかかりそうです", "この機、また飛べるようにします"],
- "rep_good": ["はい、陛下！", "まだ戻らない機を待っています", "手が足りませんが、やります"],
- "rep_crew": ["……はい。帰ってきました", "仲間が、まだ……", "陛下……ただいま戻りました"],
- "rep_mech": ["一晩あれば直します", "発動機を載せ替えます", "この機はもう……部品取りにします"],
- "rep_rest": ["大丈夫です、動いていたほうが楽なんです", "はい……少しだけ"],
- "named": [["sumi", "陛下、一番機が見えました"], ["kujo", "重い者は天幕へ。順番は私が決めます"], ["fumi", "各機へ。滑走路は二本とも使えます"], ["omiya", "数えてます……まだ、足りません"], ["ojou", "……皆さん、よくお戻りに"], ["sumi", "陛下、あまり滑走路に近づかれませんように"], ["omiya", "零戦、まだ戻ってない子がいます……"]]};
+const AB_LN = {"amb": ["来た！ 一機見える！", "煙を吐いてる……", "脚が出てない！", "何機帰ってきたの？", "まだ数が足りない……", "担架、もっと持ってきて！", "誘導、こっち！ 左へ寄せて！", "燃料車、三番へ！", "あの機、片発だ……", "がんばって……あと少し……", "降りた！ 降りたよ！", "水、まわして！"], "fire": ["消火急げ！", "泡を回して！ 風上から！", "火が消えた！ 中を確かめて！"], "crashShort": ["手前に落ちた！", "救急車、出して！", "走って！ 間に合って！"], "belly": ["胴体着陸！ 離れて！", "火花が出てる！ 消火班！"], "rescue": ["出せる人から出して！", "意識あります！ こっちへ！", "担架！ 二人で、頭の方を持って！", "……この人はもう……白い布を"], "triage": ["重い人はこっちの天幕へ！", "歩ける人は待機、水を飲ませて", "……運んで、並べてあげて"], "turn": ["点検よし！", "給油、始めます！", "弾薬、積み込み終わり！", "待機線へ回して！"], "repair": ["ジー！", "エンジン吊るよ！ せーの！", "穴は当て板で塞いで！", "溶接、離れて！", "この機はもう飛べない……部品取りに"], "tow": ["トラクター、つないで！", "押して！ 格納庫へ！", "掩体壕の三番へ入れて！"], "alarm": ["敵機接近！ 空襲警報！", "搭乗員、走れ！", "零戦、回して！ 上がれる機から上がって！", "発進！ 発進！", "敵機、引き返した模様！ 警報解除！"], "key": ["副操縦手が機銃手に操縦を教えながらここまで来たようで、副操縦手はたった今事切れました。機長はすでに死んでいます！"], "gunner": ["……着いた……着いたんですか……", "手が……離れないんです……", "副操縦手さんが……ずっと、声を……"], "medic": ["もう大丈夫。手を離して、ゆっくり", "深呼吸して。あなたが降ろしたのよ"], "rep_bloody": ["はい……機内はひどい有様です", "身元を確かめてから運び出します", "掃除には時間がかかりそうです", "この機、また飛べるようにします"], "rep_good": ["はい、陛下！", "まだ戻らない機を待っています", "手が足りませんが、やります"], "rep_crew": ["……はい。帰ってきました", "仲間が、まだ……", "陛下……ただいま戻りました"], "rep_mech": ["一晩あれば直します", "発動機を載せ替えます", "この機はもう……部品取りにします"], "rep_rest": ["大丈夫です、動いていたほうが楽なんです", "はい……少しだけ"], "named": [["sumi", "陛下、一番機が見えました"], ["kujo", "重い者は天幕へ。順番は私が決めます"], ["fumi", "各機へ。滑走路は二本とも使えます"], ["omiya", "数えてます……まだ、足りません"], ["ojou", "……皆さん、よくお戻りに"], ["sumi", "陛下、あまり滑走路に近づかれませんように"], ["omiya", "零戦、まだ戻ってない子がいます……"]], "party": ["皆さん、盃を。明日の無事を祈って", "……乾杯", "明日は何番機？", "私、七番機", "お母さんに手紙、書いた？", "眠れそうにないね", "お酒、苦い……", "明日も晴れるといいな", "帰ったら、甘いもの食べたい", "しっ、陛下がいらしてる"], "p_date": ["えっ……は、はい！必ず帰ります", "約束ですよ、陛下", "……はい。生きて帰れたら", "デ、デート……ですか？ はい、帰ります！", "じゃあ、何を着ていくか考えておきます"], "p_choco": ["チョコは帰ってからのお楽しみです", "えっ、私が作るんですか？ ……はい！", "……はい。生きて帰れたら", "約束ですよ、陛下。甘いのにします", "下手でも、食べてくださいね"], "p_by": ["いいなぁ", "ずるい", "陛下、私にも言ってください！", "……いいな、あの子"], "p_cup": ["私はお水で乾杯します", "形だけ口をつけます"], "p_hair": ["はい、封筒に入れて実家宛てに", "まだです……今夜切ります"], "p_hairS": ["短いので、爪だけ渡しました", "妹に少しだけ"], "lineup": ["搭乗員、整列！ 陛下の御前です", "滑走路は穴だらけです。誘導に従って、穴をよけて"], "tko": ["搭乗開始！", "右の穴に寄りすぎないで！", "一番機、出ます！", "帽振れー！", "行ってらっしゃい！"], "crater": ["穴にはまった！ 機首が！", "転覆した！ 消火班！", "引き出して！ 早く！"], "ret_date": ["陛下、帰りました。デートの約束、覚えてますよね？", "……帰ってきました。約束、ですよ", "ただいま戻りました。デート、どこへ連れていってくれます？"], "ret_choco": ["陛下、帰りました。チョコ、作りますね", "……生きて帰れました。チョコ、約束どおりに", "帰りました！ 甘いの、作ります"]};
 /*ABLN_END*/
-const AB_KING = { start: '……帰ってくるのを待とう', key: '……よく、降ろした', alarm: '慌てるな。上がれる機から上げろ', clear: '……戻った者を、休ませろ' };
-const AB_ASK = { good: 'ご苦労', stat: '状況は？', crew: 'よく帰った', mech: '直りそうか？', rest: '無理するなよ', bloody: '血だらけだ' };
+const AB_KING = { morning: '……ひどくやられたな。それでも、行くのか', retDate: '……ああ。約束だ', retChoco: '……楽しみにしてる', miss: '……そうか', start: '……帰ってくるのを待とう', key: '……よく、降ろした', alarm: '慌てるな。上がれる機から上げろ', clear: '……戻った者を、休ませろ' };
+const AB_ASK = { date: '生きて帰ってきたらデートしよう', choco: 'バレンタインデーが近いから、チョコ作ってよ', cup: '飲めない人もいるよね', hair: '髪の毛とか爪とか残した？', hairS: '死ぬ前に髪の毛、誰かに渡したの？', good: 'ご苦労', stat: '状況は？', crew: 'よく帰った', mech: '直りそうか？', rest: '無理するなよ', bloody: '血だらけだ' };
 function abVoice(text) { const V = (window.VOICE_AB || {}).lines || {}; for (const k in V) if (V[k].ja === text) return V[k]; return null; }
 function abSay(P, text, prio) {   // P：話す人（null なら字幕だけ）
   if (!text) return; const el = $('subtitle'); subtitle(text); if (el && P) el.textContent = `${P.label}「${text}」`;
@@ -732,6 +714,7 @@ function abEngPos(P, i) { const v = new V3(P.engX[i] || 0, P.kind === 'g4m' ? -0
 const AB_RW = [0, 110];   // 滑走路の x（南 +z から北 -z へ降りる）
 const AB_TENT = { cmd: [-62, 40], med: [-62, 110], rest: [-62, -40] }, AB_BODY = [-46, 130];   // 遺体を並べる列（医務の天幕の脇）
 function abBuild(name) {
+  AB.act = +name.slice(2) || 1;
   ground.visible = false; AB.built = true; AB.mats = {}; AB.pool = null;
   const grass = canvasTex(256, 256, (g, W, H) => { g.fillStyle = '#6f7a4c'; g.fillRect(0, 0, W, H); for (let i = 0; i < 900; i++) { g.fillStyle = ['#66713f', '#7b8453', '#5e6a3b', '#857f55'][i % 4]; g.fillRect(Math.random() * W, Math.random() * H, 3 + Math.random() * 6, 2 + Math.random() * 4); } }, 1);
   grass.wrapS = grass.wrapT = THREE.RepeatWrapping; grass.repeat.set(160, 160);
@@ -767,8 +750,87 @@ function abBuild(name) {
   for (let i = 0; i < 24; i++) abBox(1.2, 0.8, 0.8, 0x7a6038, -150 + (i % 6) * 1.4, 0.4 + ((i / 6) | 0) % 2 * 0.8, -330 + ((i / 12) | 0) * 2);
   // 遠くの林
   for (let i = 0; i < 160; i++) { const a = i / 160 * Math.PI * 2, R = rand(900, 1300); const t = new THREE.Mesh(AB.treeGeo || (AB.treeGeo = new THREE.ConeGeometry(4, 14, 7)), abMat(0x2e3f26)); t.position.set(Math.cos(a) * R, 7, Math.sin(a) * R); stageRoot.add(t); }
-  abPxInit(); AB.hint = null;
+  abPxInit(); AB.hint = null; if (AB.act === 2) abBuild2();
 }
+// ==== 第二幕：壮行式（前夜の兵舎）→ 翌朝 空襲のあと → 搭乗員整列 → 発進 → 飛ばす → 帰還 ====
+const AB_HALL = [-700, 0];   // 兵舎の広間（基地から離して置く）
+function abBuild2() {
+  // 空襲の跡：穴・焼けた機・煙
+  AB.craters = []; const cr = (x, z, r) => { const m = new THREE.Mesh(new THREE.CircleGeometry(r, 16), abMat(0x3a3328)); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.035, z); stageRoot.add(m);
+    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; abBox(r * 0.6, 0.5, r * 0.4, 0x5a4e3c, x + Math.cos(a) * r * 1.1, 0.2, z + Math.sin(a) * r * 1.1, -a); } AB.craters.push({ x, z, r }); };
+  for (const [x, z, r] of [[8, 300, 3], [-12, 120, 4], [14, -80, 3.5], [-6, -260, 3], [104, 220, 3], [120, 40, 3.5], [96, -150, 3], [-58, -120, 3], [-150, 60, 3.5], [-90, 200, 3], [-170, -150, 3], [-60, 260, 2.5], [-40, 6, 2.5], [70, -330, 3], [-140, 300, 3]]) cr(x, z, r);
+  AB.wrecks = []; for (const [x, z, k] of [[-120, 120, 'g4m'], [-160, -40, 'zero'], [-95, -190, 'g4m'], [-185, 160, 'zero'], [-230, -260, 'g4m'], [40, 360, 'zero']]) { const P = abPlane(k, { crash: 1 }); P.p.set(x, P.y0 * 0.4, z); P.g.rotation.set(0.05, rand(0, 6), rand(-0.3, 0.3)); P.st = 'wreck'; P.parts.forEach(m => m.visible = false); P.smolder = true; AB.wrecks.push(P); }
+  // 兵舎の広間
+  const [hx, hz] = AB_HALL; abBox(30, 0.1, 64, 0x6b5638, hx, 0.05, hz); abBox(30, 0.3, 64, 0x2a241c, hx, 5.2, hz);
+  abBox(0.5, 5, 64, 0x7d6a50, hx - 15, 2.5, hz, 0, true); abBox(0.5, 5, 64, 0x7d6a50, hx + 15, 2.5, hz, 0, true); abBox(30, 5, 0.5, 0x7d6a50, hx, 2.5, hz - 32, 0, true); abBox(30, 5, 0.5, 0x7d6a50, hx, 2.5, hz + 32, 0, true);
+  for (let i = 0; i < 14; i++) for (const s of [-1, 1]) { const z = hz - 28 + i * 4.2; abBox(2, 0.5, 0.9, 0x5a4a34, hx + s * 13.5, 0.45, z); abBox(1.9, 0.12, 0.8, 0xe6e0cf, hx + s * 13.5, 0.75, z); abBox(0.5, 0.3, 0.4, 0x3d3a30, hx + s * 14.2, 0.95, z); }   // 寝台と私物
+  for (let i = 0; i < 3; i++) { const z = hz - 18 + i * 18; abBox(3, 0.8, 12, 0x6b4f32, hx, 0.4, z); for (let k = 0; k < 16; k++) { const c = new THREE.Mesh(AB.cupGeo || (AB.cupGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.09, 8)), abMat(0xf0ece2)); c.position.set(hx + (k % 2 ? 0.9 : -0.9), 0.85, z - 5.5 + ((k / 2) | 0) * 1.5); stageRoot.add(c); } abBox(0.25, 0.4, 0.25, 0xd9d2bf, hx, 0.98, z); }
+  for (let i = 0; i < 6; i++) abBox(0.4, 0.3, 0.4, 0xffe6a8, hx + (i % 2 ? 5 : -5), 4.8, hz - 25 + i * 10);   // 裸電球
+  abBox(8, 2, 0.1, 0xf2ede0, hx, 2.6, hz - 31.6);   // 正面の幕
+}
+function abVehicles() {
+  AB.fire = abVeh('fire', -36, 160, Math.PI); AB.amb = abVeh('amb', -36, 140, Math.PI); AB.fuel = abVeh('fuel', -140, -290, 0); AB.tr = [abVeh('tractor', -200, -200, 0), abVeh('tractor', -200, -195, 0), abVeh('tractor', -200, -190, 0)];
+}
+function abStart2() {
+  abPopulate1(); abVehicles(); AB.ph = 'night'; AB.n.g4mOut = 12; AB.n.zeroOut = 15; AB.talk = {}; abHud();
+  // 前夜：広間に搭乗員六十
+  AB.hall = []; const [hx, hz] = AB_HALL; for (let i = 0; i < 60; i++) { const x = hx + (i % 2 ? 2.2 : -2.2) + rand(-0.6, 0.6), z = hz - 24 + ((i / 2) | 0) * 1.6 + rand(-0.3, 0.3); const C = abPerson(x, z, '搭乗員', { kind: 'crew', label: '搭乗員' }); C.short = Math.random() < 0.4; C.hall = true; AB.hall.push(C); }
+  AB.sumiH = abNamed('sumi', hx, hz - 29, '白瀬 澄');
+  player.pos.set(hx, 0, hz + 26); player.yaw = 0; abLookNight(true);
+  showBanner('幕五 第二幕「出撃」── 前夜', '兵舎で壮行式。殿は歩いて話せる。「翌朝へ」で進む');
+  setTimeout(() => AB.on && abSay(AB.sumiH, AB_LN.party[0], 2), 3000); setTimeout(() => AB.on && abSay(null, AB_LN.party[1], 1), 7000);
+  abUi(true); abNextBtn('翌朝へ', () => abMorning());
+}
+function abLookNight(on) { if (on) { scene.background.setHex(0x0b0e14); scene.fog.color.setHex(0x0b0e14); scene.fog.near = 30; scene.fog.far = 120; hemiL.intensity = 0.55; ambL.intensity = 0.55; sun.intensity = 0.15; } else abLook(); }
+function abNextBtn(text, fn) { let b = $('abNext'); if (!text) { if (b) b.remove(); return; } if (!b) { b = document.createElement('button'); b.id = 'abNext'; b.type = 'button'; abBtnCss(b); b.style.position = 'fixed'; b.style.zIndex = 61; b.style.top = 'calc(68px + var(--sat,0px))'; b.style.left = 'calc(16px + var(--sal,0px))'; b.style.fontSize = '16px'; b.style.padding = '8px 18px'; document.body.appendChild(b); }
+  b.textContent = text; b.onclick = ev => { ev.preventDefault(); ev.stopPropagation(); b.remove(); fn(); }; }
+function abCaption(t, sec) { let c = $('abCap'); if (!c) { c = document.createElement('div'); c.id = 'abCap'; c.style.cssText = 'position:fixed;inset:0;z-index:79;display:flex;align-items:center;justify-content:center;background:#000;color:#e8d9a8;font-size:28px;letter-spacing:.3em;transition:opacity 1s;pointer-events:none'; document.body.appendChild(c); } c.textContent = t; c.style.opacity = 1; c.style.display = 'flex'; setTimeout(() => { c.style.opacity = 0; setTimeout(() => { c.style.display = 'none'; }, 1100); }, (sec || 2.5) * 1000); }
+function abMorning() {
+  abCaption('翌朝', 2.2); AB.ph = 'line';
+  setTimeout(() => { if (!AB.on) return; abLookNight(false);
+    // 広間の六十人は外へ。整列は百人（五列×二十）
+    AB.line = []; for (const C of AB.hall) { C.s.visible = false; C.gone = true; }
+    for (let i = 0; i < 100; i++) { const r = (i / 20) | 0, c = i % 20; const old = AB.hall[i]; const C = abPerson(-70 + r * 2.4, -30 + c * 1.6, '搭乗員', { kind: 'crew', label: '搭乗員', gid: old ? old.gid : null }); C.short = old ? old.short : Math.random() < 0.4; if (old && AB.talk[old.vk]) { AB.talk[C.vk] = AB.talk[old.vk]; C.talkLab = old.talkLab; } C.line = true; AB.line.push(C); }
+    abNamed('ojou', -84, -18, '西園寺 すみれ'); player.pos.set(-86, 0, -14); player.yaw = -Math.PI / 2;
+    showBanner('翌朝 ── 米軍の反撃のあと', '滑走路に穴、焼けた機。搭乗員が整列している。近づけば話せる。「出撃」で発進');
+    setTimeout(() => AB.on && abSay(AB.nm.sumi, AB_LN.lineup[0], 2), 3000); setTimeout(() => AB.on && abKing(AB_KING.morning), 6500);
+    abParkSortie(); abNextBtn('出撃', () => abSortie()); }, 1200);
+}
+function abParkSortie() {   // 出撃機を駐機場に並べる
+  AB.sortie = []; for (let i = 0; i < 27; i++) { const k = i < 12 ? 'g4m' : 'zero', P = abPlane(k, {}); const s = i < 12 ? i : i - 12; P.p.set(k === 'g4m' ? -110 - (s % 2) * 36 : -190, P.y0, k === 'g4m' ? -300 + ((s / 2) | 0) * 34 : -320 + s * 22); P.g.rotation.y = -Math.PI / 2; P.st = 'park'; P.idx = i; P.label = (k === 'g4m' ? '陸攻' + (s + 1) : '零戦' + (s + 1)) + '番機'; AB.sortie.push(P); }
+}
+function abSortie() {   // 乗り込み → 穴をよけて滑走 → 離陸。一機は穴に落ちて転覆・火災
+  AB.ph = 'tko'; abLine('tko'); const lc = AB.line.slice(); let li = 0;
+  AB.sortie.forEach((P, i) => { const n = P.kind === 'g4m' ? 7 : 1; P.crewC = []; for (let k = 0; k < n && li < lc.length; k++) { const C = lc[li++]; P.crewC.push(C); C.spd = 2.4; abGo(C, P.p.x + 3, P.p.z + 2); C.onArrive = () => { C.s.visible = false; C.aboard = P; }; if (AB.talk[C.vk]) P.talk = { gid: C.gid, kind: AB.talk[C.vk], lab: C.talkLab || '搭乗員' }; } });
+  for (const C of lc.slice(li)) { abGo(C, C.home.x - 10, C.home.z, 1.2); }   // 残りは見送り
+  AB.sortie.forEach((P, i) => AB.q.push([AB.t + 25 + i * 5, () => { P.run = true; P.st = 'taxi'; const rx = P.kind === 'g4m' ? 0 : 110; P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 660), new V3(rx, 0, 660), new V3(rx, 0, 640)]; P.onTaxiEnd = 1; if (i === 17) { P.path = [new V3(-40, 0, P.p.z), new V3(-40, 0, 6)]; P.craterHit = true; } }]));
+}
+function abCraterHit(P) {   // 穴に脚を取られて前のめりに転覆、火が出る
+  P.st = 'wreck'; P.run = false; P.g.rotation.x = 0.9; P.p.y = P.y0 + 0.6; P.burn = true; abNoise(1.2, 0.2, 400); abLine('crater', P.p); AB.fireQ.push(P); P.dmg.crash = 1;
+  AB.q.push([AB.t + 15, () => { const C = abPerson(P.p.x - 3, P.p.z + 3, '搭乗員', { kind: 'crew', label: P.label + ' 搭乗員' }); abDown(C, false); C.need = 'bed'; abDrive(AB.amb, [[P.p.x - 14, P.p.z + 10]]); abLine('rescue', P.p); }]);
+}
+function abFF() {   // 飛ばす：数時間後、帰還
+  abCaption('数時間後……', 2.6); AB.ph = 'ret';
+  for (const P of AB.sortie) if (P.st === 'gone') { stageRoot.remove(P.g); P.dead = true; }
+  AB.planes = AB.planes.filter(P => !P.dead);
+  const up = AB.sortie.filter(P => P.st === 'gone'); const L = [];
+  for (const P of up) { const lost = Math.random() < (P.kind === 'g4m' ? 0.3 : 0.22); if (lost) { if (P.talk) AB.missT = (AB.missT || []).concat([P]); continue; }
+    const d = {}; const r = Math.random(); if (r < 0.25) d.smoke = 1; if (r < 0.1) d.belly = 1; if (r > 0.85) d.crater = 1; if (P.kind === 'g4m' && Math.random() < 0.2) d.eng = 1; L.push({ kind: P.kind, d, talk: P.talk, lab: P.label }); }
+  AB.n.g4m = 0; AB.n.zero = 0; abHud(); AB.sched = L; AB.next = AB.t + 6;
+}
+function abRetTalk(P, C) {   // 話した子が帰ってきた
+  C.gid = P.talk.gid; C.s.material = abSprMat(C.gid); C.label = P.talk.lab; const L = P.talk.kind === 'date' ? AB_LN.ret_date : AB_LN.ret_choco;
+  abGo(C, player.pos.x + 1.5, player.pos.z + 1.5, 2.2); C.onArrive = () => { abSay(C, abPick(L), 2.4); setTimeout(() => AB.on && abKing(P.talk.kind === 'date' ? AB_KING.retDate : AB_KING.retChoco), 2800); };
+}
+function abMissReport() { const M = AB.missT || []; M.forEach((P, i) => AB.q.push([AB.t + 6 + i * 9, () => { const w = abNear(player.pos, 40, q => q.st === 'ok' && q.kind !== 'crew') || AB.nm.sumi; abSay(w, `陛下……${P.label}は、戻りませんでした。あの子も……`, 2); AB.q.push([AB.t + 4, () => abKing(AB_KING.miss)]); }])); }
+function abUpdate2(dt) {
+  if (AB.wrecks) for (const P of AB.wrecks) if (Math.random() < dt * 3) abPx('smoke', P.p.clone().setY(1.5).add(new V3(rand(-2, 2), 0, rand(-2, 2))), new V3(rand(-0.3, 0.3), 2.5, 0.4), 9, [0.2, 0.19, 0.18], [0.5, 0.49, 0.47]);
+  if (AB.ph === 'night' && (AB.mT = (AB.mT || 2) - dt) <= 0) { AB.mT = rand(2.5, 5); const q = abNear(player.pos, 14, p => p.hall && p.st === 'ok'); if (q) abSay(q, abPick(AB_LN.party.slice(2)), 0.8); }
+  if (AB.ph === 'tko') { for (const P of AB.sortie) { if (P.craterHit && P.st === 'taxi' && !P.path.length) { abCraterHit(P); P.craterHit = false; } if (P.st === 'taxi' && P.onTaxiEnd && !P.path.length) { P.st = 'tko'; P.t2 = 0; } }
+    if (!AB.ffShown && AB.sortie.every(P => P.st === 'gone' || P.st === 'wreck')) { AB.ffShown = true; showBanner('全機発進', '「飛ばす」で帰還まで進む'); abNextBtn('飛ばす', () => abFF()); } }
+  if (AB.ph === 'ret' && AB.sched && !AB.sched.length && !AB.missDone && AB.planes.every(P => P.st !== 'app' && P.st !== 'roll')) { AB.missDone = true; abMissReport(); }
+}
+
 
 // ---- 第一幕「帰還」：陸攻十八・零戦十二が順に戻る。地上の仕事を見守る ----
 function abNamed(k, x, z, label) { const gid = cvGid(k); return abPerson(x, z, label, { gid, key: k, label, kind: 'named' }); }
@@ -800,12 +862,13 @@ function abSched1() {   // 帰ってくる順と傷み方
 }
 function abReset() {
   for (const k of ['ui']) { }
-  AB.ppl = []; AB.planes = []; AB.veh = []; AB.str = []; AB.q = []; AB.gl = 0; AB.zl = 0; AB.waits = []; AB.dT = 0; AB.sched = null; AB.t = 0; AB.said = {}; AB.log = []; AB.n.g4m = 0; AB.n.zero = 0; AB.bodyN = 0; AB.bedN = 0; AB.slot = 0; AB.alarm = 0; AB.ask = false; AB.over = false; AB.ambT = 4; AB.fuelQ = []; AB.towQ = []; AB.fireQ = [];
+  AB.ppl = []; AB.planes = []; AB.veh = []; AB.str = []; AB.q = []; AB.gl = 0; AB.zl = 0; AB.ph = null; AB.ffShown = false; AB.missDone = false; AB.missT = null; AB.talk = {}; AB.sortie = []; AB.line = []; AB.hall = []; AB.alarm = 0; abNextBtn(null); AB.waits = []; AB.dT = 0; AB.sched = null; AB.t = 0; AB.said = {}; AB.log = []; AB.n.g4m = 0; AB.n.zero = 0; AB.bodyN = 0; AB.bedN = 0; AB.slot = 0; AB.alarm = 0; AB.ask = false; AB.over = false; AB.ambT = 4; AB.fuelQ = []; AB.towQ = []; AB.fireQ = [];
   player.pos.set(-58, 0, 40); player.yaw = Math.PI / 2 + 0.25; player.pitch = 0.02; player.hp = CFG.maxHp;
 }
 function abStart() {
+  if (AB.act === 2) { abStart2(); return; }
   abPopulate1(); AB.sched = abSched1(); AB.next = 18;
-  AB.fire = abVeh('fire', -36, 160, Math.PI); AB.amb = abVeh('amb', -36, 140, Math.PI); AB.fuel = abVeh('fuel', -140, -290, 0); AB.tr = [abVeh('tractor', -200, -200, 0), abVeh('tractor', -200, -195, 0), abVeh('tractor', -200, -190, 0)];
+  abVehicles();
   showBanner('近代海戦 幕五「帰還」', '出撃した陸攻二十七・零戦十八が戻ってくる。殿は地上で待つ。歩いて話せる。作戦終了ボタンで終える');
   setTimeout(() => AB.on && abKing(AB_KING.start), 3500); setTimeout(() => AB.on && abSay(AB.nm.fumi, AB_LN.named[2][1]), 9000);
   abUi(true);
@@ -814,7 +877,7 @@ function abStart() {
 function abLaunch(o) {
   const P = abPlane(o.kind, o.d), rx = o.kind === 'g4m' ? AB_RW[0] + rand(-4, 4) : AB_RW[1] + rand(-4, 4); P.rx = rx; P.st = 'app'; P.t = 0; P.run = true; P.T = o.kind === 'g4m' ? 30 : 24;
   P.a = new V3(rx + rand(-30, 30), 150, 2100); P.b = o.d.crash ? new V3(rx + rand(-20, 20), P.y0 * 0.4, 820 + rand(0, 60)) : new V3(rx, P.y0, 640); P.p.copy(P.a);
-  if (o.d.belly || o.d.crash) P.gear.visible = false; P.label = (o.kind === 'g4m' ? '陸攻' : '零戦') + (o.kind === 'g4m' ? ++AB.gl : ++AB.zl) + '番機';
+  if (o.d.belly || o.d.crash) P.gear.visible = false; P.label = o.lab || ((o.kind === 'g4m' ? '陸攻' : '零戦') + (o.kind === 'g4m' ? ++AB.gl : ++AB.zl) + '番機'); P.talk = o.talk || null;
   if (!AB.said.first) { AB.said.first = 1; setTimeout(() => AB.on && abSay(AB.nm.sumi, AB_LN.named[0][1]), 1500); } else if (Math.random() < 0.5) setTimeout(() => AB.on && abLine('amb'), 2500);
   if (o.d.smoke) setTimeout(() => AB.on && abLine('amb', null), 6000);
 }
@@ -825,9 +888,9 @@ function abPlaneTick(P, dt) {
   if (P.st === 'app') { const u = Math.min(1, P.t / P.T); P.p.lerpVectors(P.a, P.b, u); P.g.rotation.x = 0.06; if (P.dmg.smoke) P.g.rotation.z = Math.sin(P.t * 1.4) * 0.06;
     if (u >= 1) { P.g.rotation.set(0, 0, 0);
       if (P.dmg.crash) { P.st = 'wreck'; P.run = false; P.g.rotation.set(0.12, rand(-0.6, 0.6), rand(-0.4, 0.4)); P.p.y = P.y0 * 0.45; for (let k = 0; k < 40; k++) abPx('dust', P.p.clone(), new V3(rand(-8, 8), rand(1, 6), rand(-12, 2)), 4, [0.55, 0.5, 0.42], [0.7, 0.66, 0.6]); abNoise(1.4, 0.25, 300); abLine('crashShort', P.p); P.burn = true; abStopped(P); }
-      else { P.st = 'roll'; P.v = P.kind === 'g4m' ? 58 : 50; P.stopZ = P.dmg.belly ? rand(330, 420) : P.dmg.grim ? rand(80, 160) : rand(-120, 60); if (P.dmg.belly) { P.p.y = P.y0 * 0.45; abLine('belly', P.p); } } } return; }
+      else { P.st = 'roll'; P.v = P.kind === 'g4m' ? 58 : 50; P.stopZ = P.dmg.crater ? rand(100, 300) : P.dmg.belly ? rand(330, 420) : P.dmg.grim ? rand(80, 160) : rand(-120, 60); if (P.dmg.belly) { P.p.y = P.y0 * 0.45; abLine('belly', P.p); } } } return; }
   if (P.st === 'roll') { const d = P.p.z - P.stopZ, a = (P.v * P.v) / Math.max(4, 2 * d); P.v = Math.max(0, P.v - a * dt); P.p.z -= P.v * dt; if (P.dmg.belly && Math.random() < 0.8) abPx('spark', P.p.clone().setY(0.2).add(new V3(rand(-2, 2), 0, rand(-2, 4))), new V3(rand(-3, 3), rand(1, 4), rand(2, 8)), 0.6, [1, 0.9, 0.5], [1, 0.4, 0.1]);
-    if (P.v < 0.5 || d < 0.5) { if (P.dmg.belly || P.dmg.grim) { P.st = 'stopped'; P.run = !!P.dmg.grim && false; if (P.dmg.fire) P.burn = true; abStopped(P); } else { P.st = 'taxi'; const s = AB.slot++, sx = -95 - (s % 2) * 40, sz = -260 + ((s / 2) | 0) * 34; P.path = [new V3(P.rx - 32, 0, P.p.z), new V3(sx + 24, 0, sz), new V3(sx, 0, sz)]; P.slotP = new V3(sx, 0, sz); } } return; }
+    if (P.v < 0.5 || d < 0.5) { if (P.dmg.crater) { P.st = 'stopped'; P.run = false; P.g.rotation.x = 0.45; P.burn = Math.random() < 0.5; abLine('crater', P.p); abStopped(P); } else if (P.dmg.belly || P.dmg.grim) { P.st = 'stopped'; P.run = !!P.dmg.grim && false; if (P.dmg.fire) P.burn = true; abStopped(P); } else { P.st = 'taxi'; const s = AB.slot++, sx = -95 - (s % 2) * 40, sz = -260 + ((s / 2) | 0) * 34; P.path = [new V3(P.rx - 32, 0, P.p.z), new V3(sx + 24, 0, sz), new V3(sx, 0, sz)]; P.slotP = new V3(sx, 0, sz); } } return; }
   if (P.st === 'taxi') { const T = P.path[0]; if (!T) { P.st = 'park'; P.run = false; P.g.rotation.y = -Math.PI / 2; abStopped(P); return; } const dx = T.x - P.p.x, dz = T.z - P.p.z, d = Math.hypot(dx, dz); if (d < 1) { P.path.shift(); return; } const v = Math.min(d, 9 * dt); P.p.x += dx / d * v; P.p.z += dz / d * v; P.g.rotation.y = Math.atan2(dx, dz) + Math.PI; return; }
   if (P.st === 'tko') { P.t2 = (P.t2 || 0) + dt; const v = Math.min(55, P.t2 * 6); P.p.z -= v * dt; if (v > 40) { P.p.y += (v - 40) * 0.5 * dt; P.g.rotation.x = -0.12; } if (P.p.z < -1800) { P.st = 'gone'; P.g.visible = false; P.run = false; } }
 }
@@ -839,15 +902,17 @@ function abStopped(P) {   // 止まった：人を出す・消火・担架・整
   if (d.crash) { dead = P.kind === 'g4m' ? 3 + ((Math.random() * 2) | 0) : 1; wnd = n - dead; } else if (d.grim) { dead = 2; wnd = 2; } else if (d.belly) { dead = Math.random() < 0.5 ? 1 : 0; wnd = 2; } else if (d.smoke) { dead = Math.random() < 0.35 ? 1 : 0; wnd = (Math.random() * 2) | 0; }
   const delay = P.burn ? 16 : 3;
   AB.q.push([AB.t + delay, () => {
-    for (let k = 0; k < n; k++) { const side = k % 2 ? 1 : -1, x = P.p.x + side * rand(2.5, 4.5), z = P.p.z + rand(-3, 6); const C = abPerson(x, z, '搭乗員', { kind: 'crew', label: (P.label || '') + ' 搭乗員' });
+    const out = [];
+    for (let k = 0; k < n; k++) { const side = k % 2 ? 1 : -1, x = P.p.x + side * rand(2.5, 4.5), z = P.p.z + rand(-3, 6); const C = abPerson(x, z, '搭乗員', { kind: 'crew', label: (P.label || '') + ' 搭乗員' }); out.push(C);
       if (d.grim && k === 0) { C.label = P.label + ' 機長'; abDown(C, true); C.need = 'body'; }
       else if (d.grim && k === 1) { C.label = P.label + ' 副操縦手'; abDown(C, true); C.need = 'body'; }
       else if (d.grim && k === 2) { C.label = P.label + ' 機銃手'; C.shock = true; AB.gunner = C; }
       else if (k >= n - dead && !d.grim) { abDown(C, true); C.need = 'body'; }
       else if (k < wnd + (d.grim ? 3 : 0) && !(d.grim && k < 3)) { abDown(C, false); C.need = 'bed'; }
       else { abGo(C, AB_TENT.rest[0] + rand(-6, 6), AB_TENT.rest[1] + rand(-8, 8), 1.1); } }
+    if (P.talk) { const C = out.find(c => c.st === 'ok' && !c.shock); if (C) abRetTalk(P, C); }
     if (dead + wnd) abLine('rescue', P.p); if (d.grim) abKeyScene(P);
-    if (P.dmg.crash || P.dmg.belly) AB.q.push([AB.t + 40, () => abStrip(P)]); else if (P.dmg.smoke || P.dmg.grim) AB.towQ.push(P); else AB.fuelQ.push(P);
+    if (P.dmg.crash || P.dmg.belly || P.dmg.crater) AB.q.push([AB.t + 40, () => abStrip(P)]); else if (P.dmg.smoke || P.dmg.grim) AB.towQ.push(P); else AB.fuelQ.push(P);
     if (P.dmg.crash || P.dmg.belly || dead + wnd > 1) abDrive(AB.amb, [[P.p.x - 14, P.p.z + 10]]);
   }]);
 }
@@ -907,14 +972,15 @@ function abUpdate(dt) {
   if (!AB.on) return; AB.t += dt;
   AB.q = AB.q.filter(([t, f]) => { if (AB.t >= t) { try { f(); } catch (e) { console.warn(e); } return false; } return true; });
   if (AB.sched && AB.sched.length && AB.t >= AB.next) { abLaunch(AB.sched.shift()); AB.next = AB.t + rand(9, 14); }
-  if (!AB.alarm && AB.n.g4m + AB.n.zero >= 16) abAlarm();
+  if (AB.act === 2) abUpdate2(dt);
+  if (AB.act === 1 && !AB.alarm && AB.n.g4m + AB.n.zero >= 16) abAlarm();
   if (AB.sched && !AB.sched.length && !AB.said.allIn && AB.planes.every(P => P.st !== 'app' && P.st !== 'roll')) { AB.said.allIn = 1; AB.q.push([AB.t + 20, () => { abSay(AB.nm.omiya, `陸攻${AB.n.g4m}、零戦${AB.n.zero - 0}……これで全部です`, 1.8); abKing(AB_KING.clear); showBanner('帰還、これまで', `陸攻 ${AB.n.g4m}／${AB.n.g4mOut}・零戦 ${AB.n.zero}／${AB.n.zeroOut}。作戦終了ボタンで終える`); }]); }
-  for (const P of AB.planes) { abPlaneTick(P, dt); if (P.st === 'taxi' && P.onTaxiEnd && !P.path.length) { P.st = 'tko'; P.t2 = 0; } if (P.st === 'repair' && P.repT != null) abRepairTick(P, dt); if (P.strip) abStripTick(P, dt); }
+  for (const P of AB.planes) { abPlaneTick(P, dt); if (P.st === 'taxi' && P.craterHit && !P.path.length) { P.craterHit = false; abCraterHit(P); } if (P.st === 'taxi' && P.onTaxiEnd && !P.path.length) { P.st = 'tko'; P.t2 = 0; } if (P.st === 'repair' && P.repT != null) abRepairTick(P, dt); if (P.strip) abStripTick(P, dt); }
   for (const p of AB.ppl) abPersonTick(p, dt); for (const S of [...AB.str]) abStrTick(S, dt); for (const V of AB.veh) abVehTick(V, dt);
   if (AB.waits) AB.waits = AB.waits.filter(f => !f());
   const F = AB.fire; if (F.sprayT > 0) { F.sprayT -= dt; const P = F.work; const n0 = F.p.clone().setY(2.6); for (let k = 0; k < 4; k++) abPx('water', n0, P.p.clone().sub(n0).setY(6).multiplyScalar(0.55).add(new V3(rand(-1, 1), rand(0, 2), rand(-1, 1))), 1.6, [0.9, 0.93, 0.95], [0.75, 0.78, 0.8]); if (F.sprayT <= 0) { P.burn = false; abLine('fire', P.p, q => q.kind === 'fire'); F.work = null; abDrive(F, [[-36, 160]]); for (const q of AB.ppl) if (q.kind === 'fire' && q.st === 'ok') abGo(q, q.home.x, q.home.z, 2); } }
   if ((AB.dT = (AB.dT || 0) - dt) <= 0) { AB.dT = 1; abDispatch(); }
-  if ((AB.ambT -= dt) <= 0) { AB.ambT = rand(3, 6); const near = AB.ppl.filter(q => q.st === 'ok' && q.kind !== 'named' && Math.hypot(q.p.x - player.pos.x, q.p.z - player.pos.z) < 50); if (near.length) { const q = abPick(near), k = q.kind === 'mech' ? 'repair' : q.kind === 'medic' ? 'triage' : q.kind === 'arm' ? 'turn' : 'amb'; abSay(q, abPick(AB_LN[k]), 0.9); }
+  if ((AB.ambT -= dt) <= 0 && (AB.act === 1 || AB.ph === 'ret')) { AB.ambT = rand(3, 6); const near = AB.ppl.filter(q => q.st === 'ok' && q.kind !== 'named' && Math.hypot(q.p.x - player.pos.x, q.p.z - player.pos.z) < 50); if (near.length) { const q = abPick(near), k = q.kind === 'mech' ? 'repair' : q.kind === 'medic' ? 'triage' : q.kind === 'arm' ? 'turn' : 'amb'; abSay(q, abPick(AB_LN[k]), 0.9); }
     if (Math.random() < 0.15) { const nm = abPick(AB_LN.named.slice(3)); abSay(AB.nm[nm[0]], nm[1], 1.4); } }
   if (AB.sock) AB.sock.rotation.y = Math.sin(AB.t * 0.3) * 0.2;
   abPxTick(dt); abEngTick(dt); abTalkHud();
@@ -943,7 +1009,8 @@ function abTalkHud() {
 function abMenu() {
   if ($('abMenu') || state !== 'play') return; const q = AB.near, g = abGrimNear(); if (document.exitPointerLock) document.exitPointerLock();
   const m = document.createElement('div'); m.id = 'abMenu'; m.style.cssText = `position:fixed;z-index:62;left:50%;transform:translateX(-50%);bottom:${MOBILE ? 150 : 70}px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:94vw`;
-  const opts = []; if (q) { opts.push(['good', AB_ASK.good], ['stat', AB_ASK.stat]); if (q.kind === 'crew') opts.push(['crew', AB_ASK.crew]); if (q.kind === 'mech') opts.push(['mech', AB_ASK.mech]); if (q.kind === 'crew' || q.kind === 'medic') opts.push(['rest', AB_ASK.rest]); }
+  const opts = []; if (q && AB.act === 2 && q.kind === 'crew' && (q.hall || q.line)) { opts.push(['date', AB_ASK.date], ['choco', AB_ASK.choco]); if (q.hall) { opts.push(['cup', AB_ASK.cup], ['hair', AB_ASK.hair]); if (q.short) opts.push(['hairS', AB_ASK.hairS]); } }
+  else if (q) { opts.push(['good', AB_ASK.good], ['stat', AB_ASK.stat]); if (q.kind === 'crew') opts.push(['crew', AB_ASK.crew]); if (q.kind === 'mech') opts.push(['mech', AB_ASK.mech]); if (q.kind === 'crew' || q.kind === 'medic') opts.push(['rest', AB_ASK.rest]); }
   if (g) opts.push(['bloody', AB_ASK.bloody]); opts.push(['x', 'やめる']);
   for (const [k, l] of opts) { const b = document.createElement('button'); b.type = 'button'; b.textContent = l; abBtnCss(b); b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); m.remove(); abAnswer(k, q, g); }); m.appendChild(b); }
   document.body.appendChild(m);
@@ -953,6 +1020,8 @@ function abAnswer(k, q, g) {
   if (k === 'x') { lock(); return; }
   abKing(AB_ASK[k]);
   if (k === 'bloody') { abCabin(true); const who = abNear(g.p, 30, p => p.st === 'ok' && p.kind !== 'crew') || q; AB_LN.rep_bloody.forEach((s, i) => AB.q.push([AB.t + 1.6 + i * 3.2, () => abSay(who, s, 2)])); AB.q.push([AB.t + 15, () => abCabin(false)]); return; }
+  if (k === 'date' || k === 'choco') { AB.talk[q.vk] = k; q.talkLab = q.label; const pool = k === 'date' ? AB_LN.p_date : AB_LN.p_choco; setTimeout(() => AB.on && abSay(q, abPick(pool), 1.8), 1100); setTimeout(() => { const b = abNear(q.p, 6, p => p !== q && p.st === 'ok' && p.kind === 'crew'); if (b && AB.on) abSay(b, abPick(AB_LN.p_by), 1); }, 3800); lock(); return; }
+  if (k === 'cup' || k === 'hair' || k === 'hairS') { setTimeout(() => AB.on && abSay(q, abPick(AB_LN['p_' + k]), 1.8), 1100); lock(); return; }
   if (k === 'stat') { setTimeout(() => AB.on && abSay(q, `陸攻 ${AB.n.g4m}、零戦 ${AB.n.zero} が戻りました。まだ待っています`, 1.8), 1100); lock(); return; }
   const pool = k === 'good' ? AB_LN.rep_good : k === 'crew' ? AB_LN.rep_crew : k === 'mech' ? AB_LN.rep_mech : AB_LN.rep_rest; setTimeout(() => AB.on && abSay(q, abPick(pool), 1.8), 1100); lock();
 }
@@ -977,7 +1046,7 @@ function abEndAsk() {
 function abEndAns(yes) { AB.ask = false; const d = $('abAsk'); if (d) d.style.display = 'none'; if (yes) gameOver(true); else lock(); }
 function abOverText(win) {
   abUi(false); const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
-  if (h1) h1.textContent = '作戦終了'; if (h2) h2.textContent = `幕五「帰還」 ── 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut} が戻った　並べた者 ${AB.bodyN}・手当て ${AB.bedN}`;
+  if (h1) h1.textContent = '作戦終了'; if (h2) h2.textContent = `幕五 ${['', '「帰還」', '「出撃」', '「特攻」', '「夜」'][AB.act] || ''} ── 陸攻 ${AB.n.g4m}/${AB.n.g4mOut}・零戦 ${AB.n.zero}/${AB.n.zeroOut} が戻った　並べた者 ${AB.bodyN}・手当て ${AB.bedN}`;
 }
 addEventListener('keydown', ev => {
   if (!AB.on || state !== 'play') return;
@@ -1256,7 +1325,7 @@ function mechMedEnsure() {
   medics.blue = medics.blue.filter(m => !m.extra);
   if (MED_NAMES.blue.surgeon.length > 2) MED_NAMES.blue.surgeon.length = 2;
   if (MED_NAMES.blue.nurse.length > 2) MED_NAMES.blue.nurse.length = 2;
-  const extra = { surgeon: ['外科医 九条 紗英', '外科医 葉山 みどり'], nurse: ['看護師 遠野 あかり', '看護師 水無瀬 ことね'] };
+  const extra = { surgeon: ['外科医 九条 紗英', '外科医 葉山 みどり'], nurse: ['看護師 遠野 あかり', '看護師 早瀬 ことね'] };
   for (const role of ['surgeon', 'nurse']) for (let k = 0; k < 2; k++) {
     medics.blue.push({ role, e: null, dead: false, extra: true });
     MED_NAMES.blue[role].push(extra[role][k]);
@@ -3209,7 +3278,7 @@ function stageLook(name) {
   ambL.intensity = uk3 ? 0.14 : pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = uk3 ? 0.5 : uk || uk2 ? 1.2 : pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
-  AB.on = /^ab\d/.test(name); if (AB.on) abLook(); else if (typeof abUi === 'function') abUi(false);   // 幕五 航空基地
+  AB.on = /^ab\d/.test(name); document.documentElement.classList.toggle('abobs', AB.on); if (AB.on) abLook(); else if (typeof abUi === 'function') abUi(false);   // 幕五 航空基地
   FB.on = name === 'fubuki'; if (FB.on) fbLook(); else if (typeof fbEndBtn === 'function') fbEndBtn(false);   // 吹雪の山岳行軍
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 
@@ -14217,6 +14286,7 @@ const STAGES = {
   island: { name: '無人島サバイバル模擬戦闘', desc: '200人を乗せた飛行機が不時着。敵味方の区別をなくして生還を目指す。南側の砂浜の流砂・アリジゴク、森の棘を撃つ木と毒の湖、吸血草の草地を抜け、最後の広場で死亡した侍女たちの敵役を全員倒せ。本陣は不時着した機内。' },
   nanban: { name: '南蛮の戦い', desc: '日本軍はベトナムの山間へ進む。道の両側は絶壁で、仕掛けのある谷を進むしかない。槍が先頭、その後ろに懐刀、弓はさらに後ろから斉射する。日本の侍女はおよそ百人。英国がおよそ三十人、後ろからマスケットで続く。破裂弾の大砲が二門。弾は人に直撃せず、手前で破裂して破片が飛ぶ。会敵までは少し歩く。張り線、振り子の丸太、しなる竹、穴、蜂の巣は間隔をあけてあり、旗が見える。近づくと印がつき、秘書の「足元見て」「棒で突いて進め」でも見つかる。こちら側で E を押すと外し、敵側に立って E を押すと敵の方へ向く。穴は見張りを置くか、ふさぐ。現地の娘は弓か懐刀で、ベトナムの名とベトナム語。獣は飼い主を襲わない。稜線まで抜け、獣と現地の娘がいなくなれば勝ち。' },
   keiku4: { name: '近代海戦 幕四「船旅」', desc: '戦いを終えた夜。桜鳳の客船区画の食堂で祝勝会。卓を回って皆と話し、乾杯・歌・手品・物まねを頼める。艦の揺れ、戦死した仲間の席、酔った侍女、雪風と補給艦からの無線の乾杯。途中で王が会議室に皆を集め、セキュリティを確かめる。終わるのは終了ボタンか Q。' },
+  ab2: { name: '近代海戦 幕五 第二幕「出撃」', desc: '前夜の兵舎で壮行式。翌朝、米軍の反撃で穴だらけの基地から陸攻十二・零戦十五が発進する。「飛ばす」で帰還へ。話した子が帰れば約束の一言、帰らなければ侍女が静かに告げる。作戦終了ボタンで終える。' },
   ab1: { name: '近代海戦 幕五「帰還」', desc: '陸の航空基地。出撃した一式陸攻二十七・零戦十八のうち、傷ついた機が次々と戻ってくる。殿は地上で見守り、歩いて話せる。消火・救出・担架・給油・修理。作戦終了ボタンで終える。' },
   keiku3: { name: '近代海戦 幕三「輸送機強襲」', desc: '修理を終えた桜鳳に、米軍の C-47 輸送機三機が艦尾から強行着艦を試みる。一番機は甲板に激突して大破、二・三番機から空挺兵が降りて艦橋・機関室・弾薬庫を狙う。近衛は王を囲み、迎撃班は弓と懐刀で迎え撃つ。終わるのは終了ボタンか殿の死だけ。' },
   keiku2: { name: '近代海戦 幕二「レトロ砲戦」', desc: '第一艦隊が米重巡（ボルチモア級、20.3 cm 三連装三基）と近距離で出会う。夾叉、命中、火災。大淀は 15.5 cm 砲、雪風は 61 cm 魚雷と煙幕で反撃する。終わるのは終了ボタンか殿の死だけ。' },
@@ -23150,7 +23220,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zr';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zs';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23259,7 +23329,7 @@ const EXTRA_GIRLS = {
   girl25: { type: 'mob', anyRole: true, prof: { name: '雨宮 小夜', pers: '臆病', cm: 157, vv: 1, pitch: 1.2 } },     // 横の三つ編み・物静か
   // v6：新しい兵の娘 6人（正面・横・斜め・後ろの写真。両軍の通常の兵として全ステージに出る）
   girl26: { type: 'mob', anyRole: true, prof: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1, pitch: 1.15 } },  // 夜会巻き・腰に手・自信家
-  girl27: { type: 'mob', anyRole: true, prof: { name: '小鳥遊 ここな', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
+  girl27: { type: 'mob', anyRole: true, prof: { name: '小鳥遊 ひびき', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
   girl28: { type: 'mob', anyRole: true, prof: { name: '朝倉 ひなた', pers: '陽気', cm: 158, vv: 2, pitch: 1.45 } },  // 両手ピース・ポニーテール・元気いっぱい
   girl29: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
   girl30: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
@@ -26321,7 +26391,7 @@ const SYSOP_REQ = {
 // ---- 救護班（両軍とも外科医2人＋看護師2人）。外科医は矢を抜いて手当てし起こす（少し助けやすい）。看護師は外科医の手伝い・包帯・声かけ、
 //      手の空いた外科医がいないときは自分で手当てする。一人の娘を二人で取り合わない（medBy＝主に手当てする人、assistBy＝手伝い）
 const MED_TEAM = role => [0, 1].map(i => ({ role, e: null, dead: false }));
-const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 白石 のぞみ'] },
+const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 白石 麗華'] },
   orange: { surgeon: ['外科医 楠 かおる', '外科医 柊 理沙'], nurse: ['看護師 若葉 つばさ', '看護師 小野寺 結衣'] } };
 const medics = { blue: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')], orange: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')] };
 // v10：青組の看護師をもう一人（羽田 なぎさ、22歳。落ち着いた性格。高校ではバドミントン部、看護大学卒）。自分の写真（nurse2）で、他の看護師と同じ働き
@@ -28170,7 +28240,7 @@ function drawWeapon() {
   if (state !== 'play' && state !== 'pause') return;
   if (RK.on) { rkDraw2D(); return; }
   if (UD.on) { udDraw2D(); return; }
-  if (UK.on || UK7.on || PAL.on) return;   // 英国淑女編の会見・祝勝会・宮殿の日常：弓は構えない
+  if (UK.on || UK7.on || PAL.on || AB.on) return;   // 英国淑女編の会見・祝勝会・宮殿の日常：弓は構えない
   const sw = player.switchT > 0 ? Math.sin(player.switchT / 0.3 * Math.PI) : 0;
   const bobX = Math.cos(player.bob) * H * 0.012, bobY = Math.abs(Math.sin(player.bob)) * H * 0.015 + sw * H * 0.35;
   // 弓の引き具合の照準リング
@@ -28446,7 +28516,7 @@ document.addEventListener('mousedown', e => {
 });
 document.addEventListener('mouseup', e => { if (MOBILE) return; if (state === 'play' && e.button === 0) primaryUp(); });
 document.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !UK.on && !UK7.on && !PAL.on && !UK.choice) setWeapon(player.weapon ^ 1); }, { passive: true });
+addEventListener('wheel', e => { if (!MOBILE && state === 'play' && !menuOpen && !AB.on && !UK.on && !UK7.on && !PAL.on && !UK.choice) setWeapon(player.weapon ^ 1); }, { passive: true });
 // ---- 選択肢メニューのキー操作（全ステージ共通）：↑↓／W・S で選び、Enter・E で決定。長いメニューは枠の中でスクロール ----
 const MenuNav = { i: -1, box: null };
 function menuNavBox() { if (UK.choice) return $('ukdlgChoices'); if (menuOpen) return $('secmenu'); return null; }
@@ -28483,6 +28553,7 @@ function primaryDown() {
     if (!UD.kingJump) udKingJump();
     return;
   }
+  if (AB.on) return;   // 幕五：殿は見守る側。武器は持たない
   if (PAL.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('宮殿の中では武器は使いません'); return; }
   if (UK7.on) { if (UK.dlg && !UK.choice) ukDlgSkip(); else popup('祝勝会：武器は鞘に収めたまま'); return; }   // 第七幕：宴の客と給仕には刃を向けない
   if (UK.on) { if (UK.dlg) ukDlgSkip(); else popup('会見の場：弓は引かない'); return; }

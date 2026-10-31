@@ -10553,7 +10553,24 @@ function buildKeiku() {
   for (const z of [-88, -70, -34, -4, 16, 66]) cvGun(-10.85, z, Yd, false);
   for (const z of [-88, -70, 50, 68]) cvGun(10.85, z, Yd, false);
   cvGun(12.8, -14, Yd, false); cvGun(12.8, 28, Yd, false);
-  CV.Yg = Y1 + 3.2; cvScaleShip(1.62);
+  CV.Yg = Y1 + 3.2; cvScaleShip(1.62); cvSnapFloors();
+}
+// 当たりの床を、見えている床板の上面に合わせる（人が床にめり込む・浮くのを防ぐ）
+function cvSnapFloors() {
+  stageRoot.updateMatrixWorld(true);
+  const objs = []; stageRoot.traverse(o => { if (o.isMesh && o.visible && !o.isSprite && !(o.material && o.material.transparent && o.material.opacity < 0.3)) objs.push(o); });
+  const rc = new THREE.Raycaster(), dn = new THREE.Vector3(0, -1, 0), o = new THREE.Vector3(); let n = 0;
+  for (const f of floors) {
+    if (f.dyn || f.elev || (CV.elevs || []).some(e => e.fl === f || (f.x0 < e.fl.x1 + 1 && f.x1 > e.fl.x0 - 1 && f.z0 < e.fl.z1 + 1 && f.z1 > e.fl.z0 - 1 && Math.abs(f.y - e.fl.y) < 8))) continue;
+    const d = [];
+    for (const [u, v] of [[0.2, 0.2], [0.8, 0.2], [0.5, 0.5], [0.2, 0.8], [0.8, 0.8], [0.35, 0.65], [0.65, 0.35]]) {
+      o.set(f.x0 + (f.x1 - f.x0) * u, f.y + 0.9, f.z0 + (f.z1 - f.z0) * v); rc.set(o, dn); rc.far = 1.6;
+      const h = rc.intersectObjects(objs, false); if (h.length) d.push(h[0].point.y - f.y);
+    }
+    if (d.length < 4) continue; d.sort((a, b) => a - b); const m = d[d.length >> 1];
+    if (m > 0.025 && m < 0.45 && d.filter(v => Math.abs(v - m) < 0.02).length >= 4) { f.y += m; n++; }
+  }
+  CV.snapN = n;
 }
 function cvScaleShip(S) {
   CV.S = S;
@@ -10655,7 +10672,7 @@ function cvPush(pos, r) {
 }
 function cvElevStep(dt) {
   if (!CV.elevs) return;
-  const top = (CV.Yd || 12) + 0.08, bot = (CV.Yh || 6) + 0.55;
+  const th = 0.165 * (CV.S || 1), top = (CV.Yd || 12) - th + 0.01, bot = (CV.Yh || 6) + 0.08 * (CV.S || 1) - th + 0.01;   // 床板の上面を甲板・格納庫床と面一に
   for (const e of CV.elevs) {
     if (e.dir) {
       e.y += e.dir * dt * 0.18;
@@ -10663,7 +10680,7 @@ function cvElevStep(dt) {
       if (e.y <= 0) { e.y = 0; e.dir = 0; }
     }
     e.m.position.y = bot + (top - bot) * e.y;
-    e.fl.y = e.m.position.y;
+    e.fl.y = e.m.position.y + th;   // 昇降機の床板の上面に立つ
     const L = e.busy;
     if (L && L.ph === 'onElev') {
       L.g.position.set(e.m.position.x, e.m.position.y + 1.05, e.m.position.z);
@@ -10937,6 +10954,7 @@ function cvAliveN() { let n = 0; for (const r of CV.R || []) if (r.d !== 'fam' &
 function cvSpawnR(r) {
   const opt = { yari: -1, y: r.y, cv: true, set: { special: true, cvWalk: true, passive: true } };
   const gid = r.gid || r.girl; if (gid && GIRLS[gid]) opt.girl = gid;
+  if (!r.ySnap) { const fy = floorUnder(r.x, r.z, r.y + 0.3); if (fy > r.y - 0.6 && fy < r.y + 0.75) r.y = fy; r.ySnap = true; opt.y = r.y; }
   const e = spawnEnemy(r.x, r.z, 'mob', false, 'blue', opt); if (!e) return null;
   if (!r.gid && e.girl) r.girl = e.girl.id;
   e.state = 'idle'; e.baseY = r.y; e.s.position.set(r.x, r.y, r.z); e.hold = { face: r.f }; e.faceWant = e.face = r.f; e.s.rotation.y = r.f;
@@ -10979,6 +10997,7 @@ function cvActStep(e, dt) {
     else if (d > 0.08) { const st = Math.min(d, dt * (r.mv ? 2.6 : 1.1)); x += dx / d * st; z += dz / d * st; e.faceWant = Math.atan2(dx, dz); }
     else { if (r.mv) r.mv = false; e.faceWant = r.f + Math.sin(time * 0.31 + r.i) * (r.w === 'kneel' ? 0.1 : 0.45); }
   }
+  if (x !== p.x || z !== p.z) { const fy = floorUnder(x, z, e.baseY + 0.45); if (fy > e.baseY - 0.9 && fy < e.baseY + 0.5) e.baseY = fy; }   // 階段・段差でも足を床に
   p.set(x, e.baseY, z); e.wx = x; e.wz = z; e.wy = e.baseY;
   const cp = camera.position, near = Math.abs(e.baseY + 1.4 - cp.y) < 4.5 && Math.hypot(x - cp.x, z - cp.z) < 22;
   if (near) animateNpc(e, dt, 0);
@@ -11427,8 +11446,9 @@ function cvStart() {
   CV.vmap = {}; const VL = (window.VOICE_CV || {}).lines || {}; for (const k in VL) { const L = VL[k]; CV.vmap[(L.who || '*') + '|' + L.ja] = L.file; }
   cvStream(0, true);
   window.__cv = { CV, cvRosterOpen, cvRosterClose, cvHole, cvBoom, cvHitR, cvStream, cvSpawnFoe, cvDownR, cvTally, cvTracer, cvGunCheck: typeof cvGunCheck === "function" ? cvGunCheck : null };
-  let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
-    b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); CV.rosOpen ? cvRosterClose() : cvRosterOpen(); }); }
+  let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;pointer-events:auto;touch-action:manipulation;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
+    const tg = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; CV.rosOpen ? cvRosterClose() : cvRosterOpen(); };
+    b.addEventListener('click', tg); b.addEventListener('touchstart', tg, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); }
   showBanner('軽空母の航海', `乗艦 ${CV.total0}（部署の定員と予備・交代員百）。R で定員表、戦闘機は E で操縦席`);
   setTimeout(() => { if (CV.on && state === 'play') cvKingSay(CV_KING[0]); }, 700);
   setTimeout(() => { if (CV.on && state === 'play' && CV.capR) cvSay(CV.capR, CV_FAMLN.sumi[1], 1.6); }, 4200);
@@ -19960,7 +19980,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -25533,7 +25553,7 @@ if (mtnOpenBtn) {
 $('titleBtn').onclick = toTitle;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = toTitle;
-{ const b = $('bCvEnd'); if (b) b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); cvEndAsk(); }); }
+{ const b = $('bCvEnd'); if (b) { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; cvEndAsk(); }; b.addEventListener('click', f); b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); } }
 
 // 梯子の案内：近くに梯子があれば「W で上る／E で自動」などを出す（スマホは「梯子」ボタン）
 function ladderGo() {

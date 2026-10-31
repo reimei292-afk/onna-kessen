@@ -9943,6 +9943,45 @@ function cvFighter(x, y, z, yaw, kind) {
   g.position.set(x, y, z); g.rotation.y = yaw; stageRoot.add(g);
   return g;
 }
+// 格納庫の後部：整備場。作業台・予備発動機とプロペラ・翼の架台・爆弾/魚雷運搬車・揚弾口・消火ホースと消火器・整備員の休憩所
+function cvHangarShop(Y, boxes) {
+  const L = c => new THREE.MeshLambertMaterial({ color: c }), M = CV.M;
+  const wood = L(0x6b4a2c), steel = M.steel, dark = M.dark, red = L(0xa82a22), olive = L(0x4a5a3a), yel = L(0xc9a020), canvas = L(0xb8ad8c), brass = M.brass || L(0xb08a3a), cream = L(0xe6dcc4);
+  const box = (x0, x1, y0, y1, z0, z1, m, solid) => { cvSlab(x0, x1, Y + y0, Y + y1, z0, z1, m); if (solid) boxes.push({ x0, x1, z0, z1, y0: Y, y1: Y + y1 }); };
+  const cyl = (x, y, z, r0, r1, h, m, rx, rz, n) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, n || 12), m); o.position.set(x, Y + y, z); if (rx) o.rotation.x = rx; if (rz) o.rotation.z = rz; stageRoot.add(o); return o; };
+  // 作業台（右舷の壁ぞい）：天板・脚・万力・工具・油の染み
+  for (const z of [19, 23.5, 28]) { const x0 = 6.6, x1 = 8.2; box(x0, x1, 0.86, 0.92, z, z + 3.6, wood, true); for (const [a, b] of [[x0 + 0.05, z + 0.05], [x1 - 0.12, z + 0.05], [x0 + 0.05, z + 3.48], [x1 - 0.12, z + 3.48]]) box(a, a + 0.07, 0, 0.86, b, b + 0.07, steel);
+    box(x0 + 0.1, x1 - 0.1, 0.25, 0.28, z + 0.1, z + 3.5, wood); box(x1 - 0.05, x1, 0.92, 2.2, z, z + 3.6, L(0x5a5040));   // 下の棚と工具板
+    for (let k = 0; k < 7; k++) box(x1 - 0.09, x1 - 0.05, 1.2 + (k % 3) * 0.28, 1.45 + (k % 3) * 0.28, z + 0.3 + k * 0.45, z + 0.36 + k * 0.45, k % 2 ? steel : red);
+    cyl(x0 + 0.35, 1.02, z + 0.6, 0.08, 0.08, 0.2, dark); box(x0 + 0.2, x0 + 0.5, 0.92, 1.0, z + 1.4, z + 2.4, L(0x3a3a38)); cyl(x0 + 0.6, 0.93, z + 2.9, 0.18, 0.18, 0.01, L(0x2a241c)); }
+  // 予備の栄(さかえ)発動機：架台に載せた星形
+  for (const z of [19.5, 25]) { box(-0.9, 0.9, 0, 0.5, z, z + 1.6, olive, true); const cx = 0, cz = z + 0.8; cyl(cx, 1.05, cz, 0.5, 0.5, 0.5, dark, Math.PI / 2);
+    for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; const c = cyl(cx + Math.cos(a) * 0.55, 1.05 + Math.sin(a) * 0.55, cz + (k % 2 ? 0.12 : -0.12), 0.09, 0.09, 0.36, L(0x55585a), 0, 0, 8); c.rotation.z = a - Math.PI / 2; }
+    cyl(cx, 1.05, cz - 0.4, 0.16, 0.2, 0.4, dark, Math.PI / 2); }
+  // プロペラの立て掛け架台と、外した主翼の架台
+  box(-8.3, -8.0, 0, 2.6, 18, 22, wood, true); for (let k = 0; k < 4; k++) { const z = 18.5 + k * 0.9; box(-7.98, -7.9, 0.1, 3.0, z, z + 0.16, L(0x3c2e22)); cyl(-7.9, 1.55, z + 0.08, 0.12, 0.12, 0.1, brass, 0, Math.PI / 2); }
+  box(-8.4, -6.9, 0, 1.1, 23, 23.2, steel); box(-8.4, -6.9, 0, 1.1, 30, 30.2, steel); box(-7.9, -7.7, 1.1, 3.3, 23, 30.2, olive, true);   // 翼を縦にした姿
+  box(-7.95, -7.65, 1.1, 1.25, 23, 30.2, L(0x8a2a22));   // 翼端の赤帯風ではなく前縁の保護布
+  // 爆弾・魚雷の運搬車（中央の通路）
+  for (const [x, z, t] of [[-3.6, 20, 0], [-3.6, 24, 0], [3.4, 31, 1], [-3.6, 28, 1]]) { box(x - 0.45, x + 0.45, 0.25, 0.32, z - 1.3, z + 1.3, steel, true); for (const sx of [-0.4, 0.4]) for (const sz of [-1, 1]) cyl(x + sx, 0.14, z + sz, 0.14, 0.14, 0.08, dark, 0, Math.PI / 2, 10);
+    if (t) { cyl(x, 0.62, z, 0.27, 0.27, 2.4, L(0x606a68), Math.PI / 2, 0, 14); cyl(x, 0.62, z - 1.35, 0.27, 0.05, 0.4, L(0x606a68), -Math.PI / 2, 0, 14); box(x - 0.3, x + 0.3, 0.6, 0.64, z + 1.2, z + 1.6, dark); }   // 九一式魚雷
+    else { cyl(x, 0.62, z, 0.22, 0.22, 1.2, L(0x3a3c36), Math.PI / 2, 0, 12); cyl(x, 0.62, z - 0.75, 0.22, 0.04, 0.3, L(0x3a3c36), -Math.PI / 2, 0, 12); box(x - 0.24, x + 0.24, 0.58, 0.66, z + 0.6, z + 0.95, dark); box(x - 0.03, x + 0.03, 0.4, 0.84, z + 0.6, z + 0.95, dark); } }   // 二五番
+  // 揚弾口（床の開口の縁：黄と黒の縞、鎖の手すり）
+  for (let k = 0; k < 8; k++) box(1.0 + k * 0.3, 1.3 + k * 0.3, 0.005, 0.02, 33, 33.25, k % 2 ? yel : dark); box(1.0, 3.4, 0.004, 0.012, 33.25, 35.5, L(0x1a1c1e)); for (const [a, b] of [[1.0, 33], [3.4, 33], [1.0, 35.5], [3.4, 35.5]]) box(a - 0.04, a + 0.04, 0, 1.0, b - 0.04, b + 0.04, yel, true);
+  cyl(2.2, 0.95, 33, 0.012, 0.012, 2.4, steel, 0, Math.PI / 2, 4); cyl(2.2, 0.95, 35.5, 0.012, 0.012, 2.4, steel, 0, Math.PI / 2, 4); cvSign(2.2, Y + 1.6, 32.9, '揚弾口　立入注意', Math.PI).scale.set(0.4, 0.4, 1);
+  // 消火ホースの巻き取りと消火器（両舷の柱ぞい）
+  for (const [x, z] of [[8.3, 17.5], [-8.4, 17.0], [8.3, 33], [-8.4, 33]]) { const s = x > 0 ? -1 : 1; const r = cyl(x + s * 0.25, 1.3, z, 0.45, 0.45, 0.22, red, 0, Math.PI / 2, 16); cyl(x + s * 0.25, 1.3, z, 0.12, 0.12, 0.3, steel, 0, Math.PI / 2, 8); cyl(x + s * 0.3, 0.3, z + 0.8, 0.12, 0.12, 0.6, red, 0, 0, 10); cyl(x + s * 0.3, 0.66, z + 0.8, 0.04, 0.05, 0.12, dark, 0, 0, 6); }
+  cvSign(8.2, Y + 2.2, 17.5, '消火ホース', -Math.PI / 2).scale.set(0.35, 0.35, 1);
+  // 整備員の休憩所（左舷後ろの隅）：ベンチ、茶道具、木箱、干した手ぬぐい、張り紙
+  box(-8.3, -6.9, 0.42, 0.48, 31, 35, wood, true); box(-8.4, -8.3, 0.42, 1.1, 31, 35, wood); box(-6.2, -5.0, 0.7, 0.75, 32, 34, wood, true); box(-6.1, -5.1, 0, 0.7, 32.1, 33.9, L(0x4a3826));
+  cyl(-5.6, 0.86, 32.6, 0.13, 0.15, 0.2, L(0x8a7a5a)); for (let k = 0; k < 4; k++) cyl(-5.9 + k * 0.22, 0.79, 33.4, 0.04, 0.035, 0.08, cream, 0, 0, 8);
+  for (const [x, z, h] of [[-4.4, 34.2, 0.6], [-4.4, 34.2, 1.2], [-3.6, 34.6, 0.6]]) box(x - 0.38, x + 0.38, h - 0.6, h, z - 0.3, z + 0.3, L(0x7a5a36), true);
+  cyl(-7.6, 2.3, 33, 0.01, 0.01, 4.2, L(0x8a8a80), Math.PI / 2, 0, 4); for (let k = 0; k < 5; k++) box(-7.65, -7.55, 1.75, 2.3, 31.3 + k * 0.75, 31.8 + k * 0.75, k % 2 ? cream : L(0xd8d0bc));
+  cvSign(-8.35, Y + 1.9, 33, '整備員 休憩所', Math.PI / 2).scale.set(0.4, 0.4, 1); cvSign(0, Y + 2.8, 17.6, '整備場', Math.PI).scale.set(0.5, 0.5, 1);
+  // 床の油の染み（血ではない）と天井のチェーンブロック
+  const oil = L(0x2a2620); for (const [x, z, r] of [[0, 21, 0.9], [-2, 26.5, 0.5], [5.4, 22, 0.6], [1.5, 29, 0.7]]) { const o = new THREE.Mesh(new THREE.CircleGeometry(r, 14), oil); o.rotation.x = -Math.PI / 2; o.position.set(x, Y + 0.012, z); o.material.transparent = true; o.material.opacity = 0.55; stageRoot.add(o); }
+  for (const z of [20.3, 25.8]) { cyl(0, 4.6, z, 0.015, 0.015, 3.0, steel, 0, 0, 4); box(-0.15, 0.15, 3.0, 3.35, z - 0.1, z + 0.1, yel); }
+}
 function cvAir(x, y, z, yaw, kind) {
   if (kind === 'zero' || kind === 'escort' || kind === 'usf') {
     const g = cvFighter(x, y, z, yaw, kind);
@@ -11198,9 +11237,9 @@ function buildKeiku() {
   for (let i = 0; i < 6; i++) { park(-6.2, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); park(2.4, Yd + 0.55, -78 + i * 9.2, 0, 'zero'); }
   for (let i = 0; i < 4; i++) park(-6.2, Yd + 0.55, 4 + i * 11, 0, 'zero');
   park(-6.2, Yd + 0.55, -16, 0, 'escort'); park(2.4, Yd + 0.55, -16, 0, 'escort');
-  park(7.2, Yd + 0.45, 58, 0, 'liaison');
-  for (let i = 0; i < 12; i++) park(0, Yh + 0.7, -58 + i * 7.4, Math.PI, 'bomb');
-  for (let i = 0; i < 3; i++) park(0, Yh + 0.65, 18 + i * 6.5, Math.PI, 'recon');
+  // 搭載機はおよそ三十（瑞鳳程度）：零戦・直掩 二十が飛べる機、格納庫の前寄りに整備中の零戦 六。後部は整備場
+  for (let i = 0; i < 6; i++) { const x = i % 2 ? 4.6 : -4.6, z = -2 + ((i / 2) | 0) * 6.4 + (i % 2) * 3.2; const g = cvFighter(x, Yh + 0.7, z, Math.PI, 'zero'); const k = CV.parked.indexOf(g); if (k >= 0) CV.parked.splice(k, 1); g.userData.kind = 'maint'; g.position.y = Yh + 0.7; if (g.userData.prop) g.userData.prop.visible = i % 3 !== 0; }
+  cvHangarShop(Yh, boxes);
   // 舷側歩廊（飛行甲板の張り出しの下）と、艦尾の遊歩・プール
   cvFloor(-11.2, -8.7, -84, 68, Yh); cvFloor(8.7, 11.2, -84, 68, Yh);
   deckPlate(-11.2, -8.8, -84, 68, Yh, M.steel); deckPlate(8.8, 11.2, -84, 68, Yh, M.steel);
@@ -11652,7 +11691,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031ze）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031zf）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -21572,7 +21611,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031ze';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zf';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

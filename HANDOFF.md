@@ -437,3 +437,13 @@
   - Personalities: 8% freeze for 25–60 s, 12% help others and move slower.
   - Firefighters stay until the last quarter of the timer. Carriers and escorts are excluded.
   - King lines 臆病者… and 俺の子どもたち…, with reactions.
+
+## zc
+- Boarding-view bugs on 大淀:
+  - The transfer landing was inside the aft deckhouse; moved to hl×0.86 and the return point to hl×0.9.
+  - Her deck-top normals pointed down and rendered black; flipped them.
+  - The carrier's power-loss dimming treated 大淀 as below deck; it now skips 大淀, the boat ride and the post-sinking period.
+- Firefighters who stay in the rush: exactly d==='fire' (消火班（ホース・泡）, 20 people). 応急 (dc) no longer stays.
+- 幕二 cruiser:
+  - Moved to x 210, about twice as close (banner says 距離およそ四千).
+  - Added a sweeping searchlight cone, a bow wave, and a muzzle-flash PointLight on each salvo.

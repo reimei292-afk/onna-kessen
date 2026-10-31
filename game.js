@@ -852,8 +852,8 @@ function abCastAdd(k, x, z, label) { const P = abNamed(k, x, z, label); (AB.cast
 function abExtra(k, x, z, label, gid) { const P = abPerson(x, z, label, { gid, label, kind: 'named' }); (AB.cast = AB.cast || {})[k] = P; return P; }
 function abKamiGids() { const P = abGids(); const out = []; for (let i = 0; i < 12; i++) out.push(P[(i * 11 + 5) % P.length]); return out; }
 const AB_KAMI_N = ['みさき', 'はるか', 'あおい', 'ゆいな', 'ななみ', 'さくら', 'りこ', 'かえで', 'しおり', 'まどか', 'ちはる', 'ゆずは'];
-function abLookDim(far) { scene.background.setHex(0x0b0e14); scene.fog.color.setHex(0x0b0e14); scene.fog.near = 20; scene.fog.far = far || 90; hemiL.intensity = 0.5; ambL.intensity = 0.6; sun.intensity = 0.12; }
-function abLookIn() { scene.background.setHex(0x1a1612); scene.fog.color.setHex(0x1a1612); scene.fog.near = 30; scene.fog.far = 160; hemiL.intensity = 0.9; ambL.intensity = 0.8; sun.intensity = 0.5; }
+function abLookDim(far) { sky.visible = false; scene.background.setHex(0x0b0e14); scene.fog.color.setHex(0x0b0e14); scene.fog.near = 20; scene.fog.far = far || 90; hemiL.intensity = 0.5; ambL.intensity = 0.6; sun.intensity = 0.12; }
+function abLookIn() { sky.visible = false; scene.background.setHex(0x1a1612); scene.fog.color.setHex(0x1a1612); scene.fog.near = 30; scene.fog.far = 160; hemiL.intensity = 0.9; ambL.intensity = 0.8; sun.intensity = 0.5; }
 function abFace(x, z) { player.yaw = Math.atan2(-(x - player.pos.x), -(z - player.pos.z)); }
 function abBuild3() {   // 無線室（基地から離して置く）
   const [rx, rz] = AB_RADIO; abRoom(rx, rz, 18, 14, 4, 0x6f6758, 0x4a4238);
@@ -927,7 +927,7 @@ function abUpdate3(dt) {
 function abStart4() {
   AB.ph = 'walk4'; AB.cast = {}; const ps = [['sumi', '白瀬 澄'], ['ojou', '西園寺 すみれ'], ['omiya', '大宮 ひなた'], ['fumi', '綾瀬 文乃'], ['sec2', '早瀬 ことね'], ['kujo', '九条 紗英']];
   AB.walk = ps.map(([k, l], i) => { const P = abCastAdd(k, -180 + (i % 3) * 1.5, -60 + ((i / 3) | 0) * 2, l); P.off = [[1.6, 1.2], [-1.6, 1.2], [2.6, 2.6], [-2.6, 2.6], [0.9, 2.2], [-0.9, 3.4]][i]; return P; });
-  player.pos.set(-180, 0, -64); abFace(-260, -150); abLookDim(110); AB.n.zeroOut = 12;
+  player.pos.set(-180, 0, -64); abFace(-260, -150); abLookDim(110); hemiL.intensity = 0.22; ambL.intensity = 0.28; AB.n.zeroOut = 12;
   showBanner('幕五 第四幕「夜」', '夜の基地を、皆で歩く。兵舎の方へ');
   AB.q.push([AB.t + 3, () => abSeq([AB_LN.walk4[0], AB_LN.walk4[4], AB_LN.walk4[2]])]); AB.q.push([AB.t + 18, () => abGhosts4()]);
   abUi(true);
@@ -936,12 +936,12 @@ function abGhostMat(gid) { const k = 'gh_' + gid; if (AB.mats[k]) return AB.mats
 function abGhosts4() {
   if (!AB.on || AB.gh) return; const G = abKamiGids(); AB.gh = []; const bz = -150;
   for (let i = 0; i < 12; i++) { const gid = G[i]; const g = GIRLS[gid]; if (!g || !g.front) continue; const s = new THREE.Sprite(abGhostMat(gid)); s.center.set(0.5, 0); const h = AB_H * (g.front.hk || 1); s.scale.set(h * (g.front.aspect || 0.3), h, 1);
-    s.position.set(player.pos.x + 30 + (i % 4) * 2.2, 0.15, player.pos.z - 20 - ((i / 4) | 0) * 2.4); stageRoot.add(s); AB.gh.push({ s, t: -i * 0.9, to: new V3(-312, 0.15, bz + (i % 4) * 1.2 - 2), a: 0.34 }); }
+    s.position.set(player.pos.x - 6 + (i % 4) * 1.8, 0.15, player.pos.z - 12 - ((i / 4) | 0) * 2.2); stageRoot.add(s); AB.gh.push({ s, t: -i * 0.9, to: new V3(-312, 0.15, bz + (i % 4) * 1.2 - 2), a: 0.34 }); }
   AB.ph = 'ghost4'; AB.q.push([AB.t + 5, () => abSeq([AB_LN.ghost4[0], AB_LN.ghost4[1], ['@pause', '', 2], AB_LN.ghost4[3]])]);
 }
 function abGhostTick(dt) { if (!AB.gh) return; let left = 0;
   for (const G of AB.gh) { G.t += dt; if (G.t < 0) { G.s.visible = false; left++; continue; } G.s.visible = true; const p = G.s.position, dx = G.to.x - p.x, dz = G.to.z - p.z, d = Math.hypot(dx, dz);
-    if (d > 0.5) { const v = Math.min(d, 3.2 * dt); p.x += dx / d * v; p.z += dz / d * v; p.y = 0.15 + Math.sin(G.t * 1.7) * 0.05; left++; } else if (G.a > 0) { G.a = Math.max(0, G.a - dt * 0.25); if (!G.own) { G.s.material = G.s.material.clone(); G.own = 1; } G.s.material.opacity = G.a; left++; if (G.a <= 0) G.s.visible = false; } }
+    if (d > 0.5) { const v = Math.min(d, 2.4 * dt); p.x += dx / d * v; p.z += dz / d * v; p.y = 0.15 + Math.sin(G.t * 1.7) * 0.05; left++; } else if (G.a > 0) { G.a = Math.max(0, G.a - dt * 0.25); if (!G.own) { G.s.material = G.s.material.clone(); G.own = 1; } G.s.material.opacity = G.a; left++; if (G.a <= 0) G.s.visible = false; } }
   if (!left && !AB.said.gh) { AB.said.gh = 1; abSay(AB.cast.sumi, AB_LN.ghost4[2][1], 2); AB.q.push([AB.t + 3, () => { abSay(AB.cast.ojou, AB_LN.ghost4[4][1], 2); abNextBtn('兵舎へ入る', () => abInside4()); }]); } }
 function abBuild4() {   // 空の兵舎（中）
   const [hx, hz] = AB_HALL; abRoom(hx, hz, 16, 44, 4.2, 0x6e5a40, 0x5e4a32);
@@ -988,7 +988,7 @@ function abCast5(cx, cz, majors, del) {   // 名のある人を並べる
 function abDoc(on) {
   let d = $('abDoc'); if (!on) { if (d) { d.style.opacity = 0; setTimeout(() => d.remove(), 900); } return; }
   if (d) return; d = document.createElement('div'); d.id = 'abDoc';
-  d.style.cssText = 'position:fixed;left:50%;top:calc(6px + var(--sat,0px));transform:translateX(-50%);z-index:62;background:#f3ead2;color:#1c1712;border:1px solid #8a7a50;box-shadow:0 4px 18px rgba(0,0,0,.5);padding:10px 14px;writing-mode:vertical-rl;font-family:"Yuji Syuku","HG行書体","YuMincho","Hiragino Mincho ProN","Noto Serif JP",serif;font-size:min(14px,3.6vh);line-height:1.55;height:min(300px,64vh);max-width:94vw;overflow:hidden;transition:opacity .8s;pointer-events:none';
+  d.style.cssText = 'position:fixed;left:50%;top:calc(6px + var(--sat,0px));transform:translateX(-50%);z-index:59;background:#f3ead2;color:#1c1712;border:1px solid #8a7a50;box-shadow:0 4px 18px rgba(0,0,0,.5);padding:10px 14px;writing-mode:vertical-rl;font-family:"Yuji Syuku","HG行書体","YuMincho","Hiragino Mincho ProN","Noto Serif JP",serif;font-size:min(14px,3.3vh);line-height:1.5;height:min(300px,56vh);max-width:94vw;overflow:hidden;transition:opacity .8s;pointer-events:none';
   const arts = ['講和調印文書', '一、両国ハ本書調印ノ時ヲ以テ一切ノ戦闘行為ヲ停止ス', '一、両国ハ捕虜ヲ速ヤカニ交換ス', '一、戦没者ノ遺骸及ビ遺品ハ之ヲ相互ニ返還ス', '一、両軍ハ別ニ定ムル線マデ撤退ス', '一、爾余ノ事項ハ追ツテ両国ノ交渉ニ依リ之ヲ定ム', '右ノ証トシテ茲ニ署名シ血判ヲ押ス'];
   d.innerHTML = arts.map((a, i) => `<div style="${i ? '' : 'font-size:1.25em;letter-spacing:.3em;margin-left:.6em'}">${a}</div>`).join('') + '<div style="margin-left:.8em"></div>' + AB_SIGNERS.map((n, i) => `<div style="position:relative;padding-bottom:1.6em">${n}<span id="abSeal${i}" style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:11px;height:14px;border-radius:50%;opacity:0;transition:opacity 1.2s;background:repeating-radial-gradient(ellipse at 50% 55%,rgba(110,16,16,.9) 0 1px,rgba(140,30,30,.55) 1px 2px);"></span></div>`).join('');
   document.body.appendChild(d);
@@ -23441,7 +23441,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zu';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zv';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

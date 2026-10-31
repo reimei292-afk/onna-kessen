@@ -10835,7 +10835,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031l）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031m）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -11002,7 +11002,7 @@ function cvLaunchStep(dt) {
       if (g.position.z <= tzd) {   // 侍女の搭乗員でも着艦は難しい：やり直し・防護柵・艦橋激突がある
         const pf = 0.14 + (L.wnd ? 0.12 : 0) + (L.hp < 3 ? 0.08 : 0), rr = Math.random();
         if (rr < pf * 0.5 && !L.bolt) { L.bolt = true; L.ph = 'home'; L.leg2 = false; g.position.y = deckY + 2 * S; cvEv('deck', '索に掛からない！ やり直し！ 復行！', 2, 1.8); continue; }
-        if (rr < pf * 0.8) { L.ph = 'trap'; L.t = 0; L.v *= 1.25; L.bar = true; g.position.y = deckY; cvEv('deck', '索を外した！ 防護柵に突っ込むぞ！', 2, 2); player.shake = Math.max(player.shake || 0, 0.25); continue; }
+        if (rr < pf * 0.9) { L.ph = 'trap'; L.t = 0; L.v *= 1.25; L.bar = true; g.position.y = deckY; cvEv('deck', '索を外した！ 防護柵に突っ込むぞ！', 2, 2); player.shake = Math.max(player.shake || 0, 0.25); continue; }
         if (rr < pf) { L.ph = 'isl'; L.t = 0; cvEv('deck', '流された！ 右へ……艦橋に！', 1, 2.2); continue; }
         L.ph = 'trap'; L.t = 0; g.position.y = deckY; cvEv('deck', '制動索、掛かった！', 3, 1.6); player.shake = Math.max(player.shake || 0, 0.1); }
       continue;
@@ -11639,7 +11639,7 @@ function cvUsVsZero(f, dt) {
   if ((fwd || rear) && (f.zgT = (f.zgT || 0) - dt) <= 0) {
     f.zgT = fwd ? 0.12 : 0.18; const sp = 300, dd = bd || 1;
     for (let k = 0; k < 2; k++) cvTracer(f.p.x + (k - 0.5) * 0.6, f.p.y, f.p.z, (dx / dd + rand(-0.03, 0.03)) * sp, (dy / dd + rand(-0.03, 0.03)) * sp, (dz / dd + rand(-0.03, 0.03)) * sp, dd / sp, CV_TC.us, 3);
-    if (Math.random() < (fwd ? 0.05 : 0.03)) {
+    if (Math.random() < (fwd ? 0.035 : 0.02)) {
       z.hp -= 1; if (Math.random() < 0.3) z.wnd = true; puff(zp.clone(), 0xffe0a0, 3, 0.4, 2, 0.1);
       if (z.hp <= 0 && z.ph === 'fight') { z.ph = 'down'; puff(zp.clone(), 0xff6622, 8, 1.6, 2, 0.4); popup('零戦、未帰還'); if (fwd) cvUsSay(f.who, '零戦、撃墜！', 'Splash one Zeke!', f.pitch); else cvUsSay(f.who, '後席、零戦を落とした！', 'Gunner got the Zeke!', f.pitch); }
     }
@@ -20483,7 +20483,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031l';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

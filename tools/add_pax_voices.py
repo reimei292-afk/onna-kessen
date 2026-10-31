@@ -7,6 +7,12 @@ L = {
   'greet': 'いらっしゃいませ。何階へ参りますか？', 'up': '上へ参ります。', 'down': '下へ参ります。', 'close': 'ドアが閉まります。', 'here': 'こちらの階でございます。',
   'f5': '5階、飛行甲板でございます。', 'f4': '4階、格納庫でございます。', 'cafe': '4階、カフェでございます。', 'f3': '3階、第二甲板、客室甲板でございます。',
   'f2': '2階、中甲板、王の間、小劇場でございます。', 'f1': '1階、大劇場でございます。'}),
+ 'elvb': ('ja-JP-NanamiNeural', 55, 8, {
+  'greet': 'ようこそ、艦首エレベーターへ。どちらまで？', 'up': '上へ参りまーす。', 'down': '下へ参りまーす。', 'close': 'ドア、閉まりまーす。', 'here': 'もう、こちらの階ですよ。',
+  'bh': '3階、第二甲板、大広間でございます。', 'cafe': '4階、カフェでございます。アイスがおすすめです。', 'f5': '5階、飛行甲板でございます。'}),
+ 'elvs': ('ja-JP-NanamiNeural', -18, -6, {
+  'greet': '艦尾エレベーターでございます。何階へ参りましょう。', 'up': '上へ参ります。', 'down': '下へ参ります。', 'close': 'ドアが閉まります。ご注意ください。', 'here': 'こちらの階でございます。',
+  's1': '1階、大劇場、舞台前でございます。', 's2': '2階、食堂、医務室、浴室でございます。', 's3': '3階、客室甲板でございます。', 's4': '4階、艦尾格納庫でございます。', 'f5': '5階、飛行甲板でございます。'}),
  'cf1': ('ja-JP-NanamiNeural', 12, 10, {
   'hello': 'いらっしゃいませ！カフェへようこそ！', 'ask': 'アイスクリーム、バニラとストロベリーとチョコがございます。', 'serve': 'お待たせしました！どうぞ、ごゆっくり。'}),
  'cf2': ('ja-JP-NanamiNeural', -8, -4, {
@@ -17,6 +23,8 @@ async def one(t, p, v, pi, r):
         try: await edge_tts.Communicate(t, v, rate=f'{r:+d}%', pitch=f'{pi:+d}Hz').save(p); return
         except Exception: await asyncio.sleep(2 * (a + 1))
 async def main():
+    import sys
     for who, (v, pi, r, m) in L.items():
+        if len(sys.argv) > 1 and who not in sys.argv[1:]: continue
         for k, t in m.items(): await one(t, os.path.join(D, f'pax_{who}_{k}.mp3'), v, pi, r)
 asyncio.run(main())

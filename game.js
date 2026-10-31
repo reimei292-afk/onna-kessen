@@ -9824,6 +9824,14 @@ function cvSkin(hex) {
   const m = new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide });
   CV.M._mt[k] = m; return m;
 }
+// 実機の寸法に合わせる（人＝約1.6m、艦の縮尺 S=1.62 を掛けた後の実寸）。車輪の接地高さは保つ
+//   零戦二一型 全幅12.0m 全長9.06m／F4F 11.58m 8.76m／SBD 12.66m 9.96m／九七艦攻 15.52m 10.3m
+const CV_REAL = { zero: 12.0, escort: 12.0, usf: 11.58, usb: 12.66, bomb: 15.52, recon: 15.52, liaison: 11.0 };
+function cvBakeReal(g, kind, spanNow, wheelY) {
+  const want = CV_REAL[kind]; if (!want) return g; const k = want / (spanNow * 1.62);
+  for (const o of g.children) { o.position.multiplyScalar(k); o.position.y -= (wheelY || 0) * (1 - k); o.scale.multiplyScalar(k); }
+  return g;
+}
 function cvFighterProto(kind) {
   const us = kind === 'usf', M = CV.M, g = new THREE.Group();
   const body = cvSkin(us ? 0x1a3c70 : 0x3a5630);
@@ -9904,6 +9912,14 @@ function cvFighterProto(kind) {
   } else if (M.star) {
     cvStar(g, 2.2, -0.02, 0.85, 0.46, true); cvStar(g, -2.2, -0.02, 0.85, 0.46, true); cvStar(g, 0.78, 0.15, -0.2, 0.3, false);
   }
+  if (!us) {   // 排気の煤（胴体側面）、パネルの継ぎ目、カウルの黒
+    const soot = M._soot || (M._soot = new THREE.MeshBasicMaterial({ color: 0x1c1a17, transparent: true, opacity: 0.55, depthWrite: false }));
+    for (const s of [-1, 1]) { const st = add(new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.16), soot)); st.rotation.y = s * Math.PI / 2; st.position.set(s * 0.515, -0.02, 2.05); }
+    const pl = M._panel || (M._panel = new THREE.MeshBasicMaterial({ color: 0x25301e }));
+    for (const z of [1.8, 0.3, -1.2, -2.6]) { const r = add(new THREE.Mesh(new THREE.TorusGeometry(z > 0 ? 0.53 : 0.43 + z * 0.04, 0.008, 4, 20), pl)); r.position.z = z; }
+    for (const s of [-1, 1]) for (const xx of [1.2, 2.6, 3.9]) { const ln = add(new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.005, 1.4 - xx * 0.12), pl)); ln.position.set(s * xx, 0.0 + (2 - Math.abs(xx - 2)) * 0.02, 0.95); }
+  }
+  cvBakeReal(g, us ? 'usf' : 'zero', us ? 9.4 : 10.3, 0.58);
   return g;
 }
 function cvFighter(x, y, z, yaw, kind) {
@@ -9980,6 +9996,7 @@ function cvAir(x, y, z, yaw, kind) {
       const wh = add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.08, 8), dark)); wh.rotation.z = Math.PI / 2; wh.position.set(s * 0.7, gearY - 0.15, S.wingZ + 0.2);
     }
   }
+  cvBakeReal(g, kind, S.span, S.mr * 0.85 + 0.31);
   g.position.set(x, y, z); g.rotation.y = yaw; g.userData.kind = kind; stageRoot.add(g);
   if (kind !== 'usf' && kind !== 'usb') CV.parked.push(g);
   return g;
@@ -10864,7 +10881,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031n）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031o）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -20512,7 +20529,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

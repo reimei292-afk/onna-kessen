@@ -40,7 +40,7 @@ def seq(x):
         for v in x: yield from seq(v)
 for who, ja in seq([o4['CVF_VISIT'], o4['CVF_EARLY'], o4['CVF_GREET'], o4['CVF_FUN'], o4['CVF_EV'], o4['CVF_MEET']]):
     if who == 'k' or ja.startswith('（') or '♪' in ja: continue
-    if who in ('c', 'c2'): add('c', ja, vw='din')
+    if who in ('c', 'c2', 'x', 'x2'): add('c', ja, vw='din')
     elif who == '*': add('*', ja, vw='din')
     else: add(who, ja)
 for ja in o4['CVF_CHAT']: add('*', ja, vw='din')

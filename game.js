@@ -11539,6 +11539,41 @@ function buildKeiku() {
     wall(-0.55, 0.55, -48.5, -37.5, Y2, Y2 + 0.86, Mw); cvSlab(-0.6, 0.6, Y2 + 0.86, Y2 + 0.9, -48.6, -37.4, M.white);
     for (let i = 0; i < 6; i++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.3), Mw); b.position.set(i % 2 ? 0.25 : -0.25, Y2 + 0.99, -47.5 + i * 1.8); stageRoot.add(b); }
     for (const z of [-49.2, -46.8, -44.4]) wall(-4.1, -3.3, z, z + 0.9, Y2, Y2 + 0.9, Mw);   // 米びつ・野菜箱
+    { // 烹炊所の作り込み：白い目地のタイル床と腰壁、棚の鍋・ざる・丼の山、吊るした鍋とお玉、米俵・樽・桶、まな板の野菜、前掛け、暖色の灯り（通り道はあける）
+      const tex = M.galT || (M.galT = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); g.fillStyle = '#d9d6cc'; g.fillRect(0, 0, 128, 128); g.strokeStyle = '#9d9a90'; g.lineWidth = 2; for (let i = 0; i <= 128; i += 32) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 128); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(128, i); g.stroke(); } for (let k = 0; k < 220; k++) { g.fillStyle = `rgba(80,70,50,${Math.random() * 0.06})`; g.fillRect(Math.random() * 128, Math.random() * 128, 3, 3); } const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })());
+      const tf = new THREE.Mesh(new THREE.PlaneGeometry(11.0, 17.6), new THREE.MeshLambertMaterial({ map: tex.clone() })); tf.material.map.repeat.set(11, 17.6); tf.material.map.needsUpdate = true; tf.rotation.x = -Math.PI / 2; tf.position.set(1.4, Y2 + 0.012, -41.1); stageRoot.add(tf);
+      const tw = new THREE.MeshLambertMaterial({ map: tex }); for (const [x, rot] of [[6.95, -Math.PI / 2], [-4.15, Math.PI / 2]]) { const w = new THREE.Mesh(new THREE.PlaneGeometry(17.4, 1.3), tw); w.rotation.y = rot; w.position.set(x, Y2 + 0.66, -41.1); stageRoot.add(w); }
+      const add = (geo, mat, x, y, z, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (ry) m.rotation.y = ry; stageRoot.add(m); return m; };
+      const Mal = M.alu || (M.alu = new THREE.MeshStandardMaterial({ color: 0xc8ccd0, metalness: 0.7, roughness: 0.35 })), Mcu = M.cu || (M.cu = new THREE.MeshStandardMaterial({ color: 0xb06a3a, metalness: 0.6, roughness: 0.4 }));
+      const Mbam = M.bam || (M.bam = new THREE.MeshLambertMaterial({ color: 0xc9a868 })), Mstr = M.straw || (M.straw = new THREE.MeshLambertMaterial({ color: 0xd2bd84 })), Mcer = M.cer || (M.cer = new THREE.MeshLambertMaterial({ color: 0xf4f2ec }));
+      const Mdk = M.daikon || (M.daikon = new THREE.MeshLambertMaterial({ color: 0xf2f0e6 })), Mcab = M.cab || (M.cab = new THREE.MeshLambertMaterial({ color: 0x8fb46a })), Mcar = M.car || (M.car = new THREE.MeshLambertMaterial({ color: 0xe0752a })), Mcl = M.cloth || (M.cloth = new THREE.MeshLambertMaterial({ color: 0xe9e4d6 }));
+      const lite = typeof LITE !== 'undefined' && LITE;
+      // 壁ぎわの棚（左舷側 x -4.1〜-3.5、z -40〜-33）：三段に鍋・ざる・丼の山
+      for (let k = 0; k < 4; k++) cvSlab(-4.15, -3.45, Y2 + 0.45 + k * 0.5, Y2 + 0.48 + k * 0.5, -39.9, -33.2, Mw);   // 扉（z -41）をふさがない
+      for (const z of [-39.9, -36.5, -33.2]) wall(-4.15, -3.45, z - 0.04, z + 0.04, Y2, Y2 + 2.0, Mw);
+      for (let k = 1; k < 4; k++) for (let z = -39.5; z < -33.5; z += lite ? 1.1 : 0.55) { const t = (k * 7 + Math.round(z * 3)) % 3, y = Y2 + 0.48 + k * 0.5;
+        if (t === 0) add(new THREE.CylinderGeometry(0.2, 0.18, 0.22, 14), Mal, -3.8, y + 0.11, z);
+        else if (t === 1) for (let b = 0; b < 5; b++) add(new THREE.CylinderGeometry(0.09, 0.05, 0.06, 10), Mcer, -3.8, y + 0.03 + b * 0.055, z);
+        else add(new THREE.CylinderGeometry(0.2, 0.12, 0.1, 12), Mbam, -3.8, y + 0.05, z); }
+      // 仕込み台の上：まな板、大根・人参・キャベツ、包丁、ざる
+      for (let i = 0; i < 4; i++) { const z = -47.6 + i * 2.8; add(new THREE.BoxGeometry(0.5, 0.04, 0.32), Mw, -0.2, Y2 + 0.92, z);
+        const dk = add(new THREE.CylinderGeometry(0.04, 0.025, 0.4, 8), Mdk, -0.2, Y2 + 0.97, z); dk.rotation.z = Math.PI / 2;
+        for (let c = 0; c < 3; c++) { const m = add(new THREE.CylinderGeometry(0.018, 0.006, 0.14, 6), Mcar, 0.25, Y2 + 0.92, z - 0.15 + c * 0.1); m.rotation.z = Math.PI / 2; }
+        add(new THREE.SphereGeometry(0.11, 10, 8), Mcab, 0.28, Y2 + 1.0, z + 0.4); add(new THREE.CylinderGeometry(0.17, 0.1, 0.08, 12), Mbam, -0.25, Y2 + 0.94, z + 0.6);
+        add(new THREE.BoxGeometry(0.22, 0.008, 0.04), Mal, -0.05, Y2 + 0.945, z - 0.05); }
+      // 吊り棚：仕込み台の上に鍋とお玉（頭より上）
+      cvSlab(-0.06, 0.06, Y2 + 2.2, Y2 + 2.24, -48.3, -37.7, M.steel);
+      for (let z = -48; z < -38; z += lite ? 1.2 : 0.6) { const big = Math.round(z * 5) % 2 === 0; const h = add(big ? new THREE.CylinderGeometry(0.16, 0.14, 0.12, 12) : new THREE.CylinderGeometry(0.03, 0.03, 0.02, 8), big ? Mcu : Mal, 0, Y2 + (big ? 2.02 : 1.9), z); if (!big) { const st = add(new THREE.CylinderGeometry(0.008, 0.008, 0.3, 4), Mal, 0, Y2 + 2.05, z); } }
+      // 艦尾側の壁ぎわ（z -49.7）：米俵・醤油樽・水桶
+      for (let i = 0; i < 3; i++) for (let j = 0; j < (i < 2 ? 2 : 1); j++) { const t = add(new THREE.CylinderGeometry(0.28, 0.28, 0.75, 12), Mstr, 1.4 + i * 0.6, Y2 + 0.28 + j * 0.5, -49.55); t.rotation.z = Math.PI / 2; }
+      boxes.push({ x0: 1.1, x1: 3.0, z0: -49.85, z1: -49.25, y0: Y2, y1: Y2 + 1.05 });
+      for (let i = 0; i < 2; i++) { cyl(3.6 + i * 0.7, -49.45, Y2, 0.26, 0.62, Mw, true); add(new THREE.TorusGeometry(0.265, 0.02, 6, 16), M.dark, 3.6 + i * 0.7, Y2 + 0.15, -49.45).rotation.x = Math.PI / 2; add(new THREE.TorusGeometry(0.265, 0.02, 6, 16), M.dark, 3.6 + i * 0.7, Y2 + 0.48, -49.45).rotation.x = Math.PI / 2; }
+      for (let i = 0; i < 3; i++) add(new THREE.CylinderGeometry(0.17, 0.14, 0.26, 12), Mw, -2.8 + i * 0.45, Y2 + 0.13, -49.6);
+      // 前掛けと手ぬぐい（左舷の壁の掛け釘）
+      for (let i = 0; i < (lite ? 3 : 6); i++) { const a = add(new THREE.PlaneGeometry(0.42, 0.7), Mcl, -4.13, Y2 + 1.45, -49 + i * 0.75, Math.PI / 2); a.material.side = THREE.DoubleSide; }
+      // 暖色の灯り（裸電球）
+      for (const z of [-46, -40, -34]) { add(new THREE.SphereGeometry(0.07, 8, 6), M.bulb || (M.bulb = new THREE.MeshBasicMaterial({ color: 0xffe2a8 })), 1.5, Y2 + 2.6, z); if (!lite) { const L = new THREE.PointLight(0xffd59a, 0.55, 9); L.position.set(1.5, Y2 + 2.5, z); stageRoot.add(L); } }
+    }
     // 兵員食堂：長机と長腰掛け
     for (const x of [3.2, 5.6]) { wall(x - 0.4, x + 0.4, -22.5, -13.0, Y2, Y2 + 0.76, Mw); for (const s of [-1, 1]) cvSlab(x + s * 0.72 - 0.16, x + s * 0.72 + 0.16, Y2 + 0.38, Y2 + 0.44, -22.3, -13.2, Mw); }
     wall(6.4, 6.95, -31, -24, Y2, Y2 + 1.0, M.steel); cvSign(6.9, Y2 + 1.7, -27.5, '配食口', -Math.PI / 2).scale.set(0.45, 0.45, 1);
@@ -12922,7 +12957,7 @@ function cvBoatStepK(dt) {
 }
 // ── 幕四「船旅」：桜鳳の客船区画、食堂を祝勝会場に。立食の丸卓六つ（一の卓に大宮）。西園寺・白石・綾瀬は自分の艦にいるので欠席 ──
 //   台詞は一本の列で順に流す（一行ごとに文字数に応じた間をとり、言い終わる前に次へ進まない）
-const CVF_SEAT = [['ojou', 'sumi', 'omiya', 'fumi', 'sec2'], ['kujo', 'sec4', 'sec3', 'reika', 'shizuka', 'flute'], ['sysop', 'shinobu', 'chikage']];   // 一の卓は殿が上座（舞台を向く）。四の卓から先は名の無い侍女だけ
+const CVF_SEAT = [['ojou', 'sumi', 'omiya', 'fumi', 'sec2'], ['kujo', 'sec4', 'sec3', 'reika', 'shizuka', 'flute'], ['sysop']];   // 三の卓は霧島と名の無い五人   // 一の卓は殿が上座（舞台を向く）。四の卓から先は名の無い侍女だけ
 const CVF_OFF = ['akari', 'midori', 'tono', 'sec5', 'hiyori'];   // 幕四の宴には出ない名のある者
 const CVF_VISIT = [
   [['omiya', '陛下、一の卓へようこそ。上座、空けておきました'], ['k', '大宮、隣に立つだけで落ち着くな'], ['ojou', '陛下……今日は、ゆっくり……召し上がって、くださいませ'], ['k', '西園寺、今日はゆっくりでいい'], ['ojou', '……はい。わたくしは、いつも……ゆっくりですわ'],
@@ -12930,7 +12965,7 @@ const CVF_VISIT = [
   [['shizuka', '空襲の三波目、格納庫で耳がおかしくなりました'], ['kujo', '私は二波目で爆風に飛ばされて、気づいたら医務室でした'], ['k', '二人とも、よく戻った'], ['shizuka', '陛下が早瀬さんに引っ張られて走ってたの、見えましたよ'], ['k', '……あれは引っ張られていたのではない。並走だ'], ['kujo', '足、浮いてましたけど'],
    ['reika', '陛下、補給の礼なら、料理で受け取りました'], ['k', '白石、好きなだけ食え'], ['reika', '交渉しなくても出てくる料理って、いいですね'], ['sec3', '桜鳳の針路、明日まで地図に引いておきました'], ['sec4', '今日の分の記録も、もう付けてあります'], ['k', '宮下、今日くらい筆を置け'],
    ['flute', '陛下、一曲、吹いてもいいですか。笛はもう禁止じゃないですよね'], ['k', '号笛の代わりに鳴らさなければいい'], ['flute', '戦の合図じゃない曲にします。……故郷の子守唄'], ['k', '頼む'], ['@stage', 'flute'], ['*', '（舞台の上で、笛の子守唄が静かに流れる）'], ['@back', 'flute']],
-  [['shinobu', '陛下。西部の早撃ちの話、まだ根に持ってます'], ['k', '根に持つほど負けたか？'], ['shinobu', '抜いたのは私が先でした。ただ、相手の弾の方が先に帽子に届いただけです'], ['chikage', 'それを負けと言うのよ、しのぶ'], ['shinobu', '帽子は負けました。私は負けてません'], ['k', '……帽子に乾杯だな'],
+  [['x', '陛下。西部の早撃ちの話、まだ根に持ってます'], ['k', '根に持つほど負けたか？'], ['x', '抜いたのは私が先でした。ただ、相手の弾の方が先に帽子に届いただけです'], ['x2', 'それを負けと言うのよ'], ['x', '帽子は負けました。私は負けてません'], ['k', '……帽子に乾杯だな'],
    ['sysop', '陛下、重巡の夜戦のとき、無線は一度も切れませんでした'], ['k', 'あの夜、霧島の声だけは落ち着いていたな'], ['sysop', '手は震えてました。声だけ仕事してたんです']],
 ];
 const CVF_CHAT = [   // 卓どうしの雑談（台詞が無い間に、近くの誰かが言う）
@@ -13024,7 +13059,7 @@ const CVF_FUN = {
 const CVF_EV = {
   spill: [['*', '（艦がぐらりと傾く。グラスが倒れて、白い卓布に葡萄酒が広がる）'], ['sec4', 'あっ、ごめんなさい、袖が……！'], ['sec2', '大丈夫、拭けば落ちます。陛下のお召し物にはかかってません'], ['k', 'かかっても構わん。海の上の宴だ']],
   slide: [['*', '（大きな横揺れ。皿が卓の端まで滑っていき、侍女が一人よろけて床に手をつく）'], ['@mur', 'fall'], ['k', 'おい、大丈夫か？'], ['c', '……だ、大丈夫です。膝を少し打っただけです'], ['c2', 'お皿が逃げる！'], ['omiya', '押さえました！ ……ローストビーフ一枚だけ救出'], ['k', '一枚でも救えたなら上出来だ']],
-  fallen: [['*', '（卓ごとに一つだけ、誰も立たない場所がある。小さな札に名前）'], ['k', 'ここ、誰が座ってたっけ……まあいい、料理が余るな'], ['sec2', '……ここ、真由の場所です。ローストビーフ、好きだったから'], ['chikage', 'こっちは結衣。甘いものしか食べなかった子'], ['omiya', '陛下も、一切れどうぞ。……みんなの分まで']],
+  fallen: [['*', '（卓ごとに一つだけ、誰も立たない場所がある。小さな札に名前）'], ['k', 'ここ、誰が座ってたっけ……まあいい、料理が余るな'], ['sec2', '……ここ、真由の場所です。ローストビーフ、好きだったから'], ['x', 'こっちは結衣。甘いものしか食べなかった子'], ['omiya', '陛下も、一切れどうぞ。……みんなの分まで']],
   tipsy: [['c', 'へいか～、陛下ぁ、わたし、輸送機の兵、三人も倒したんですよぉ'], ['k', '死ぬ前に沢山飲んでおけ'], ['c', 'ごほうび、ください～。陛下の、その、お皿の苺……'], ['omiya', 'はい、そこまで。あなたは水を飲んで、こちらに座りなさい'], ['c', '大宮さん、こわい～……'], ['omiya', '陛下、失礼しました。……苺はお守りしましたわ'], ['k', '助かった']],
   phone: [['sumi', '綾瀬さん、白石さん。護衛と補給、本当にありがとう'], ['fumi', '雪風は副長に任せてきました。今夜だけは、こちらで'], ['reika', '補給艦の食料、半分ここに運び込みました。遠慮なく食べてください'], ['k', '綾瀬、白石。お前たちがいたから、この宴がある。乾杯'], ['fumi', '乾杯'], ['reika', '乾杯。……温かいお料理、久しぶりです']],
 };
@@ -13048,9 +13083,11 @@ function cvfR(who) {
 }
 function cvfSay(who, text) {
   const F = CV.F; if (who === 'k') { cvKingSay(text); return; }
-  if (who === 'x') who = 'c-any';   // 近くの名の無い者
   if (who === '*') { subtitle(text); const el = $('subtitle'); if (el) el.textContent = text; return; }
   if ((who === 'fumi' || who === 'reika') && !cvfR(who)) { const n = who === 'fumi' ? '綾瀬 文乃（雪風・無線）' : '白石 麗華（補給艦・無線）'; subtitle(text); const el = $('subtitle'); if (el) el.textContent = `${n}「${text}」`; const f = cvVoiceFile(who, text); if (f && VoicePack.ok) VoicePack.play(f, 3, 1.8, 1); return; }
+  if (who === 'x' || who === 'x2') {   // 殿のいちばん近くにいる名の無い者（x）と、その次（x2）
+    const p = player.pos, L = F.crowd.filter(q => q.e && q.st === 'ok').sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z)); const r = L[who === 'x' ? 0 : 1] || L[0];
+    if (r) { CV.fOK = true; cvSay(r, text, 1.6, 'c'); CV.fOK = false; } else subtitle(text); return; }
   let r = who === 'c' || who === 'c2' ? (F.cur && F.cur[who]) : cvfR(who);
   if (!r) { if (CV_NAMED_V.has(who)) { subtitle(text); return; } r = F.crowd[(Math.random() * F.crowd.length) | 0]; }   // 名のある人を他人に言わせない
   CV.fOK = true; cvSay(r, text, 1.6, CV_NAMED_V.has(who) ? who : (who === 'c' || who === 'c2' ? 'c' : null)); CV.fOK = false;
@@ -13077,14 +13114,14 @@ function cvfStage(cmd, who) {
   if (cmd === '@mur') { cvfMur(who); return 0.3; }
   if (cmd === '@unhands') { for (const g of F.hands || []) stageRoot.remove(g); F.hands = null; return 0.4; }
   if (cmd === '@kback') { if (F.kRet) player.pos.set(...F.kRet); player.yaw = 0; return 0.3; }
-  const r = cvfR(who); if (!r || r.st !== 'ok') return 0.2;
   if (cmd === '@sides') {   // 名のある者だけ：父方は殿の右、母方は左（舞台の前に一列ずつ）。西園寺・白石・綾瀬もこのときだけ広間へ歩いて来る
     F.sides = []; const L = [['ojou', -1, 0], ['omiya', -1, 1], ['kujo', -1, 2], ['sumi', 1, 0], ['sec2', 1, 1], ['fumi', 1, 2], ['flute', 1, 3], ['reika', 1, 4], ['sec4', 0, 0], ['sec3', 0, 1], ['sysop', 0, 2], ['shizuka', 0, 3]];
     for (const [k, sd, i] of L) { const r = cvfR(k); if (!r || r.st !== 'ok') continue; const was = r.away; F.sides.push([r, r.x, r.z, r.f, was]);
       if (was) { r.away = false; r.x = r.hx = r.ax = sx - 6.5 * S; r.z = r.hz = r.az = sz + 1.5 * S; r.y = r.hy = F.Y; r.ySnap = false; r.loc = '祝勝会'; }
-      r.x = r.ax = sd ? sx - sd * (1.6 + i * 0.85) * S : sx + 5.5 * S + i * 0.8 * S; r.z = r.az = sd ? sz + 2.6 * S : sz + 4.6 * S; r.f = Math.PI; r.mv = true; r.w = 'stand'; }
+      r.x = r.ax = sd ? sx + sd * (1.6 + i * 0.85) * S : sx + 5.5 * S + i * 0.8 * S; r.z = r.az = sd ? sz + 2.6 * S : sz + 4.6 * S; r.f = Math.PI; r.mv = true; r.w = 'stand'; }
     cvStream(0, true); return 7; }
   if (cmd === '@unsides') { for (const [r, x, z, f, was] of F.sides || []) { if (was) { r.x = r.ax = sx - 6.5 * S; r.z = r.az = sz + 1.5 * S; r.mv = true; setTimeout(() => { if (CV.F) { cvDespawn(r); r.away = true; } }, 6000); } else { r.x = r.ax = x; r.z = r.az = z; r.f = f; r.mv = true; } } F.sides = null; return 1; }
+  const r = cvfR(who); if (!r || r.st !== 'ok') return 0.2;
   if (cmd === '@stage') { F.onStage = F.onStage || {}; F.onStage[who] = [r.x, r.z, r.f]; const tx = sx - 0.6 * S, tz = sz + 0.2 * S; const d = Math.hypot(tx - r.x, tz - r.z); r.x = r.ax = tx; r.z = r.az = tz; r.f = 0; r.mv = true; r.w = 'stand'; if (!r.e) cvStream(0, true); return Math.min(12, d / 2.6 + 1.0); }
   if (cmd === '@back') { const o = F.onStage && F.onStage[who]; if (!o) return 0.2; const d = Math.hypot(o[0] - r.x, o[1] - r.z); r.x = r.ax = o[0]; r.z = r.az = o[1]; r.f = o[2]; r.mv = true; delete F.onStage[who]; return Math.min(4, d / 2.6); }
   return 0.2;
@@ -22553,7 +22590,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zn';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zo';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -30887,5 +30924,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvBoardStart, cvBoardStep, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

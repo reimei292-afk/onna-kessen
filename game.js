@@ -10402,9 +10402,157 @@ function cvTerrace(x0, x1, z0, z1, y, boxes) {
   for (let z = z0 + 1; z < z1; z += 2.2) for (const sx of [x0 + 0.3, x1 - 0.3]) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 5), E.glow); b.position.set(sx, y + 2.6, z); stageRoot.add(b); }
   const L = new THREE.PointLight(0xffe0a8, 0.6, 14, 1.6); L.position.set((x0 + x1) / 2, y + 2.6, (z0 + z1) / 2); stageRoot.add(L);
 }
+// ---- 艦隊：一隻ずつ定義表から組む。艦を足すときは CV_FLEET に一行足すだけ ----
+//   実寸（全長・幅, m）：大淀 192.1×16.6／陽炎型（雪風）118.5×10.8／第十三号型駆潜艇 51.0×6.7／補給艦（対空強化） 約150×19
+//   配置（ユーザー指定の輪形）：大淀が前、雪風が左舷、駆潜艇が右舷、補給艦が後ろ。座標は艦の縮尺前（×1.62 で実寸）
+const CV_FLEET = [
+  { id: 'oyodo', nm: '大淀', len: 192.1, beam: 16.6, fb: 6.2, x: 0, z: -250, col: 0x7d8288, board: true, cap: '西園寺', capGid: 'ojou',
+    sup: [[-3.4, 3.4, -28, -6, 8.5], [-2.4, 2.4, -6, 10, 5.2], [-4.6, 4.6, 26, 64, 2.6]], fun: [[0, 2, 1.6, 9]], mast: [[-10, 20], [22, 13]],
+    guns: [['t155', -52], ['t155', -40], ['dual127', -2, -1], ['dual127', -2, 1], ['dual127', 8, -1], ['dual127', 8, 1], ['aa25', 14, -1], ['aa25', 14, 1], ['aa25', 22, -1], ['aa25', 22, 1]] },
+  { id: 'yukikaze', nm: '雪風', len: 118.5, beam: 10.8, fb: 4.6, x: -110, z: -40, col: 0x7a7f86, cap: '綾瀬', capGid: 'fumi',
+    sup: [[-2.2, 2.2, -36, -24, 6.4], [-2.0, 2.0, -24, 18, 2.4]], fun: [[-14, 1.2, 1.0, 6], [4, 1.2, 1.0, 6]], mast: [[-22, 15]],
+    guns: [['dual127', -42], ['dual127', 26], ['dual127', 34], ['aa25', -8, -1], ['aa25', -8, 1], ['tt', -2], ['tt', 14]] },
+  { id: 'kusen', nm: '第十三号駆潜艇', len: 51, beam: 6.7, fb: 2.6, x: 95, z: 0, col: 0x80858a, cap: '艇長', capGid: null,
+    sup: [[-1.6, 1.6, -10, 0, 3.6]], fun: [[2, 0.8, 0.7, 3]], mast: [[-6, 9]], guns: [['aa25', -16], ['aa25', 14], ['dc', 22, -1], ['dc', 22, 1]] },
+  { id: 'hokyu', nm: '補給艦（対空強化）', len: 150, beam: 19, fb: 7.4, x: 0, z: 235, col: 0x6f6a62, cap: '白石', capGid: 'reika',
+    sup: [[-6, 6, 44, 62, 9], [-3, 3, -48, -40, 6]], fun: [[54, 1.8, 1.6, 7]], mast: [[-56, 16], [-10, 18], [20, 18]],
+    guns: [['dual127', -66], ['dual127', 68], ['aa25', -40, -1], ['aa25', -40, 1], ['aa25', -20, -1], ['aa25', -20, 1], ['aa25', 0, -1], ['aa25', 0, 1], ['aa25', 30, -1], ['aa25', 30, 1]] },
+];
+function cvHullGeo(len, beam, fb, draft) {   // 上から見た輪郭（尖った艦首・丸い艦尾）を縦に押し出す
+  const L = len / 1.62, B = beam / 1.62, h = (fb + draft) / 1.62, sh = new THREE.Shape(), hl = L / 2, hb = B / 2;
+  sh.moveTo(0, -hl); sh.quadraticCurveTo(hb * 0.9, -hl * 0.55, hb, -hl * 0.15); sh.lineTo(hb, hl * 0.7); sh.quadraticCurveTo(hb, hl, 0, hl); sh.quadraticCurveTo(-hb, hl, -hb, hl * 0.7); sh.lineTo(-hb, -hl * 0.15); sh.quadraticCurveTo(-hb * 0.9, -hl * 0.55, 0, -hl);
+  const g = new THREE.ExtrudeGeometry(sh, { depth: h, bevelEnabled: false, curveSegments: 10 }); g.rotateX(Math.PI / 2); g.translate(0, (fb / 1.62), 0);
+  return g;   // 形の y 軸 → ワールドの z（艦首が -z）
+}
+function cvBuildShip(d) {
+  const M = CV.M, g = new THREE.Group(), u = 1 / 1.62, fbU = d.fb * u, hb = d.beam * u / 2, hl = d.len * u / 2;
+  g.position.set(d.x, 0, d.z); stageRoot.add(g);
+  const gray = new THREE.MeshLambertMaterial({ color: d.col }), dk = M.dark, deckM = M.plank || M.deck;
+  const hull = new THREE.Mesh(cvHullGeo(d.len, d.beam, d.fb, 5), gray); g.add(hull);
+  const top = new THREE.Mesh(cvHullGeo(d.len - 1, d.beam - 0.4, 0.12, 0), deckM); top.position.y = fbU - 0.06; g.add(top);
+  const boot = new THREE.Mesh(cvHullGeo(d.len + 0.2, d.beam + 0.2, 0.25, 0.5), M.boot || dk); boot.position.y = -fbU + 0.25 * u; g.add(boot);
+  const sup = (x0, x1, z0, z1, h) => { const m = new THREE.Mesh(new THREE.BoxGeometry((x1 - x0) * u * 1.62 / 1.62, h * u, (z1 - z0) * u), gray); m.position.set((x0 + x1) / 2 * u, fbU + h * u / 2, (z0 + z1) / 2 * u); g.add(m);
+    for (let yy = 1.4; yy < h - 0.6; yy += 2.3) { const w = new THREE.Mesh(new THREE.BoxGeometry((x1 - x0) * u + 0.02, 0.25 * u, (z1 - z0) * u * 0.8), dk); w.position.set(m.position.x, fbU + yy * u, m.position.z); g.add(w); } };
+  for (const s of d.sup) sup(...s);
+  for (const [z, rx, rz, h] of d.fun) { const f = new THREE.Mesh(new THREE.CylinderGeometry(rx * u, rx * u * 1.1, h * u, 14), gray); f.scale.z = rz / rx; f.position.set(0, fbU + (d.sup[0][4] * 0.6 + h / 2) * u, z * u); f.rotation.x = 0.12; g.add(f); const cap = new THREE.Mesh(new THREE.CylinderGeometry(rx * u * 1.02, rx * u * 1.02, 0.5 * u, 14), dk); cap.position.set(0, f.position.y + h * u / 2, f.position.z - 0.12 * h * u * 0.5); cap.scale.z = rz / rx; g.add(cap); }
+  for (const [z, h] of d.mast) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * u, 0.25 * u, h * u, 6), dk); m.position.set(0, fbU + h * u / 2 + 3 * u, z * u); g.add(m); const y = new THREE.Mesh(new THREE.BoxGeometry(5 * u, 0.15 * u, 0.15 * u), dk); y.position.set(0, fbU + (h * 0.85 + 3) * u, z * u); g.add(y); }
+  for (const [k, z, s] of d.guns) {
+    const x = (s || 0) * (hb - 1.2 * u), gp = new THREE.Group(); gp.position.set(x, fbU, z * u); g.add(gp);
+    if (k === 't155') { const t = new THREE.Mesh(new THREE.BoxGeometry(5 * u, 2.4 * u, 6 * u), gray); t.position.y = 1.4 * u; gp.add(t); for (const b of [-1, 0, 1]) { const br = new THREE.Mesh(new THREE.CylinderGeometry(0.14 * u, 0.16 * u, 9 * u, 6), dk); br.rotation.x = Math.PI / 2; br.position.set(b * 1.2 * u, 1.6 * u, -6.5 * u); gp.add(br); } }
+    else if (k === 'dual127') { const t = new THREE.Mesh(new THREE.BoxGeometry(3.4 * u, 2.2 * u, 4.2 * u), gray); t.position.y = 1.2 * u; gp.add(t); for (const b of [-1, 1]) { const br = new THREE.Mesh(new THREE.CylinderGeometry(0.09 * u, 0.1 * u, 5.1 * u, 6), dk); br.rotation.x = Math.PI / 2 - 0.25; br.position.set(b * 0.6 * u, 1.6 * u, -3.6 * u); gp.add(br); } }
+    else if (k === 'aa25') { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.9 * u, 1 * u, 0.8 * u, 8), dk); t.position.y = 0.4 * u; gp.add(t); for (const b of [-1, 0, 1]) { const br = new THREE.Mesh(new THREE.CylinderGeometry(0.04 * u, 0.04 * u, 2.2 * u, 4), dk); br.rotation.x = 0.9; br.position.set(b * 0.28 * u, 1.3 * u, -0.6 * u); gp.add(br); } }
+    else if (k === 'tt') { const t = new THREE.Mesh(new THREE.BoxGeometry(3 * u, 1.2 * u, 8 * u), gray); t.position.y = 0.8 * u; gp.add(t); t.rotation.y = 1.2; }
+    else if (k === 'dc') { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.4 * u, 0.4 * u, 1.2 * u, 8), dk); t.position.y = 0.6 * u; gp.add(t); }
+  }
+  // 艦首の白波
+  const foam = new THREE.Mesh(new THREE.PlaneGeometry(d.beam * u * 2.2, d.len * u * 0.25), new THREE.MeshBasicMaterial({ color: 0xf2f6f8, transparent: true, opacity: 0.55, depthWrite: false })); foam.rotation.x = -Math.PI / 2; foam.position.set(0, 0.05, -hl * 0.85); g.add(foam);
+  const sh = { d, g, x: d.x, z: d.z, fbU, hl, hb };
+  if (d.board) cvBoardable(sh);
+  return sh;
+}
+// 乗れる艦（大淀）：上甲板・艦橋への階段・艦橋の電話。座標は艦の縮尺前のワールド
+function cvBoardable(sh) {
+  const d = sh.d, u = 1 / 1.62, y = sh.fbU, X = sh.x, Z = sh.z, hb = sh.hb - 0.3, hl = sh.hl;
+  cvFloor(X - hb, X + hb, Z - hl * 0.15, Z + hl * 0.7, y); cvFloor(X - hb * 0.7, X + hb * 0.7, Z - hl * 0.55, Z - hl * 0.15, y); cvFloor(X - hb * 0.3, X + hb * 0.3, Z - hl * 0.85, Z - hl * 0.55, y);
+  const rail = (x0, x1, z0, z1) => { cvSlab(x0, x1, y, y + 0.7, z0, z1, CV.M.steel); boxes.push({ x0, x1, z0, z1, y0: y, y1: y + 0.95 }); };
+  rail(X - hb - 0.1, X - hb, Z - hl * 0.15, Z + hl * 0.7); rail(X + hb, X + hb + 0.1, Z - hl * 0.15, Z + hl * 0.7);
+  rail(X - hb, X + hb, Z + hl * 0.7, Z + hl * 0.7 + 0.1);
+  rail(X - hb * 0.7 - 0.1, X - hb * 0.7, Z - hl * 0.55, Z - hl * 0.15); rail(X + hb * 0.7, X + hb * 0.7 + 0.1, Z - hl * 0.55, Z - hl * 0.15);
+  rail(X - hb * 0.3 - 0.1, X - hb * 0.3, Z - hl * 0.85, Z - hl * 0.55); rail(X + hb * 0.3, X + hb * 0.3 + 0.1, Z - hl * 0.85, Z - hl * 0.55);
+  // 艦橋構造物：甲板から階段で艦橋（羅針艦橋）へ。艦橋は壁と窓、中に電話
+  const s0 = d.sup[0], bx0 = X + s0[0] * u, bx1 = X + s0[1] * u, bz0 = Z + s0[2] * u, bz1 = Z + s0[3] * u, by = y + s0[4] * u - 0.02;
+  boxes.push({ x0: bx0, x1: bx1, z0: bz0, z1: bz1, y0: y, y1: by - 0.1 });
+  const pz0 = bz1, pz1 = bz1 + 3.2;   // 艦橋の後ろの露天の踊り場（艦橋の床と同じ高さ）
+  cvStairs(X + 0.3, X + 1.5, pz1 + (by - y) / 0.19 * 0.28 + 0.2, pz1, y, by, '階段　上 艦橋（大淀）');
+  cvFloor(X - 1.6, X + 1.6, pz0, pz1, by); cvSlab(X - 1.6, X + 1.6, by - 0.2, by, pz0, pz1, CV.M.steel);
+  boxes.push({ x0: X - 1.7, x1: X + 0.25, z0: pz0, z1: pz1 + 0.05, y0: y, y1: by - 0.15 });
+  rail(X - 1.7, X - 1.6, pz0, pz1); rail(X + 1.6, X + 1.7, pz0, pz1);
+  cvFloor(bx0 + 0.15, bx1 - 0.15, bz0 + 0.15, bz1, by);
+  const wh = 2.3, wall = (x0, x1, z0, z1) => { cvSlab(x0, x1, by, by + wh, z0, z1, CV.M.isle || CV.M.steel); boxes.push({ x0, x1, z0, z1, y0: by, y1: by + wh }); };
+  wall(bx0, bx0 + 0.12, bz0, bz1); wall(bx1 - 0.12, bx1, bz0, bz1); wall(bx0, bx1, bz0, bz0 + 0.12);
+  wall(bx0, X - 0.6, bz1 - 0.12, bz1); wall(X + 0.6, bx1, bz1 - 0.12, bz1);   // 後ろの出入口
+  for (let x = bx0 + 0.4; x < bx1 - 0.4; x += 0.9) { const w = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.55), CV.M.glass); w.position.set(x, by + 1.6, bz0 + 0.14); stageRoot.add(w); }
+  cvSlab(bx0, bx1, by + wh, by + wh + 0.2, bz0, bz1, CV.M.isle || CV.M.steel);
+  const L = new THREE.PointLight(0xffe6c0, 0.6, 9); L.position.set(X, by + 2, (bz0 + bz1) / 2); stageRoot.add(L);
+  cvSign(X, by + 2.0, bz1 - 0.2, '大淀　羅針艦橋', Math.PI);
+  CV.phones.push({ x: bx1 - 0.35, y: by, z: bz0 + 1.2, ship: 'oyodo' }); cvPhoneMesh(bx1 - 0.2, by + 1.3, bz0 + 1.2);
+  sh.capPos = [X - 0.8, by, bz0 + 1.4];
+  // 移乗：空母の艦尾テラスと大淀の後甲板を内火艇で行き来する
+  CV.xfer.push({ x: 0, y: 11.28, z: 84, to: [X, y, Z + hl * 0.55], label: '内火艇で大淀へ（E）' });
+  CV.xfer.push({ x: X, y, z: Z + hl * 0.6, to: [0, 11.28, 80], label: '内火艇で空母へ戻る（E）' });
+  cvSign(X + 1.5, y + 1.4, Z + hl * 0.6, '内火艇（E）空母へ', Math.PI);
+}
+function cvPhoneMesh(x, y, z) { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.22), CV.M.dark); g.add(b); const h = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.26, 6), new THREE.MeshLambertMaterial({ color: 0x1a1a1a })); h.position.set(-0.06, 0.05, 0); h.rotation.x = Math.PI / 2; g.add(h); g.position.set(x, y, z); stageRoot.add(g); }
+function cvBuildFleet() {
+  CV.phones = CV.phones || []; CV.xfer = CV.xfer || []; CV.fleet = [];
+  for (const d of CV_FLEET) CV.fleet.push(cvBuildShip(d));
+  CV.phones.push({ x: 15.9, y: CV.Yb, z: 6.5, ship: 'cv' }); cvPhoneMesh(16.15, CV.Yb + 1.3, 6.5); cvSign(15.9, CV.Yb + 1.8, 6.5, '艦隊電話（E）', -Math.PI / 2);
+}
+// 艦長たちを各艦へ（空母の客室の名簿から移す）。艇長は名無し
+function cvFleetCrew() {
+  if (CV.fleetCrew) return; CV.fleetCrew = true; const S = CV.S || 1;
+  for (const sh of CV.fleet) { const d = sh.d; if (!d.capGid) continue; const r = CV.R.find(q => q.gid === d.capGid || q.girl === d.capGid); if (!r) continue;
+    cvDespawn(r); r.ship = d.nm; r.loc = d.nm + ' 艦長'; r.capOf = d.id;
+    const p = sh.capPos || [sh.x + 1, sh.fbU + (d.sup[0][4] / 1.62), sh.z + d.sup[0][2] / 1.62 + 1];
+    r.x = p[0] * S; r.y = p[1] * S; r.z = p[2] * S; r.hx = r.x; r.hz = r.z; r.hy = r.y; r.ax = r.x; r.az = r.z; r.ySnap = false; r.w = 'stand'; r.f = 0; }
+}
+// 艦隊電話：E を押すたびに雪風・補給艦・駆潜艇へ順に。命令と返事を一言ずつ
+const CV_PHONE = {
+  yukikaze: { who: '綾瀬（雪風艦長）', ord: ['雪風、対空警戒を厳に', '雪風、左舷の見張りを増やせ', '雪風、現状を報告せよ'],
+    sail: ['こちら雪風。異常なし。左舷、見張りを続けます', '了解。爆雷の準備もできています'], raid: ['こちら雪風！ 左舷上空に敵機、撃ち方始めています！', '了解、空母の左を固めます！'], lull: ['こちら雪風。損害軽微、弾薬を補充中です', '了解。負傷者は二名、手当て済みです'] },
+  hokyu: { who: '白石（補給艦長）', ord: ['補給艦、燃料と弾薬の残りを知らせ', '補給艦、後方の対空を厚くせよ', '補給艦、現状を報告せよ'],
+    sail: ['こちら補給艦、白石です。燃料・弾薬とも十分ございます', '承知しました。機銃を増やして後ろを守ります'], raid: ['補給艦、対空戦闘中！ 後ろは任せてください！', '至近弾ありましたが航行に支障なし！'], lull: ['補給艦です。次の補給、いつでも出せます', '機銃弾を空母へ回す準備をします'] },
+  kusen: { who: '駆潜艇 艇長', ord: ['駆潜艇、対潜警戒を厳に', '駆潜艇、右舷前方を探れ', '駆潜艇、現状を報告せよ'],
+    sail: ['こちら駆潜艇。聴音、異常なし', '了解。右舷の警戒を続けます'], raid: ['駆潜艇、機銃で応戦中！', '了解、右舷に寄ります！'], lull: ['駆潜艇。聴音異常なし、爆雷十分', '了解。浮遊物を拾いながら続航します'] },
+};
+function cvPhoneUse(ph) {
+  const ks = ['yukikaze', 'hokyu', 'kusen'], k = ks[(CV.phoneI = ((CV.phoneI || 0) + 1)) % 3], P = CV_PHONE[k];
+  const ord = P.ord[(Math.random() * P.ord.length) | 0], st = CV.phase === 'raid' ? P.raid : CV.phase === 'lull' ? P.lull : P.sail, ans = st[(Math.random() * st.length) | 0];
+  const sub = t => { subtitle(t); const el = $('subtitle'); if (el) el.textContent = t; };
+  sub((ph.ship === 'oyodo' ? '大淀 艦橋' : '空母 艦橋') + '「' + ord + '」'); setTimeout(() => { if (CV.on) sub(P.who + '「' + ans + '」'); }, 1800);
+  return true;
+}
+function cvNearPhone() { const S = CV.S || 1, p = player.pos; return (CV.phones || []).find(q => Math.hypot(q.x * S - p.x, q.z * S - p.z) < 1.6 * S && Math.abs(q.y * S - p.y) < 1.6 * S); }
+function cvNearXfer() { const S = CV.S || 1, p = player.pos; return (CV.xfer || []).find(q => Math.hypot(q.x * S - p.x, q.z * S - p.z) < 2.2 * S && Math.abs(q.y * S - p.y) < 1.6 * S); }
+function cvXferUse(q) { const S = CV.S || 1; player.pos.set(q.to[0] * S, q.to[1] * S + 0.05, q.to[2] * S); player.vy = 0; player.lastXZ = null; CV.foot = null; CV.back = [player.pos.x, player.pos.y, player.pos.z]; popup(q.to[2] < -100 ? '内火艇で大淀に移った' : '内火艇で空母に戻った'); return true; }
+// 艦内放送：朝は体操のピアノ（自作の短い曲）、そのあと化粧・美術館・音楽の話を短く
+const CV_PA = [
+  ['ラジオ体操', '総員、おはようございます。朝の体操を始めます。腕を前から上へ、大きく伸ばして'],
+  ['化粧の時間', '潮風で肌が乾きます。寝る前に、乳液を少し多めに。口紅は艦内では控えめに'],
+  ['美術館だより', '今日はパリの美術館の話です。睡蓮の大きな絵の前では、少し離れて眺めるのがおすすめ'],
+  ['音楽の時間', 'このあと、小日向ひよりさんのフルートで短い曲をお届けします'],
+];
+function cvPaStep(dt) {
+  if (CV.phase === 'raid') { if (CV.paSnd) { try { CV.paSnd.stop(); } catch (e) {} CV.paSnd = null; } return; }
+  if ((CV.paT = (CV.paT == null ? 12 : CV.paT) - dt) > 0) return; CV.paT = 95;
+  const i = (CV.paI = (CV.paI == null ? -1 : CV.paI) + 1) % CV_PA.length, [ttl, txt] = CV_PA[i];
+  const s = '艦内放送（' + ttl + '）「' + txt + '」'; subtitle(s); const el = $('subtitle'); if (el) el.textContent = s;
+  if (typeof speechSynthesis !== 'undefined' && !window.__noTTS) { try { const u = new SpeechSynthesisUtterance(txt); u.lang = 'ja-JP'; u.rate = 1.05; u.volume = 0.6; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
+  if (i === 0) cvPiano();
+}
+function cvPiano() {   // 体操用の明るいピアノ（自作のハ長調の短い節を四回）
+  try { const A = window.__cvAC || (window.__cvAC = new (window.AudioContext || window.webkitAudioContext)()); const t0 = A.currentTime + 0.1, out = A.createGain(); out.gain.value = 0.12; out.connect(A.destination);
+    const mel = [60, 64, 67, 72, 67, 64, 65, 69, 72, 69, 65, 62, 64, 67, 71, 67, 60, 64, 67, 72], bass = [48, 53, 55, 48];
+    const note = (m, t, d, v) => { const o = A.createOscillator(), o2 = A.createOscillator(), g = A.createGain(); o.type = 'triangle'; o2.type = 'sine'; o.frequency.value = o2.frequency.value = 440 * Math.pow(2, (m - 69) / 12); o2.frequency.value *= 2; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + 0.01); g.gain.exponentialRampToValueAtTime(0.001, t + d); o.connect(g); o2.connect(g); g.connect(out); o.start(t); o2.start(t); o.stop(t + d + 0.05); o2.stop(t + d + 0.05); };
+    for (let r = 0; r < 4; r++) mel.forEach((m, i) => { const t = t0 + r * 6 + i * 0.3; note(m, t, 0.5, 0.5); if (i % 5 === 0) note(bass[(i / 5) | 0], t, 1.4, 0.35); });
+    CV.paSnd = { stop: () => out.disconnect() }; } catch (e) {}
+}
+// 生活の跡：大部屋に畳んだ服・湯呑み・手紙・干した手拭い
+function cvLifeMarks() {
+  const r = cvRng(77), cloth = [0xf4f2ec, 0x1a1a1a, 0xd8c8b8, 0xe8e0f0].map(c => new THREE.MeshLambertMaterial({ color: c })), cup = new THREE.MeshLambertMaterial({ color: 0xe8e4da }), paper = new THREE.MeshLambertMaterial({ color: 0xf6f0e0 });
+  for (const z of CV_LIFE_Z) for (let i = 0; i < 6; i++) { const x = -6 + r() * 12, zz = z + r() * 14, y = 4.12;
+    const k = r(); let m;
+    if (k < 0.4) { m = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.06, 0.26), cloth[(r() * 4) | 0]); m.position.set(x, y + 0.03, zz); }
+    else if (k < 0.7) { m = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.08, 8), cup); m.position.set(x, y + 0.04, zz); }
+    else { m = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.15), paper); m.rotation.x = -Math.PI / 2; m.rotation.z = r() * 3; m.position.set(x, y + 0.012, zz); }
+    stageRoot.add(m); }
+}
+const CV_LIFE_Z = [-55, -39, -21, 17, 27];
+// 波を越えて残る戦闘の跡：被弾した所の焦げ跡は消さない
+function cvScorch(x, y, z, r) { const S = CV.S || 1; const m = new THREE.Mesh(new THREE.CircleGeometry(r || 2.2, 14), CV.M._scorch || (CV.M._scorch = new THREE.MeshBasicMaterial({ color: 0x141210, transparent: true, opacity: 0.6, depthWrite: false }))); m.rotation.x = -Math.PI / 2; m.position.set(x, y + 0.05 * S, z); m.scale.setScalar(S); stageRoot.add(m); }
 const CV_SPON = [[-1, -66], [-1, 30], [1, -66], [1, 52]];   // 12.7cm連装高角砲のスポンソン（舷・z）
 function buildKeiku() {
-  CV.doors = []; CV.dirs = []; CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
+  CV.doors = []; CV.dirs = []; CV.phones = []; CV.xfer = []; CV.fleetCrew = false; CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
   const M = cvMats();
   const Yd = 17.2, Yh = 11.2, Y1 = 4.0, Yb = 17.2 + 3.7;
   CV.Yd = Yd; CV.Yh = Yh; CV.Y1 = Y1; CV.Yb = Yb;
@@ -10864,6 +11012,7 @@ function buildKeiku() {
     cvEdwRoom(1.3, 7.2, 42, 52, yA, hA, 'lounge', boxes); cvEdwRoom(-7.2, -1.3, 42, 52, yA, hA, 'library', boxes);
     cvEdwRoom(-1.3, 1.3, 42, 64, yA, hA, 'hall', boxes); cvEdwRoom(-7.2, 7.2, 64, 74, yA, hA, 'dine', boxes);
     cvTerrace(-8, 8, 66, 87, 11.28, boxes); }
+  cvBuildFleet(); cvLifeMarks();
   CV.Yg = Y1 + 3.2; cvScaleShip(1.62); cvSnapFloors();
 }
 // 当たりの床を、見えている床板の上面に合わせる（人が床にめり込む・浮くのを防ぐ）
@@ -10956,6 +11105,8 @@ function cvUse() {
     else popup('甲板の上で、速度を落として');
     return true;
   }
+  const ph = cvNearPhone(); if (ph) return cvPhoneUse(ph);
+  const xf = cvNearXfer(); if (xf) return cvXferUse(xf);
   const dr = cvNearDoor(); if (dr) { cvDoorToggle(dr); return true; }
   const pl = cvNearPlane();
   if (pl) { cvMount(pl); popup('操縦席に入った'); return true; }
@@ -10999,7 +11150,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031p）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031q）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -11666,7 +11817,7 @@ function cvBoom(x, z, y, inHull, onDeck) {
     if (Math.abs(x) < 26 * S) { CV.hp -= 2; if (Math.random() < 0.45) cvEv('dc', CV_EV.flood, 8, 2); cvHitR(x, z, CV.Yh, 5 * S, 0.12, 0.25, 'near', x, z, 3); }
     return;
   }
-  CV.hp -= onDeck ? 2.5 : 3;
+  CV.hp -= onDeck ? 2.5 : 3; if (onDeck) cvScorch(x, CV.Yd, z, 2.6);
   cvHitR(x, z, y, 7.5 * S, 0.55, 0.3, 'bomb', x, z);
   if (pd < 3.5 * S && pdy < 3) hurtPlayer(60); else if (pd < 8 * S && pdy < 3) hurtPlayer(18);
   if (onDeck) {
@@ -11909,6 +12060,7 @@ function cvMaid(x, z, y, face, line) {
   e.special = true; e.hold = { face }; e.cvCrew = true; e.state = 'idle'; e.baseY = y; e.s.position.y = y; e.cvLine = line;
 }
 function cvStart() {
+  setTimeout(() => { if (CV.on) { const t = '王「これが初の近代艦隊か……」'; subtitle(t); const el = $('subtitle'); if (el) el.textContent = t; } }, 2500);
   CV.phase = 'sail'; CV.t = 0; CV.hp = 100; CV.killed = 0; CV.goneN = 0; CV.spawned = 0; CV.ended = false; CV.talkT = 3; CV.usI = 0; CV.ask = false; CV.sunkSaid = false; CV.clearSaid = false; CV.downSaid = false; CV.endWhy = '';
   CV.foe = []; CV.cap = []; CV.bombs = []; CV.shells = []; CV.holes = []; CV.emit = []; CV.debris = []; CV.resQ = []; CV.fires = []; CV.wv = 0; CV.lost = 0; CV.resSent = 0; CV.evT = {}; CV.sayT = 0; CV.strT = 0;
   CV.back = [0, (CV.Yd || 12.35) + 0.3, 8 * (CV.S || 1)];
@@ -12058,7 +12210,7 @@ function updateCv(dt) {
   const endBtn = $('bCvEnd'), rosBtn = $('bCvRos');
   if (!CV.on || state !== 'play') { if (!CV.on) { const mp = $('cvMap'); if (mp) mp.style.display = 'none'; if (endBtn) endBtn.style.display = 'none'; if (rosBtn) rosBtn.style.display = 'none'; const d = $('cvRos'); if (d) d.style.display = 'none'; } return; }
   if (endBtn) endBtn.style.display = 'block'; if (rosBtn) rosBtn.style.display = 'block';
-  CV.t += dt; cvMapStep(dt); cvSteamStep(dt); cvDoorAuto(dt); cvMorgueStep(dt);
+  CV.t += dt; cvMapStep(dt); cvSteamStep(dt); cvDoorAuto(dt); cvMorgueStep(dt); cvFleetCrew(); cvPaStep(dt);
   const S = CV.S || 1;
   if (CV.sea) { const m = CV.sea.material; if (m.map) { m.map.offset.y = (m.map.offset.y + dt * 0.012) % 1; } if (m.normalMap) { m.normalMap.offset.y = (m.normalMap.offset.y + dt * 0.02) % 1; m.normalMap.offset.x = Math.sin(time * 0.05) * 0.1; } }
   if (CV.flag) CV.flag.rotation.y = Math.sin(time * 1.7) * 0.35;
@@ -12070,7 +12222,8 @@ function updateCv(dt) {
   if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 18 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
   if (fy > 1 && Math.abs(p.y - fy) < 1.4) CV.foot = [p.x, fy, p.z];
   else if (CV.foot && !player.climbing && !CV.ride && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
-  if (CV.back && (p.y < -0.4 || Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
+  const onOy = (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
+  if (CV.back && (p.y < -0.4 || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
   cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt);
   if (CV.rosOpen && (CV.rosT = (CV.rosT || 0) - dt) <= 0) { CV.rosT = 1; cvRosterDraw(); }
   if (CV.phase === 'sail' && CV.t > 26) cvWaveStart(0);
@@ -20648,7 +20801,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -25190,7 +25343,7 @@ function updateEnemies(dt) {
     }
     const pdx = player.pos.x - p.x, pdz = player.pos.z - p.z, pd = Math.hypot(pdx, pdz);
     if (!e.perch && !e.seated && pd < 0.9 && pd > 1e-4 && Math.abs(player.pos.y - e.baseY) < 1) { p.x -= pdx / pd * (0.9 - pd); p.z -= pdz / pd * (0.9 - pd); }
-    const lim = MECH.on ? MECH.lim : CFG.field;
+    const lim = MECH.on ? MECH.lim : (CV.on ? 420 : CFG.field);
     p.x = clamp(p.x, -lim, lim); p.z = clamp(p.z, -lim, lim);
     if ((MTN.on || DUAL.on) && !e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && e.state !== 'down' && e.state !== 'seppuku') {
       const fy = floorUnder(p.x, p.z, e.baseY + 0.45);
@@ -26332,7 +26485,7 @@ function updatePlayer(dt) {
     if (keys.Space && player.onGround) { player.vy = PLANE.on ? 2.6 : 5.2; player.onGround = false; player.seated = false; }   // 機内は天井が低い
     player.vy -= 14 * dt; player.yPre = player.pos.y; player.pos.y += player.vy * dt;
   }
-  player.pos.x = clamp(player.pos.x, -(MECH.on ? MECH.lim : CFG.field), MECH.on ? MECH.lim : CFG.field); player.pos.z = clamp(player.pos.z, -(MECH.on ? MECH.lim : CFG.field), MECH.on ? MECH.lim : CFG.field);
+  { const L = MECH.on ? MECH.lim : (CV.on ? 420 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
   for (const c of colliders) {
     if (player.pos.y > 2) continue;
     const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.35;

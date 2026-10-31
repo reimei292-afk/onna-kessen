@@ -10513,7 +10513,9 @@ function cvPhoneUse(ph) {
   return true;
 }
 function cvNearPhone() { const S = CV.S || 1, p = player.pos; return (CV.phones || []).find(q => Math.hypot(q.x * S - p.x, q.z * S - p.z) < 1.6 * S && Math.abs(q.y * S - p.y) < 1.6 * S); }
-function cvNearXfer() { const S = CV.S || 1, p = player.pos; return (CV.xfer || []).find(q => Math.hypot(q.x * S - p.x, q.z * S - p.z) < 2.2 * S && Math.abs(q.y * S - p.y) < 1.6 * S); }
+function cvNearXfer() { const S = CV.S || 1, p = player.pos;
+  if (CV.sinkPh === 'abandon' && CV.xfer && CV.xfer[0] && Math.abs(p.x) > 9.5 * S && (Math.abs(p.y - CV.Yd) < 1.6 || Math.abs(p.y - CV.Yh) < 1.6)) return { x: p.x / S, y: p.y / S, z: p.z / S, to: CV.xfer[0].to, label: '救命艇で大淀へ（E）' };
+  return (CV.xfer || []).find(q => Math.hypot(q.x * S - p.x, q.z * S - p.z) < 2.2 * S && Math.abs(q.y * S - p.y) < 1.6 * S); }
 function cvXferUse(q) { const S = CV.S || 1; player.pos.set(q.to[0] * S, q.to[1] * S + 0.05, q.to[2] * S); player.vy = 0; player.lastXZ = null; CV.foot = null; CV.back = [player.pos.x, player.pos.y, player.pos.z]; popup(q.to[2] < -100 ? '内火艇で大淀に移った' : '内火艇で空母に戻った'); return true; }
 // 艦内放送：朝は体操のピアノ（自作の短い曲）、そのあと化粧・美術館・音楽の話を短く
 const CV_PA = [   // 平時の艦内放送。朝は体操（自作のピアノ）、あとは順に。どれも短く
@@ -10706,7 +10708,7 @@ function cvSecondary(x, z, y, msg, hp) {   // 誘爆：少し間をおいて大�
   for (let k = 0; k < n; k++) setTimeout(() => { if (!CV.on) return; const xx = x + rand(-4, 4) * S, zz = z + rand(-5, 5) * S, P = new V3(xx, y + 1.5 * S, zz);
     if (typeof uk2Flash === 'function') uk2Flash(P, 12, 0.35); puff(P, 0xffb060, 10, 3.2, 4, 0.35);
     for (let q = 0; q < (LITE ? 5 : 10); q++) cvSmoke(xx + rand(-3, 3), y + rand(0.5, 4), zz + rand(-3, 3), rand(4, 7), rand(2.5, 4), [0.15, 0.14, 0.13], rand(4, 8), 1.4, 0.75);
-    cvHitR(xx, zz, y, 8 * S, 0.45, 0.35, 'bomb', xx, zz, 3); cvScorch(xx, y, zz, 3.5); CV.hp -= hp / n; player.shake = Math.max(player.shake || 0, 0.7);
+    cvHitR(xx, zz, y, 8 * S, 0.45, 0.35, 'bomb', xx, zz, 3); cvScorch(xx, y, zz, 3.5); CV.hp -= hp / n * (CV.wv === 2 ? 0.6 : 1); player.shake = Math.max(player.shake || 0, 0.7);
     if (Math.abs(player.pos.y - y) < 4 * S && Math.hypot(player.pos.x - xx, player.pos.z - zz) < 9 * S) hurtPlayer(30);
     if (Math.random() < 0.8) cvFireStart(clamp(xx, -7 * S, 7 * S), zz, y + 0.1 * S);
     if (CV.hp <= 0 && !CV.sunkSaid) cvSinkStart(); }, 900 + k * rand(700, 1600));
@@ -11521,7 +11523,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031v）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031w）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -11639,10 +11641,10 @@ function cvLaunchStep(dt) {
       continue;
     }
     if (L.ph === 'roll') {   // 滑走：加速して、機速がついたら機首を上げる
-      L.v = Math.min(44, L.v + dt * (L.v < 20 ? 9 : 6)); L.spin = 60;
+      const ek = 0.55 + 0.45 * ((CV.dmg && CV.dmg.eng) || 1); L.v = Math.min(44, L.v + dt * (L.v < 20 ? 9 : 6) * ek); L.spin = 60; if (ek < 0.8 && !L.slowSaid) { L.slowSaid = true; cvEv('air', '速力が出ない、合成風速が足りない！ 発艦が苦しい！', 12, 2); }
       g.position.z -= L.v * dt; g.position.y = deckY;
       const rot = L.v > 34 ? Math.min(0.16, (L.v - 34) * 0.03) : 0; cvPlanePose(g, Math.PI, -rot, 0);
-      if (L.v >= 40 || g.position.z < -86 * S) { L.ph = 'up'; L.t = 0; L.vy = 1; }
+      if (L.v >= 40 || g.position.z < -86 * S) { L.ph = 'up'; L.t = 0; L.vy = L.v < 34 ? -1.5 : 1; if (L.v < 34) cvEv('air', '機首が沈む……持ち直して！', 6, 2.2); }
       continue;
     }
     if (L.ph === 'up') {   // 上昇：艦首を越えて沈み気味→上がる
@@ -12168,6 +12170,7 @@ function cvWreck(x, z, y) {
 function cvBombDrop(f, err) {
   if (!CV.M.bomb) { CV.M.bomb = new THREE.MeshLambertMaterial({ color: 0x3e4436 }); CV.M.bombG = new THREE.CylinderGeometry(0.22, 0.16, 1.6, 8); CV.M.bombG.rotateX(Math.PI / 2); }
   const m = new THREE.Mesh(CV.M.bombG, CV.M.bomb); m.position.copy(f.p); stageRoot.add(m);
+  err *= 0.5 + 0.5 * ((CV.dmg && CV.dmg.eng) || 1);   // 機関が傷むと回避の舵が重く、爆弾が当たりやすい
   const v = f.v.clone().multiplyScalar(0.96); v.x += rand(-err, err); v.z += rand(-err, err);
   CV.bombs.push({ p: f.p.clone().add(new V3(0, -1.2, 0)), v, m, f });
 }
@@ -12189,10 +12192,10 @@ function cvBoom(x, z, y, inHull, onDeck) {
   player.shake = Math.max(player.shake || 0, pd < 40 ? 0.5 : 0.2);
   if (!inHull) {
     for (let k = 0; k < (LITE ? 8 : 16); k++) cvSmoke(x + rand(-1.5, 1.5), 0.5 + k * 1.6, z + rand(-1.5, 1.5), rand(3, 5), rand(1.6, 2.6), [0.93, 0.96, 0.98], rand(3, 6), 0.6, 0.8);
-    if (Math.abs(x) < 26 * S) { CV.hp -= 3.5; if (Math.random() < 0.45) cvEv('dc', CV_EV.flood, 8, 2); cvHitR(x, z, CV.Yh, 5 * S, 0.12, 0.25, 'near', x, z, 3); }
+    if (Math.abs(x) < 26 * S) { CV.hp -= 3.5 * (CV.wv === 2 ? 0.6 : 1); if (Math.random() < 0.45) cvEv('dc', CV_EV.flood, 8, 2); cvHitR(x, z, CV.Yh, 5 * S, 0.12, 0.25, 'near', x, z, 3); }
     return;
   }
-  CV.hp -= onDeck ? 5 : 6; if (onDeck) cvScorch(x, CV.Yd, z, 2.6);   // 軽空母は脆い
+  CV.hp -= (onDeck ? 4 : 5) * (CV.wv === 2 ? 0.6 : 1); if (onDeck) cvScorch(x, CV.Yd, z, 2.6);   // 軽空母は脆い
   cvHitR(x, z, y, 7.5 * S, 0.55, 0.3, 'bomb', x, z);
   if (pd < 3.5 * S && pdy < 3) hurtPlayer(60); else if (pd < 8 * S && pdy < 3) hurtPlayer(18);
   if (onDeck) {
@@ -12658,7 +12661,7 @@ function cvLullStart() {
   setTimeout(() => { if (CV.on && CV.phase === 'lull') cvEv('med', '負傷者、医務室へ運びます！', 1, 2); }, 7000);
 }
 function cvLullStep(dt) {
-  CV.lullT -= dt; if (!cvHangarFire() && CV.hp > 0) CV.hp = Math.min(100, CV.hp + dt * 0.12);   // 合間に応急班が排水・補強して少し持ち直す
+  CV.lullT -= dt; if (!cvHangarFire() && CV.hp > 0) CV.hp = Math.min(100, CV.hp + dt * 0.3);   // 合間に応急班が排水・補強して少し持ち直す
   if (CV.lullT < 14 && !CV.lullSaid) { CV.lullSaid = 1; cvEv('sig', '電探、感あり！ 大編隊、接近中！', 1, 2.2); }
   if (CV.lullT < 6 && CV.lullSaid === 1) { CV.lullSaid = 2; cvEv('look', cvBearing(rand(-300, 300), -400) + '　次の波です！', 1, 2.2); }
   if (CV.lullT <= 0) cvWaveStart(CV.wv + 1);
@@ -21182,7 +21185,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

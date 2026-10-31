@@ -11815,7 +11815,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031zj）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031zk）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -15713,7 +15713,7 @@ function fbSquad(from, n, cz) {
 }
 // ---- 進行 ----
 function fbReset() {
-  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, nomRu: FB_NOM.ru });
+  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, ft: 0, sally: false, nomRu: FB_NOM.ru });
   CFG.maxBodies = LITE ? 220 : 600;
   player.pos.set(0, 0, FB_Z.start); player.yaw = 0; player.pitch = -0.02;
   UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
@@ -15801,6 +15801,7 @@ function fbBrain(e, dt) {
   if (!e.fb) return false;
   const p = e.s.position;
   if (e.fbFall) { e.fbFallT += dt; p.y -= dt * (4 + e.fbFallT * 9); e.knock.set(0, 0, 0); if (p.y < -16) { e.s.visible = false; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); } return true; }
+  if (e.fbRu && e.fbFlee && isUp(e)) { p.z += dt * 7; p.x += (p.x < 0 ? -1 : 1) * dt * 1.5; e.s.rotation.y = 0; return true; }   // 砦の出撃で退く
   if (e.fbRu) {   // スキーで素早く寄せ、近づいたら普段の戦い方
     if (e.fbSki > 0) { e.fbSki -= dt; const d = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (d < 20) e.fbSki = 0; }
     if (FB.bridgeDown && p.z < FB_Z.bridge1 + 1 && p.z > FB_Z.bridge0 - 1) p.z = p.z > (FB_Z.bridge0 + FB_Z.bridge1) / 2 ? FB_Z.bridge1 + 1 : FB_Z.bridge0 - 1;
@@ -15834,6 +15835,7 @@ function fbHome(e) {
     const tail = FB.bridgeDown && !FB.rgAcross ? FB_Z.bridge1 + 8 : kz + 40; return [((e.id % 9) - 4) * 1.8, tail + (e.id % 5) * 1.5];
   }
   if (e.fbNamed === 'ojou') return [0, FB_Z.fort - 6];
+  if (e.fbLast && FB.ph === 'bridgeSend' && !FB.sendDone) return [((e.id % 5) - 2) * 1.2, FB_Z.bridge0 - 4 - (e.id % 3)];   // 十人は先に向こう岸へ
   if (e.fbLast && !FB.crossed && FB.ph !== 'bridgeSend' && !(FB.ph === 'bridgeWait' && FB.lastGo)) return [((e.id % 5) - 2) * 1.2, FB_Z.bridge1 + 3 + (e.id % 2) * 1.2];
   if (FB.ph === 'slopeWait' && FB.st < 34) { const s = e.fbSlot, gone = FB.st / 34 * FB.col.length; if (s > gone) return [((s % 6) - 2.5) * 1.3, FB_Z.slope1 + 4 + Math.floor((s - gone) / 6) * 1.4]; }
   if (FB.gateOpen && FB.ph !== 'fortFight') { const s = e.fbSlot || 0; return [((s % 12) - 5.5) * 1.6, FB_Z.fort - 5 - Math.floor(s / 12) * 1.5]; }
@@ -15897,7 +15899,8 @@ function updateFb(dt) {
   if (FB.ph === 'slopeRush') { FB.st += dt; if (FB.st > 5 && !FB.rushAv) { FB.rushAv = true; fbAvalanche((FB_Z.slope0 + FB_Z.slope1) / 2, false); setTimeout(() => FB.on && ukDlg([fbS('ru_after')]), 6000); FB.ph = 'march2b'; } }
   if (FB.ph === 'march2b' && pz < FB_Z.coat + 8) fbCoat();
   if (FB.ph === 'march3' && pz < FB_Z.fort + 45) fbFort();
-  if (FB.ph === 'fortFight') { const near = FB.ru.filter(e => isUp(e) && e.s.position.z < FB_Z.fort + 50).length; if (!UK.dlg && (near === 0 || (pz < FB_Z.fort + 4 && near < 3))) fbArrive(); }
+  if (FB.ph === 'fortFight' && !UK.dlg) { FB.ft = (FB.ft || 0) + dt; if (FB.ft > 35 && !FB.sally) { FB.sally = true; for (const e of FB.ru) if (isUp(e)) e.fbFlee = true; popup('砦の門が開き、守備隊が打って出た！ ロシアのスキー部隊が退いていく'); popupTimer = 4; } }
+  if (FB.ph === 'fortFight') { const near = FB.ru.filter(e => isUp(e) && !e.fbFlee && e.s.position.z < FB_Z.fort + 50).length; if (!UK.dlg && (near === 0 || (pz < FB_Z.fort + 4 && near < 3))) fbArrive(); }
   for (const e of FB.col) if (e.fbToHut && isUp(e) && Math.hypot(e.s.position.x - 9, e.s.position.z - FB_Z.hut) < 1.5 && !e.fbHidden) { e.fbHidden = true; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } }
   // 数（名目）
   const cu = FB.col.filter(isUp).length; FB.colNom = Math.round(cu * (FB_NOM.col + FB_NOM.port) / (FB_DRAW.col + FB_DRAW.port + FB_NAMED.length));
@@ -15959,7 +15962,7 @@ function fbOverText(win) {
   const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
   const C = FB.ch, lines = [C.bridge ? (C.bridge === 'wait' ? '橋：綾瀬を待った' : '橋：十人を先に渡した') : '', C.hut ? (C.hut === 'carry' ? '小屋：負傷者を担いだ' : '小屋：負傷者を残した') : '', C.slope ? (C.slope === 'spread' ? '斜面：一人ずつ' : '斜面：駆け抜けた') : '', C.coat ? (C.coat === 'give' ? '外套：谷口に着せた' : '外套：着たまま') : ''].filter(Boolean).join(' ／ ');
   if (h1) h1.textContent = win ? '作戦終了' : '作戦中止';
-  if (h2) h2.textContent = (win ? (FB.gateOpen ? '吹雪の山岳行軍 ── 砦に着いた' : '吹雪の山岳行軍 ── 行軍の途中で幕') : '殿が倒れた（凍えて／討たれて）。血は出ていない') + (lines ? '　' + lines : '');
+  if (h2) h2.textContent = (win ? (FB.gateOpen ? '吹雪の山岳行軍 ── 砦に着いた' : '吹雪の山岳行軍 ── 行軍の途中で幕') : '殿が倒れた（凍えて／討たれて）') + (lines ? '　' + lines : '');
 }
 addEventListener('keydown', ev => {
   if (!FB.on || state !== 'play') return;
@@ -15970,7 +15973,7 @@ addEventListener('keydown', ev => {
 }, true);
 function fbLabel() { return { intro: '吹雪の山岳行軍', march: '峠道：吊り橋へ', bridgeTalk: '吊り橋', bridgeWait: '吊り橋：綾瀬を待つ', bridgeSend: '吊り橋：十人を渡す', march1: '峠道：山小屋へ', hutTalk: '山小屋', march2: '峠道：雪庇の斜面へ', slopeTalk: '雪庇の斜面', slopeWait: '斜面：一人ずつ', slopeRush: '斜面：駆け抜ける', march2b: '峠道：砦へ', coatTalk: '谷口が倒れた', march3: '峠道：砦へ', fortFight: '砦の門前：包囲を破る', fort: '砦', done: '砦（作戦終了は Q）' }[FB.ph] || ''; }
 function fbRemain() { const ru = FB.ru.filter(isUp).length, nom = Math.max(0, Math.round(FB.ruPool + ru * FB_NOM.ru / 120)); return `ロシア スキー部隊 約${nom}　本隊 約${FB.colNom || 0}　しんがり ${FB.rgGone ? '向こう岸' : FB.rg.length ? '約' + Math.round(FB.rg.filter(isUp).length * FB_NOM.rg / (FB_DRAW.rg + 1)) : '合流'}`; }
-if (TEST) window.__fb = { FB, pick: i => ukPick(i), skip: () => ukDlgSkip(), squad: (f, n) => fbSquad(f, n), pl: () => player, cnt: () => { const c = {}; for (const e of enemies) { const k = e.team + (e.dead ? "D" : ""); c[k] = (c[k] || 0) + 1; } return c; }, dlg: () => !!UK.dlg, av: z => fbAvalanche(z == null ? player.pos.z : z, false) };
+if (TEST) window.__fb = { FB, pick: i => ukPick(i), skip: () => ukDlgSkip(), squad: (f, n) => fbSquad(f, n), pl: () => player, cnt: () => { const c = {}; for (const e of enemies) { const k = e.team + (e.dead ? "D" : ""); c[k] = (c[k] || 0) + 1; } return c; }, dlg: () => !!UK.dlg, ud: () => UK.dlg ? JSON.stringify({ cur: UK.dlg.cur, ch: !!UK.choice, n: (UK.dlg.q || UK.dlg.steps || []).length }) : "", over: () => state, av: z => fbAvalanche(z == null ? player.pos.z : z, false) };
 
 // ====================================================================
 //  アメリカ西部編 第一幕「荒野の決闘」（?stage=usDuel）
@@ -22415,7 +22418,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zj';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zk';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -26958,7 +26961,7 @@ function updateEnemies(dt) {
     }
     const pdx = player.pos.x - p.x, pdz = player.pos.z - p.z, pd = Math.hypot(pdx, pdz);
     if (!e.perch && !e.seated && pd < 0.9 && pd > 1e-4 && Math.abs(player.pos.y - e.baseY) < 1) { p.x -= pdx / pd * (0.9 - pd); p.z -= pdz / pd * (0.9 - pd); }
-    const lim = MECH.on ? MECH.lim : (CV.on ? 420 : CFG.field);
+    const lim = MECH.on ? MECH.lim : (CV.on ? 420 : FB.on ? 280 : CFG.field);
     p.x = clamp(p.x, -lim, lim); p.z = clamp(p.z, -lim, lim);
     if ((MTN.on || DUAL.on) && !e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && e.state !== 'down' && e.state !== 'seppuku') {
       const fy = floorUnder(p.x, p.z, e.baseY + 0.45);
@@ -28105,7 +28108,7 @@ function updatePlayer(dt) {
     if (keys.Space && player.onGround) { player.vy = PLANE.on ? 2.6 : 5.2; player.onGround = false; player.seated = false; }   // 機内は天井が低い
     player.vy -= 14 * dt; player.yPre = player.pos.y; player.pos.y += player.vy * dt;
   }
-  { const L = MECH.on ? MECH.lim : (CV.on ? 420 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
+  { const L = MECH.on ? MECH.lim : (CV.on ? 420 : FB.on ? 280 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
   for (const c of colliders) {
     if (player.pos.y > 2) continue;
     const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.35;

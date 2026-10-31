@@ -644,7 +644,7 @@ function abGids() { if (AB.pool && AB.pool.length) return AB.pool; AB.pool = rkP
 function abSprMat(gid) { const k = 'spr_' + gid; if (AB.mats[k]) return AB.mats[k]; const g = GIRLS[gid]; return (AB.mats[k] = new THREE.SpriteMaterial({ map: g.front.tex, alphaTest: 0.35, transparent: true, depthWrite: true })); }
 function abFlatMat(gid, dark) { const k = 'flat_' + gid + (dark ? 'd' : ''); if (AB.mats[k]) return AB.mats[k]; const g = GIRLS[gid]; return (AB.mats[k] = new THREE.MeshLambertMaterial({ map: g.front.tex, alphaTest: 0.35, transparent: true, side: THREE.DoubleSide, color: dark ? 0x9a9690 : 0xffffff })); }
 function abPerson(x, z, role, o) {
-  o = o || {}; let gid = o.gid; if (!gid || !GIRLS[gid] || !GIRLS[gid].front) { const P = abGids(); gid = P[(AB.ppl.length * 7 + 3) % P.length]; }
+  o = o || {}; let gid = o.gid; if (!gid || !GIRLS[gid] || !GIRLS[gid].front) { const P = abGids(); gid = mobDeal('ab', P); }
   const G = GIRLS[gid], hk = G.front.hk || 1, asp = G.front.aspect || 0.3, h = (o.h || AB_H) * hk;
   const s = new THREE.Sprite(abSprMat(gid)); s.center.set(0.5, 0); s.scale.set(h * asp, h, 1); s.position.set(x, 0, z); stageRoot.add(s);
   const P = { gid, s, h, asp, p: s.position, role, name: o.name || '', label: o.label || role, key: o.key || null, st: 'ok', tgt: null, spd: o.spd || 1.4, home: new V3(x, 0, z), busy: null, kind: o.kind || 'gnd', vk: o.vk != null ? o.vk : AB.ppl.length, idle: Math.random() * 6 };
@@ -870,7 +870,7 @@ function abRoom(cx, cz, w, d, h, wall, floor, ceil) {
 }
 function abCastAdd(k, x, z, label) { const P = abNamed(k, x, z, label); (AB.cast = AB.cast || {})[k] = P; return P; }
 function abExtra(k, x, z, label, gid) { const P = abPerson(x, z, label, { gid, label, kind: 'named' }); (AB.cast = AB.cast || {})[k] = P; return P; }
-function abKamiGids() { const P = abGids(); const out = []; for (let i = 0; i < 12; i++) out.push(P[(i * 11 + 5) % P.length]); return out; }
+function abKamiGids() { const P = abGids(); const out = []; for (let i = 0; i < 12; i++) out.push(mobDeal('abk', P)); return out; }
 const AB_KAMI_N = ['みさき', 'はるか', 'あおい', 'ゆいな', 'ななみ', 'さくら', 'りこ', 'かえで', 'しおり', 'まどか', 'ちはる', 'ゆずは'];
 function abLookDim(far) { sky.visible = false; scene.background.setHex(0x0b0e14); scene.fog.color.setHex(0x0b0e14); scene.fog.near = 20; scene.fog.far = far || 90; hemiL.intensity = 0.5; ambL.intensity = 0.6; sun.intensity = 0.12; }
 function abLookIn() { sky.visible = false; scene.background.setHex(0x1a1612); scene.fog.color.setHex(0x1a1612); scene.fog.near = 30; scene.fog.far = 160; hemiL.intensity = 0.9; ambL.intensity = 0.8; sun.intensity = 0.5; }
@@ -1095,7 +1095,7 @@ function abBuild6() {
 const AB_JO = [['jo1', '侍女'], ['jo2', '侍女'], ['jo3', '侍女']];
 function abStart6() {
   AB.ph = 'court6'; const [x, z] = AB_COURT; abLookIn(); AB.cast = {};
-  const P = abGids(); AB_JO.forEach(([k, l], i) => abExtra(k, x + 1.8 + i * 1.4, z - 4, l, P[(i * 17 + 3) % P.length]));
+  const P = abGids(); AB_JO.forEach(([k, l], i) => abExtra(k, x + 1.8 + i * 1.4, z - 4, l, mobDeal('ab', P)));
   abCastAdd('ojou', x - 1.8, z - 4, '西園寺 すみれ'); abCastAdd('omiya', x - 3.2, z - 4, '大宮 ひなた');
   const us = ['us01', 'us19', 'us05'].filter(g => GIRLS[g] && GIRLS[g].front); ['del1', 'del2', 'del3'].forEach((k, i) => abExtra(k, x - 2.4 + i * 2.4, z - 12.5, ['裁判長', '裁判官', '裁判官'][i], us[i] || null));
   const G = ['sumi', 'fumi', 'sec2', 'kujo', 'sec4', 'sec3', 'reika', 'shizuka', 'flute', 'sysop'], GL = ['白瀬 澄', '綾瀬 文乃', '早瀬 ことね', '九条 紗英', '宮下 千尋', '桜井 ゆかり', '白石 麗華', '久遠 静香', '小鳥遊 ひびき', '霧島 怜'];
@@ -1209,7 +1209,7 @@ function abFate(P) { const n = abCrewN(P), d = P.dmg; let dead = 0, wnd = 0;
 function abSeatDead(P, k) { const n = abCrewN(P), f = P.fate; return P.dmg.grim ? k < 2 : k >= n - f.dead; }
 function abSeatCrew(P) {   // 帰ってきた機：席に座った搭乗員が見える。戦死した者は席で崩れたまま
   P.fate = abFate(P); P.seat = []; const pool = abGids(), base = (AB.planes.length * 5 + 1);
-  AB_SEAT[P.kind].forEach((v, k) => { const gid = (P.crewG && P.crewG[k] && GIRLS[P.crewG[k]] && GIRLS[P.crewG[k]].front) ? P.crewG[k] : pool[(base + k * 3) % pool.length], G = GIRLS[gid], hk = G.front.hk || 1, asp = G.front.aspect || 0.3, h = AB_H * hk * 0.82, dead = abSeatDead(P, k); let m;
+  AB_SEAT[P.kind].forEach((v, k) => { const gid = (P.crewG && P.crewG[k] && GIRLS[P.crewG[k]] && GIRLS[P.crewG[k]].front) ? P.crewG[k]   : mobDeal('ab', pool), G = GIRLS[gid], hk = G.front.hk || 1, asp = G.front.aspect || 0.3, h = AB_H * hk * 0.82, dead = abSeatDead(P, k); let m;
     if (dead) { m = new THREE.Mesh(AB.flatGeo || (AB.flatGeo = new THREE.PlaneGeometry(1, 1)), abFlatMat(gid, true)); m.scale.set(h * asp, h, 1); m.rotation.set(-1.05, k % 2 ? 0.5 : -0.5, k % 2 ? -0.35 : 0.35); m.position.set(v[0] + (k % 2 ? 0.12 : -0.12), v[1] - 0.35, v[2] - 0.2); }
     else { m = new THREE.Sprite(abSprMat(gid)); m.center.set(0.5, 0); m.scale.set(h * asp, h, 1); m.position.set(v[0], v[1] - h * 0.45 + (P.kind === 'zero' ? 0.25 : 0), v[2]); }
     m.userData.seat = k; P.g.add(m); P.seat.push({ gid, m, dead }); });
@@ -11296,10 +11296,11 @@ function cvBuildShip(d) {
 // 乗れる艦（大淀）：上甲板・艦橋への階段・艦橋の電話。座標は艦の縮尺前のワールド
 function cvBoardable(sh) {
   const d = sh.d, u = 1 / 1.62, y = sh.fbU, X = sh.x, Z = sh.z, hb = sh.hb - 0.3, hl = sh.hl;
-  cvFloor(X - hb, X + hb, Z - hl * 0.15, Z + hl * 0.7, y); cvFloor(X - hb * 0.7, X + hb * 0.7, Z - hl * 0.55, Z - hl * 0.15, y); cvFloor(X - hb * 0.3, X + hb * 0.3, Z - hl * 0.85, Z - hl * 0.55, y);
+  cvFloor(X - hb, X + hb, Z - hl * 0.15, Z + hl * 0.7, y); cvFloor(X - hb * 0.8, X + hb * 0.8, Z + hl * 0.7, Z + hl * 0.93, y);   // 後甲板（内火艇の着く所）
+  cvFloor(X - hb * 0.7, X + hb * 0.7, Z - hl * 0.55, Z - hl * 0.15, y); cvFloor(X - hb * 0.3, X + hb * 0.3, Z - hl * 0.85, Z - hl * 0.55, y);
   const rail = (x0, x1, z0, z1) => { cvSlab(x0, x1, y, y + 0.7, z0, z1, CV.M.steel); boxes.push({ x0, x1, z0, z1, y0: y, y1: y + 0.95 }); };
   rail(X - hb - 0.1, X - hb, Z - hl * 0.15, Z + hl * 0.7); rail(X + hb, X + hb + 0.1, Z - hl * 0.15, Z + hl * 0.7);
-  rail(X - hb, X + hb, Z + hl * 0.7, Z + hl * 0.7 + 0.1);
+  rail(X - hb, X - hb * 0.8, Z + hl * 0.7, Z + hl * 0.7 + 0.1); rail(X + hb * 0.8, X + hb, Z + hl * 0.7, Z + hl * 0.7 + 0.1); rail(X - hb * 0.8 - 0.1, X - hb * 0.8, Z + hl * 0.7, Z + hl * 0.93); rail(X + hb * 0.8, X + hb * 0.8 + 0.1, Z + hl * 0.7, Z + hl * 0.93); rail(X - hb * 0.8, X + hb * 0.8, Z + hl * 0.93, Z + hl * 0.93 + 0.1);
   rail(X - hb * 0.7 - 0.1, X - hb * 0.7, Z - hl * 0.55, Z - hl * 0.15); rail(X + hb * 0.7, X + hb * 0.7 + 0.1, Z - hl * 0.55, Z - hl * 0.15);
   rail(X - hb * 0.3 - 0.1, X - hb * 0.3, Z - hl * 0.85, Z - hl * 0.55); rail(X + hb * 0.3, X + hb * 0.3 + 0.1, Z - hl * 0.85, Z - hl * 0.55);
   // 艦橋構造物：甲板から階段で艦橋（羅針艦橋）へ。艦橋は壁と窓、中に電話
@@ -11321,7 +11322,7 @@ function cvBoardable(sh) {
   CV.phones.push({ x: bx1 - 0.35, y: by, z: bz0 + 1.2, ship: 'oyodo' }); cvPhoneMesh(bx1 - 0.2, by + 1.3, bz0 + 1.2);
   sh.capPos = [X - 0.8, by, bz0 + 1.4];
   // 移乗：空母の艦尾テラスと大淀の後甲板を内火艇で行き来する
-  CV.xfer.push({ x: 0, y: 11.28, z: 84, to: [X, y, Z + hl * 0.86], label: '内火艇で大淀へ（E）' });
+  CV.xfer.push({ x: 0, y: 11.28, z: 84, to: [X, y, Z + hl * 0.82], label: '内火艇で大淀へ（E）' });
   CV.xfer.push({ x: X + 1.2, y, z: Z + hl * 0.9, to: [0, 11.28, 80], label: '内火艇で空母へ戻る（E）' });
   cvSign(X + 1.5, y + 1.4, Z + hl * 0.6, '内火艇（E）空母へ', Math.PI);
 }
@@ -13534,7 +13535,7 @@ function cvPool() {   // 乗組の写真：日本の侍女（名のある人・�
   if (CV.pool && CV.pool.length) return CV.pool;
   const named = new Set(['sumi', 'sec2', 'ojou', 'fumi', 'omiya', 'reika', 'sec3', 'sec4', 'shizuka', 'kujo', 'sysop', 'tono', 'flute'].map(k => cvGid(k)).filter(Boolean));   // 小日向・氷室・一条・夏目・村瀬の顔は一般の乗組にも使う（その人だけの顔にしない）
   for (const k of [typeof SEC_ID !== 'undefined' && SEC_ID, typeof SEC2_ID !== 'undefined' && SEC2_ID, typeof FLUTE_ID !== 'undefined' && FLUTE_ID, typeof MEDIC_ID !== 'undefined' && MEDIC_ID, 'girl26', 'surgeon']) if (k) named.add(k);
-  CV.pool = Object.values(GIRLS).filter(g => g && g.type === 'mob' && !named.has(g.id) && !/^(uk|us|fr|vn|ru|de|cn)/.test(g.id)).map(g => g.id);
+  CV.pool = jpMobLooks().filter(id => !named.has(id) && !/^(uk|us|fr|vn|ru|de|cn)/.test(id));   // 全ステージ共通の見た目すべて（弓兵の素手の姿も）
   return CV.pool;
 }
 // ---- 名簿を作る（倍率をかけた後に呼ぶ） ----
@@ -13625,7 +13626,7 @@ function cvRosterBuild() {
       for (let i = 0; i < 6; i++) { const r = res.shift(); if (!r) break; const lx = L.x + (i % 3 - 1) * 1.6, z0 = L.z - 5 + (i >> 1 & 1) * 0, zz = L.z + (i < 3 ? -4 : 4); put(r, { x: lx * S, z: zz * S, y: CV.Yh, f: i < 3 ? 0 : Math.PI, walkP: i }); L.n.push(r); } }   /* ウォーキングレッスン（格納庫の中央。講師と六人、立つ・歩くだけ） */
     if (CV.paxU) for (const U of CV.paxU) { const r = res.shift(); if (r) put(r, { d: 'elv', nm: U.D.girl, x: (U.XF - U.sg * 0.4) * S, z: (U.Z0 + 0.4) * S, y: U.LV[U.D.park] * S, f: U.sg > 0 ? Math.PI / 2 : -Math.PI / 2, paxGirl: U.D.id }); } }
   // 写真を固定（同じ人は最後まで同じ顔）
-  const pool = cvPool(); for (const r of R) if (!r.gid && pool.length) r.girl = pool[(r.i * 7 + 3) % pool.length];
+  const pool = cvPool(); for (const r of R) if (!r.gid && pool.length) r.girl = mobDeal('cv', pool);
   CV.total0 = R.filter(r => r.d !== 'fam').length;
 }
 function cvAliveN() { let n = 0; for (const r of CV.R || []) if (r.d !== 'fam' && r.st !== 'dead') n++; return n; }
@@ -14291,6 +14292,14 @@ function cvOyHitStep(dt) {
   for (let i = 0; i < k; i++) cvDownR(crew[i], Math.random() < 0.4, x, z, 'oyodo');
   O.log.push(what); cvShipSay('oyodo', what + '！ 応急員、急げ！');
 }
+function cvOyReunion() {   // 殿の前に半円で並ぶ。大淀の甲板で 西園寺・大宮・綾瀬・ことね と再会（生きていれば近くへ寄せる）
+  if (CV.oyReu) return; CV.oyReu = true; const S = CV.S || 1, P = player.pos, oy = (CV.fleet || []).find(s => s.d.board); if (!oy) return;
+  const W = [[/西園寺/, '陛下！ ご無事で……大淀へようこそ。艦はわたしが預かります'], [/大宮/, '陛下……よかった、本当によかった'], [/綾瀬/, '陛下、記録は全部持ち出しました。皆の名前も'], [/早瀬|ことね/, '陛下、お怪我を見せてください。すぐ手当てします']];
+  W.forEach(([re, t], i) => { const r = (CV.R || []).find(q => re.test(q.nm || '') && q.st === 'ok'); if (!r) return;
+    const a = (player.yaw || 0) + (i - 1.5) * 0.45, x = P.x - Math.sin(a) * 2.8 * S, z = P.z - Math.cos(a) * 2.8 * S; if (!/早瀬|ことね/.test(r.nm)) { cvDespawn(r); r.x = r.hx = r.ax = x; r.z = r.hz = r.az = z; r.y = r.hy = P.y; r.ySnap = false; r.ship = oy.d.nm; r.loc = '大淀甲板'; r.w = 'stand'; }
+    setTimeout(() => r.st === 'ok' && cvSay(r, t, 2.2), 1500 + i * 3800); });
+  setTimeout(() => cvKing('皆、よく生きていてくれた'), 17000);
+}
 function cvOyReport() {   // 殿が大淀に乗ったとき、西園寺が被害を報告する
   const O = CV.oy, oy = (CV.fleet || []).find(s => s.d.board); if (!oy || CV.oyRep) return; CV.oyRep = true; const cap = CV.R.find(r => r.gid === oy.d.capGid && r.st === 'ok');
   const dead = CV.R.filter(r => r.ship === oy.d.nm && r.st === 'dead' && !r.rescued).length, wnd = CV.R.filter(r => r.ship === oy.d.nm && r.st === 'wnd').length, fires = O ? O.fires.filter(f => !f.out).length : 0;
@@ -14355,7 +14364,7 @@ function cvBoatStepK(dt) {
     const st = (CV.t * 2.4) % (Math.PI * 2); for (const o of E.oars) { o.rotation.x = Math.sin(st) * 0.5; o.rotation.z = o.userData.s * (0.9 + 0.25 * Math.cos(st)); }
     const L = CV_ROW[E.li], dLeft = CV_ROW.length - E.li;
     if (d > 8 * S && (d > 30 * S || !L)) { E.b.rotation.y = Math.atan2(gx - bp.x, gz - bp.z); bp.x += (gx - bp.x) / d * v * dt; bp.z += (gz - bp.z) / d * v * dt; }
-    else if (!L) { cvXferUse(CV.xfer[0]); E.ph = 'done'; return true; }   // 着いた。台詞が残っていれば言い終わるまで横付けで待つ
+    else if (!L) { E.ph = 'moor'; E.t = 0; E.go = false; cvEv('deck', 'タラップ、降ろせ！ 陛下、どうぞ！', 1, 2); return true; }   // 着いた。台詞が残っていれば言い終わるまで横付けで待つ
     cvBoatSeat(E);
     if ((E.lT -= dt) <= 0 && L) { E.lT = Math.max(6.5, Math.min(10, (d / v) / Math.max(1, dLeft))); E.li++; const [w, t] = L;   // 残り距離に合わせて台詞の間隔を伸び縮み（最低 6.5 秒）
       if (w === 'k') cvKing(t); else { const r = w === 'hy' ? (cvHayase() || E.es[0]) : w === 'row' ? E.rowers[(Math.random() * E.rowers.length) | 0] : E.res[(Math.random() * E.res.length) | 0] || E.rowers[0]; if (r && r.st === 'ok') cvSay(r, t, 1.8); } }
@@ -14640,7 +14649,12 @@ function cvEscortStep(dt) {
     if (!near && (E.callT = (E.callT || 0) - dt) <= 0) { E.callT = 9; const r = E.es[0]; if (r && r.st === 'ok') cvSay(r, '陛下、艇はこちらです！ ' + (E.sd > 0 ? '右舷' : '左舷') + 'へ！', 1.8); }
     if (E.go) { btn.style.display = 'none'; p.x = bx; p.z = bz; player.vy = 0; E.ph = 'lower'; E.t = 0; popup('カッターに乗った'); cvKing('よし、乗るぞ'); }
     return; }
-  else { const b = $('bBoardK'); if (b) b.style.display = 'none'; }
+  else if (E.ph === 'moor') {   // 大淀に横付け：タラップを上るボタンで殿が乗る（自動では乗せない）
+    const btn = cvBoardBtn(); btn.textContent = 'タラップを上る'; btn.style.display = state === 'play' ? 'block' : 'none'; cvBoatSeat(E);
+    if ((E.callT = (E.callT || 0) - dt) <= 0) { E.callT = 10; const r = E.es[0]; if (r && r.st === 'ok') cvSay(r, '陛下、タラップです。足もとにお気をつけて', 1.8); }
+    if (E.go) { btn.style.display = 'none'; btn.textContent = '乗る'; E.go = false; cvXferUse(CV.xfer[0]); E.ph = 'done'; cvKing('上るぞ'); cvOyReunion(); }
+    return; }
+  else { const b = $('bBoardK'); if (b) { b.style.display = 'none'; b.textContent = '乗る'; } }
   if (cvBoatStepK(dt)) return;
   if (E.ph === 'boat') { const oy = (CV.fleet || []).find(s => s.d.board), to = CV.xfer && CV.xfer[0] && CV.xfer[0].to; if (!oy || !to) return; const bp = E.b.position, gx = to[0] * S, gz = to[2] * S, d = Math.hypot(gx - bp.x, gz - bp.z);
     if (d > 12 && E.t < 25) { const v = Math.min(d, 24 * dt); bp.x += (gx - bp.x) / d * v; bp.z += (gz - bp.z) / d * v; E.b.rotation.y = Math.atan2(gx - bp.x, gz - bp.z); p.set(bp.x, 1.4 * S, bp.z); player.vy = 0; }
@@ -22239,6 +22253,9 @@ function palSpots(R) {
 // ---- 人：時間帯ごとに、いまの階にいる娘だけを出す ----
 const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);
 // 日本の名の無い侍女の見た目すべて：侍女（旧 雑兵）mob・girl と、弓を持たない姿のある弓兵（archer01〜10）。名のある娘の写真は除く
+// 名の無い侍女の見た目を、山札のように切って均等に配る（どの見た目も同じ回数ずつ）
+const MOB_DECK = {};
+function mobDeal(key, pool) { if (!pool || !pool.length) return undefined; let D = MOB_DECK[key]; if (!D || D.src !== pool || !D.a.length) { const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } D = MOB_DECK[key] = { src: pool, a }; } return D.a.pop(); }
 function jpMobLooks() { const no = PAL_NOGEN();
   return Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.front && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
 function palPool() {
@@ -24028,7 +24045,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zzc';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zzd';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -32370,5 +32387,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

@@ -2806,6 +2806,7 @@ function stageLook(name) {
   ambL.intensity = uk3 ? 0.14 : pl ? 0.95 : nr ? 0.22 : sn ? 0.9 : mt ? 0.72 : ap ? 0.9 : isl ? 0.95 : tr ? 0.82 : LOOK0.amb; sun.intensity = uk3 ? 0.5 : uk || uk2 ? 1.2 : pl ? 0.9 : nr ? 0.12 : sn ? 1.0 : mt ? 1.15 : ap ? 1.05 : isl ? 1.25 : tr ? 0.88 : LOOK0.sun;
   SUN_DIR.copy(pl ? new V3(0.12, 1, 0.08).normalize() : uk3 ? U3.MOON.clone().setY(0.6).normalize() : SUN_DIR0);
   if (USD.on) usdLook();   // アメリカ西部編：荒野の夕焼け
+  FB.on = name === 'fubuki'; if (FB.on) fbLook(); else if (typeof fbEndBtn === 'function') fbEndBtn(false);   // 吹雪の山岳行軍
   if (RK.on || UD.on) { ground.visible = false; for (const m of mountains) m.visible = false; scene.fog.near = UD.on ? 48 : 1800; scene.fog.far = UD.on ? 190 : 15000; scene.fog.color.setHex(0xa9bfd2); scene.background.setHex(0x9db8d0); sky.visible = true; }
 
   if (!/^keiku/.test(name) && $('cvGunBtns')) $('cvGunBtns').style.display = 'none';
@@ -11763,7 +11764,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031zh）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031zi）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -13410,6 +13411,7 @@ const STAGES = {
   usRaid: { name: 'アメリカ西部編 第三幕「陸攻出撃」', desc: '試製 嶺雲（双発の陸上攻撃機）の編隊でアメリカ軍の前進飛行場を叩く。殿は一番機に乗り、1〜6 で持ち場を移る（操縦席・爆撃照準・前方／左／右／後方機銃。V で外から）。ほかは搭乗員が受け持つ。米軍の戦闘機が上方前方・側方・後方から一撃をかけ、目標の上では対空機銃が待つ。破裂爆弾を落として帰る。搭乗員が全員倒れた機は、自動操縦でひとりで基地へ帰り着陸する。殿が被弾するか一番機が落ちれば作戦中止。' },
   usDrop: { name: 'アメリカ西部編 第四幕「空挺降下」', desc: '前の出撃で、アメリカ軍前進飛行場の格納庫の爆弾は壊してある。一式陸攻を参考にした、中の広い双発輸送機「試製 蒼雲」が 3 機。1 機に空挺部隊 40 人。ほかは操縦手・副操縦手・電探・前方機銃手・右機銃手・左機銃手・後方機銃手・医師か看護師が 1 人。殿の乗る機には秘書課もいる。画面左の小さいボタンで機内を歩き、降下口で空挺。着地したあとは地上の米軍と弓・刀で戦う。飛行場の手前で、残った対空機銃と破裂弾が少し来る。一時停止に味方と敵の数。' },
   yamajiro: { name: '山城の守り', desc: '戦国の山城（月山富田城・七尾城・八王子城・竹田城の縄張りに倣う）。坂の下から寄せてくる敵を、三の丸→二の丸→本丸の曲輪で一つずつ食い止める。切岸・堀切・竪堀・枡形虎口。赤い杭の所で E：丸太・岩を転がす／吊り橋を切り落とす／太鼓で控えを呼ぶ。霧が時々立ちこめる。水の手を取られると手当てが遅くなる。' },
+  fubuki: { name: '吹雪の山岳行軍', desc: '包囲された味方の山砦へ、殿みずから補給の列（侍女数百と荷役）を率いて峠を越える。季節外れの吹雪、背後は雪崩で塞がる。体温が下がると凍傷で体力が減る（白瀬に E でおにぎり）。隠れたクレバス、雪崩、ロシアのスキー部隊（分隊・小隊）の待ち伏せと回り込み。吊り橋・山小屋・雪庇・外套で殿が選ぶ。終わりは作戦終了ボタンか Q。' },
   usDuel: { name: 'アメリカ西部編 第一幕「荒野の決闘」', desc: '西部の荒野。アメリカ勢（一軍およそ 70 人、スマホは 32 人）の隊長が一対一の決闘を申し込み、コルトを貸してくる。殿が誰を出すか選ぶ（殿自らも可：10 で振り向いたらクリック／タップ／Space の早撃ち）。背中合わせで 1〜10 を数えて離れ、10 で撃ち合う。そのあと総力戦――ウィンチェスター・スプリングフィールド・コルトに、弓・刀・槍・竹束と破裂弾の大砲で挑む。アメリカ勢を半数まで減らせば勝ち、殿が倒れたら負け（E で台詞を送る・1〜7 で選ぶ）。' },
   frSea: { name: 'フランス人形編 第一幕「海戦」', desc: 'フランス艦隊が英国の港を狙う。港に駐屯する日本勢と英国勢、一軍およそ 200 人（スマホは 120 人）が 4 隻ずつで打って出る。破裂弾の撃ち合いは約 3 分――共和国艦が横付けしたら鉤縄と渡り板で白兵戦。敵の乗組員を半数まで減らすか、旗艦ラ・ジロンド号を制圧すれば艦隊は退く。殿の船の 2 階には船室（階段から）。大宮には E で話しかけられる。' },
   ukHarbor: { name: '英国淑女編 第二幕「砲火」', desc: '殿の港に英国の船が来襲。沖のライオネス号と小型艇の破裂弾が降る——赤い輪は着弾の印、竹束・土塁・家の陰へ。やがて短艇でマスケットの戦列と長槍の方陣が上陸し、最後は剣の斬り込み。浜で押し返せ。' },
@@ -13903,8 +13905,8 @@ function ukSpawnAll() {
   });
 }
 // ---- 台詞（英語の声＋日本語字幕）と会話の進行 ----
-const ukL = k => (CAMP.on && usdLine(k)) || (PAL.on && palL(k)) || (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
-function ukWho(who) { if (CAMP.on) return who === 'king' ? null : campWho(who); if (PAL.on) return palWho(who); if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
+const ukL = k => (FB.on && fbLine(k)) || (CAMP.on && usdLine(k)) || (PAL.on && palL(k)) || (USD.on && usdLine(k)) || (FRS.on && frsLine(k)) || (UK7.on && uk7L(k)) || (UK4.on && (((window.VOICE_UK4 || {}).lines || {})[k] || UK4_NARR[k] || UK5_NARR[k])) || (UK3.on && (((window.VOICE_UK3 || {}).lines || {})[k] || UK3_NARR[k])) || (window.VOICE_UK || {})[k] || ((window.VOICE_UK2 || {}).lines || {})[k] || UK2_NARR[k] || null;
+function ukWho(who) { if (FB.on) return who === 'king' ? null : fbWho(who); if (CAMP.on) return who === 'king' ? null : campWho(who); if (PAL.on) return palWho(who); if (USD.on) return usdWho(who); if (FRS.on) return frsWho(who); if (UK7.on) return uk7Who(who); if (UK4.on) return uk4Who(who); if (UK3.on) return uk3Who(who); if (UK2.on) return uk2Who(who); return who === 'king' ? null : UK.by[who] || UK.jpBy[who] || null; }
 const UK_WHO_NAME = { narr: '', ojou: '秘書課 西園寺 すみれ', nurse: '救護班', king: '殿', reika: '白石 麗華', shizuka: '久遠 静香', sumi: '秘書課 白瀬 澄' };
 function ukSpeak(key) {
   const L = ukL(key); if (!L) return 0;
@@ -15386,6 +15388,523 @@ function updateFrs(dt) {
   FRS.perfU = (FRS.perfU || 0) * 0.95 + (performance.now() - t0) * 0.05;
 }
 if (TEST) window.__frs = { FRS, frsFire, frsTalkOmiya };
+
+// ============================================================
+//  吹雪の山岳行軍（?stage=fubuki）
+//  包囲された味方の山砦へ、殿みずから補給の列を率いて峠を越える。季節外れの吹雪、背後は雪崩で塞がり、進むしかない。
+//  選択（橋・小屋・斜面・外套）で、誰が生き残るか・後の会話・侍女たちの殿への気持ちが変わる。
+//  ロシアのスキー部隊（名目 360、分隊 10・小隊 30）が追い、待ち伏せ、回り込む。写真は仮（FB_RU_IDS を差し替える）。
+// ============================================================
+const FB = { on: false };
+const FB_K = LITE ? 0.3 : 1;                              // スマホ：同時に描く人数だけ減らす
+const FB_DRAW = { col: Math.round(120 * FB_K), port: Math.round(16 * FB_K), rg: Math.round(40 * FB_K), ru: Math.round(100 * FB_K) };
+const FB_NOM = { col: 420, port: 60, rg: 100, ru: 360 };  // 名目の人数（HUD の数字）
+const FB_RU_IDS = ['uk01', 'uk02', 'uk03', 'uk04', 'uk05', 'uk06', 'uk07', 'uk08', 'uk10'];   // 仮：ロシア兵の写真が届いたら差し替え
+const FB_Z = { start: 200, wall: 214, bridge0: 12, bridge1: 28, hut: -60, slope0: -150, slope1: -122, coat: -180, fort: -262 };
+const FB_TXT = {
+  // ---- 開幕 ----
+  n_open: { who: 'narr', narr: true, ja: '味方の山砦が包囲された。殿は自ら補給の列を率い、雪の峠を越える――' },
+  o_sumi1: { who: 'sumi', ja: '殿、砦まであと二十里。この峠を越えれば、明日の昼には着けます。' },
+  o_fumi1: { who: 'fumi', ja: '殿、その服装寒くない（笑）？' },
+  k_fumi1: { who: 'king', ja: 'お前たちに言われたくない' },
+  o_fumi2: { who: 'fumi', ja: 'ふふっ。私たちは慣れてますから。……しんがりは私の隊が持ちます。荷の大半も、私の隊が背負っています。' },
+  o_sec2: { who: 'sec2', ja: 'あ、あの、空が……急に暗く……。こんな時期に、吹雪なんて……。' },
+  o_av: { who: 'narr', narr: true, ja: '――背後の斜面が崩れた。雪崩が来た道を塞ぐ。' },
+  o_sumi2: { who: 'sumi', ja: '……戻る道が、埋まりました。殿、もう前へ進むしかありません。' },
+  o_omiya: { who: 'omiya', ja: '分隊ごとに間を詰めて！ 前の人の背中から目を離さないでください！' },
+  k_go: { who: 'king', ja: '進め。砦の者たちが待っている' },
+  o_endo: { who: 'm43', ja: '斥候の遠藤です！ 後ろの尾根にスキーの跡……ロシアのスキー部隊です。数百はいます！' },
+  // ---- 行軍中のつぶやき ----
+  b_cold1: { who: 'm37', ja: '指の感覚が……ない……。' },
+  b_cold2: { who: 'm39', ja: 'さ、寒いです……。でも、歩きます……。' },
+  b_cold3: { who: 'm35', ja: '止まると凍えます。歩き続けて。' },
+  b_cold4: { who: 'maid', ja: '前が見えない……誰か、声を出して……！' },
+  b_cold5: { who: 'omiya', ja: '一班、点呼！ ……よし、全員いますね！' },
+  b_cold6: { who: 'sec2', ja: 'と、殿……お顔が真っ白です……。' },
+  b_cold7: { who: 'porter', ja: '荷が重い……でも、これを砦に届けなきゃ……。' },
+  b_cold8: { who: 'm43', ja: '風下に回られています。気をつけて。' },
+  b_trust1: { who: 'maid', ja: '殿がいらっしゃるなら……大丈夫。' },
+  b_trust2: { who: 'm37', ja: '殿は、私たちを置いていかない。そう信じてます。' },
+  b_dist1: { who: 'maid', ja: '……私たちも、いつか置いていかれるのかな。' },
+  b_dist2: { who: 'm35', ja: '殿の判断です。……従います。' },
+  b_ice: { who: 'sumi', ja: '足元にお気をつけを。雪の下に裂け目があります。' },
+  b_cre: { who: 'sec2', ja: 'と、殿っ！ 大丈夫ですか！？' },
+  b_av: { who: 'omiya', ja: '雪崩ですっ！ 尾根から離れてっ！' },
+  b_amb: { who: 'm43', ja: '左の尾根、スキー兵！ 回り込んできます！' },
+  b_amb2: { who: 'omiya', ja: '一班、二班、左へ！ 弓組は斜面を狙って！' },
+  b_amb3: { who: 'sumi', ja: '殿をお守りして！ 列を崩さないで！' },
+  b_amb4: { who: 'm35', ja: '右からも来ます。挟まれています。' },
+  b_rear: { who: 'fumi', ja: 'しんがり、構え！ ここは一歩も通さない！' },
+  b_rear2: { who: 'fumi', ja: '殿、こちらは大丈夫。先へ！' },
+  b_med: { who: 'nurse', ja: '息はあります！ 担架を！' },
+  // ---- 橋 ----
+  r_sumi1: { who: 'sumi', ja: '殿、この先の谷に吊り橋があります。……綱が凍って、何本も切れかけています。' },
+  r_sumi2: { who: 'sumi', ja: '本隊は一人ずつ渡しています。でも、あと一組しか持ちません。' },
+  r_omiya: { who: 'omiya', ja: 'まだこちら側に、三班の十人が残っています。それから……。' },
+  r_fumi1: { who: 'fumi', ja: '（遠くから）殿！ しんがりは追手を食い止めています！ 荷の大半もこちらに！ 今そちらへ向かいます！' },
+  r_sumi3: { who: 'sumi', ja: '綾瀬様の隊を待てば、綾瀬様も、砦への兵糧も救えるかもしれません。でも、待つ間に追手が来て……最後に渡る十人の上で、橋が落ちるかもしれません。' },
+  r_sumi4: { who: 'sumi', ja: '十人を先に渡せば、十人は助かります。でも、綾瀬様の隊と荷は、向こう岸に取り残されます。' },
+  r_m37: { who: 'm37', ja: '殿……私たち、どうすれば……。' },
+  r_sec2: { who: 'sec2', ja: '……ど、どちらを選んでも、誰かが……。' },
+  k_wait: { who: 'king', ja: '綾瀬を待つ。荷がなければ、砦の者が飢える' },
+  k_send: { who: 'king', ja: '十人を先に渡せ。今、目の前の命を取る' },
+  w_m37: { who: 'm37', ja: '……わかりました。待ちます。綾瀬様が来るまで。' },
+  w_fumi: { who: 'fumi', ja: '待っててくれたんですか……！ 全員、荷を背負って走れ！ 橋まで！' },
+  w_fall: { who: 'omiya', ja: '綱が……！ 橋が落ちますっ！' },
+  w_after: { who: 'sumi', ja: '……落ちたのは、三班の者たちです。綾瀬様の隊と荷は、渡り切りました。' },
+  w_fumi2: { who: 'fumi', ja: '……私たちのために、三班の子たちが……。殿、この借りは、必ず返します。' },
+  w_m35: { who: 'm35', ja: '……殿は、荷を選んだのですね。' },
+  s_m37: { who: 'm37', ja: 'ありがとうございます……！ 走って、一人ずつ！' },
+  s_fumi: { who: 'fumi', ja: '（谷の向こうから）殿！ それでいいんです！ 私たちは下の沢を回ります！ 必ず……追いつきますから！' },
+  s_fall: { who: 'omiya', ja: '十人、全員渡りました！ ……あっ、橋が……！' },
+  s_sec2: { who: 'sec2', ja: '綾瀬さん……綾瀬さんっ……！' },
+  s_sumi: { who: 'sumi', ja: '……荷の大半を失いました。おにぎりも、残りわずかです。殿、分けて食べましょう。' },
+  // ---- 小屋 ----
+  h_sumi1: { who: 'sumi', ja: '殿、山小屋です。……食べ物がもう足りません。' },
+  h_nurse: { who: 'nurse', ja: '歩けない者が十二人います。担いで行けば列は遅れ、皆の食べる分も減ります。' },
+  h_sumi2: { who: 'sumi', ja: '小屋に残せば、薪と少しの食べ物で、迎えが来るまで持つかもしれません。……持たないかもしれません。' },
+  h_m39: { who: 'm39', ja: '……私たち、置いていかれるんですか……？' },
+  k_carry: { who: 'king', ja: '誰も置いていかない。担いで行く' },
+  k_leave: { who: 'king', ja: '小屋に残す。砦から必ず迎えを出す' },
+  c_omiya: { who: 'omiya', ja: 'はいっ！ 二人一組で担いで！ 交代は十分ごと！' },
+  c_m39: { who: 'm39', ja: 'う……ありがとうございます……殿……。' },
+  c_porter: { who: 'porter', ja: '私のおにぎり、半分あげる。……大丈夫、まだ歩ける。' },
+  l_nurse: { who: 'nurse', ja: '私が残って看ます。……薪を絶やしませんから。' },
+  l_m39: { who: 'm39', ja: '……はい。待ってます。必ず、迎えに来てくださいね……。' },
+  l_m35: { who: 'm35', ja: '……正しい判断だと思います。頭では、わかっています。' },
+  // ---- 斜面 ----
+  sl_endo: { who: 'm43', ja: 'この先の斜面、雪庇が張り出しています。大勢で踏めば、崩れます。' },
+  sl_sumi: { who: 'sumi', ja: '間を空けて一人ずつ渡れば安全です。でも時間がかかり、その間に凍え、追手に追いつかれます。' },
+  k_spread: { who: 'king', ja: '一人ずつ渡る。急ぐな' },
+  k_rush: { who: 'king', ja: '一気に駆け抜ける。止まれば凍える' },
+  sp_omiya: { who: 'omiya', ja: '十歩ずつ間を空けて！ 次の人は、前の人が渡り切ってから！' },
+  sp_done: { who: 'm43', ja: '最後の一人、渡りました！ 雪崩は……後ろで止まりました！' },
+  ru_omiya: { who: 'omiya', ja: '全員、走れーっ！ 止まらないでっ！' },
+  ru_after: { who: 'sumi', ja: '……何人か、雪に呑まれました。' },
+  // ---- 外套 ----
+  ct_sec2: { who: 'sec2', ja: '殿っ……！ 谷口さんが、動けなく……！' },
+  ct_m39: { who: 'm39', ja: 'さむ……い……。ごめんなさい……足が……。' },
+  ct_sumi: { who: 'sumi', ja: '体が冷えきっています。……殿の外套なら、あるいは。でも殿が凍えてしまいます。' },
+  k_give: { who: 'king', ja: '俺の外套を着ろ' },
+  k_keep: { who: 'king', ja: '……担いで運べ。俺が倒れるわけにはいかない' },
+  g_m39: { who: 'm39', ja: 'え……殿の……？ あ、あったかい……。' },
+  g_sec2: { who: 'sec2', ja: 'と、殿っ……！ （顔が真っ赤に）……わ、私も……くっついて歩きます……！' },
+  g_omiya: { who: 'omiya', ja: '殿、かっこいいですけど、凍えたら怒りますよ（笑）！' },
+  kp_sumi: { who: 'sumi', ja: '……殿のご判断は正しいです。殿が倒れたら、全てが終わりますから。' },
+  kp_porter: { who: 'porter', ja: '私たちが担ぎます。……谷口さん、しっかり。' },
+  // ---- 砦 ----
+  f_endo: { who: 'm43', ja: '砦が見えます！ ……でも、門の前にロシアの小隊が！' },
+  f_sumi: { who: 'sumi', ja: '殿、ここを抜ければ終わりです。押し通りましょう！' },
+  f_open: { who: 'ojou', ja: '門を開けよ。……殿、よくぞ、この吹雪の中を。' },
+  f_ojou2: { who: 'ojou', ja: '兵糧が届かねば、明日には城を明け渡すところでした。' },
+  f_ojou_nofood: { who: 'ojou', ja: '……荷は、これだけですか。いえ、殿が来てくださった。それで皆、もう少し持ちこたえます。' },
+  f_fumi_ok: { who: 'fumi', ja: '殿、約束どおり、追いつきました。……ちゃんと褒めてくださいね（笑）？' },
+  f_fumi_back: { who: 'fumi', ja: '（門の外から）……殿！ 遅くなりました！ 下の沢を回って、半分だけ……連れて帰りました！' },
+  f_fumi_wait: { who: 'fumi', ja: '殿が待ってくれたから、私たちはここにいます。三班の子たちの分まで、戦います。' },
+  f_m39_ok: { who: 'm39', ja: '殿の外套、まだあったかいです……。返したくないなぁ……なんて。' },
+  f_m39_kp: { who: 'm39', ja: '……殿。運んでくれて、ありがとうございました……。' },
+  f_hut_c: { who: 'nurse', ja: '担いできた十二人、皆、息があります。……殿のおかげです。' },
+  f_hut_l: { who: 'ojou', ja: '小屋へは明朝、迎えを出します。……殿のお言葉どおりに。' },
+  f_trust_hi: { who: 'omiya', ja: '殿！ 皆、言ってますよ。この殿にならどこまでもついていくって！' },
+  f_trust_mid: { who: 'omiya', ja: '皆、疲れてますけど……殿を恨んでる人はいません。たぶん（笑）。' },
+  f_trust_lo: { who: 'm35', ja: '……皆、殿の判断をそれぞれに考えています。今は、そっとしておいてあげてください。' },
+  f_sec2: { who: 'sec2', ja: '殿……ご無事で、よかった……ほんとうに……。' },
+  f_end: { who: 'sumi', ja: '殿、作戦終了のご命令を。' },
+  // ---- E で話す ----
+  t_sumi: { who: 'sumi', ja: 'おにぎりです。冷たいですけど……塩は効いてます。' },
+  t_sumi0: { who: 'sumi', ja: '……申し訳ありません。おにぎりは、もうありません。' },
+  t_sumiF: { who: 'sumi', ja: '殿は満腹のはずです。……次は寒くなってからにしてください。' },
+  t_sec2a: { who: 'sec2', ja: 'あ、あの、手、冷たくないですか……？ わ、私の手袋……いえ、持ってないんでした……。' },
+  t_sec2b: { who: 'sec2', ja: '綾瀬さん、きっと大丈夫ですよね……？' },
+  t_fumi: { who: 'fumi', ja: '殿、しんがりは私に任せて、前を向いててください。' },
+  t_omiya: { who: 'omiya', ja: 'あと少しです！ 背筋伸ばして歩けば、体もあったまりますよ！' },
+  t_m35: { who: 'm35', ja: '……前職は気象台の補助でした。この吹雪は、あと一日続きます。' },
+  t_m37: { who: 'm37', ja: '殿とお話しすると、少しだけ寒さを忘れます。' },
+  t_m39: { who: 'm39', ja: 'お、おにぎり、もう一個あったら……い、いえ、なんでもないです！' },
+  t_m43: { who: 'm43', ja: 'スキーの跡は三方向。分隊ごとに回り込んできます。' },
+  // 倒れる時の短い声
+  cry1: { who: 'maid', ja: 'あっ……！' }, cry2: { who: 'maid', ja: 'うっ……！' },
+};
+const FB_NAME = { narr: '', king: '殿', sumi: '秘書課 白瀬 澄', sec2: '秘書課 早瀬 ことね', fumi: '秘書課 綾瀬 文乃（しんがり）', omiya: '大宮 ひなた（侍女頭）', ojou: '西園寺 すみれ（砦の守将）',
+  m35: '神崎 真白', m37: '村瀬 碧', m39: '谷口 のぞみ', m43: '遠藤 加那（斥候）', maid: '侍女', porter: '荷役', nurse: '救護班' };
+function fbLine(k) { return (((window.VOICE_FB || {}).lines || {})[k]) || FB_TXT[k] || null; }
+function fbWho(who) { if (who === 'nurse') { const m = (medics.blue || []).find(m => m.e && isUp(m.e)); return m ? m.e : null; } if (who === 'maid' || who === 'porter') return fbAnyNear(who === 'porter'); return (FB.by && FB.by[who]) || null; }
+function fbAnyNear(port) { let b = null, bd = 30; for (const e of FB.col || []) { if (!isUp(e) || !!e.fbPort !== port || e.fbNamed) continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd) { bd = d; b = e; } } return b; }
+function fbBark(k, gap) {
+  const L = fbLine(k); if (!L || !FB.on || UK.dlg) return false;
+  if (FB.said[k] && time - FB.said[k] < (gap || 25)) return false;
+  const e = fbWho(L.who); if (L.who !== 'narr' && L.who !== 'king' && !e) return false; if (e && !isUp(e)) return false;
+  FB.said[k] = time;
+  const d = e ? Math.min(14, Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z)) : 0;
+  if (L.file) Talk.as(e, () => VoicePack.play(L.file, d, 1.95, 1));
+  subtitle(L.ja); const el = $('subtitle'); if (el) el.textContent = `${FB_NAME[L.who] || ''}「${L.ja}」`;
+  return true;
+}
+// ---- 地形 ----
+function fbMat(c, o) { return new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {})); }
+function buildFubuki() {
+  FB.pits = []; FB.avs = []; FB.fires = [];
+  const snowT = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#e8eef4'; g.fillRect(0, 0, w, h); for (let i = 0; i < 2400; i++) { const v = Math.random(); g.fillStyle = v < 0.5 ? 'rgba(170,190,210,.22)' : 'rgba(255,255,255,.5)'; g.fillRect(Math.random() * w, Math.random() * h, rand(1, 4), rand(1, 3)); } }, true);
+  snowT.wrapS = snowT.wrapT = THREE.RepeatWrapping; snowT.repeat.set(20, 120);
+  const snow = new THREE.MeshLambertMaterial({ map: snowT, color: 0xffffff }), rock = fbMat(0x5f6b76), dark = fbMat(0x1a2632), wood = fbMat(0x5a4330), branch = fbMat(0xdfe8ef), trunk = fbMat(0x463e38);
+  // 雪面（谷）：起伏のある長い道
+  const gg = new THREE.PlaneGeometry(70, 520, 35, 260); gg.rotateX(-Math.PI / 2);
+  const P = gg.attributes.position; for (let i = 0; i < P.count; i++) { const x = P.getX(i), z = P.getZ(i); P.setY(i, 0.12 * Math.sin(z * 0.13 + x * 0.4) + 0.06 * Math.cos(z * 0.55 + x) + (Math.abs(x) > 26 ? (Math.abs(x) - 26) * 0.6 : 0)); }
+  gg.computeVertexNormals();
+  for (const [z0, z1] of [[FB_Z.bridge1, 260], [-270, FB_Z.bridge0]]) { const len = z1 - z0, g = new THREE.PlaneGeometry(70, len, 35, Math.round(len / 2)); g.rotateX(-Math.PI / 2); const Q = g.attributes.position; for (let i = 0; i < Q.count; i++) { const x = Q.getX(i), z = Q.getZ(i) + (z0 + z1) / 2; Q.setY(i, 0.12 * Math.sin(z * 0.13 + x * 0.4) + 0.06 * Math.cos(z * 0.55 + x) + (Math.abs(x) > 26 ? (Math.abs(x) - 26) * 0.6 : 0)); } g.computeVertexNormals(); const m = new THREE.Mesh(g, snow); m.position.z = (z0 + z1) / 2; m.receiveShadow = true; stageRoot.add(m); }
+  gg.dispose();
+  // 谷の両側：雪をかぶった岩壁と、遠い峰
+  for (const sd of [-1, 1]) {
+    for (let z = -270; z < 260; z += 18) { const h = rand(14, 30), m = new THREE.Mesh(new THREE.ConeGeometry(rand(9, 14), h, 6), Math.random() < 0.5 ? rock : branch); m.position.set(sd * rand(36, 44), h * 0.4, z + rand(-5, 5)); m.rotation.y = rand(0, 3); stageRoot.add(m); }
+    boxes.push({ x0: sd < 0 ? -40 : 29, x1: sd < 0 ? -29 : 40, z0: -280, z1: 270, y0: 0, y1: 30 });
+    for (let i = 0; i < 4; i++) { const m = new THREE.Mesh(new THREE.ConeGeometry(rand(60, 110), rand(90, 160), 7), fbMat(0xcfdbe6, { fog: true })); m.position.set(sd * rand(110, 170), 30, rand(-260, 240)); stageRoot.add(m); }
+  }
+  // 針葉樹（道は空ける）
+  for (let i = 0; i < 150; i++) {
+    const x = (Math.random() < 0.5 ? -1 : 1) * rand(10, 27), z = rand(-255, 205), h = rand(4.5, 9);
+    if (z > FB_Z.bridge0 - 4 && z < FB_Z.bridge1 + 4) continue;
+    const g = new THREE.Group(), t = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.22, h * 0.45, 6), trunk); t.position.y = h * 0.22; g.add(t);
+    for (let k = 0; k < 3; k++) { const c = new THREE.Mesh(new THREE.ConeGeometry(h * (0.25 - k * 0.045), h * 0.36, 7), branch); c.position.y = h * (0.35 + k * 0.2); g.add(c); }
+    g.position.set(x, 0, z); stageRoot.add(g); colliders.push({ x, z, r: 0.45 });
+  }
+  // 谷の裂け目と吊り橋
+  const ch = new THREE.Mesh(new THREE.BoxGeometry(70, 0.2, FB_Z.bridge1 - FB_Z.bridge0), dark); ch.position.set(0, -14, (FB_Z.bridge0 + FB_Z.bridge1) / 2); stageRoot.add(ch);
+  for (const sd of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(70, 14, 0.6), fbMat(0x4b5763)); w.position.set(0, -7, sd < 0 ? FB_Z.bridge0 : FB_Z.bridge1); stageRoot.add(w); }
+  const br = new THREE.Group(), L = FB_Z.bridge1 - FB_Z.bridge0; FB.planks = [];
+  for (let i = 0; i < 40; i++) { const p = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.08, 0.32), wood); const z = FB_Z.bridge0 + (i + 0.5) * L / 40; p.position.set(rand(-0.05, 0.05), -0.05 - Math.sin(Math.PI * (i + 0.5) / 40) * 0.9, z); p.rotation.y = rand(-0.04, 0.04); br.add(p); FB.planks.push({ m: p, v: 0, fall: false }); }
+  for (const sd of [-1, 1]) for (const y of [0.0, 0.95]) { const pts = []; for (let i = 0; i <= 20; i++) { const z = FB_Z.bridge0 + i * L / 20; pts.push(new V3(sd * 1.1, y - Math.sin(Math.PI * i / 20) * 0.9 + 0.02, z)); } const r = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, 0.035, 5), fbMat(0x8a7a5c)); br.add(r); FB.planks.push({ m: r, v: 0, fall: false, rope: true }); }
+  for (const z of [FB_Z.bridge0 - 0.6, FB_Z.bridge1 + 0.6]) for (const sd of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.6, 6), wood); p.position.set(sd * 1.2, 0.8, z); stageRoot.add(p); }
+  stageRoot.add(br); FB.bridge = br;
+  // 雪に隠れた裂け目（クレバス）
+  for (const [x, z, w] of [[-6, 150, 3], [7, 132, 2.6], [-2, 92, 3.2], [9, 70, 2.4], [-8, 44, 3], [4, -20, 2.8], [-5, -95, 3], [8, -112, 2.6], [-3, -205, 3.2], [6, -228, 2.4]]) {
+    const hole = new THREE.Mesh(new THREE.PlaneGeometry(w, 6), dark); hole.rotation.x = -Math.PI / 2; hole.position.set(x, 0.02, z); hole.visible = false; stageRoot.add(hole);
+    FB.pits.push({ x, z, w, hole, seen: false });
+  }
+  // 背後の雪崩（開幕で道を塞ぐ）
+  const av = new THREE.Mesh(new THREE.BoxGeometry(60, 9, 14), fbMat(0xf2f6fa)); av.position.set(0, 30, FB_Z.wall + 4); stageRoot.add(av); FB.backAv = av;
+  // 山小屋
+  { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(7, 3.2, 5.5), wood); b.position.y = 1.6; g.add(b);
+    for (const sd of [-1, 1]) { const r = new THREE.Mesh(new THREE.BoxGeometry(4.3, 0.25, 6.4), branch); r.position.set(sd * 1.75, 3.9, 0); r.rotation.z = -sd * 0.6; g.add(r); }
+    const d = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2, 0.1), fbMat(0x2e2016)); d.position.set(-3.55, 1, 0); d.rotation.y = Math.PI / 2; g.add(d);
+    const w = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), new THREE.MeshBasicMaterial({ color: 0xffb35a })); w.position.set(-3.52, 1.9, 1.6); w.rotation.y = -Math.PI / 2; g.add(w);
+    g.position.set(13, 0, FB_Z.hut); stageRoot.add(g); boxes.push({ x0: 9.5, x1: 16.5, z0: FB_Z.hut - 2.75, z1: FB_Z.hut + 2.75, y0: 0, y1: 4 }); FB.fires.push([8.5, FB_Z.hut, 8]); }
+  // 斜面の雪庇
+  { const m = new THREE.Mesh(new THREE.BoxGeometry(16, 6, 30), branch); m.position.set(-30, 10, (FB_Z.slope0 + FB_Z.slope1) / 2); m.rotation.z = -0.5; stageRoot.add(m); FB.cornice = m; }
+  // 山砦：石垣・門・櫓・篝火
+  { const z = FB_Z.fort, st = fbMat(0x6d6a63);
+    for (const sd of [-1, 1]) { const w = new THREE.Mesh(new THREE.BoxGeometry(24, 7, 3), st); w.position.set(sd * 16, 3.5, z); stageRoot.add(w); boxes.push({ x0: sd < 0 ? -28 : 4, x1: sd < 0 ? -4 : 28, z0: z - 1.5, z1: z + 1.5, y0: 0, y1: 7 });
+      const t = new THREE.Mesh(new THREE.BoxGeometry(4, 10, 4), wood); t.position.set(sd * 6, 5, z); stageRoot.add(t);
+      const f = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffa040 })); f.position.set(sd * 5, 2.2, z + 2.5); stageRoot.add(f); FB.fires.push([sd * 5, z + 2.5, 6]); }
+    const gate = new THREE.Mesh(new THREE.BoxGeometry(8, 5.5, 0.5), wood); gate.position.set(0, 2.75, z); stageRoot.add(gate); FB.gate = gate; FB.gateBox = { x0: -4, x1: 4, z0: z - 0.4, z1: z + 0.4, y0: 0, y1: 6 }; boxes.push(FB.gateBox);
+    for (let i = 0; i < 6; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(3, 2.4, 3), wood); r.position.set(rand(-20, 20), 1.2, z - rand(6, 20)); stageRoot.add(r); } }
+  // 吹雪の粒
+  { const n = 2600, g = new THREE.BufferGeometry(), a = new Float32Array(n * 3); for (let i = 0; i < n; i++) { a[i * 3] = rand(-30, 30); a[i * 3 + 1] = rand(0, 16); a[i * 3 + 2] = rand(-30, 30); } g.setAttribute('position', new THREE.BufferAttribute(a, 3));
+    FB.flakes = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 0.09, transparent: true, opacity: 0.85, depthWrite: false })); FB.flakes.frustumCulled = false; stageRoot.add(FB.flakes); }
+  FB.avMesh = new THREE.Mesh(new THREE.BoxGeometry(70, 5, 16), fbMat(0xf4f8fb, { transparent: true, opacity: 0.92 })); FB.avMesh.visible = false; stageRoot.add(FB.avMesh);
+  buildMedPost(3, FB_Z.start + 6, 'blue');
+}
+function fbLook() {
+  ground.visible = false; for (const m of mountains) m.visible = false; sky.visible = false;
+  scene.fog.color.setHex(0xc9d5df); scene.background.setHex(0xc3cfda); scene.fog.near = 4; scene.fog.far = 60;
+  hemiL.color.setHex(0xe8f2ff); hemiL.groundColor.setHex(0x8a9aaa); hemiL.intensity = 1.35; ambL.intensity = 0.85; sun.intensity = 0.55;
+}
+// ---- 人 ----
+function fbSp(x, z, kind, team, gid, prof) {
+  const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: {} });
+  if (!e) return null;
+  if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = EXTRA_GIRLS[gid].prof.cm / 100;
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
+  e.sq = null; e.fb = true; e.home = [x, z]; e.s.rotation.y = e.face = e.faceWant = team === 'blue' ? Math.PI : 0;
+  return e;
+}
+const FB_NAMED = [['sumi', () => SEC_ID, { name: '秘書課 白瀬 澄', pers: '冷静', cm: 160, vv: 1 }, 'mob'], ['sec2', () => SEC2_ID, { name: '秘書課 早瀬 ことね', pers: '臆病', cm: 158, vv: 2 }, 'mob'],
+  ['omiya', () => 'omiya', null, 'mob'], ['m35', () => 'girl35', null, 'mob'], ['m37', () => 'girl37', null, 'archer'], ['m39', () => 'girl39', null, 'mob'], ['m43', () => 'girl43', null, 'archer']];
+let FB_SKI_G = null, FB_SKI_M = null;
+function fbSkis(e) { if (!FB_SKI_G) { FB_SKI_G = new THREE.BoxGeometry(0.08, 0.03, 1.7); FB_SKI_M = fbMat(0x3a2d22); } for (const sd of [-1, 1]) { const m = new THREE.Mesh(FB_SKI_G, FB_SKI_M); m.position.set(sd * 0.13, 0.03, 0.1); e.s.add(m); } }
+function fbSpawn() {
+  FB.col = []; FB.rg = []; FB.ru = []; FB.by = {};
+  const z0 = FB_Z.start;
+  for (const [k, gf, pr, kind] of FB_NAMED) { const e = fbSp(rand(-2, 2), z0 + 3 + FB.col.length * 0.8, kind, 'blue', gf(), pr); if (!e) continue; e.fbNamed = k; e.ukTag = FB_NAME[k]; e.hp = e.hpMax = 10; FB.by[k] = e; FB.col.push(e); }
+  for (let i = 0; i < FB_DRAW.col; i++) { const e = fbSp(rand(-6, 6), z0 + 6 + i * 0.25, Math.random() < 0.32 ? 'archer' : 'mob', 'blue'); if (!e) continue; e.fbSq = Math.floor(i / 10) + 1; FB.col.push(e); }
+  for (let i = 0; i < FB_DRAW.port; i++) { const e = fbSp(rand(-3, 3), z0 + 14 + i * 0.4, 'mob', 'blue'); if (!e) continue; e.fbPort = true; e.passive = true; const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); FB.col.push(e); }
+  FB.col.forEach((e, i) => { e.fbSlot = i; });
+  // 綾瀬のしんがり（荷の大半も背負う）
+  const f = fbSp(0, z0 + 40, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 157, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.fbRg = true; f.ukTag = FB_NAME.fumi; f.hp = f.hpMax = 12; FB.by.fumi = f; FB.rg.push(f); }
+  for (let i = 0; i < FB_DRAW.rg; i++) { const e = fbSp(rand(-8, 8), z0 + 38 + rand(0, 8), Math.random() < 0.4 ? 'archer' : 'mob', 'blue'); if (!e) continue; e.fbRg = true; if (i % 3 === 0) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); } FB.rg.push(e); }
+}
+// ロシアのスキー兵：分隊（10）ずつ。from: 'rear' | 'left' | 'right' | 'front'
+function fbSquad(from, n, cz) {
+  n = Math.max(3, Math.round((n || 10) * (LITE ? 0.45 : 1)));
+  let made = 0;
+  for (let i = 0; i < n; i++) {
+    if (FB.ruPool <= 0 || FB.ru.filter(isUp).length >= FB_DRAW.ru) break;
+    const sx = from === 'left' ? -26 : from === 'right' ? 26 : rand(-10, 10), sz = (cz != null ? cz : player.pos.z) + (from === 'rear' ? rand(45, 60) : from === 'front' ? -rand(35, 50) : rand(-15, 15));
+    const e = fbSp(sx + rand(-2, 2), sz + rand(-3, 3), Math.random() < 0.3 ? 'archer' : 'mob', 'orange', FB_RU_IDS[(Math.random() * FB_RU_IDS.length) | 0], { name: 'ロシア兵', pers: '好戦的' });
+    if (!e) continue; e.fbRu = true; e.hp = e.hpMax = 3; e.ukTag = 'ロシア スキー兵'; e.fbSki = 3 + rand(0, 3); e.speed *= 1.25; e.state = e.kind === 'archer' ? 'advance' : 'approach'; fbSkis(e);
+    FB.ru.push(e); FB.ruPool -= Math.max(1, Math.round(FB_NOM.ru / 120)); made++;
+  }
+  return made;
+}
+// ---- 進行 ----
+function fbReset() {
+  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, nomRu: FB_NOM.ru });
+  CFG.maxBodies = LITE ? 220 : 600;
+  player.pos.set(0, 0, FB_Z.start); player.yaw = 0; player.pitch = -0.02;
+  UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
+  if (FB.gateBox && !boxes.includes(FB.gateBox)) boxes.push(FB.gateBox);
+  if (FB.gate) FB.gate.position.y = 2.75;
+}
+function fbStart() {
+  for (const k in FB_NAME) if (!(k in UK_WHO_NAME)) UK_WHO_NAME[k] = FB_NAME[k];
+  fbSpawn(); fbEndBtn(true);
+  showBanner('吹雪の山岳行軍', '包囲された山砦へ、補給の列を率いて峠を越える'); bannerTimer = 5;
+  const say = k => ({ say: k });
+  ukDlg([{ wait: 1.2 }, say('n_open'), say('o_sumi1'), say('o_fumi1'), say('k_fumi1'), say('o_fumi2'), say('o_sec2'), { fn: () => { FB.blizzard = true; fbBackAvalanche(); } }, { wait: 2.5 }, say('o_av'), say('o_sumi2'), say('o_omiya'), say('k_go'), { wait: 1 }, say('o_endo')], () => { FB.ph = 'march'; FB.ambT = 25; });
+}
+function fbBackAvalanche() { FB.backAvT = 0; FB.shake = 2.5; Sfx.noiseBurst(3.5, 'lowpass', 300, 40, 0.9); }
+function fbChoice(key, opts, after) {   // opts: [label, sub, [steps], fn]
+  return { choice: opts.map(o => ({ label: o[0], sub: o[1], then: [{ fn: () => { FB.ch[key] = o[4]; FB.log.push(key + ':' + o[4]); } }, ...o[2], { fn: o[3] }] })) };
+}
+const fbS = k => ({ say: k });
+function fbBridge() {
+  FB.ph = 'bridgeTalk';
+  // 本隊（最後の十人以外）は渡り切らせる。十人は手前で待つ
+  const near = FB.col.filter(e => isUp(e) && !e.fbNamed).sort((a, b) => b.s.position.z - a.s.position.z);
+  FB.last = near.slice(0, Math.max(4, Math.round(10 * (LITE ? 0.5 : 1)))); for (const e of FB.last) e.fbLast = true;
+  ukDlg([fbS('r_sumi1'), fbS('r_sumi2'), fbS('r_omiya'), fbS('r_fumi1'), fbS('r_sumi3'), fbS('r_sumi4'), fbS('r_m37'), fbS('r_sec2'),
+    fbChoice('bridge', [
+      ['「綾瀬を待つ」', 'しんがりと荷を待つ。十人は最後に渡る', [fbS('k_wait'), fbS('w_m37')], () => { FB.ph = 'bridgeWait'; FB.bt = 0; fbSquad('rear', 30, FB_Z.bridge1 + 30); }, 'wait'],
+      ['「十人を先に渡せ」', '十人は助かる。綾瀬の隊と荷は向こう岸に残る', [fbS('k_send'), fbS('s_m37')], () => { FB.ph = 'bridgeSend'; FB.bt = 0; FB.trust += 2; }, 'send'],
+    ])]);
+}
+function fbOnBridge(e) { const z = e.s.position.z; return z > FB_Z.bridge0 && z < FB_Z.bridge1; }
+function fbCollapse(fallers) {
+  FB.bridgeDown = true; FB.shake = 1.2; Sfx.noiseBurst(1.4, 'lowpass', 900, 80, 0.8);
+  for (const P of FB.planks) { P.fall = true; P.v = rand(-1, 0); }
+  for (const e of fallers) { e.fbFallT = 0; e.fbFall = true; e.passive = true; Sfx.noiseBurst(0.3, 'bandpass', 1300, 900, 0.25); }
+  for (const e of fallers) { const i = FB.col.indexOf(e); if (i >= 0) FB.col.splice(i, 1); }
+}
+function fbHut() {
+  FB.ph = 'hutTalk';
+  const hurt = FB.col.filter(e => isUp(e) && !e.fbNamed && !e.fbPort).sort((a, b) => a.hp / a.hpMax - b.hp / b.hpMax);
+  FB.wounded = hurt.slice(0, Math.max(3, Math.round(12 * (LITE ? 0.5 : 1)))); for (const e of FB.wounded) { e.fbWounded = true; e.speed *= 0.7; }
+  ukDlg([fbS('h_sumi1'), fbS('h_nurse'), fbS('h_sumi2'), fbS('h_m39'),
+    fbChoice('hut', [
+      ['「誰も置いていかない。担いで行く」', '列は遅れ、食べる分は減る。体温の下がりが早い', [fbS('k_carry'), fbS('c_omiya'), fbS('c_m39'), fbS('c_porter')], () => { FB.ph = 'march2'; FB.trust += 2; FB.food = Math.max(0, FB.food - 2); FB.coldK *= 1.2; }, 'carry'],
+      ['「小屋に残す。迎えを出す」', '列は速くなる。残る者は迎えを待つ', [fbS('k_leave'), fbS('l_nurse'), fbS('l_m39'), fbS('l_m35')], () => { FB.ph = 'march2'; FB.trust -= 1; FB.food += 1; FB.hutLeft = true; for (const e of FB.wounded) e.fbToHut = true; }, 'leave'],
+    ])]);
+}
+function fbSlope() {
+  FB.ph = 'slopeTalk';
+  ukDlg([fbS('sl_endo'), fbS('sl_sumi'),
+    fbChoice('slope', [
+      ['「一人ずつ渡る。急ぐな」', '雪崩は避けられる。待つ間に凍え、追手が来る', [fbS('k_spread'), fbS('sp_omiya')], () => { FB.ph = 'slopeWait'; FB.st = 0; fbSquad('rear', 20); }, 'spread'],
+      ['「一気に駆け抜ける」', '早い。雪庇が崩れるかもしれない', [fbS('k_rush'), fbS('ru_omiya')], () => { FB.ph = 'slopeRush'; FB.st = 0; FB.trust -= 1; }, 'rush'],
+    ])]);
+}
+function fbCoat() {
+  FB.ph = 'coatTalk'; const t = FB.by.m39; if (t && isUp(t)) { t.fbHold = true; }
+  ukDlg([fbS('ct_sec2'), fbS('ct_m39'), fbS('ct_sumi'),
+    fbChoice('coat', [
+      ['「俺の外套を着ろ」', '谷口は持ち直す。殿の体温が早く下がる', [fbS('k_give'), fbS('g_m39'), fbS('g_sec2'), fbS('g_omiya')], () => { FB.ph = 'march3'; FB.trust += 2; FB.coldK *= 1.6; if (t) t.fbHold = false; }, 'give'],
+      ['「担いで運べ」', '殿は体温を保つ', [fbS('k_keep'), fbS('kp_sumi'), fbS('kp_porter')], () => { FB.ph = 'march3'; FB.trust -= 1; if (t) { t.fbHold = false; t.speed *= 0.7; } }, 'keep'],
+    ])]);
+}
+function fbFort() {
+  FB.ph = 'fortFight'; ukDlg([fbS('f_endo'), fbS('f_sumi')]);
+  for (let i = 0; i < 3; i++) fbSquad(i === 1 ? 'front' : i ? 'right' : 'left', 10, FB_Z.fort + 30);
+}
+function fbArrive() {
+  FB.ph = 'fort'; FB.gateOpen = true; const i = boxes.indexOf(FB.gateBox); if (i >= 0) boxes.splice(i, 1);
+  if (!FB.by.ojou) { const o = fbSp(0, FB_Z.fort - 6, 'mob', 'blue', OJOU_ID, { name: '西園寺 すみれ', pers: '冷静', cm: 158, vv: 0 }); if (o) { o.fbNamed = 'ojou'; o.ukTag = FB_NAME.ojou; o.fbHold = true; FB.by.ojou = o; } }
+  const q = [{ wait: 1.5 }, fbS('f_open'), fbS(FB.ch.bridge === 'send' ? 'f_ojou_nofood' : 'f_ojou2')];
+  if (FB.ch.bridge === 'wait' && FB.by.fumi && isUp(FB.by.fumi)) q.push(fbS('f_fumi_wait'));
+  if (FB.ch.bridge === 'send') q.push({ fn: () => fbFumiBack() }, { wait: 1 }, fbS('f_fumi_back'));
+  q.push(fbS(FB.ch.hut === 'carry' ? 'f_hut_c' : 'f_hut_l'));
+  if (FB.by.m39 && isUp(FB.by.m39)) q.push(fbS(FB.ch.coat === 'give' ? 'f_m39_ok' : 'f_m39_kp'));
+  q.push(fbS('f_sec2'), fbS(FB.trust >= 3 ? 'f_trust_hi' : FB.trust >= 0 ? 'f_trust_mid' : 'f_trust_lo'), fbS('f_end'));
+  ukDlg(q, () => { FB.ph = 'done'; showBanner('砦に着いた', `作戦終了は${MOBILE ? '作戦終了ボタン' : 'Q／作戦終了ボタン'}`); FB.endHint = true; });
+}
+function fbFumiBack() {   // 下の沢を回ってきた綾瀬と、しんがりの半分
+  FB.lostRg = Math.round(FB_NOM.rg * 0.55);
+  const f = fbSp(-2, FB_Z.fort + 14, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 157, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.ukTag = FB_NAME.fumi; f.home = [-2, FB_Z.fort - 3]; FB.by.fumi = f; FB.col.push(f); }
+  for (let i = 0; i < Math.round(8 * FB_K) + 2; i++) { const e = fbSp(rand(-5, 5), FB_Z.fort + 16 + rand(0, 6), 'mob', 'blue'); if (e) { e.home = [rand(-6, 6), FB_Z.fort - 4 - rand(0, 6)]; FB.col.push(e); } }
+}
+// ---- 毎フレーム ----
+function fbBrain(e, dt) {
+  if (!e.fb) return false;
+  const p = e.s.position;
+  if (e.fbFall) { e.fbFallT += dt; p.y -= dt * (4 + e.fbFallT * 9); e.knock.set(0, 0, 0); if (p.y < -16) { e.s.visible = false; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); } return true; }
+  if (e.fbRu) {   // スキーで素早く寄せ、近づいたら普段の戦い方
+    if (e.fbSki > 0) { e.fbSki -= dt; const d = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (d < 20) e.fbSki = 0; }
+    if (FB.bridgeDown && p.z < FB_Z.bridge1 + 1 && p.z > FB_Z.bridge0 - 1) p.z = p.z > (FB_Z.bridge0 + FB_Z.bridge1) / 2 ? FB_Z.bridge1 + 1 : FB_Z.bridge0 - 1;
+    return false;
+  }
+  if (e.fbHidden) { e.passive = true; e.state = 'idle'; e.s.visible = false; return true; }
+  // 近くに敵：戦う（運び手・負傷者・止まっている者は戦わない）
+  const foe = !e.fbPort && !e.fbWounded && !e.fbHold && !e.fbFall ? fbNearFoe(e, e.fbRg ? 26 : 18) : null;
+  if (foe) { e.passive = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } return false; }
+  e.knock.set(0, 0, 0); e.passive = true; e.state = 'idle'; e.tgt = null; e.moving = false;
+  if (e.fbHold) { e.faceWant = Math.PI; return true; }
+  const h = fbHome(e); if (!h) return true;
+  let tx = h[0], tz = h[1];
+  // 橋：谷の手前・上では橋の中心へ寄る
+  const onB = p.z > FB_Z.bridge0 - 1 && p.z < FB_Z.bridge1 + 2;
+  if (!FB.bridgeDown && ((p.z > FB_Z.bridge1 && tz < FB_Z.bridge1) || onB)) { if (Math.abs(p.x) > 0.6 && p.z > FB_Z.bridge1 - 0.3) { tx = rand(-0.4, 0.4); tz = Math.max(tz, FB_Z.bridge1 + 0.6); } else tx = 0; }
+  if (FB.bridgeDown) { if (p.z > FB_Z.bridge1 - 0.5) tz = Math.max(tz, FB_Z.bridge1 + 1); else tz = Math.min(tz, FB_Z.bridge0 - 0.5); }
+  const d = Math.hypot(tx - p.x, tz - p.z);
+  if (d > 0.4) { const sp = e.speed * (d > 6 ? 1.15 : 0.8); const k = Math.min(d, sp * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(tx - p.x, tz - p.z); }
+  else e.faceWant = Math.PI;
+  if (onB) p.y = e.baseY = -0.05 - Math.sin(Math.PI * clamp((p.z - FB_Z.bridge0) / (FB_Z.bridge1 - FB_Z.bridge0), 0, 1)) * 0.9 + 0.05; else if (e.baseY < 0) p.y = e.baseY = 0;
+  return true;
+}
+function fbNearFoe(e, R) { const p = e.s.position; for (const o of FB.ru) { if (!isUp(o)) continue; if (Math.abs(o.s.position.z - p.z) < R && Math.abs(o.s.position.x - p.x) < R) return o; } return null; }
+function fbHome(e) {
+  const kx = player.pos.x, kz = player.pos.z;
+  if (e.fbToHut) return [9 + (e.fbSlot % 3) * 0.6, FB_Z.hut + ((e.fbSlot % 5) - 2) * 0.7];
+  if (e.fbRg) {
+    if (FB.rgGone) return null;
+    if (FB.ph === 'bridgeWait' && FB.bt > 6) return [rand(-0.5, 0.5) + ((e.fbSlot || 0) % 2), FB.bt > 20 || (FB.rgCross) ? FB_Z.bridge0 - 4 - (e.id % 10) : FB_Z.bridge1 + 3 + (e.id % 12)];
+    const tail = FB.bridgeDown && !FB.rgAcross ? FB_Z.bridge1 + 8 : kz + 40; return [((e.id % 9) - 4) * 1.8, tail + (e.id % 5) * 1.5];
+  }
+  if (e.fbNamed === 'ojou') return [0, FB_Z.fort - 6];
+  if (e.fbLast && !FB.crossed && FB.ph !== 'bridgeSend' && !(FB.ph === 'bridgeWait' && FB.lastGo)) return [((e.id % 5) - 2) * 1.2, FB_Z.bridge1 + 3 + (e.id % 2) * 1.2];
+  if (FB.ph === 'slopeWait' && FB.st < 34) { const s = e.fbSlot, gone = FB.st / 34 * FB.col.length; if (s > gone) return [((s % 6) - 2.5) * 1.3, FB_Z.slope1 + 4 + Math.floor((s - gone) / 6) * 1.4]; }
+  if (FB.gateOpen && FB.ph !== 'fortFight') { const s = e.fbSlot || 0; return [((s % 12) - 5.5) * 1.6, FB_Z.fort - 5 - Math.floor(s / 12) * 1.5]; }
+  if (e.fbNamed) { const o = { sumi: [1.4, 1.6], sec2: [-1.4, 1.8], omiya: [2.5, 3.5], m35: [-2.6, 4], m37: [0.8, 5], m39: [-0.8, 6], m43: [3, -2] }[e.fbNamed] || [0, 3]; return [kx + o[0], kz + o[1]]; }
+  const s = e.fbSlot, row = Math.floor(s / 8), col = s % 8; return [kx + (col - 3.5) * 1.5, kz + 7 + row * 1.5];
+}
+function updateFb(dt) {
+  if (!FB.on) return;
+  FB.t += dt; ukDlgTick(dt);
+  // 吹雪：風・視界
+  const gust = 0.5 + 0.5 * Math.sin(FB.t * 0.23) * Math.sin(FB.t * 0.071 + 1);
+  FB.wind = FB.blizzard ? 0.6 + gust * 0.8 : 0.25;
+  scene.fog.near = FB.blizzard ? 2 + (1 - gust) * 3 : 8; scene.fog.far = FB.blizzard ? 26 + (1 - gust) * 34 : 80;
+  if (FB.flakes) { const a = FB.flakes.geometry.attributes.position, arr = a.array; FB.flakes.position.set(player.pos.x, 0, player.pos.z);
+    for (let i = 0; i < arr.length; i += 3) { arr[i] += dt * (FB.blizzard ? 6 + FB.wind * 8 : 0.6); arr[i + 1] -= dt * (FB.blizzard ? 2.5 : 1.2); arr[i + 2] += dt * FB.wind * 2.5; if (arr[i] > 30) arr[i] -= 60; if (arr[i + 1] < 0) arr[i + 1] += 16; if (arr[i + 2] > 30) arr[i + 2] -= 60; } a.needsUpdate = true; }
+  if (FB.backAvT != null && FB.backAv) { FB.backAvT += dt; FB.backAv.position.y = Math.max(4.2, 30 - FB.backAvT * 9); if (FB.backAvT > 3.5 && !FB.wallUp) { FB.wallUp = true; boxes.push({ x0: -30, x1: 30, z0: FB_Z.wall - 3, z1: FB_Z.wall + 11, y0: 0, y1: 9 }); } }
+  if (FB.shake > 0) { player.shake = Math.max(player.shake || 0, 0.3); FB.shake -= dt; }
+  // 橋の板が落ちる
+  if (FB.bridgeDown) for (const P of FB.planks) if (P.m.position.y > -30) { P.v -= 18 * dt; P.m.position.y += P.v * dt; P.m.rotation.x += dt * 1.3; }
+  medPost.blue = [player.pos.x + 3, player.pos.z + 8, 0];
+  if (state !== 'play') return;
+  fbCold(dt); fbPits(dt); fbAvTick(dt);
+  // 殿の足場
+  const px = player.pos.x, pz = player.pos.z;
+  if (pz > FB_Z.bridge0 - 0.3 && pz < FB_Z.bridge1 + 0.3) { if (FB.bridgeDown) player.pos.z = FB_Z.bridge0 - 0.4; else if (Math.abs(px) > 1.0) { player.pos.x = clamp(px, -0.9, 0.9); if (!FB.said.edge || time - FB.said.edge > 5) { FB.said.edge = time; popup('橋から足を踏み外しかけた！'); } } }
+  if (FB.crossed && player.pos.z > FB_Z.bridge0 - 0.4 && FB.bridgeDown) player.pos.z = FB_Z.bridge0 - 0.4;
+  if (!FB.gateOpen && player.pos.z < FB_Z.fort + 1.2) player.pos.z = FB_Z.fort + 1.2;
+  player.pos.x = clamp(player.pos.x, -27, 27);
+  // 行軍の会話
+  if (!UK.dlg && FB.t > 20 && Math.random() < dt / 14) { const pool = ['b_cold1', 'b_cold2', 'b_cold3', 'b_cold4', 'b_cold5', 'b_cold6', 'b_cold7', 'b_cold8', ...(FB.trust >= 2 ? ['b_trust1', 'b_trust2'] : FB.trust < 0 ? ['b_dist1', 'b_dist2'] : [])]; fbBark(pool[(Math.random() * pool.length) | 0], 60); }
+  // 待ち伏せ・追手
+  const free = /^march|^bridgeWait|^slopeWait/.test(FB.ph);
+  if (free && FB.ruPool > 0) { FB.ambT -= dt; if (FB.ambT <= 0) { FB.ambT = rand(38, 60); const r = Math.random(), from = r < 0.4 ? 'rear' : r < 0.7 ? 'left' : 'right'; const pl = Math.random() < 0.3; const n = fbSquad(from, pl ? 30 : 10); if (n) { fbBark(from === 'rear' ? (FB.rg.some(isUp) && !FB.rgGone ? 'b_rear' : 'b_amb3') : Math.random() < 0.5 ? 'b_amb' : 'b_amb4', 20); setTimeout(() => FB.on && fbBark('b_amb2', 20), 3500); popup(pl ? 'ロシアのスキー部隊、小隊規模で回り込んでくる！' : 'ロシアのスキー兵の分隊！'); popupTimer = 3; } } }
+  // ロシア兵の遠すぎる者は消す（追い抜いた分）
+  for (const e of FB.ru) if (isUp(e) && e.s.position.z - player.pos.z > 120) { e.hp = 0; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } }
+  FB.ru = FB.ru.filter(e => enemies.includes(e));
+  // 段取り
+  const ph = FB.ph;
+  if (ph === 'march' && pz < FB_Z.bridge0 - 2) fbBridge();
+  else if (ph === 'march' && pz < FB_Z.bridge1 + 30 && !FB.said.r_pre) { FB.said.r_pre = time; fbBark('b_ice', 1); }
+  if (ph === 'bridgeSend') {
+    FB.bt += dt;
+    if (FB.bt > 4 && !FB.sendDone && FB.last.every(e => !isUp(e) || e.s.position.z < FB_Z.bridge0 - 0.5)) { FB.sendDone = true; FB.crossed = true; fbCollapse([]); ukDlg([fbS('s_fall'), fbS('s_fumi'), fbS('s_sec2'), fbS('s_sumi')], () => { FB.ph = 'march1'; }); FB.food = Math.max(1, FB.food - 3); FB.rgLeftT = 0; }
+    if (FB.bt > 40 && !FB.sendDone) for (const e of FB.last) if (isUp(e)) e.s.position.set(rand(-1, 1), 0, FB_Z.bridge0 - 2);
+  }
+  if (FB.sendDone && !FB.rgGone) { FB.rgLeftT += dt; if (FB.rgLeftT > 14) { FB.rgGone = true; for (const e of FB.rg) if (isUp(e)) { e.fbHidden = true; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } } FB.by.fumi = null; FB.rg = []; } }
+  if (ph === 'bridgeWait') {
+    FB.bt += dt;
+    if (FB.bt > 3 && !FB.said.w_fumi) { FB.said.w_fumi = time; ukDlg([fbS('w_fumi')]); }
+    const rgUp = FB.rg.filter(isUp);
+    if (FB.bt > 20 && !FB.rgCross) FB.rgCross = true;
+    if (FB.rgCross && !FB.lastGo && (rgUp.every(e => e.s.position.z < FB_Z.bridge0) || FB.bt > 60)) { FB.lastGo = true; FB.lastT = 0; for (const e of rgUp) if (e.s.position.z > FB_Z.bridge0) e.s.position.set(rand(-2, 2), 0, FB_Z.bridge0 - 3); FB.rgAcross = true; }
+    if (FB.lastGo) { FB.lastT += dt; const on = FB.last.filter(e => isUp(e) && fbOnBridge(e));
+      if (!FB.bridgeDown && (on.length >= Math.ceil(FB.last.length * 0.35) || FB.lastT > 9)) { const f = on.length ? on.slice(0, Math.max(1, Math.round(on.length * 0.8))) : FB.last.filter(isUp).slice(0, 3); FB.lostCol += Math.round(f.length * FB_NOM.col / FB_DRAW.col); fbCollapse(f); FB.crossed = true; FB.food += 3; FB.trust -= 1;
+        for (const e of FB.rg) if (isUp(e)) { e.fbRg = false; e.fbSlot = FB.col.length; FB.col.push(e); } FB.rg = [];
+        ukDlg([fbS('w_fall'), { wait: 1.5 }, fbS('w_after'), fbS('w_fumi2'), fbS('w_m35')], () => { FB.ph = 'march1'; }); } }
+  }
+  if (/^march1$/.test(FB.ph) && pz < FB_Z.hut + 14) fbHut();
+  if (FB.ph === 'march2' && pz < FB_Z.slope1 + 10) fbSlope();
+  if (FB.ph === 'slopeWait') { FB.st += dt; player.pos.z = Math.max(player.pos.z, FB_Z.slope1 + 2); if (FB.st > 34) { FB.ph = 'march2b'; ukDlg([fbS('sp_done')]); fbAvalanche(FB_Z.slope1 + 18, true); } else if ((FB.st | 0) % 5 === 0) setText('wavetxt', `一人ずつ渡っている…… 残り ${Math.ceil(34 - FB.st)} 秒`); }
+  if (FB.ph === 'slopeRush') { FB.st += dt; if (FB.st > 5 && !FB.rushAv) { FB.rushAv = true; fbAvalanche((FB_Z.slope0 + FB_Z.slope1) / 2, false); setTimeout(() => FB.on && ukDlg([fbS('ru_after')]), 6000); FB.ph = 'march2b'; } }
+  if (FB.ph === 'march2b' && pz < FB_Z.coat + 8) fbCoat();
+  if (FB.ph === 'march3' && pz < FB_Z.fort + 45) fbFort();
+  if (FB.ph === 'fortFight') { const near = FB.ru.filter(e => isUp(e) && e.s.position.z < FB_Z.fort + 50).length; if (!UK.dlg && (near === 0 || (pz < FB_Z.fort + 4 && near < 3))) fbArrive(); }
+  for (const e of FB.col) if (e.fbToHut && isUp(e) && Math.hypot(e.s.position.x - 9, e.s.position.z - FB_Z.hut) < 1.5 && !e.fbHidden) { e.fbHidden = true; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } }
+  // 数（名目）
+  const cu = FB.col.filter(isUp).length; FB.colNom = Math.round(cu * (FB_NOM.col + FB_NOM.port) / (FB_DRAW.col + FB_DRAW.port + FB_NAMED.length));
+}
+function fbCold(dt) {
+  let warm = false; for (const f of FB.fires) if (Math.hypot(player.pos.x - f[0], player.pos.z - f[1]) < f[2]) warm = true;
+  if (FB.gateOpen && player.pos.z < FB_Z.fort) warm = true;
+  if (warm) FB.temp = Math.min(100, FB.temp + dt * 6);
+  else if (FB.blizzard && !UK.choice) FB.temp = Math.max(0, FB.temp - dt * 0.42 * FB.coldK * (0.7 + FB.wind * 0.5) * (player.moving === false ? 1.3 : 1));
+  if (FB.temp < 35 && !warm) { player.hp -= dt * (35 - FB.temp) * 0.03; player.deathCold = true; if (!FB.said.frost || time - FB.said.frost > 20) { FB.said.frost = time; popup('凍傷が進む。白瀬からおにぎりを（E）'); popupTimer = 3; } }
+  if (player.hp <= 0 && state === 'play') { player.hp = 0; gameOver(false); }
+  const el = $('fbTemp'); if (el) { el.textContent = `体温 ${Math.round(FB.temp)}　おにぎり ${FB.food}`; el.style.color = FB.temp < 35 ? '#9cf' : '#fff'; }
+}
+function fbPits(dt) {
+  for (const P of FB.pits) {
+    const dx = (player.pos.x - P.x) / (P.w * 0.5), dz = (player.pos.z - P.z) / 3, r = dx * dx + dz * dz;
+    if (!P.seen && r < 4 && Math.random() < dt * 1.5) { P.seen = true; P.hole.visible = true; fbBark('b_ice', 30); }
+    if (r < 0.7 && (P.cd || 0) < time) { P.cd = time + 3; P.seen = true; P.hole.visible = true; hurtPlayer(18); FB.temp = Math.max(0, FB.temp - 8); const ang = Math.atan2(player.pos.x - P.x, player.pos.z - P.z) || 0.01; player.pos.x += Math.sin(ang) * 3; player.pos.z += Math.cos(ang) * 3.5; popup('雪に隠れたクレバス！ 縁にしがみついて這い上がった'); popupTimer = 2.5; fbBark('b_cre', 20); }
+  }
+}
+function fbAvalanche(z, harmless) {
+  FB.av = { z, x: -60, harmless, hit: new Set() }; FB.avMesh.visible = true; FB.avMesh.position.set(-60, 2.5, z); Sfx.noiseBurst(4, 'lowpass', 260, 40, 0.9); FB.shake = 3; fbBark('b_av', 5); popup('雪崩だ！'); popupTimer = 2.5;
+}
+function fbAvTick(dt) {
+  if (FB.blizzard && /^march/.test(FB.ph) && !FB.av) { FB.avT -= dt; if (FB.avT <= 0) { FB.avT = rand(70, 110); fbAvalanche(player.pos.z - rand(8, 22), false); } }
+  const A = FB.av; if (!A) return;
+  A.x += dt * 16; FB.avMesh.position.x = A.x;
+  if (!A.harmless) {
+    if (Math.abs(player.pos.z - A.z) < 8 && Math.abs(player.pos.x - A.x) < 35 && !A.hit.has('k')) { A.hit.add('k'); hurtPlayer(28); FB.temp = Math.max(0, FB.temp - 12); popup('雪崩に巻き込まれた！ 雪を掻き分けて出る'); popupTimer = 2.5; }
+    for (const e of enemies) { if (!isUp(e) || A.hit.has(e.id)) continue; const p = e.s.position; if (Math.abs(p.z - A.z) < 8 && Math.abs(p.x - A.x) < 35) { A.hit.add(e.id); if (e.fbNamed) { e.hp = Math.max(1, e.hp - 4); continue; } if (Math.random() < 0.3) { e.hp = 0; killEnemy(e, false, new V3(A.x, 0, A.z)); if (e.team === 'blue') FB.lostCol += Math.round(FB_NOM.col / FB_DRAW.col); } else { e.hp = Math.max(1, e.hp - 2); e.knock.set(8, 0, 0); } } }
+  }
+  if (A.x > 70) { FB.av = null; FB.avMesh.visible = false; }
+}
+// ---- 話す・おにぎり・作戦終了 ----
+function fbKey() {
+  if (UK.dlg) { if (!UK.choice) ukDlgSkip(); return true; }
+  if (!FB.on || state !== 'play') return false;
+  let best = null, bd = 3.2; for (const k in FB.by) { const e = FB.by[k]; if (!e || !isUp(e)) continue; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d < bd) { bd = d; best = k; } }
+  if (!best) return false;
+  if (best === 'sumi') { if (player.hp >= CFG.maxHp && FB.temp > 90) ukDlg([fbS('t_sumiF')]); else if (FB.food > 0) { FB.food--; player.hp = Math.min(CFG.maxHp, player.hp + 40); FB.temp = Math.min(100, FB.temp + 18); Sfx.pickup && Sfx.pickup(); ukDlg([fbS('t_sumi')]); } else ukDlg([fbS('t_sumi0')]); return true; }
+  const m = { sec2: FB.ch.bridge === 'send' ? 't_sec2b' : 't_sec2a', fumi: 't_fumi', omiya: 't_omiya', m35: 't_m35', m37: 't_m37', m39: 't_m39', m43: 't_m43', ojou: 'f_ojou2' }[best];
+  if (m) ukDlg([fbS(m)]); return true;
+}
+function fbEndBtn(on) {
+  let b = $('bFbEnd'); if (!b && on) { b = document.createElement('button'); b.id = 'bFbEnd'; b.type = 'button'; b.textContent = (MOBILE ? '' : 'Q ') + '作戦終了'; b.style.cssText = 'position:fixed;top:calc(8px + var(--sat,0px));right:150px;z-index:60;font:inherit;font-size:14px;padding:6px 14px;background:rgba(20,24,30,.75);color:#f4ecd6;border:1px solid #e8d9a8;border-radius:6px'; b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); fbEndAsk(); }); document.body.appendChild(b);
+    const t = document.createElement('div'); t.id = 'fbTemp'; t.style.cssText = 'position:fixed;top:calc(44px + var(--sat,0px));right:150px;z-index:60;font-size:14px;color:#fff;text-shadow:0 1px 3px #000'; document.body.appendChild(t); }
+  if (b) b.style.display = on ? '' : 'none'; const t = $('fbTemp'); if (t) t.style.display = on ? '' : 'none';
+}
+function fbEndAsk() {
+  if (!FB.on || state !== 'play' || FB.ask) return; FB.ask = true; if (document.exitPointerLock) document.exitPointerLock();
+  let d = $('fbAsk'); if (!d) { d = document.createElement('div'); d.id = 'fbAsk'; d.style.cssText = 'position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)'; document.body.appendChild(d); }
+  d.style.display = 'flex';
+  d.innerHTML = `<div style="background:rgba(16,18,22,.94);border:1px solid #e8d9a8;padding:18px 22px;border-radius:8px;text-align:center;color:#f4ecd6;max-width:420px"><div style="font-size:20px;letter-spacing:.14em">作戦を終了しますか？</div><div style="margin:10px 0 16px;font-size:14px">${FB.gateOpen ? '砦に着いた。' : 'まだ行軍の途中です。ここで幕を引きます。'}</div><button data-a="y">はい</button><button data-a="n">いいえ</button></div>`;
+  d.querySelectorAll('button').forEach(b => { b.style.cssText = 'font:inherit;font-size:16px;margin:0 8px;padding:8px 20px;background:#e8d9a8;color:#1a1410;border:0;border-radius:4px;cursor:pointer'; b.addEventListener('click', ev => { ev.preventDefault(); ev.stopPropagation(); fbEndAns(b.dataset.a === 'y'); }); });
+}
+function fbEndAns(yes) { FB.ask = false; const d = $('fbAsk'); if (d) d.style.display = 'none'; if (yes) { FB.endWhy = 'end'; gameOver(true); } else lock(); }
+function fbOverText(win) {
+  fbEndBtn(false);
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
+  const C = FB.ch, lines = [C.bridge ? (C.bridge === 'wait' ? '橋：綾瀬を待った' : '橋：十人を先に渡した') : '', C.hut ? (C.hut === 'carry' ? '小屋：負傷者を担いだ' : '小屋：負傷者を残した') : '', C.slope ? (C.slope === 'spread' ? '斜面：一人ずつ' : '斜面：駆け抜けた') : '', C.coat ? (C.coat === 'give' ? '外套：谷口に着せた' : '外套：着たまま') : ''].filter(Boolean).join(' ／ ');
+  if (h1) h1.textContent = win ? '作戦終了' : '作戦中止';
+  if (h2) h2.textContent = (win ? (FB.gateOpen ? '吹雪の山岳行軍 ── 砦に着いた' : '吹雪の山岳行軍 ── 行軍の途中で幕') : '殿が倒れた（凍えて／討たれて）。血は出ていない') + (lines ? '　' + lines : '');
+}
+addEventListener('keydown', ev => {
+  if (!FB.on || state !== 'play') return;
+  if (FB.ask) { if (ev.code === 'KeyY' || ev.code === 'Enter') fbEndAns(true); else if (ev.code === 'KeyN' || ev.code === 'Escape' || ev.code === 'KeyQ') fbEndAns(false); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
+  if (ev.repeat) return;
+  if (ev.code === 'KeyQ') { fbEndAsk(); ev.preventDefault(); ev.stopImmediatePropagation(); return; }
+  if ((ev.code === 'KeyE' || (UK.dlg && !UK.choice && ev.code === 'Enter')) && fbKey()) { ev.preventDefault(); ev.stopImmediatePropagation(); }
+}, true);
+function fbLabel() { return { intro: '吹雪の山岳行軍', march: '峠道：吊り橋へ', bridgeTalk: '吊り橋', bridgeWait: '吊り橋：綾瀬を待つ', bridgeSend: '吊り橋：十人を渡す', march1: '峠道：山小屋へ', hutTalk: '山小屋', march2: '峠道：雪庇の斜面へ', slopeTalk: '雪庇の斜面', slopeWait: '斜面：一人ずつ', slopeRush: '斜面：駆け抜ける', march2b: '峠道：砦へ', coatTalk: '谷口が倒れた', march3: '峠道：砦へ', fortFight: '砦の門前：包囲を破る', fort: '砦', done: '砦（作戦終了は Q）' }[FB.ph] || ''; }
+function fbRemain() { const ru = FB.ru.filter(isUp).length, nom = Math.max(0, Math.round(FB.ruPool + ru * FB_NOM.ru / 120)); return `ロシア スキー部隊 約${nom}　本隊 約${FB.colNom || 0}　しんがり ${FB.rgGone ? '向こう岸' : FB.rg.length ? '約' + Math.round(FB.rg.filter(isUp).length * FB_NOM.rg / (FB_DRAW.rg + 1)) : '合流'}`; }
+if (TEST) window.__fb = { FB, pick: i => ukPick(i), skip: () => ukDlgSkip(), squad: (f, n) => fbSquad(f, n), pl: () => player, cnt: () => { const c = {}; for (const e of enemies) { const k = e.team + (e.dead ? "D" : ""); c[k] = (c[k] || 0) + 1; } return c; }, dlg: () => !!UK.dlg, av: z => fbAvalanche(z == null ? player.pos.z : z, false) };
 
 // ====================================================================
 //  アメリカ西部編 第一幕「荒野の決闘」（?stage=usDuel）
@@ -21634,7 +22153,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
+  if (name === 'fubuki') buildFubuki(); else if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -21680,7 +22199,7 @@ const bloodMat = new THREE.MeshBasicMaterial({ color: 0x7a1218, transparent: tru
 const bloodPoolGeo = new THREE.CircleGeometry(1, 12);
 const bloodDecals = [];
 function spillBlood(x, y, z, scale) {
-  if (UK2.on || UK3.on || UK4.on || CV.on) return;   // 第二幕・第三幕・第四幕：血の表現は出さない
+  if (UK2.on || UK3.on || UK4.on || CV.on || FB.on) return;   // 第二幕・第三幕・第四幕：血の表現は出さない
   const s = clamp((scale || 1) * 0.16, 0.1, 0.2);
   const pool = new THREE.Mesh(bloodPoolGeo, bloodMat);
   pool.rotation.x = -Math.PI / 2; pool.rotation.z = rand(0, 6.2);
@@ -21708,7 +22227,7 @@ function clearBlood() {
   bloodDecals.length = 0;
 }
 function puff(pos, color, n, size, speed, life) {
-  if ((UK2.on || UK3.on || UK4.on || CV.on) && (color === 0xb10f25 || color === 0xff263f || color === 0x7a1218)) color = UK3.on ? 0x9a9286 : 0xcfc4ad;   // 第二幕：被弾の飛沫は赤くしない（砂埃の色）
+  if ((UK2.on || UK3.on || UK4.on || CV.on || FB.on) && (color === 0xb10f25 || color === 0xff263f || color === 0x7a1218)) color = UK3.on ? 0x9a9286 : 0xcfc4ad;   // 第二幕：被弾の飛沫は赤くしない（砂埃の色）
   for (let i = 0; i < n; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: 0.8 }));
     s.position.copy(pos); s.scale.setScalar(size); s.renderOrder = 3;
@@ -21830,7 +22349,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zh';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zi';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23995,7 +24514,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (NB.on || ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || CAMP.on || CV.on) return;   // 軽空母は自前の対空戦
+  if (FB.on || NB.on || ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || CAMP.on || CV.on) return;   // 軽空母は自前の対空戦
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -26096,6 +26615,7 @@ function updateEnemies(dt) {
     if (e.defending) { e.passive = false; e.kneel = false; if (e.state === 'idle') { e.state = e.kind === 'archer' ? 'advance' : 'approach'; e.t = 0; } }
     if (e.seated && !e.bowSeat) seatedBrain(e, dt);
     else if ((CAMP.on || e.cmdr) && campBrain(e, dt)) { /* 第二幕・大将の采配 */ }
+    else if (FB.on && fbBrain(e, dt)) { /* 吹雪の山岳行軍 */ }
     else if (USD.on && usdBrain(e, dt)) { /* アメリカ西部編：持ち場・竹束・銃 */ }
     else if (FRS.on && frsBrain(e, dt)) { /* フランス人形編 第一幕：持ち場の砲員 */ }
     else if (UK2.on && !FRS.on && uk2Brain(e, dt)) { /* 第二幕：砲撃の間は陰へ・戦列と方陣・退却・船の上 */ }
@@ -26719,7 +27239,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', CAMP.on ? campLabel() : PAL.on ? palPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', FB.on ? (FB.ph === 'slopeWait' ? `斜面：一人ずつ渡っている…… 残り ${Math.ceil(34 - FB.st)} 秒` : fbLabel()) : CAMP.on ? campLabel() : PAL.on ? palPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -26738,6 +27258,7 @@ function updateHud(dt) {
   if (UK3.on) { const c = uk3Counts(), g = uk3Goal(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (g ? '　' + g : '')); }   // 第三幕：同じ「残敵・味方」
   if (FRS.on) { const c = frsCounts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}`); }
   if (CAMP.on) setText('remain', campRemain());
+  if (FB.on) setText('remain', fbRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
   if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'gun' ? '第一艦隊・桜鳳　砲戦' : CV.phase === 'board' ? '第一艦隊・桜鳳　乗り込み' : CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
@@ -27035,7 +27556,7 @@ function setupTouch() {
   tapBtn('bRun', b => { touch.run = !touch.run; b.classList.toggle('on', touch.run); });
   tapBtn('bJump', () => { if (player.onGround) { player.vy = 5.2; player.onGround = false; player.pos.y += 0.01; } });
   tapBtn('bPause', () => pauseGame());
-  tapBtn('bTalk', () => { if (PAL.on) { palKey(); return; } if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (NB.on && nbTrapUse()) return; else if (CV.on && cvUse()) return; else if (sec.near) openSecMenu(); });
+  tapBtn('bTalk', () => { if (FB.on && fbKey()) return; if (PAL.on) { palKey(); return; } if (USD.on && usdKey()) return; if (FRS.on && frsKey()) return; if (UK.on) { ukUse(); return; } if (UK3.on) { uk3Key(); return; } if (UK4.on && (UK.dlg || !sec.near || (UK4.v5 && u5NearCon()))) { uk4Key(); return; } if (UK7.on) { uk7Key(); return; } if (menuOpen) closeSecMenu(); else if (NB.on && nbTrapUse()) return; else if (CV.on && cvUse()) return; else if (sec.near) openSecMenu(); });
   tapBtn('bLad', () => { if (keiUse()) return; if (carUse()) return; if (mechUse()) return; if (!castleUse()) ladderGo(); });
   // iOS のピンチ・ダブルタップ拡大やスクロールを止める
   document.addEventListener('gesturestart', e => e.preventDefault(), opt);
@@ -27244,6 +27765,7 @@ function resetGame() {
   else if (builtStage === 'beach') beachReset();   // 殿の舟の屋形の中
   else if (builtStage === 'ukMeet') ukReset();   // 英国淑女編：殿の小早
   else if (builtStage === 'ukHarbor') uk2Reset();   // 英国淑女編 第二幕：町の通り
+  else if (builtStage === 'fubuki') fbReset();   // 吹雪の山岳行軍
   else if (builtStage === 'usDuel') usdReset();   // アメリカ西部編 第一幕：日本の陣の前
   else if (builtStage === 'frSea') frsReset();   // フランス人形編 第一幕：殿の船の甲板
   else if (builtStage === 'ukNight') uk3Reset();
@@ -27265,14 +27787,15 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
   if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
-  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'fubuki' || stageName === 'palace') builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
   $('bTrenchAttack').style.display='none';
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
-  if (builtStage === 'usDuel') { spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); for (const m of medics.blue) spawnMedic('blue', m); for (const A of aides) spawnAide(A); }   // アメリカ西部編：秘書課・救護班・補佐役は本陣に
+  if (builtStage === 'fubuki') { for (const m of medics.blue) spawnMedic('blue', m); }   // 吹雪の山岳行軍：人は fbSpawn が置く
+  else if (builtStage === 'usDuel') { spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); for (const m of medics.blue) spawnMedic('blue', m); for (const A of aides) spawnAide(A); }   // アメリカ西部編：秘書課・救護班・補佐役は本陣に
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (CAMP_OWN.includes(builtStage)) { /* 第二幕：段ごとに campStart が置く */ }
@@ -27282,13 +27805,14 @@ function startGame() {
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && builtStage !== 'palace' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none';
   $('hud').style.display = 'block';
   SITU.reset(); SITU.preload(); saiDownPreload();
   state = 'play'; lock();
   if (CAMP_OWN.includes(builtStage)) campStart();   // 第二幕：城下町・宮殿・山城
+  else if (builtStage === 'fubuki') fbStart();   // 吹雪の山岳行軍
   else if (builtStage === 'usDuel') usdStart();   // アメリカ西部編 第一幕：会見→決闘→総力戦
   else if (builtStage === 'frSea') frsStart();   // フランス人形編 第一幕：いきなり砲撃戦
   else if (builtStage === 'ukMeet') ukStart();   // 戦いは無い：会見だけ
@@ -27364,6 +27888,7 @@ function gameOver(win) {
   state = 'over'; player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
   if (!win && !player.deathCold) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
   { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? (CV.on && CV.endWhy === 'leave' ? '航海を終えた' : '勝利') : (CV.on && CV.endWhy === 'king' ? '作戦中止' : CV.on && CV.hp <= 0 ? '航行不能' : '敗北'); if (h2) h2.textContent = win ? (CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで幕を引いた' : '米軍の空襲を退けた') : NB.on ? '山間の稜線まで抜けた' : AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (CV.on && CV.hp <= 0 ? '終了ボタンで、航行不能を結果にした' : AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
+  if (FB.on) fbOverText(win);   // 吹雪の山岳行軍
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで航海を終えた。乗艦は約 1,100 人。' : win ? `米軍の戦闘機と爆撃機 <b>${CV.killed}</b> を退けた。乗艦は約 1,100 人。` : `艦が航行不能になった。残る米軍機 <b>${Math.max(0, CV.total - CV.killed)}</b>。`) : `味方 <b>${battleCounts().ally}</b>　／　敵 <b>${battleCounts().foe}</b><br>撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   if (CAMP.on) campResult(win);   // 第二幕：段ごとの結果
@@ -29989,7 +30514,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    if (FB.on) updateFb(dt); if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); if (NB.on) updateNanban(dt); if (CV.on) updateCv(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on) ukTalkHud(); if (FRS.on) frsTalkHud();

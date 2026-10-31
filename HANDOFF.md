@@ -419,3 +419,21 @@
 - 大淀 crew are 26 reserves (12 in lite) moved aboard in cvFleetCrew.
 - cvOyReport: 西園寺's damage report, the King's reply, and damage-control/treatment lines.
 - Fix: escort boat ride is no longer reset by the out-of-bounds check, and it finishes during 'going' (24 m/s, 25 s cap).
+
+## zb
+- 西園寺's report fires when the King actually reaches 大淀, not during the boat ride.
+- Visuals are canvas-drawn (cvTex / cvDecal / cvFlame):
+  - Some of 大淀's window strips switch to a broken-glass texture.
+  - Soot and jagged holes on the superstructure sides.
+  - Additive flickering flames, plus steam as fires are put out.
+- 幕二:
+  - Dusk sky and lighting.
+  - Star shells (cvStarStep): parachute flare sprites plus a PointLight, fired by both sides in turn.
+  - Cruiser moved to x 380.
+  - 大淀's return fire now uses the game-time queue C.lq.
+  - Rebalanced: with smoke and torpedoes ordered, the cruiser is silenced in ~3.5 min with the carrier at ~30 hp. With no orders, the carrier is lost in ~3.3 min.
+- Abandon rush (cvRushStart / cvRushStep):
+  - Most spawned crew run to the deck edge or stairs, with crowding and slowdowns at exits; 45% of deck crew jump into the sea.
+  - Personalities: 8% freeze for 25–60 s, 12% help others and move slower.
+  - Firefighters stay until the last quarter of the timer. Carriers and escorts are excluded.
+  - King lines 臆病者… and 俺の子どもたち…, with reactions.

@@ -1325,7 +1325,7 @@ function mechMedEnsure() {
   medics.blue = medics.blue.filter(m => !m.extra);
   if (MED_NAMES.blue.surgeon.length > 2) MED_NAMES.blue.surgeon.length = 2;
   if (MED_NAMES.blue.nurse.length > 2) MED_NAMES.blue.nurse.length = 2;
-  const extra = { surgeon: ['外科医 九条 紗英', '外科医 葉山 みどり'], nurse: ['看護師 遠野 あかり', '看護師 早瀬 ことね'] };
+  const extra = { surgeon: ['外科医 九条 紗英', '外科医 葉山 みどり'], nurse: ['看護師 遠野 あかり', '看護師 真鍋 千夏'] };
   for (const role of ['surgeon', 'nurse']) for (let k = 0; k < 2; k++) {
     medics.blue.push({ role, e: null, dead: false, extra: true });
     MED_NAMES.blue[role].push(extra[role][k]);
@@ -23220,7 +23220,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zs';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031zt';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -23329,7 +23329,7 @@ const EXTRA_GIRLS = {
   girl25: { type: 'mob', anyRole: true, prof: { name: '雨宮 小夜', pers: '臆病', cm: 157, vv: 1, pitch: 1.2 } },     // 横の三つ編み・物静か
   // v6：新しい兵の娘 6人（正面・横・斜め・後ろの写真。両軍の通常の兵として全ステージに出る）
   girl26: { type: 'mob', anyRole: true, prof: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1, pitch: 1.15 } },  // 夜会巻き・腰に手・自信家
-  girl27: { type: 'mob', anyRole: true, prof: { name: '小鳥遊 ひびき', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
+  girl27: { type: 'mob', anyRole: true, prof: { name: '高梨 紬', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
   girl28: { type: 'mob', anyRole: true, prof: { name: '朝倉 ひなた', pers: '陽気', cm: 158, vv: 2, pitch: 1.45 } },  // 両手ピース・ポニーテール・元気いっぱい
   girl29: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
   girl30: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
@@ -26391,7 +26391,7 @@ const SYSOP_REQ = {
 // ---- 救護班（両軍とも外科医2人＋看護師2人）。外科医は矢を抜いて手当てし起こす（少し助けやすい）。看護師は外科医の手伝い・包帯・声かけ、
 //      手の空いた外科医がいないときは自分で手当てする。一人の娘を二人で取り合わない（medBy＝主に手当てする人、assistBy＝手伝い）
 const MED_TEAM = role => [0, 1].map(i => ({ role, e: null, dead: false }));
-const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 白石 麗華'] },
+const MED_NAMES = { blue: { surgeon: ['外科医 鷹司 玲子', '外科医 東雲 真琴'], nurse: ['看護師 朝比奈 しずく', '看護師 芹沢 美緒'] },
   orange: { surgeon: ['外科医 楠 かおる', '外科医 柊 理沙'], nurse: ['看護師 若葉 つばさ', '看護師 小野寺 結衣'] } };
 const medics = { blue: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')], orange: [...MED_TEAM('surgeon'), ...MED_TEAM('nurse')] };
 // v10：青組の看護師をもう一人（羽田 なぎさ、22歳。落ち着いた性格。高校ではバドミントン部、看護大学卒）。自分の写真（nurse2）で、他の看護師と同じ働き

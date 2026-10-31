@@ -10723,7 +10723,7 @@ function cvDmgStep(dt) {   // 機関の被害で速力（波の流れ）、停�
   for (const f of CV.fires || []) { if (f.out || f.I < 1.6) continue; if ((f.spT = (f.spT == null ? 12 : f.spT) - dt) > 0) continue; f.spT = rand(14, 24);
     if ((CV.fires.filter(q => !q.out).length) < (LITE ? 6 : 10)) cvFireStart(clamp(f.x + rand(-6, 6) * S, -7.5 * S, 7.5 * S), f.z + rand(-7, 7) * S, f.y, 'spread'); }
 }
-function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
+function cvDmgReset() { const D = CV.dmg; if (D && D.L0) { ambL.intensity = D.L0[0]; hemiL.intensity = D.L0[1]; sun.intensity = D.L0[2]; } if (D && D.emg) scene.remove(D.emg); CV.ammo = null; CV.carts = null; CV.sinkObjs = null; CV.carrierGone = false; CV.sunkDone = false; CV.sinkPh = null; CV.rboats = []; CV.brgBroken = false; CV.abWarn = false; CV.dmg = { eng: 1, elec: false, gal: false, hit: {} }; }
 // 殿の回復：軍医のそばで手当て、王の間で休む、秘書のおにぎり
 function cvKingHeal(dt) {
   if (player.hp >= CFG.maxHp || player.hp <= 0) return; const S = CV.S || 1, P = player.pos, H = CV.heal || (CV.heal = { med: 0, oni: 60, rest: 0 });
@@ -10814,6 +10814,8 @@ const CV_LINES = {
   sink: ['救命艇はこっち！', '慌てないで、一人ずつ！', '泳げない人は浮き輪を！', '手を貸して、引き上げる！', '殿を先に！', '大淀が近くに来てる！'],
   oy: ['大淀の皆さん、ありがとう', '助かった……', '空母が……私たちの艦が……', '殿がご無事で良かった'],
   kingOy: ['大淀か……世話になる', '生き残った者は全員拾え', '振り返るな……前を見ろ'],
+  cruiseWar: ['また揺れた……怖い', 'テーブルの下に！', '甲板のみんな、大丈夫かな……', 'あの子、機銃の弾運びなの。無事でいて', '音が近い……', '灯りが消えたらどうしよう', '泣かないで、ここは艦の真ん中だから', 'お客様の皆さん、窓から離れて'],
+  cruiseReply: ['……はい、ありがたいことです', '甲板の子たちに申し訳なくて……', 'そう……ですね。でも友達が上に', '殿、それは少し意地悪です', 'お湯加減、ちょうどよろしいですか'],
   kingSail: ['いい天気だ', '皆、よく働いてくれる', '今夜は劇場をのぞいてみるか'],
   kingWave: ['来るぞ……落ち着いて撃て', 'まだ沈まんぞ', '持ちこたえろ！'],
 };
@@ -10826,6 +10828,35 @@ function cvLinesStep(dt) {   // 普通の侍女・乗員と殿の一言を、場
   if (Math.random() < 0.18) { const K = ph === 'raid' ? CV_LINES.kingWave : ph === 'sail' || ph === 'end' ? CV_LINES.kingSail : null; if (K) { cvKing(K[(Math.random() * K.length) | 0]); return; } }
   const c = camera.position, near = CV.R.filter(r => r.e && r.st === 'ok' && !r.gid && r.e.s.position.distanceTo(c) < 16); if (!near.length) return;
   cvSay(near[(Math.random() * near.length) | 0], L[(Math.random() * L.length) | 0], 1.4);
+}
+// ── 弾薬の流れ：弾薬庫→揚弾筒→機銃。装填手が弾倉を運び、格納庫では爆弾・魚雷の台車が機体へ ──
+function cvAmmoStep(dt) {
+  if (!CV.on || CV.carrierGone) return; const S = CV.S || 1, war = CV.phase === 'raid' || CV.phase === 'lull';
+  if (!CV.ammo) { CV.ammo = []; const mat = new THREE.MeshLambertMaterial({ color: 0x4a4f3a }), geo = new THREE.BoxGeometry(0.5 * S * 0.5, 0.3 * S * 0.5, 0.35 * S * 0.5);
+    const gs = (CV.guns || []).filter((g, i) => i % (LITE ? 6 : 3) === 0);
+    for (const g of gs) { const m = new THREE.Mesh(geo, mat); m.visible = false; stageRoot.add(m); const sd = g.x > 0 ? 1 : -1; CV.ammo.push({ m, g, hx: sd * 6.8 * S, hz: g.z, t: Math.random() * 6 }); }
+    const cm = new THREE.MeshLambertMaterial({ color: 0x2c2e30 }), bm = new THREE.MeshLambertMaterial({ color: 0x55583e }); CV.carts = [];
+    for (let k = 0; k < (LITE ? 2 : 5); k++) { const c = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(0.8 * S * 0.6, 0.25 * S * 0.6, 2.2 * S * 0.6), cm); b.position.y = 0.3 * S * 0.6; c.add(b);
+      const bomb = new THREE.Mesh(k % 2 ? new THREE.CylinderGeometry(0.22 * S * 0.6, 0.22 * S * 0.6, 3.4 * S * 0.6, 10) : new THREE.SphereGeometry(0.3 * S * 0.6, 10, 8), bm); if (k % 2) bomb.rotation.x = Math.PI / 2; else bomb.scale.set(1, 1, 2.6); bomb.position.y = 0.62 * S * 0.6; c.add(bomb); c.userData.b = bomb; c.visible = false; stageRoot.add(c); CV.carts.push({ c, L: null, t: 0 }); } }
+  for (const a of CV.ammo) { a.m.visible = war && cvGunMan(a.g) > 0; if (!a.m.visible) continue; a.t += dt; const T = 7, u = (a.t % T) / T;
+    // 0–0.35 揚弾筒を上がる、0.35–0.8 甲板を砲へ運ぶ、0.8–1 砲側で弾倉を交換
+    let x, y, z; if (u < 0.35) { x = a.hx; z = a.hz; y = CV.Yh + (CV.Yd - CV.Yh) * (u / 0.35); } else if (u < 0.8) { const k = (u - 0.35) / 0.45; x = a.hx + (a.g.x - a.hx) * k; z = a.hz + (a.g.z - a.hz) * k; y = a.g.y + 1.0 * S * 0.6 + Math.abs(Math.sin(k * 20)) * 0.04; } else { x = a.g.x; z = a.g.z; y = a.g.y + 0.9; if (!a.sw && u > 0.9) { a.sw = true; if (Math.random() < 0.08) { const r = CV.R.find(r => r.e && r.st === 'ok' && Math.hypot(r.x - a.g.x, r.z - a.g.z) < 3); if (r) cvSay(r, ['弾倉、交換！', '次の弾倉！', '装填よし！'][(Math.random() * 3) | 0], 1.2); } } }
+    if (u < 0.5) a.sw = false; a.m.position.set(x, y, z); }
+  for (const c of CV.carts) {   // 格納庫：再装備中の機体へ台車を押していき、爆弾・魚雷を取り付ける
+    if (!c.L || !(c.L.rearm > 0) || c.L.ph !== 'hangar') { c.c.visible = false; c.L = (CV.launches || []).find(L => L.ph === 'hangar' && L.rearm > 0 && !CV.carts.some(o => o.L === L)) || null; c.t = 0; continue; }
+    const g = c.L.g; c.t += dt; const k = Math.min(1, c.t / 8); c.c.visible = true; c.c.position.set(g.position.x + (1 - k) * 6 * S, CV.Yh, g.position.z + 0.5 * S); c.c.userData.b.position.y = (0.62 + Math.max(0, (c.t - 9) / 4) * 1.2) * S * 0.6;
+    if (c.t > 13) { c.c.userData.b.visible = false; } else c.c.userData.b.visible = true; if (c.t > 16) c.t = 0; }
+}
+function cvCruiseWarStep(dt) {   // 戦闘中のクルーズ区画：侍女はおびえ、隠れ、甲板の友を案じる。殿は風呂や寝台で一言
+  if (CV.phase !== 'raid' && CV.phase !== 'lull') { CV.kingBathSaid = false; return; }
+  const S = CV.S || 1, p = player.pos, inCr = p.x > -7.4 * S && p.x < 7.4 * S && p.z > 40 * S && p.z < 88 * S && Math.abs(p.y - CV.Y1) < 2.5;
+  if (!inCr) return; const near = CV.R.filter(r => r.e && r.st === 'ok' && ['cab', 'din', 'ban', 'bath', 'shop', 'fam'].includes(r.d) && r.e.s.position.distanceTo(p) < 12);
+  if ((CV.crT = (CV.crT || 3) - dt) <= 0 && near.length) { CV.crT = rand(5, 9); const L = CV_LINES.cruiseWar; cvSay(near[(Math.random() * near.length) | 0], L[(Math.random() * L.length) | 0], 1.5); }
+  const suite = p.x > -7.2 * S && p.x < -1.3 * S && p.z > 42 * S && p.z < 63 * S;
+  if (suite && !CV.kingBathSaid && (CV.stillT = (Math.hypot(player.vel ? player.vel.x : 0, player.vel ? player.vel.z : 0) < 0.3 ? (CV.stillT || 0) + dt : 0)) > 3) {
+    CV.kingBathSaid = true; cvKing('ふう。侍女が命がけで危ないところにいる中で入るお湯や寝るベッドは最高だ。お前らもクルーズ配属でよかったな');
+    const R = CV_LINES.cruiseReply; near.slice(0, 3).forEach((r, i) => setTimeout(() => { if (r.st === 'ok') cvSay(r, R[(i + ((Math.random() * R.length) | 0)) % R.length], 1.8); }, 3800 + i * 2600));
+  }
 }
 const CV_SPON = [[-1, -66], [-1, 30], [1, -66], [1, 52]];   // 12.7cm連装高角砲のスポンソン（舷・z）
 function buildKeiku() {
@@ -11427,7 +11458,7 @@ function cvElevStep(dt) {
     }
   }
 }
-// ---- 発着艦の流れ（20261031t）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
+// ---- 発着艦の流れ（20261031u）：格納庫→昇降機→押して発艦位置へ→慣性始動機を回す→燃料・弾薬→試運転→車輪止め払い→旗の合図→滑走・引き起こし・上昇
 //      着艦：艦尾から進入→制動索に掛かる→索を外す→押して昇降機へ→格納庫で再補給。甲板に穴・格納庫火災の間は出さない
 //      開始時に上がっている直掩は三機だけ。残りは空襲が始まってから、この流れで一機ずつ上がる
 function cvArmLaunches() {
@@ -12361,7 +12392,7 @@ function cvStart() {
   let b = $('bCvRos'); if (!b) { b = document.createElement('button'); b.id = 'bCvRos'; b.type = 'button'; b.textContent = '定員表'; b.style.cssText = 'display:none;position:fixed;z-index:34;pointer-events:auto;touch-action:manipulation;top:90px;left:calc(50% + 104px);padding:8px 14px;font:600 15px sans-serif;letter-spacing:.12em;color:#1a1410;background:#cfe3f2;border:0;border-radius:6px;cursor:pointer'; ($('hud') || document.body).appendChild(b);
     const tg = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; CV.rosOpen ? cvRosterClose() : cvRosterOpen(); };
     b.addEventListener('click', tg); b.addEventListener('touchstart', tg, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); }
-  showBanner('軽空母の航海', `乗艦 ${CV.total0}（部署の定員と予備・交代員百）。R で定員表、M で艦内図、戦闘機は E で操縦席`);
+  showBanner('第一艦隊　旗艦「桜鳳」', `大淀・雪風・駆潜艇・補給艦を従えて。乗艦 ${CV.total0}（部署の定員と予備・交代員百）。R で定員表、M で艦内図、戦闘機は E で操縦席`);
   setTimeout(() => { if (CV.on && state === 'play') cvKingSay(CV_KING[0]); }, 700);
   setTimeout(() => { if (CV.on && state === 'play' && CV.capR) cvSay(CV.capR, CV_FAMLN.sumi[1], 1.6); }, 4200);
 }
@@ -12510,7 +12541,7 @@ function updateCv(dt) {
   const onOy = CV.carrierGone || (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
   const inTh = Math.abs(p.x) < 6.0 * S && p.z > 36 * S && p.z < 74.3 * S && p.y > -1.8 * S;   // 大劇場は水線の下
   if (CV.back && ((p.y < -0.4 && !inTh) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
-  cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvBoatStep(dt); cvLinesStep(dt);
+  cvStream(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvBoatStep(dt); cvLinesStep(dt); cvAmmoStep(dt); cvCruiseWarStep(dt);
   if (CV.rosOpen && (CV.rosT = (CV.rosT || 0) - dt) <= 0) { CV.rosT = 1; cvRosterDraw(); }
   if (CV.phase === 'sail' && CV.t > 26 && !CV.daily) cvWaveStart(0);
   if (CV.phase === 'lull' && !CV.ended) cvLullStep(dt);
@@ -21088,7 +21119,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261031u';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -25998,7 +26029,7 @@ function updateHud(dt) {
   if (CAMP.on) setText('remain', campRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
-  if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'raid' ? '軽空母の航海・対空戦' : '軽空母の航海'); }
+  if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
   popupTimer -= dt; $('popup').style.opacity = clamp(popupTimer * 2, 0, 1);

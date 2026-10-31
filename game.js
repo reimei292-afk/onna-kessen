@@ -9786,6 +9786,7 @@ function cvStairs(x0, x1, za, zb, y0, y1, label, opt) {
   }
   // 下の天井裏：段の下を塞ぐ（下の階で階段の下に潜り込まない）
   const lowEnd = za + dir * tr * Math.ceil(n * 0.35);
+  cvSlab(x0, x1, y0, y0 + rise * 0.22, Math.min(lowEnd, zb), Math.max(lowEnd, zb), M.steel);   // 段の下の物入れ
   boxes.push({ x0, x1, z0: Math.min(lowEnd, zb), z1: Math.max(lowEnd, zb), y0: y0 - 0.05, y1: y0 + rise * 0.22, stairUnder: true });
   if (label) { const s = cvSign((x0 + x1) / 2, y0 + 2.0, za - dir * 0.05, label, dir > 0 ? Math.PI : 0); s.scale.set(0.5, 0.5, 1); }
   (CV.stairs = CV.stairs || []).push({ x0, x1, za, zb, y0, y1, label });
@@ -10680,6 +10681,12 @@ function buildKeiku() {
   for (const z of [-88, -70, -34, -4, 16, 66]) cvGun(-10.85, z, Yd, false);
   for (const z of [-88, -70, 50, 68]) cvGun(10.85, z, Yd, false);
   cvGun(12.8, -14, Yd, false); cvGun(12.8, 28, Yd, false);
+  // 甲板どうしをつなぐ手すり付きの階段（梯子は予備として残す）。下の床の高さ→上の床の高さ
+  cvStairs(-0.7, 0.7, -3.0, -9.0, 0.72, 4.12, '階段　上 中甲板（侍女大部屋）');
+  cvStairs(-0.7, 0.7, 10.5, 4.5, 4.12, 7.72, '階段　上 第二甲板（医務室・食堂）');
+  cvStairs(-6.9, -5.6, -24.5, -30.6, 7.72, 11.28, '階段　上 格納庫');
+  cvStairs(-8.1, -6.8, -2.0, -11.6, 11.28, 17.2, '階段　上 飛行甲板');
+  cvStairs(6.8, 8.1, 42.6, 33.0, 11.28, 17.2, '階段　上 飛行甲板');
   CV.Yg = Y1 + 3.2; cvScaleShip(1.62); cvSnapFloors();
 }
 // 当たりの床を、見えている床板の上面に合わせる（人が床にめり込む・浮くのを防ぐ）

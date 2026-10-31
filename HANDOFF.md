@@ -413,3 +413,9 @@
 ## keiku y
 - 海の後始末: うつ伏せに浮く者（cvFloatBody、服のまま・傷なし、簡易形状）。殿の移乗後にティアラ・パンプスが流れてきて殿の字幕と侍女の反応（cvAftermathStep）。キャミソールは流さない。
 - z: 海の漂流物（焦げた木材・救命胴衣・広がる重油 CV.oil）。帽子・ベルト・キャミソールは無し。
+
+## za
+- 大淀 takes raid damage (cvOyHitStep): up to 7 events in raid phase (strafe / near miss / bomb). Effects: scorch, fires with smoke, a hole, broken glass and AA flags, downed crew left in place.
+- 大淀 crew are 26 reserves (12 in lite) moved aboard in cvFleetCrew.
+- cvOyReport: 西園寺's damage report, the King's reply, and damage-control/treatment lines.
+- Fix: escort boat ride is no longer reset by the out-of-bounds check, and it finishes during 'going' (24 m/s, 25 s cap).

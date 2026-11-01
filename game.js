@@ -13350,6 +13350,46 @@ function buildKeiku() {
     const hm = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.07, 0.46), M.cloth); hm.position.set(x, Y1 + 0.95, z); hm.rotation.z = (i % 2 ? -1 : 1) * 0.1; stageRoot.add(hm);
   }
   cvStairs(-2.7, -1.15, 38.2, 26.6, Y1, Yh, '階段　上 格納庫', { openRail: true });   // 士官食堂に最初から空けてある階段室（x -3.05〜-0.75）。扉口（z 42）には出さない
+  { // 階段を扉口から外したあとの左舷。絨毯（|x|<0.85）と寝台（z 40.4 まで）と扉（x -1.2〜1.2）には出さない
+    const yb = Y1;
+    const teak = new THREE.MeshLambertMaterial({ color: 0x8a5a32 });
+    const darkW = new THREE.MeshLambertMaterial({ color: 0x4a301c });
+    const white = new THREE.MeshLambertMaterial({ color: 0xf6f3ee });
+    const water = new THREE.MeshLambertMaterial({ color: 0x8fe4f2, transparent: true, opacity: 0.92 });
+    const chrome = new THREE.MeshLambertMaterial({ color: 0xd8e0ea });
+    const cloth = new THREE.MeshLambertMaterial({ color: 0xf4efe6 });
+    const tx0 = -4.55, tx1 = -3.15, tz0 = 39.25, tz1 = 41.35;
+    cvSlab(-6.9, -4.9, yb + 0.02, yb + 0.07, 40.52, 41.62, teak);
+    cvSlab(tx0 - 0.12, tx1 + 0.06, yb + 0.02, yb + 0.07, tz0 - 0.1, tz1 + 0.08, teak);
+    cvSlab(tx0, tx1, yb + 0.07, yb + 0.40, tz0, tz1, darkW);
+    cvSlab(tx0 + 0.16, tx1 - 0.16, yb + 0.22, yb + 0.34, tz0 + 0.16, tz1 - 0.16, white);
+    cvSlab(tx0, tx0 + 0.1, yb + 0.34, yb + 0.54, tz0, tz1, white);
+    cvSlab(tx1 - 0.1, tx1, yb + 0.34, yb + 0.54, tz0, tz1, white);
+    cvSlab(tx0 + 0.1, tx1 - 0.1, yb + 0.34, yb + 0.54, tz0, tz0 + 0.1, white);
+    cvSlab(tx0 + 0.1, tx1 - 0.1, yb + 0.34, yb + 0.54, tz1 - 0.1, tz1, white);
+    const wt = new THREE.Mesh(new THREE.PlaneGeometry(tx1 - tx0 - 0.48, tz1 - tz0 - 0.5), water);
+    wt.rotation.x = -Math.PI / 2; wt.position.set((tx0 + tx1) / 2, yb + 0.52, (tz0 + tz1) / 2); stageRoot.add(wt);
+    const faucet = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.016, 6, 10, Math.PI), chrome);
+    faucet.position.set((tx0 + tx1) / 2, yb + 0.64, tz0 + 0.22); faucet.rotation.y = Math.PI / 2; stageRoot.add(faucet);
+    for (const [jx, jz] of [[-4.25, 39.75], [-3.45, 39.75], [-4.25, 40.55], [-3.45, 40.55]]) {
+      const j = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.022, 0.045, 8), chrome); j.position.set(jx, yb + 0.53, jz); stageRoot.add(j);
+    }
+    boxes.push({ x0: tx0 - 0.02, x1: tx1 + 0.02, z0: tz0 - 0.02, z1: tz1 + 0.02, y0: yb, y1: yb + 0.56 });
+    const chair = (x, z) => {
+      const g = new THREE.Group(); g.position.set(x, yb, z); g.rotation.y = Math.PI / 2;
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.42), teak); seat.position.set(0, 0.42, 0); g.add(seat);
+      const cush = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.028, 0.36), cloth); cush.position.set(0, 0.45, 0.02); g.add(cush);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.4, 0.04), teak); back.position.set(0, 0.64, -0.2); g.add(back);
+      for (const dx of [-0.16, 0.16]) for (const dz of [-0.16, 0.16]) { const lg = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.42, 0.035), teak); lg.position.set(dx, 0.21, dz); g.add(lg); }
+      stageRoot.add(g);
+      boxes.push({ x0: x - 0.26, x1: x + 0.26, z0: z - 0.26, z1: z + 0.26, y0: yb, y1: yb + 0.88 });
+    };
+    chair(-6.35, 41.02); chair(-5.5, 41.02);
+    const tab = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.035, 10), teak); tab.position.set(-5.92, yb + 0.46, 40.68); stageRoot.add(tab);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.42, 8), darkW); stem.position.set(-5.92, yb + 0.24, 40.68); stageRoot.add(stem);
+    boxes.push({ x0: -6.16, x1: -5.68, z0: 40.46, z1: 40.9, y0: yb, y1: yb + 0.52 });
+    cvSign(-5.9, yb + 1.7, 41.48, 'テラス席・小ジャグジー', 0).scale.set(0.55, 0.55, 1);
+  }
   // 甲板の下に層を足す。機関（吃水線の上）、兵員、烹炊、その上が格納庫。艦橋はもう一段
   const Y0 = 0.6, Y2 = 7.6; CV.Y0 = Y0; CV.Y2 = Y2;
   const bay = (y, z0, z1, xL, xR) => {
@@ -16058,6 +16098,7 @@ const CV_ZONES = [
   ['Y1', -6.7, -2.55, 11.25, 15.55, '女子トイレ'],
   ['Y1', 2.55, 6.7, 12.45, 15.7, '女子トイレ'],
   ['Y1', -5.3, -3.35, 74.45, 75.85, '女子トイレ'],
+  ['Y1', -6.9, -3.05, 39.05, 41.65, 'テラス席'],
   ['Yhld', 0.95, 3.15, 18.7, 22.5, '女子トイレ'],
 ];
 const CV_DECKN = { Yd: '飛行甲板', Yh: '格納庫甲板', Yg: '客室甲板', Y2: '第二甲板', Y1: '中甲板', Y0: '下甲板（機関・弾薬）', Yb: '艦橋', Ya: '大吹き抜け', Yhld: '船倉' };
@@ -25390,7 +25431,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

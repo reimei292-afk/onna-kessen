@@ -11585,14 +11585,14 @@ function cvTheatreStep(dt) {
 // 侍女大部屋の三段寝台（壁ぎわ）と私物棚
 function cvBunks() {
   const Y1 = CV.Y1 || 4.0, M = CV.M || {}, fr = new THREE.MeshLambertMaterial({ color: 0x6b4a2c }), mat = new THREE.MeshLambertMaterial({ color: 0xf1ede2 }), blk = new THREE.MeshLambertMaterial({ color: 0x8a9aa8 });
-  const postG = new THREE.BoxGeometry(0.06, 2.3, 0.06), bedG = new THREE.BoxGeometry(1.9, 0.12, 0.85), blG = new THREE.BoxGeometry(1.0, 0.1, 0.8);
+  const postG = new THREE.BoxGeometry(0.07, 2.3, 0.07), bedG = new THREE.BoxGeometry(1.42, 0.1, 0.55), blG = new THREE.BoxGeometry(0.62, 0.07, 0.42);
   const posts = new THREE.InstancedMesh(postG, fr, 900), beds = new THREE.InstancedMesh(bedG, mat, 400), bls = new THREE.InstancedMesh(blG, blk, 400), mm = new THREE.Matrix4(); let np = 0, nb = 0;
   for (const [a, b] of [[-55, -40.4], [-39.6, -22.4], [-21.6, -4.4], [16.6, 41]]) for (const s of [-1, 1]) {
     const xa = s * 4.9, xb = s * 6.85, xc = (xa + xb) / 2;
     boxes.push({ x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: a + 0.6, z1: b - 0.6, y0: Y1, y1: Y1 + 2.3 });
-    for (let z = a + 1.1; z < b - 0.9; z += 1.15) { for (const ly of [0.36, 1.06, 1.76]) { if (nb >= 400) break; mm.makeTranslation(xc, Y1 + ly, z); beds.setMatrixAt(nb, mm); mm.makeTranslation(xc + s * 0.35, Y1 + ly + 0.1, z); bls.setMatrixAt(nb, mm); nb++; }
-      for (const px of [xa, xb]) for (const dz of [-0.42, 0.42]) { if (np >= 900) break; mm.makeTranslation(px, Y1 + 1.15, z + dz); posts.setMatrixAt(np++, mm); } }
-    cvSlab(Math.min(xa, xb), Math.max(xa, xb), Y1 + 2.32, Y1 + 2.37, a + 0.6, b - 0.6, fr);   // 上の私物棚（三段寝台の上）
+    for (let z = a + 1.25; z < b - 1.05; z += 1.55) { for (const ly of [0.42, 1.12, 1.82]) { if (nb >= 400) break; mm.makeTranslation(xc, Y1 + ly, z); beds.setMatrixAt(nb, mm); mm.makeTranslation(xc + s * 0.22, Y1 + ly + 0.08, z - 0.02); bls.setMatrixAt(nb, mm); nb++; }
+      for (const px of [xa, xb]) for (const dz of [-0.46, 0.46]) { if (np >= 900) break; mm.makeTranslation(px, Y1 + 1.15, z + dz); posts.setMatrixAt(np++, mm); } }
+    cvSlab(Math.min(xa + s * 0.02, xb - s * 0.02), Math.max(xa + s * 0.02, xb - s * 0.02), Y1 + 2.32, Y1 + 2.37, a + 0.6, b - 0.6, fr);
   }
   posts.count = np; beds.count = bls.count = nb; CV.berth = Object.assign(CV.berth || {}, { bunk: nb }); stageRoot.add(posts, beds, bls);
   for (const [t, z] of [['侍女大部屋　一', -46], ['侍女大部屋　二', -30], ['侍女大部屋　三', -12], ['侍女大部屋　四', 28]]) for (const ry of [0, Math.PI]) cvSign(0, Y1 + 2.7, z + (ry ? -0.05 : 0.05), t, ry).scale.set(0.6, 0.6, 1);
@@ -13215,8 +13215,9 @@ function buildKeiku() {
   }
   const hamG = new THREE.BoxGeometry(1.35, 0.06, 0.42), ham = new THREE.InstancedMesh(hamG, M.cloth, 80);
   const hm = new THREE.Matrix4(); let hi = 0;
-  for (let z = -50; z < 40; z += 3.2) for (const x of [-4.6, 4.6]) { if (z > -4.6 && z < 16.4) continue;   // 洗濯所・浴場には吊らない
-    hm.makeRotationZ(x > 0 ? -0.12 : 0.12); hm.setPosition(x, Y1 + 0.85, z); ham.setMatrixAt(hi++, hm);
+  for (let z = -50; z < 40; z += 3.2) for (const x of [-3.95, 3.95]) { if (z > -4.6 && z < 16.4) continue;   // 洗濯所・浴場には吊らない
+    if (x > 0 && z > -9.8 && z < -1.8) continue;   // 右舷の階段（寝台の柱にも触れない）
+    hm.makeRotationZ(x > 0 ? -0.12 : 0.12); hm.setPosition(x, Y1 + 1.15, z); ham.setMatrixAt(hi++, hm);
   }
   ham.count = hi; stageRoot.add(ham);
   for (const z of [-30, -8, 16]) {
@@ -24746,7 +24747,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

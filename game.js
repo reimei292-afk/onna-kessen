@@ -10567,8 +10567,8 @@ function cvStairs(x0, x1, za, zb, y0, y1, label, opt) {
     const y = y0 + rise * k / n, s0 = za + dir * (k - 1) * tr, s1 = za + dir * k * tr, c0 = Math.min(s0, s1), c1 = Math.max(s0, s1);
     floors.push({ x0, x1, z0: c0, z1: c1, y, stair: true });
     const rh = Math.abs(rise) / n, yb = y - Math.min(rh, Math.max(0.04, rh));
-    cvSlab(x0, x1, yb, y - 0.028, c0, c1, riser);
-    cvSlab(x0 + 0.015, x1 - 0.015, y - 0.028, y + 0.012, c0 + 0.012, c1 - 0.012, tread);
+    const rs = cvSlab(x0, x1, yb, y - 0.028, c0, c1, riser); rs.userData.cvStair = 1;
+    const td = cvSlab(x0 + 0.015, x1 - 0.015, y - 0.028, y + 0.012, c0 + 0.012, c1 - 0.012, tread); td.userData.cvStair = 1;
   }
   if (!opt.noRail) {   // 段の両脇。歩く幅の内側には出さないが、端からは落ちない高さにする
     const zLo = Math.min(za, zb) - 0.06, zHi = Math.max(za, zb) + 0.06, yR0 = Math.min(y0, y1), yR1 = Math.max(y0, y1) + 1.08;
@@ -10577,21 +10577,69 @@ function cvStairs(x0, x1, za, zb, y0, y1, label, opt) {
     for (const s of [-1, 1]) {
       const inner = 0.0, outer = 0.16;
       const xa = s < 0 ? x0 - outer : x1 - inner, xb = s < 0 ? x0 + inner : x1 + outer;
-      cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.02, yR1 - 0.07, zLo, zHi, railM);
-      cvSlab(Math.min(xa, xb) - 0.015, Math.max(xa, xb) + 0.015, yR1 - 0.07, yR1 + 0.01, zLo, zHi, capM);
-      for (let k = 0; k < 2; k++) cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.28 + k * 0.34, yR0 + 0.34 + k * 0.34, zLo, zHi, capM);
+      const post = cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.02, yR1 - 0.07, zLo, zHi, railM); post.userData.cvStair = 1;
+      const cap = cvSlab(Math.min(xa, xb) - 0.015, Math.max(xa, xb) + 0.015, yR1 - 0.07, yR1 + 0.01, zLo, zHi, capM); cap.userData.cvStair = 1;
+      for (let k = 0; k < 2; k++) { const bar = cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.28 + k * 0.34, yR0 + 0.34 + k * 0.34, zLo, zHi, capM); bar.userData.cvStair = 1; }
       boxes.push({ x0: Math.min(xa, xb) - 0.02, x1: Math.max(xa, xb) + 0.02, z0: zLo, z1: zHi, y0: yR0 + 0.02, y1: yR1, stairRail: true });
     }
   }
   if (label) { const s = cvSign((x0 + x1) / 2, y0 + 2.0, za - dir * 0.05, label, dir > 0 ? Math.PI : 0); s.scale.set(0.5, 0.5, 1); }
   (CV.stairs = CV.stairs || []).push({ x0, x1, za, zb, y0, y1, label });
 }
+// 階段の上に残った絨毯・板を開口する。段と手すり（cvStair）は残す
+function cvRevealStairs() {
+  const stairs = CV.stairs || []; if (!stairs.length) return;
+  const cuts = [];
+  for (const s of stairs) {
+    const x0 = Math.min(s.x0, s.x1) - 0.04, x1 = Math.max(s.x0, s.x1) + 0.04;
+    const z0 = Math.min(s.za, s.zb) - 0.04, z1 = Math.max(s.za, s.zb) + 0.04;
+    const yLo = Math.min(s.y0, s.y1) - 0.08, yHi = Math.max(s.y0, s.y1) + 0.3;
+    cuts.push([x0, x1, z0, z1, yLo, yHi]);
+  }
+  for (const [x0, x1, z0, z1, yLo, yHi] of cuts) {
+    const kill = [];
+    for (const o of stageRoot.children) {
+      if (!o.isMesh || o.isInstancedMesh || !o.geometry || (o.userData && o.userData.cvStair)) continue;
+      if (Math.abs(o.rotation.x) > 0.35 || Math.abs(o.rotation.z) > 0.35 || Math.abs(o.rotation.y) > 0.35) continue;
+      const gt = o.geometry.type; if (gt !== 'BoxGeometry' && gt !== 'PlaneGeometry') continue;
+      const p = o.geometry.parameters || {};
+      const h = gt === 'PlaneGeometry' ? 0.02 : (p.height || 0);
+      if (h > 0.36) continue;
+      const w = p.width || 0, d = gt === 'PlaneGeometry' ? (p.height || 0) : (p.depth || 0);
+      const hx = w / 2, hz = (gt === 'PlaneGeometry' ? (p.height || 0) : d) / 2;
+      const a = o.position.x - hx, b = o.position.x + hx, e = o.position.z - hz, f = o.position.z + hz;
+      const top = o.position.y + h / 2, bot = o.position.y - h / 2;
+      if (top < yLo || bot > yHi) continue;
+      if (b <= x0 + 0.01 || a >= x1 - 0.01 || f <= z0 + 0.01 || e >= z1 - 0.01) continue;
+      if (h < 0.1 && Math.min(b - a, f - e) < 0.7) continue;
+      kill.push([o, a, b, top, bot, e, f, gt]);
+    }
+    for (const [o, a, b, top, bot, e, f, gt] of kill) {
+      stageRoot.remove(o);
+      const ma = Math.max(a, x0), mb = Math.min(b, x1), parts = [];
+      if (x0 > a) parts.push([a, x0, e, f]); if (x1 < b) parts.push([x1, b, e, f]);
+      if (z0 > e) parts.push([ma, mb, e, z0]); if (z1 < f) parts.push([ma, mb, z1, f]);
+      for (const [pa, pb, pc, pd] of parts) {
+        if (pb - pa < 0.04 || pd - pc < 0.04) continue;
+        if (gt === 'BoxGeometry') cvSlab(pa, pb, bot, top, pc, pd, o.material);
+        else { const m = new THREE.Mesh(new THREE.PlaneGeometry(pb - pa, pd - pc), o.material); m.rotation.x = -Math.PI / 2; m.position.set((pa + pb) / 2, top, (pc + pd) / 2); stageRoot.add(m); }
+      }
+    }
+  }
+}
 function cvLad(x, z0, z1, y0, y1, force) {   // 梯子は使わない：幅の広い手すり付き階段に置き換える（通路をふさがない向きを選ぶ）
   const zc = (z0 + z1) / 2, run = Math.max(2.4, (y1 - y0) * 1.25), w = 0.95;
   const hit = (xa, xb, za, zb) => { let n = 0; for (const b of boxes) if (b.x1 > xa && b.x0 < xb && b.z1 > Math.min(za, zb) && b.z0 < Math.max(za, zb) && b.y1 > y0 + 0.2 && b.y0 < y1) n++; return n; };
-  let best = null; for (const dir of force ? [force.dir] : [1, -1]) for (const dx of force ? [force.dx] : [0, -0.9, 0.9]) { const xa = x + dx - w, xb = x + dx + w, za = zc - dir * run / 2, zb = zc + dir * run / 2, n = hit(xa, xb, za, zb); if (!best || n < best.n) best = { n, xa, xb, za, zb }; }
+  let best = null; for (const dir of (force && force.dir != null ? [force.dir] : [1, -1])) for (const dx of (force && force.dx != null ? [force.dx] : [0, -0.9, 0.9])) { const xa = x + dx - w, xb = x + dx + w, za = zc - dir * run / 2, zb = zc + dir * run / 2, n = hit(xa, xb, za, zb); if (!best || n < best.n) best = { n, xa, xb, za, zb }; }
   (CV.ladAudit = CV.ladAudit || []).push([x, zc, y0, y1, best.n]);
-  cvStairs(best.xa, best.xb, best.za, best.zb, y0, y1, null); return;
+  cvStairs(best.xa, best.xb, best.za, best.zb, y0, y1, (force && force.label) || null);
+  if (force && force.up && CV.stairs && CV.stairs.length) {
+    const s = CV.stairs[CV.stairs.length - 1];
+    const zHi = s.y1 >= s.y0 ? s.zb : s.za, zLo = s.y1 >= s.y0 ? s.za : s.zb;
+    const sg = cvSign((s.x0 + s.x1) / 2, Math.max(s.y0, s.y1) + 1.55, zHi + Math.sign(zHi - zLo || 1) * 0.42, force.up, 0);
+    sg.scale.set(0.42, 0.42, 1);
+  }
+  return;
   for (const s of [-1, 1]) cvSlab(x + s * 0.28, x + s * 0.34, y0, y1 + 0.8, zc - 0.04, zc + 0.04, CV.M.steel);
   for (let y = y0 + 0.28; y < y1 + 0.7; y += 0.32) cvSlab(x - 0.3, x + 0.3, y, y + 0.04, zc - 0.04, zc + 0.04, CV.M.gold);
   ladders.push({ x0: x - 0.6, x1: x + 0.6, z0, z1, y0, y1 });
@@ -11431,7 +11479,7 @@ function cvSeaHole(mat) {   // 船体の中（上から見て甲板の下）で�
 function cvTheatre() {
   const T = CV_TH, Y0 = 0.72, Yc = CV.Y1 || 4.0, yb = T.yb;
   const L = c => new THREE.MeshLambertMaterial({ color: c });
-  const vel = L(0x6e1820), gold = L(0xc9a24a), carpet = L(0x7a2228), dark = L(0x2a1a18), seatM = L(0x9a1e2a), wood = L(0x5a3620), cream = L(0xe8dcc0);
+  const vel = L(0x6e1820), gold = L(0xc9a24a), carpet = L(0xb33a44), dark = L(0x2a1a18), seatM = L(0x9a1e2a), wood = L(0x5a3620), cream = L(0xe8dcc0);
   // 入口の壁（電機室・航空ガソリン庫側）。真ん中に扉口
   cvWall(T.x0, -1.0, T.z0, T.z0 + 0.25, Y0, Yc, cream); cvWall(1.0, T.x1, T.z0, T.z0 + 0.25, Y0, Yc, cream);
   cvFloor(-1.0, 1.0, T.z0 - 0.1, T.z0 + 0.35, Y0);   // 扉口の敷居（下甲板の床と劇場の床の隙間）
@@ -11476,7 +11524,7 @@ function cvTheatre() {
   for (const s of [-1, 1]) cvSlab(s * 3.85, s * 5.8, ys, Yc, T.z1 - 0.6, T.z1 - 0.1, vel);
   CV.th = { cv, tex, i: -1, t: 99, imgs: {}, on: false };
   cvThDraw('title');
-  const house = new THREE.PointLight(0xffe4b8, 1.15, 36); house.position.set(0, 1.6, 56); stageRoot.add(house);
+  const house = new THREE.PointLight(0xffe4b8, 2.4, 52); house.position.set(0, 2.2, 56); stageRoot.add(house);
   for (const [x, y, z, I, d] of [[0, 2.4, 44, 1.05, 26], [0, 1.35, 64.5, 1.25, 24], [-3.4, 1.8, 58, 0.7, 18], [3.4, 1.8, 58, 0.7, 18], [0, ys + 2.4, 71, 1.1, 20]]) {
     const L = new THREE.PointLight(0xffe8c2, I, d); L.position.set(x, y, z); stageRoot.add(L);
   }
@@ -12887,10 +12935,12 @@ function cvCruiseAdd() {
   }
   // ===== 6. 船倉（下甲板の下）。三段寝台・倉庫。糧食庫の脇の階段でのみ降りる =====
   { const y = Yk;
-    deck(-5.05, 5.05, -64, 32, y, std(0x6a675e, 0.85, 0.04));
-    cvWall(-5.15, -5.0, -64, 32, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
-    cvWall(5.0, 5.15, -64, 32, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
-    cvWall(-5.05, 5.05, -64.1, -64, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    deck(-5.05, 5.05, -64, 31.7, y, std(0x6a675e, 0.85, 0.04));
+    cvWall(-5.15, -5.0, -64, -58.45, y, Ya0 - 0.04, std(0x8a8680, 0.8, 0.1));
+    cvWall(-5.15, -5.0, -58.45, 31.7, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    cvWall(5.0, 5.15, -64, -58.45, y, Ya0 - 0.04, std(0x8a8680, 0.8, 0.1));
+    cvWall(5.0, 5.15, -58.45, 31.7, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    cvWall(-5.05, 5.05, -64.1, -64, y, Ya0 - 0.04, std(0x8a8680, 0.8, 0.1));
     cvStairs(-3.45, -2.15, -13.1, -7.35, y, Y0, '階段　上 下甲板（糧食庫）');
     const postG = new THREE.BoxGeometry(0.05, 2.15, 0.05), bedG = new THREE.BoxGeometry(1.15, 0.08, 0.72), blG = new THREE.BoxGeometry(0.55, 0.05, 0.62);
     const posts = new THREE.InstancedMesh(postG, std(0x8d9296, 0.4, 0.7), 1400);
@@ -12923,6 +12973,8 @@ function cvCruiseAdd() {
     cvWall(4.3, 4.95, 28.2, 30.4, y, y + 2.2, std(0x24262a, 0.6, 0.4));
     cvSign(4.2, y + 1.6, 29.3, '弾薬庫　扉', -Math.PI / 2).scale.set(0.4, 0.4, 1);
     boxes.push({ x0: 4.25, x1: 5.0, z0: 28.1, z1: 30.5, y0: y, y1: y + 2.2 });
+    cvWall(-5.05, 5.05, 31.45, 31.75, y, Y0 - 0.05, std(0x8a8680, 0.8, 0.1));
+    cvSign(0, y + 1.7, 31.2, '船倉　ここまで', Math.PI).scale.set(0.45, 0.45, 1);
     cvSign(0, y + 2.2, -62.5, '船倉　侍女居住区', 0).scale.set(0.6, 0.6, 1);
     cvSign(0, y + 2.2, 21.2, '倉庫', Math.PI).scale.set(0.5, 0.5, 1);
     light(0, y + 2.3, -30, 0.35, 16); light(0, y + 2.3, 8, 0.3, 14);
@@ -13012,11 +13064,18 @@ function buildKeiku() {
       cvSlab(hw - t, hw, y0, 7.35, 6, 20, M.hull);
       cvSlab(hw - t, hw, 10.15, y1, 6, 20, M.hull);
     } else cvSlab(hw - t, hw, y0, y1, z0, z1, M.hull);
-    cvSlab(-hw + t, hw - t, y1 - 0.28, y1, z0, z1, M.steel);
+    if (hw === 6.2 && z0 === 62) {
+      cvSlab(-hw + t, -5.15, y1 - 0.28, y1, z0, z1, M.steel);
+      cvSlab(5.15, hw - t, y1 - 0.28, y1, z0, z1, M.steel);
+    } else if (hw === 3.8 && z0 === 76) {
+      cvSlab(-hw + t, -2.52, y1 - 0.28, y1, z0, 87.35, M.steel);
+      cvSlab(2.52, hw - t, y1 - 0.28, y1, z0, 87.35, M.steel);
+      cvSlab(-hw + t, hw - t, y1 - 0.28, y1, 87.35, z1, M.steel);
+    } else cvSlab(-hw + t, hw - t, y1 - 0.28, y1, z0, z1, M.steel);
     cvSlab(-hw - 0.04, -hw + 0.02, 0.05, 0.85, z0, z1, M.boot); cvSlab(hw - 0.02, hw + 0.04, 0.05, 0.85, z0, z1, M.boot);
   }
   cvSlab(-2.5, 2.5, -0.6, 3.5, -98.15, -97.7, M.hull);
-  cvSlab(-3.9, 3.9, -1.0, 4.1, 89.6, 90.15, M.hull);
+  cvSlab(-3.9, 3.9, -1.0, 8.2, 89.6, 90.15, M.hull);
   for (let z = -72; z <= 52; z += 4.6) for (const s of [-1, 1]) for (const yy of [5.5, 8.9]) {
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.2, 8), M.glass);
     p.rotation.z = Math.PI / 2; p.position.set(s * 9.05, yy, z); stageRoot.add(p);
@@ -13213,12 +13272,12 @@ function buildKeiku() {
   // 下のクルーズ区画。王の間、サロン、浴室、小劇場、食堂、大部屋
   cvFloor(-7.15, 7.15, 42.2, 62, Y1); cvFloor(-5.55, 5.55, 62, 76, Y1); cvFloor(-3.15, 3.15, 76, 87.6, Y1);
   deckPlate(-7.15, 7.15, 42.2, 62, Y1, M.wood); deckPlate(-5.55, 5.55, 62, 76, Y1, M.wood); deckPlate(-3.15, 3.15, 76, 87.6, Y1, M.wood);
-  wall(-7.7, -7.2, 42, 62, Y1, Yh - 0.25, M.bulk); wall(7.2, 7.7, 42, 62, Y1, Yh - 0.25, M.bulk);
-  wall(-5.75, -5.45, 62, 76, Y1, Yh - 0.25, M.bulk); wall(5.45, 5.75, 62, 76, Y1, Yh - 0.25, M.bulk);
-  wall(-3.35, -3.05, 76, 88, Y1, Yh - 0.25, M.bulk); wall(3.05, 3.35, 76, 88, Y1, Yh - 0.25, M.bulk);
+  wall(-7.58, -7.15, 42, 62, Y1, Y1 + 3.05, M.bulk); wall(7.15, 7.58, 42, 62, Y1, Y1 + 3.05, M.bulk);
+  wall(-5.78, -5.55, 62, 76, Y1, Y1 + 3.05, M.bulk); wall(5.55, 5.78, 62, 76, Y1, Y1 + 3.05, M.bulk);
+  wall(-3.38, -3.15, 76, 88, Y1, Y1 + 3.05, M.bulk); wall(3.15, 3.38, 76, 88, Y1, Y1 + 3.05, M.bulk);
   wall(-7.2, -1.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
   wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
-  wall(-3.05, 3.05, 87.75, 88.15, Y1, Y1 + 3.25, M.bulk);
+  wall(-3.38, 3.38, 87.75, 88.15, Y1, Y1 + 3.25, M.bulk);
   const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 3.25, M.bulk);
   bulkZ(51.7, -7.15, -1.9); bulkZ(51.7, 1.9, 7.15);
   bulkZ(63.7, -5.45, -1.9); bulkZ(63.7, 1.9, 5.45);
@@ -13397,13 +13456,15 @@ function buildKeiku() {
     const runner = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 256, (g, w, h) => { g.fillStyle = '#5a1a26'; g.fillRect(0, 0, w, h); g.fillStyle = '#c6a15a'; g.fillRect(4, 0, 3, h); g.fillRect(w - 7, 0, 3, h); for (let y = 0; y < h; y += 32) { g.beginPath(); g.arc(w / 2, y + 16, 6, 0, 7); g.fill(); } }); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1, 10); return t; })() });
     const cabW = M.cabW || (M.cabW = new THREE.MeshLambertMaterial({ color: 0xf6f3ec }));
     const cabF = M.cabF || (M.cabF = new THREE.MeshStandardMaterial({ color: 0xf3e2c4, emissive: 0x8a5a28, emissiveIntensity: 0.45, roughness: 0.55, metalness: 0.02 }));
-    const limX = z => z < 62 ? 7.15 : z < 76 ? 5.45 : 3.05;   // 艦尾で船体が細くなる。床を舷側の外へ出さない
-    cvFloor(-7.15, 7.15, 46.6, 62, Yg); cvFloor(-5.45, 5.45, 62, 76, Yg); cvFloor(-3.05, 3.05, 76, 87.4, Yg);
+    const limX = z => z < 62 ? 6.72 : z < 76 ? 5.02 : 2.48;   // 外壁の内側。艦尾で船体が細くなる
+    cvFloor(-6.72, 6.72, 46.6, 62, Yg); cvFloor(-5.02, 5.02, 62, 76, Yg); cvFloor(-2.48, 2.48, 76, 87.4, Yg);
     deckPlate(-1.05, 1.05, 46.6, 87.2, Yg + 0.012, cabF);
-    cvSlab(-0.42, 0.42, Yg + 0.03, Yg + 0.045, 46.8, 87.0, runner);
-    for (const s of [-1, 1]) { deckPlate(s * 1.55, s * 7.15, 47, 62, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 5.45, 62, 76, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 3.05, 76, 87.2, Yg + 0.012, cabF); }
-    wall(-3.05, 3.05, 87.3, 87.7, Yg, top, M.bulk);
-    wall(-7.2, -1.55, 46.6, 47.0, Yg, top, cabW); wall(1.55, 7.2, 46.6, 47.0, Yg, top, cabW);
+    for (const s of [-1, 1]) { deckPlate(s * 1.55, s * 6.72, 47, 62, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 5.02, 62, 76, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 2.48, 76, 87.2, Yg + 0.012, cabF); }
+    wall(-2.48, 2.48, 87.3, 87.7, Yg, top, cabW);
+    wall(-6.72, -1.55, 46.6, 47.0, Yg, top, cabW); wall(1.55, 6.72, 46.6, 47.0, Yg, top, cabW);
+    wall(-7.5, -6.72, 47.0, 62, Yg, top, cabW); wall(6.72, 7.5, 47.0, 62, Yg, top, cabW);
+    wall(-5.7, -5.02, 62, 63.85, Yg, top, cabW); wall(-5.7, -5.02, 67.05, 76, Yg, top, cabW); wall(5.02, 5.7, 62, 76, Yg, top, cabW);
+    wall(-3.3, -2.48, 76, 87.3, Yg, top, cabW); wall(2.48, 3.3, 76, 87.3, Yg, top, cabW);
     const doorsP = [], doorsS = [];
     for (let r = 0; r < 10; r++) { const zd = 47 + r * 4 + 2.6; doorsP.push([zd, r === 4 ? 1.25 : 0.5]); doorsS.push([zd, 0.5]); }
     gapWall(-1.55, -1.1, 47, 87.3, Yg, top, cabW, doorsP); gapWall(1.1, 1.55, 47, 87.3, Yg, top, cabW, doorsS);
@@ -13417,46 +13478,68 @@ function buildKeiku() {
     }
     for (let r = 1; r < 10; r++) for (const s of [-1, 1]) { const z = 47 + r * 4, lim = limX(z), xa = Math.min(s * 1.5, s * lim), xb = Math.max(s * 1.5, s * lim); wall(xa, xb, z - 0.12, z + 0.12, Yg, top, cabW); }
     { const cm = M.ceilC || (M.ceilC = new THREE.MeshLambertMaterial({ color: 0xf3ead8 }));   // 天井：艦尾遊歩甲板へ上がる階段の吹き抜けだけ開ける
-      cvSlab(-7.15, 7.15, top, top + 0.1, 46.6, 62, cm);
-      cvSlab(-5.45, -1.15, top, top + 0.1, 62, 69.7, cm); cvSlab(1.15, 5.45, top, top + 0.1, 62, 69.7, cm);
-      cvSlab(-5.45, 5.45, top, top + 0.1, 69.7, 76, cm); cvSlab(-3.05, 3.05, top, top + 0.1, 76, 87.7, cm);
-      cvSlab(-7.15, 7.15, top + 0.1, Yh - 0.02, 46.6, 62, M.bulk);
-      cvSlab(-5.45, -1.15, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk); cvSlab(1.15, 5.45, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk);
-      cvSlab(-5.45, 5.45, top + 0.1, Yh - 0.02, 69.7, 76, M.bulk); cvSlab(-3.05, 3.05, top + 0.1, Yh - 0.02, 76, 87.7, M.bulk);
+      cvSlab(-6.72, 6.72, top, top + 0.1, 46.6, 62, cm);
+      cvSlab(-5.02, -1.15, top, top + 0.1, 62, 69.7, cm); cvSlab(1.15, 5.02, top, top + 0.1, 62, 69.7, cm);
+      cvSlab(-5.02, 5.02, top, top + 0.1, 69.7, 76, cm); cvSlab(-2.48, 2.48, top, top + 0.1, 76, 87.7, cm);
+      cvSlab(-6.72, 6.72, top + 0.1, Yh - 0.02, 46.6, 62, M.bulk);
+      cvSlab(-5.02, -1.15, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk); cvSlab(1.15, 5.02, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk);
+      cvSlab(-5.02, 5.02, top + 0.1, Yh - 0.02, 69.7, 76, M.bulk); cvSlab(-2.48, 2.48, top + 0.1, Yh - 0.02, 76, 87.7, M.bulk);
       cvSlab(-1.2, -1.1, Yg, Yh, 63.9, 64.15, cabin); cvSlab(-1.2, -1.1, Yg, Yh, 67.05, 69.7, cabin); cvSlab(1.1, 1.2, Yg, Yh, 63.9, 69.7, cabin); }   // 吹き抜けの脇。左の扉口（エレベーター前）は開ける
     cvSlab(-7.15, 7.15, Yh - 0.14, Yh - 0.02, 47.6, 64, M.steel);
     cvSign(0, Yg + 2.3, 47.1, '客室甲板　王の一行', 0);
     for (const z of [52, 64, 76, 84]) { const L = new THREE.PointLight(0xfff1d8, 0.7, 16); L.position.set(0, Yg + 1.9, z); stageRoot.add(L); }
     // 家具は種類ごとに一つの InstancedMesh（描画を軽く）
     const I = {}, put = (k, geo, mat) => (I[k] = I[k] || { geo, mat, list: [] });
-    const G = (k, geo, mat, x, y, z, ry) => put(k, geo, mat).list.push([x, y, z, ry || 0]);
+    const G = (k, geo, mat, x, y, z, ry, sx) => put(k, geo, mat).list.push([x, y, z, ry || 0, sx || 1]);
     const bedG = new THREE.BoxGeometry(2.0, 0.42, 1.05), matG = new THREE.BoxGeometry(1.92, 0.16, 0.96), pilG = new THREE.BoxGeometry(0.4, 0.12, 0.72), heaG = new THREE.BoxGeometry(0.08, 1.0, 1.08);
     const deskG = new THREE.BoxGeometry(0.55, 0.06, 1.0), legG = new THREE.BoxGeometry(0.5, 0.72, 0.9), chG = new THREE.BoxGeometry(0.45, 0.45, 0.45), chbG = new THREE.BoxGeometry(0.06, 0.55, 0.45);
     const wdG = new THREE.BoxGeometry(0.55, 2.0, 0.95), rugG = new THREE.BoxGeometry(2.2, 0.02, 1.6), lampG = new THREE.CylinderGeometry(0.1, 0.16, 0.24, 10), portG = new THREE.CylinderGeometry(0.24, 0.24, 0.06, 16), portR = new THREE.TorusGeometry(0.26, 0.04, 6, 16);
-    const frameG = new THREE.BoxGeometry(0.04, 0.55, 0.75), quilt = M.quilt || (M.quilt = new THREE.MeshLambertMaterial({ color: 0x7a2836 })), lampM = M.lampM || (M.lampM = new THREE.MeshLambertMaterial({ color: 0xffe9b8, emissive: 0x8a6a30 }));
+    const frameG = new THREE.BoxGeometry(0.04, 0.55, 0.75), quiltG = new THREE.BoxGeometry(1.2, 0.05, 1.0), quilt = M.quilt || (M.quilt = new THREE.MeshLambertMaterial({ color: 0x7a2836 })), lampM = M.lampM || (M.lampM = new THREE.MeshLambertMaterial({ color: 0xffe9b8, emissive: 0x8a6a30 }));
     for (let r = 0; r < 10; r++) for (const s of [-1, 1]) {
       if (s < 0 && r === 4) continue;   // 艦尾エレベーターの前は客室にしない（ホール）
-      const zc = 47 + r * 4 + 2, span = (zc < 62 ? 7.05 : zc < 76 ? 5.35 : 2.95) - 1.6, k = Math.min(1, span / 5.5);
-      const X = u => s * (1.6 + (Math.abs(u) - 1.6) * k), xo = X(6.0);
-      G('bed', bedG, M.woodD, xo, Yg + 0.21, zc - 0.85); G('mat', matG, M.cloth, xo, Yg + 0.5, zc - 0.85); G('quilt', new THREE.BoxGeometry(1.2, 0.05, 1.0), quilt, xo - s * 0.35 * k, Yg + 0.6, zc - 0.85);
-      G('pil', pilG, M.cloth, X(6.75), Yg + 0.62, zc - 0.85); G('hea', heaG, M.woodD, X(7.08), Yg + 0.7, zc - 0.85);
-      G('desk', deskG, M.wood, X(6.8), Yg + 0.76, zc + 1.2); G('dleg', legG, M.woodD, X(6.8), Yg + 0.37, zc + 1.2);
-      G('chair', chG, M.woodD, X(6.15), Yg + 0.24, zc + 1.2); G('chb', chbG, M.woodD, X(5.92), Yg + 0.72, zc + 1.2);
-      G('lamp', lampG, lampM, X(6.85), Yg + 0.93, zc + 1.5);
-      if (k > 0.7) G('wd', wdG, M.woodD, X(1.88), Yg + 1.0, zc - 1.35);
-      G('rug', rugG, M.sand, X(4.1), Yg + 0.05, zc + 0.3);
-      G('port', portG, M.glass, X(7.13), Yg + 1.75, zc + 0.3, 1); G('portr', portR, M.brass, X(7.1), Yg + 1.75, zc + 0.3, 2);
-      G('frame', frameG, M.gold, X(7.12), Yg + 1.75, zc - 0.85);
-      boxes.push({ x0: Math.min(xo - 1.0, xo + 1.0), x1: Math.max(xo - 1.0, xo + 1.0), z0: zc - 1.4, z1: zc - 0.3, y0: Yg, y1: Yg + 0.65 });
-      boxes.push({ x0: Math.min(X(6.5), X(7.1)), x1: Math.max(X(6.5), X(7.1)), z0: zc + 0.7, z1: zc + 1.7, y0: Yg, y1: Yg + 0.8 });
-      if (k > 0.7) boxes.push({ x0: Math.min(X(1.6), X(2.16)), x1: Math.max(X(1.6), X(2.16)), z0: zc - 1.85, z1: zc - 0.85, y0: Yg, y1: Yg + 2 });
+      const zc = 47 + r * 4 + 2;
+      const inn = zc < 62 ? 6.62 : zc < 76 ? 4.92 : 2.38;
+      const span = Math.max(0.7, inn - 1.72);
+      const bedW = Math.min(2.0, Math.max(0.72, span - 0.16));
+      const bx = s * (inn - 0.1 - bedW / 2), bsc = bedW / 2.0;
+      G('bed', bedG, M.woodD, bx, Yg + 0.21, zc - 0.85, 0, bsc);
+      G('mat', matG, M.cloth, bx, Yg + 0.5, zc - 0.85, 0, bsc);
+      G('quilt', quiltG, quilt, bx - s * 0.28 * bsc, Yg + 0.6, zc - 0.85, 0, bsc);
+      G('pil', pilG, M.cloth, bx + s * (bedW / 2 - 0.22), Yg + 0.62, zc - 0.85, 0, Math.min(1, bedW / 2));
+      G('hea', heaG, M.woodD, bx + s * (bedW / 2 - 0.06), Yg + 0.7, zc - 0.85);
+      const bedIn = Math.abs(bx) - bedW / 2, gap = bedIn - 1.72;
+      if (gap > 0.85) {
+        const dw = Math.min(0.55, gap - 0.2), dx = s * (bedIn - 0.1 - dw / 2);
+        G('desk', deskG, M.wood, dx, Yg + 0.76, zc + 1.2, 0, dw / 0.55);
+        G('dleg', legG, M.woodD, dx, Yg + 0.37, zc + 1.2, 0, dw / 0.55);
+        G('lamp', lampG, lampM, dx, Yg + 0.93, zc + 1.45);
+        const chx = s * (Math.abs(dx) - dw / 2 - 0.28);
+        if (Math.abs(chx) > 1.7) { G('chair', chG, M.woodD, chx, Yg + 0.24, zc + 1.2); G('chb', chbG, M.woodD, chx - s * 0.1, Yg + 0.72, zc + 1.2); }
+      } else {
+        const dw = Math.min(0.42, Math.max(0.28, bedW * 0.5));
+        G('desk', deskG, M.wood, bx, Yg + 0.76, zc + 1.05, 0, dw / 0.55);
+        G('dleg', legG, M.woodD, bx, Yg + 0.37, zc + 1.05, 0, dw / 0.55);
+        G('lamp', lampG, lampM, bx, Yg + 0.93, zc + 1.25);
+      }
+      if (span > 4.2) G('wd', wdG, M.woodD, s * 2.05, Yg + 1.0, zc - 1.35);
+      const rugW = Math.min(2.2, span - 0.08);
+      if (rugW > 0.7) G('rug', rugG, M.sand, s * (inn - 0.1 - rugW / 2), Yg + 0.05, zc + 0.15, 0, rugW / 2.2);
+      G('port', portG, M.glass, s * (inn - 0.04), Yg + 1.55, zc + 0.2, 1);
+      G('portr', portR, M.brass, s * (inn - 0.06), Yg + 1.55, zc + 0.2, 2);
+      G('frame', frameG, M.gold, s * (inn - 0.06), Yg + 1.45, zc - 0.85);
+      boxes.push({ x0: Math.min(bx - bedW / 2, bx + bedW / 2), x1: Math.max(bx - bedW / 2, bx + bedW / 2), z0: zc - 1.4, z1: zc - 0.3, y0: Yg, y1: Yg + 0.65 });
       const j = r * 2 + (s > 0 ? 1 : 0), nm = (CV_ROOMS[j] || [''])[0];
       const sg = cvSign(s * 1.05, Yg + 2.05, zc - 0.5, (j + 1) + '　' + nm, s > 0 ? -Math.PI / 2 : Math.PI / 2); sg.scale.set(0.5, 0.75, 1);
     }
-    const mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), one = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
-    for (const k in I) { const d = I[k], im = new THREE.InstancedMesh(d.geo, d.mat, d.list.length); d.list.forEach((a, i) => { e3.set(a[3] === 2 ? 0 : 0, a[3] === 1 || a[3] === 2 ? Math.PI / 2 : 0, a[3] === 1 ? Math.PI / 2 : 0, 'YXZ'); if (a[3] === 1) e3.set(0, 0, Math.PI / 2); q.setFromEuler(e3); mt.compose(pv.set(a[0], a[1], a[2]), q, one); im.setMatrixAt(i, mt); }); stageRoot.add(im); }
-    // 梯子：大部屋の後ろから客室甲板へ、客室甲板から艦尾遊歩甲板へ
-    cvLad(0, 84.4, 85.0, Y1, Yg, { dx: 0, dir: -1 });
+    const mt = new THREE.Matrix4(), q = new THREE.Quaternion(), e3 = new THREE.Euler(), scv = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
+    for (const k in I) { const d = I[k], im = new THREE.InstancedMesh(d.geo, d.mat, d.list.length); d.list.forEach((a, i) => { e3.set(a[3] === 2 ? 0 : 0, a[3] === 1 || a[3] === 2 ? Math.PI / 2 : 0, a[3] === 1 ? Math.PI / 2 : 0, 'YXZ'); if (a[3] === 1) e3.set(0, 0, Math.PI / 2); q.setFromEuler(e3); mt.compose(pv.set(a[0], a[1], a[2]), q, scv.set(a[4] || 1, 1, 1)); im.setMatrixAt(i, mt); }); stageRoot.add(im); }
+    // 梯子：大部屋の後ろから客室甲板へ。下りた先は休み処
+    cvLad(0, 84.4, 85.0, Y1, Yg, { dx: 0, dir: -1, label: '階段　上　客室甲板', up: '階段　下　大部屋' });
+    cvSlab(1.35, 2.25, Y1 + 0.42, Y1 + 0.5, 86.2, 87.2, M.wood);
+    cvSlab(1.35, 2.25, Y1 + 0.5, Y1 + 0.92, 86.95, 87.2, M.woodD);
+    boxes.push({ x0: 1.3, x1: 2.3, z0: 86.15, z1: 87.25, y0: Y1, y1: Y1 + 1.0 });
+    { const lp = new THREE.PointLight(0xffe6c0, 0.75, 9); lp.position.set(-0.2, Y1 + 2.15, 86.4); stageRoot.add(lp); }
+    cvSign(0, Y1 + 2.05, 87.45, '艦尾の休み処', Math.PI).scale.set(0.4, 0.4, 1);
     cvStairs(0.35, 1.15, 64.15, 69.45, Yg, Yh, '階段　上 格納庫');   // 廊下の右半分だけ。左は客室通路
     cvSign(-2.7, Yg + 1.85, 65.4, '客室通路はこちら →', -Math.PI / 2).scale.set(0.42, 0.42, 1);
     cvSlab(-3.7, -2.4, Yg + 0.4, Yg + 0.48, 64.4, 64.75, M.wood);   // エレベーター前のベンチ
@@ -13748,7 +13831,7 @@ function buildKeiku() {
     wall(6.4, 6.9, 75, 78.5, Y1, Y1 + 1.9, Mw);   // 器棚
     cvSign(4.5, Y1 + 2.3, 74.6, '御膳所（王家の厨房）', 0).scale.set(0.55, 0.55, 1);
   }
-  cvLad(0, -24.4, -23, Y0, Y1);
+  cvLad(0, -24.4, -23, Y0, Y1, { label: '階段　上　侍女大部屋', up: '階段　下　下甲板' });
   // 中甲板→第二甲板は下の手すり付き階段（z 10.5→4.5）だけ。同じ場所に二つ重ねると手すりが互いの通り道をふさいでいた
   cvStairs(4.7, 6.4, -30.2, -25.2, Y2, Yh, '階段　上 格納庫');
   cvDress();
@@ -13786,8 +13869,7 @@ function buildKeiku() {
   // ── 艦首の大広間（祝勝会場）：英国淑女編 第七幕の大広間と同じ赤い渦巻きの絨毯・シャンデリア・白い丸卓 22。烹炊所の前（艦首側）──
   //   以前は烹炊所より前が空洞で、船体の中に海面が見えていた。床・壁・天井で塞ぎ、海が見えるのは艦首のテラスだけにする
   { const Yg0 = Y1 + 3.2, U = u7Mats(), HZ0 = -79.4, HZ1 = -50.0, HXL = -7.2, HXR = 8.6, XC = (HXL + HXR) / 2, ceil = Yh - 0.06;   // 20261101b：幅 14→15.8、奥行 24.4→29.4（縮尺前）。左舷の外側 x<-7.2 は大吹き抜けへの階段室
-    for (const [hw, z0, z1] of hulls) if (z1 <= 36 || z0 >= 76) cvSlab(-hw + 0.42, hw - 0.42, 0.12, 0.3, Math.max(z0, -97.6), z1, M.dark);   // 船底の内張り（中の海面を隠す）
-    cvSlab(-6.4, 6.4, -0.6, 0.3, 36, 76, M.dark);
+    for (const [hw, z0, z1] of hulls) if (z1 <= 36 || z0 >= 76) cvSlab(-hw + 0.42, hw - 0.42, 0.12, 0.3, Math.max(z0, -97.6), z1, M.dark);   // 船底の内張り（中の海面を隠す）。劇場の床には被せない
     wall(-7.2, -6.55, -56.42, -56.0, Y1, Y1 + 3.15, M.bulk); wall(6.55, 7.2, -56.42, -56.0, Y1, Y1 + 3.15, M.bulk); wall(-6.4, 6.4, -48.42, -48.0, Y0, Y0 + 3.15, M.bulk);   // 中甲板の前端は中央を開けて大部屋へ。下甲板の隔壁はそのまま
     cvFloor(HXL, HXR, HZ0, HZ1, Y2); cvSlab(HXL - 0.02, 8.68, Y2 - 0.35, Y2 + 0.06, HZ0, HZ1, M.steel);
     const cp = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#6e1420'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(214,170,80,.55)'; g.lineWidth = 3; for (let i = 0; i < 4; i++) { g.beginPath(); g.arc(w / 2, h / 2, 12 + i * 16, 0, 6.3); g.stroke(); } g.fillStyle = 'rgba(214,170,80,.5)'; for (const [x, y] of [[0, 0], [w, 0], [0, h], [w, h]]) { g.beginPath(); g.arc(x, y, 10, 0, 6.3); g.fill(); } }, 24);
@@ -14012,12 +14094,17 @@ function cvNavFix() {
     if (Math.max(col.r, col.g, col.b) > 0.28 || lum > 0.6) continue;
     stageRoot.remove(o);
   }
-  const oak = new THREE.MeshStandardMaterial({ color: 0xf8ead0, emissive: 0x7a4e22, emissiveIntensity: 0.55, roughness: 0.48, metalness: 0.02 });
+  const plank = canvasTex(64, 256, (g, w, h) => {
+    g.fillStyle = '#e7c99a'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) { const n = 198 + (x * 13 % 42); g.fillStyle = `rgb(${n},${(n * 0.74) | 0},${(n * 0.46) | 0})`; g.fillRect(x, 0, 15, h); g.fillStyle = 'rgba(120,70,30,.28)'; g.fillRect(x + 14, 0, 2, h); }
+  }, 4);
+  const oak = new THREE.MeshBasicMaterial({ map: plank });
   const oakAt = (x0, x1, z0, z1) => cvSlab(x0, x1, Yg + 0.11, Yg + 0.17, z0, z1, oak);
-  oakAt(-7.05, -1.2, 47.05, 61.9); oakAt(1.2, 7.05, 47.05, 61.9);
-  oakAt(-5.35, -1.2, 62.0, 75.9); oakAt(1.2, 5.35, 62.0, 75.9);
-  oakAt(-2.95, -1.2, 76.0, 87.05); oakAt(1.2, 2.95, 76.0, 87.05);
+  oakAt(-6.6, -1.2, 47.05, 61.9); oakAt(1.2, 6.6, 47.05, 61.9);
+  oakAt(-4.9, -1.2, 62.0, 75.9); oakAt(1.2, 4.9, 62.0, 75.9);
+  oakAt(-2.35, -1.2, 76.0, 87.05); oakAt(1.2, 2.35, 76.0, 87.05);
   oakAt(-0.95, 0.95, 46.7, 87.05);
+  cvRevealStairs();
   for (const z of [50, 58, 66, 74, 82]) for (const x of [-4.2, 0, 4.2]) { const L = new THREE.PointLight(0xfff0d0, x === 0 ? 0.9 : 0.55, 11); L.position.set(x, Yg + 1.85, z); stageRoot.add(L); }
   for (const [x, z] of [[-6, -54], [6, -54], [0, -64], [-6, -46]]) { const L = new THREE.PointLight(0xffe2b0, 0.55, 12); L.position.set(x, Ya2 + 2.1, z); stageRoot.add(L); }
 }
@@ -16133,14 +16220,15 @@ function updateCv(dt) {
   cvLaunchStep(dt);
   const p = player.pos;
   const fy = floorUnder(p.x, p.z, p.y + 0.2);
+  const onDeck = fy > -8 && Math.abs(p.y - fy) < 1.8;
   const inAt = Math.abs(p.x) < 6.3 * S && p.z > -87 * S && p.z < -54 * S && p.y > -2.3 * S && p.y < (CV.Y2 || 12);
   const inHd = Math.abs(p.x) < 6.2 * S && p.z > -66 * S && p.z < 34 * S && p.y > -3.3 * S && p.y < 0.2 * S;
   if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 18 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
-  if (fy > 1 && Math.abs(p.y - fy) < 1.4) CV.foot = [p.x, fy, p.z];
-  else if (CV.foot && !player.climbing && !CV.ride && !inAt && !inHd && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
+  if (fy > -8 && Math.abs(p.y - fy) < 1.6) CV.foot = [p.x, Math.max(fy, p.y), p.z];
+  else if (CV.foot && !player.climbing && !CV.ride && fy < -20 && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
   const onOy = CV.carrierGone || (CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) || (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
   const inTh = Math.abs(p.x) < 6.0 * S && p.z > 36 * S && p.z < 74.3 * S && p.y > -1.8 * S;   // 大劇場は水線の下
-  if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh && !inAt && !inHd) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
+  if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh && !inAt && !inHd && !onDeck) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
   if (CV.poolW && CV.poolW.material && CV.poolW.material.map) CV.poolW.material.map.offset.x = (CV.poolW.material.map.offset.x + dt * 0.02) % 1;
   if (CV.jacW && CV.jacW.material && CV.jacW.material.map) CV.jacW.material.map.offset.y = (CV.jacW.material.map.offset.y + dt * 0.05) % 1;
   if ((CV.brClamp = (CV.brClamp || 0) - dt) <= 0) { CV.brClamp = 0.25; const I = CV.isl; if (I && CV.Yd) for (const e of bodies) { const r = e.cvR; if (!r || e.baseY < CV.Yd - 0.55 * S) continue; const q = e.s.position; const ix0 = I.x0 * S, ix1 = I.x1 * S, iz0 = I.z0 * S, iz1 = I.z1 * S; if (q.x < ix0 - 0.35 * S || q.x > ix1 + 0.35 * S || q.z < iz0 - 0.35 * S || q.z > iz1 + 0.35 * S) continue; const nx = Math.min(ix1 - 0.22 * S, Math.max(ix0 + 0.22 * S, q.x)), nz = Math.min(iz1 - 0.28 * S, Math.max(iz0 + 0.28 * S, q.z)); if (nx !== q.x || nz !== q.z) { q.x = nx; q.z = nz; e.px = nx; e.pz = nz; e.wx = nx; e.wz = nz; r.x = nx; r.z = nz; } } }
@@ -25273,7 +25361,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

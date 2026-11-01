@@ -11204,10 +11204,21 @@ function cvEdwRoom(x0, x1, z0, z1, y, h, kind, boxes) {
     for (const [sx, sz, ry] of [[x0 + 0.75, cz - 2.2, Math.PI / 2], [x0 + 0.75, cz + 2.2, Math.PI / 2], [x1 - 0.75, cz - 2.2, -Math.PI / 2], [x1 - 0.75, cz + 2.2, -Math.PI / 2]]) cvChester(sx, y, sz, ry, boxes);
     for (const sz of [cz - 2.2, cz + 2.2]) cvSmallTable(cx, y, sz, boxes);
   }
-  if (kind === 'library') {   // ガラス扉の本棚、革の椅子、小卓
+  if (kind === 'library') {   // ガラス扉の本棚、革の椅子、小卓、暖炉、移動はしご、緑の電気スタンド
     for (let z = z0 + 1.0; z < z1 - 1.0; z += 1.4) { if (nearDoor(x0 + 0.3, z) || nearDoor(x0 + 0.3, z + 1.2)) continue; add(new THREE.BoxGeometry(0.42, 2.1, 1.2), E.wood, x0 + 0.3, y + 1.05, z + 0.6); const f = add(new THREE.PlaneGeometry(1.1, 1.9), E.books, x0 + 0.52, y + 1.05, z + 0.6, Math.PI / 2); add(new THREE.PlaneGeometry(1.1, 1.9), E.glass, x0 + 0.53, y + 1.05, z + 0.6, Math.PI / 2); box(x0, x0 + 0.52, z, z + 1.2, 2.1); }
     cvChester(cx + 0.9, y, cz - 1.6, -Math.PI / 2, boxes); cvChester(cx + 0.9, y, cz + 1.6, -Math.PI / 2, boxes); cvSmallTable(cx - 0.3, y, cz, boxes);
     const L = new THREE.PointLight(0xffe2b0, 0.7, 10, 1.5); L.position.set(cx, cy - 0.7, cz); stageRoot.add(L); chand(cx, cz, false);
+    add(new THREE.BoxGeometry(1.5, 1.15, 0.28), E.wood, -5.0, y + 0.58, z0 + 0.22);
+    add(new THREE.BoxGeometry(0.7, 0.42, 0.08), E.gilt, -5.0, y + 0.48, z0 + 0.38);
+    const em = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.28, 0.04), new THREE.MeshStandardMaterial({ color: 0xffb060, emissive: 0xff7a2a, emissiveIntensity: 0.8, roughness: 0.5 })); em.position.set(-5.0, y + 0.42, z0 + 0.4); stageRoot.add(em);
+    box(-5.8, -4.2, z0, z0 + 0.42, 1.25);
+    const lad = new THREE.Group(); lad.position.set(x0 + 0.85, y, z1 - 1.15); lad.rotation.z = 0.12; stageRoot.add(lad);
+    for (const sx of [-0.16, 0.16]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.7, 0.04), E.wood); rail.position.set(sx, 0.85, 0); lad.add(rail); }
+    for (let i = 0; i < 5; i++) { const rung = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.03, 0.03), E.wood); rung.position.set(0, 0.35 + i * 0.28, 0); lad.add(rung); }
+    box(x0 + 0.62, x0 + 1.08, z1 - 1.4, z1 - 0.85, 1.7);
+    const shade = new THREE.MeshStandardMaterial({ color: 0x1d6b45, roughness: 0.45, metalness: 0.15, emissive: 0x0c3a28, emissiveIntensity: 0.35 });
+    for (const [lx, lz] of [[x1 - 0.7, z0 + 1.3], [x1 - 0.7, z1 - 1.2]]) { add(new THREE.CylinderGeometry(0.04, 0.06, 0.42, 8), E.gilt, lx, y + 0.72, lz); add(new THREE.CylinderGeometry(0.16, 0.22, 0.16, 10), shade, lx, y + 0.98, lz); }
+    const Lg = new THREE.PointLight(0xc8f0c8, 0.32, 6, 1.6); Lg.position.set(x1 - 0.7, y + 1.25, cz); stageRoot.add(Lg);
   }
   if (kind === 'dine') {   // 食堂：縦溝の柱、白い格天井、すりガラスの灯、緑青のビロードの幕と椅子
     for (const px of [cx - (x1 - x0) * 0.25, cx + (x1 - x0) * 0.25]) for (const pz of [z0 + 2.5, z1 - 2.5]) { add(new THREE.CylinderGeometry(0.17, 0.19, h - 0.2, 16), E.oak, px, y + (h - 0.2) / 2, pz); add(new THREE.BoxGeometry(0.42, 0.16, 0.42), E.gilt, px, y + h - 0.25, pz); box(px - 0.2, px + 0.2, pz - 0.2, pz + 0.2, h); }
@@ -11245,9 +11256,9 @@ function cvTerrace(x0, x1, z0, z1, y, boxes) {
 }
 // ---- 艦隊：一隻ずつ定義表から組む。艦を足すときは CV_FLEET に一行足すだけ ----
 //   実寸（全長・幅, m）：大淀 192.1×16.6／陽炎型（雪風）118.5×10.8／第十三号型駆潜艇 51.0×6.7／補給艦（対空強化） 約150×19
-//   配置（ユーザー指定の輪形）：大淀が前、雪風が左舷、駆潜艇が右舷、補給艦が後ろ。座標は艦の縮尺前（×1.62 で実寸）
+//   配置：大淀は空母の右舷正横（全通甲板と島型艦橋が横から見える）。雪風が左舷、駆潜艇が右舷前方、補給艦が後ろ。座標は艦の縮尺前（×1.62 で実寸）
 const CV_FLEET = [
-  { id: 'oyodo', nm: '大淀', len: 192.1, beam: 16.6, fb: 6.2, x: 0, z: -250, col: 0x7d8288, board: true, cap: '西園寺', capGid: 'ojou',
+  { id: 'oyodo', nm: '大淀', len: 192.1, beam: 16.6, fb: 6.2, x: 54, z: -8, col: 0x7d8288, board: true, cap: '西園寺', capGid: 'ojou',
     sup: [[-3.4, 3.4, -28, -6, 8.5], [-2.4, 2.4, -6, 10, 5.2], [-4.6, 4.6, 26, 64, 2.6]], fun: [[0, 2, 1.6, 9]], mast: [[-10, 20], [22, 13]],
     guns: [['t155', -52], ['t155', -40], ['dual127', -2, -1], ['dual127', -2, 1], ['dual127', 8, -1], ['dual127', 8, 1], ['aa25', 14, -1], ['aa25', 14, 1], ['aa25', 22, -1], ['aa25', 22, 1]] },
   { id: 'yukikaze', nm: '雪風', len: 118.5, beam: 10.8, fb: 4.6, x: -110, z: -40, col: 0x7a7f86, cap: '綾瀬', capGid: 'fumi',
@@ -11340,7 +11351,7 @@ function cvFleetCrew() {
     const p = sh.capPos || [sh.x + 1, sh.fbU + (d.sup[0][4] / 1.62), sh.z + d.sup[0][2] / 1.62 + 1];
     r.x = p[0] * S; r.y = p[1] * S; r.z = p[2] * S; r.hx = r.x; r.hz = r.z; r.hy = r.y; r.ax = r.x; r.az = r.z; r.ySnap = false; r.w = 'stand'; r.f = 0; }
   const oy = CV.fleet.find(s => s.d.board); if (oy) { const pool = CV.R.filter(r => r.d === 'res' && !r.paxFix && !r.gid && r.st === 'ok' && !r.ship).slice(0, LITE ? 12 : 26);   // 大淀の乗員（予備員から）：機銃座・応急・見張り
-    pool.forEach((r, i) => { cvDespawn(r); r.ship = oy.d.nm; r.loc = oy.d.nm + ' 乗員'; const sd = i % 2 ? 1 : -1; r.x = r.hx = r.ax = (oy.x + sd * (oy.hb - 1.2) * rand(0.3, 1)) * S; r.z = r.hz = r.az = (oy.z + (i / pool.length - 0.5) * oy.hl * 1.5) * S; r.y = r.hy = oy.fbU * S; r.ySnap = false; r.w = i % 4 === 0 ? 'kneel' : 'stand'; r.f = sd > 0 ? Math.PI / 2 : -Math.PI / 2; }); }
+    pool.forEach((r, i) => { cvDespawn(r); r.ship = oy.d.nm; r.loc = oy.d.nm + ' 乗員'; const sd = i % 2 ? 1 : -1; r.x = r.hx = r.ax = (oy.x + sd * (oy.hb - 1.2) * rand(0.3, 1)) * S; r.z = r.hz = r.az = (oy.z + (i / pool.length - 0.5) * oy.hl * 1.5) * S; r.y = r.hy = oy.fbU * S; r.ySnap = false; r.w = 'stand'; r.f = sd > 0 ? Math.PI / 2 : -Math.PI / 2; }); }
 }
 // 艦隊電話：E を押すたびに雪風・補給艦・駆潜艇へ順に。命令と返事を一言ずつ
 const CV_PHONE = {
@@ -11552,7 +11563,7 @@ function cvHangarAft(Y, boxes) {
 }
 function cvRestStep() {   // 非番・予備の侍女を交代詰所へ（卓で座ってお茶）。空襲で持ち場へ
   if (!CV_REST || !CV.R) return; const S = CV.S || 1, Yh = CV.Yh, calm = CV.phase === 'sail' || CV.phase === 'end';
-  if (calm && !CV.restCrew && CV.t > 0.3) { CV.restCrew = []; const spots = CV_REST.sit.map(s => [s, 'kneel']).concat(CV_REST.stand.map(s => [s, 'stand']));
+  if (calm && !CV.restCrew && CV.t > 0.3) { CV.restCrew = []; const spots = CV_REST.sit.map(s => [s, 'stand']).concat(CV_REST.stand.map(s => [s, 'stand']));
     const ok = r => !r.paxFix && r.st === 'ok' && !r.capOf && !r.cap && !r.ship && !r.e && !r.gid && !r.task && !(CV.thCrew || []).includes(r), pool = CV.R.filter(r => ok(r) && (r.d === 'res' || r.d0 === 'res')).concat(CV.R.filter(r => ok(r) && (r.d === 'mnt' || r.d === 'ammo') && r.d0 !== 'res'));
     for (let i = 0; i < Math.min(spots.length, pool.length); i++) { const r = pool[i], [[x, z, f], w] = spots[i]; r.rs0 = [r.x, r.y, r.z, r.hx, r.hy, r.hz, r.loc, r.w, r.hw, r.f]; r.x = r.hx = r.ax = r.hax = x * S; r.z = r.hz = r.az = r.haz = z * S; r.y = r.hy = Yh; r.f = f; r.w = r.hw = w; r.ySnap = false; r.loc = '交代詰所'; CV.restCrew.push(r); } }
   if (!calm && CV.restCrew) { for (const r of CV.restCrew) { if (!r.rs0 || r.st !== 'ok') continue; cvDespawn(r); [r.x, r.y, r.z, r.hx, r.hy, r.hz, r.loc, r.w, r.hw, r.f] = r.rs0; r.ax = r.x; r.az = r.z; r.ySnap = false; } CV.restCrew = null; }
@@ -11815,7 +11826,7 @@ function cvLoungeStep(dt) {
     else if (r.atPiano && !inL && (CV.lnOut = (CV.lnOut || 0) + dt) > 4) { const v = r.pv; cvDespawn(r); [r.x, r.z, r.y, r.f, r.hx, r.hz, r.hy, r.ax, r.az, r.loc] = v; r.ySnap = false; r.atPiano = false; }
     else if (inL) CV.lnOut = 0;
   }
-  const near = r && r.st === 'ok' && !r.ship && Math.hypot(r.x - P.x * S, r.z - P.z * S) < 0.8 * S && /^(sail|lull)$/.test(CV.phase) && Math.hypot(player.pos.x - P.x * S, player.pos.z - (P.z + 2) * S) < 11 * S && Math.abs(player.pos.y - CV.Y1) < 1.5 * S;
+  const near = r && r.st === 'ok' && !r.ship && Math.hypot(r.x - P.x * S, r.z - P.z * S) < 0.8 * S && /^(sail|lull|end)$/.test(CV.phase) && Math.hypot(player.pos.x - P.x * S, player.pos.z - (P.z + 2) * S) < 11 * S && Math.abs(player.pos.y - CV.Y1) < 1.5 * S;
   if (!near) { if (CV.lnSnd) { CV.lnSnd.stop(); CV.lnSnd = null; } return; }
   if (CV.lnSnd && CV.lnSnd.end > performance.now()) return;
   try { const A = window.__cvAC || (window.__cvAC = new (window.AudioContext || window.webkitAudioContext)()), t0 = A.currentTime + 0.05, out = A.createGain(); out.gain.value = 0.09; out.connect(A.destination);
@@ -12084,7 +12095,7 @@ function cvRampStart() {
   // 名の無い侍女：凍りつく・逃げる・見に行く（あとで武器を取りに行く者も）
   const ok = r => r.st === 'ok' && !r.cap && !r.capOf && !r.ship && !r.job && !r.task && !r.def && !B.guard.includes(r) && Math.abs(r.y - CV.Yd) < 1.5 * S;
   B.crowd = CV.R.filter(ok).slice(0, LITE ? 10 : 22);
-  B.crowd.forEach((r, i) => { const m = i % 3; r.mood = ['freeze', 'flee', 'look'][m]; if (m === 0) { r.w = 'kneel'; } else if (m === 1) { r.x = r.ax = Math.max(-10 * S, Math.min(10 * S, r.x + rand(-4, 4) * S)); r.z = r.az = Math.min(80 * S, r.z + rand(-25, -12) * S); r.mv = true; r.w = 'stand'; } else { r.x = r.ax = Math.max(-10 * S, Math.min(10 * S, r.x + rand(-3, 3) * S)); r.z = r.az = r.z + rand(6, 14) * S; r.mv = true; r.w = 'stand'; } if (i < 8) B.reserve.push({ r, k: i % (B.squads.length || 1), late: true }); });
+  B.crowd.forEach((r, i) => { const m = i % 3; r.mood = ['freeze', 'flee', 'look'][m]; if (m === 0) { r.w = 'stand'; } else if (m === 1) { r.x = r.ax = Math.max(-10 * S, Math.min(10 * S, r.x + rand(-4, 4) * S)); r.z = r.az = Math.min(80 * S, r.z + rand(-25, -12) * S); r.mv = true; r.w = 'stand'; } else { r.x = r.ax = Math.max(-10 * S, Math.min(10 * S, r.x + rand(-3, 3) * S)); r.z = r.az = r.z + rand(6, 14) * S; r.mv = true; r.w = 'stand'; } if (i < 8) B.reserve.push({ r, k: i % (B.squads.length || 1), late: true }); });
   B.rT = 0; B.armN = 0; B.fT = rand(14, 22); B.sT = 1.5; B.armed = [];
 }
 function cvRpos(r) { return r.e ? r.e.s.position : { x: r.x, y: r.y, z: r.z }; }
@@ -12115,7 +12126,7 @@ function cvDefStart() {
   B.guard = CV.R.filter(r => ok(r) && (r.d === 'kg' || r.gid === 'sec2' || /秘書|近衛/.test(r.role || ''))).slice(0, LITE ? 8 : 16);
   const posts = [['bridge', (CV.isl.x0 - 1.6) * S, ((CV.isl.z0 + CV.isl.z1) / 2) * S, CV.Yd], ['stair', -1.9 * S, 36 * S, CV.Y1], ['stair', 0, -6 * S, CV.Yd], ['hangar', 0, 14 * S, CV.Yh]];
   const pool = CV.R.filter(r => ok(r) && !B.guard.includes(r) && /^(deck|zp|res|mnt|dc)$/.test(r.d));
-  B.reserve = []; B.squads = posts.map(([k, x, z, y], i) => { const all = pool.splice(0, LITE ? 4 : 8), m = all.splice(0, 2); all.forEach(r => B.reserve.push({ r, k: i })); m.forEach((r, j) => { cvDespawn(r); const a = j / m.length * Math.PI * 2; r.x = r.hx = r.ax = x + Math.cos(a) * 2.2 * S; r.z = r.hz = r.az = z + Math.sin(a) * 2.2 * S; r.y = r.hy = y; r.ySnap = false; r.w = r.hw = j % 2 ? 'kneel' : 'stand'; r.def = k; }); return { k, x, z, y, m, T: 2 + i }; });
+  B.reserve = []; B.squads = posts.map(([k, x, z, y], i) => { const all = pool.splice(0, LITE ? 4 : 8), m = all.splice(0, 2); all.forEach(r => B.reserve.push({ r, k: i })); m.forEach((r, j) => { cvDespawn(r); const a = j / m.length * Math.PI * 2; r.x = r.hx = r.ax = x + Math.cos(a) * 2.2 * S; r.z = r.hz = r.az = z + Math.sin(a) * 2.2 * S; r.y = r.hy = y; r.ySnap = false; r.w = r.hw = 'stand'; r.def = k; }); return { k, x, z, y, m, T: 2 + i }; });
   // 艦橋の扉にバリケード（机・木箱・寝台）
   const d = B.door; if (d) { const bx = d.x * S, bz = d.z * S, by = d.y * S, wd = CV.M.wood || CV.M.deck; for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.BoxGeometry((0.8 + (i % 2) * 0.5) * S, (0.6 + (i === 3 ? 0.5 : 0)) * S, 0.7 * S), wd); c.position.set(bx - 0.9 * S, by + (i === 3 ? 0.95 : 0.3) * S, bz + (i - 1.5) * 0.7 * S); c.rotation.y = i * 0.3; stageRoot.add(c); (B.barr = B.barr || []).push(c); } B.doorHp = 170; }
   B.q.push([B.t + 3, () => { const s = B.squads[0].m[0]; if (s) cvSay(s, '扉の前に机を積んだ！ これで少しは持つ！', 1.8); }]);
@@ -12149,7 +12160,7 @@ function cv3React(dt) {
         const n = melN.get(f) || 0;
         if (n < 2) { melN.set(f, n + 1); const stop = 1.6 * S; r.x = r.ax = p.x - ux * stop; r.z = r.az = p.z - uz * stop; r.mv = true; r.w = 'stand';
           if (fd < 2.4 * S && Math.random() < 0.5) { if (r.e) { r.e.s.position.x += ux * 0.3 * S; r.e.s.position.z += uz * 0.3 * S; } cvSay(r, CV3_RX.mel[(Math.random() * 4) | 0], 0.9); if (Math.random() < 0.18) { f.e.quietDeath = true; killEnemy(f.e, false, { x: q.x, z: q.z }); } else if (Math.random() < 0.06) { cvDownR(r, Math.random() < 0.3, q.x - ux, q.z - uz, '米兵との白兵戦'); cvSay(r, CV_DEF.down[(Math.random() * 3) | 0], 1.2); } } }
-        else { r.x = r.ax = p.x - ux * 6 * S + uz * 2 * S; r.z = r.az = p.z - uz * 6 * S - ux * 2 * S; r.mv = true; r.w = 'kneel'; }
+        else { r.x = r.ax = p.x - ux * 6 * S + uz * 2 * S; r.z = r.az = p.z - uz * 6 * S - ux * 2 * S; r.mv = true; r.w = 'stand'; }
       }
     } else {
       flee++;
@@ -12517,6 +12528,263 @@ function cvGunStep(dt) {
   if (C.hp <= 0) { C.list = Math.min(0.3, C.list + dt * 0.002); if (Math.random() < dt * 2) cvSmoke(cg.x + rand(-5, 5), 14, cg.z + rand(-60, 60), 6, 18, [0.18, 0.17, 0.16], 1, 5, 5); }
 }
 const CV_SPON = [[-1, -66], [-1, 30], [1, -66], [1, 52]];   // 12.7cm連装高角砲のスポンソン（舷・z）
+// ── クルーズの追加区画（20261101）：大吹き抜け＋中庭、プールの仕上げ、士官食堂、船倉、機関の配管、医務室 ──
+// 格納庫（Yh）と大広間（Y2）の床は抜かない。吹き抜けは大広間の下（z -84〜-59）。船倉は下甲板の下。
+function cvCruiseAdd() {
+  const Y0 = CV.Y0, Y2 = CV.Y2, Yh = CV.Yh, Ya0 = -1.2, Ya1 = 1.75, Ya2 = 4.7, Yk = -2.55;
+  CV.Ya0 = Ya0; CV.Ya1 = Ya1; CV.Ya2 = Ya2; CV.Yhld = Yk;
+  const std = (hex, rough, metal, ex) => new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: rough, metalness: metal }, ex || {}));
+  const gold = std(0xd4b15a, 0.32, 0.9), brass = std(0xc6a15a, 0.28, 0.88);
+  const glass = std(0xd7eef2, 0.06, 0.04, { transparent: true, opacity: 0.3, depthWrite: false });
+  const marbleT = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#e7e2d8'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(150,140,130,.45)'; g.lineWidth = 2;
+    for (let i = 0; i < 18; i++) { g.beginPath(); g.moveTo(Math.random() * w, Math.random() * h); g.bezierCurveTo(Math.random() * w, Math.random() * h, Math.random() * w, Math.random() * h, Math.random() * w, Math.random() * h); g.stroke(); }
+    for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(255,255,255,${Math.random() * 0.15})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+  }, 4);
+  const tealT = canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = '#1c6e74'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#d4b56a'; g.lineWidth = 2;
+    for (let y = 16; y < h; y += 32) for (let x = 16; x < w; x += 32) { g.strokeStyle = ((x + y) / 32 | 0) % 2 ? '#e6d7a4' : '#0e4e54'; g.beginPath(); g.arc(x, y, 8, 0, 6.3); g.stroke(); }
+  }, 3);
+  const diaT = canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = '#f3ead4'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = '#8a6240'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w / 2, 0); g.lineTo(w, h / 2); g.lineTo(w / 2, h); g.closePath(); g.stroke();
+    g.strokeStyle = '#c4b496'; g.lineWidth = 1; g.beginPath(); g.moveTo(0, 0); g.lineTo(w, h); g.moveTo(w, 0); g.lineTo(0, h); g.stroke();
+  }, 6);
+  const teakT = canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = '#a56b3c'; g.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) { g.fillStyle = `rgb(${150 + (x % 32)},${90 + (x % 20)},${48})`; g.fillRect(x, 0, 15, h); g.fillStyle = 'rgba(40,20,8,.35)'; g.fillRect(x + 14, 0, 2, h); }
+  }, 4);
+  const woodT = canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = '#4a2c18'; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 80; i++) { g.fillStyle = `rgba(${30 + Math.random() * 40},${16},${8},.35)`; g.fillRect(Math.random() * w, 0, 2, h); }
+    g.strokeStyle = '#2a160c'; g.lineWidth = 4; for (let y = 0; y < h; y += 42) g.strokeRect(4, y + 4, w - 8, 34);
+  });
+  const marble = new THREE.MeshStandardMaterial({ map: marbleT, roughness: 0.45, metalness: 0.05 });
+  const teal = new THREE.MeshStandardMaterial({ map: tealT, roughness: 0.9, metalness: 0 });
+  const dia = new THREE.MeshStandardMaterial({ map: diaT, roughness: 0.8, metalness: 0 });
+  const teak = new THREE.MeshStandardMaterial({ map: teakT, roughness: 0.72, metalness: 0.02 });
+  const wood = new THREE.MeshStandardMaterial({ map: woodT, roughness: 0.6, metalness: 0.05 });
+  const led = new THREE.MeshStandardMaterial({ color: 0xfff1c8, emissive: 0xffc56a, emissiveIntensity: 0.9, roughness: 0.4 });
+  const cream = std(0xf4efe4, 0.7, 0), awn = [std(0xc4493a, 0.7, 0), std(0x2f6f86, 0.7, 0), std(0xd4a24a, 0.7, 0), std(0x3d6b45, 0.7, 0)];
+  const potM = std(0x8d5a32, 0.7, 0.05), leafM = std(0x2f6a34, 0.8, 0), blueM = std(0x3a6ea5, 0.35, 0.15);
+  const add = (geo, mat, x, y, z, rx, ry) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; if (ry) m.rotation.y = ry; stageRoot.add(m); return m; };
+  const light = (x, y, z, I, d) => { const L = new THREE.PointLight(0xffe2b4, I, d, 1.4); L.position.set(x, y, z); stageRoot.add(L); return L; };
+  // ===== 1+2. 大吹き抜け（下）と中庭（最下階）。大広間の床の下。昇降機（x<-4.6, z -69〜-66）には被せない =====
+  const AX0 = -4.35, AX1 = 5.05, Z0 = -84.2, Z1 = -58.6;
+  const deck = (x0, x1, z0, z1, y, mat) => { cvFloor(x0, x1, z0, z1, y); cvSlab(x0, x1, y - 0.16, y, z0, z1, mat); };
+  deck(AX0, AX1, Z0, Z1, Ya0, dia);   // 中庭：ひし形タイル
+  cvSlab(AX0, AX1, Ya0 + 0.005, Ya0 + 0.02, -76.4, -70.6, teak);   // 周囲ではなく中央寄りのウッドの縁（階段の外）
+  const carpet = add(new THREE.CircleGeometry(2.15, 28), teal, 0, Ya0 + 0.03, -74.2, -Math.PI / 2);
+  // 回廊（中・上）。中央の大階段の幅は床にしない
+  for (const y of [Ya1, Ya2]) {
+    deck(AX0, -2.7, Z0 + 1.2, y === Ya2 ? -66.5 : -60.2, y, marble);
+    deck(2.7, AX1, Z0 + 1.2, y === Ya2 ? -66.5 : -60.2, y, marble);
+    deck(AX0, AX1, Z0, Z0 + 1.35, y, marble);
+    if (y === Ya1) deck(AX0, AX1, -60.3, Z1, y, marble);
+  }
+  deck(-4.2, -1.05, -71.15, -69.15, Ya2, marble);   // 大階段の上の踊り場（左）
+  deck(1.05, 4.2, -71.15, -69.15, Ya2, marble);
+  deck(-4.25, -2.15, -66.4, -64.55, Ya2, marble);   // 大広間へ上がる階段の下
+  // ガラス手すりと金の笠木、縁の灯
+  const railAt = (x0, x1, z0, z1, y) => {
+    cvSlab(x0, x1, y + 0.92, y + 0.98, z0, z1, gold);
+    cvSlab(x0, x1, y + 0.08, y + 0.9, z0, z1, glass);
+    boxes.push({ x0: Math.min(x0, x1), x1: Math.max(x0, x1), z0: Math.min(z0, z1), z1: Math.max(z0, z1), y0: y, y1: y + 1.05 });
+    cvSlab(x0, x1, y + 0.012, y + 0.03, z0, z1, led);
+  };
+  for (const y of [Ya1, Ya2]) {
+    const zEnd = y === Ya2 ? -66.5 : -60.2;
+    if (y === Ya1) {
+      railAt(-2.72, -2.64, Z0 + 1.3, -75.7, y); railAt(-2.72, -2.64, -72.7, zEnd, y);
+      railAt(2.64, 2.72, Z0 + 1.3, -75.7, y); railAt(2.64, 2.72, -72.7, zEnd, y);
+    } else {
+      railAt(-2.72, -2.64, Z0 + 1.3, zEnd, y); railAt(2.64, 2.72, Z0 + 1.3, zEnd, y);
+    }
+    railAt(AX0, AX1, Z0 + 1.28, Z0 + 1.38, y);
+  }
+  railAt(AX0, -1.1, -60.28, -60.18, Ya1); railAt(1.1, AX1, -60.28, -60.18, Ya1);
+  // 曲線の笠木（吹き抜けの前後）
+  for (const y of [Ya0 + 0.96, Ya1 + 0.96, Ya2 + 0.96]) {
+    const arc = add(new THREE.TorusGeometry(3.15, 0.045, 8, 28, Math.PI * 0.55), gold, 0, y, -80.6); arc.rotation.x = Math.PI / 2; arc.rotation.z = Math.PI * 0.72;
+  }
+  // 左右対称の大階段（最下階 ↔ 上の回廊）。上の床は回廊の外なので切らない
+  cvStairs(-2.42, -1.12, -78.5, -70.35, Ya0, Ya2, '大階段', { noCut: true, wallSide: 'lo' });
+  cvStairs(1.12, 2.42, -78.5, -70.35, Ya0, Ya2, null, { noCut: true, wallSide: 'hi' });
+  deck(AX0, -2.38, -75.6, -72.8, Ya1, marble); deck(2.38, AX1, -75.6, -72.8, Ya1, marble);   // 中回廊へ降りられる踊り場
+  cvStairs(-3.55, -2.25, -65.15, -60.05, Ya2, Y2, '階段　上 大広間');   // 大広間の床だけ開口
+  cvSign(-2.9, Y2 + 2.15, -59.7, '大吹き抜けへ', Math.PI).scale.set(0.55, 0.55, 1);
+  cvSign(0, Ya0 + 2.3, Z1 + 0.15, '中庭広場', Math.PI).scale.set(0.7, 0.7, 1);
+  // 天井：大広間の床裏にガラスと白い骨。格納庫は触らない
+  add(new THREE.PlaneGeometry(AX1 - AX0 - 0.4, 16), glass, 0.3, 7.28, -76, Math.PI / 2);
+  for (let i = 0; i < 5; i++) cvSlab(-3.6, 3.6, 7.22, 7.32, -82 + i * 3.2, -81.85 + i * 3.2, cream);
+  for (const x of [-3.4, 0, 3.4]) cvSlab(x - 0.05, x + 0.05, 7.15, 7.32, -83, -66, cream);
+  // シャンデリア（ガラス粒はインスタンス）
+  { const g = new THREE.Group(); g.position.set(0, 6.55, -74.2); stageRoot.add(g);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.03, 6, 24), gold); ring.rotation.x = Math.PI / 2; g.add(ring);
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.025, 6, 18), gold); ring2.rotation.x = Math.PI / 2; ring2.position.y = -0.45; g.add(ring2);
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 6), gold); rod.position.y = 0.45; g.add(rod);
+    const cry = new THREE.InstancedMesh(new THREE.OctahedronGeometry(0.045, 0), std(0xfff6e4, 0.15, 0.2, { emissive: 0x887050, emissiveIntensity: 0.45 }), 220), mt = new THREE.Matrix4();
+    for (let i = 0; i < 220; i++) { const a = i / 28 * 6.283, rr = 0.25 + (i % 5) * 0.16, yy = -0.15 - (i % 7) * 0.09; mt.makeTranslation(Math.cos(a) * rr, yy, Math.sin(a) * rr); cry.setMatrixAt(i, mt); }
+    g.add(cry); }
+  light(0, 6.15, -74.2, 0.85, 16); light(-3.2, 3.4, -78, 0.4, 12); light(3.2, 3.4, -68, 0.4, 12); light(0, 1.5, -64.5, 0.45, 14);
+  // 中央の台とグランドピアノ（立つ。座らない）
+  add(new THREE.CylinderGeometry(1.05, 1.15, 0.12, 24), marble, 0, Ya0 + 0.08, -74.2);
+  add(new THREE.TorusGeometry(1.05, 0.03, 6, 24), led, 0, Ya0 + 0.14, -74.2).rotation.x = Math.PI / 2;
+  { const g = new THREE.Group(); g.position.set(0, Ya0, -74.2); stageRoot.add(g); const blk = std(0x141416, 0.35, 0.55);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.18, 1.0), blk); body.position.set(0, 0.62, 0); g.add(body);
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.18, 16, 1, false, 0, Math.PI), blk); tail.rotation.y = -Math.PI / 2; tail.position.set(0, 0.62, 0.5); g.add(tail);
+    const lid = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.02, 0.95), blk); lid.position.set(0.2, 0.95, 0.08); lid.rotation.z = 0.7; g.add(lid);
+    const keys = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.03, 0.1), cream); keys.position.set(0, 0.7, -0.52); g.add(keys);
+    for (const [lx, lz] of [[-0.34, -0.35], [0.34, -0.35], [0, 0.75]]) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6), blk); leg.position.set(lx, 0.28, lz); g.add(leg); }
+    boxes.push({ x0: -0.5, x1: 0.5, z0: -74.9, z1: -73.5, y0: Ya0, y1: Ya0 + 1.05 }); }
+  // 売店（日よけ）、女神像、噴水、鉢
+  const stalls = [[-3.7, -81.6, 0], [-3.7, -79.4, 1], [3.5, -81.6, 2], [3.5, -79.4, 3]];
+  CV.atSpots = [];
+  for (const [x, z, i] of stalls) {
+    cvSlab(x - 0.7, x + 0.7, Ya0, Ya0 + 0.95, z - 0.35, z + 0.35, cream);
+    boxes.push({ x0: x - 0.75, x1: x + 0.75, z0: z - 0.4, z1: z + 0.4, y0: Ya0, y1: Ya0 + 1.05 });
+    const aw = add(new THREE.BoxGeometry(1.7, 0.04, 0.9), awn[i], x, Ya0 + 2.15, z + 0.15); aw.rotation.x = -0.25;
+    cvSign(x, Ya0 + 1.7, z + 0.4, ['花', '茶', '菓子', '絵葉書'][i], 0).scale.set(0.4, 0.4, 1);
+    CV.atSpots.push([x, z + 0.85, Math.PI]);
+  }
+  { const pts = []; for (let i = 0; i <= 10; i++) { const t = i / 10, r = 0.22 + Math.sin(t * Math.PI) * 0.28; pts.push(new THREE.Vector2(r * (0.7 + 0.3 * Math.sin(t * 6)), t * 1.7)); }
+    const st = new THREE.Mesh(new THREE.LatheGeometry(pts, 16), blueM); st.position.set(0, Ya0, -80.4); stageRoot.add(st);
+    boxes.push({ x0: -0.45, x1: 0.45, z0: -80.9, z1: -79.9, y0: Ya0, y1: Ya0 + 1.8 });
+    cvSign(0, Ya0 + 2.15, -80.2, '海の女神', Math.PI).scale.set(0.4, 0.4, 1); }
+  add(new THREE.CylinderGeometry(0.85, 0.95, 0.38, 20), marble, 0, Ya0 + 0.2, -76.6);
+  add(new THREE.CircleGeometry(0.62, 18), std(0x7ec8e0, 0.15, 0.1, { transparent: true, opacity: 0.75 }), 0, Ya0 + 0.4, -76.6, -Math.PI / 2);
+  add(new THREE.TorusGeometry(0.15, 0.04, 6, 12), brass, 0, Ya0 + 0.85, -76.6).rotation.x = Math.PI / 2;
+  boxes.push({ x0: -0.95, x1: 0.95, z0: -77.5, z1: -75.7, y0: Ya0, y1: Ya0 + 0.7 });
+  const pots = [[-4.0, -77.2], [4.7, -77.2], [-4.0, -68], [4.7, -68], [-4.0, -62.5], [4.7, -62.5]];
+  for (const [x, z] of pots) { add(new THREE.CylinderGeometry(0.22, 0.18, 0.32, 10), potM, x, Ya0 + 0.16, z); add(new THREE.SphereGeometry(0.32, 8, 6), leafM, x, Ya0 + 0.55, z); boxes.push({ x0: x - 0.28, x1: x + 0.28, z0: z - 0.28, z1: z + 0.28, y0: Ya0, y1: Ya0 + 0.9 }); }
+  for (const [x, z, f] of [[-1.4, -66.5, 0.4], [1.5, -66.2, -0.5], [-2.2, -69.8, 0.8], [2.0, -69.2, 2.4], [3.3, -67.4, Math.PI], [-3.3, -71.2, 1.2]]) CV.atSpots.push([x, z, f]);
+  CV.walkL0 = { x: 0.2, z: -63.6 };   // 講師と六人は名簿でここに立てる（格納庫ではない）
+  // 壁（船体側はすでに外板）。前後を塞いで海へ落とさない。大広間へ続く開口は残す
+  cvWall(AX0 - 0.12, AX0, Z0, Z1, Ya0, 7.35, cream); cvWall(AX1, AX1 + 0.12, Z0, Z1, Ya0, 7.35, cream);
+  cvWall(AX0, AX1, Z0 - 0.12, Z0, Ya0, 7.35, cream);
+  cvWall(AX0, -1.15, Z1, Z1 + 0.12, Ya0, Ya1, cream); cvWall(1.15, AX1, Z1, Z1 + 0.12, Ya0, Ya1, cream);
+  // ===== 3. プールデッキ（既存の水面をチーク・ガラス柵・寝椅子・ジャグジーに。発着艦の甲板には出さない） =====
+  { const y = Yh;
+    const rim = add(new THREE.RingGeometry(0.2, 4.6, 40), teak, 0, y + 0.03, 79); rim.rotation.x = -Math.PI / 2; rim.scale.set(1.55, 1, 2.15);
+    const wt = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#1f78b4'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < 8; i++) { g.beginPath(); g.moveTo(0, i * 16); g.bezierCurveTo(40, i * 16 + 8, 80, i * 16 - 6, 128, i * 16 + 2); g.stroke(); } }, 3);
+    CV.poolW = add(new THREE.PlaneGeometry(6.2, 8.6), new THREE.MeshStandardMaterial({ map: wt, roughness: 0.12, metalness: 0.25, transparent: true, opacity: 0.82 }), 0, y + 0.64, 79, -Math.PI / 2);
+    for (const s of [-1, 1]) { railAt(s * 3.55, s * 3.68, 74.2, 83.8, y); }
+    railAt(-3.5, 3.5, 83.75, 83.9, y); railAt(-3.5, -1.3, 74.15, 74.3, y); railAt(1.3, 3.5, 74.15, 74.3, y);
+    const chairG = new THREE.BoxGeometry(0.55, 0.05, 1.15), backG = new THREE.BoxGeometry(0.55, 0.4, 0.05), frG = new THREE.BoxGeometry(0.04, 0.28, 0.04);
+    const cm = teak, nC = 8, ch = new THREE.InstancedMesh(chairG, cm, nC), bk = new THREE.InstancedMesh(backG, cm, nC), fr = new THREE.InstancedMesh(frG, wood, nC * 4), mt = new THREE.Matrix4();
+    const spots = [[-5.3, 76.2], [-5.3, 78.4], [-5.3, 81.2], [5.3, 76.2], [5.3, 78.6], [5.3, 81.4], [-6.2, 83.2], [6.2, 83.2]];
+    spots.forEach((p, i) => { mt.makeTranslation(p[0], y + 0.36, p[1]); ch.setMatrixAt(i, mt); mt.makeTranslation(p[0], y + 0.55, p[1] - 0.55); bk.setMatrixAt(i, mt); for (let k = 0; k < 4; k++) { const dx = k % 2 ? 0.22 : -0.22, dz = k < 2 ? 0.45 : -0.45; mt.makeTranslation(p[0] + dx, y + 0.16, p[1] + dz); fr.setMatrixAt(i * 4 + k, mt); } boxes.push({ x0: p[0] - 0.35, x1: p[0] + 0.35, z0: p[1] - 0.65, z1: p[1] + 0.65, y0: y, y1: y + 0.7 }); });
+    stageRoot.add(ch, bk, fr);
+    add(new THREE.CylinderGeometry(1.05, 1.15, 0.55, 20), teak, 6.15, y + 0.28, 79.6);
+    const jw = canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#49b4d8'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(255,255,255,.4)'; for (let i = 0; i < 6; i++) g.fillRect(0, i * 10, w, 2); }, 2);
+    CV.jacW = add(new THREE.CircleGeometry(0.82, 18), new THREE.MeshStandardMaterial({ map: jw, roughness: 0.1, metalness: 0.2 }), 6.15, y + 0.57, 79.6, -Math.PI / 2);
+    boxes.push({ x0: 5.05, x1: 7.25, z0: 78.5, z1: 80.7, y0: y, y1: y + 0.7 });
+    cvSign(6.15, y + 1.5, 78.3, 'ジャグジー', Math.PI).scale.set(0.4, 0.4, 1);
+    light(0, y + 2.4, 79, 0.35, 10);
+    CV.mopAt = [-6.4, 75.4];
+    add(new THREE.CylinderGeometry(0.02, 0.02, 1.3, 6), wood, -6.15, y + 0.7, 75.5); add(new THREE.BoxGeometry(0.28, 0.04, 0.12), std(0xded6c6, 0.8, 0), -6.15, y + 0.12, 75.5);
+  }
+  // ===== 4. 士官食堂（第二甲板・士官室）。図書室は既存の客室甲板に暖炉を足してある =====
+  { const y = Y2;
+    for (const x of [-4.15, 6.55]) add(new THREE.PlaneGeometry(12.2, 2.6), wood, x, y + 1.35, 32.5, 0, x < 0 ? Math.PI / 2 : -Math.PI / 2);
+    cvSlab(-1.0, 5.6, y + 0.74, y + 0.78, 28.2, 37.4, cream);   // 白クロスの長卓
+    boxes.push({ x0: -1.05, x1: 5.65, z0: 28.1, z1: 37.5, y0: y, y1: y + 0.85 });
+    for (const [lx, lz] of [[-0.8, 28.4], [5.4, 28.4], [-0.8, 37.2], [5.4, 37.2]]) add(new THREE.BoxGeometry(0.08, 0.74, 0.08), wood, lx, y + 0.37, lz);
+    const plate = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.12, 0.12, 0.02, 10), std(0xd8dde2, 0.25, 0.85), 16), mt = new THREE.Matrix4();
+    for (let i = 0; i < 8; i++) { mt.makeTranslation(0.4, y + 0.8, 29 + i * 1.05); plate.setMatrixAt(i, mt); mt.makeTranslation(4.2, y + 0.8, 29 + i * 1.05); plate.setMatrixAt(8 + i, mt); }
+    stageRoot.add(plate);
+    add(new THREE.TorusGeometry(0.42, 0.02, 6, 16), brass, 2.3, y + 2.55, 32.6).rotation.x = Math.PI / 2;
+    light(2.3, y + 2.35, 32.6, 0.45, 9);
+    cvSlab(5.7, 6.45, y, y + 0.9, 29.2, 35.5, wood); cvSign(5.5, y + 1.6, 32, 'サイドボード', -Math.PI / 2).scale.set(0.35, 0.35, 1);
+    boxes.push({ x0: 5.65, x1: 6.5, z0: 29.1, z1: 35.6, y0: y, y1: y + 1.0 });
+    // 暖炉（前の壁）
+    cvSlab(-0.2, 2.4, y, y + 1.15, 26.35, 26.7, std(0x3a3a3a, 0.8, 0.2));
+    cvSlab(0.15, 2.05, y + 0.15, y + 0.7, 26.55, 26.75, std(0x6a2218, 0.6, 0, { emissive: 0x5a2010, emissiveIntensity: 0.5 }));
+    boxes.push({ x0: -0.25, x1: 2.45, z0: 26.3, z1: 26.8, y0: y, y1: y + 1.2 });
+    cvSign(0, y + 2.4, 26.6, '士官食堂', 0).scale.set(0.5, 0.5, 1);
+    CV.messAt = [[-1.55, 30.2, Math.PI / 2], [-1.55, 33.8, Math.PI / 2], [6.75, 32.4, -Math.PI / 2]];
+  }
+  // ===== 6. 船倉（下甲板の下）。三段寝台・倉庫。糧食庫の脇の階段でのみ降りる =====
+  { const y = Yk;
+    deck(-5.05, 5.05, -64, 32, y, std(0x6a675e, 0.85, 0.04));
+    cvWall(-5.15, -5.0, -64, 32, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    cvWall(5.0, 5.15, -64, 32, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    cvWall(-5.05, 5.05, -64.1, -64, y, Y0 - 0.15, std(0x8a8680, 0.8, 0.1));
+    cvStairs(-3.45, -2.15, -13.1, -7.35, y, Y0, '階段　上 下甲板（糧食庫）');
+    const postG = new THREE.BoxGeometry(0.05, 2.15, 0.05), bedG = new THREE.BoxGeometry(1.85, 0.08, 0.78), blG = new THREE.BoxGeometry(0.9, 0.05, 0.7);
+    const posts = new THREE.InstancedMesh(postG, std(0x8d9296, 0.4, 0.7), 1400);
+    const beds = new THREE.InstancedMesh(bedG, std(0xe7e2d4, 0.8, 0), 900);
+    const bls = new THREE.InstancedMesh(blG, std(0x8ea0b0, 0.85, 0), 900);
+    const mt = new THREE.Matrix4(); let np = 0, nb = 0;
+    const row = (xc, z0, z1) => {
+      const xa = xc - 0.92, xb = xc + 0.92;
+      let span0 = null, prev = null;
+      const flush = (zEnd) => { if (span0 == null) return; boxes.push({ x0: Math.min(xa, xb), x1: Math.max(xa, xb), z0: span0, z1: zEnd, y0: y, y1: y + 2.2 }); span0 = null; };
+      for (let z = z0; z < z1 - 0.2; z += 1.12) {
+        if (z > -14.0 && z < -6.2 && xc < -1) { flush(z - 0.5); continue; }   // 左舷の階段は塞がない
+        if (span0 == null) span0 = z - 0.45;
+        prev = z;
+        for (const ly of [0.32, 1.02, 1.72]) { if (nb >= 900) break; mt.makeTranslation(xc, y + ly, z); beds.setMatrixAt(nb, mt); mt.makeTranslation(xc + Math.sign(xc || 1) * 0.35, y + ly + 0.07, z); bls.setMatrixAt(nb, mt); nb++; }
+        for (const px of [xa, xb]) for (const dz of [-0.36, 0.36]) { if (np >= 1400) break; mt.makeTranslation(px, y + 1.05, z + dz); posts.setMatrixAt(np++, mt); }
+      }
+      if (span0 != null && prev != null) flush(prev + 0.45);
+    };
+    for (const x of [-4.15, -2.15, 2.15, 4.15]) { row(x, -63.2, -46.2); row(x, -42.0, 18.0); }
+    posts.count = np; beds.count = bls.count = nb; stageRoot.add(posts, beds, bls);
+    CV.holdBeds = nb;
+    // 倉庫（艦尾側の空き）
+    const sack = std(0xd2c08a, 0.85, 0), crate = wood, barrel = std(0x6b4424, 0.7, 0.05);
+    for (let i = 0; i < 6; i++) add(new THREE.CylinderGeometry(0.28, 0.28, 0.45, 10), sack, -3.6 + (i % 3) * 0.7, y + 0.25 + ((i / 3) | 0) * 0.48, 22.5);
+    for (let i = 0; i < 4; i++) { add(new THREE.BoxGeometry(0.7, 0.55, 0.7), crate, 2.2 + (i % 2) * 0.8, y + 0.28, 24 + ((i / 2) | 0) * 0.8); }
+    boxes.push({ x0: 2.0, x1: 3.9, z0: 23.6, z1: 25.4, y0: y, y1: y + 0.8 });
+    for (let i = 0; i < 3; i++) add(new THREE.CylinderGeometry(0.32, 0.34, 0.7, 12), barrel, -1.2 + i * 0.75, y + 0.35, 27.5);
+    add(new THREE.TorusGeometry(0.9, 0.03, 6, 14), std(0x9aa0a4, 0.4, 0.6), 3.6, y + 1.6, 29).rotation.y = Math.PI / 2;
+    cvWall(4.3, 4.95, 28.2, 30.4, y, y + 2.2, std(0x24262a, 0.6, 0.4));
+    cvSign(4.2, y + 1.6, 29.3, '弾薬庫　扉', -Math.PI / 2).scale.set(0.4, 0.4, 1);
+    boxes.push({ x0: 4.25, x1: 5.0, z0: 28.1, z1: 30.5, y0: y, y1: y + 2.2 });
+    cvSign(0, y + 2.2, -62.5, '船倉　侍女居住区', 0).scale.set(0.6, 0.6, 1);
+    cvSign(0, y + 2.2, 21.2, '倉庫', Math.PI).scale.set(0.5, 0.5, 1);
+    light(0, y + 2.3, -30, 0.35, 16); light(0, y + 2.3, 8, 0.3, 14);
+  }
+  // ===== 7. 機関：配管・弁・圧力計・蒸気。人は缶の前で作業（名簿側） =====
+  { const y = Y0, pipe = std(0x9aa3a8, 0.35, 0.72), hot = std(0xc45a32, 0.5, 0.3, { emissive: 0x6a220c, emissiveIntensity: 0.35 });
+    const tube = (pts, r) => { const c = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2]))); const m = new THREE.Mesh(new THREE.TubeGeometry(c, 24, r || 0.07, 6, false), pipe); stageRoot.add(m); return m; };
+    for (const s of [-1, 1]) {
+      tube([[s * 3.6, y + 2.15, -44], [s * 3.6, y + 2.5, -40], [s * 2.2, y + 2.55, -36], [s * 2.2, y + 2.4, -32]], 0.09);
+      tube([[s * 4.5, y + 0.4, -46], [s * 4.5, y + 1.6, -46], [s * 4.5, y + 1.6, -32]], 0.05);
+      for (let i = 0; i < 4; i++) { const z = -44 + i * 4; const v = add(new THREE.TorusGeometry(0.16, 0.028, 6, 14), brass, s * 4.55, y + 1.15, z); v.rotation.y = Math.PI / 2;
+        add(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 12), cream, s * 2.55, y + 1.55, z, 0, Math.PI / 2);
+        CV.steam = CV.steam || []; CV.steam.push([s * 3.6, y + 2.3, z]); }
+    }
+    for (const s of [-1, 1]) tube([[s * 3.2, y + 1.1, 8], [s * 2.4, y + 1.5, 14], [s * 2.4, y + 0.7, 24], [s * 1.2, y + 0.45, 36]], 0.08);
+    cvSign(-4.6, Y0 + 2.15, -42, '缶圧計', Math.PI / 2).scale.set(0.35, 0.35, 1);
+    light(-3.6, Y0 + 2.4, -38, 0.25, 10);
+    void hot;
+  }
+  // ===== 8. 医務室（第二甲板）。ベッド・カーテン・戸棚・手洗い・赤十字 =====
+  { const y = Y2, white = std(0xf7f4ee, 0.6, 0.02), sheet = std(0xe7eef2, 0.8, 0), cross = std(0xc42828, 0.5, 0.1);
+    for (let i = 0; i < 6; i++) { const z = -9.2 + i * 2.5;
+      cvSlab(4.15, 6.35, y, y + 0.55, z, z + 1.7, white); cvSlab(4.25, 6.25, y + 0.55, y + 0.62, z + 0.08, z + 1.6, sheet);
+      boxes.push({ x0: 4.1, x1: 6.4, z0: z - 0.05, z1: z + 1.75, y0: y, y1: y + 0.7 });
+      add(new THREE.PlaneGeometry(1.15, 1.7), std(0xd5ebe8, 0.5, 0, { transparent: true, opacity: 0.45, side: THREE.DoubleSide }), 4.05, y + 1.15, z + 0.85, 0, Math.PI / 2);
+    }
+    cvSlab(-3.9, -2.5, y, y + 1.8, -8.5, -6.2, white); cvSlab(-3.9, -2.5, y + 0.7, y + 0.76, -8.4, -6.3, cream);
+    boxes.push({ x0: -4.0, x1: -2.45, z0: -8.6, z1: -6.1, y0: y, y1: y + 1.85 });
+    add(new THREE.BoxGeometry(0.7, 0.75, 0.5), white, -3.2, y + 0.4, 4.2); add(new THREE.BoxGeometry(0.45, 0.08, 0.32), std(0xb9c6ce, 0.2, 0.4), -3.2, y + 0.82, 4.2);
+    boxes.push({ x0: -3.6, x1: -2.8, z0: 3.9, z1: 4.6, y0: y, y1: y + 0.9 });
+    const badge = add(new THREE.PlaneGeometry(0.7, 0.7), cross, -4.05, y + 2.2, 0, 0, Math.PI / 2);
+    add(new THREE.PlaneGeometry(0.22, 0.5), cream, -4.02, y + 2.2, 0, 0, Math.PI / 2); add(new THREE.PlaneGeometry(0.5, 0.22), cream, -4.02, y + 2.2, 0, 0, Math.PI / 2);
+    cvSign(-3.4, y + 2.45, -11.2, '医務室', 0).scale.set(0.55, 0.55, 1);
+    light(-1, y + 2.5, -2, 0.4, 12);
+    void badge;
+  }
+  // 艦首先端：飛行甲板の下を板でつなぎ、横から全通甲板に見える（当たりは付けない）
+  cvSlab(-11.2, 11.2, 9.4, 17.05, -90.35, -90.08, CV.M.hull || std(0x8e928a, 0.7, 0.15));
+}
+
 function buildKeiku() {
   CV.restOn = false; CV.restCrew = null;
   CV.doors = []; CV.dirs = []; CV.phones = []; CV.xfer = []; CV.sk = null; CV.outG = null; CV.fleetCrew = false; CV.th = null; CV.thSeats = null; CV.thCrew = null; CV.daily = /[?&]daily=1/.test(location.search) || !!CV.dailyKeep; CV.heal = null; if (typeof cvDmgReset === 'function') cvDmgReset(); CV.guns = []; CV.foe = []; CV.cap = []; CV.shells = []; CV.bombs = []; CV.parked = []; CV.traces = []; CV.sea = null; CV.wake = []; CV.flag = null;
@@ -12884,9 +13152,9 @@ function buildKeiku() {
     const cyl = (x, z, y, r, h, mat, solid) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.04, h, 16), mat); m.position.set(x, y + h / 2, z); stageRoot.add(m); if (solid) boxes.push({ x0: x - r, x1: x + r, z0: z - r, z1: z + r, y0: y, y1: y + h }); return m; };
     const Mw = M.woodL || (M.woodL = new THREE.MeshLambertMaterial({ color: 0xb08a5a })), Mfu = M.futon || (M.futon = new THREE.MeshLambertMaterial({ color: 0xf1ede2 })), Mpil = M.pillow || (M.pillow = new THREE.MeshLambertMaterial({ color: 0xd8d0bc }));
     const Mred = M.redP || (M.redP = new THREE.MeshLambertMaterial({ color: 0x9c2a22 })), Mwat = M.wat || (M.wat = new THREE.MeshLambertMaterial({ color: 0x7fa6b4, transparent: true, opacity: 0.8 }));
-    CV.steam = [];
+    CV.steam = CV.steam || [];
     // 第二甲板：左舷に通路（x -7.0〜-4.4）。部屋の扉は通路側
-    const rooms2 = [[-50, -32, '烹炊所（千百人分）'], [-32, -12, '兵員食堂・整備控'], [-12, 8, '医務室・電機室'], [8, 26, '応急指揮所・資材庫'], [26, 39, '士官室']];
+    const rooms2 = [[-50, -32, '烹炊所（千百人分）'], [-32, -12, '兵員食堂・整備控'], [-12, 8, '医務室・電機室'], [8, 26, '応急指揮所・資材庫'], [26, 39, '士官食堂']];
     gapWall(-4.4, -4.2, -50, 39, Y2, Y2 + 3.15, M.bulk, rooms2.map(r => [(r[0] + r[1]) / 2, 0.65]));
     for (const [a, b, nm] of rooms2) { const c = (a + b) / 2; cvSign(-4.47, Y2 + 2.45, c, nm, -Math.PI / 2).scale.set(0.6, 0.6, 1); cvSign(0, Y2 + 2.55, a + 0.5, nm, 0).scale.set(0.6, 0.6, 1); }
     cvSign(-5.7, Y2 + 2.6, -49.5, '第二甲板　左舷通路', 0).scale.set(0.55, 0.55, 1); cvSign(-5.7, Y2 + 2.6, 38.5, '第二甲板　左舷通路', Math.PI).scale.set(0.55, 0.55, 1);
@@ -13077,7 +13345,9 @@ function buildKeiku() {
       for (const [x0, x1] of [[-7.0, -1.7], [1.7, 7.0]]) cvSlab(x0, x1, Yh - 0.12, Yh, 43.0, 46.6, M.bulk); }
     // 卓の位置（縮尺前）。0 が一の卓（大宮）、1 が隣の卓。ほか 5 列 × 4 行
     CV.hallTP = [[-1.6, -70.2], [2.4, -69.8]]; for (const z of [-65.4, -61.0, -56.6, -52.6]) for (const x of [-5.4, -2.7, 0, 2.7, 5.4]) CV.hallTP.push([x, z]); }
+  cvCruiseAdd();
   cvBuildFleet(); cvLifeMarks(); cvTheatre(); cvBunks();
+  CV.bedN = ((CV.berth && CV.berth.bunk) || 0) + (CV.holdBeds || 0);
   cvCafeBuild(); cvPaxBuild();
   CV.Yg = Y1 + 3.2; cvScaleShip(1.62); cvSnapFloors();
   { const S = CV.S, Y = CV.Y2 + 0.08 * S; CV.hallT = CV.hallTP.map(([x, z], i) => cvfTable(x * S, Y, z * S, i === 0, i)); }
@@ -13264,9 +13534,9 @@ const WALK_V = { a: 'はい、皆さん、まずは立ち姿勢から。頭の�
 function cvWalkStep(dt) {
   const L = CV.walkL; if (!L || !L.t) return; const S = CV.S || 1;
   if ((L.T = (L.T == null ? 2 : L.T) - dt) <= 0) { L.T = 7; L.ph = ((L.ph == null ? -1 : L.ph) + 1) % 7;
-    const ks = 'abcdefg', k = ks[L.ph], near = Math.hypot(player.pos.x - L.x * S, player.pos.z - L.z * S) < 22 * S && Math.abs(player.pos.y - CV.Yh) < 2;
+    const ks = 'abcdefg', k = ks[L.ph], deck = L.deck != null ? L.deck : CV.Yh, near = Math.hypot(player.pos.x - L.x * S, player.pos.z - L.z * S) < 22 * S && Math.abs(player.pos.y - deck) < 2.4 * S;
     if (near && L.t.st === 'ok') { cvSay(L.t, WALK_V[k], 2.6, 'paxv'); if (typeof VoicePack !== 'undefined' && VoicePack.ok) VoicePack.play('cv/walk_t_' + k + '.mp3', 1.5, 2.4, 1); }
-    if (L.ph >= 2) L.n.forEach((r, i) => { if (r.st !== 'ok') return; const side = ((i < 3 ? 0 : 1) + L.ph) % 2, zz = L.z + (side ? 4 : -4); r.x = r.ax = (L.x + (i % 3 - 1) * 1.6) * S; r.z = r.az = zz * S; r.mv = true; r.w = 'stand'; r.f = side ? 0 : Math.PI; }); }
+    if (L.ph >= 2) L.n.forEach((r, i) => { if (r.st !== 'ok') return; const side = (i + L.ph) % 2, zz = L.z - 2.1 + i * 0.7 + (side ? 1.5 : 0); r.x = r.ax = L.x * S; r.z = r.az = zz * S; r.mv = true; r.w = 'stand'; r.f = side ? 0 : Math.PI; }); }
 }
 function cvPaxStep(dt) {
   cvWalkStep(dt); if (!CV.paxU) return; const L = CV.pax || paxInit(); if (!L) return;
@@ -13340,7 +13610,7 @@ function cvScaleShip(S) {
   for (const L of ladders) { L.x0 *= S; L.x1 *= S; L.z0 *= S; L.z1 *= S; L.y0 *= S; L.y1 *= S; }
   for (const g of CV.guns) { g.x *= S; g.y *= S; g.z *= S; }
   if (medPost.blue && !medPost.blue.cvS) { medPost.blue = medPost.blue.map(v => v * S); medPost.blue.cvS = 1; }   // 医務班の持ち場も縮尺に合わせる（宙に浮いていた）
-  CV.Yd *= S; CV.Yh *= S; CV.Y1 *= S; CV.Yb *= S; if (CV.Y0) CV.Y0 *= S; if (CV.Y2) CV.Y2 *= S; if (CV.Yg) CV.Yg *= S;
+  CV.Yd *= S; CV.Yh *= S; CV.Y1 *= S; CV.Yb *= S; if (CV.Y0) CV.Y0 *= S; if (CV.Y2) CV.Y2 *= S; if (CV.Yg) CV.Yg *= S; if (CV.Ya0) CV.Ya0 *= S; if (CV.Ya1) CV.Ya1 *= S; if (CV.Ya2) CV.Ya2 *= S; if (CV.Yhld) CV.Yhld *= S;
 }
 function cvNearPlane() {
   if (!CV.on || CV.ride) return null;
@@ -13477,7 +13747,7 @@ function cvArmLaunches() {
 }
 // 甲板員の役：[x, z（機体基準・機首は -z）, 向き, 姿勢, 名]
 const CV_DECKROLE = [
-  ['guide', 0, -9.5, 0, 'stand'], ['chockL', -1.5, -0.4, Math.PI / 2, 'kneel'], ['chockR', 1.5, -0.4, -Math.PI / 2, 'kneel'], ['crank', 1.4, -2.7, -Math.PI / 2, 'kneel'],
+  ['guide', 0, -9.5, 0, 'stand'], ['chockL', -1.5, -0.4, Math.PI / 2, 'stand'], ['chockR', 1.5, -0.4, -Math.PI / 2, 'stand'], ['crank', 1.4, -2.7, -Math.PI / 2, 'stand'],
   ['fuel', -2.8, 0.6, Math.PI / 2, 'stand'], ['ammo', 2.8, 0.6, -Math.PI / 2, 'stand'], ['wingL', -5.9, 0.4, Math.PI / 2, 'stand'], ['wingR', 5.9, 0.4, -Math.PI / 2, 'stand'],
 ];
 function cvCrewOn(L, roles) {
@@ -13655,7 +13925,7 @@ const CV_DEPT = [
   ['hag', '12.7cm連装高角砲', 48], ['dir', '高射装置', 16], ['mg3', '25mm三連装機銃', 90], ['mg1', '25mm単装機銃', 36], ['ammo', '弾薬運搬', 60], ['look', '見張り', 24],
   ['zp', '零戦搭乗員', 18], ['tp', '艦攻搭乗員', 27], ['rp', '艦偵搭乗員', 9], ['mnt', '整備', 150], ['deck', '飛行甲板・昇降機・着艦制動', 40], ['ord', '兵装（爆弾・魚雷）', 30],
   ['boil', '缶（ボイラー）', 48], ['turb', 'タービン', 32], ['elec', '電機', 30], ['dc', '応急', 40], ['fire', '消火班（ホース・泡）', 20], ['off', '士官', 20], ['brg', '艦橋・操舵', 20], ['sig', '信号・通信', 30],
-  ['pb', '機銃艇', 24], ['lb', '救命艇', 32], ['med', '医務（軍医3・看護17）', 20], ['gal', '烹炊・主計', 60],
+  ['pb', '機銃艇', 24], ['lb', '救命艇', 32], ['med', '医務（軍医4・看護18）', 22], ['gal', '烹炊・主計', 60],
   ['cab', '客室係', 8], ['din', '食堂', 30], ['ban', '宴会・楽団', 20], ['bath', '浴場', 10], ['shop', '売店・理髪', 5], ['kg', '王の秘書・護衛', 30],
   ['res', '予備・交代員', 80], ['fam', '王の一行', 0],
 ];
@@ -13674,8 +13944,8 @@ const CV_LN = {
   mnt: { sail: ['プラグ交換、終わり', '燃料、満タンです', 'エンジン、試運転します', 'この機、油漏れ。直します'], raid: ['予備の機、急げ！', '工具、片付けて！'] },
   deck: { sail: ['エレベーター、上げます！', '着艦制動索、張りました', '甲板、整列！'], raid: ['発艦はじめ！', '甲板、退避！', 'エレベーター、止めないで！'] },
   ord: { sail: ['二百五十キロ爆弾、取り付けます', '信管、まだ入れないで'], raid: ['弾薬庫、閉めて！', '爆弾、格納庫から下ろして！'] },
-  boil: { sail: ['缶圧、よし', '重油噴燃器、もう一本！', '缶室、暑い……', '蒸気、上がります'], raid: ['全缶、全力！', '煙、出しすぎないで！'] },
-  turb: { sail: ['回転、上げます', '軸受、温度よし', 'タービン、異常なし'], raid: ['両舷前進一杯、了解！', '回転、一杯！'] },
+  boil: { sail: ['缶圧、異常なし', '缶圧、よし', '重油噴燃器、もう一本！', '缶室、暑い……', '蒸気、上がります'], raid: ['全缶、全力！', '煙、出しすぎないで！'] },
+  turb: { sail: ['軸、回ってます', '回転、上げます', '軸受、温度よし', 'タービン、異常なし'], raid: ['両舷前進一杯、了解！', '回転、一杯！'] },
   elec: { sail: ['発電機、異常なし', '配電盤、切り替えます'], raid: ['予備電源、入れます！'] },
   dc: { sail: ['防水扉、点検よし', '角材と鉄板、積んであります'], raid: ['応急班、前へ！', '第二甲板浸水！', '防水扉、閉めて！', '甲板の穴、塞ぎます！', '角材と鉄板、持ってきて！'] },
   off: { sail: ['各部、報告を', '持ち場を離れるな'], raid: ['対空戦闘！', '負傷者は医務室へ！'] },
@@ -13792,7 +14062,7 @@ function cvRosterBuild() {
   for (let k = 0; k < 8; k++) { const s = k % 2 ? 1 : -1; A('deck', s * 10.4, 36 + (k >> 1) * 7, Yd, -s * Math.PI / 2); }
   for (let k = 0; k < 20; k++) A('deck', -6 + (k % 5) * 2.6, -74 + ((k / 5) | 0) * 34, Yd, 0, 'walk', 0, 9);
   for (let k = 0; k < 30; k++) A('ord', k % 2 ? 4.0 : -4.0, -62 + (k >> 1) * 5.6, Yh, 0, 'walk', 0, 3.5);
-  for (let b = 0; b < 8; b++) { const s = b < 4 ? -1 : 1, z = -45 + (b % 4) * 5; for (let k = 0; k < 6; k++) A('boil', s * (k < 3 ? 1.35 : 0.6), z - 1.2 + (k % 3) * 1.2, Y0, s < 0 ? -Math.PI / 2 : Math.PI / 2, k === 5 ? 'walk' : 'stand', 0, -2.2); }
+  for (let b = 0; b < 8; b++) { const s = b < 4 ? -1 : 1, z = -44 + (b % 4) * 4; for (let k = 0; k < 6; k++) A('boil', s * (k < 3 ? 2.15 : 1.35), z + (k % 3 - 1) * 0.7, Y0, s < 0 ? -Math.PI / 2 : Math.PI / 2, k === 5 ? 'walk' : 'stand', 0, k === 5 ? 1.5 : 0); }
   for (let t = 0; t < 4; t++) { const x = t % 2 ? 3.4 : -3.4, z = 8 + ((t / 2) | 0) * 8; for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, px = x + Math.cos(a) * 2.0, pz = z + Math.sin(a) * 2.3; A('turb', clamp(px, -5.8, 5.8), pz, Y0, Math.atan2(x - px, z - pz), k % 4 === 3 ? 'walk' : 'stand', 0, 1.4); } }
   grid('elec', 15, -5.4, 1.6, 22, 32, Y0, 0, mix, 1.2, 0); grid('elec', 15, 1.8, 5.8, -11, -2, Y2, -Math.PI / 2, mix, 0, 1.2);
   grid('dc', 40, -3.8, 5.2, 9.5, 25, Y2, 0, k => (k % 4 === 0 ? 'walk' : 'stand'), 0, 1.5);
@@ -13808,9 +14078,11 @@ function cvRosterBuild() {
   for (let k = 0; k < 6; k++) A('sig', 12.6, -3.6 + k * 1.6, Yd, -Math.PI / 2, 'walk', 0.8, 0);
   for (let k = 0; k < 6; k++) A('look', 13 + (k % 3) * 1.4, -14.5 + (k > 2 ? 44 : 0), Yd, k > 2 ? 0 : Math.PI);
   { let pb = 0, lb = 0; for (const b of CV.boats || []) { const s = b.x > 0 ? 1 : -1; if (b.patrol) for (let k = 0; k < 6; k++) { A('pb', s * (k < 3 ? 9.7 : 9.1), b.z - 1.6 + (k % 3) * 1.6, Yh, s * Math.PI / 2); pb++; } else for (let k = 0; k < 2; k++) { A('lb', s * 9.6, b.z + (k ? 0.8 : -0.8), Yh, s * Math.PI / 2); lb++; } } }
-  grid('med', 4, 4.2, 6.4, 66.8, 70.6, Y1, -Math.PI / 2); grid('med', 12, -3.8, -2.4, -10.6, 6.6, Y2, Math.PI / 2, k => (k % 2 ? 'kneel' : 'stand'));
-  for (const [x, z, y] of [[6.8, 12, Yd], [6.8, -22, Yd], [3.4, 0, Yh], [-3.4, -30, Yh]]) A('med', x, z, y, 0, 'walk', 0, 3);
-  { const md = R.filter(r => r.d === 'med'); md.slice(4, 7).forEach(r => { r.ttl = '軍医'; r.w = r.hw = 'stand'; }); md.forEach(r => { r.ttl = r.ttl || '看護'; }); }   // 医療班：軍医三（＋外科医 九条）、看護十七（＋遠野）
+  for (let k = 0; k < 4; k++) A('med', -0.6, -8.2 + k * 3.4, Y2, Math.PI / 2, 'stand', 0, 0, { ttl: '軍医' });
+  for (let k = 0; k < 14; k++) { const col = k < 7 ? 0 : 1; A('med', 3.15 - col * 0.75, -9.2 + (k % 7) * 2.0, Y2, col ? Math.PI / 2 : -Math.PI / 2, 'stand'); }
+  grid('med', 2, 5.2, 6.2, 67.2, 70.2, Y1, -Math.PI / 2);
+  for (const [x, z, y] of [[6.8, 12, Yd], [-3.4, -30, Yh]]) A('med', x, z, y, 0, 'walk', 0, 3);
+  { const md = R.filter(r => r.d === 'med'); md.forEach(r => { r.ttl = r.ttl || '看護'; }); }   // 医療班：軍医四、看護十八（名のある九条・遠野は一行の名簿）
   grid('gal', 17, -2.8, -1.2, -48.5, -34, Y2, -Math.PI / 2, mix, 1.0, 0); grid('gal', 17, 1.2, 4.3, -48.5, -34, Y2, k => (k % 3 ? Math.PI / 2 : -Math.PI / 2), mix, 1.0, 0); grid('gal', 6, 1.8, 5.8, -31, -24, Y2, Math.PI / 2);
   for (let k = 0; k < 20; k++) { const s = k % 2 ? 1 : -1; A('gal', s * 3.6, -52 + (k >> 1) * 7, Y1, 0, 'walk', 0, 4); }
   for (let k = 0; k < 8; k++) A('cab', k % 2 ? 0.5 : -0.5, 48 + k * 4.6, Yg, 0, 'walk', 0, 3);
@@ -13820,9 +14092,9 @@ function cvRosterBuild() {
   for (let k = 0; k < 5; k++) A('shop', 2.4 + (k % 3) * 1.05, 47 + 9 * 4 + 1.0 + (k > 2 ? 1.6 : 0), Yg, Math.PI / 2);
   for (let k = 0; k < 8; k++) A('kg', k < 4 ? -3.2 : -0.7, k < 4 ? 43.6 + k * 2.3 : 44.2 + (k - 4) * 2.0, Y1, k < 4 ? Math.PI / 2 : -Math.PI / 2);
   grid('kg', 10, 2.0, 6.6, 43, 51, Y1, Math.PI); for (let k = 0; k < 6; k++) A('kg', k % 2 ? 0.6 : -0.6, 48.5 + k * 6.2, Yg, 0); for (let k = 0; k < 6; k++) A('kg', k % 2 ? 0.55 : -0.55, 43 + k * 7.5, Y1, 0, 'walk', 0, 2.5);
-  grid('res', 24, -6.8, -1.8, 74.4, 87.0, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel')); for (let k = 0; k < 4; k++) A('din', 3.6 + (k % 2) * 0.4, 77 + k * 2.2, Y1, Math.PI / 2);   // 御膳所の料理番
+  grid('res', 24, -6.8, -1.8, 74.4, 87.0, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), 'stand'); for (let k = 0; k < 4; k++) A('din', 3.6 + (k % 2) * 0.4, 77 + k * 2.2, Y1, Math.PI / 2);   // 御膳所の料理番
   for (let k = 0; k < 20; k++) { const s = k % 2 ? 1 : -1; A('fire', s * 7.7, -56 + (k >> 1) * 10, Yh, -s * Math.PI / 2, k % 4 === 3 ? 'walk' : 'stand', 0, 2.5); }   // 格納庫の消火栓・泡消火の持ち場
-  grid('res', 56, -3.0, 3.0, -55, 40, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), k => (k % 3 === 0 ? 'stand' : 'kneel'));
+  grid('res', 56, -3.0, 3.0, -55, 40, Y1, k => (k % 2 ? Math.PI / 2 : -Math.PI / 2), 'stand');
   // 王の一行（客室）。名のある人は自分の写真
   for (let j = 0; j < 20; j++) {
     const [name, key] = CV_ROOMS[j]; if (!key) continue;
@@ -13836,8 +14108,11 @@ function cvRosterBuild() {
     if (C) { const YC = C.YC * S;
       C.staff.forEach(([x, z], i) => { const r = res.shift(); if (r) put(r, { d: 'cafe', nm: i ? '美空 みるく' : '葉月 ここな', x: x * S, z: z * S, y: YC, f: 0, cafe: i + 1 }); });
       for (const k of [0, 3, 5, 6, 9, 12]) { const q = C.seats[k], r = res.shift(); if (q && r) put(r, { x: (q[0] - Math.sin(q[2]) * 0.5) * S, z: (q[1] + 0.35) * S, y: YC, f: q[2], cafeG: true });   /* 座る絵がまだ無いので、椅子の横に立つ */ } }
-    { const L = CV.walkL = { x: 0, z: 6, y: CV.Yh / S, n: [] }; const t = res.shift(); if (t) { put(t, { d: 'walkT', nm: '白鷺 れいか', x: (L.x - 3.2) * S, z: L.z * S, y: CV.Yh, f: Math.PI / 2, walkT: true }); L.t = t; }
-      for (let i = 0; i < 6; i++) { const r = res.shift(); if (!r) break; const lx = L.x + (i % 3 - 1) * 1.6, z0 = L.z - 5 + (i >> 1 & 1) * 0, zz = L.z + (i < 3 ? -4 : 4); put(r, { x: lx * S, z: zz * S, y: CV.Yh, f: i < 3 ? 0 : Math.PI, walkP: i }); L.n.push(r); } }   /* ウォーキングレッスン（格納庫の中央。講師と六人、立つ・歩くだけ） */
+    { const W0 = CV.walkL0 || { x: 0.2, z: -63.6 }, deck = CV.Ya0 || CV.Yh; const L = CV.walkL = { x: W0.x, z: W0.z, y: deck / S, deck, n: [] }; const t = res.shift(); if (t) { put(t, { d: 'walkT', nm: '白鷺 れいか', x: (L.x - 1.7) * S, z: L.z * S, y: deck, f: Math.PI / 2, walkT: true }); L.t = t; }
+      for (let i = 0; i < 6; i++) { const r = res.shift(); if (!r) break; put(r, { x: L.x * S, z: (L.z - 2.1 + i * 0.7) * S, y: deck, f: Math.PI, walkP: i }); L.n.push(r); } }   /* 中庭で一列に立つウォーキング。講師は横 */
+    if (CV.atSpots) for (const sp of CV.atSpots) { const r = res.shift(); if (r) put(r, { x: sp[0] * S, z: sp[1] * S, y: CV.Ya0, f: sp[2] || 0 }); }
+    if (CV.mopAt) { const r = res.shift(); if (r) put(r, { x: CV.mopAt[0] * S, z: CV.mopAt[1] * S, y: CV.Yh, f: 0.4 }); }
+    if (CV.messAt) for (const sp of CV.messAt) { const r = res.shift(); if (r) put(r, { x: sp[0] * S, z: sp[1] * S, y: CV.Y2, f: sp[2] || 0 }); }
     if (CV.paxU) for (const U of CV.paxU) { const r = res.shift(); if (r) put(r, { d: 'elv', nm: U.D.girl, x: (U.XF - U.sg * 0.4) * S, z: (U.Z0 + 0.4) * S, y: U.LV[U.D.park] * S, f: U.sg > 0 ? Math.PI / 2 : -Math.PI / 2, paxGirl: U.D.id }); } }
   // 写真を固定（同じ人は最後まで同じ顔）
   const pool = cvPool(); for (const r of R) if (!r.gid && pool.length) r.girl = mobDeal('cv', pool);
@@ -13867,11 +14142,25 @@ function cvLieOk(x, z, y, yaw, L) {   // 足元(x,z)から yaw の向きに長�
 }
 function cvFitFall(e) {
   const r = e.cvR, p = e.s.position, y = e.baseY, L = (e.figH || 1.6) * 1.05;
-  const pref = r && r.lieYaw != null ? r.lieYaw : e.fallYaw;
-  const tryAt = (x, z) => { for (let k = 0; k < 24; k++) { const a = pref + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12; if (cvLieOk(x, z, y, a, L)) return a; } return null; };
+  const I = CV.isl, S = CV.S || 1;
+  const onBr = !!(I && y > CV.Yd - 0.45 * S && p.x > I.x0 * S - 0.2 * S && p.x < I.x1 * S + 0.35 * S && p.z > I.z0 * S - 0.2 * S && p.z < I.z1 * S + 0.2 * S);
+  if (onBr) { p.x = Math.min(I.x1 * S - 0.25 * S, Math.max(I.x0 * S + 0.25 * S, p.x)); p.z = Math.min(I.z1 * S - 0.35 * S, Math.max(I.z0 * S + 0.35 * S, p.z)); }
+  const inside = (x, z, a) => {
+    if (!onBr) return true;
+    const sx = Math.sin(a), sz = Math.cos(a);
+    for (const t of [0, L * 0.5, L * 0.85]) { const px = x + sx * t, pz = z + sz * t; if (px < I.x0 * S + 0.12 * S || px > I.x1 * S - 0.12 * S || pz < I.z0 * S + 0.15 * S || pz > I.z1 * S - 0.15 * S) return false; }
+    return true;
+  };
+  const pref = onBr ? 0 : (r && r.lieYaw != null ? r.lieYaw : e.fallYaw);
+  const tryAt = (x, z) => {
+    const order = onBr ? [0, Math.PI] : [];
+    for (let k = 0; k < 24; k++) order.push(pref + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * Math.PI / 12);
+    for (const a of order) { if (!inside(x, z, a)) continue; if (cvLieOk(x, z, y, a, onBr ? L * 0.7 : L)) return a; }
+    return null;
+  };
   let a = tryAt(p.x, p.z), nx = p.x, nz = p.z;
-  for (let rr = 0.4; a == null && rr <= 4; rr += 0.4) for (let k = 0; k < 16 && a == null; k++) { const t = k / 16 * Math.PI * 2, x = p.x + Math.sin(t) * rr, z = p.z + Math.cos(t) * rr; if (Math.abs(floorUnder(x, z, y + 0.4) - y) > 0.3) continue; const b = tryAt(x, z); if (b != null) { a = b; nx = x; nz = z; } }
-  if (a == null) { a = pref; L && (e.lieShort = true); }   // 収まらない狭い所：消さずにその場で（長さを詰めて）
+  for (let rr = 0.4; a == null && rr <= (onBr ? 1.6 : 4); rr += 0.4) for (let k = 0; k < 16 && a == null; k++) { const t = k / 16 * Math.PI * 2, x = p.x + Math.sin(t) * rr, z = p.z + Math.cos(t) * rr; if (onBr && (x < I.x0 * S + 0.2 * S || x > I.x1 * S - 0.2 * S || z < I.z0 * S + 0.2 * S || z > I.z1 * S - 0.2 * S)) continue; if (Math.abs(floorUnder(x, z, y + 0.4) - y) > 0.3) continue; const b = tryAt(x, z); if (b != null) { a = b; nx = x; nz = z; } }
+  if (a == null) { a = onBr ? 0 : pref; e.lieShort = true; if (onBr) { nx = (I.x0 + I.x1) / 2 * S; nz = (I.z0 + I.z1) / 2 * S; } }
   e.fallYaw = a; p.x = nx; p.z = nz; e.px = nx; e.pz = nz; e.wx = nx; e.wz = nz;
   if (r) { r.x = nx; r.z = nz; r.lieYaw = a; }
 }
@@ -14069,7 +14358,7 @@ function cvMedTick(dt) {
     if (m.d !== 'med' || m.st !== 'ok' || !m.task) continue;
     const v = m.task, arrived = !m.e || !v.e || Math.hypot(m.e.s.position.x - v.e.s.position.x, m.e.s.position.z - v.e.s.position.z) < 1.4;
     if ((m.taskT -= 0.5) > 0 && !arrived) continue;
-    if (v.st === 'wnd') { cvSay(m, CV_EV.treat, 1.7); cvDespawn(v); v.st = 'ok'; v.hurt = 1; if (v.gun) { v.gun = null; } v.x = v.hx = rand(-6.2, -2.2) * S; v.z = v.hz = rand(-10.5, 6.5) * S; v.y = v.hy = Y2; v.w = v.hw = 'kneel'; v.ax = v.az = v.hax = v.haz = undefined; v.f = Math.PI / 2; }
+    if (v.st === 'wnd') { cvSay(m, CV_EV.treat, 1.7); cvDespawn(v); v.st = 'ok'; v.hurt = 1; if (v.gun) { v.gun = null; } v.x = v.hx = rand(-6.2, -2.2) * S; v.z = v.hz = rand(-10.5, 6.5) * S; v.y = v.hy = Y2; v.w = v.hw = 'stand'; v.ax = v.az = v.hax = v.haz = undefined; v.f = Math.PI / 2; }
     else if (v.st === 'dead') { cvSay(m, CV_EV.rinju, 1.7); v.medDone = true; }
     v.medBy = null; cvUntask(m);
   }
@@ -14077,7 +14366,7 @@ function cvMedTick(dt) {
   if (busy >= 6) return;
   for (const v of CV.R) {
     if ((v.st !== 'wnd' && !(v.st === 'dead' && !v.medDone)) || v.medBy || time - v.downT < 2.5) continue;
-    if (!v.e) { if (time - v.downT > 25) { if (v.st === 'wnd') { v.st = 'ok'; v.hurt = 1; v.x = v.hx = rand(-6.2, -2.2) * S; v.z = v.hz = rand(-10.5, 6.5) * S; v.y = v.hy = Y2; v.w = v.hw = 'kneel'; v.ax = v.az = undefined; v.gun = null; } else v.medDone = true; } continue; }
+    if (!v.e) { if (time - v.downT > 25) { if (v.st === 'wnd') { v.st = 'ok'; v.hurt = 1; v.x = v.hx = rand(-6.2, -2.2) * S; v.z = v.hz = rand(-10.5, 6.5) * S; v.y = v.hy = Y2; v.w = v.hw = 'stand'; v.ax = v.az = undefined; v.gun = null; } else v.medDone = true; } continue; }
     let best = null, bd = 1e18; for (const m of CV.R) { if (m.d !== 'med' || m.st !== 'ok' || m.task || m.hurt) continue; const s = (m.x - v.x) ** 2 + (m.z - v.z) ** 2 + ((m.y - v.y) * 8) ** 2; if (s < bd) { bd = s; best = m; } }
     if (!best) break;
     best.task = v; v.medBy = best; best.taskT = 9; const a = Math.random() * 6.28;
@@ -14108,14 +14397,14 @@ function cvHole(x, z) {
   const em = { x, y: Yd + 0.5, z, size: 3.2, life: 5, dt: LITE ? 0.45 : 0.22, col: [0.2, 0.19, 0.18], a: 0.6 }; CV.emit.push(em);
   const h = { x, z, p: 0, m, sp, bx, em, crew: [] }; CV.holes.push(h);
   // 応急班：生きている者を八人まで
-  let n = 0; for (const r of CV.R) { if (n >= 8) break; if (r.d !== 'dc' || r.st !== 'ok' || r.task || r.job || r.hurt) continue; const a = n / 8 * 6.28; r.task = h; r.x = x + Math.cos(a) * 2.5 * S; r.z = z + Math.sin(a) * 2.5 * S; r.f = Math.atan2(x - r.x, z - r.z); r.w = 'kneel'; r.ax = r.az = undefined; if (r.y !== Yd) { r.y = Yd; cvDespawn(r); } r.mv = true; h.crew.push(r); n++; }
+  let n = 0; for (const r of CV.R) { if (n >= 8) break; if (r.d !== 'dc' || r.st !== 'ok' || r.task || r.job || r.hurt) continue; const a = n / 8 * 6.28; r.task = h; r.x = x + Math.cos(a) * 2.5 * S; r.z = z + Math.sin(a) * 2.5 * S; r.f = Math.atan2(x - r.x, z - r.z); r.w = 'stand'; r.ax = r.az = undefined; if (r.y !== Yd) { r.y = Yd; cvDespawn(r); } r.mv = true; h.crew.push(r); n++; }
   return h;
 }
 function cvHoleStep(dt) {
   for (const h of CV.holes) {
     if (h.done) continue;
     const alive = h.crew.filter(r => r.st === 'ok' && r.task === h).length;
-    if (alive < 4) { for (const r of CV.R) { if (h.crew.length > 14 || alive >= 6) break; if (r.d !== 'dc' || r.st !== 'ok' || r.task || r.hurt) continue; r.task = h; const a = Math.random() * 6.28, S = CV.S || 1; r.x = h.x + Math.cos(a) * 2.5 * S; r.z = h.z + Math.sin(a) * 2.5 * S; r.w = 'kneel'; r.ax = r.az = undefined; r.f = Math.atan2(h.x - r.x, h.z - r.z); if (r.y !== CV.Yd) { r.y = CV.Yd; cvDespawn(r); } r.mv = true; h.crew.push(r); break; } }
+    if (alive < 4) { for (const r of CV.R) { if (h.crew.length > 14 || alive >= 6) break; if (r.d !== 'dc' || r.st !== 'ok' || r.task || r.hurt) continue; r.task = h; const a = Math.random() * 6.28, S = CV.S || 1; r.x = h.x + Math.cos(a) * 2.5 * S; r.z = h.z + Math.sin(a) * 2.5 * S; r.w = 'stand'; r.ax = r.az = undefined; r.f = Math.atan2(h.x - r.x, h.z - r.z); if (r.y !== CV.Yd) { r.y = CV.Yd; cvDespawn(r); } r.mv = true; h.crew.push(r); break; } }
     h.p += dt * alive / 8 / (h.slow || (h.slow = rand(200, 360))) * (CV.phase === 'lull' ? 1.3 : 1);   // 数分かかる。次の波まで残る穴もある
     if (h.p > 0.4 && !h.half) { h.half = cvPatchPlate(h, 0); } if (h.p > 0.75 && h.half && !h.half2) { h.half2 = cvPatchPlate(h, 1); }
     if (h.p >= 1) {
@@ -14561,7 +14850,7 @@ function cvBoatMake(sd, z) {
 function cvRowerPos(E, i) { const S = CV.S || 1, bp = E.b.position, ry = E.b.rotation.y, lz = (-2.8 + (i >> 1) * 1.1) * S, lx = ((i & 1) ? 0.55 : -0.55) * S; return [bp.x + Math.cos(ry) * lx + Math.sin(ry) * lz, bp.y + 0.75 * S, bp.z - Math.sin(ry) * lx + Math.cos(ry) * lz]; }
 function cvBoatSeat(E) {   // 殿・護衛・漕ぎ手・救った者を艇の上に置く
   const S = CV.S || 1, p = player.pos, bp = E.b.position; p.set(bp.x, bp.y + 0.75 * S, bp.z + 3.4 * S * Math.cos(E.b.rotation.y)); player.vy = 0;
-  const all = [...E.es, ...E.rowers, ...E.res.slice(0, 8)]; all.forEach((r, i) => { if (r.st !== 'ok') return; const q = cvRowerPos(E, i % 12); r.x = r.hx = r.ax = q[0]; r.y = r.hy = q[1]; r.z = r.hz = r.az = q[2]; r.ySnap = true; r.w = 'kneel'; if (r.e) r.e.s.position.set(q[0], q[1], q[2]); });
+  const all = [...E.es, ...E.rowers, ...E.res.slice(0, 8)]; all.forEach((r, i) => { if (r.st !== 'ok') return; const q = cvRowerPos(E, i % 12); r.x = r.hx = r.ax = q[0]; r.y = r.hy = q[1]; r.z = r.hz = r.az = q[2]; r.ySnap = true; r.w = 'stand'; if (r.e) r.e.s.position.set(q[0], q[1], q[2]); });
 }
 function cvBoatStepK(dt) {
   const E = CV.esc; if (!E || !E.oars) return; const S = CV.S || 1, bp = E.b.position;
@@ -14938,19 +15227,24 @@ const CV_ZONES = [
   ['Yd', -11, 11, -92, 88, '飛行甲板'], ['Yd', 11.2, 17, -8, 10, '艦橋'],
   ['Yh', -8.6, 8.6, -66, 43, '格納庫'], ['Yh', -8, 8, 66, 87, '艦尾遊歩甲板'],
   ['Yg', -7.15, 7.15, 46.6, 87.4, '客室甲板（王の一行）'],
-  ['Y2', -7, -4.4, -50, 39, '左舷通路'], ['Y2', -4.4, 7, -50, -32, '烹炊所'], ['Y2', -4.4, 7, -32, -12, '兵員食堂'], ['Y2', -4.4, 7, -12, 8, '医務室・電機室'], ['Y2', -4.4, 7, 8, 26, '応急指揮所'], ['Y2', -4.4, 7, 26, 39, '士官室'],
+  ['Y2', -7, -4.4, -50, 39, '左舷通路'], ['Y2', -4.4, 7, -50, -32, '烹炊所'], ['Y2', -4.4, 7, -32, -12, '兵員食堂'], ['Y2', -4.4, 7, -12, 8, '医務室・電機室'], ['Y2', -4.4, 7, 8, 26, '応急指揮所'], ['Y2', -4.4, 7, 26, 39, '士官食堂'],
   ['Y1', -7.2, 7.2, -56, -40, '侍女大部屋 一'], ['Y1', -7.2, 7.2, -40, -22, '侍女大部屋 二'], ['Y1', -7.2, 7.2, -22, -4, '侍女大部屋 三'], ['Y1', -7.2, 0, -4, 16, '洗濯所'], ['Y1', 0, 7.2, -4, 16, '兵員浴場'], ['Y1', -7.2, 7.2, 16, 41.7, '侍女大部屋 四'],
   ['Y1', -7.2, -1.3, 42, 52, '王の間'], ['Y1', 1.3, 7.2, 42, 52, 'サロン'], ['Y1', -1.3, 1.3, 42, 64, '中央通路'], ['Y1', -7.2, -1.3, 52, 64, '浴室'], ['Y1', 1.3, 7.2, 52, 64, '小劇場'], ['Y1', -7.2, 7.2, 64, 74, '食堂'], ['Y1', -7.2, 0, 74, 87.6, '大部屋・吊り床'], ['Y1', 0, 7.2, 74, 87.6, '御膳所'],
   ['Y0', -6.4, 6.4, -48, -32, '缶室'], ['Y0', -6.4, 6.4, -32, -16, '弾薬庫'], ['Y0', -6.4, 6.4, -16, 2, '糧食庫'], ['Y0', -6.4, 6.4, 2, 18, 'タービン'], ['Y0', -6.4, 2.4, 18, 36, '電機室'], ['Y0', 2.4, 6.4, 18, 36, '航空ガソリン庫'], ['Y0', -5.9, 5.9, 36, 74, '大劇場'],
+  ['Yh', -6.5, 6.5, 74, 84, 'プール'],
+  ['Ya', -4.4, 5.1, -84.2, -58.6, '大吹き抜け・中庭'],
+  ['Yhld', -5.1, 5.1, -64, 32, '船倉・三段寝台'],
 ];
-const CV_DECKN = { Yd: '飛行甲板', Yh: '格納庫甲板', Yg: '客室甲板', Y2: '第二甲板', Y1: '中甲板', Y0: '下甲板（機関・弾薬）', Yb: '艦橋' };
+const CV_DECKN = { Yd: '飛行甲板', Yh: '格納庫甲板', Yg: '客室甲板', Y2: '第二甲板', Y1: '中甲板', Y0: '下甲板（機関・弾薬）', Yb: '艦橋', Ya: '大吹き抜け', Yhld: '船倉' };
 function cvDeckAt(x, y, z) {
   const S = CV.S || 1, py = y / S + 0.6, px = x / S, pz = z / S;
   if (py >= CV.Yd / S + 1.6 && px > 10.5) return 'Yb';
   if (py >= CV.Yd / S) return 'Yd';
   if (py >= CV.Yh / S) return 'Yh';
   if (py >= CV.Yg / S) return pz > 43 ? 'Yg' : 'Y2';
+  if (pz > -86 && pz < -57 && Math.abs(px) < 6.4 && py < CV.Y2 / S - 0.2 && py > -1.6) return 'Ya';
   if (py >= CV.Y1 / S) return 'Y1';
+  if (pz > -66 && pz < 33 && Math.abs(px) < 6.2 && py < -1.65) return 'Yhld';
   return 'Y0';
 }
 // ---- 桜鳳のざわめき：祝勝会（ukParty）の重ね声の仕組みを使う。退艦の叫び・巡航区画の避難・平時の賑わいで声の種類と密度を変える ----
@@ -15125,12 +15419,17 @@ function updateCv(dt) {
   cvLaunchStep(dt);
   const p = player.pos;
   const fy = floorUnder(p.x, p.z, p.y + 0.2);
+  const inAt = Math.abs(p.x) < 6.3 * S && p.z > -87 * S && p.z < -54 * S && p.y > -2.3 * S && p.y < (CV.Y2 || 12);
+  const inHd = Math.abs(p.x) < 6.2 * S && p.z > -66 * S && p.z < 34 * S && p.y > -3.3 * S && p.y < 0.2 * S;
   if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 18 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
   if (fy > 1 && Math.abs(p.y - fy) < 1.4) CV.foot = [p.x, fy, p.z];
-  else if (CV.foot && !player.climbing && !CV.ride && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
+  else if (CV.foot && !player.climbing && !CV.ride && !inAt && !inHd && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
   const onOy = CV.carrierGone || (CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) || (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
   const inTh = Math.abs(p.x) < 6.0 * S && p.z > 36 * S && p.z < 74.3 * S && p.y > -1.8 * S;   // 大劇場は水線の下
-  if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
+  if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh && !inAt && !inHd) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
+  if (CV.poolW && CV.poolW.material && CV.poolW.material.map) CV.poolW.material.map.offset.x = (CV.poolW.material.map.offset.x + dt * 0.02) % 1;
+  if (CV.jacW && CV.jacW.material && CV.jacW.material.map) CV.jacW.material.map.offset.y = (CV.jacW.material.map.offset.y + dt * 0.05) % 1;
+  if ((CV.brClamp = (CV.brClamp || 0) - dt) <= 0) { CV.brClamp = 0.25; const I = CV.isl; if (I && CV.Yd) for (const e of bodies) { const r = e.cvR; if (!r || e.baseY < CV.Yd - 0.55 * S) continue; const q = e.s.position; const ix0 = I.x0 * S, ix1 = I.x1 * S, iz0 = I.z0 * S, iz1 = I.z1 * S; if (q.x < ix0 - 0.35 * S || q.x > ix1 + 0.35 * S || q.z < iz0 - 0.35 * S || q.z > iz1 + 0.35 * S) continue; const nx = Math.min(ix1 - 0.22 * S, Math.max(ix0 + 0.22 * S, q.x)), nz = Math.min(iz1 - 0.28 * S, Math.max(iz0 + 0.28 * S, q.z)); if (nx !== q.x || nz !== q.z) { q.x = nx; q.z = nz; e.px = nx; e.pz = nz; e.wx = nx; e.wz = nz; r.x = nx; r.z = nz; } } }
   cvStream(dt); cvLoungeStep(dt); cvDoorStep(dt); cvFxStep(dt); cvTalkTick(dt); cvMedTick(dt); cvResTick(); cvHoleStep(dt); cvBombStep(dt); cvSinkStep(dt); cvDebrisStep(dt); cvSinkPhaseStep(dt); cvEscortStep(dt); cvRushStep(dt); cvCarryStep(dt); cvSwimStep(dt); cvSink2Step(dt); cvAftermathStep(dt); cvOyHitStep(dt); cvBoatStep(dt); cvLinesStep(dt); cvAmmoStep(dt); cvCruiseWarStep(dt); cvBoardStep(dt); cvGunStep(dt);
   if (CV.rosOpen && (CV.rosT = (CV.rosT || 0) - dt) <= 0) { CV.rosT = 1; cvRosterDraw(); }
   if (CV.phase === 'sail' && CV.t > 26 && !CV.daily && CV.act === 1) cvWaveStart(0);
@@ -15214,7 +15513,7 @@ function cvFireStep(dt) {
     let alive = 0; for (const r of f.crew) if (r.st === 'ok' && r.job === f) alive++;
     if (alive < 8 && (f.askT = (f.askT || 0) - dt) <= 0) { f.askT = 0.6;
       const pick = CV.R.find(r => r.d === 'fire' && r.st === 'ok' && !r.job && !r.task && !r.hurt) || (alive < 4 && CV.R.find(r => (r.d === 'dc' || r.d === 'res') && !r.paxFix && r.st === 'ok' && !r.job && !r.task && !r.hurt));
-      if (pick) { const a = f.crew.length * 0.78 + 0.4, rad = 4.2 * S; pick.job = f; pick.x = clamp(f.x + Math.cos(a) * rad, -8.0 * S, 8.0 * S); pick.z = f.z + Math.sin(a) * rad; pick.w = f.crew.length % 3 === 1 ? 'kneel' : 'stand'; pick.ax = pick.az = undefined; pick.f = Math.atan2(f.x - pick.x, f.z - pick.z); if (Math.abs(pick.y - f.y) > 1) { pick.y = f.y; cvDespawn(pick); } pick.mv = true; pick.jt = f.t; f.crew.push(pick); }
+      if (pick) { const a = f.crew.length * 0.78 + 0.4, rad = 4.2 * S; pick.job = f; pick.x = clamp(f.x + Math.cos(a) * rad, -8.0 * S, 8.0 * S); pick.z = f.z + Math.sin(a) * rad; pick.w = 'stand'; pick.ax = pick.az = undefined; pick.f = Math.atan2(f.x - pick.x, f.z - pick.z); if (Math.abs(pick.y - f.y) > 1) { pick.y = f.y; cvDespawn(pick); } pick.mv = true; pick.jt = f.t; f.crew.push(pick); }
     }
     let work = 0; for (const r of f.crew) if (r.st === 'ok' && r.job === f && r.e && Math.hypot(r.e.s.position.x - r.x, r.e.s.position.z - r.z) < 1.2) work++; else if (r.st === 'ok' && r.job === f && !r.e && (!r.mv || f.t - (r.jt || 0) > 4)) work++;
     f.I += dt * (0.03 - work * 0.0105) * (LITE ? 1.2 : 1); f.I = Math.min(3, f.I);
@@ -24260,7 +24559,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261031zzg';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

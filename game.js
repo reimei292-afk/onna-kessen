@@ -11016,8 +11016,6 @@ function cvDress() {
   cvSlab(-6.7, -1.7, Y1 + 1.7, Y1 + 2.35, 43.4, 43.55, M.boot);
   const mirror = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.7), new THREE.MeshBasicMaterial({ color: 0xd5eef8 }));
   mirror.position.set(-6.55, Y1 + 1.5, 58); mirror.rotation.y = Math.PI / 2; stageRoot.add(mirror);
-  cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 52.5, 52.7, M.boot);
-  cvSlab(1.4, 6.6, Y1 + 1.6, Y1 + 2.4, 63.2, 63.4, M.boot);
 }
 // ---- 見える床だけを作る（板と当たりを必ず一緒に）。穴は [x0,x1,z0,z1] で抜く ----
 function cvPlate(x0, x1, z0, z1, y, mat, holes, th) {
@@ -13300,7 +13298,7 @@ function buildKeiku() {
   wall(1.2, 7.2, 41.9, 42.35, Y1, Y1 + 3.25, M.bulk);
   wall(-3.38, 3.38, 87.75, 88.15, Y1, Y1 + 3.25, M.bulk);
   const bulkZ = (z, x0, x1) => wall(x0, x1, z, z + 0.42, Y1, Y1 + 3.25, M.bulk);
-  bulkZ(51.7, -7.15, -1.9); bulkZ(51.7, 1.9, 7.15);
+  bulkZ(51.7, -7.15, -1.9); bulkZ(51.7, 2.55, 7.15);   // 右は x 1.9〜2.55 を通路にする（席は x 2.5 から）
   bulkZ(63.7, -5.45, -1.9); bulkZ(63.7, 1.9, 5.45);
   bulkZ(73.6, -3.05, -1.9); bulkZ(73.6, 1.9, 3.05);
   gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[47.0, 4.0], [57.9, 5.6], [68.2, 1.4], [76.2, 1.2]]);   // 浴室（z 52.3〜63.5）は扉枠なし。開口のまま
@@ -25435,7 +25433,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

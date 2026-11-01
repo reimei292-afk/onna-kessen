@@ -13519,7 +13519,7 @@ function buildKeiku() {
     const cabF = M.cabF || (M.cabF = new THREE.MeshStandardMaterial({ color: 0xf3e2c4, emissive: 0x8a5a28, emissiveIntensity: 0.45, roughness: 0.55, metalness: 0.02 }));
     const limX = z => z < 62 ? 6.72 : z < 76 ? 5.02 : 2.48;   // 外壁の内側。艦尾で船体が細くなる
     cvFloor(-6.72, 6.72, 46.6, 62, Yg); cvFloor(-5.02, 5.02, 62, 76, Yg); cvFloor(-2.48, 2.48, 76, 87.4, Yg);
-    deckPlate(-1.05, 1.05, 46.6, 87.2, Yg + 0.012, cabF);
+    deckPlate(-1.05, 1.22, 46.6, 87.2, Yg + 0.012, cabF);
     for (const s of [-1, 1]) { deckPlate(s * 1.55, s * 6.72, 47, 62, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 5.02, 62, 76, Yg + 0.012, cabF); deckPlate(s * 1.55, s * 2.48, 76, 87.2, Yg + 0.012, cabF); }
     wall(-2.48, 2.48, 87.3, 87.7, Yg, top, cabW);
     wall(-6.72, -1.55, 46.6, 47.0, Yg, top, cabW); wall(1.55, 6.72, 46.6, 47.0, Yg, top, cabW);
@@ -13527,25 +13527,29 @@ function buildKeiku() {
     wall(-5.7, -5.02, 62, 63.85, Yg, top, cabW); wall(-5.7, -5.02, 67.05, 76, Yg, top, cabW); wall(5.02, 5.7, 62, 76, Yg, top, cabW);
     wall(-3.3, -2.48, 76, 87.3, Yg, top, cabW); wall(2.48, 3.3, 76, 87.3, Yg, top, cabW);
     const doorsP = [], doorsS = [];
-    for (let r = 0; r < 10; r++) { const zd = 47 + r * 4 + 2.6; doorsP.push([zd, r === 4 ? 1.25 : 0.5]); doorsS.push([zd, 0.5]); }
+    for (let r = 0; r < 10; r++) { const zd = 47 + r * 4 + 2.6; doorsP.push([zd, r === 4 ? 1.25 : 0.5]); if (r !== 4 && r !== 5) doorsS.push([zd, 0.5]); }
+    doorsS.push([66.8, 2.95]);   // z 63.85〜69.75。右の格納庫階段の外に枠を置く
     gapWall(-1.55, -1.1, 47, 87.3, Yg, top, cabW, doorsP); gapWall(1.1, 1.55, 47, 87.3, Yg, top, cabW, doorsS);
     for (let r = 0; r < 10; r++) for (const s of [-1, 1]) {   // 個室の扉。通路側へ開いて、開口は通れる
       if (s < 0 && r === 4) continue;
+      if (s > 0 && (r === 4 || r === 5)) continue;   // 右は格納庫への階段。扉は置かない
       const zd = 47 + r * 4 + 2.6, g = new THREE.Group();
       g.position.set(s * 1.08, Yg, zd + 0.42); g.rotation.y = s > 0 ? 2.55 : -2.55;
       const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.045, 1.42, 0.78), M.panel); leaf.position.set(0, 0.74, -0.39); g.add(leaf);
       const knob = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), M.brass); knob.position.set(s > 0 ? -0.04 : 0.04, 0.78, -0.68); g.add(knob);
       stageRoot.add(g);
     }
-    for (let r = 1; r < 10; r++) for (const s of [-1, 1]) { const z = 47 + r * 4, lim = limX(z), xa = Math.min(s * 1.5, s * lim), xb = Math.max(s * 1.5, s * lim); wall(xa, xb, z - 0.12, z + 0.12, Yg, top, cabW); }
+    for (let r = 1; r < 10; r++) for (const s of [-1, 1]) { const z = 47 + r * 4, lim = limX(z), xa = Math.min(s * 1.5, s * lim), xb = Math.max(s * 1.5, s * lim); if (s > 0 && r === 5) { wall(2.15, xb, z - 0.12, z + 0.12, Yg, top, cabW); continue; } wall(xa, xb, z - 0.12, z + 0.12, Yg, top, cabW); }
     { const cm = M.ceilC || (M.ceilC = new THREE.MeshLambertMaterial({ color: 0xf3ead8 }));   // 天井：艦尾遊歩甲板へ上がる階段の吹き抜けだけ開ける
       cvSlab(-6.72, 6.72, top, top + 0.1, 46.6, 62, cm);
-      cvSlab(-5.02, -1.15, top, top + 0.1, 62, 69.7, cm); cvSlab(1.15, 5.02, top, top + 0.1, 62, 69.7, cm);
+      cvSlab(-5.02, 1.12, top, top + 0.1, 62, 69.7, cm); cvSlab(2.12, 5.02, top, top + 0.1, 62, 69.7, cm);
+      cvSlab(1.12, 2.12, top, top + 0.1, 62, 63.9, cm);
       cvSlab(-5.02, 5.02, top, top + 0.1, 69.7, 76, cm); cvSlab(-2.48, 2.48, top, top + 0.1, 76, 87.7, cm);
       cvSlab(-6.72, 6.72, top + 0.1, Yh - 0.02, 46.6, 62, M.bulk);
-      cvSlab(-5.02, -1.15, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk); cvSlab(1.15, 5.02, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk);
+      cvSlab(-5.02, 1.12, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk); cvSlab(2.12, 5.02, top + 0.1, Yh - 0.02, 62, 69.7, M.bulk);
+      cvSlab(1.12, 2.12, top + 0.1, Yh - 0.02, 62, 63.9, M.bulk);
       cvSlab(-5.02, 5.02, top + 0.1, Yh - 0.02, 69.7, 76, M.bulk); cvSlab(-2.48, 2.48, top + 0.1, Yh - 0.02, 76, 87.7, M.bulk);
-      cvSlab(-1.2, -1.1, Yg, Yh, 63.9, 64.15, cabin); cvSlab(-1.2, -1.1, Yg, Yh, 67.05, 69.7, cabin); cvSlab(1.1, 1.2, Yg, Yh, 63.9, 69.7, cabin); }   // 吹き抜けの脇。左の扉口（エレベーター前）は開ける
+      }   // 廊下の天井は塞ぐ。階段の穴は右の客室側（x 1.12〜2.12、z 63.9〜69.7）
     cvSlab(-7.15, 7.15, Yh - 0.14, Yh - 0.02, 47.6, 64, M.steel);
     cvSign(0, Yg + 2.3, 47.1, '客室甲板　王の一行', 0);
     for (const z of [52, 64, 76, 84]) { const L = new THREE.PointLight(0xfff1d8, 0.7, 16); L.position.set(0, Yg + 1.9, z); stageRoot.add(L); }
@@ -13575,7 +13579,7 @@ function buildKeiku() {
         G('dleg', legG, M.woodD, dx, Yg + 0.37, zc + 1.2, 0, dw / 0.55);
         G('lamp', lampG, lampM, dx, Yg + 0.93, zc + 1.45);
         const chx = s * (Math.abs(dx) - dw / 2 - 0.28);
-        if (Math.abs(chx) > 1.7) { G('chair', chG, M.woodD, chx, Yg + 0.24, zc + 1.2); G('chb', chbG, M.woodD, chx - s * 0.1, Yg + 0.72, zc + 1.2); }
+        if (Math.abs(chx) > 1.7 && !(s > 0 && chx < 2.2 && zc + 1.2 > 63.9 && zc + 1.2 < 69.8)) { G('chair', chG, M.woodD, chx, Yg + 0.24, zc + 1.2); G('chb', chbG, M.woodD, chx - s * 0.1, Yg + 0.72, zc + 1.2); }
       } else {
         const dw = Math.min(0.42, Math.max(0.28, bedW * 0.5));
         G('desk', deskG, M.wood, bx, Yg + 0.76, zc + 1.05, 0, dw / 0.55);
@@ -13601,7 +13605,7 @@ function buildKeiku() {
     boxes.push({ x0: 1.3, x1: 2.3, z0: 86.15, z1: 87.25, y0: Y1, y1: Y1 + 1.0 });
     { const lp = new THREE.PointLight(0xffe6c0, 0.75, 9); lp.position.set(-0.2, Y1 + 2.15, 86.4); stageRoot.add(lp); }
     cvSign(0, Y1 + 2.05, 87.45, '艦尾の休み処', Math.PI).scale.set(0.4, 0.4, 1);
-    cvStairs(0.35, 1.15, 64.15, 69.45, Yg, Yh, '階段　上 格納庫');   // 廊下の右半分だけ。左は客室通路
+    cvStairs(1.28, 1.95, 64.15, 69.45, Yg, Yh, '階段　上 格納庫', { openRail: true });   // 右の客室側。白い廊下（x 1.22 まで）には出さない
     cvSign(-2.7, Yg + 1.85, 65.4, '客室通路はこちら →', -Math.PI / 2).scale.set(0.42, 0.42, 1);
     cvSlab(-3.7, -2.4, Yg + 0.4, Yg + 0.48, 64.4, 64.75, M.wood);   // エレベーター前のベンチ
     // 王の間を飾る（天蓋の寝台・シャンデリア・ソファ・肖像画）
@@ -25431,7 +25435,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

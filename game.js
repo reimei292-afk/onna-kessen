@@ -10574,13 +10574,34 @@ function cvStairs(x0, x1, za, zb, y0, y1, label, opt) {
     const zLo = Math.min(za, zb) - 0.06, zHi = Math.max(za, zb) + 0.06, yR0 = Math.min(y0, y1), yR1 = Math.max(y0, y1) + 1.08;
     const railM = M.railW || (M.railW = new THREE.MeshStandardMaterial({ color: 0x6a4328, roughness: 0.5, metalness: 0.12 }));
     const capM = M.brass;
+    const spanZ = (zb - za) || 1;
     for (const s of [-1, 1]) {
       const inner = 0.0, outer = 0.16;
       const xa = s < 0 ? x0 - outer : x1 - inner, xb = s < 0 ? x0 + inner : x1 + outer;
-      const post = cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.02, yR1 - 0.07, zLo, zHi, railM); post.userData.cvStair = 1;
-      const cap = cvSlab(Math.min(xa, xb) - 0.015, Math.max(xa, xb) + 0.015, yR1 - 0.07, yR1 + 0.01, zLo, zHi, capM); cap.userData.cvStair = 1;
-      for (let k = 0; k < 2; k++) { const bar = cvSlab(Math.min(xa, xb), Math.max(xa, xb), yR0 + 0.28 + k * 0.34, yR0 + 0.34 + k * 0.34, zLo, zHi, capM); bar.userData.cvStair = 1; }
-      boxes.push({ x0: Math.min(xa, xb) - 0.02, x1: Math.max(xa, xb) + 0.02, z0: zLo, z1: zHi, y0: yR0 + 0.02, y1: yR1, stairRail: true });
+      const xA = Math.min(xa, xb), xB = Math.max(xa, xb);
+      if (opt.openRail) {   // 壁ではなく柱と斜めの笠木。席は見える。当たりは残して落ちない
+        const np = Math.max(2, Math.round((zHi - zLo) / 1.25));
+        for (let i = 0; i <= np; i++) {
+          const zc = zLo + (zHi - zLo) * i / np;
+          const t = clamp((zc - za) / spanZ, 0, 1);
+          const yBase = y0 + (y1 - y0) * t, yTop = yBase + 0.98;
+          const post = cvSlab(xA, xB, yBase + 0.02, yTop, zc - 0.04, zc + 0.04, railM); post.userData.cvStair = 1;
+          const cap = cvSlab(xA - 0.012, xB + 0.012, yTop - 0.035, yTop + 0.02, zc - 0.055, zc + 0.055, capM); cap.userData.cvStair = 1;
+        }
+        const ns = Math.max(4, Math.round((zHi - zLo) / 0.7));
+        for (let i = 0; i < ns; i++) {
+          const zc0 = zLo + (zHi - zLo) * i / ns, zc1 = zLo + (zHi - zLo) * (i + 1) / ns;
+          const t0 = clamp((zc0 - za) / spanZ, 0, 1), t1 = clamp((zc1 - za) / spanZ, 0, 1);
+          const yA = y0 + (y1 - y0) * t0 + 0.9, yB = y0 + (y1 - y0) * t1 + 0.9;
+          const bar = cvSlab(xA, xB, Math.min(yA, yB) - 0.03, Math.max(yA, yB) + 0.03, Math.min(zc0, zc1), Math.max(zc0, zc1), capM);
+          bar.userData.cvStair = 1;
+        }
+      } else {
+        const post = cvSlab(xA, xB, yR0 + 0.02, yR1 - 0.07, zLo, zHi, railM); post.userData.cvStair = 1;
+        const cap = cvSlab(xA - 0.015, xB + 0.015, yR1 - 0.07, yR1 + 0.01, zLo, zHi, capM); cap.userData.cvStair = 1;
+        for (let k = 0; k < 2; k++) { const bar = cvSlab(xA, xB, yR0 + 0.28 + k * 0.34, yR0 + 0.34 + k * 0.34, zLo, zHi, capM); bar.userData.cvStair = 1; }
+      }
+      boxes.push({ x0: xA - 0.02, x1: xB + 0.02, z0: zLo, z1: zHi, y0: yR0 + 0.02, y1: yR1, stairRail: true });
     }
   }
   if (label) { const s = cvSign((x0 + x1) / 2, y0 + 2.0, za - dir * 0.05, label, dir > 0 ? Math.PI : 0); s.scale.set(0.5, 0.5, 1); }
@@ -11497,7 +11518,7 @@ function cvTheatre() {
     cvWall(xa, xb, 61.8, 62, yb, Y0 + 0.9, vel); }
   cvWall(-4.6, -2.15, 45.8, 46, Y0, Y0 + 0.55, vel); cvWall(2.15, 4.8, 45.8, 46, Y0, Y0 + 0.55, vel); cvSlab(-4.8, -2.15, Y0 + 0.55, Y0 + 0.62, 45.75, 46.05, gold); cvSlab(2.15, 4.8, Y0 + 0.55, Y0 + 0.62, 45.75, 46.05, gold);
   cvSlab(-4.6, -2.05, yb, Y0 - 0.25, 45.9, 46, vel); cvSlab(2.05, 4.6, yb, Y0 - 0.25, 45.9, 46, vel);
-  cvStairs(-1.9, 1.9, 64.0, 45.7, yb + 0.02, Y0, '客席通路', { noCut: true });
+  cvStairs(-1.9, 1.9, 64.0, 45.7, yb + 0.02, Y0, '客席通路', { noCut: true, openRail: true });
   for (const [y, R, zc] of [[Y0 + 0.9, 30, 76], [Y0 - 0.2, 30, 76]]) { const g = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.12, 48, 1, true, Math.PI - 0.19, 0.38), gold); g.material.side = THREE.DoubleSide; g.position.set(0, y, zc); stageRoot.add(g); }
   for (const s of [-1, 1]) for (let z = 50; z < 62; z += 5) { const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe2a0 })); lamp.position.set(s * 4.7, Y0 + 1.05, z); stageRoot.add(lamp); }
   // 客席：中央は一段ずつの通路。席は左右だけ（中央に段を敷くと先へ歩けない）
@@ -25368,7 +25389,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

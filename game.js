@@ -12893,7 +12893,15 @@ function cvCruiseAdd() {
     cvFloor(2.2, 8.3, -82.6, -79.05, TY); cvSlab(2.2, 8.3, TY - 0.14, TY, -82.6, -79.05, teak);
     cvFloor(-2.2, 2.2, -81.2, -79.05, TY); cvSlab(-2.2, 2.2, TY - 0.14, TY, -81.2, -79.05, teak);
     cvSign(-4.6, TY + 1.7, -79.25, 'この先　大吹き抜け', Math.PI).scale.set(0.42, 0.42, 1);
-    cvSign(4.6, TY + 1.7, -79.25, 'この先　大吹き抜け', Math.PI).scale.set(0.42, 0.42, 1); }
+    cvSign(4.6, TY + 1.7, -79.25, 'この先　大吹き抜け', Math.PI).scale.set(0.42, 0.42, 1);
+    // テラスの中央から下の白い手すり甲板が見えるが、脇の階段は手すりの向こうで降り口がない。左右に下りを足す（大吹き抜けの前壁 z=-84.2 より艦首側）
+    deck(-4.7, -2.35, -89.8, -84.45, Ya2, marble);
+    deck(2.35, 4.7, -89.8, -84.45, Ya2, marble);
+    cvStairs(-4.55, -2.5, -89.15, -84.55, Ya2, TY, '階段　下 下の甲板', { openRail: true });
+    cvStairs(2.5, 4.55, -89.15, -84.55, Ya2, TY, '階段　下 下の甲板', { openRail: true });
+    const lip = (x0, x1) => { cvSlab(x0, x1, Ya2 + 0.02, Ya2 + 0.92, -89.88, -89.72, cream); boxes.push({ x0, x1, z0: -89.9, z1: -89.7, y0: Ya2, y1: Ya2 + 0.98, stairRail: true }); };
+    lip(-4.7, -2.35); lip(2.35, 4.7);
+  }
   // ===== 3. プールデッキ（既存の水面をチーク・ガラス柵・寝椅子・ジャグジーに。発着艦の甲板には出さない） =====
   { const y = Yh;
     const rim = add(new THREE.RingGeometry(0.2, 4.6, 40), teak, 0, y + 0.03, 79); rim.rotation.x = -Math.PI / 2; rim.scale.set(1.55, 1, 2.15);
@@ -25433,7 +25441,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261102a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

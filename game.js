@@ -15090,7 +15090,7 @@ function cvTalkTick(dt) {
   if (best.hurt) pool = ['大丈夫です、まだ動けます', 'すぐ持ち場に戻ります'];
   CV.lastD = best.d; cvSay(best, pool[(Math.random() * pool.length) | 0], 1.3);
 }
-// ---- 被弾：白い閃光と土煙。短い声で崩れる（血・傷は無し） ----
+// ---- 被弾：血は倒れた人の床と近くの壁だけ。画面には付けない ----
 function cvDownR(r, dead, fx, fz, why) {
   if (r.st !== 'ok') return;
   r.st = dead ? 'dead' : 'wnd'; r.mv = false; r.why = why || ''; r.downT = time;
@@ -15098,7 +15098,9 @@ function cvDownR(r, dead, fx, fz, why) {
   CV.lost = (CV.lost || 0) + (dead ? 1 : 0);
   const e = r.e;
   if (e && e.state !== 'down') {
-    const p = e.s.position; puff(new V3(p.x, e.baseY + 1.2, p.z), 0xffffff, 3, 0.45, 2.2, 0.16); puff(new V3(p.x, e.baseY + 0.6, p.z), 0xa8a196, 4, 0.9, 1.4, 0.7);
+    const p = e.s.position;
+    puff(new V3(p.x, e.baseY + 1.15, p.z), 0xb10f25, 7, 0.2, 2.2, 0.32);
+    puff(new V3(p.x, e.baseY + 0.55, p.z), 0x7a1218, 4, 0.12, 1.5, 0.4);
     e.quietDeath = true; killEnemy(e, false, { x: fx == null ? p.x : fx, z: fz == null ? p.z - 1 : fz });
     const c = camera.position;
     if (Math.hypot(p.x - c.x, p.z - c.z) < 16 && Math.abs(e.baseY + 1.4 - c.y) < 4 && time - (CV.cryT || -9) > 1.1) {
@@ -25211,27 +25213,32 @@ const bloodMat = new THREE.MeshBasicMaterial({ color: 0x7a1218, transparent: tru
 const bloodPoolGeo = new THREE.CircleGeometry(1, 12);
 const bloodDecals = [];
 function spillBlood(x, y, z, scale) {
-  if (UK2.on || UK3.on || UK4.on || CV.on || FB.on) return;   // 第二幕・第三幕・第四幕：血の表現は出さない
-  const s = clamp((scale || 1) * 0.16, 0.1, 0.2);
+  if (UK2.on || UK3.on || UK4.on || FB.on) return;   // 第二幕・第三幕・第四幕・吹雪：血の表現は出さない。空母と陸攻は床と壁に飛ばす
+  const s = clamp((scale || 1) * (CV.on ? 0.28 : 0.16), CV.on ? 0.18 : 0.1, CV.on ? 0.48 : 0.2);
   const pool = new THREE.Mesh(bloodPoolGeo, bloodMat);
   pool.rotation.x = -Math.PI / 2; pool.rotation.z = rand(0, 6.2);
-  pool.position.set(x, (y || 0) + 0.02, z); pool.scale.setScalar(s);
+  pool.position.set(x, (y || 0) + 0.03, z); pool.scale.setScalar(s);
   scene.add(pool); bloodDecals.push(pool);
-  let best = null, bd = 0.42;
+  let best = null, bd = CV.on ? 1.35 : 0.42;
   for (const b of boxes) {
-    if (b.y1 != null && b.y1 < 0.4) continue;
+    if (b.y1 != null && b.y1 < (y || 0) + 0.25) continue;
+    if (b.y0 != null && b.y0 > (y || 0) + 1.7) continue;
     const cx = clamp(x, b.x0, b.x1), cz = clamp(z, b.z0, b.z1), d = Math.hypot(x - cx, z - cz);
     if (d < bd && d > 0.02) { bd = d; best = { b, cx, cz, d }; }
   }
-  if (best && Math.random() < 0.55) {
-    const geo = new THREE.PlaneGeometry(rand(0.05, 0.1), rand(0.08, 0.16));
-    const w = new THREE.Mesh(geo, bloodMat);
-    w.userData.ownGeo = geo;
-    const nx = (x - best.cx) / best.d, nz = (z - best.cz) / best.d;
-    const wy = (best.b.y0 || 0) + rand(0.4, 1.15);
-    w.position.set(best.cx + nx * 0.03, wy, best.cz + nz * 0.03);
-    w.lookAt(best.cx + nx * 2, wy, best.cz + nz * 2);
-    scene.add(w); bloodDecals.push(w);
+  if (best) {
+    const nsp = CV.on ? 2 : 1;
+    for (let i = 0; i < nsp; i++) {
+      if (!CV.on && Math.random() > 0.55) continue;
+      const geo = new THREE.PlaneGeometry(rand(CV.on ? 0.16 : 0.05, CV.on ? 0.42 : 0.1), rand(CV.on ? 0.22 : 0.08, CV.on ? 0.55 : 0.16));
+      const w = new THREE.Mesh(geo, bloodMat);
+      w.userData.ownGeo = geo;
+      const nx = (x - best.cx) / best.d, nz = (z - best.cz) / best.d;
+      const wy = clamp((y || 0) + rand(0.45, 1.35), (best.b.y0 || 0) + 0.2, (best.b.y1 || ((y || 0) + 1.6)) - 0.08);
+      w.position.set(best.cx + nx * 0.04, wy, best.cz + nz * 0.04);
+      w.lookAt(best.cx + nx * 2, wy, best.cz + nz * 2);
+      scene.add(w); bloodDecals.push(w);
+    }
   }
 }
 function clearBlood() {
@@ -25239,7 +25246,7 @@ function clearBlood() {
   bloodDecals.length = 0;
 }
 function puff(pos, color, n, size, speed, life) {
-  if ((UK2.on || UK3.on || UK4.on || CV.on || FB.on) && (color === 0xb10f25 || color === 0xff263f || color === 0x7a1218)) color = UK3.on ? 0x9a9286 : 0xcfc4ad;   // 第二幕：被弾の飛沫は赤くしない（砂埃の色）
+  if ((UK2.on || UK3.on || UK4.on || FB.on) && (color === 0xb10f25 || color === 0xff263f || color === 0x7a1218)) color = UK3.on ? 0x9a9286 : 0xcfc4ad;   // 第二幕・吹雪：被弾の飛沫は赤くしない。空母は床と壁に血を残す
   for (let i = 0; i < n; i++) {
     const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color, transparent: true, depthWrite: false, opacity: 0.8 }));
     s.position.copy(pos); s.scale.setScalar(size); s.renderOrder = 3;
@@ -25361,7 +25368,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -29956,7 +29963,7 @@ function updateEnemies(dt) {
   }
 }
 
-// ---- プレイヤー被弾（画面の縁が一瞬白く光る。塗料は付かない） ----
+// ---- プレイヤー被弾（縁が白く光るだけ。血は足元の床と近くの壁に飛び、画面には付かない） ----
 function hurtPlayer(dmg) {
   if (player.god && (BEACH.on || stageName === 'keiku3')) return;
   if (state !== 'play' || inHQ()) return;
@@ -29964,7 +29971,8 @@ function hurtPlayer(dmg) {
   if (CAMP.on && CAMP.ph === 4 && !CAMP.solo && player.hp - dmg <= 0) { player.hp = 1; yjEnding(); return; }   // 山城：殿は討たれず、自ら幕を引く（何も見せない）
   if (FB.on) { dmg = Math.min(dmg, FB.ch.bridge === 'send' ? 9 : 14, Math.max(1, 28 - (FB.dmgWin || 0))); FB.dmgWin = (FB.dmgWin || 0) + dmg; }   // 吹雪：殿は一撃でも、囲まれても一気には崩れない
   player.hp -= dmg; player.hurtT = 0.5; player.shake = 0.25;
-  puff(player.pos.clone().setY(CV.on ? player.pos.y + 1 : 1), CV.on || FB.on ? 0xffffff : 0xb10f25, CV.on ? 3 : 7, 0.16, 1.6, 0.3);
+  puff(player.pos.clone().setY(CV.on ? player.pos.y + 1 : 1), FB.on ? 0xffffff : 0xb10f25, CV.on ? 5 : 7, 0.16, 1.6, 0.3);
+  if (CV.on) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
   Sfx.hurt();
   if (player.hp <= 0) {
     if (CV.on) { player.hp = 0; cvKingDown(); return; }
@@ -31508,7 +31516,7 @@ function rkBoom(p, k) {   // 着弾：土ぼこりだけ（火も爆発の光も
   if (Sfx.ctx) { const d = p.distanceTo(camera.position), g = clamp(1.2 - d / 2500, 0.05, 1); Sfx.noiseBurst(0.7, 'lowpass', 180, 40, 0.6 * g, 1, Math.min(2, d / 340)); }
 }
 // ---- 被弾：発動機・機体・搭乗員（殿も） ----
-function rkKingHit() {   // 殿の被弾：窓に血が飛び、作戦は中止
+function rkKingHit() {   // 殿の被弾：血は機体の床と壁だけ。画面と風防には付けず、作戦は中止
   if (RK.kingHit) return; RK.kingHit = true; RK.over = true; RK.log.push('kinghit');
   const K = RK.planes[0]; if (K) { const k = rkKingPos(); rkBloodAt(K, new V3(k.x, k.y + 1.15, k.z), true); }
   if (Sfx.ctx) Sfx.noiseBurst(0.12, 'lowpass', 900, 200, 0.5, 1);
@@ -32021,9 +32029,21 @@ function rkBloodGeom() {
   RK._bDrip = paint('drip');
   RK._bGeo = new THREE.PlaneGeometry(1, 1);
 }
+function rkOffGlass(z) {   // 風防の帯には血を残さない。帯の外の壁・床側へ押し出す
+  let z2 = z;
+  for (let pass = 0; pass < 3; pass++) {
+    for (const ab of RK_GLZ) {
+      if (z2 > ab[0] - 0.04 && z2 < ab[1] + 0.04) {
+        const lo = ab[0] - 0.2, hi = ab[1] + 0.2;
+        z2 = Math.abs(z2 - ab[0]) <= Math.abs(ab[1] - z2) ? lo : hi;
+      }
+    }
+  }
+  return clamp(z2, -9.05, 10.35);
+}
 function rkBloodSurf(bx, by, bz, i) {
   const z0 = clamp(bz, -9.1, 10.4), r0 = rkR(RK_FUS, z0), r = Math.max(0.26, r0 - 0.055), floorY = -0.86;
-  const gz = rkGlassZ(bz), z = (Math.abs(gz - bz) < 1.15 ? gz : bz) + rand(-0.1, 0.1);
+  const z = rkOffGlass(bz + rand(-0.06, 0.06));
   const side = bx < -0.04 ? -1 : bx > 0.04 ? 1 : (Math.random() < 0.5 ? -1 : 1);
   if (i % 4 === 3 || by < -0.5) {
     const x = clamp(bx * 0.65 + rand(-0.22, 0.22), -r * 0.72, r * 0.72);
@@ -32073,7 +32093,7 @@ function rkScreenBlood(n) {
   }
   const cap = LITE ? 16 : 32; if (RK.gBlood.length > cap) RK.gBlood.splice(0, RK.gBlood.length - cap);
 }
-function rkBloodAt(P, gp, heavy) {   // 傷の位置から内壁・床・ガラスへ血を飛ばし、付いたところで止める
+function rkBloodAt(P, gp, heavy) {   // 傷の近くの内壁と床だけ。王の画面と風防には付けない
   if (!P || !P.body || RK.silent || !gp) return;
   rkBloodGeom();
   const bx = gp.x / P.sc.x, by = gp.y / P.sc.y, bz = gp.z / P.sc.z;
@@ -32085,7 +32105,6 @@ function rkBloodAt(P, gp, heavy) {   // 傷の位置から内壁・床・ガラ�
   for (let i = 0; i < n; i++) rkBloodDecal(P, rkBloodSurf(bx, by, bz, i), heavy);
   const cap = LITE ? 36 : 72;
   while (P.bleeds.length > cap) { const old = P.bleeds.shift(); if (old.spot) P.body.remove(old.spot); if (old.drip) P.body.remove(old.drip); }
-  if (rkInside(P)) rkScreenBlood(heavy ? 5 : 2);
 }
 function rkBloodTick(P, dt) {
   if (!P.bleeds) return;

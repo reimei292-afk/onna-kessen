@@ -13028,7 +13028,7 @@ function buildKeiku() {
   railCut(-1, -86, 72); railCut(1, -86, -16); railCut(1, 30, 72);   // 右舷は艦橋のスポンソンで切れる
   // 舷外ギャラリー（飛行甲板の縁より一段下）：25mm機銃と12.7cm連装高角砲のスポンソン
   CV.galY = Yd - 1.9;
-  const gallery = (s0, z0, z1, cap0, cap1) => { const yg = CV.galY, xa = s0 * 11.35, xb = s0 * 13.5, xL = Math.min(xa, xb), xR = Math.max(xa, xb);
+  const gallery = (s0, z0, z1, cap0, cap1) => { const yg = CV.galY, xa = s0 * 8.85, xb = s0 * 13.5, xL = Math.min(xa, xb), xR = Math.max(xa, xb);
     cvSlab(xL, xR, yg - 0.22, yg, z0, z1, M.steel); cvFloor(xL, xR, z0, z1, yg);
     { let a = z0; for (const [ss, zz] of CV_SPON) if (ss === s0 && zz > z0 && zz < z1) { rail(s0 * 13.4, s0 * 13.52, a, zz - 2.4, yg, 1.0); a = zz + 2.4; } rail(s0 * 13.4, s0 * 13.52, a, z1, yg, 1.0); }
     if (cap0) rail(xL, xR, z0 - 0.12, z0, yg, 1.0);
@@ -13128,8 +13128,8 @@ function buildKeiku() {
     }
     if (zEnd > z + 0.08) wall(x0, x1, z, zEnd, y0, y1, mat);
   };
-  gapWall(-8.7, -8.2, -86, 40, Yh, Yd - 0.35, M.steel, [[-70, 1.5], [-48, 1.5], [-24, 1.5], [0, 1.5], [20, 1.5]]);
-  gapWall(8.2, 8.7, -86, 40, Yh, Yd - 0.35, M.steel, [[-70, 1.5], [-48, 1.5], [-24, 1.5], [8, 1.5], [24, 1.5]]);
+  gapWall(-8.7, -8.2, -86, 40, Yh, Yd - 0.35, M.steel, []);
+  gapWall(8.2, 8.7, -86, 40, Yh, Yd - 0.35, M.steel, []);
   wall(-8.6, -1.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
   wall(1.6, 8.6, -66.25, -65.85, Yh, Yd - 0.45, M.steel);
   const h1 = new THREE.PointLight(0xfff1d4, 0.7, 36); h1.position.set(0, 10.2, -30); stageRoot.add(h1);
@@ -24860,7 +24860,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

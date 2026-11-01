@@ -3,14 +3,14 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261101c`
+- 現在のバージョン: `20261101d`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。`v.txt` も同じ値。
   2. `node --check game.js`
   3. コミット名義: `reimei292-afk <reimei292-afk@users.noreply.github.com>`（GIT_AUTHOR_*/GIT_COMMITTER_* を export）
   4. push: `git -c credential.helper= -c credential.helper='!/usr/local/bin/gh auth git-credential' push`
 - 作業プロセスは約50分で落とされることがある。**10分ごとにコミット＋push**。
-- ユーザー指示（2026-11-01）: 見た目の修正が済んだら、確認のあと **公開まで一気にやる**（バージョン上げ・commit・push）。確認だけで止めない。
+- ユーザー指示（2026-11-01）: 見た目の修正が済んだら、確認のあと **公開まで一気にやる**（バージョン上げ・commit・push）。確認だけで止めない。できた箇所から小分けに push し、報告で止めず次へ進む。
 
 ## エンジン概要
 - three.js 1ファイル構成（`game.js` 巨大、`index.html` にUI/CSS）。キャラは**実写写真のビルボード**（8方向×歩行フレーム）。

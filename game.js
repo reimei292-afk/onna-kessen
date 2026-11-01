@@ -10743,20 +10743,19 @@ function cvHangarShop(Y, boxes) {
   const box = (x0, x1, y0, y1, z0, z1, m, solid) => { cvSlab(x0, x1, Y + y0, Y + y1, z0, z1, m); if (solid) boxes.push({ x0, x1, z0, z1, y0: Y, y1: Y + y1 }); };
   const cyl = (x, y, z, r0, r1, h, m, rx, rz, n) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, n || 12), m); o.position.set(x, Y + y, z); if (rx) o.rotation.x = rx; if (rz) o.rotation.z = rz; stageRoot.add(o); return o; };
   // 作業台（右舷の壁ぞい）：天板・脚・万力・工具・油の染み
-  for (const z of [19, 23.5, 28]) { const x0 = 6.6, x1 = 8.2; box(x0, x1, 0.86, 0.92, z, z + 3.6, wood, true); for (const [a, b] of [[x0 + 0.05, z + 0.05], [x1 - 0.12, z + 0.05], [x0 + 0.05, z + 3.48], [x1 - 0.12, z + 3.48]]) box(a, a + 0.07, 0, 0.86, b, b + 0.07, steel);
-    box(x0 + 0.1, x1 - 0.1, 0.25, 0.28, z + 0.1, z + 3.5, wood); box(x1 - 0.05, x1, 0.92, 2.2, z, z + 3.6, L(0x5a5040));   // 下の棚と工具板
+  for (const z of [32.2, 35.8, 39.2]) { const x0 = 6.6, x1 = 8.2; box(x0, x1, 0.86, 0.92, z, z + 3.2, wood, true); for (const [a, b] of [[x0 + 0.05, z + 0.05], [x1 - 0.12, z + 0.05], [x0 + 0.05, z + 3.08], [x1 - 0.12, z + 3.08]]) box(a, a + 0.07, 0, 0.86, b, b + 0.07, steel);
+    box(x0 + 0.1, x1 - 0.1, 0.25, 0.28, z + 0.1, z + 3.1, wood); box(x1 - 0.05, x1, 0.92, 2.2, z, z + 3.2, L(0x5a5040));   // 下の棚と工具板
     for (let k = 0; k < 7; k++) box(x1 - 0.09, x1 - 0.05, 1.2 + (k % 3) * 0.28, 1.45 + (k % 3) * 0.28, z + 0.3 + k * 0.45, z + 0.36 + k * 0.45, k % 2 ? steel : red);
     cyl(x0 + 0.35, 1.02, z + 0.6, 0.08, 0.08, 0.2, dark); box(x0 + 0.2, x0 + 0.5, 0.92, 1.0, z + 1.4, z + 2.4, L(0x3a3a38)); cyl(x0 + 0.6, 0.93, z + 2.9, 0.18, 0.18, 0.01, L(0x2a241c)); }
   // 予備の栄(さかえ)発動機：架台に載せた星形
-  for (const z of [19.5, 25]) { box(-0.9, 0.9, 0, 0.5, z, z + 1.6, olive, true); const cx = 0, cz = z + 0.8; cyl(cx, 1.05, cz, 0.5, 0.5, 0.5, dark, Math.PI / 2);
+  for (const z of [37.2, 40.4]) { box(-0.9, 0.9, 0, 0.5, z, z + 1.6, olive, true); const cx = 0, cz = z + 0.8; cyl(cx, 1.05, cz, 0.5, 0.5, 0.5, dark, Math.PI / 2);
     for (let k = 0; k < 14; k++) { const a = k / 14 * Math.PI * 2; const c = cyl(cx + Math.cos(a) * 0.55, 1.05 + Math.sin(a) * 0.55, cz + (k % 2 ? 0.12 : -0.12), 0.09, 0.09, 0.36, L(0x55585a), 0, 0, 8); c.rotation.z = a - Math.PI / 2; }
     cyl(cx, 1.05, cz - 0.4, 0.16, 0.2, 0.4, dark, Math.PI / 2); }
   // プロペラの立て掛け架台と、外した主翼の架台
   box(-8.3, -8.0, 0, 2.6, 18, 22, wood, true); for (let k = 0; k < 4; k++) { const z = 18.5 + k * 0.9; box(-7.98, -7.9, 0.1, 3.0, z, z + 0.16, L(0x3c2e22)); cyl(-7.9, 1.55, z + 0.08, 0.12, 0.12, 0.1, brass, 0, Math.PI / 2); }
-  box(-8.4, -6.9, 0, 1.1, 23, 23.2, steel); box(-8.4, -6.9, 0, 1.1, 30, 30.2, steel); box(-7.9, -7.7, 1.1, 3.3, 23, 30.2, olive, true);   // 翼を縦にした姿
-  box(-7.95, -7.65, 1.1, 1.25, 23, 30.2, L(0x8a2a22));   // 翼端の赤帯風ではなく前縁の保護布
-  // 爆弾・魚雷の運搬車（中央の通路）
-  for (const [x, z, t] of [[-3.6, 20, 0], [-3.6, 24, 0], [3.4, 31, 1], [-3.6, 28, 1]]) { box(x - 0.45, x + 0.45, 0.25, 0.32, z - 1.3, z + 1.3, steel, true); for (const sx of [-0.4, 0.4]) for (const sz of [-1, 1]) cyl(x + sx, 0.14, z + sz, 0.14, 0.14, 0.08, dark, 0, Math.PI / 2, 10);
+  box(-8.4, -6.9, 0, 1.1, 36.2, 36.4, steel); box(-8.4, -6.9, 0, 1.1, 42.0, 42.2, steel); box(-7.9, -7.7, 1.1, 3.3, 36.2, 42.2, olive, true);   // 翼を縦にした姿
+  box(-7.95, -7.65, 1.1, 1.25, 36.2, 42.2, L(0x8a2a22));   // 翼端の赤帯風ではなく前縁の保護布
+  for (const [x, z, t] of [[-3.6, 36.2, 0], [-3.6, 38.4, 0], [3.2, 40.2, 1], [-3.6, 41.2, 1]]) { box(x - 0.45, x + 0.45, 0.25, 0.32, z - 1.3, z + 1.3, steel, true); for (const sx of [-0.4, 0.4]) for (const sz of [-1, 1]) cyl(x + sx, 0.14, z + sz, 0.14, 0.14, 0.08, dark, 0, Math.PI / 2, 10);
     if (t) { cyl(x, 0.62, z, 0.27, 0.27, 2.4, L(0x606a68), Math.PI / 2, 0, 14); cyl(x, 0.62, z - 1.35, 0.27, 0.05, 0.4, L(0x606a68), -Math.PI / 2, 0, 14); box(x - 0.3, x + 0.3, 0.6, 0.64, z + 1.2, z + 1.6, dark); }   // 九一式魚雷
     else { cyl(x, 0.62, z, 0.22, 0.22, 1.2, L(0x3a3c36), Math.PI / 2, 0, 12); cyl(x, 0.62, z - 0.75, 0.22, 0.04, 0.3, L(0x3a3c36), -Math.PI / 2, 0, 12); box(x - 0.24, x + 0.24, 0.58, 0.66, z + 0.6, z + 0.95, dark); box(x - 0.03, x + 0.03, 0.4, 0.84, z + 0.6, z + 0.95, dark); } }   // 二五番
   // 揚弾口（床の開口の縁：黄と黒の縞、鎖の手すり）
@@ -10773,7 +10772,7 @@ function cvHangarShop(Y, boxes) {
   cvSign(-8.35, Y + 1.9, 33, '整備員 休憩所', Math.PI / 2).scale.set(0.4, 0.4, 1); cvSign(0, Y + 2.8, 17.6, '整備場', Math.PI).scale.set(0.5, 0.5, 1);
   // 床の油の染み（血ではない）と天井のチェーンブロック
   const oil = L(0x2a2620); for (const [x, z, r] of [[0, 21, 0.9], [-2, 26.5, 0.5], [5.4, 22, 0.6], [1.5, 29, 0.7]]) { const o = new THREE.Mesh(new THREE.CircleGeometry(r, 14), oil); o.rotation.x = -Math.PI / 2; o.position.set(x, Y + 0.012, z); o.material.transparent = true; o.material.opacity = 0.55; stageRoot.add(o); }
-  for (const z of [20.3, 25.8]) { cyl(0, 4.6, z, 0.015, 0.015, 3.0, steel, 0, 0, 4); box(-0.15, 0.15, 3.0, 3.35, z - 0.1, z + 0.1, yel); }
+  for (const z of [35.4, 39.0]) { cyl(0, 4.6, z, 0.015, 0.015, 3.0, steel, 0, 0, 4); box(-0.15, 0.15, 3.0, 3.35, z - 0.1, z + 0.1, yel); }
 }
 function cvAir(x, y, z, yaw, kind) {
   if (kind === 'zero' || kind === 'escort' || kind === 'usf') {
@@ -13121,7 +13120,7 @@ function buildKeiku() {
   const h1 = new THREE.PointLight(0xfff1d4, 0.7, 36); h1.position.set(0, 10.2, -30); stageRoot.add(h1);
   const h2 = new THREE.PointLight(0xfff1d4, 0.65, 36); h2.position.set(0, 10.2, 10); stageRoot.add(h2);
   cvSign(0, 10.4, 36, '格納庫', 0);
-  cvLad(-2.2, -30.4, -29.1, Yh, Yd);
+  cvStairs(-11.22, -10.35, -36.2, -28.4, Yh, Yd, '階段　上 飛行甲板');
   // 前部昇降機（z16〜30）の穴に重なっていた階段は外した（格納庫→飛行甲板は x±7 の階段と艦首寄りの階段で上がる）
   const sc = 1;
   const park = (x, y, z, yaw, kind) => { const g = cvAir(x, y, z, yaw, kind); g.scale.setScalar(kind === 'liaison' ? 0.85 : sc); g.position.y = y + 0.55; return g; };
@@ -13129,7 +13128,7 @@ function buildKeiku() {
   for (let i = 0; i < 4; i++) park(-6.2, Yd + 0.55, 4 + i * 11, 0, 'zero');
   park(-6.2, Yd + 0.55, -16, 0, 'escort'); park(2.4, Yd + 0.55, -16, 0, 'escort');
   // 搭載機はおよそ三十（瑞鳳程度）：零戦・直掩 二十が飛べる機、格納庫の前寄りに整備中の零戦 六。後部は整備場
-  for (let i = 0; i < 6; i++) { const x = i % 2 ? 4.25 : -4.25, z = 1.0 + ((i / 2) | 0) * 6.0; /* 翼端が格納庫の壁（x±8.2）・階段・前部昇降機（z16〜）・隣の機に触れない並び */ const g = cvFighter(x, Yh + 0.7, z, Math.PI, 'zero'); const k = CV.parked.indexOf(g); if (k >= 0) CV.parked.splice(k, 1); g.userData.kind = 'maint'; g.position.y = Yh + 0.7; if (g.userData.prop) g.userData.prop.visible = i % 3 !== 0; }
+  for (let i = 0; i < 6; i++) { const z = -32 + i * 8; const g = cvFighter(0, Yh + 0.7, z, Math.PI, 'zero'); const k = CV.parked.indexOf(g); if (k >= 0) CV.parked.splice(k, 1); g.userData.kind = 'maint'; g.position.y = Yh + 0.7; if (g.userData.prop) g.userData.prop.visible = i % 3 !== 0; }
   cvHangarShop(Yh, boxes);
   cvHangarAft(Yh, boxes);   // 格納庫の後ろ（プールの手前）：床を張り、弾薬置き場と交代詰所に
   // 舷側歩廊（飛行甲板の張り出しの下）と、艦尾の遊歩・プール
@@ -13545,8 +13544,8 @@ function buildKeiku() {
   cvStairs(3.05, 4.45, -2.6, -9.0, 0.72, 4.12, '階段　上 中甲板（侍女大部屋）');
   cvStairs(-3.55, -2.15, 10.6, 4.3, 4.12, 7.72, '階段　上 第二甲板（医務室・食堂）');
   cvStairs(-6.9, -5.6, -24.5, -30.6, 7.72, 11.28, '階段　上 格納庫');
-  cvStairs(-8.1, -6.8, -2.0, -11.6, 11.28, 17.2, '階段　上 飛行甲板');
-  cvStairs(6.8, 8.1, 42.6, 33.0, 11.28, 17.2, '階段　上 飛行甲板');
+  cvStairs(-11.22, -10.35, -2.0, -11.6, 11.28, 17.2, '階段　上 飛行甲板');
+  cvStairs(10.35, 11.22, 42.6, 33.0, 11.28, 17.2, '階段　上 飛行甲板');
   // 客船区画の内装（エドワード朝の客船風）
   { const yA = 4.08, hA = 7.24 - 4.08 - 0.3;
     cvEdwRoom(1.3, 7.2, 42, 52, yA, hA, 'lounge', boxes); cvEdwRoom(-7.2, -1.3, 42, 52, yA, hA, 'library', boxes);
@@ -24840,7 +24839,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

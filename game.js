@@ -12601,7 +12601,7 @@ function cvGrandFlight(side, y0, y1, z0, z1) {
 // ── クルーズの追加区画（20261101）：大吹き抜け＋中庭、プールの仕上げ、士官食堂、船倉、機関の配管、医務室 ──
 // 格納庫（Yh）と大広間（Y2）の床は抜かない。吹き抜けは大広間の下（z -84〜-59）。船倉は下甲板の下。
 function cvCruiseAdd() {
-  const Y0 = CV.Y0, Y2 = CV.Y2, Yh = CV.Yh, Ya0 = -1.2, Ya1 = 1.75, Ya2 = 4.7, Yk = -2.55;
+  const Y0 = CV.Y0, Y1 = CV.Y1, Y2 = CV.Y2, Yh = CV.Yh, Ya0 = -1.2, Ya1 = 1.75, Ya2 = 4.7, Yk = -2.55;
   CV.Ya0 = Ya0; CV.Ya1 = Ya1; CV.Ya2 = Ya2; CV.Yhld = Yk;
   const std = (hex, rough, metal, ex) => new THREE.MeshStandardMaterial(Object.assign({ color: hex, roughness: rough, metalness: metal }, ex || {}));
   const gold = std(0xd4b15a, 0.32, 0.9), brass = std(0xc6a15a, 0.28, 0.88);
@@ -25273,7 +25273,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101q';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -33593,7 +33593,7 @@ for (const t of document.querySelectorAll('#stagesel .stabs button')) t.addEvent
 if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(es => { for (const x of es) stageArrUpd(x.target); }); for (const tr of document.querySelectorAll('#stagesel .strack')) ro.observe(tr); }
 addEventListener('resize', () => { for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr); });
 for (const tr of document.querySelectorAll('#stagesel .strack')) stageArrUpd(tr);
-selectStage(stageName);
+try { selectStage(stageName); } catch (e) { console.error(e); }
 { const b = document.getElementById('buildtag'), t = '版 ' + ASSET_V;
   if (b) b.textContent = t;
   else { const h = document.querySelector('#title h2'); if (h) h.insertAdjacentHTML('afterend', '<p id="buildtag" style="font-size:14px;letter-spacing:.12em;color:#ffe9b8;margin:0 0 6px">' + t + '</p>'); }

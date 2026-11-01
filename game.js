@@ -13303,7 +13303,7 @@ function buildKeiku() {
   bulkZ(51.7, -7.15, -1.9); bulkZ(51.7, 1.9, 7.15);
   bulkZ(63.7, -5.45, -1.9); bulkZ(63.7, 1.9, 5.45);
   bulkZ(73.6, -3.05, -1.9); bulkZ(73.6, 1.9, 3.05);
-  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[47.0, 4.0], [57.8, 1.4], [68.2, 1.4], [76.2, 1.2]]);
+  gapWall(-1.55, -1.1, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[47.0, 4.0], [57.9, 5.6], [68.2, 1.4], [76.2, 1.2]]);   // 浴室（z 52.3〜63.5）は扉枠なし。開口のまま
   gapWall(1.1, 1.55, 42.2, 87.4, Y1, Y1 + 3.25, M.bulk, [[47.0, 4.0], [57.8, 1.4], [68.2, 1.4], [76.2, 1.2]]);
   deckPlate(-7.1, -1.6, 42.3, 51.5, Y1 + 3.12, M.white);
   deckPlate(1.6, 7.1, 42.3, 51.5, Y1 + 3.12, M.white);
@@ -13401,7 +13401,7 @@ function buildKeiku() {
   bay(Y0, -48, 36, -6.4, 6.4);
   bay(Y1, -56, 41.7, -7.2, 7.2);
   { const y = Y2; cvFloor(-7.0, 7.0, -50, 39, y); deckPlate(-6.85, 6.85, -49.85, 38.85, y, M.steel);
-    gapWall(7.0, 7.2, -50, 39, y, y + 3.15, M.bulk, [[-42, 0.75], [-20, 0.75], [0, 0.75], [20, 0.75], [34, 0.75]]);
+    gapWall(7.0, 7.2, -50, 39, y, y + 3.15, M.bulk, [[-42, 0.75], [-20, 0.75], [34, 0.75]]);   // z 0 と 20 はジャグジー側。海の見える扉は置かない
     cvFloor(7.2, 8.6, -50, 39, y); cvSlab(7.2, 8.6, y - 0.22, y + 0.04, -50, 39, M.steel);
     cvSign(7.9, y + 2.4, -48.6, '第二甲板　右舷通路', 0).scale.set(0.5, 0.5, 1);
     wall(-7.2, -7.0, -46.0, 39, y, y + 3.15, M.bulk); wall(-7.2, -7.0, -50, -46.0, y + 2.2, y + 3.15, M.bulk);
@@ -14086,7 +14086,7 @@ function cvNavFix() {
   };
   const clearVol = (x0, x1, z0, z1, y0, y1) => { splitBox(x0, x1, z0, z1, y0, y1); holeMesh(x0, x1, z0, z1, y0, y1); killLoose(x0, x1, z0, z1, y0, y1); };
   // 右舷を左舷と同じ通路にする。十字路で左右をつなぐ。大部屋の前のグレー壁は中央を抜く
-  clearVol(4.5, 8.22, -50, 39, Y2 + 0.22, Y2 + 2.15);
+  clearVol(7.25, 8.22, -50, 39, Y2 + 0.22, Y2 + 2.15);   // 右舷通路だけ空ける。部屋の外壁（x 7.0〜7.2）は残し、海が見えないようにする
   clearVol(-8.05, 8.22, -6.7, -4.15, Y2 + 0.22, Y2 + 2.15);
   clearVol(-6.45, 6.45, -56.55, -55.85, Y1 + 0.15, Y1 + 3.3);
   cvCutFloors(-2.86, -0.99, 26.4, 38.4, Y2);   // 格納庫への階段が、後から張った第二甲板を貫通する（段は残す）
@@ -25435,7 +25435,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -12922,7 +12922,7 @@ function cvCruiseAdd() {
         add(new THREE.CylinderGeometry(0.09, 0.09, 0.03, 12), cream, s * 2.55, y + 1.55, z, 0, Math.PI / 2);
         CV.steam = CV.steam || []; CV.steam.push([s * 3.6, y + 2.3, z]); }
     }
-    for (const s of [-1, 1]) tube([[s * 3.2, y + 1.1, 8], [s * 2.4, y + 1.5, 14], [s * 2.4, y + 0.7, 24], [s * 1.2, y + 0.45, 36]], 0.08);
+    for (const s of [-1, 1]) tube([[s * 3.2, y + 1.1, 8], [s * 2.4, y + 1.5, 14], [s * 2.4, y + 0.7, 24], [s * 1.2, y + 0.45, 33.2]], 0.08);
     cvSign(-4.6, Y0 + 2.15, -42, '缶圧計', Math.PI / 2).scale.set(0.35, 0.35, 1);
     light(-3.6, Y0 + 2.4, -38, 0.25, 10);
     void hot;
@@ -13035,12 +13035,44 @@ function buildKeiku() {
   railCut(-1, -86, 72); railCut(1, -86, -16); railCut(1, 30, 72);   // 右舷は艦橋のスポンソンで切れる
   // 舷外ギャラリー（飛行甲板の縁より一段下）：25mm機銃と12.7cm連装高角砲のスポンソン
   CV.galY = Yd - 1.9;
-  const gallery = (s0, z0, z1) => { const yg = CV.galY, xa = s0 * 11.35, xb = s0 * 13.5;
-    cvSlab(Math.min(xa, xb), Math.max(xa, xb), yg - 0.22, yg, z0, z1, M.steel); cvFloor(Math.min(xa, xb), Math.max(xa, xb), z0, z1, yg);
-    { let a = z0; for (const [ss, zz] of CV_SPON) if (ss === s0 && zz > z0 && zz < z1) { rail(s0 * 13.4, s0 * 13.52, a, zz - 2.4, yg, 1.0); a = zz + 2.4; } rail(s0 * 13.4, s0 * 13.52, a, z1, yg, 1.0); } rail(Math.min(xa, xb), Math.max(xa, xb), z0 - 0.12, z0, yg, 1.0); rail(Math.min(xa, xb), Math.max(xa, xb), z1, z1 + 0.12, yg, 1.0);
-    for (let z = z0 + 1; z < z1; z += 4) cvSlab(Math.min(s0 * 9.2, xb), Math.max(s0 * 9.2, xb) - (s0 > 0 ? 0.9 : 0) + (s0 < 0 ? 0.9 : 0), yg - 1.2, yg - 0.22, z, z + 0.16, M.steel);   // 腕木
+  const gallery = (s0, z0, z1, cap0, cap1) => { const yg = CV.galY, xa = s0 * 11.35, xb = s0 * 13.5, xL = Math.min(xa, xb), xR = Math.max(xa, xb);
+    cvSlab(xL, xR, yg - 0.22, yg, z0, z1, M.steel); cvFloor(xL, xR, z0, z1, yg);
+    { let a = z0; for (const [ss, zz] of CV_SPON) if (ss === s0 && zz > z0 && zz < z1) { rail(s0 * 13.4, s0 * 13.52, a, zz - 2.4, yg, 1.0); a = zz + 2.4; } rail(s0 * 13.4, s0 * 13.52, a, z1, yg, 1.0); }
+    if (cap0) rail(xL, xR, z0 - 0.12, z0, yg, 1.0);
+    if (cap1) rail(xL, xR, z1, z1 + 0.12, yg, 1.0);
+    for (let z = z0 + 1; z < z1; z += 4) cvSlab(Math.min(s0 * 9.2, xb), Math.max(s0 * 9.2, xb) - (s0 > 0 ? 0.9 : 0) + (s0 < 0 ? 0.9 : 0), yg - 1.2, yg - 0.22, z, z + 0.16, M.steel);
   };
-  gallery(-1, -88, 70); gallery(1, -88, -17); gallery(1, 31, 70);
+  // 左右のギャラリーは艦首と艦尾でつながる。右舷は艦橋スポンソンの外側を回って途切れない
+  gallery(-1, -93.4, 76.9, false, false);
+  gallery(1, -93.4, -16.4, false, false);
+  gallery(1, 30.4, 76.9, false, false);
+  {
+    const yg = CV.galY;
+    const cat = (x0, x1, z0, z1) => { cvSlab(x0, x1, yg - 0.22, yg, z0, z1, M.steel); cvFloor(x0, x1, z0, z1, yg); };
+    cat(-13.5, 13.5, -93.55, -90.15);
+    rail(-13.5, 13.5, -93.7, -93.55, yg, 1.0);
+    rail(-11.25, 11.25, -90.28, -90.12, yg, 1.0);
+    cvSlab(-0.09, 0.09, 6.35, yg - 0.22, -92.35, -92.1, M.steel);
+    cvSlab(-0.09, 0.09, 6.35, yg - 0.22, -91.05, -90.8, M.steel);
+    cvSign(0, yg + 1.55, -92.3, '機銃ギャラリー　艦首で左右へ', 0).scale.set(0.48, 0.48, 1);
+    cat(-13.5, 13.5, 74.15, 77.05);
+    rail(-13.5, 13.5, 77.05, 77.2, yg, 1.0);
+    rail(-11.25, 11.25, 74.0, 74.15, yg, 1.0);
+    for (const x of [-5.4, 0, 5.4]) cvSlab(x - 0.08, x + 0.08, 9.35, yg - 0.22, 75.45, 75.65, M.steel);
+    cvSign(0, yg + 1.55, 75.5, '機銃ギャラリー　艦尾で左右へ', Math.PI).scale.set(0.48, 0.48, 1);
+    cat(17.35, 19.6, -17.7, 31.7);
+    rail(19.46, 19.6, -17.7, 31.7, yg, 1.0);
+    cat(11.35, 19.6, -17.7, -16.15);
+    cat(11.35, 19.6, 30.15, 31.7);
+    rail(13.52, 19.6, -17.85, -17.7, yg, 1.0);
+    rail(13.52, 19.6, 31.7, 31.85, yg, 1.0);
+    rail(11.35, 17.3, -16.28, -16.12, yg, 0.72);
+    rail(11.35, 17.3, 30.02, 30.18, yg, 0.72);
+    for (let z = -14; z <= 28; z += 7) { cvSlab(17.22, 17.38, yg - 0.22, Yd - 1.18, z, z + 0.14, M.steel); cvSlab(17.22, 19.45, yg - 0.52, yg - 0.22, z, z + 0.12, M.steel); }
+    cvSign(18.55, yg + 1.45, 6, '右舷ギャラリー　艦橋の外を回る', Math.PI / 2).scale.set(0.4, 0.4, 1);
+    const gl = new THREE.PointLight(0xffe6c4, 0.45, 14); gl.position.set(0, yg + 1.8, -92); stageRoot.add(gl);
+    const gl2 = new THREE.PointLight(0xffe6c4, 0.45, 14); gl2.position.set(0, yg + 1.8, 75.4); stageRoot.add(gl2);
+  }
   // 舷側に倒せる無線檣（左舷4本・右舷2本）。発着艦中は水平に倒してある
   for (const [s0, z] of [[-1, -52], [-1, -28], [-1, 2], [-1, 46], [1, -40], [1, 58]]) {
     const g = new THREE.Group(); g.position.set(s0 * 13.45, CV.galY + 0.4, z);
@@ -13310,7 +13342,8 @@ function buildKeiku() {
       const x = i % 2 ? 3.4 : -3.4, z = 8 + (i / 2 | 0) * 8;
       const cas = new THREE.Mesh(new THREE.CylinderGeometry(0.75, 0.9, 2.6, 14, 1, false, 0, Math.PI), M.gun); cas.rotation.z = Math.PI / 2; cas.rotation.y = Math.PI / 2; cas.position.set(x, Y0 + 1.05, z); stageRoot.add(cas);
       const gear = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.6, 1.4), M.steel); gear.position.set(x, Y0 + 0.8, z + 2.4); stageRoot.add(gear);
-      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 30, 8), M.brass); sh.rotation.x = Math.PI / 2; sh.position.set(x * 0.7, Y0 + 0.35, z + 18); stageRoot.add(sh);
+      const zA = z + 2.2, zB = 33.4, len = zB - zA;   // 大劇場（z36〜）には軸を入れない
+      const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, len, 8), M.brass); sh.rotation.x = Math.PI / 2; sh.position.set(x * 0.7, Y0 + 0.35, (zA + zB) / 2); stageRoot.add(sh);
     }
     cvSign(-3.6, Y0 + 2.4, -46.2, '第一・第二缶室', 0); cvSign(3.4, Y0 + 2.4, 5.4, 'タービン・減速装置', 0);
   }
@@ -24747,7 +24780,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261101f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261101g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

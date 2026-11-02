@@ -62,7 +62,8 @@ for(let x=-6;x<=6;x+=3){box(island,x,20,-6.1,2.4,1.8,.15,glass,false)}
 // Island mast and rotating radar.
 cyl(island,0,26,0,.65,.9,6,steel);cyl(island,0,29,0,3.8,3.8,.3,darkSteel,32);const radar=new THREE.Group();radar.position.set(0,29.5,0);island.add(radar);box(radar,0,0,0,1,0.3,19,gold,false);box(radar,0,.2,0,19,.22,.6,steel,false);
 for(let i=0;i<6;i++){const a=cyl(island,-7+i*2.8,26,-1,.12,.12,7,steel,8);a.rotation.z=.16}
-for(let x of [-8,8]){const stack=cyl(island,x,19,3,2.1,2.5,5,darkSteel,20);cyl(island,x,22,3,1.6,1.6,.3,mat(0x5b3027,.8,.1),20)}\nisland.children.slice(0,10).forEach(o=>{if(o.isMesh)o.castShadow=true});
+for(let x of [-8,8]){const stack=cyl(island,x,19,3,2.1,2.5,5,darkSteel,20);cyl(island,x,22,3,1.6,1.6,.3,mat(0x5b3027,.8,.1),20)}
+island.children.slice(0,10).forEach(o=>{if(o.isMesh)o.castShadow=true});
 // Hangar bay, illuminated interior, overhead trusses, service doors and aircraft elevators.
 const hangar=new THREE.Group();hangar.position.set(-12,-8,0);carrier.add(hangar);box(hangar,0,0,0,190,15,48,navy);box(hangar,0,7.55,0,188,.5,46,steel);
 for(let side of [-1,1]){box(hangar,0,1,side*23.7,190,13,.5,steel);for(let x=-88;x<=88;x+=18){box(hangar,x,1.5,side*24,13,10,.16,glass,false);box(hangar,x,7,side*24,13,.35,.3,gold,false)}}

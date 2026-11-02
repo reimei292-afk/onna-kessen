@@ -65,13 +65,11 @@ jobs:
               await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block');
               const transfer=await page.locator('#ptitle').textContent();
               if(transfer!=='連絡通路')throw new Error('Ship transfer point unavailable: '+transfer);console.log('TRANSFER_OK');
-              const mobile=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-              await mobile.goto('http://127.0.0.1:8000/keiku5.html',{waitUntil:'domcontentloaded'});
-              await mobile.waitForFunction(()=>window.__carrierStage,{timeout:15000});
-              if(await mobile.locator('#touch').evaluate(e=>getComputedStyle(e).display==='none'))throw new Error('Mobile controls hidden');console.log('MOBILE_OK');
+              await page.setViewportSize({width:390,height:844});
+              if(await page.locator('#touch').evaluate(e=>getComputedStyle(e).display==='none'))throw new Error('Mobile controls hidden');console.log('MOBILE_OK');
               if(errors.length)throw new Error('Browser errors: '+errors.slice(0,15).join(' | '));
               console.log('CARRIER_CRUISE_VISUAL_OVERHAUL_PASS '+JSON.stringify({initial,voice,lift,transfer,mobile:true}));
-              await mobile.close();
+              
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE

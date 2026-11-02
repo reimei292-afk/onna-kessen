@@ -67,7 +67,7 @@ for(let x of [-8,8]){const stack=cyl(island,x,19,3,2.1,2.5,5,darkSteel,20);cyl(i
 const hangar=new THREE.Group();hangar.position.set(-12,-8,0);carrier.add(hangar);box(hangar,0,0,0,190,15,48,navy);box(hangar,0,7.55,0,188,.5,46,steel);
 for(let side of [-1,1]){box(hangar,0,1,side*23.7,190,13,.5,steel);for(let x=-88;x<=88;x+=18){box(hangar,x,1.5,side*24,13,10,.16,glass,false);box(hangar,x,7,side*24,13,.35,.3,gold,false)}}
 for(let x=-88;x<=88;x+=16){box(hangar,x,7,0,.35,.3,45,gold,false);const lamp=new THREE.Mesh(new THREE.BoxGeometry(5,.18,.7),new THREE.MeshBasicMaterial({color:0xffe7b2}));lamp.position.set(x,7.25,0);hangar.add(lamp)}
-for(let x of [-65,-5,55]){box(hangar,x,-6,0,18,.4,12,deckmat);for(let z of [-4,4])box(hangar,x,-3,z,1.2,5,steel)}
+for(let x of [-65,-5,55]){box(hangar,x,-6,0,18,.4,12,deckmat);for(let z of [-4,4])box(hangar,x,-3,z,1.2,5,1,steel)}
 // Realistic aircraft silhouettes: tapered fuselage, swept wings, tailplanes, canopy and landing gear.
 const aircraftPaint=mat(0x65737a,.48,.58),canopyMat=new THREE.MeshPhysicalMaterial({color:0x8dc1d4,roughness:.12,metalness:.25,transparent:true,opacity:.82,clearcoat:1});
 function aircraft(p,x,y,z,scale=1,type='jet',rot=0){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rot;g.scale.setScalar(scale);p.add(g);

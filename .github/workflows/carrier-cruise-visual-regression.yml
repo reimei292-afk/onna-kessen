@@ -1,0 +1,82 @@
+name: Carrier cruise visual regression
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  browser-visual-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Serve project
+        run: |
+          python3 -m http.server 8000 >/tmp/carrier.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
+      - name: Render both ships and verify interactions
+        run: |
+          node <<'NODE'
+          const {chromium}=require('playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--enable-webgl']});
+            const page=await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
+            const errors=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));
+            page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
+            try{
+              await page.goto('http://127.0.0.1:8000/keiku5.html',{waitUntil:'domcontentloaded',timeout:60000});
+              await page.waitForTimeout(1000);
+              if(!await page.evaluate(()=>!!window.__carrierStage)) throw new Error('Stage boot failed; page errors='+JSON.stringify(errors)+'; title='+await page.title()+'; scripts='+await page.locator('script').count());
+              await page.waitForFunction(()=>window.__carrierStage&&window.__carrierStage.carrier&&window.__carrierStage.cruise,{timeout:10000});
+              console.log('STAGE_BOOTED');
+              await page.waitForTimeout(2500);
+              const initial=await page.evaluate(()=>({
+                canvas:!!document.querySelector('canvas'),
+                renderCalls:window.__carrierStage.renderer.info.render.calls,
+                carrierChildren:window.__carrierStage.carrier.children.length,
+                cruiseChildren:window.__carrierStage.cruise.children.length,
+                crew:window.__carrierStage.crewSpots.length,
+                sprites:window.__carrierStage.carrier.children.filter(x=>x.children?.some(y=>y.material?.map)).length,
+                sceneObjects:window.__carrierStage.scene.children.length
+              }));
+              console.log('INITIAL_RENDER '+JSON.stringify(initial));if(!initial.canvas||initial.renderCalls<1||initial.carrierChildren<20||initial.cruiseChildren<30||initial.crew!==6)throw new Error('Visual scene did not initialize: '+JSON.stringify(initial));
+              try{await page.screenshot({path:'/tmp/carrier-overhaul.png',fullPage:true,timeout:10000});console.log('SCREENSHOT_OK')}catch(e){console.log('SCREENSHOT_SKIPPED '+e.message)}
+              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=-26;p.y=2.1;p.z=-64;});
+              await page.keyboard.press('e');
+              await page.waitForFunction(()=>document.querySelector('#dialogue').style.display==='block');
+              const voice=await page.evaluate(()=>({text:document.querySelector('#dialoguetext').textContent,src:window.__carrierVoice?.src||''}));
+              if(!voice.text.includes('点検よし')||!voice.src.includes('assets/voices/ab/192f280260.mp3'))throw new Error('Existing voice reuse failed: '+JSON.stringify(voice));console.log('VOICE_OK');
+              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=0;p.y=2;p.z=-42;});
+              await page.keyboard.press('e');
+              await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block'&&document.querySelectorAll('[data-deck]').length===3);
+              await page.locator('[data-deck="2"]').click();
+              const lift=await page.evaluate(()=>({deck:window.__carrierStage.player.deck,y:window.__carrierStage.player.y}));
+              if(lift.deck!==2||lift.y!==17)throw new Error('Carrier elevator failed: '+JSON.stringify(lift));console.log('LIFT_OK');
+              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=36;p.y=3.5;p.z=-19;});
+              await page.keyboard.press('e');
+              await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block');
+              const transfer=await page.locator('#ptitle').textContent();
+              if(transfer!=='連絡通路')throw new Error('Ship transfer point unavailable: '+transfer);console.log('TRANSFER_OK');
+              await page.setViewportSize({width:390,height:844});
+              if(await page.locator('#touch').evaluate(e=>getComputedStyle(e).display==='none'))throw new Error('Mobile controls hidden');console.log('MOBILE_OK');
+              if(errors.length)throw new Error('Browser errors: '+errors.slice(0,15).join(' | '));
+              console.log('CARRIER_CRUISE_VISUAL_OVERHAUL_PASS '+JSON.stringify({initial,voice,lift,transfer,mobile:true}));
+              
+            }finally{await browser.close()}
+          })().catch(e=>{console.error(e);process.exit(1)});
+          NODE
+      - name: Upload rendered screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carrier-cruise-overhaul-screenshot
+          path: /tmp/carrier-overhaul.png
+          if-no-files-found: ignore

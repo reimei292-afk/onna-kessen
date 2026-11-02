@@ -1,8 +1,6 @@
 name: Carrier cruise visual regression
 
 on:
-  push:
-    branches: [feature/carrier-cruise-visual-overhaul]
   pull_request:
     branches: [main]
   workflow_dispatch:

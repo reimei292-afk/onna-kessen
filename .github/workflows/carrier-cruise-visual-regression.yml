@@ -61,7 +61,7 @@ jobs:
               await page.locator('[data-deck="2"]').click();
               const lift=await page.evaluate(()=>({deck:window.__carrierStage.player.deck,y:window.__carrierStage.player.y}));
               if(lift.deck!==2||lift.y!==17)throw new Error('Carrier elevator failed: '+JSON.stringify(lift));
-              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=36;p.y=3.5;p.z=0;});
+              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=36;p.y=3.5;p.z=-19;});
               await page.keyboard.press('e');
               await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block');
               const transfer=await page.locator('#ptitle').textContent();

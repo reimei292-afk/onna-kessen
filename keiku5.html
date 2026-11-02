@@ -56,7 +56,7 @@ for(let x=-82;x<62;x+=24){box(ship,x,-.45,0,1,.2,30,gold,false);cyl(ship,x,-1,0,
 for(let x of [-60,-10,40]){box(ship,x,-5,0,14,.3,8,deckmat);box(ship,x,-3.8,0,1,2,1,gold)}
 aircraft(ship,-50,-8,.7);aircraft(ship,5,9,.68);
 // Cruise superstructure and internal decks: forward public atrium, aft cabins.
-const decks=[{y:5,name:"プロムナードデッキ",desc:"海側の遊歩廊・展望ラウンジ・ショップ"},{y:10,name:"客室デッキ",desc:"海側バルコニー客室・中央通路・エレベーターホール"},{y:15,name:"パブリックデッキ",desc:"大吹き抜け・レストラン・劇場・プール"},{y:20,name:"ブリッジデッキ",desc:"操舵室・航海計器・乗員区画"}];
+const decks=[{y:-1,name:"格納庫階",desc:"航空機整備区画・工具庫・機体移動スペース"},{y:3,name:"飛行甲板",desc:"発着艦区画・駐機位置・着艦制動索"},{y:5,name:"プロムナードデッキ",desc:"海側の遊歩廊・展望ラウンジ・ショップ"},{y:10,name:"客室デッキ",desc:"海側バルコニー客室・中央通路・エレベーターホール"},{y:15,name:"パブリックデッキ",desc:"大吹き抜け・レストラン・劇場・プール"},{y:20,name:"サンデッキ",desc:"上部展望・デッキチェア・屋外休憩区画"},{y:25,name:"ブリッジデッキ",desc:"操舵室・航海計器・乗員区画"}];
 function room(parent,x,z,w,d,y,h,wall=cream){box(parent,x,y,z,w,.35,d,wood);for(let xx of [x-w/2,x+w/2])box(parent,xx,y+h/2,z,.35,h,d,wall);for(let zz of [z-d/2,z+d/2])box(parent,x,y+h/2,zz,w,h,.35,wall)}
 // The promenade is an open, sheltered public deck with glass rails.
 box(ship,0,5,0,245,.5,42,wood);
@@ -83,7 +83,7 @@ box(ship,74,24,0,36,1,18,white);box(ship,74,27,0,34,5,17,white);for(let x=60;x<=
 box(ship,74,30,0,36,.5,18,dark);cyl(ship,74,33,0,.5,.5,5,steel);cyl(ship,74,36,0,5,5,.25,white,32);box(ship,74,36.5,0,.3,.4,18,gold);
 for(let x=60;x<=88;x+=7)box(ship,x,24.8,-9,3,.25,.25,gold);
 // Elevator lobby shaft and platforms connect all accessible decks.
-const liftX=103,liftZ=0;for(let y of [5,10,15,20,25]){box(ship,liftX,y,liftZ,9,.35,9,steel);for(let s of [-1,1])box(ship,liftX+s*4.6,y+1.3,liftZ,.2,2.6,9,gold)}
+const liftX=103,liftZ=0;for(let y of [-1,3,5,10,15,20,25]){box(ship,liftX,y,liftZ,9,.35,9,steel);for(let s of [-1,1])box(ship,liftX+s*4.6,y+1.3,liftZ,.2,2.6,9,gold)}
 // Internal stairs between public decks; landings are wide and walkable.
 for(let level=0;level<4;level++){const y=5+level*5;for(let i=0;i<12;i++){const step=box(ship,83+i*.9,y+i*.38,9,2,.35,5,wood);step.position.z=9}box(ship,89,y+4.5,9,8,.35,7,wood)}
 // Detailed fittings, doors, deck signage.
@@ -96,7 +96,7 @@ for(let s of [-1,1])for(let x=-100;x<100;x+=22){const b=box(ship,x,5.3,s*24,8,1.
 const spots=[{x:liftX,y:5,z:0,name:"旅客用エレベーター",desc:"各旅客デッキとブリッジデッキを結ぶ大型エレベーター。Eキーで階を選びます。",kind:"lift"},{x:74,y:25,z:0,name:"操舵室",desc:"前方海域を見渡すパノラマ窓、操舵輪、電子海図、レーダー、通信卓を備える航海中枢。",kind:"room"},{x:-42,y:15,z:0,name:"メインレストラン",desc:"海を眺めながら食事を楽しめるメインダイニング。テーブル席とサービスカウンター。",kind:"room"},{x:45,y:15,z:-8,name:"大劇場",desc:"舞台、客席、音響・照明設備を備えた船内劇場。",kind:"room"},{x:-5,y:20,z:-11,name:"屋外プール",desc:"海風を感じる屋外プール。周囲にサンデッキとデッキチェア。",kind:"room"},{x:-12,y:-1,z:0,name:"航空機格納庫",desc:"整備区画、工具台、機体移動スペースを持つ格納庫。大型昇降機で飛行甲板へつながります。",kind:"room"},{x:-90,y:3,z:0,name:"飛行甲板",desc:"発着艦標識、着艦制動索、航空機駐機位置、舷側安全ネットを備える広大な飛行甲板。",kind:"room"}];
 const markers=[];for(const s of spots){const m=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.12,20),new THREE.MeshBasicMaterial({color:0xf1cf78}));m.position.set(s.x,s.y+.2,s.z);ship.add(m);markers.push({mesh:m,spot:s})}
 // Player navigation and collision bounds. Vertical deck changes are elevator-only.
-const player={x:-16,y:5,z:12,deck:0};let yaw=0,pitch=0,locked=false,keys={},near=null,moveTouch={};camera.position.set(player.x,player.y+1.7,player.z);
+const player={x:-16,y:5,z:12,deck:2};let yaw=0,pitch=0,locked=false,keys={},near=null,moveTouch={};camera.position.set(player.x,player.y+1.7,player.z);
 function activeDeck(){return decks[player.deck]||{name:"飛行甲板",y:3,desc:"航空運用区画"}}
 function panel(title,body){document.getElementById("ptitle").textContent=title;document.getElementById("pbody").innerHTML=body;document.getElementById("panel").style.display="block"}
 function interact(){if(!near)return;if(near.kind==="lift"){const options=decks.map((d,i)=>'<button data-deck="'+i+'">'+d.name+'</button>').join(" ");panel("エレベーター",'<p>移動する階を選択してください。</p><div style="display:flex;flex-wrap:wrap;gap:8px">'+options+'</div>');document.querySelectorAll("[data-deck]").forEach(b=>b.onclick=()=>{player.deck=+b.dataset.deck;player.y=decks[player.deck].y;document.getElementById("panel").style.display="none";camera.position.y=player.y+1.7;});}else panel(near.name,"<p>"+near.desc+"</p><p>現在位置："+activeDeck().name+"</p>")}

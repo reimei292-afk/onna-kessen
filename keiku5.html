@@ -1,136 +1,186 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>近代海戦・幕六「鳳翔 — 洋上の宮殿」</title>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>近代海戦・幕六「鳳翔 — 二つの巨艦」</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071522;color:#eef3f5;font-family:system-ui,"Yu Gothic",sans-serif}canvas{display:block}#hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 5px #000}#top{position:absolute;left:16px;top:14px;padding:10px 14px;background:#071522b8;border:1px solid #b5c9d055;border-radius:8px;max-width:min(560px,80vw)}#top b{letter-spacing:.12em;color:#e6d4a3}#top small{display:block;color:#c6d2d8;margin-top:4px}#deck{position:absolute;right:16px;top:14px;background:#071522c9;border:1px solid #b5c9d055;border-radius:8px;padding:9px 13px;text-align:right}#prompt{position:absolute;bottom:94px;left:50%;transform:translateX(-50%);padding:9px 16px;background:#06121dcc;border:1px solid #e2cf9a88;border-radius:8px;display:none;white-space:nowrap}#help{position:absolute;left:16px;bottom:14px;padding:9px 12px;background:#071522b8;border-radius:8px;color:#dce5e9;font-size:12px}#map{position:absolute;right:16px;bottom:14px;width:190px;padding:10px;background:#071522d9;border:1px solid #b5c9d055;border-radius:8px;font-size:12px}#map button,#panel button{pointer-events:auto;background:#c9b98d;color:#17212a;border:0;border-radius:5px;padding:7px 11px;font-weight:700}#panel{display:none;pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(520px,90vw);max-height:78vh;overflow:auto;padding:22px;background:#101c25f2;border:1px solid #d7c48d;border-radius:12px;box-shadow:0 20px 80px #000b}#panel h2{margin:0 0 8px;color:#e7d5a5}#panel p{line-height:1.7;color:#d5dfe3}#panel .close{float:right}#touch{display:none;position:fixed;bottom:22px;right:18px;gap:8px;pointer-events:auto}#touch button{width:58px;height:58px;border-radius:50%;border:1px solid #e7d5a5;background:#0a1826bb;color:white;font-size:13px}@media(max-width:800px),(pointer:coarse){#touch{display:flex;flex-wrap:wrap;width:132px}#help{max-width:48vw;font-size:10px}#map{width:150px}#prompt{bottom:155px;white-space:normal;width:80vw;text-align:center}}
-#dialogue{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(720px,88vw);padding:14px 18px;background:linear-gradient(110deg,#071522ed,#172d3bea);border:1px solid #d8c38a;border-radius:10px;box-shadow:0 12px 40px #0009;pointer-events:none}#dialogue strong{display:block;color:#e9d6a2;font-size:13px;letter-spacing:.12em;margin-bottom:5px}#dialogue span{font-size:16px;line-height:1.65}@media(max-width:800px){#dialogue{bottom:160px;font-size:13px}#dialogue span{font-size:14px}}</style></head><body>
-<div id="hud"><div id="top"><b>近代海戦・幕六　「鳳翔 — 洋上の宮殿」</b><small>全長 342 m級・飛行甲板／格納庫／旅客居住区を備える大型航空母艦型クルーズシップ</small></div><div id="deck">現在地：<strong id="deckname">海上プロムナード</strong><br><small id="coords">WASD 移動</small></div><div id="prompt"></div><div id="help">WASD：移動　マウス：視点　Shift：走る<br>E：設備を調べる／乗降　M：艦内案内　Esc：カーソル解除</div><div id="map"><b>艦内案内</b><p>甲板を歩き、案内表示やエレベーターで各階へ移動できます。</p><button id="mapbtn">案内を開く（M）</button></div><div id="panel"><button class="close" id="close">閉じる</button><h2 id="ptitle">艦内案内</h2><div id="pbody"></div></div></div>
-<div id="dialogue" aria-live="polite"><strong id="speaker">乗員</strong><span id="dialoguetext"></span></div><div id="touch"><button data-move="forward">前進</button><button data-move="left">左</button><button data-move="back">後退</button><button data-move="right">右</button><button id="usebtn">調べる</button></div>
-<script src="lib/three.min.js"></script><script src="assets/voices/voices_ab.js"></script><script>
-(()=> {
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x8ba5b7);scene.fog=new THREE.Fog(0x8ba5b7,180,650);
-const camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,1200);camera.position.set(-15,5,19);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;document.body.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xddeeff,0x39434a,2.0));const sun=new THREE.DirectionalLight(0xffedcf,3.1);sun.position.set(-90,150,80);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-230;sun.shadow.camera.right=230;sun.shadow.camera.top=180;sun.shadow.camera.bottom=-180;scene.add(sun);
-const mat=(c,r=.75,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
-const steel=mat(0x45545d,.52,.7),dark=mat(0x202d35,.7,.55),deckmat=mat(0x343f45,.9,.12),white=mat(0xd8dedb,.65,.25),glass=new THREE.MeshPhysicalMaterial({color:0x8cb4c4,metalness:.35,roughness:.16,transparent:true,opacity:.55}),gold=mat(0xb99b5b,.38,.65),wood=mat(0x80664b,.65),cream=mat(0xd9d1bd,.8),blue=mat(0x1c536d,.55,.35);
-function box(parent,x,y,z,w,h,d,material,cast=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;parent.add(o);return o}
-function cyl(parent,x,y,z,rt,rb,h,material,seg=16){const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg),material);o.position.set(x,y,z);o.castShadow=true;parent.add(o);return o}
-function label(parent,str,x,y,z,rot=0){const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');g.fillStyle='#13232c';g.fillRect(0,0,512,128);g.strokeStyle='#d4bd83';g.lineWidth=5;g.strokeRect(5,5,502,118);g.fillStyle='#f1e5c5';g.font='bold 42px sans-serif';g.textAlign='center';g.fillText(str,256,80);const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(6,1.5),new THREE.MeshBasicMaterial({map:t,transparent:true,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.y=rot;parent.add(m)}
-// Ocean, horizon and distant swell.
-const oceanGeo=new THREE.PlaneGeometry(1500,1500,120,120);oceanGeo.rotateX(-Math.PI/2);const ocean=new THREE.Mesh(oceanGeo,new THREE.MeshPhysicalMaterial({color:0x1d536d,roughness:.24,metalness:.28,clearcoat:.8,clearcoatRoughness:.2}));ocean.position.y=-17; ocean.receiveShadow=true;scene.add(ocean);const oceanBase=oceanGeo.attributes.position.array.slice();
-const ship=new THREE.Group();scene.add(ship);
-// Deep, flared hull with stepped bow and stern.
-const hullShape=new THREE.Shape();hullShape.moveTo(-147,-17);hullShape.lineTo(92,-21);hullShape.quadraticCurveTo(137,-21,153,0);hullShape.quadraticCurveTo(137,21,92,21);hullShape.lineTo(-147,17);hullShape.quadraticCurveTo(-158,0,-147,-17);const hullGeo=new THREE.ExtrudeGeometry(hullShape,{depth:15,bevelEnabled:true,bevelSegments:4,steps:1,bevelSize:2.2,bevelThickness:1.8,curveSegments:12});hullGeo.rotateX(Math.PI/2);const hull=new THREE.Mesh(hullGeo,steel);hull.position.y=-.5;hull.castShadow=true;hull.receiveShadow=true;ship.add(hull);
-// Bow anchor hawse pipes, anchor chains, stern propellers and rudders.
-for(const s of [-1,1]){const anchor=cyl(ship,140,-5,s*13,1.2,1.2,2,dark,12);anchor.rotation.z=Math.PI/2;const chain=box(ship,132,-5,s*15,15,.35,.35,dark);chain.rotation.z=-.12;const prop=cyl(ship,-137,-13,s*9,2.8,2.8,1.2,gold,20);prop.rotation.z=Math.PI/2;const blade=new THREE.Group();blade.position.set(-138,-13,s*9);ship.add(blade);for(let i=0;i<4;i++){const b=box(blade,0,0,0,.7,5,.7,gold);b.rotation.z=i*Math.PI/2;}}
-for(let s of [-1,1]){box(ship,0,-1,s*22,255,4,1.2,dark);for(let x=-120;x<125;x+=8)box(ship,x,-7,s*22.8,1.2,5,.25,steel)}
-// Lower hull waterline and bulbous bow.
-box(ship,0,-15,0,260,2,40,dark);cyl(ship,142,-9,0,7,9,14,steel,24).rotation.z=Math.PI/2;
-// Main flight deck, angled landing area, edge sponsons.
-box(ship,0,1,0,304,3,58,deckmat);box(ship,4,2.7,0,292,.25,56,dark);
-for(let s of [-1,1]){box(ship,0,2.9,s*28.4,300,.35,.7,white);for(let x=-138;x<140;x+=18)box(ship,x,3.1,s*26.5,3,.15,.16,gold)}
-// Flight deck markings and landing centerline.
-for(let x=-130;x<130;x+=18)box(ship,x,3.05,0,.22,.08,48,white,false);
-for(let z=-20;z<=20;z+=10)box(ship,125,3.1,z,2,.08,1.2,gold,false);
-box(ship,-88,3.08,0,1,.1,28,white,false);box(ship,-88,3.1,-15,8,.1,1.2,white,false);
-for(let z=-22;z<=22;z+=11)box(ship,-135,3.1,z,5,.1,1,white,false);
-// Island superstructure starboard side.
-const island=new THREE.Group();ship.add(island);island.position.set(68,0,20);
-box(island,0,7,0,28,11,13,white);box(island,0,13,0,23,2,12,steel);box(island,0,17,0,18,5,10,white);box(island,0,20,0,19,.5,10,dark);
-for(let x=-8;x<=8;x+=4)box(island,x,17.2,-5.1,2,2,.15,glass,false);
-box(island,0,23,0,2,5,2,dark);cyl(island,0,27,0,1.2,.5,3,steel);cyl(island,0,29,0,5,5,.3,dark,32);box(island,0,29.4,0,1,.5,16,steel);
-for(let i=0;i<4;i++){const a=new THREE.Mesh(new THREE.BoxGeometry(.25,.25,10),gold);a.position.set(0,25+i*.7,0);a.rotation.y=i*.8;island.add(a)}
-// Catwalks, safety nets, aircraft lifts and arrestor cables.
-for(let s of [-1,1]){box(ship,0,-1,s*31,300,1,4,dark);for(let x=-145;x<145;x+=12)box(ship,x,.2,s*32,1,2,.25,gold)}
-for(let x of [-48,18]){box(ship,x,-3,0,24,1,20,dark);box(ship,x,-1.8,0,22,.2,18,steel)}
-for(let z of [-16,-8,0,8,16]){const wire=box(ship,114,3.12,z,1,.07,.09,white,false);wire.rotation.z=.03}
-// Aircraft model group.
-function aircraft(parent,x,z,scale=1,kind="fighter"){const g=new THREE.Group();g.position.set(x,3.5,z);g.scale.setScalar(scale);parent.add(g);const fus=mat(kind==="helicopter"?0x526b59:0x687782,.55,.55),can=new THREE.MeshPhysicalMaterial({color:0x8cbacb,roughness:.15,metalness:.3,transparent:true,opacity:.75});cyl(g,0,0,0,.55,.62,8,fus,16).rotation.x=Math.PI/2;const wing=box(g,0,-.1,0,kind==="fighter"?2:3,.22,15,fus);wing.rotation.y=0;box(g,3.4,0,0,1.8,.2,5,fus);box(g,-3.5,0,0,1.8,.2,5,fus);box(g,-3.4,.8,0,.3,1.6,3,fus);const canopy=new THREE.Mesh(new THREE.SphereGeometry(.65,16,10),can);canopy.position.set(1.1,.45,0);canopy.scale.set(2,.8,1);g.add(canopy);for(let s of [-1,1]){cyl(g,-1,-.45,s*2,.16,.16,1.2,dark,10).rotation.z=Math.PI/2}return g}
-aircraft(ship,-92,-11,.92);aircraft(ship,-92,12,.92);aircraft(ship,-55,0,.9);aircraft(ship,-20,-14,.82);aircraft(ship,-20,15,.82);aircraft(ship,8,0,.95);aircraft(ship,42,-12,.82,"helicopter");
-// Hangar volume beneath flight deck with large sliding doors.
-box(ship,-12,-7,0,168,12,34,dark);box(ship,-12,-.8,0,164,.35,32,steel);
-for(let z of [-17,17])box(ship,-12,-6,z,166,10,.6,white);
-for(let x=-90;x<68;x+=18){box(ship,x,-6,17.4,8,8,.18,glass);box(ship,x,-6,-17.4,8,8,.18,glass)}
-// Hangar interior lighting, aircraft service bays, tool carts.
-for(let x=-82;x<62;x+=24){box(ship,x,-.45,0,1,.2,30,gold,false);cyl(ship,x,-1,0,.4,.4,1.5,gold)}
-for(let x of [-60,-10,40]){box(ship,x,-5,0,14,.3,8,deckmat);box(ship,x,-3.8,0,1,2,1,gold)}
-aircraft(ship,-50,-8,.7);aircraft(ship,5,9,.68);
-// Cruise superstructure and internal decks: forward public atrium, aft cabins.
-const decks=[{y:-1,name:"格納庫階",desc:"航空機整備区画・工具庫・機体移動スペース"},{y:3,name:"飛行甲板",desc:"発着艦区画・駐機位置・着艦制動索"},{y:5,name:"プロムナードデッキ",desc:"海側の遊歩廊・展望ラウンジ・ショップ"},{y:10,name:"客室デッキ",desc:"海側バルコニー客室・中央通路・エレベーターホール"},{y:15,name:"パブリックデッキ",desc:"大吹き抜け・レストラン・劇場・プール"},{y:20,name:"サンデッキ",desc:"上部展望・デッキチェア・屋外休憩区画"},{y:25,name:"ブリッジデッキ",desc:"操舵室・航海計器・乗員区画"}];
-function room(parent,x,z,w,d,y,h,wall=cream){box(parent,x,y,z,w,.35,d,wood);for(let xx of [x-w/2,x+w/2])box(parent,xx,y+h/2,z,.35,h,d,wall);for(let zz of [z-d/2,z+d/2])box(parent,x,y+h/2,zz,w,h,.35,wall)}
-// The promenade is an open, sheltered public deck with glass rails.
-box(ship,0,5,0,245,.5,42,wood);
-for(let s of [-1,1]){box(ship,0,7,s*21,245,3,.35,white);for(let x=-120;x<122;x+=5)box(ship,x,7,s*20.7,.12,2,.12,glass,false)}
-// Passenger accommodation deck and cabin partitions.
-box(ship,-4,10,0,230,.5,40,cream);
-for(let z of [-19,19])box(ship,-4,12,z,230,4,.4,white);
-for(let x=-112;x<110;x+=13){box(ship,x,12,-10, .25,4,18,white);box(ship,x,12,10,.25,4,18,white);box(ship,x,13.1,-19.5,2,1.2,.15,glass);box(ship,x,13.1,19.5,2,1.2,.15,glass)}
-box(ship,-4,12,0,230,4,.35,white); // central corridor partition edge
-for(let x=-100;x<100;x+=25){box(ship,x,10.8,0,7,.5,3,wood);box(ship,x,11.7,0,6,1.4,.2,gold)}
-
-// Repeated cabin modules: beds, pillows, bedside tables, lamps, wardrobes and balcony doors.
-for(let x=-103;x<=103;x+=26){for(const side of [-1,1]){const z=side*11;box(ship,x,10.65,z,8,.22,12,wood);box(ship,x-1,11.25,z- side*2,3,.9,5,cream);box(ship,x-1,11.78,z-side*2,2.8,.22,1.1,white);box(ship,x+2.8,11.1,z-side*3,1.2,1.2,1.4,wood);cyl(ship,x+2.8,12,z-side*3,.12,.12,.45,gold,10);box(ship,x-3.1,11.7,z+side*2.8,1.4,2.1,1.2,wood);box(ship,x,12.1,side*19.1,2.5,2.5,.18,glass);box(ship,x+3.2,11.2,z+side*3,1.2,.7,1.2,blue);}}
-// Warm cabin ceiling lights and illuminated corridor wayfinding.
-for(let x=-108;x<110;x+=12){const lamp=new THREE.Mesh(new THREE.BoxGeometry(2.8,.12,.5),new THREE.MeshBasicMaterial({color:0xffe4a8}));lamp.position.set(x,14.1,0);ship.add(lamp);box(ship,x,13.9,0,3,.08,.6,gold,false);}
-// Public deck: atrium void and theatre/restaurant blocks.
-box(ship,0,15,0,230,.5,42,cream);
-box(ship,-42,17,0,44,4,26,wood);box(ship,-42,19.2,0,38,.4,22,gold);
-for(let x=-58;x<-26;x+=5)for(let z=-8;z<=8;z+=5)cyl(ship,x,15.7,z,.8,.8,1.1,wood,12);
-box(ship,45,17,-8,58,4,22,blue);box(ship,45,19.2,-8,52,.35,18,gold);
-for(let x=25;x<68;x+=8)box(ship,x,16.2,-19,5,1,.8,wood);
-box(ship,45,17,13,56,4,10,dark);box(ship,45,19.2,13,50,.3,8,wood);
-for(let x=25;x<68;x+=6)box(ship,x,16.1,18,4,1,.6,gold);
-// Pool and glass canopy on upper leisure terrace.
-box(ship,0,20,0,220,.5,40,deckmat);box(ship,-5,20.45,-11,34,.35,12,blue);for(let s of [-1,1])box(ship,-5,21,s*17,34,1,.2,glass);
-for(let x=-20;x<12;x+=8){cyl(ship,x,21,10,1.2,1.2,1.5,white,16);box(ship,x,21.9,10,3,.2,3,cream)}
-
-// Restaurant table settings, chair backs, service counter and pendant lighting.
-for(let x=-58;x<-25;x+=8){for(let z=-9;z<=9;z+=9){cyl(ship,x,15.95,z,1.5,1.5,.22,cream,20);for(const s of [-1,1]){box(ship,x+s*2,15.9,z,1,.8,1,wood);box(ship,x+s*2,16.35,z,1,.12,1,gold);}}}
-for(let x=-61;x<-22;x+=6){cyl(ship,x,19.8,-12,.12,.12,2,gold,10);const bulb=new THREE.Mesh(new THREE.SphereGeometry(.32,12,8),new THREE.MeshBasicMaterial({color:0xffe1a0}));bulb.position.set(x,18.8,-12);ship.add(bulb)}
-// Theatre rows, upholstered seats, stage proscenium and screen.
-box(ship,69,18,-8,1,3,17,gold);box(ship,73,18,-8,7,4,.35,cream);for(let row=0;row<4;row++)for(let col=0;col<7;col++){const x=26+col*5,z=-15+row*4;box(ship,x,15.9,z,2.2,.8,2.1,mat(0x7a2830,.85));box(ship,x,16.8,z-0.8,2.2,1.2,.35,mat(0x7a2830,.85));}
-// Pool ladders, deck showers, sun loungers and glass wind screens.
-for(let x=-21;x<15;x+=6){box(ship,x,20.9,-11,1.2,.16,2,gold);for(let s of [-1,1])cyl(ship,x+s*.45,20.5,-11,.08,.08,1.2,white,8)}
-for(let x=-27;x<25;x+=9){const lounger=box(ship,x,20.65,14,5,.3,2.1,cream);lounger.rotation.x=-.12;box(ship,x,21.2,13.2,2,.18,2,white);}
-// Bridge deck, panoramic windows, mast and navigation equipment.
-box(ship,74,24,0,36,1,18,white);box(ship,74,27,0,34,5,17,white);for(let x=60;x<=88;x+=5)box(ship,x,27,8.7,3.8,2.7,.18,glass);
-box(ship,74,30,0,36,.5,18,dark);cyl(ship,74,33,0,.5,.5,5,steel);cyl(ship,74,36,0,5,5,.25,white,32);box(ship,74,36.5,0,.3,.4,18,gold);
-for(let x=60;x<=88;x+=7)box(ship,x,24.8,-9,3,.25,.25,gold);
-// Elevator lobby shaft and platforms connect all accessible decks.
-const liftX=103,liftZ=0;for(let y of [-1,3,5,10,15,20,25]){box(ship,liftX,y,liftZ,9,.35,9,steel);for(let s of [-1,1])box(ship,liftX+s*4.6,y+1.3,liftZ,.2,2.6,9,gold)}
-// Internal stairs between public decks; landings are wide and walkable.
-for(let level=0;level<4;level++){const y=5+level*5;for(let i=0;i<12;i++){const step=box(ship,83+i*.9,y+i*.38,9,2,.35,5,wood);step.position.z=9}box(ship,89,y+4.5,9,8,.35,7,wood)}
-// Detailed fittings, doors, deck signage.
-for(let x=-112;x<112;x+=16){for(let s of [-1,1]){box(ship,x,6.3,s*18,2.8,2.4,.25,glass);box(ship,x,5.5,s*18,3,.15,.4,gold)}}
-label(ship,"FLIGHT DECK",-80,4,0);label(ship,"HANGAR",-10,-.2,17.8,Math.PI);label(ship,"PROMENADE",-10,8,20,Math.PI);label(ship,"GRAND ATRIUM",0,18,20,Math.PI);label(ship,"BRIDGE",74,31,9,Math.PI);
-for(let x=-110;x<110;x+=22){cyl(ship,x,3.8,28.7,.18,.18,1.5,gold,10);cyl(ship,x,3.8,-28.7,.18,.18,1.5,gold,10)}
-// Lifeboats and davits.
-for(let s of [-1,1])for(let x=-100;x<100;x+=22){const b=box(ship,x,5.3,s*24,8,1.6,2.6,mat(0xc9bca2,.65,.15));b.rotation.z=.08;box(ship,x,6.5,s*24,1,2,.25,gold)}
-// Crew figures use the same already-recorded voice lines as the existing carrier/airfield scenes.
-const crewUniform=mat(0x34495a,.72,.18),crewCap=mat(0x1b2d3c,.7,.1),skin=mat(0xc99d7b,.85);
-function crewMember(x,y,z,scale=1){const g=new THREE.Group();g.position.set(x,y,z);g.scale.setScalar(scale);ship.add(g);cyl(g,0,1.15,0,.42,.5,1.15,crewUniform,12);const head=new THREE.Mesh(new THREE.SphereGeometry(.32,16,12),skin);head.position.y=1.95;g.add(head);cyl(g,0,2.2,0,.36,.36,.18,crewCap,16);for(const s of [-1,1]){const arm=cyl(g,s*.52,1.28,0,.14,.16,.82,crewUniform,10);arm.rotation.z=s*.22;const leg=cyl(g,s*.2,.42,0,.17,.19,.78,dark,10);leg.rotation.z=s*.04;}return g}
-const crewSpots=[{x:-23,y:5,z:11,name:"甲板整備員",voice:"192f280260",role:"飛行甲板の点検担当"},{x:-8,y:5,z:19,name:"給油担当員",voice:"95ad01e323",role:"航空機への燃料補給担当"},{x:-30,y:-1,z:5,name:"格納庫整備員",voice:"03b1acfa72",role:"格納庫の整備・搭載担当"},{x:25,y:3,z:-10,name:"発艦管制員",voice:"3efb85e0fe",role:"発艦準備と甲板運用の担当"},{x:55,y:3,z:12,name:"通信員",voice:"f19a5e9955",role:"艦内・航空管制通信担当"},{x:100,y:25,z:7,name:"航空管制士",voice:"60bac2d364",role:"ブリッジから発艦指示を伝達"}];
-crewSpots.forEach((s,i)=>{crewMember(s.x,s.y,s.z,i===5?1.05:.95);});
-function playCrewVoice(key){const line=window.VOICE_AB&&window.VOICE_AB.lines&&window.VOICE_AB.lines[key];if(!line)return;const box=document.getElementById("dialogue");document.getElementById("speaker").textContent=line.who+" — "+(crewSpots.find(s=>s.voice===key)?.name||"乗員");document.getElementById("dialoguetext").textContent=line.ja;box.style.display="block";if(window.__carrierVoice){window.__carrierVoice.pause();window.__carrierVoice.currentTime=0;}window.__carrierVoice=new Audio("assets/voices/"+line.file);window.__carrierVoice.volume=.9;window.__carrierVoice.play().catch(()=>{});}
-// Markers for interactable locations.
-const spots=[{x:liftX,y:5,z:0,name:"旅客用エレベーター",desc:"各旅客デッキとブリッジデッキを結ぶ大型エレベーター。Eキーで階を選びます。",kind:"lift"},{x:74,y:25,z:0,name:"操舵室",desc:"前方海域を見渡すパノラマ窓、操舵輪、電子海図、レーダー、通信卓を備える航海中枢。",kind:"room"},{x:-42,y:15,z:0,name:"メインレストラン",desc:"海を眺めながら食事を楽しめるメインダイニング。テーブル席とサービスカウンター。",kind:"room"},{x:45,y:15,z:-8,name:"大劇場",desc:"舞台、客席、音響・照明設備を備えた船内劇場。",kind:"room"},{x:-5,y:20,z:-11,name:"屋外プール",desc:"海風を感じる屋外プール。周囲にサンデッキとデッキチェア。",kind:"room"},{x:-12,y:-1,z:0,name:"航空機格納庫",desc:"整備区画、工具台、機体移動スペースを持つ格納庫。大型昇降機で飛行甲板へつながります。",kind:"room"},{x:-90,y:3,z:0,name:"飛行甲板",desc:"発着艦標識、着艦制動索、航空機駐機位置、舷側安全ネットを備える広大な飛行甲板。",kind:"room"},...crewSpots.map(s=>({...s,kind:"dialogue",desc:s.role}))];
-const radar=new THREE.Group();radar.position.set(74,37.1,0);ship.add(radar);box(radar,0,0,0,1.1,.2,17,gold,false);box(radar,0,.12,0,17,.16,.7,steel,false);const radarDish=cyl(radar,0,.3,0,1.2,1.2,.25,white,24);radarDish.rotation.x=Math.PI/2;
-const markers=[];for(const s of spots){const m=new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.12,20),new THREE.MeshBasicMaterial({color:0xf1cf78}));m.position.set(s.x,s.y+.2,s.z);ship.add(m);markers.push({mesh:m,spot:s})}
-// Player navigation and collision bounds. Vertical deck changes are elevator-only.
-const player={x:-16,y:5,z:12,deck:2};let yaw=0,pitch=0,locked=false,keys={},near=null,moveTouch={};camera.position.set(player.x,player.y+1.7,player.z);
-function activeDeck(){return decks[player.deck]||{name:"飛行甲板",y:3,desc:"航空運用区画"}}
-function panel(title,body){document.getElementById("ptitle").textContent=title;document.getElementById("pbody").innerHTML=body;document.getElementById("panel").style.display="block"}
-function interact(){if(!near)return;if(near.kind==="dialogue"){playCrewVoice(near.voice);return;}if(near.kind==="lift"){const options=decks.map((d,i)=>'<button data-deck="'+i+'">'+d.name+'</button>').join(" ");panel("エレベーター",'<p>移動する階を選択してください。</p><div style="display:flex;flex-wrap:wrap;gap:8px">'+options+'</div>');document.querySelectorAll("[data-deck]").forEach(b=>b.onclick=()=>{player.deck=+b.dataset.deck;player.y=decks[player.deck].y;document.getElementById("panel").style.display="none";camera.position.y=player.y+1.7;});}else panel(near.name,"<p>"+near.desc+"</p><p>現在位置："+activeDeck().name+"</p>")}
-function mapOpen(){panel("鳳翔・艦内案内",'<p><b>飛行甲板</b> — 発着艦・駐機・着艦制動区画</p><p><b>格納庫階</b> — 航空機整備・工具庫・昇降機</p><p><b>プロムナードデッキ</b> — 海側遊歩廊・展望ラウンジ</p><p><b>客室デッキ</b> — バルコニー客室・中央廊下</p><p><b>パブリックデッキ</b> — 大吹き抜け・レストラン・劇場・プール</p><p><b>ブリッジデッキ</b> — 操舵室・航海計器・通信設備</p><p>エレベーターの前で E を押すと階を移動できます。</p>')}
-document.getElementById("mapbtn").onclick=mapOpen;document.getElementById("close").onclick=()=>document.getElementById("panel").style.display="none";
-addEventListener("keydown",e=>{keys[e.code]=true;if(e.code==="KeyE")interact();if(e.code==="KeyM")mapOpen();if(e.code==="Escape"&&locked)document.exitPointerLock()});addEventListener("keyup",e=>keys[e.code]=false);
-renderer.domElement.addEventListener("click",()=>{if(!locked&&document.getElementById("panel").style.display!=="block")renderer.domElement.requestPointerLock?.()});
-document.addEventListener("pointerlockchange",()=>locked=document.pointerLockElement===renderer.domElement);
-document.addEventListener("mousemove",e=>{if(!locked)return;yaw-=e.movementX*.0022;pitch=Math.max(-1.15,Math.min(1.15,pitch-e.movementY*.0018))});
-document.querySelectorAll("[data-move]").forEach(b=>{const k=b.dataset.move;b.addEventListener("pointerdown",e=>{moveTouch[k]=true;b.setPointerCapture(e.pointerId)});["pointerup","pointercancel","lostpointercapture"].forEach(ev=>b.addEventListener(ev,()=>moveTouch[k]=false))});document.getElementById("usebtn").onclick=interact;
-const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04);const elapsed=clock.elapsedTime;const pos=ocean.geometry.attributes.position;for(let i=0;i<pos.count;i++){const x=oceanBase[i*3],z=oceanBase[i*3+2];pos.array[i*3+1]=Math.sin(x*.018+elapsed*.7)*.32+Math.sin(z*.026-elapsed*.52)*.22+Math.sin((x+z)*.009+elapsed*.34)*.16;}pos.needsUpdate=true;ocean.geometry.computeVertexNormals();radar.rotation.y=elapsed*.9;const f=(keys.KeyW||keys.ArrowUp||moveTouch.forward?1:0)-(keys.KeyS||keys.ArrowDown||moveTouch.back?1:0),s=(keys.KeyD||keys.ArrowRight||moveTouch.right?1:0)-(keys.KeyA||keys.ArrowLeft||moveTouch.left?1:0);const speed=(keys.ShiftLeft?13:7)*dt;player.x+=(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed;player.z+=(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;player.x=Math.max(-148,Math.min(148,player.x));player.z=Math.max(-27,Math.min(27,player.z));camera.position.set(player.x,player.y+1.7,player.z);camera.rotation.order="YXZ";camera.rotation.set(pitch,yaw,0);
-let best=1e9;near=null;for(const m of markers){const d=Math.hypot(player.x-m.spot.x,player.z-m.spot.z,player.y-m.spot.y);if(d<best){best=d;near=m.spot}}const p=document.getElementById("prompt");p.style.display=best<9?"block":"none";p.textContent=near?(near.kind==="lift"?"E — "+near.name+"（階を選択）":"E — "+near.name):"";document.getElementById("deckname").textContent=activeDeck().name;document.getElementById("coords").textContent="位置 "+Math.round(player.x)+" m / "+Math.round(player.z)+" m";for(const m of markers)m.mesh.material.color.setHex(m.spot===near?0xffef9a:0xf1cf78);renderer.render(scene,camera)}
-window.__carrierStage={scene,camera,ship,player,spots,crewSpots,renderer,interact,mapOpen};
-tick();addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071522;color:#edf3f5;font-family:system-ui,"Yu Gothic",sans-serif}canvas{display:block}
+#hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 5px #000}#top{position:absolute;left:16px;top:14px;padding:11px 15px;background:linear-gradient(120deg,#081725e8,#183247d9);border:1px solid #c9b47c88;border-radius:5px;max-width:min(600px,80vw);box-shadow:0 8px 28px #0005}#top b{letter-spacing:.13em;color:#f0dba8;font-size:15px}#top small{display:block;color:#d4e0e6;margin-top:5px;line-height:1.5}#deck{position:absolute;right:16px;top:14px;background:#081725e8;border:1px solid #c9b47c88;padding:10px 14px;text-align:right;border-radius:5px}#deck strong{color:#f0dba8}#prompt{position:absolute;bottom:105px;left:50%;transform:translateX(-50%);padding:10px 18px;background:#06121de8;border:1px solid #e2cf9a;border-radius:4px;display:none;white-space:nowrap}#help{position:absolute;left:16px;bottom:14px;padding:10px 13px;background:#081725d9;border:1px solid #b5c9d044;border-radius:4px;color:#dce5e9;font-size:12px;line-height:1.7}#map{position:absolute;right:16px;bottom:14px;width:205px;padding:12px;background:#081725e8;border:1px solid #b5c9d066;border-radius:5px;font-size:12px;line-height:1.6}#map button,#panel button{pointer-events:auto;background:linear-gradient(#e4d4a9,#b9a477);color:#17212a;border:1px solid #f2e4bd;border-radius:3px;padding:8px 12px;font-weight:700}#panel{display:none;pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);max-height:80vh;overflow:auto;padding:23px;background:linear-gradient(145deg,#142635f7,#07131ff7);border:1px solid #d7c48d;border-radius:5px;box-shadow:0 24px 90px #000c}#panel h2{margin:0 0 10px;color:#ead6a5;letter-spacing:.08em}#panel p{line-height:1.8;color:#d5dfe3}#panel .close{float:right}#touch{display:none;position:fixed;bottom:20px;right:16px;gap:7px;pointer-events:auto;width:142px;flex-wrap:wrap}#touch button{width:62px;height:54px;border-radius:4px;border:1px solid #e7d5a5;background:#0a1826dc;color:white;font-size:13px}@media(max-width:800px),(pointer:coarse){#touch{display:flex}#help{max-width:48vw;font-size:10px}#map{width:150px}#prompt{bottom:150px;white-space:normal;width:82vw;text-align:center}#top{max-width:62vw;font-size:12px}#top b{font-size:12px}#top small{font-size:10px}#deck{font-size:11px}}
+#dialogue{display:none;position:fixed;left:50%;bottom:25px;transform:translateX(-50%);width:min(720px,88vw);padding:13px 18px;background:linear-gradient(110deg,#071522f5,#1b3548f0);border:1px solid #d8c38a;box-shadow:0 12px 40px #0009;pointer-events:none;border-radius:4px}#dialogue strong{display:block;color:#e9d6a2;font-size:13px;letter-spacing:.12em;margin-bottom:5px}#dialogue span{font-size:16px;line-height:1.65}@media(max-width:800px){#dialogue{bottom:155px}#dialogue span{font-size:14px}}
+</style></head><body>
+<div id="hud"><div id="top"><b>近代海戦・幕六　「鳳翔 — 二つの巨艦」</b><small>航空母艦《鳳翔》と豪華客船《セレスティア》 — 洋上の二大艦を巡る</small></div><div id="deck">現在地：<strong id="deckname">飛行甲板</strong><br><small id="coords">WASD 移動</small></div><div id="prompt"></div><div id="help">WASD：移動　マウス：視点<br>Shift：走る　E：調べる／乗降<br>M：艦内案内　Esc：カーソル解除</div><div id="map"><b>艦内案内</b><p>空母と客船を連絡通路で行き来できます。各艦のエレベーターで上層へ。</p><button id="mapbtn">案内を開く（M）</button></div><div id="panel"><button class="close" id="close">閉じる</button><h2 id="ptitle">艦内案内</h2><div id="pbody"></div></div></div>
+<div id="dialogue" aria-live="polite"><strong id="speaker">乗員</strong><span id="dialoguetext"></span></div>
+<div id="touch"><button data-move="forward">前進</button><button data-move="left">左</button><button data-move="back">後退</button><button data-move="right">右</button><button id="usebtn">調べる</button></div>
+<script src="lib/three.min.js"></script><script src="assets/voices/voices_ab.js"></script>
+<script>
+(()=>{'use strict';
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x8ca9ba);scene.fog=new THREE.FogExp2(0x8ca9ba,.00078);
+const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.1,1800);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;document.body.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe6f2ff,0x263744,1.65));const sun=new THREE.DirectionalLight(0xffedcf,3.15);sun.position.set(-180,260,170);sun.castShadow=true;sun.shadow.mapSize.set(3072,3072);sun.shadow.camera.left=-280;sun.shadow.camera.right=280;sun.shadow.camera.top=230;sun.shadow.camera.bottom=-230;sun.shadow.bias=-.00025;scene.add(sun);
+const fill=new THREE.DirectionalLight(0x91c9ed,.75);fill.position.set(120,65,-180);scene.add(fill);
+const mat=(c,r=.65,m=.15)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+function canvasTex(draw,w=1024,h=1024,rx=1,ry=1){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(rx,ry);t.anisotropy=8;return t}
+const deckTex=canvasTex((g,w,h)=>{g.fillStyle='#343c40';g.fillRect(0,0,w,h);for(let i=0;i<18000;i++){const v=35+Math.random()*30;g.fillStyle='rgba('+v+','+(v+3)+','+(v+5)+','+(.08+Math.random()*.15)+')';g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1+Math.random()*2)}g.strokeStyle='rgba(180,190,190,.13)';g.lineWidth=2;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<h;y+=128){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}},1024,1024,8,2);
+const hullTex=canvasTex((g,w,h)=>{g.fillStyle='#263a48';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=64){for(let x=0;x<w;x+=128){g.fillStyle=(x/128+y/64)%2?'#2c4352':'#304858';g.fillRect(x+2,y+2,124,60);g.fillStyle='#8b9290';for(let k=0;k<4;k++){g.beginPath();g.arc(x+12+k*32,y+8,2,0,Math.PI*2);g.fill()}}}g.strokeStyle='rgba(11,19,26,.6)';g.lineWidth=5;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}},1024,512,4,2);
+const teakTex=canvasTex((g,w,h)=>{g.fillStyle='#866b4d';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=42){g.fillStyle=y%84?'#927657':'#7e6449';g.fillRect(0,y,w,38);g.strokeStyle='#574634';g.lineWidth=2;g.beginPath();g.moveTo(0,y+39);g.lineTo(w,y+39);g.stroke();for(let x=(y%84?0:120);x<w;x+=240){g.strokeStyle='rgba(38,28,19,.45)';g.beginPath();g.moveTo(x,y);g.lineTo(x,y+38);g.stroke()}}},1024,512,5,2);
+const glass=new THREE.MeshPhysicalMaterial({color:0x9dc6d7,metalness:.32,roughness:.12,transparent:true,opacity:.62,clearcoat:1});
+const steel=mat(0x52616a,.42,.78),darkSteel=mat(0x1d2b34,.48,.72),white=mat(0xd8dedb,.48,.3),navy=mat(0x243b4b,.46,.72),gold=mat(0xb79b61,.38,.7),cream=mat(0xe1dfd6,.7,.08),teak=new THREE.MeshStandardMaterial({map:teakTex,roughness:.76}),flightDeck=new THREE.MeshStandardMaterial({map:deckTex,roughness:.9,metalness:.08}),hullMat=new THREE.MeshStandardMaterial({map:hullTex,roughness:.52,metalness:.48}),poolMat=new THREE.MeshPhysicalMaterial({color:0x168bb4,roughness:.18,metalness:.2,clearcoat:1,transparent:true,opacity:.88});
+function box(p,x,y,z,w,h,d,m,cast=true){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;p.add(o);return o}
+function cyl(p,x,y,z,rt,rb,h,m,n=20){const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,n),m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
+function sphere(p,x,y,z,r,m,sx=1,sy=1,sz=1){const o=new THREE.Mesh(new THREE.SphereGeometry(r,20,14),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;p.add(o);return o}
+function plate(p,L,B,y,m){const s=new THREE.Shape();s.moveTo(-L*.5,-B*.46);s.lineTo(L*.34,-B*.5);s.quadraticCurveTo(L*.5,-B*.48,L*.5,0);s.quadraticCurveTo(L*.5,B*.48,L*.34,B*.5);s.lineTo(-L*.5,B*.46);s.quadraticCurveTo(-L*.54,0,-L*.5,-B*.46);const geo=new THREE.ExtrudeGeometry(s,{depth:.8,bevelEnabled:true,bevelSegments:3,steps:1,bevelSize:.35,bevelThickness:.35,curveSegments:18});geo.rotateX(Math.PI/2);const o=new THREE.Mesh(geo,m);o.position.y=y+.8;o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
+function hull(p,L,B,D){const s=new THREE.Shape();s.moveTo(-L*.49,-B*.38);s.lineTo(L*.31,-B*.5);s.quadraticCurveTo(L*.47,-B*.48,L*.5,0);s.quadraticCurveTo(L*.47,B*.48,L*.31,B*.5);s.lineTo(-L*.49,B*.38);s.quadraticCurveTo(-L*.54,0,-L*.49,-B*.38);const geo=new THREE.ExtrudeGeometry(s,{depth:D,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:1.3,bevelThickness:1.2,curveSegments:24});geo.rotateX(Math.PI/2);const o=new THREE.Mesh(geo,hullMat);o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
+function sign(p,text,x,y,z,rot=0,scale=1){const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');g.fillStyle='#142632';g.fillRect(0,0,512,128);g.strokeStyle='#d5bd83';g.lineWidth=6;g.strokeRect(4,4,504,120);g.fillStyle='#f4e8c7';g.font='bold 43px sans-serif';g.textAlign='center';g.fillText(text,256,82);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const m=new THREE.Mesh(new THREE.PlaneGeometry(7*scale,1.75*scale),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.y=rot;p.add(m)}
+// Open ocean: dense geometry, layered directional swell, distant horizon.
+const seaGeo=new THREE.PlaneGeometry(2200,2200,150,150);seaGeo.rotateX(-Math.PI/2);const seaMat=new THREE.MeshPhysicalMaterial({color:0x27617b,roughness:.2,metalness:.24,clearcoat:1,clearcoatRoughness:.18});const sea=new THREE.Mesh(seaGeo,seaMat);sea.position.y=-18;sea.receiveShadow=true;scene.add(sea);const seaBase=seaGeo.attributes.position.array.slice();
+const horizon=new THREE.Mesh(new THREE.PlaneGeometry(2200,280),new THREE.MeshBasicMaterial({color:0xb5c6c9,transparent:true,opacity:.18,side:THREE.DoubleSide}));horizon.position.set(0,25,-650);scene.add(horizon);
+// Distant island silhouettes and low cloud banks.
+const landMat=mat(0x566d65,1,0),cloudMat=new THREE.MeshStandardMaterial({color:0xf4f5ef,roughness:1,transparent:true,opacity:.76});
+for(let i=0;i<7;i++){const g=new THREE.Group();g.position.set(-620+i*205,-8,-560-Math.random()*100);for(let j=0;j<7;j++){const h=24+Math.random()*65;const b=new THREE.Mesh(new THREE.ConeGeometry(55+Math.random()*45,h,7),landMat);b.position.set(j*48-130,h*.48,Math.random()*75);b.rotation.z=(Math.random()-.5)*.25;g.add(b)}scene.add(g)}
+for(let i=0;i<30;i++){const g=new THREE.Group();g.position.set(-800+Math.random()*1600,90+Math.random()*65,-450-Math.random()*500);for(let j=0;j<4;j++){const c=sphere(g,(Math.random()-.5)*35,(Math.random()-.5)*8,(Math.random()-.5)*20,13+Math.random()*12,cloudMat,1.8,.55,1.2)}scene.add(g)}
+// AIRCRAFT CARRIER — broad, angular flight deck, armored hull and island.
+const carrier=new THREE.Group();carrier.position.set(0,0,-42);scene.add(carrier);hull(carrier,360,70,18);plate(carrier,356,76,0,flightDeck);
+box(carrier,-5,-8,0,304,15,50,darkSteel);box(carrier,-5,-.25,0,298,.35,48,steel);
+for(const side of [-1,1]){box(carrier,0,-3.5,side*35,340,2,1.1,darkSteel);for(let x=-165;x<170;x+=8){box(carrier,x,-2.4,side*35.6,.22,1.6,.18,gold,false);box(carrier,x,-13,side*30,5,.25,.4,steel,false)}}
+// Main flight deck perimeter and non-slip texture.
+box(carrier,0,1.2,0,344,1.2,68,flightDeck);box(carrier,0,1.85,0,340,.18,66,darkSteel);
+for(const side of [-1,1]){box(carrier,0,2.03,side*32.5,340,.12,.35,white,false);for(let x=-166;x<170;x+=14)box(carrier,x,2.08,side*29.8,2,.08,.16,gold,false)}
+// Landing area, catapult tracks, arrestor wires, deck numbers and safety zones.
+for(let x=-150;x<130;x+=18)box(carrier,x,2.08,-5,.16,.07,49,white,false);
+for(let z=-22;z<=22;z+=11)box(carrier,154,2.1,z,2,.08,1.2,gold,false);
+for(let x=-120;x<135;x+=35){box(carrier,x,2.1,20,17,.08,.24,white,false);box(carrier,x,2.1,-20,17,.08,.24,white,false)}
+for(let z=-25;z<=25;z+=25){const stripe=box(carrier,145,2.11,z,13,.08,1.2,white,false);stripe.rotation.y=.35}
+for(let z=-26;z<=26;z+=13)box(carrier,-158,2.1,z,8,.08,1.2,gold,false);
+sign(carrier,"FLIGHT DECK",-110,2.2,0,0,1.15);sign(carrier,"CATAPULT",-20,2.2,-29,0,.8);
+// Port and starboard sponsons, elevators, safety netting and catwalks.
+for(const side of [-1,1]){box(carrier,-12,-1.2,side*39,270,1.5,9,navy);for(let x=-145;x<145;x+=4){cyl(carrier,x,.2,side*41,.12,.12,1.4,gold,8)}}
+for(const x of [-75,55]){box(carrier,x,1.15,0,28,.35,24,darkSteel);box(carrier,x,1.38,0,26,.15,22,steel);for(let s of [-1,1])box(carrier,x,2.1,s*12,25,.1,.18,gold,false)}
+// Island superstructure with bridge windows, navigation levels, exhaust trunks, antennas.
+const island=new THREE.Group();island.position.set(64,0,21);carrier.add(island);
+box(island,0,5,0,30,8,17,white);box(island,0,10,0,27,2,16,navy);box(island,0,14,0,25,5,14,white);box(island,0,17,0,27,1,15,darkSteel);
+for(let x=-11;x<=11;x+=3.7){box(island,x,14.1,-7.15,2.8,3.5,.16,glass,false);box(island,x,5,-8.6,3.4,3.3,.16,glass,false)}
+box(island,0,20,0,18,3,12,white);box(island,0,22,0,18,.4,12,darkSteel);
+for(let x=-6;x<=6;x+=3){box(island,x,20,-6.1,2.4,1.8,.15,glass,false)}
+// Island mast and rotating radar.
+cyl(island,0,26,0,.65,.9,6,steel);cyl(island,0,29,0,3.8,3.8,.3,darkSteel,32);const radar=new THREE.Group();radar.position.set(0,29.5,0);island.add(radar);box(radar,0,0,0,1,0.3,19,gold,false);box(radar,0,.2,0,19,.22,.6,steel,false);
+for(let i=0;i<6;i++){const a=cyl(island,-7+i*2.8,26,-1,.12,.12,7,steel,8);a.rotation.z=.16}
+for(let x of [-8,8]){const stack=cyl(island,x,19,3,2.1,2.5,5,darkSteel,20);cyl(island,x,22,3,1.6,1.6,.3,mat(0x5b3027,.8,.1),20)}
+// Hangar bay, illuminated interior, overhead trusses, service doors and aircraft elevators.
+const hangar=new THREE.Group();hangar.position.set(-12,-8,0);carrier.add(hangar);box(hangar,0,0,0,190,15,48,navy);box(hangar,0,7.55,0,188,.5,46,steel);
+for(let side of [-1,1]){box(hangar,0,1,side*23.7,190,13,.5,steel);for(let x=-88;x<=88;x+=18){box(hangar,x,1.5,side*24,13,10,.16,glass,false);box(hangar,x,7,side*24,13,.35,.3,gold,false)}}
+for(let x=-88;x<=88;x+=16){box(hangar,x,7,0,.35,.3,45,gold,false);const lamp=new THREE.Mesh(new THREE.BoxGeometry(5,.18,.7),new THREE.MeshBasicMaterial({color:0xffe7b2}));lamp.position.set(x,7.25,0);hangar.add(lamp)}
+for(let x of [-65,-5,55]){box(hangar,x,-6,0,18,.4,12,deckmat);for(let z of [-4,4])box(hangar,x,-3,z,1.2,5,steel)}
+// Realistic aircraft silhouettes: tapered fuselage, swept wings, tailplanes, canopy and landing gear.
+const aircraftPaint=mat(0x65737a,.48,.58),canopyMat=new THREE.MeshPhysicalMaterial({color:0x8dc1d4,roughness:.12,metalness:.25,transparent:true,opacity:.82,clearcoat:1});
+function aircraft(p,x,y,z,scale=1,type='jet',rot=0){const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=rot;g.scale.setScalar(scale);p.add(g);
+const fus=new THREE.Mesh(new THREE.CylinderGeometry(.48,.78,11,18,1,false),aircraftPaint);fus.rotation.z=-Math.PI/2;fus.position.y=.15;g.add(fus);const nose=new THREE.Mesh(new THREE.ConeGeometry(.48,2.4,18),aircraftPaint);nose.rotation.z=-Math.PI/2;nose.position.x=6.55;nose.position.y=.15;g.add(nose);
+const wingShape=new THREE.Shape();wingShape.moveTo(-1.3,-1.1);wingShape.lineTo(1.2,-1.1);wingShape.lineTo(2.5,-7.2);wingShape.lineTo(1.6,-8.5);wingShape.lineTo(-1.1,-4.1);wingShape.lineTo(-1.3,-1.1);const wg=new THREE.ExtrudeGeometry(wingShape,{depth:.22,bevelEnabled:true,bevelSize:.08,bevelThickness:.08,bevelSegments:2});wg.rotateX(Math.PI/2);const wings=new THREE.Mesh(wg,aircraftPaint);wings.position.y=.2;g.add(wings);
+const tailShape=new THREE.Shape();tailShape.moveTo(-1,-.8);tailShape.lineTo(1,-.8);tailShape.lineTo(1.8,-3.1);tailShape.lineTo(-1.7,-3.1);tailShape.closePath();const tg=new THREE.ExtrudeGeometry(tailShape,{depth:.18,bevelEnabled:true,bevelSize:.04,bevelThickness:.04,bevelSegments:1});tg.rotateX(Math.PI/2);const tail=new THREE.Mesh(tg,aircraftPaint);tail.position.set(-4,.3,0);g.add(tail);
+const fin=box(g,-4,1.25,0,2.4,2.4,.25,aircraftPaint);fin.rotation.z=-.18;
+const canopy=sphere(g,1.7,.75,0,.85,canopyMat,2.2,.62,.9);
+for(let s of [-1,1]){const strut=cyl(g,-.2,-.55,s*2.8,.1,.1,1.6,darkSteel,8);strut.rotation.x=Math.PI/2;const wheel=cyl(g,-.2,-1.35,s*2.8,.36,.36,.28,darkSteel,14);wheel.rotation.x=Math.PI/2}
+if(type==='prop'){const prop=new THREE.Group();prop.position.set(7,.15,0);g.add(prop);for(let i=0;i<3;i++){const b=box(prop,.1,0,0,.22,2.4,.12,darkSteel);b.rotation.x=i*Math.PI/3}g.userData.prop=prop}
+return g}
+const jets=[];[[-112,-17],[-112,16],[-75,-3],[-38,-18],[-38,18],[-3,-3],[32,-17],[32,17],[98,-7]].forEach((v,i)=>jets.push(aircraft(carrier,v[0],2.65,v[1],i===2?.92:.82,i===4?'prop':'jet',i%2?Math.PI:0)));
+aircraft(hangar,-58,-5,-9,.68,'prop');aircraft(hangar,12,-5,9,.72,'jet');aircraft(hangar,68,-5,-7,.65,'jet');
+// Deck tractors, tow bars, fuel bowsers, fire trucks, pallets and tie-downs.
+const vehicleRed=mat(0xb74732,.62,.16),rubber=mat(0x171a1c,.95,0);
+function serviceVehicle(p,x,y,z){const g=new THREE.Group();g.position.set(x,y,z);p.add(g);box(g,0,.9,0,5,1.3,2.4,vehicleRed);box(g,.4,1.8,0,2.1,.9,2.1,glass);for(let s of [-1,1])for(let a of [-1,1]){const w=cyl(g,a*1.6,.45,s*.95,.48,.48,.35,rubber,14);w.rotation.x=Math.PI/2}return g}
+serviceVehicle(carrier,-133,2,-23);serviceVehicle(carrier,-5,2,25);serviceVehicle(carrier,115,2,18);
+for(let x=-150;x<150;x+=10)for(let z of [-30,30]){const tie=cyl(carrier,x,2.1,z,.14,.14,.08,gold,10)}
+// Safety rails, ladders, rescue baskets and life rafts on the carrier.
+for(let side of [-1,1]){for(let x=-160;x<160;x+=6){box(carrier,x,2.8,side*34,.12,1.1,.12,gold,false)}box(carrier,0,2.35,side*34,340,.14,.14,white,false)}
+// Carrier crew: photo sprites from the existing character library, with 3D fallback.
+const crewSpots=[{x:-26,y:2.1,z:-22,name:'甲板整備員',voice:'192f280260',role:'航空機の発艦前点検'},{x:-6,y:2.1,z:25,name:'給油担当員',voice:'95ad01e323',role:'航空機への燃料補給'},{x:-53,y:-5,z:-8,name:'格納庫整備員',voice:'03b1acfa72',role:'機体整備と搭載作業'},{x:40,y:2.1,z:-26,name:'発艦管制員',voice:'3efb85e0fe',role:'発艦準備と甲板運用'},{x:84,y:2.1,z:17,name:'通信員',voice:'f19a5e9955',role:'艦内通信と航空管制'},{x:64,y:18,z:20,name:'航空管制士',voice:'60bac2d364',role:'艦橋から発艦指示を伝達'}];
+function fallbackCrew(parent,x,y,z){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);const uni=mat(0x344a5c,.82,.08),skin=mat(0xc99b7b,.9);cyl(g,0,1,0,.34,.42,1.05,uni,12);sphere(g,0,1.75,0,.27,skin);cyl(g,0,1.98,0,.31,.31,.13,darkSteel,14);for(let s of [-1,1]){const arm=cyl(g,s*.42,1.1,0,.12,.14,.7,uni,10);arm.rotation.z=s*.2;cyl(g,s*.16,.34,0,.14,.15,.65,darkSteel,10)}return g}
+const crew=[];
+crewSpots.forEach((s,i)=>{const holder=new THREE.Group();holder.position.set(s.x,s.y,s.z);carrier.add(holder);fallbackCrew(holder,0,0,0);crew.push({holder,spot:s})});
+const textureLoader=new THREE.TextureLoader();['conscript_01_front.webp','conscript_02_front.webp','conscript_03_front.webp','conscript_04_front.webp','conscript_05_front.webp','conscript_06_front.webp'].forEach((name,i)=>{textureLoader.load('assets/conscripts/'+name,t=>{t.colorSpace=THREE.SRGBColorSpace;const old=crew[i].holder.children[0];crew[i].holder.remove(old);const m=new THREE.Mesh(new THREE.PlaneGeometry(1.7,3.5),new THREE.MeshBasicMaterial({map:t,transparent:true,alphaTest:.12,side:THREE.DoubleSide,depthWrite:false}));m.position.y=1.72;crew[i].holder.add(m)})});
+// LUXURY CRUISE SHIP — separate vessel with tiered decks, balconies, glass atrium and pool.
+const cruise=new THREE.Group();cruise.position.set(0,0,43);scene.add(cruise);hull(cruise,350,52,17);box(cruise,0,-1,0,318,2,45,navy);plate(cruise,330,54,0,teak);
+for(let side of [-1,1]){box(cruise,0,-3,side*25.2,320,2,.7,white);for(let x=-155;x<155;x+=7){box(cruise,x,-2,side*25.5,.3,1.2,.2,gold,false)}}
+// Cruise decks: stepped stern accommodation and bow lounge tiers.
+const levels=[{y:4,L:300,B:44},{y:9,L:278,B:40},{y:14,L:252,B:36},{y:19,L:220,B:32},{y:24,L:185,B:27},{y:29,L:135,B:22},{y:34,L:82,B:18}];
+levels.forEach((d,i)=>{plate(cruise,d.L,d.B,d.y, i<2?cream:white);for(let side of [-1,1]){box(cruise,0,d.y+2,side*(d.B/2-.3),d.L-10,3,.28,white);for(let x=-d.L/2+10;x<d.L/2-5;x+=4.3){box(cruise,x,d.y+2.2,side*(d.B/2-.1),2.2,1.55,.14,glass,false);box(cruise,x,d.y+1.25,side*(d.B/2+.1),2.4,.12,.38,gold,false)}}});
+for(let d of levels.slice(0,5)){for(let x=-d.L/2+12;x<d.L/2-8;x+=7){for(let side of [-1,1]){box(cruise,x,d.y+1.1,side*(d.B/2+1.1),5,.12,2.1,teak);box(cruise,x,d.y+2,side*(d.B/2+2),5,1.5,.12,glass,false)}}}
+// Bow observation lounge, aft glass atrium and panoramic bridge.
+box(cruise,112,12,0,40,9,27,glass);box(cruise,112,16,0,42,.5,29,white);for(let x=95;x<=129;x+=6)box(cruise,x,12,14,4,7,.15,glass,false);
+box(cruise,0,27,0,90,5,18,glass);box(cruise,0,29.7,0,94,.4,22,white);
+box(cruise,0,37,0,70,4,16,white);for(let x=-30;x<=30;x+=6)box(cruise,x,37,8.1,4.8,2.4,.15,glass,false);box(cruise,0,39.3,0,72,.4,17,darkSteel);
+// Twin exhaust funnels, mast, satellite domes and navigation lights.
+for(let x of [-30,28]){const funnel=cyl(cruise,x,34,-3,5.5,7,14,mat(0x273c50,.48,.4),24);cyl(cruise,x,41,-3,5.2,5.5,1.3,vehicleRed,24);cyl(cruise,x,42,-3,3.7,3.7,.5,darkSteel,24);box(cruise,x,45,-3,.7,4,.7,steel)}
+cyl(cruise,0,44,0,.45,.7,8,steel);for(let x of [-16,16])sphere(cruise,x,42,0,2.8,white,1,1,1);
+for(let x=-120;x<120;x+=30){cyl(cruise,x,37,0,.35,.35,3,gold,12)}
+// Pool complex, glass wind screens, hot tubs, sun loungers and outdoor bar.
+box(cruise,-38,25.1,0,64,.35,18,poolMat);for(let side of [-1,1])box(cruise,-38,26,side*10,65,2,.18,glass,false);
+for(let x=-63;x<-10;x+=8){const lounger=box(cruise,x,25.5,15,5,.28,2.2,cream);lounger.rotation.z=-.08;box(cruise,x,26.1,14.2,2,.16,1.7,white)}
+for(let x=-60;x<-10;x+=12)cyl(cruise,x,25.6,-13,2.4,2.4,1.3,blue,24);
+box(cruise,62,25,0,28,1,12,wood);for(let x=50;x<75;x+=5){cyl(cruise,x,26,0,.25,.25,2,gold,10);sphere(cruise,x,25,0,.22,mat(0xffd89a,.3,0))}
+// Restaurants, theatre and atrium fittings behind glazed walls.
+box(cruise,-105,10,0,54,4,32,wood);for(let x=-127;x<-80;x+=8)for(let z=-12;z<=12;z+=12){cyl(cruise,x,12,z,1.6,1.6,.3,cream,20);for(let s of [-1,1])box(cruise,x+s*2,11.7,z,1,.8,1,navy)}
+box(cruise,62,10,0,50,5,28,navy);for(let row=0;row<4;row++)for(let col=0;col<8;col++){box(cruise,42+col*5,11,-11+row*6,2.2,.8,2,mat(0x702c36,.9));box(cruise,42+col*5,11.8,-11+row*6-1,2.2,1.2,.3,mat(0x702c36,.9))}
+box(cruise,65,13,0,2,4,26,gold);box(cruise,67,13,0,8,3,.3,cream);
+// Passenger lifeboats and davits on both sides.
+for(let side of [-1,1])for(let x=-128;x<130;x+=22){const boat=box(cruise,x,7,side*28,10,2.2,3.3,vehicleRed);boat.rotation.z=.06;box(cruise,x,8.4,side*28,7,1,.3,cream);for(let a of [-1,1]){const arm=cyl(cruise,x+a*4,10,side*28,.16,.16,3,gold,10);arm.rotation.z=.6}}
+for(let x=-110;x<110;x+=18)box(cruise,x,3,0,1,.2,1,gold,false);
+sign(cruise,"CELESTIA",-65,5,27,Math.PI,1.15);sign(cruise,"OCEAN LOUNGE",112,18,14,Math.PI,.7);sign(cruise,"SUN DECK",-25,31,12,Math.PI,.8);
+// Ship-to-ship transfer bridge with articulated gangway and illuminated handrails.
+const gangway=new THREE.Group();gangway.position.set(36,3.5,0);scene.add(gangway);box(gangway,0,0,0,12,.65,48,steel);box(gangway,0,.36,0,11,.12,46,teak);
+for(let side of [-1,1]){box(gangway,0,1.35,side*23.5,12,.12,.16,gold,false);for(let x=-5;x<=5;x+=2.5)box(gangway,x,.8,side*23.5,.12,1,.12,white,false)}
+for(let x=-5;x<=5;x+=2.5){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.16,10,8),new THREE.MeshBasicMaterial({color:0xffd99a}));lamp.position.set(x,1.55,sideSafe(x));gangway.add(lamp)}
+function sideSafe(x){return x<0?-23.5:23.5}
+// Tender boat and navigation buoys between the vessels.
+const tender=new THREE.Group();tender.position.set(-105,-8,8);scene.add(tender);hull(tender,34,8,4);box(tender,0,-1,0,26,1,6,white);box(tender,2,1,0,10,3,5,glass);for(let i=0;i<3;i++)cyl(tender,-8+i*8,2,0,.2,.2,2,gold,10);
+for(let x=-190;x<190;x+=75){const buoy=cyl(scene,x,-7,5,1.2,1.2,5,vehicleRed,16);cyl(scene,x,-3,5,.3,.3,2,gold,12);const lamp=sphere(scene,x,-1.7,5,.45,mat(0xffd66d,.3,0));}
+// Operational detail: deck lights, floodlights, bollards and anchor gear.
+for(let x=-150;x<150;x+=30){for(let side of [-1,1]){cyl(carrier,x,3,side*31,.18,.18,3,gold,12);const light=sphere(carrier,x,4.7,side*31,.32,mat(0xffe0a3,.25,0));}}
+for(let side of [-1,1]){for(let x=-140;x<140;x+=18){cyl(cruise,x,6,side*27,.18,.18,2,gold,10);sphere(cruise,x,7,side*27,.22,mat(0xffdf9a,.25,0))}}
+const spots=[
+{x:-25,y:2,z:-64,name:'発艦管制区画',desc:'カタパルト、着艦制動索、甲板作業員の配置を確認できます。',kind:'room'},
+{x:-15,y:-8,z:-50,name:'航空機格納庫',desc:'艦載機の整備ベイ、牽引車、燃料・工具区画を備えた格納庫です。',kind:'room'},
+{x:64,y:17,z:-21,name:'空母艦橋',desc:'艦載機運用を統括する艦橋。レーダーと通信設備が稼働しています。',kind:'room'},
+{x:36,y:3.5,z:-19,name:'連絡通路',desc:'空母から豪華客船へ渡る連絡橋です。',kind:'transfer'},
+{x:-38,y:25,z:43,name:'客船プールデッキ',desc:'プール、ジャグジー、サンラウンジャーを備えた屋外レジャーデッキです。',kind:'room'},
+{x:-105,y:10,z:43,name:'メインダイニング',desc:'海側の窓とテーブル席を備える客船のメインレストランです。',kind:'room'},
+{x:62,y:10,z:43,name:'船内劇場',desc:'客席、舞台、照明を備えた船内シアターです。',kind:'room'},
+{x:0,y:37,z:43,name:'客船ブリッジ',desc:'パノラマ窓から海域を見渡す操舵室です。',kind:'room'},
+{x:0,y:2,z:-42,name:'空母エレベーター',desc:'格納庫・飛行甲板・艦橋デッキを結ぶ大型エレベーターです。',kind:'lift',ship:'carrier'},
+{x:140,y:5,z:43,name:'客船エレベーター',desc:'客室、プール、ブリッジの各デッキへ移動します。',kind:'lift',ship:'cruise'}
+];
+const crewSpotsWorld=crewSpots.map(s=>({...s,x:s.x,y:s.y,z:s.z-42,kind:'dialogue'}));crewSpotsWorld.forEach(s=>spots.push(s));
+const markers=[];spots.forEach(s=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.1,16),new THREE.MeshBasicMaterial({color:0xf0d38a,transparent:true,opacity:.75}));m.position.set(s.x,s.y+.25,s.z);scene.add(m);markers.push({mesh:m,spot:s})});
+const decks=[
+{name:'空母・格納庫',y:-8,x:-15,z:-50,desc:'航空機整備と機体移動区画'},
+{name:'空母・飛行甲板',y:2,x:-25,z:-64,desc:'発着艦・駐機・着艦制動区画'},
+{name:'空母・艦橋',y:17,x:64,z:-21,desc:'航空運用管制・通信区画'},
+{name:'客船・プロムナード',y:10,x:-105,z:43,desc:'海側遊歩廊・メインダイニング'},
+{name:'客船・プールデッキ',y:25,x:-38,z:43,desc:'屋外プール・サンデッキ'},
+{name:'客船・ブリッジ',y:37,x:0,z:43,desc:'操舵室・航海計器'}
+];
+const player={x:-65,y:2,z:-42,deck:1};let yaw=0,pitch=-.08,locked=false,keys={},moveTouch={},near=null;
+camera.position.set(player.x,player.y+1.75,player.z+6);
+function panel(title,body){document.getElementById('ptitle').textContent=title;document.getElementById('pbody').innerHTML=body;document.getElementById('panel').style.display='block'}
+function elevatorOptions(shipName){const ids=shipName==='carrier'?[0,1,2]:[3,4,5];const opts=ids.map(i=>'<button data-deck="'+i+'">'+decks[i].name+'</button>').join(' ');panel('エレベーター','<p>移動するデッキを選択してください。</p><div style="display:flex;gap:8px;flex-wrap:wrap">'+opts+'</div>');document.querySelectorAll('[data-deck]').forEach(b=>b.onclick=()=>{const d=decks[+b.dataset.deck];player.deck=+b.dataset.deck;player.x=d.x;player.y=d.y;player.z=d.z;document.getElementById('panel').style.display='none'})}
+function playCrewVoice(key,name){const line=window.VOICE_AB&&window.VOICE_AB.lines&&window.VOICE_AB.lines[key];if(!line)return;document.getElementById('speaker').textContent=line.who+' — '+name;document.getElementById('dialoguetext').textContent=line.ja;document.getElementById('dialogue').style.display='block';if(window.__carrierVoice){window.__carrierVoice.pause();window.__carrierVoice.currentTime=0}window.__carrierVoice=new Audio('assets/voices/'+line.file);window.__carrierVoice.volume=.9;window.__carrierVoice.play().catch(()=>{})}
+function interact(){if(!near)return;if(near.kind==='dialogue'){playCrewVoice(near.voice,near.name);return}if(near.kind==='lift'){elevatorOptions(near.ship);return}if(near.kind==='transfer'){panel(near.name,'<p>'+near.desc+'</p><p>この連絡橋を渡ると、空母と客船を行き来できます。</p>');return}panel(near.name,'<p>'+near.desc+'</p><p>現在位置：'+document.getElementById('deckname').textContent+'</p>')}
+function mapOpen(){panel('二つの巨艦・艦内案内','<p><b>航空母艦《鳳翔》</b> — 飛行甲板、格納庫、艦橋、艦載機、発艦管制設備。</p><p><b>豪華客船《セレスティア》</b> — 客室デッキ、メインダイニング、劇場、プール、展望ブリッジ。</p><p><b>連絡通路</b> — 二隻の間を渡る連絡橋。船の間を歩いて移動できます。</p><p>各エレベーターの前で E を押すと上層・下層へ移動できます。</p>')}
+document.getElementById('mapbtn').onclick=mapOpen;document.getElementById('close').onclick=()=>document.getElementById('panel').style.display='none';
+addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyM')mapOpen();if(e.code==='Escape'&&locked)document.exitPointerLock()});addEventListener('keyup',e=>keys[e.code]=false);
+renderer.domElement.addEventListener('click',()=>{if(!locked&&document.getElementById('panel').style.display!=='block')renderer.domElement.requestPointerLock?.()});
+document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0021;pitch=Math.max(-1.1,Math.min(1.1,pitch-e.movementY*.0017))});
+document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;b.addEventListener('pointerdown',e=>{moveTouch[k]=true;b.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>moveTouch[k]=false))});document.getElementById('usebtn').onclick=interact;
+// Deck collision: the gangway is the only walkable connection between the two hulls.
+function onWalkable(x,z){const onCarrier=x>-180&&x<180&&z>-82&&z< -2;const onCruise=x>-180&&x<180&&z>16&&z<72;const onBridge=x>24&&x<48&&z>-22&&z<24;return onCarrier||onCruise||onBridge}
+const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
+const a=seaGeo.attributes.position;for(let i=0;i<a.count;i++){const x=seaBase[i*3],z=seaBase[i*3+2];a.array[i*3+1]=Math.sin(x*.012+t*.55)*.55+Math.sin(z*.019-t*.42)*.34+Math.sin((x+z)*.008+t*.28)*.22}a.needsUpdate=true;if(Math.floor(t*12)%3===0)seaGeo.computeVertexNormals();radar.rotation.y=t*1.2;
+const f=(keys.KeyW||keys.ArrowUp||moveTouch.forward?1:0)-(keys.KeyS||keys.ArrowDown||moveTouch.back?1:0),s=(keys.KeyD||keys.ArrowRight||moveTouch.right?1:0)-(keys.KeyA||keys.ArrowLeft||moveTouch.left?1:0),speed=(keys.ShiftLeft?12:6.5)*dt;
+const nx=player.x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed,nz=player.z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;if(onWalkable(nx,nz)){player.x=nx;player.z=nz}
+camera.position.set(player.x,player.y+1.75,player.z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
+let best=1e9;near=null;for(const m of markers){const d=Math.hypot(player.x-m.spot.x,player.z-m.spot.z,player.y-m.spot.y);if(d<best){best=d;near=m.spot}}
+const p=document.getElementById('prompt');p.style.display=best<10?'block':'none';p.textContent=near?(near.kind==='lift'?'E — '+near.name+'（デッキ選択）':near.kind==='dialogue'?'E — '+near.name+'（会話）':'E — '+near.name):'';document.getElementById('deckname').textContent=decks[player.deck].name;document.getElementById('coords').textContent='位置 '+Math.round(player.x)+' / '+Math.round(player.z)+' m';
+for(const m of markers){m.mesh.material.opacity=m.spot===near?.95:.3;m.mesh.scale.setScalar(m.spot===near?1.45:1)}
+for(const c of crew){c.holder.rotation.y=Math.atan2(camera.position.x-c.holder.position.x,camera.position.z-c.holder.position.z)}
+for(const j of jets)if(j.userData.prop)j.userData.prop.rotation.x=t*8;
+renderer.render(scene,camera)}
+window.__carrierStage={scene,camera,carrier,cruise,player,spots,crewSpots,renderer,interact,mapOpen,decks};
+tick();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 })();
 </script></body></html>

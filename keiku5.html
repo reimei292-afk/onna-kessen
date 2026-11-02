@@ -13,7 +13,7 @@
 (()=>{'use strict';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x8ca9ba);scene.fog=new THREE.FogExp2(0x8ca9ba,.00078);
 const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.1,1800);
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.35));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;document.body.appendChild(renderer.domElement);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe6f2ff,0x263744,1.65));const sun=new THREE.DirectionalLight(0xffedcf,3.15);sun.position.set(-180,260,170);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);renderer.shadowMap.needsUpdate=true;sun.shadow.camera.left=-280;sun.shadow.camera.right=280;sun.shadow.camera.top=230;sun.shadow.camera.bottom=-230;sun.shadow.bias=-.00025;scene.add(sun);
 const fill=new THREE.DirectionalLight(0x91c9ed,.75);fill.position.set(120,65,-180);scene.add(fill);
 const mat=(c,r=.65,m=.15)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
@@ -30,12 +30,12 @@ function plate(p,L,B,y,m){const s=new THREE.Shape();s.moveTo(-L*.5,-B*.46);s.lin
 function hull(p,L,B,D){const s=new THREE.Shape();s.moveTo(-L*.49,-B*.38);s.lineTo(L*.31,-B*.5);s.quadraticCurveTo(L*.47,-B*.48,L*.5,0);s.quadraticCurveTo(L*.47,B*.48,L*.31,B*.5);s.lineTo(-L*.49,B*.38);s.quadraticCurveTo(-L*.54,0,-L*.49,-B*.38);const geo=new THREE.ExtrudeGeometry(s,{depth:D,bevelEnabled:true,bevelSegments:5,steps:1,bevelSize:1.3,bevelThickness:1.2,curveSegments:24});geo.rotateX(Math.PI/2);const o=new THREE.Mesh(geo,hullMat);o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
 function sign(p,text,x,y,z,rot=0,scale=1){const c=document.createElement('canvas');c.width=512;c.height=128;const g=c.getContext('2d');g.fillStyle='#142632';g.fillRect(0,0,512,128);g.strokeStyle='#d5bd83';g.lineWidth=6;g.strokeRect(4,4,504,120);g.fillStyle='#f4e8c7';g.font='bold 43px sans-serif';g.textAlign='center';g.fillText(text,256,82);const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;const m=new THREE.Mesh(new THREE.PlaneGeometry(7*scale,1.75*scale),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));m.position.set(x,y,z);m.rotation.y=rot;p.add(m)}
 // Open ocean: dense geometry, layered directional swell, distant horizon.
-const seaGeo=new THREE.PlaneGeometry(2200,2200,90,90);seaGeo.rotateX(-Math.PI/2);const seaMat=new THREE.MeshPhysicalMaterial({color:0x27617b,roughness:.2,metalness:.24,clearcoat:1,clearcoatRoughness:.18});const sea=new THREE.Mesh(seaGeo,seaMat);sea.position.y=-18;sea.receiveShadow=true;scene.add(sea);const seaBase=seaGeo.attributes.position.array.slice();
+const seaGeo=new THREE.PlaneGeometry(2200,2200,64,64);seaGeo.rotateX(-Math.PI/2);const seaMat=new THREE.MeshPhysicalMaterial({color:0x27617b,roughness:.2,metalness:.24,clearcoat:1,clearcoatRoughness:.18});const sea=new THREE.Mesh(seaGeo,seaMat);sea.position.y=-18;sea.receiveShadow=true;scene.add(sea);const seaBase=seaGeo.attributes.position.array.slice();
 const horizon=new THREE.Mesh(new THREE.PlaneGeometry(2200,280),new THREE.MeshBasicMaterial({color:0xb5c6c9,transparent:true,opacity:.18,side:THREE.DoubleSide}));horizon.position.set(0,25,-650);scene.add(horizon);
 // Distant island silhouettes and low cloud banks.
 const landMat=mat(0x566d65,1,0),cloudMat=new THREE.MeshStandardMaterial({color:0xf4f5ef,roughness:1,transparent:true,opacity:.76});
 for(let i=0;i<7;i++){const g=new THREE.Group();g.position.set(-620+i*205,-8,-560-Math.random()*100);for(let j=0;j<5;j++){const h=24+Math.random()*65;const b=new THREE.Mesh(new THREE.ConeGeometry(55+Math.random()*45,h,7),landMat);b.position.set(j*48-130,h*.48,Math.random()*75);b.rotation.z=(Math.random()-.5)*.25;g.add(b)}scene.add(g)}
-for(let i=0;i<18;i++){const g=new THREE.Group();g.position.set(-800+Math.random()*1600,90+Math.random()*65,-450-Math.random()*500);for(let j=0;j<3;j++){const c=sphere(g,(Math.random()-.5)*35,(Math.random()-.5)*8,(Math.random()-.5)*20,13+Math.random()*12,cloudMat,1.8,.55,1.2)}scene.add(g)}
+for(let i=0;i<12;i++){const g=new THREE.Group();g.position.set(-800+Math.random()*1600,90+Math.random()*65,-450-Math.random()*500);for(let j=0;j<2;j++){const c=sphere(g,(Math.random()-.5)*35,(Math.random()-.5)*8,(Math.random()-.5)*20,13+Math.random()*12,cloudMat,1.8,.55,1.2)}scene.add(g)}
 // AIRCRAFT CARRIER — broad, angular flight deck, armored hull and island.
 const carrier=new THREE.Group();carrier.position.set(0,0,-42);scene.add(carrier);hull(carrier,360,70,18);plate(carrier,356,76,0,flightDeck);
 box(carrier,-5,-8,0,304,15,50,darkSteel);box(carrier,-5,-.25,0,298,.35,48,steel);
@@ -99,8 +99,8 @@ const cruise=new THREE.Group();cruise.position.set(0,0,43);scene.add(cruise);hul
 for(let side of [-1,1]){box(cruise,0,-3,side*25.2,320,2,.7,white);for(let x=-155;x<155;x+=7){box(cruise,x,-2,side*25.5,.3,1.2,.2,gold,false)}}
 // Cruise decks: stepped stern accommodation and bow lounge tiers.
 const levels=[{y:4,L:300,B:44},{y:9,L:278,B:40},{y:14,L:252,B:36},{y:19,L:220,B:32},{y:24,L:185,B:27},{y:29,L:135,B:22},{y:34,L:82,B:18}];
-levels.forEach((d,i)=>{plate(cruise,d.L,d.B,d.y, i<2?cream:white);for(let side of [-1,1]){box(cruise,0,d.y+2,side*(d.B/2-.3),d.L-10,3,.28,white);for(let x=-d.L/2+10;x<d.L/2-5;x+=6.5){box(cruise,x,d.y+2.2,side*(d.B/2-.1),2.2,1.55,.14,glass,false);box(cruise,x,d.y+1.25,side*(d.B/2+.1),2.4,.12,.38,gold,false)}}});
-for(let d of levels.slice(0,5)){for(let x=-d.L/2+12;x<d.L/2-8;x+=10){for(let side of [-1,1]){box(cruise,x,d.y+1.1,side*(d.B/2+1.1),5,.12,2.1,teak);box(cruise,x,d.y+2,side*(d.B/2+2),5,1.5,.12,glass,false)}}}
+levels.forEach((d,i)=>{plate(cruise,d.L,d.B,d.y, i<2?cream:white);for(let side of [-1,1]){box(cruise,0,d.y+2,side*(d.B/2-.3),d.L-10,3,.28,white);for(let x=-d.L/2+10;x<d.L/2-5;x+=9.5){box(cruise,x,d.y+2.2,side*(d.B/2-.1),2.2,1.55,.14,glass,false);box(cruise,x,d.y+1.25,side*(d.B/2+.1),2.4,.12,.38,gold,false)}}});
+for(let d of levels.slice(0,5)){for(let x=-d.L/2+12;x<d.L/2-8;x+=18){for(let side of [-1,1]){box(cruise,x,d.y+1.1,side*(d.B/2+1.1),5,.12,2.1,teak);box(cruise,x,d.y+2,side*(d.B/2+2),5,1.5,.12,glass,false)}}}
 // Bow observation lounge, aft glass atrium and panoramic bridge.
 box(cruise,112,12,0,40,9,27,glass);box(cruise,112,16,0,42,.5,29,white);for(let x=95;x<=129;x+=6)box(cruise,x,12,14,4,7,.15,glass,false);
 box(cruise,0,27,0,90,5,18,glass);box(cruise,0,29.7,0,94,.4,22,white);
@@ -170,7 +170,7 @@ document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;b.ad
 // Deck collision: the gangway is the only walkable connection between the two hulls.
 function onWalkable(x,z){const onCarrier=x>-180&&x<180&&z>-82&&z< -2;const onCruise=x>-180&&x<180&&z>16&&z<72;const onBridge=x>24&&x<48&&z>-22&&z<24;return onCarrier||onCruise||onBridge}
 const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
-const a=seaGeo.attributes.position;for(let i=0;i<a.count;i++){const x=seaBase[i*3],z=seaBase[i*3+2];a.array[i*3+1]=Math.sin(x*.012+t*.55)*.55+Math.sin(z*.019-t*.42)*.34+Math.sin((x+z)*.008+t*.28)*.22}a.needsUpdate=true;if(Math.floor(t*12)%5===0)seaGeo.computeVertexNormals();radar.rotation.y=t*1.2;
+const a=seaGeo.attributes.position;for(let i=0;i<a.count;i++){const x=seaBase[i*3],z=seaBase[i*3+2];a.array[i*3+1]=Math.sin(x*.012+t*.55)*.55+Math.sin(z*.019-t*.42)*.34+Math.sin((x+z)*.008+t*.28)*.22}a.needsUpdate=true;if(Math.floor(t*12)%8===0)seaGeo.computeVertexNormals();radar.rotation.y=t*1.2;
 const f=(keys.KeyW||keys.ArrowUp||moveTouch.forward?1:0)-(keys.KeyS||keys.ArrowDown||moveTouch.back?1:0),s=(keys.KeyD||keys.ArrowRight||moveTouch.right?1:0)-(keys.KeyA||keys.ArrowLeft||moveTouch.left?1:0),speed=(keys.ShiftLeft?12:6.5)*dt;
 const nx=player.x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed,nz=player.z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;if(onWalkable(nx,nz)){player.x=nx;player.z=nz}
 camera.position.set(player.x,player.y+1.75,player.z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);

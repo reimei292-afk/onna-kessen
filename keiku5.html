@@ -131,8 +131,7 @@ function createMaid(parent,x,y,z,variant=0){
  box(g,0,1.34,.17,.14,.09,.045,variant%2?maidTrim:maidDress);
  return g;
 }
-const maids=[];
-maidSpots.forEach((s,i)=>{const parent=i<2?carrier:cruise;const holder=new THREE.Group();holder.position.set(s.x,s.y,s.z);parent.add(holder);createMaid(holder,0,0,0,i);maids.push({holder,spot:s})});
+
 // LUXURY CRUISE SHIP — separate vessel with tiered decks, balconies, glass atrium and pool.
 const cruise=new THREE.Group();cruise.position.set(0,0,43);scene.add(cruise);hull(cruise,350,52,17);box(cruise,0,-1,0,318,2,45,navy);plate(cruise,330,54,0,teak);
 for(let side of [-1,1]){box(cruise,0,-3,side*25.2,320,2,.7,white);for(let x=-155;x<155;x+=7){box(cruise,x,-2,side*25.5,.3,1.2,.2,gold,false)}}
@@ -172,6 +171,8 @@ for(let x=-190;x<190;x+=75){const buoy=cyl(scene,x,-7,5,1.2,1.2,5,vehicleRed,16)
 // Operational detail: deck lights, floodlights, bollards and anchor gear.
 for(let x=-150;x<150;x+=30){for(let side of [-1,1]){cyl(carrier,x,3,side*31,.18,.18,3,gold,12);const light=sphere(carrier,x,4.7,side*31,.32,mat(0xffe0a3,.25,0));}}
 for(let side of [-1,1]){for(let x=-140;x<140;x+=18){cyl(cruise,x,6,side*27,.18,.18,2,gold,10);sphere(cruise,x,7,side*27,.22,mat(0xffdf9a,.25,0))}}
+const maids=[];
+maidSpots.forEach((s,i)=>{const parent=i<2?carrier:cruise;const holder=new THREE.Group();holder.position.set(s.x,s.y,s.z);parent.add(holder);createMaid(holder,0,0,0,i);maids.push({holder,spot:s})});
 const spots=[
 {x:-25,y:2,z:-64,name:'発艦管制区画',desc:'カタパルト、着艦制動索、甲板作業員の配置を確認できます。',kind:'room'},
 {x:-15,y:-8,z:-50,name:'航空機格納庫',desc:'艦載機の整備ベイ、牽引車、燃料・工具区画を備えた格納庫です。',kind:'room'},

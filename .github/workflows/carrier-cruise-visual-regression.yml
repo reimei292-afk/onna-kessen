@@ -1,4 +1,4 @@
-name: Carrier cruise visual regression
+name: Cruise ship visual regression
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  browser-visual-smoke:
+  cruise-ship-browser-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -20,57 +20,78 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Serve project
         run: |
-          python3 -m http.server 8000 >/tmp/carrier.log 2>&1 &
+          python3 -m http.server 8000 >/tmp/cruise.log 2>&1 &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/ >/dev/null && break; sleep 1; done
-      - name: Render both ships and verify interactions
+      - name: Verify cruise ship, original maid sprites, voices and controls
         run: |
           node <<'NODE'
           const {chromium}=require('playwright');
           (async()=>{
             const browser=await chromium.launch({headless:true,args:['--use-gl=swiftshader','--enable-webgl']});
-            const page=await browser.newPage({viewport:{width:1600,height:1000},deviceScaleFactor:1});
-            const errors=[];page.setDefaultTimeout(15000);page.on('pageerror',e=>errors.push(e.message));
+            const page=await browser.newPage({viewport:{width:1440,height:900},deviceScaleFactor:1});
+            const errors=[];page.setDefaultTimeout(20000);
+            page.on('pageerror',e=>errors.push(e.message));
             page.on('console',m=>{if(m.type()==='error')errors.push(m.text())});
             try{
               await page.goto('http://127.0.0.1:8000/keiku5.html',{waitUntil:'domcontentloaded',timeout:60000});
-              await page.waitForTimeout(1000);
-              if(!await page.evaluate(()=>!!window.__carrierStage)) throw new Error('Stage boot failed; page errors='+JSON.stringify(errors)+'; title='+await page.title()+'; scripts='+await page.locator('script').count());
-              await page.waitForFunction(()=>window.__carrierStage&&window.__carrierStage.carrier&&window.__carrierStage.cruise,{timeout:10000});
-              console.log('STAGE_BOOTED');
-              await page.waitForTimeout(2500);
-              const initial=await page.evaluate(()=>({
-                canvas:!!document.querySelector('canvas'),
-                renderCalls:window.__carrierStage.renderer.info.render.calls,
-                carrierChildren:window.__carrierStage.carrier.children.length,
-                cruiseChildren:window.__carrierStage.cruise.children.length,
-                maids:window.__carrierStage.maidSpots.length,
-                maidModels:window.__carrierStage.maids.length,
-                sceneObjects:window.__carrierStage.scene.children.length,
-                fov:window.__carrierStage.camera.fov
-              }));
-              console.log('INITIAL_RENDER '+JSON.stringify(initial));if(!initial.canvas||initial.renderCalls<1||initial.carrierChildren<20||initial.cruiseChildren<30||initial.maids!==5||initial.maidModels!==5||initial.fov<80)throw new Error('Visual scene did not initialize: '+JSON.stringify(initial));
-              try{await page.screenshot({path:'/tmp/carrier-overhaul.png',fullPage:true,timeout:10000});console.log('SCREENSHOT_OK')}catch(e){console.log('SCREENSHOT_SKIPPED '+e.message)}
-              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=-28;p.y=2.1;p.z=-66;});
+              await page.waitForTimeout(4000);
+          const boot=await page.evaluate(()=>({stage:!!window.__cruiseStage,title:document.title,canvas:!!document.querySelector('canvas'),scripts:[...document.scripts].map(x=>x.src)}));
+          if(!boot.stage)throw new Error('Cruise stage did not boot: '+JSON.stringify({boot,errors}));
+              await page.waitForFunction(()=>window.__cruiseStage.maids.length===10&&window.__cruiseStage.maids.every(m=>m.material.map),{timeout:40000});
+              await page.waitForTimeout(1200);
+              const initial=await page.evaluate(()=>{
+                const S=window.__cruiseStage;
+                return {
+                  canvas:!!document.querySelector('canvas'),
+                  title:document.title,
+                  renderCalls:S.renderer.info.render.calls,
+                  shipChildren:S.ship.children.length,
+                  maidCount:S.maids.length,
+                  startDeck:S.player.deck,
+                  maidTextures:S.maids.filter(m=>m.material.map).length,
+                  maidFrames:S.maids.map(m=>({id:m.id,frame:m.frameName,optimizedWebp:m.frameURL.startsWith('data:image/webp'),directionalFrame:m.frameURL.includes('assets/frames/'+m.id+'_')})),
+                  decks:S.levels.length,
+                  hasCarrier:!!S.carrier,
+                  fov:S.camera.fov
+                };
+              });
+              console.log('CRUISE_INITIAL '+JSON.stringify(initial));
+              if(!initial.canvas||initial.renderCalls<1||initial.renderCalls>140||initial.startDeck!==2||initial.shipChildren<30||initial.maidCount!==10||initial.maidTextures!==10||initial.decks!==4||initial.hasCarrier||initial.fov<80)throw new Error('Cruise scene failed initial assertions: '+JSON.stringify(initial));
+              if(!initial.maidFrames.every(x=>x.optimizedWebp||x.directionalFrame))throw new Error('Original optimized maid photos/directional cut-outs not loaded: '+JSON.stringify(initial.maidFrames));
+              await page.screenshot({path:'/tmp/cruise-stage.png',fullPage:true,timeout:15000});
+              console.log('CRUISE_SCREENSHOT_OK');
+              await page.evaluate(()=>{const S=window.__cruiseStage;S.player.x=-98;S.player.y=S.levels[0].y;S.player.z=-8;});
+              await page.waitForFunction(()=>document.querySelector('#prompt').style.display==='block');
               await page.keyboard.press('e');
               await page.waitForFunction(()=>document.querySelector('#dialogue').style.display==='block');
-              const voice=await page.evaluate(()=>({text:document.querySelector('#dialoguetext').textContent,src:window.__carrierVoice?.src||''}));
-              if(!voice.text.includes('陛下、足元にお気をつけて')||!voice.src.includes('assets/voices/ab/db80932607.mp3'))throw new Error('Existing voice reuse failed: '+JSON.stringify(voice));console.log('VOICE_OK');
-              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=0;p.y=2;p.z=-42;});
+              const voice=await page.evaluate(()=>({text:document.querySelector('#dialoguetext').textContent,src:window.__cruiseVoice?.src||''}));
+              if(!voice.text.includes('陛下、足元にお気をつけて')||!voice.src.includes('assets/voices/ab/db80932607.mp3'))throw new Error('Existing voice/subtitle failed: '+JSON.stringify(voice));
+              console.log('VOICE_SUBTITLE_OK '+JSON.stringify(voice));
+              await page.evaluate(()=>{const S=window.__cruiseStage;S.player.x=0;S.player.y=S.levels[0].y;S.player.z=0;});
               await page.keyboard.press('e');
-              await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block'&&document.querySelectorAll('[data-deck]').length===3);
-              await page.evaluate(()=>document.querySelector('[data-deck="2"]').click());
-              const lift=await page.evaluate(()=>({deck:window.__carrierStage.player.deck,y:window.__carrierStage.player.y}));
-              if(lift.deck!==2||lift.y!==17)throw new Error('Carrier elevator failed: '+JSON.stringify(lift));console.log('LIFT_OK');
-              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=36;p.y=3.5;p.z=-19;});
-              await page.keyboard.press('e');
-              await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block');
-              const transfer=await page.locator('#ptitle').textContent();
-              if(transfer!=='連絡通路')throw new Error('Ship transfer point unavailable: '+transfer);console.log('TRANSFER_OK');
+              await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block'&&document.querySelectorAll('[data-deck]').length===4);
+              await page.locator('[data-deck="2"]').click();
+              const lift=await page.evaluate(()=>({deck:window.__cruiseStage.player.deck,y:window.__cruiseStage.player.y}));
+              if(lift.deck!==2||Math.abs(lift.y-22.65)>.01)throw new Error('Cruise elevator failed: '+JSON.stringify(lift));
+              console.log('ELEVATOR_OK '+JSON.stringify(lift));
+              const before=await page.evaluate(()=>window.__cruiseStage.controls().yaw);
+              await page.mouse.move(700,440);await page.mouse.down();await page.mouse.move(820,460,{steps:5});await page.mouse.up();
+              const after=await page.evaluate(()=>window.__cruiseStage.controls().yaw);
+              if(Math.abs(after-before)<.1)throw new Error('360-degree desktop drag did not rotate camera');
               await page.setViewportSize({width:390,height:844});
-              if(await page.locator('#touch').evaluate(e=>getComputedStyle(e).display==='none')||!await page.locator('#stickBase').isVisible()||!await page.locator('#lookHint').isVisible())throw new Error('Mobile joystick/look controls hidden');console.log('MOBILE_OK');
-              if(errors.length)throw new Error('Browser errors: '+errors.slice(0,15).join(' | '));
-              console.log('CARRIER_CRUISE_VISUAL_OVERHAUL_PASS '+JSON.stringify({initial,voice,lift,transfer,mobile:true}));
-              
+              if(await page.locator('#touch').evaluate(e=>getComputedStyle(e).display==='none')||!await page.locator('#stickBase').isVisible()||!await page.locator('#lookZone').isVisible()||!await page.locator('#usebtn').isVisible())throw new Error('Mobile drag controls are hidden');
+              const b=await page.locator('#stickBase').boundingBox();
+              await page.mouse.move(b.x+b.width/2,b.y+b.height/2);await page.mouse.down();await page.mouse.move(b.x+b.width*.75,b.y+b.height*.35,{steps:4});
+              const stick=await page.evaluate(()=>window.__cruiseStage.controls().stick);
+              await page.mouse.up();
+              if(Math.abs(stick.x)<.15||Math.abs(stick.y)<.15)throw new Error('Round joystick drag did not produce movement: '+JSON.stringify(stick));
+              const y0=await page.evaluate(()=>window.__cruiseStage.controls().yaw);
+              await page.mouse.move(300,420);await page.mouse.down();await page.mouse.move(350,440,{steps:4});await page.mouse.up();
+              const y1=await page.evaluate(()=>window.__cruiseStage.controls().yaw);
+              if(Math.abs(y1-y0)<.1)throw new Error('Mobile look drag did not rotate camera');
+              if(errors.length)throw new Error('Browser errors: '+errors.slice(0,12).join(' | '));
+              console.log('MOBILE_JOYSTICK_360_OK '+JSON.stringify({stick,yawDelta:y1-y0}));
+              console.log('CRUISE_STAGE_PASS');
             }finally{await browser.close()}
           })().catch(e=>{console.error(e);process.exit(1)});
           NODE
@@ -78,6 +99,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: carrier-cruise-overhaul-screenshot
-          path: /tmp/carrier-overhaul.png
+          name: cruise-ship-stage-screenshot
+          path: /tmp/cruise-stage.png
           if-no-files-found: ignore

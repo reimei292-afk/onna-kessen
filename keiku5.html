@@ -88,7 +88,7 @@ const skyTex=textureCanvas((g,w,h)=>{
  const halo=g.createRadialGradient(w*.72,h*.48,2,w*.72,h*.48,w*.22);halo.addColorStop(0,'rgba(255,245,218,.42)');halo.addColorStop(1,'rgba(255,245,218,0)');g.fillStyle=halo;g.fillRect(0,0,w,h);
  for(let i=0;i<34;i++){const x=(i*197)%w,y=h*(.25+((i*31)%37)/100),rx=45+(i%5)*20;g.save();g.translate(x,y);g.scale(1,.22);const cg=g.createRadialGradient(0,0,2,0,0,rx);cg.addColorStop(0,'rgba(255,255,250,.24)');cg.addColorStop(.7,'rgba(245,249,247,.10)');cg.addColorStop(1,'rgba(245,249,247,0)');g.fillStyle=cg;g.beginPath();g.arc(0,0,rx,0,Math.PI*2);g.fill();g.restore()}
 },1024,512);
-const sky=new THREE.Mesh(new THREE.SphereGeometry(1200,28,16),new THREE.MeshBasicMaterial({map:skyTex,side:THREE.BackSide,depthWrite:false,fog:false}));scene.add(sky);
+const sky=new THREE.Mesh(new THREE.SphereGeometry(1200,28,16),new THREE.MeshBasicMaterial({map:skyTex,side:THREE.BackSide,depthWrite:false,fog:false,toneMapped:false}));scene.add(sky);
 const seaGeo=new THREE.PlaneGeometry(1800,1800,40,40);seaGeo.rotateX(-Math.PI/2);
 const seaMat=new THREE.MeshPhysicalMaterial({color:0x28627a,roughness:.23,metalness:.16,clearcoat:.82,clearcoatRoughness:.22});
 const sea=new THREE.Mesh(seaGeo,seaMat);sea.position.y=-8.5;scene.add(sea);
@@ -212,7 +212,7 @@ const spots=[...liftSpots,...locations,...maids.map(m=>({x:m.x,y:levels[m.deck].
 const markerGeo=new THREE.RingGeometry(.38,.48,14),markerMat=new THREE.MeshBasicMaterial({color:0xe6cc8b,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});
 const markers=spots.map(s=>{const mesh=new THREE.Mesh(markerGeo,markerMat.clone());mesh.visible=false;mesh.rotation.x=-Math.PI/2;mesh.position.set(s.x,s.y+.035,s.z);scene.add(mesh);return{mesh,spot:s}});
 const player={x:-58,y:levels[2].y,z:0,deck:2};
-let yaw=-Math.PI/2,pitch=-.06,keys={},stick={x:0,y:0},stickPointer=null,lookPointer=null,lastX=0,lastY=0,near=null,walkClock=0;
+let yaw=0,pitch=-.035,keys={},stick={x:0,y:0},stickPointer=null,lookPointer=null,lastX=0,lastY=0,near=null,walkClock=0;
 camera.position.set(player.x,player.y+1.62,player.z);
 function showPanel(title,html){document.getElementById('ptitle').textContent=title;document.getElementById('pbody').innerHTML=html;document.getElementById('panel').style.display='block'}
 function closePanel(){document.getElementById('panel').style.display='none'}

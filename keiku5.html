@@ -114,13 +114,13 @@ const levels=[
  {id:0,name:'プロムナード',y:1.65,L:254,B:36},
  {id:1,name:'レストラン・ラウンジ',y:7.65,L:222,B:31},
  {id:2,name:'プール・サンデッキ',y:22.65,L:142,B:22},
- {id:3,name:'ブリッジ',y:29.65,L:58,B:17,cx:18}
+ {id:3,name:'ブリッジ',y:29.65,L:58,B:17,cx:30}
 ];
 levels.slice(1).forEach(d=>deckPlate(ship,d.L,d.B,d.y,white,d.cx||0));
-const cabinRows=[{y:4.0,L:240,B:34},{y:9.6,L:218,B:30},{y:14.6,L:192,B:27},{y:19.2,L:164,B:23},{y:24.6,L:80,B:16,cx:35},{y:30.1,L:54,B:15,cx:18}];
+const cabinRows=[{y:4.0,L:240,B:34},{y:9.6,L:218,B:30},{y:14.6,L:192,B:27},{y:19.2,L:164,B:23},{y:24.6,L:80,B:16,cx:40},{y:30.1,L:54,B:15,cx:30}];
 function taperAt(x,L){const u=x/L+.5;if(u>.82)return Math.max(.035,1-Math.pow((u-.82)/.18,1.55));if(u<.1)return .76+.24*u/.1;return 1}
 function makeSideWall(L,B,bottom,top,material,cx=0){const v=[],ind=[],uv=[];for(const side of [-1,1]){const base=v.length/3;for(let i=0;i<=48;i++){const u=i/48,x=cx+(u-.5)*L,z=side*(B*.5*taperAt(x-cx,L));v.push(x,bottom,z,x,top,z);uv.push(u,0,u,1)}for(let i=0;i<48;i++){const a=base+i*2,b=base+(i+1)*2;if(side>0)ind.push(a,b,a+1,b,b+1,a+1);else ind.push(a,a+1,b,b,a+1,b+1)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ind);g.computeVertexNormals();material.side=THREE.DoubleSide;ship.add(new THREE.Mesh(g,material))}
-[{L:240,B:34,bottom:1.65,top:7.65},{L:218,B:30,bottom:7.65,top:12.2},{L:192,B:27,bottom:12.2,top:17},{L:164,B:23,bottom:17,top:21.9},{L:80,B:16,bottom:22.65,top:27.6,cx:35},{L:54,B:15,bottom:29.65,top:34.8,cx:18}].forEach(d=>makeSideWall(d.L,d.B,d.bottom,d.top,whiteShade,d.cx||0));
+[{L:240,B:34,bottom:1.65,top:7.65},{L:218,B:30,bottom:7.65,top:12.2},{L:192,B:27,bottom:12.2,top:17},{L:164,B:23,bottom:17,top:21.9},{L:80,B:16,bottom:22.65,top:27.6,cx:40},{L:54,B:15,bottom:29.65,top:34.8,cx:30}].forEach(d=>makeSideWall(d.L,d.B,d.bottom,d.top,whiteShade,d.cx||0));
 const windowFrameItems=[],windowItems=[],balconyItems=[],balconyRailItems=[],balusterItems=[],outerRailItems=[];
 cabinRows.forEach((d,di)=>{const count=Math.floor(d.L/4.8);for(let side of [-1,1]){for(let i=0;i<count;i++){const x=(d.cx||0)-d.L*.5+8+i*4.65,taper=taperAt(x-(d.cx||0),d.L),sideZ=side*(d.B*.5*taper);windowFrameItems.push({x,y:d.y,z:sideZ+side*.05,w:1.72,h:1.3,d:.16});windowItems.push({x,y:d.y,z:sideZ+side*.15,w:1.42,h:1.02,d:.1});if(di<4&&i%2===0){balconyItems.push({x,y:d.y-1.05,z:side*(d.B*.5*taper+1.0),w:3.7,h:.16,d:1.55});balconyRailItems.push({x,y:d.y-.35,z:side*(d.B*.5*taper+1.8),w:3.7,h:.09,d:.09});for(let k=-1;k<=1;k++)balusterItems.push({x:x+k*1.25,y:d.y-.75,z:side*(d.B*.5*taper+1.8),w:.07,h:.72,d:.07})}}}});
 instancedBoxes(ship,dark,windowFrameItems);
@@ -128,7 +128,7 @@ instancedBoxes(ship,glass,windowItems);
 instancedBoxes(ship,deckWood,balconyItems);
 instancedBoxes(ship,steel,balconyRailItems);
 instancedBoxes(ship,whiteShade,balusterItems);
-for(const d of [{y:2.3,L:250,B:36},{y:8.2,L:218,B:31},{y:23.2,L:140,B:22},{y:30.2,L:58,B:17,cx:18}]){for(let side of [-1,1]){for(let x=(d.cx||0)-d.L/2+6;x<(d.cx||0)+d.L/2-5;x+=6){outerRailItems.push({x,y:d.y,z:side*(d.B/2),w:.12,h:1.05,d:.12})}outerRailItems.push({x:d.cx||0,y:d.y+.53,z:side*(d.B/2),w:d.L-12,h:.1,d:.1})}}
+for(const d of [{y:2.3,L:250,B:36},{y:8.2,L:218,B:31},{y:23.2,L:140,B:22},{y:30.2,L:58,B:17,cx:30}]){for(let side of [-1,1]){for(let x=(d.cx||0)-d.L/2+6;x<(d.cx||0)+d.L/2-5;x+=6){outerRailItems.push({x,y:d.y,z:side*(d.B/2),w:.12,h:1.05,d:.12})}outerRailItems.push({x:d.cx||0,y:d.y+.53,z:side*(d.B/2),w:d.L-12,h:.1,d:.1})}}
 instancedBoxes(ship,steel,outerRailItems);
 const accentLines=[];for(let y of [4.0,9.6,14.6,19.2,24.6])for(let side of [-1,1])accentLines.push({x:0,y:y-1.9,z:side*16.4,w:240,h:.12,d:.12});instancedBoxes(ship,gold,accentLines);
 const portholeItems=[];for(let x=-112;x<118;x+=5.2)for(let side of [-1,1])portholeItems.push({x,y:-1.8,z:side*17.3,w:.58,h:.58,d:.16});instancedBoxes(ship,glass,portholeItems);
@@ -136,13 +136,13 @@ const portholeItems=[];for(let x=-112;x<118;x+=5.2)for(let side of [-1,1])portho
 const bowBulwark=box(ship,122,2.6,0,10,1.4,29,white);bowBulwark.rotation.y=.05;
 for(const side of [-1,1]){box(ship,-122,2.2,side*14,12,1.1,1.1,white);cylinder(ship,122,2.2,side*12,.55,.55,1.1,gold)}
 // Panoramic forward bridge and tiered observation decks.
-box(ship,18,31.5,0,58,5.5,14,white);
-box(ship,18,31.7,7.15,54,4.2,.16,glass);
-box(ship,18,31.7,-7.15,54,4.2,.16,glass);
-const bridgeMullions=[];for(let x=-8;x<=44;x+=7){bridgeMullions.push({x,y:31.7,z:7.25,w:.16,h:4.2,d:.18},{x,y:31.7,z:-7.25,w:.16,h:4.2,d:.18})}instancedBoxes(ship,steel,bridgeMullions)
-box(ship,18,34.45,0,62,.35,16,white);
-box(ship,18,35.0,0,40,.45,10,navy);
-for(let x=0;x<=36;x+=8){cylinder(ship,x,36.2,0,.13,.13,2.3,steel,8)}
+box(ship,30,31.5,0,58,5.5,14,white);
+box(ship,30,31.7,7.15,54,4.2,.16,glass);
+box(ship,30,31.7,-7.15,54,4.2,.16,glass);
+const bridgeMullions=[];for(let x=4;x<=56;x+=7){bridgeMullions.push({x,y:31.7,z:7.25,w:.16,h:4.2,d:.18},{x,y:31.7,z:-7.25,w:.16,h:4.2,d:.18})}instancedBoxes(ship,steel,bridgeMullions)
+box(ship,30,34.45,0,62,.35,16,white);
+box(ship,30,35.0,0,40,.45,10,navy);
+for(let x=12;x<=48;x+=8){cylinder(ship,x,36.2,0,.13,.13,2.3,steel,8)}
 // Twin exhaust funnels with painted bands, intake lips and a slim communications mast.
 const funnelPositions=[{x:-34,y:29.2,z:-1},{x:-8,y:29.2,z:-1}];
 instancedCylinders(ship,new THREE.CylinderGeometry(4.2,5.5,12,20),navy,funnelPositions);
@@ -206,7 +206,7 @@ const locations=[
  {x:-28,y:levels[0].y,z:10,name:'船内ラウンジ入口',desc:'大きな窓とソファを備えたラウンジです。',kind:'place'},
  {x:74,y:levels[1].y,z:0,name:'メインダイニング',desc:'海側の窓に沿ってテーブルが並ぶ食堂です。',kind:'place'},
  {x:-16,y:levels[2].y,z:0,name:'プールデッキ',desc:'屋外プールとサンデッキ。救命艇や煙突も見渡せます。',kind:'place'},
- {x:18,y:levels[3].y,z:0,name:'操舵室・ブリッジ',desc:'パノラマ窓の向こうに進行方向の海が広がります。',kind:'place'}
+ {x:30,y:levels[3].y,z:0,name:'操舵室・ブリッジ',desc:'パノラマ窓の向こうに進行方向の海が広がります。',kind:'place'}
 ];
 const spots=[...liftSpots,...locations,...maids.map(m=>({x:m.x,y:levels[m.deck].y,z:m.z,name:m.speaker||'侍女',desc:'既存の侍女の写真と音声を使った乗員です。',kind:'maid',npc:m}))];
 const markerGeo=new THREE.RingGeometry(.38,.48,14),markerMat=new THREE.MeshBasicMaterial({color:0xe6cc8b,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});

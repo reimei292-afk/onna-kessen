@@ -61,6 +61,7 @@ canvas{display:block}
 <div id="dialogue" aria-live="polite"><strong id="speaker">侍女</strong><span id="dialoguetext"></span></div>
 <div id="touch"><div id="lookZone" aria-label="視点操作"></div><div id="stickBase" aria-label="移動スティック"><div id="stickKnob"></div></div><div id="lookHint">右側をドラッグ：360°視点</div><button id="usebtn">話す</button></div>
 <script src="lib/three.min.js"></script>
+<script src="assets/sprites.js"></script>
 <script src="assets/frames/frames.js"></script>
 <script src="assets/voices/voices_ab.js"></script>
 <script>
@@ -152,7 +153,7 @@ const canopyItems=[];for(let x=-48;x<=30;x+=26)canopyItems.push({x,y:26.1,z:0,w:
 const lifeBoatItems=[],boatCradleItems=[];for(let i=0;i<14;i++){for(let side of [-1,1]){const x=-94+i*14;lifeBoatItems.push({x,y:10.8,z:side*18.1,w:4.5,h:1.35,d:1.75});boatCradleItems.push({x,y:9.7,z:side*17.7,w:4.9,h:.25,d:1.9})}}
 const boatGeo=new THREE.SphereGeometry(1,12,8);const boats=new THREE.InstancedMesh(boatGeo,new THREE.MeshStandardMaterial({color:0xd77b37,roughness:.58}),lifeBoatItems.length);const obj=new THREE.Object3D();lifeBoatItems.forEach((a,i)=>{obj.position.set(a.x,a.y,a.z);obj.scale.set(a.w*.5,a.h*.5,a.d*.5);obj.updateMatrix();boats.setMatrixAt(i,obj.matrix)});boats.instanceMatrix.needsUpdate=true;ship.add(boats);instancedBoxes(ship,steel,boatCradleItems);
 // Dining promenade: tables, chairs, planters and warm light fixtures.
-const diningTables=[],diningChairs=[],planterItems=[],lampItems=[];for(let i=0;i<12;i++){const x=-94+i*16;diningTables.push({x,y:7.8,z:0,w:2.0,h:.12,d:1.2});for(let side of [-1,1])diningChairs.push({x,y:7.55,z:side*1.25,w:.62,h:.9,d:.62,ry:side*Math.PI/2})}
+const diningTables=[],diningChairs=[],planterItems=[],lampItems=[];for(let i=0;i<12;i++){const x=-94+i*16;diningTables.push({x,y:8.0,z:0,w:2.0,h:.12,d:1.2});for(let side of [-1,1])diningChairs.push({x,y:8.1,z:side*1.25,w:.62,h:.9,d:.62,ry:side*Math.PI/2})}
 for(let x=-108;x<=108;x+=24){planterItems.push({x,y:8.0,z:-11,w:3.2,h:.75,d:1.8});lampItems.push({x,y:9.0,z:11,w:.12,h:2.3,d:.12})}
 instancedBoxes(ship,woodMaterial(),diningTables);instancedBoxes(ship,white,diningChairs);instancedBoxes(ship,whiteShade,planterItems);instancedBoxes(ship,gold,lampItems);
 function woodMaterial(){return deckWood}
@@ -164,7 +165,7 @@ for(const side of [-1,1]){const anchor=cylinder(ship,118,-1.1,side*15.8,.8,.8,2.
 for(let i=0;i<8;i++){const x=-115+i*7;box(ship,x,4.2,-9,2.2,2.1,1.5,whiteShade);box(ship,x,5.35,-9,.9,.15,.8,steel)}
 // Interior-style deck fittings: doors, recessed windows, signage and stair towers.
 for(let side of [-1,1]){for(let x=-100;x<=100;x+=25){box(ship,x,3.2,side*13.8,2.2,2.8,.18,navy);box(ship,x,3.2,side*13.68,1.35,2.1,.08,glass)}}
-for(const x of [-42,42]){const stair=new THREE.Group();stair.position.set(x,1.8,sideZ(x));ship.add(stair);for(let i=0;i<14;i++)box(stair,-5+i*.75,i*.36,0,.8,.2,2.4,whiteShade);for(let side of [-1,1])box(stair,0,2.5,side*1.35,11,.12,.12,steel)}
+for(const x of [-42,42]){const stair=new THREE.Group();stair.position.set(x,1.8,sideZ(x));ship.add(stair);for(let i=0;i<17;i++)box(stair,-5.6+i*.7,i*.36,0,.75,.2,2.4,whiteShade);for(let side of [-1,1])box(stair,0,2.5,side*1.35,11,.12,.12,steel)}
 function sideZ(x){return x<0?-11:11}
 // Ship's wake and subtle hull-side foam bands.
 const foamMat=new THREE.MeshBasicMaterial({color:0xd7e3e1,transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false});
@@ -187,7 +188,7 @@ const maidDefs=[
  {id:'mob09',name:'侍女',deck:2,x:-42,z:-8},
  {id:'mob10',name:'侍女',deck:2,x:38,z:8}
 ];
-function maidFrame(npc,frame,flip){const entry=frameMeta[npc.id]&&frameMeta[npc.id][frame];const url=entry&&entry.file?entry.file:'assets/'+npc.id+'.png';if(npc.frameURL===url&&npc.frameFlip===!!flip)return;npc.frameURL=url;npc.frameFlip=!!flip;getTexture(url,t=>{npc.material.map=t;npc.material.needsUpdate=true;const aspect=entry&&entry.aspect?entry.aspect:(t.image.width/t.image.height);const hk=entry&&entry.hk?entry.hk:1;const h=1.66;const w=h*aspect/hk;npc.plane.scale.set(w,h,1);npc.plane.position.y=h*.5;if(flip)npc.plane.scale.x=-w;else npc.plane.scale.x=w})}
+function maidFrame(npc,frame,flip){const entry=frameMeta[npc.id]&&frameMeta[npc.id][frame];const spriteIndex=Number(npc.id.slice(3))-1;const url=frame==='front'&&window.MOB_SPRITES&&window.MOB_SPRITES[spriteIndex]?window.MOB_SPRITES[spriteIndex]:(entry&&entry.file?entry.file:'assets/'+npc.id+'.png');if(npc.frameURL===url&&npc.frameFlip===!!flip)return;npc.frameURL=url;npc.frameName=frame;npc.frameFlip=!!flip;getTexture(url,t=>{if(npc.frameURL!==url)return;npc.material.map=t;npc.material.needsUpdate=true;const aspect=entry&&entry.aspect?entry.aspect:(t.image.width/t.image.height);const hk=entry&&entry.hk?entry.hk:1;const h=1.66;const w=h*aspect/hk;npc.plane.scale.set(w,h,1);npc.plane.position.y=h*.5;if(flip)npc.plane.scale.x=-w;else npc.plane.scale.x=w})}
 const maids=[];
 maidDefs.forEach((d,i)=>{const g=new THREE.Group();g.position.set(d.x,levels[d.deck].y,d.z);ship.add(g);const material=new THREE.MeshBasicMaterial({transparent:true,alphaTest:.025,side:THREE.DoubleSide,depthWrite:false});const plane=new THREE.Mesh(new THREE.PlaneGeometry(1,1),material);plane.position.y=.83;g.add(plane);const shadow=new THREE.Mesh(new THREE.CircleGeometry(.27,10),new THREE.MeshBasicMaterial({color:0x07121a,transparent:true,opacity:.18,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.025;g.add(shadow);const npc={...d,group:g,plane,material,shadow,phase:i*.71,facing:Math.PI};maids.push(npc);maidFrame(npc,'front',false)});
 const liftSpots=levels.map(d=>({x:0,y:d.y,z:0,name:'エレベーター',desc:'各デッキを結ぶ船内エレベーターです。',kind:'lift',deck:d.id}));

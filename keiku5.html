@@ -186,11 +186,11 @@ const textureLoader=new THREE.TextureLoader();
 const textureCache={};
 function getTexture(url,done){if(textureCache[url]){done(textureCache[url]);return}textureLoader.load(url,t=>{t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=mobile?2:4;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;textureCache[url]=t;done(t)},undefined,()=>{})}
 const maidDefs=[
- {id:'mob01',name:'侍女',deck:0,x:-98,z:-8,voice:'db80932607',speaker:'侍女長'},
- {id:'mob02',name:'侍女',deck:0,x:-65,z:8,voice:'937a333722',speaker:'すみれ'},
- {id:'mob03',name:'侍女',deck:0,x:-24,z:-8,voice:'48a9c1d3ca',speaker:'大宮'},
- {id:'mob04',name:'侍女',deck:0,x:24,z:8,voice:'019d470c28',speaker:'文'},
- {id:'mob05',name:'侍女',deck:0,x:86,z:-7,voice:'a9cfb16913',speaker:'九条'},
+ {id:'mob01',name:'侍女',deck:0,x:-98,z:-8,voice:'db80932607',speaker:'侍女'},
+ {id:'mob02',name:'侍女',deck:0,x:-65,z:8,voice:'937a333722',speaker:'侍女'},
+ {id:'mob03',name:'侍女',deck:0,x:-24,z:-8,voice:'48a9c1d3ca',speaker:'侍女'},
+ {id:'mob04',name:'侍女',deck:0,x:24,z:8,voice:'019d470c28',speaker:'侍女'},
+ {id:'mob05',name:'侍女',deck:0,x:86,z:-7,voice:'a9cfb16913',speaker:'侍女'},
  {id:'mob06',name:'侍女',deck:1,x:-76,z:9},
  {id:'mob07',name:'侍女',deck:1,x:-18,z:-9},
  {id:'mob08',name:'侍女',deck:1,x:56,z:9},

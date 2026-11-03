@@ -136,13 +136,13 @@ const portholeItems=[];for(let x=-112;x<118;x+=5.2)for(let side of [-1,1])portho
 const bowBulwark=box(ship,122,2.6,0,10,1.4,29,white);bowBulwark.rotation.y=.05;
 for(const side of [-1,1]){box(ship,-122,2.2,side*14,12,1.1,1.1,white);cylinder(ship,122,2.2,side*12,.55,.55,1.1,gold)}
 // Panoramic forward bridge and tiered observation decks.
-box(ship,80,31.5,0,72,5.5,14,white);
-box(ship,80,31.7,7.15,67,4.2,.16,glass);
-box(ship,80,31.7,-7.15,67,4.2,.16,glass);
-const bridgeMullions=[];for(let x=49;x<=111;x+=7){bridgeMullions.push({x,y:31.7,z:7.25,w:.16,h:4.2,d:.18},{x,y:31.7,z:-7.25,w:.16,h:4.2,d:.18})}instancedBoxes(ship,steel,bridgeMullions)
-box(ship,80,34.45,0,78,.35,16,white);
-box(ship,78,35.0,0,43,.45,10,navy);
-for(let x=62;x<=94;x+=8){cylinder(ship,x,36.2,0,.13,.13,2.3,steel,8)}
+box(ship,18,31.5,0,58,5.5,14,white);
+box(ship,18,31.7,7.15,54,4.2,.16,glass);
+box(ship,18,31.7,-7.15,54,4.2,.16,glass);
+const bridgeMullions=[];for(let x=-8;x<=44;x+=7){bridgeMullions.push({x,y:31.7,z:7.25,w:.16,h:4.2,d:.18},{x,y:31.7,z:-7.25,w:.16,h:4.2,d:.18})}instancedBoxes(ship,steel,bridgeMullions)
+box(ship,18,34.45,0,62,.35,16,white);
+box(ship,18,35.0,0,40,.45,10,navy);
+for(let x=0;x<=36;x+=8){cylinder(ship,x,36.2,0,.13,.13,2.3,steel,8)}
 // Twin exhaust funnels with painted bands, intake lips and a slim communications mast.
 const funnelPositions=[{x:-34,y:29.2,z:-1},{x:-8,y:29.2,z:-1}];
 instancedCylinders(ship,new THREE.CylinderGeometry(4.2,5.5,12,20),navy,funnelPositions);
@@ -206,7 +206,7 @@ const locations=[
  {x:-28,y:levels[0].y,z:10,name:'船内ラウンジ入口',desc:'大きな窓とソファを備えたラウンジです。',kind:'place'},
  {x:74,y:levels[1].y,z:0,name:'メインダイニング',desc:'海側の窓に沿ってテーブルが並ぶ食堂です。',kind:'place'},
  {x:-16,y:levels[2].y,z:0,name:'プールデッキ',desc:'屋外プールとサンデッキ。救命艇や煙突も見渡せます。',kind:'place'},
- {x:80,y:levels[3].y,z:0,name:'操舵室・ブリッジ',desc:'パノラマ窓の向こうに進行方向の海が広がります。',kind:'place'}
+ {x:18,y:levels[3].y,z:0,name:'操舵室・ブリッジ',desc:'パノラマ窓の向こうに進行方向の海が広がります。',kind:'place'}
 ];
 const spots=[...liftSpots,...locations,...maids.map(m=>({x:m.x,y:levels[m.deck].y,z:m.z,name:m.speaker||'侍女',desc:'既存の侍女の写真と音声を使った乗員です。',kind:'maid',npc:m}))];
 const markerGeo=new THREE.RingGeometry(.38,.48,14),markerMat=new THREE.MeshBasicMaterial({color:0xe6cc8b,transparent:true,opacity:.48,side:THREE.DoubleSide,depthWrite:false});

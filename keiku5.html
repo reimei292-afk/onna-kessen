@@ -14,16 +14,16 @@ canvas{display:block}
 #top small{display:block;color:#d4e0e6;margin-top:4px;line-height:1.5}
 #deck{position:absolute;right:16px;top:14px;background:#081725dc;border:1px solid #c9b47c77;padding:9px 12px;text-align:right;border-radius:4px;font-size:12px}
 #deck strong{color:#f0dba8}
-#prompt{position:absolute;bottom:104px;left:50%;transform:translateX(-50%);padding:9px 16px;background:#06121de8;border:1px solid #e2cf9a;border-radius:4px;display:none;white-space:nowrap;font-size:13px}
+#prompt{position:absolute;z-index:14;bottom:104px;left:50%;transform:translateX(-50%);padding:9px 16px;background:#06121de8;border:1px solid #e2cf9a;border-radius:4px;display:none;white-space:nowrap;font-size:13px}
 #help{position:absolute;left:16px;bottom:14px;padding:9px 12px;background:#081725d9;border:1px solid #b5c9d044;border-radius:4px;color:#dce5e9;font-size:11px;line-height:1.7}
-#map{position:absolute;right:16px;bottom:14px;width:188px;padding:10px 12px;background:#081725e8;border:1px solid #b5c9d066;border-radius:4px;font-size:11px;line-height:1.6}
+#map{position:absolute;z-index:20;right:16px;bottom:14px;width:188px;padding:10px 12px;background:#081725e8;border:1px solid #b5c9d066;border-radius:4px;font-size:11px;line-height:1.6}
 #map button,#panel button{pointer-events:auto;background:linear-gradient(#e4d4a9,#b9a477);color:#17212a;border:1px solid #f2e4bd;border-radius:3px;padding:7px 11px;font-weight:700}
-#panel{display:none;pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(540px,92vw);max-height:78vh;overflow:auto;padding:20px;background:linear-gradient(145deg,#142635f7,#07131ff7);border:1px solid #d7c48d;border-radius:5px;box-shadow:0 20px 70px #000c}
+#panel{display:none;pointer-events:auto;position:absolute;z-index:22;left:50%;top:50%;transform:translate(-50%,-50%);width:min(540px,92vw);max-height:78vh;overflow:auto;padding:20px;background:linear-gradient(145deg,#142635f7,#07131ff7);border:1px solid #d7c48d;border-radius:5px;box-shadow:0 20px 70px #000c}
 #panel h2{margin:0 0 10px;color:#ead6a5;letter-spacing:.08em;font-size:19px}
 #panel p{line-height:1.8;color:#d5dfe3;font-size:13px}
 #panel .close{float:right}
 #panel .deckopts{display:flex;gap:7px;flex-wrap:wrap}
-#dialogue{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);width:min(700px,90vw);padding:12px 17px;background:linear-gradient(110deg,#071522f5,#1b3548f0);border:1px solid #d8c38a;box-shadow:0 10px 35px #0009;pointer-events:none;border-radius:4px}
+#dialogue{display:none;position:fixed;z-index:18;left:50%;bottom:24px;transform:translateX(-50%);width:min(700px,90vw);padding:12px 17px;background:linear-gradient(110deg,#071522f5,#1b3548f0);border:1px solid #d8c38a;box-shadow:0 10px 35px #0009;pointer-events:none;border-radius:4px}
 #dialogue strong{display:block;color:#e9d6a2;font-size:13px;letter-spacing:.12em;margin-bottom:4px}
 #dialogue span{font-size:15px;line-height:1.6}
 #touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:8}
@@ -33,10 +33,10 @@ canvas{display:block}
 #lookHint{position:absolute;right:16px;bottom:20px;padding:7px 10px;border:1px solid #d8c38a55;border-radius:18px;background:#07152288;color:#f4e8c5;font-size:10px;pointer-events:none}
 #usebtn{position:absolute;right:22px;bottom:86px;width:64px;height:64px;border-radius:50%;border:2px solid #f2dfb2;background:radial-gradient(circle at 35% 28%,#e7d7ac,#8b7148);color:#17212a;font-weight:800;box-shadow:0 5px 16px #0009;pointer-events:auto;touch-action:manipulation}
 @media(max-width:800px),(pointer:coarse){
- #touch{display:block}#help{display:none}#map{right:10px;bottom:12px;width:130px;font-size:10px}
+ #touch{display:block}#help{display:none}#map{right:10px;top:86px;bottom:auto;width:126px;font-size:10px}
  #top{max-width:60vw;font-size:11px}#top b{font-size:12px}#top small{font-size:10px}
  #deck{font-size:10px;right:10px;top:10px}
- #prompt{bottom:148px;white-space:normal;width:82vw;text-align:center}
+ #prompt{bottom:228px;white-space:normal;width:82vw;text-align:center}
  #dialogue{bottom:152px;left:50%;width:calc(100vw - 26px);padding:9px 12px}
  #dialogue span{font-size:13px}
  #stickBase{width:118px;height:118px;left:16px;bottom:16px}
@@ -250,7 +250,7 @@ function tick(){requestAnimationFrame(tick);if(document.hidden)return;const dt=M
 }
 tick();
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio,(matchMedia('(pointer:coarse)').matches||innerWidth<800) ? 0.88 : 1.15));renderer.setSize(innerWidth,innerHeight)});
-window.__cruiseStage={scene,renderer,ship,camera,player,maids,levels,spots,sea};
+window.__cruiseStage={scene,renderer,ship,camera,player,maids,levels,spots,sea,controls:()=>({yaw,pitch,stick:{x:stick.x,y:stick.y}})};
 })();
 </script>
 </body>

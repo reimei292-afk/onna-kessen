@@ -103,6 +103,7 @@ function sphere(p,x,y,z,r,m,sx=1,sy=1,sz=1){const o=new THREE.Mesh(new THREE.Sph
 function makeDeckShape(L,B){const s=new THREE.Shape();s.moveTo(-L*.5+5,-B*.44);s.lineTo(L*.34,-B*.5);s.quadraticCurveTo(L*.5,-B*.48,L*.5,0);s.quadraticCurveTo(L*.5,B*.48,L*.34,B*.5);s.lineTo(-L*.5+5,B*.44);s.quadraticCurveTo(-L*.5,-B*.44,-L*.5+5,-B*.44);return s}
 function deckPlate(parent,L,B,y,material){const geo=new THREE.ExtrudeGeometry(makeDeckShape(L,B),{depth:.45,bevelEnabled:true,bevelSegments:2,steps:1,bevelSize:.18,bevelThickness:.12,curveSegments:12});geo.rotateX(Math.PI/2);const o=new THREE.Mesh(geo,material);o.position.y=y+.45;o.receiveShadow=false;parent.add(o);return o}
 function instancedBoxes(parent,material,items){if(!items.length)return null;const mesh=new THREE.InstancedMesh(new THREE.BoxGeometry(1,1,1),material,items.length);const dummy=new THREE.Object3D();items.forEach((a,i)=>{dummy.position.set(a.x,a.y,a.z);dummy.rotation.set(a.rx||0,a.ry||0,a.rz||0);dummy.scale.set(a.w,a.h,a.d);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});mesh.instanceMatrix.needsUpdate=true;parent.add(mesh);return mesh}
+function instancedCylinders(parent,geometry,material,items){if(!items.length)return null;const mesh=new THREE.InstancedMesh(geometry,material,items.length);const dummy=new THREE.Object3D();items.forEach((a,i)=>{dummy.position.set(a.x,a.y,a.z);dummy.rotation.set(a.rx||0,a.ry||0,a.rz||0);dummy.scale.set(a.sx||1,a.sy||1,a.sz||1);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix)});mesh.instanceMatrix.needsUpdate=true;parent.add(mesh);return mesh}
 function makeHullSection(L,B,yTop,yBottom,material,beamScale){const verts=[],indices=[],uv=[];const rings=[{y:yTop,w:-1},{y:yTop-2.3,w:-.94},{y:yTop-6.5,w:-.72},{y:yBottom,w:0},{y:yTop-6.5,w:.72},{y:yTop-2.3,w:.94},{y:yTop,w:1}];const slices=48,around=rings.length;for(let i=0;i<=slices;i++){const u=i/slices,x=(u-.5)*L;let taper=1;if(u>.82)taper=Math.max(.035,1-Math.pow((u-.82)/.18,1.55));if(u<.1)taper=.76+.24*u/.1;for(let j=0;j<around;j++){const r=rings[j];verts.push(x,r.y,r.w*B*.5*taper*beamScale);uv.push(u,j/(around-1))}}for(let i=0;i<slices;i++)for(let j=0;j<around-1;j++){const a=i*around+j,b=(i+1)*around+j;indices.push(a,a+1,b,b,a+1,b+1)}const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();material.side=THREE.DoubleSide;const mesh=new THREE.Mesh(geo,material);ship.add(mesh);return mesh}
 const ship=new THREE.Group();ship.position.set(0,0,0);scene.add(ship);
 makeHullSection(268,36,1.2,-5.3,hullBlue,1);
@@ -138,19 +139,23 @@ for(const side of [-1,1]){box(ship,-122,2.2,side*14,12,1.1,1.1,white);cylinder(s
 box(ship,80,31.5,0,72,5.5,14,white);
 box(ship,80,31.7,7.15,67,4.2,.16,glass);
 box(ship,80,31.7,-7.15,67,4.2,.16,glass);
-for(let x=49;x<=111;x+=7){box(ship,x,31.7,7.25,.16,4.2,.18,steel);box(ship,x,31.7,-7.25,.16,4.2,.18,steel)}
+const bridgeMullions=[];for(let x=49;x<=111;x+=7){bridgeMullions.push({x,y:31.7,z:7.25,w:.16,h:4.2,d:.18},{x,y:31.7,z:-7.25,w:.16,h:4.2,d:.18})}instancedBoxes(ship,steel,bridgeMullions)
 box(ship,80,34.45,0,78,.35,16,white);
 box(ship,78,35.0,0,43,.45,10,navy);
 for(let x=62;x<=94;x+=8){cylinder(ship,x,36.2,0,.13,.13,2.3,steel,8)}
 // Twin exhaust funnels with painted bands, intake lips and a slim communications mast.
-for(const x of [-34,-8]){cylinder(ship,x,29.2,-1,4.2,5.5,12,navy,24);cylinder(ship,x,35.3,-1,4.1,4.2,.8,hullRed,24);cylinder(ship,x,36,-1,3.35,3.6,.55,dark,24);cylinder(ship,x,36.35,-1,2.8,3.1,.22,steel,24)}
+const funnelPositions=[{x:-34,y:29.2,z:-1},{x:-8,y:29.2,z:-1}];
+instancedCylinders(ship,new THREE.CylinderGeometry(4.2,5.5,12,20),navy,funnelPositions);
+instancedCylinders(ship,new THREE.CylinderGeometry(4.1,4.2,.8,20),hullRed,funnelPositions.map(a=>({...a,y:35.3})));
+instancedCylinders(ship,new THREE.CylinderGeometry(3.35,3.6,.55,20),dark,funnelPositions.map(a=>({...a,y:36})));
+instancedCylinders(ship,new THREE.CylinderGeometry(2.8,3.1,.22,20),steel,funnelPositions.map(a=>({...a,y:36.35})));
 cylinder(ship,22,36,0,.32,.48,12,steel,10);
 for(let x of [-12,20,52])sphere(ship,x,35.8,0,1.2,white,1.2,.7,1.2);
 box(ship,22,42,0,12,.16,.16,steel);box(ship,22,40,0,.16,4,.16,steel);
 // Open-air pool deck: recessed pool, whirlpool, sun loungers and shade structures.
 box(ship,-16,22.55,0,32,.18,12,steel);
 const pool=new THREE.Mesh(new THREE.PlaneGeometry(29,9),new THREE.MeshPhysicalMaterial({color:0x238ca8,roughness:.16,metalness:.1,clearcoat:1,transparent:true,opacity:.94}));pool.rotation.x=-Math.PI/2;pool.position.set(-16,22.68,0);ship.add(pool);
-for(let side of [-1,1]){for(let x=-65;x<=42;x+=12){box(ship,x,23.0,side*8,.9,.45,.9,white);box(ship,x,23.24,side*8,.65,.08,.65,glass)}}
+const poolPostItems=[],poolTopItems=[];for(let side of [-1,1])for(let x=-65;x<=42;x+=12){poolPostItems.push({x,y:23.0,z:side*8,w:.9,h:.45,d:.9});poolTopItems.push({x,y:23.24,z:side*8,w:.65,h:.08,d:.65})}instancedBoxes(ship,white,poolPostItems);instancedBoxes(ship,glass,poolTopItems);
 const loungerItems=[],loungerBackItems=[],tableItems=[];for(let i=0;i<24;i++){const x=-56+(i%12)*9.2,z=(i<12?-1:1)*5.8;loungerItems.push({x,y:22.72,z,w:1.0,h:.14,d:2.1});loungerBackItems.push({x,y:23.15,z:z-.58,w:1,h:.12,d:1.0,rx:-.42});if(i%3===0)tableItems.push({x:x+2,y:22.95,z:z+1,w:.7,h:.08,d:.7})}
 instancedBoxes(ship,deckWood,loungerItems);instancedBoxes(ship,white,loungerBackItems);instancedBoxes(ship,white,tableItems);
 const canopyItems=[];for(let x=-48;x<=30;x+=26)canopyItems.push({x,y:26.1,z:0,w:18,h:.22,d:10});instancedBoxes(ship,whiteShade,canopyItems);
@@ -166,10 +171,10 @@ function textPlate(parent,label,x,y,z,w,h){const c=document.createElement('canva
 textPlate(ship,'CELESTIA',127,3.0,0,13,2.4);textPlate(ship,'CELESTIA',-130,3.0,0,12,2.2);
 for(const side of [-1,1]){const anchor=cylinder(ship,118,-1.1,side*15.8,.8,.8,2.3,dark,12);anchor.rotation.x=Math.PI/2;const chain=box(ship,114,-2.1,side*17,.18,3,.18,steel);chain.rotation.z=.4}
 // Aft funnel service housings and deck ventilation.
-for(let i=0;i<8;i++){const x=-115+i*7;box(ship,x,4.2,-9,2.2,2.1,1.5,whiteShade);box(ship,x,5.35,-9,.9,.15,.8,steel)}
+const ventHousings=[],ventCaps=[];for(let i=0;i<8;i++){const x=-115+i*7;ventHousings.push({x,y:4.2,z:-9,w:2.2,h:2.1,d:1.5});ventCaps.push({x,y:5.35,z:-9,w:.9,h:.15,d:.8})}instancedBoxes(ship,whiteShade,ventHousings);instancedBoxes(ship,steel,ventCaps);
 // Interior-style deck fittings: doors, recessed windows, signage and stair towers.
-for(let side of [-1,1]){for(let x=-100;x<=100;x+=25){box(ship,x,3.2,side*13.8,2.2,2.8,.18,navy);box(ship,x,3.2,side*13.68,1.35,2.1,.08,glass)}}
-for(const x of [-42,42]){const stair=new THREE.Group();stair.position.set(x,1.8,sideZ(x));ship.add(stair);for(let i=0;i<17;i++)box(stair,-5.6+i*.7,i*.36,0,.75,.2,2.4,whiteShade);for(let side of [-1,1])box(stair,0,2.5,side*1.35,11,.12,.12,steel)}
+const doorFrames=[],doorGlass=[];for(let side of [-1,1])for(let x=-100;x<=100;x+=25){doorFrames.push({x,y:3.2,z:side*13.8,w:2.2,h:2.8,d:.18});doorGlass.push({x,y:3.2,z:side*13.68,w:1.35,h:2.1,d:.08})}instancedBoxes(ship,navy,doorFrames);instancedBoxes(ship,glass,doorGlass);
+const stairSteps=[],stairRails=[];for(const x of [-42,42]){const z=sideZ(x);for(let i=0;i<17;i++)stairSteps.push({x:x-5.6+i*.7,y:1.8+i*.36,z,w:.75,h:.2,d:2.4});for(let side of [-1,1])stairRails.push({x,y:4.3,z:z+side*1.35,w:11,h:.12,d:.12})}instancedBoxes(ship,whiteShade,stairSteps);instancedBoxes(ship,steel,stairRails);
 function sideZ(x){return x<0?-11:11}
 // Ship's wake and subtle hull-side foam bands.
 const foamMat=new THREE.MeshBasicMaterial({color:0xd7e3e1,transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false});

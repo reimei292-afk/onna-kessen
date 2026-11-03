@@ -43,17 +43,17 @@ jobs:
                 renderCalls:window.__carrierStage.renderer.info.render.calls,
                 carrierChildren:window.__carrierStage.carrier.children.length,
                 cruiseChildren:window.__carrierStage.cruise.children.length,
-                crew:window.__carrierStage.crewSpots.length,
-                sprites:window.__carrierStage.carrier.children.filter(x=>x.children?.some(y=>y.material?.map)).length,
+                maids:window.__carrierStage.maidSpots.length,
+                maidModels:window.__carrierStage.maids.length,
                 sceneObjects:window.__carrierStage.scene.children.length
               }));
-              console.log('INITIAL_RENDER '+JSON.stringify(initial));if(!initial.canvas||initial.renderCalls<1||initial.carrierChildren<20||initial.cruiseChildren<30||initial.crew!==6)throw new Error('Visual scene did not initialize: '+JSON.stringify(initial));
+              console.log('INITIAL_RENDER '+JSON.stringify(initial));if(!initial.canvas||initial.renderCalls<1||initial.carrierChildren<20||initial.cruiseChildren<30||initial.maids!==5||initial.maidModels!==5)throw new Error('Visual scene did not initialize: '+JSON.stringify(initial));
               try{await page.screenshot({path:'/tmp/carrier-overhaul.png',fullPage:true,timeout:10000});console.log('SCREENSHOT_OK')}catch(e){console.log('SCREENSHOT_SKIPPED '+e.message)}
-              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=-26;p.y=2.1;p.z=-64;});
+              await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=-28;p.y=2.1;p.z=-66;});
               await page.keyboard.press('e');
               await page.waitForFunction(()=>document.querySelector('#dialogue').style.display==='block');
               const voice=await page.evaluate(()=>({text:document.querySelector('#dialoguetext').textContent,src:window.__carrierVoice?.src||''}));
-              if(!voice.text.includes('点検よし')||!voice.src.includes('assets/voices/ab/192f280260.mp3'))throw new Error('Existing voice reuse failed: '+JSON.stringify(voice));console.log('VOICE_OK');
+              if(!voice.text.includes('陛下、足元にお気をつけて')||!voice.src.includes('assets/voices/ab/db80932607.mp3'))throw new Error('Existing voice reuse failed: '+JSON.stringify(voice));console.log('VOICE_OK');
               await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=0;p.y=2;p.z=-42;});
               await page.keyboard.press('e');
               await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block'&&document.querySelectorAll('[data-deck]').length===3);

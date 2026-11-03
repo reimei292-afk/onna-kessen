@@ -28,6 +28,13 @@ function canvasTex(draw,w=1024,h=1024,rx=1,ry=1){const c=document.createElement(
 const deckTex=canvasTex((g,w,h)=>{g.fillStyle='#343c40';g.fillRect(0,0,w,h);for(let i=0;i<18000;i++){const v=35+Math.random()*30;g.fillStyle='rgba('+v+','+(v+3)+','+(v+5)+','+(.08+Math.random()*.15)+')';g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1+Math.random()*2)}g.strokeStyle='rgba(180,190,190,.13)';g.lineWidth=2;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<h;y+=128){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}},1024,1024,8,2);
 const hullTex=canvasTex((g,w,h)=>{g.fillStyle='#263a48';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=64){for(let x=0;x<w;x+=128){g.fillStyle=(x/128+y/64)%2?'#2c4352':'#304858';g.fillRect(x+2,y+2,124,60);g.fillStyle='#8b9290';for(let k=0;k<4;k++){g.beginPath();g.arc(x+12+k*32,y+8,2,0,Math.PI*2);g.fill()}}}g.strokeStyle='rgba(11,19,26,.6)';g.lineWidth=5;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}},1024,512,4,2);
 const teakTex=canvasTex((g,w,h)=>{g.fillStyle='#866b4d';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=42){g.fillStyle=y%84?'#927657':'#7e6449';g.fillRect(0,y,w,38);g.strokeStyle='#574634';g.lineWidth=2;g.beginPath();g.moveTo(0,y+39);g.lineTo(w,y+39);g.stroke();for(let x=(y%84?0:120);x<w;x+=240){g.strokeStyle='rgba(38,28,19,.45)';g.beginPath();g.moveTo(x,y);g.lineTo(x,y+38);g.stroke()}}},1024,512,5,2);
+// Layered sky dome: blue zenith, warm marine horizon and soft high clouds.
+const skyTex=canvasTex((g,w,h)=>{
+ const grad=g.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#315a7c');grad.addColorStop(.42,'#79a0b7');grad.addColorStop(.76,'#c4d2d0');grad.addColorStop(1,'#e4d8bd');g.fillStyle=grad;g.fillRect(0,0,w,h);
+ for(let i=0;i<85;i++){const x=Math.random()*w,y=h*(.23+Math.random()*.43),rx=35+Math.random()*110,ry=8+Math.random()*24;g.save();g.translate(x,y);g.scale(1,ry/rx);const cg=g.createRadialGradient(0,0,2,0,0,rx);cg.addColorStop(0,'rgba(255,255,245,.28)');cg.addColorStop(.55,'rgba(246,249,244,.14)');cg.addColorStop(1,'rgba(240,245,244,0)');g.fillStyle=cg;g.beginPath();g.arc(0,0,rx,0,Math.PI*2);g.fill();g.restore()}
+},2048,1024,1,1);
+scene.background=null;
+const sky=new THREE.Mesh(new THREE.SphereGeometry(2100,48,32),new THREE.MeshBasicMaterial({map:skyTex,side:THREE.BackSide,depthWrite:false,fog:false}));sky.renderOrder=-1000;scene.add(sky);
 const glass=new THREE.MeshPhysicalMaterial({color:0x9dc6d7,metalness:.32,roughness:.12,transparent:true,opacity:.62,clearcoat:1});
 const steel=mat(0x52616a,.42,.78),darkSteel=mat(0x1d2b34,.48,.72),deckmat=mat(0x3b454a,.86,.08),white=mat(0xd8dedb,.48,.3),navy=mat(0x243b4b,.46,.72),gold=mat(0xb79b61,.38,.7),cream=mat(0xe1dfd6,.7,.08),wood=mat(0x80664b,.68,.08),blue=mat(0x1c536d,.52,.28),teak=new THREE.MeshStandardMaterial({map:teakTex,roughness:.76}),flightDeck=new THREE.MeshStandardMaterial({map:deckTex,roughness:.9,metalness:.08}),hullMat=new THREE.MeshStandardMaterial({map:hullTex,roughness:.52,metalness:.48}),poolMat=new THREE.MeshPhysicalMaterial({color:0x168bb4,roughness:.18,metalness:.2,clearcoat:1,transparent:true,opacity:.88});
 function box(p,x,y,z,w,h,d,m,cast=false){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;p.add(o);return o}
@@ -111,7 +118,7 @@ function createMaid(parent,x,y,z,variant=0){
  const dress=new THREE.Mesh(new THREE.CylinderGeometry(.22,.43,.82,16,1),maidDress);dress.position.y=.78;g.add(dress);
  const apron=new THREE.Mesh(new THREE.CylinderGeometry(.17,.34,.72,16,1,true,Math.PI*.18,Math.PI*.64),maidApron);apron.position.set(0,.79,.045);apron.rotation.y=Math.PI;g.add(apron);
  box(g,0,1.17,.205,.27,.31,.035,maidApron);box(g,0,1.29,.02,.34,.09,.28,maidApron);
- sphere(g,0,1.52,0,.17,maidSkin,.92,1.08,.92);sphere(g,0,1.63,-.015,.185,maidHair,1.02,.78,1);
+ sphere(g,0,1.52,0,.17,maidSkin,.92,1.08,.92);for(const eyeSide of [-1,1])sphere(g,eyeSide*.061,1.55,.151,.018,darkSteel,.9,1,.55);sphere(g,0,1.49,.154,.025,maidTrim,.7,.5,.5);sphere(g,0,1.63,-.015,.185,maidHair,1.02,.78,1);
  sphere(g,0,1.48,-.14,.105,maidHair,1.15,1.15,.8);
  box(g,0,1.72,-.005,.28,.055,.2,maidApron);box(g,0,1.69,.12,.11,.08,.035,maidTrim);
  for(const side of [-1,1]){
@@ -196,7 +203,7 @@ function interact(){if(!near)return;if(near.kind==='dialogue'){playCrewVoice(nea
 function mapOpen(){panel('二つの巨艦・艦内案内','<p><b>航空母艦《鳳翔》</b> — 飛行甲板、格納庫、艦橋、艦載機、発艦管制設備。</p><p><b>豪華客船《セレスティア》</b> — 客室デッキ、メインダイニング、劇場、プール、展望ブリッジ。</p><p><b>連絡通路</b> — 二隻の間を渡る連絡橋。船の間を歩いて移動できます。</p><p>各エレベーターの前で E を押すと上層・下層へ移動できます。</p>')}
 document.getElementById('mapbtn').onclick=mapOpen;document.getElementById('close').onclick=()=>document.getElementById('panel').style.display='none';
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyM')mapOpen();if(e.code==='Escape'&&locked)document.exitPointerLock()});addEventListener('keyup',e=>keys[e.code]=false);
-renderer.domElement.addEventListener('click',()=>{if(!locked&&document.getElementById('panel').style.display!=='block')renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',e=>{if(matchMedia('(pointer: coarse)').matches)return;if(e.pointerType&&e.pointerType!=='mouse')return;if(!locked&&document.getElementById('panel').style.display!=='block')renderer.domElement.requestPointerLock?.()});
 document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0021;pitch=Math.max(-1.1,Math.min(1.1,pitch-e.movementY*.0017))});
 // 円形スティックを引っ張って移動。画面右半分をドラッグすると360度視点を回せる。
 const stick=document.getElementById('stickBase'),knob=document.getElementById('stickKnob');let stickId=null,stickX=0,stickY=0;

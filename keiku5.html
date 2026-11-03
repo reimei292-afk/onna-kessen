@@ -4,15 +4,22 @@
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071522;color:#edf3f5;font-family:system-ui,"Yu Gothic",sans-serif}canvas{display:block}
 #hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 5px #000}#top{position:absolute;left:16px;top:14px;padding:11px 15px;background:linear-gradient(120deg,#081725e8,#183247d9);border:1px solid #c9b47c88;border-radius:5px;max-width:min(600px,80vw);box-shadow:0 8px 28px #0005}#top b{letter-spacing:.13em;color:#f0dba8;font-size:15px}#top small{display:block;color:#d4e0e6;margin-top:5px;line-height:1.5}#deck{position:absolute;right:16px;top:14px;background:#081725e8;border:1px solid #c9b47c88;padding:10px 14px;text-align:right;border-radius:5px}#deck strong{color:#f0dba8}#prompt{position:absolute;bottom:105px;left:50%;transform:translateX(-50%);padding:10px 18px;background:#06121de8;border:1px solid #e2cf9a;border-radius:4px;display:none;white-space:nowrap}#help{position:absolute;left:16px;bottom:14px;padding:10px 13px;background:#081725d9;border:1px solid #b5c9d044;border-radius:4px;color:#dce5e9;font-size:12px;line-height:1.7}#map{position:absolute;right:16px;bottom:14px;width:205px;padding:12px;background:#081725e8;border:1px solid #b5c9d066;border-radius:5px;font-size:12px;line-height:1.6}#map button,#panel button{pointer-events:auto;background:linear-gradient(#e4d4a9,#b9a477);color:#17212a;border:1px solid #f2e4bd;border-radius:3px;padding:8px 12px;font-weight:700}#panel{display:none;pointer-events:auto;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,92vw);max-height:80vh;overflow:auto;padding:23px;background:linear-gradient(145deg,#142635f7,#07131ff7);border:1px solid #d7c48d;border-radius:5px;box-shadow:0 24px 90px #000c}#panel h2{margin:0 0 10px;color:#ead6a5;letter-spacing:.08em}#panel p{line-height:1.8;color:#d5dfe3}#panel .close{float:right}#touch{display:none;position:fixed;bottom:20px;right:16px;gap:7px;pointer-events:auto;width:142px;flex-wrap:wrap}#touch button{width:62px;height:54px;border-radius:4px;border:1px solid #e7d5a5;background:#0a1826dc;color:white;font-size:13px}@media(max-width:800px),(pointer:coarse){#touch{display:flex}#help{max-width:48vw;font-size:10px}#map{width:150px}#prompt{bottom:150px;white-space:normal;width:82vw;text-align:center}#top{max-width:62vw;font-size:12px}#top b{font-size:12px}#top small{font-size:10px}#deck{font-size:11px}}
 #dialogue{display:none;position:fixed;left:50%;bottom:25px;transform:translateX(-50%);width:min(720px,88vw);padding:13px 18px;background:linear-gradient(110deg,#071522f5,#1b3548f0);border:1px solid #d8c38a;box-shadow:0 12px 40px #0009;pointer-events:none;border-radius:4px}#dialogue strong{display:block;color:#e9d6a2;font-size:13px;letter-spacing:.12em;margin-bottom:5px}#dialogue span{font-size:16px;line-height:1.65}@media(max-width:800px){#dialogue{bottom:155px}#dialogue span{font-size:14px}}
+/* 360-degree exploration controls */
+#touch{display:none;position:fixed;inset:0;pointer-events:none;z-index:8}
+#stickBase{position:absolute;left:22px;bottom:22px;width:142px;height:142px;border-radius:50%;border:2px solid #d8c38a88;background:radial-gradient(circle at 35% 28%,#7893a555,#071522bb 72%);box-shadow:0 8px 28px #0008;pointer-events:auto;touch-action:none}
+#stickKnob{position:absolute;left:50%;top:50%;width:62px;height:62px;transform:translate(-50%,-50%);border-radius:50%;border:2px solid #f2dfb2;background:radial-gradient(circle at 35% 28%,#f2e6c7,#a58c5c);box-shadow:0 4px 14px #0009}
+#lookHint{position:absolute;right:18px;bottom:30px;padding:8px 12px;border:1px solid #d8c38a55;border-radius:18px;background:#07152288;color:#f4e8c5;font-size:11px;pointer-events:none}
+#touch #usebtn{position:absolute;right:22px;bottom:92px;width:66px;height:66px;border-radius:50%;border:2px solid #f2dfb2;background:radial-gradient(circle at 35% 28%,#e7d7ac,#8b7148);color:#17212a;font-weight:800;box-shadow:0 5px 16px #0009;pointer-events:auto;touch-action:manipulation}
+@media(max-width:800px),(pointer:coarse){#touch{display:block}#stickBase{width:128px;height:128px}#stickKnob{width:56px;height:56px}#help{display:none}#map{bottom:14px;right:12px;width:130px;font-size:10px}#dialogue{bottom:164px;left:50%;width:calc(100vw - 28px);padding:10px 13px}#dialogue span{font-size:14px}#lookHint{right:18px;bottom:20px}}
 </style><script>(function(){var V="20261103b";if(!/^https?:/.test(location.protocol))return;var q=(location.search.match(/[?&]gv=([^&]+)/)||[])[1];fetch("v.txt",{cache:"no-store"}).then(function(r){return r.ok?r.text():""}).then(function(t){t=(t||"").trim();if(!t||t===V||q===t)return;var u=new URL(location.href);u.searchParams.set("gv",t);location.replace(u.href)}).catch(function(){})})();</script></head><body>
 <div id="hud"><div id="top"><b>近代海戦・幕六　「鳳翔 — 二つの巨艦」</b><small>航空母艦《鳳翔》と豪華客船《セレスティア》 — 洋上の二大艦を巡る</small></div><div id="deck">現在地：<strong id="deckname">飛行甲板</strong><br><small id="coords">WASD 移動</small></div><div id="prompt"></div><div id="help">WASD：移動　マウス：視点<br>Shift：走る　E：調べる／乗降<br>M：艦内案内　Esc：カーソル解除</div><div id="map"><b>艦内案内</b><p>空母と客船を連絡通路で行き来できます。各艦のエレベーターで上層へ。</p><button id="mapbtn">案内を開く（M）</button></div><div id="panel"><button class="close" id="close">閉じる</button><h2 id="ptitle">艦内案内</h2><div id="pbody"></div></div></div>
 <div id="dialogue" aria-live="polite"><strong id="speaker">乗員</strong><span id="dialoguetext"></span></div>
-<div id="touch"><button data-move="forward">前進</button><button data-move="left">左</button><button data-move="back">後退</button><button data-move="right">右</button><button id="usebtn">調べる</button></div>
+<div id="touch"><div id="stickBase" aria-label="移動スティック"><div id="stickKnob"></div></div><div id="lookHint">右側をドラッグ：360°視点</div><button id="usebtn">調べる</button></div>
 <script src="lib/three.min.js"></script><script src="assets/voices/voices_ab.js"></script>
 <script>
 (()=>{'use strict';
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x8ca9ba);scene.fog=new THREE.FogExp2(0x8ca9ba,.00078);
-const camera=new THREE.PerspectiveCamera(66,innerWidth/innerHeight,.1,1800);
+const camera=new THREE.PerspectiveCamera(84,innerWidth/innerHeight,.1,2400);
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;document.body.appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe6f2ff,0x263744,1.65));const sun=new THREE.DirectionalLight(0xffedcf,3.15);sun.position.set(-180,260,170);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);renderer.shadowMap.needsUpdate=true;sun.shadow.camera.left=-280;sun.shadow.camera.right=280;sun.shadow.camera.top=230;sun.shadow.camera.bottom=-230;sun.shadow.bias=-.00025;scene.add(sun);
 const fill=new THREE.DirectionalLight(0x91c9ed,.75);fill.position.set(120,65,-180);scene.add(fill);
@@ -21,6 +28,13 @@ function canvasTex(draw,w=1024,h=1024,rx=1,ry=1){const c=document.createElement(
 const deckTex=canvasTex((g,w,h)=>{g.fillStyle='#343c40';g.fillRect(0,0,w,h);for(let i=0;i<18000;i++){const v=35+Math.random()*30;g.fillStyle='rgba('+v+','+(v+3)+','+(v+5)+','+(.08+Math.random()*.15)+')';g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1+Math.random()*2)}g.strokeStyle='rgba(180,190,190,.13)';g.lineWidth=2;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<h;y+=128){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}},1024,1024,8,2);
 const hullTex=canvasTex((g,w,h)=>{g.fillStyle='#263a48';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=64){for(let x=0;x<w;x+=128){g.fillStyle=(x/128+y/64)%2?'#2c4352':'#304858';g.fillRect(x+2,y+2,124,60);g.fillStyle='#8b9290';for(let k=0;k<4;k++){g.beginPath();g.arc(x+12+k*32,y+8,2,0,Math.PI*2);g.fill()}}}g.strokeStyle='rgba(11,19,26,.6)';g.lineWidth=5;for(let x=0;x<w;x+=128){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}},1024,512,4,2);
 const teakTex=canvasTex((g,w,h)=>{g.fillStyle='#866b4d';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=42){g.fillStyle=y%84?'#927657':'#7e6449';g.fillRect(0,y,w,38);g.strokeStyle='#574634';g.lineWidth=2;g.beginPath();g.moveTo(0,y+39);g.lineTo(w,y+39);g.stroke();for(let x=(y%84?0:120);x<w;x+=240){g.strokeStyle='rgba(38,28,19,.45)';g.beginPath();g.moveTo(x,y);g.lineTo(x,y+38);g.stroke()}}},1024,512,5,2);
+// Layered sky dome: blue zenith, warm marine horizon and soft high clouds.
+const skyTex=canvasTex((g,w,h)=>{
+ const grad=g.createLinearGradient(0,0,0,h);grad.addColorStop(0,'#315a7c');grad.addColorStop(.42,'#79a0b7');grad.addColorStop(.76,'#c4d2d0');grad.addColorStop(1,'#e4d8bd');g.fillStyle=grad;g.fillRect(0,0,w,h);
+ for(let i=0;i<85;i++){const x=Math.random()*w,y=h*(.23+Math.random()*.43),rx=35+Math.random()*110,ry=8+Math.random()*24;g.save();g.translate(x,y);g.scale(1,ry/rx);const cg=g.createRadialGradient(0,0,2,0,0,rx);cg.addColorStop(0,'rgba(255,255,245,.28)');cg.addColorStop(.55,'rgba(246,249,244,.14)');cg.addColorStop(1,'rgba(240,245,244,0)');g.fillStyle=cg;g.beginPath();g.arc(0,0,rx,0,Math.PI*2);g.fill();g.restore()}
+},2048,1024,1,1);
+scene.background=null;
+const sky=new THREE.Mesh(new THREE.SphereGeometry(2100,48,32),new THREE.MeshBasicMaterial({map:skyTex,side:THREE.BackSide,depthWrite:false,fog:false}));sky.renderOrder=-1000;scene.add(sky);
 const glass=new THREE.MeshPhysicalMaterial({color:0x9dc6d7,metalness:.32,roughness:.12,transparent:true,opacity:.62,clearcoat:1});
 const steel=mat(0x52616a,.42,.78),darkSteel=mat(0x1d2b34,.48,.72),deckmat=mat(0x3b454a,.86,.08),white=mat(0xd8dedb,.48,.3),navy=mat(0x243b4b,.46,.72),gold=mat(0xb79b61,.38,.7),cream=mat(0xe1dfd6,.7,.08),wood=mat(0x80664b,.68,.08),blue=mat(0x1c536d,.52,.28),teak=new THREE.MeshStandardMaterial({map:teakTex,roughness:.76}),flightDeck=new THREE.MeshStandardMaterial({map:deckTex,roughness:.9,metalness:.08}),hullMat=new THREE.MeshStandardMaterial({map:hullTex,roughness:.52,metalness:.48}),poolMat=new THREE.MeshPhysicalMaterial({color:0x168bb4,roughness:.18,metalness:.2,clearcoat:1,transparent:true,opacity:.88});
 function box(p,x,y,z,w,h,d,m,cast=false){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=cast;o.receiveShadow=true;p.add(o);return o}
@@ -90,11 +104,34 @@ for(let x=-150;x<150;x+=10)for(let z of [-30,30]){const tie=cyl(carrier,x,2.1,z,
 // Safety rails, ladders, rescue baskets and life rafts on the carrier.
 for(let side of [-1,1]){for(let x=-160;x<160;x+=6){box(carrier,x,2.8,side*34,.12,1.1,.12,gold,false)}box(carrier,0,2.35,side*34,340,.14,.14,white,false)}
 // Carrier crew: photo sprites from the existing character library, with 3D fallback.
-const crewSpots=[{x:-26,y:2.1,z:-22,name:'甲板整備員',voice:'192f280260',role:'航空機の発艦前点検'},{x:-6,y:2.1,z:25,name:'給油担当員',voice:'95ad01e323',role:'航空機への燃料補給'},{x:-53,y:-5,z:-8,name:'格納庫整備員',voice:'03b1acfa72',role:'機体整備と搭載作業'},{x:40,y:2.1,z:-26,name:'発艦管制員',voice:'3efb85e0fe',role:'発艦準備と甲板運用'},{x:84,y:2.1,z:17,name:'通信員',voice:'f19a5e9955',role:'艦内通信と航空管制'},{x:64,y:18,z:20,name:'航空管制士',voice:'60bac2d364',role:'艦橋から発艦指示を伝達'}];
-function fallbackCrew(parent,x,y,z){const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);const uni=mat(0x344a5c,.82,.08),skin=mat(0xc99b7b,.9);cyl(g,0,1,0,.34,.42,1.05,uni,12);sphere(g,0,1.75,0,.27,skin);cyl(g,0,1.98,0,.31,.31,.13,darkSteel,14);for(let s of [-1,1]){const arm=cyl(g,s*.42,1.1,0,.12,.14,.7,uni,10);arm.rotation.z=s*.2;cyl(g,s*.16,.34,0,.14,.15,.65,darkSteel,10)}return g}
-const crew=[];
-crewSpots.forEach((s,i)=>{const holder=new THREE.Group();holder.position.set(s.x,s.y,s.z);carrier.add(holder);fallbackCrew(holder,0,0,0);crew.push({holder,spot:s})});
-const textureLoader=new THREE.TextureLoader();['conscript_01_front.webp','conscript_02_front.webp','conscript_03_front.webp','conscript_04_front.webp','conscript_05_front.webp','conscript_06_front.webp'].forEach((name,i)=>{textureLoader.load('assets/conscripts/'+name,t=>{t.colorSpace=THREE.SRGBColorSpace;const old=crew[i].holder.children[0];crew[i].holder.remove(old);const m=new THREE.Mesh(new THREE.PlaneGeometry(1.7,3.5),new THREE.MeshBasicMaterial({map:t,transparent:true,alphaTest:.12,side:THREE.DoubleSide,depthWrite:false}));m.position.y=1.72;crew[i].holder.add(m)})});
+// 侍女たち。既存の人物音声・台詞を流用し、人物は人間の身長に合わせた3Dモデルで配置。
+const maidSpots=[
+{x:-28,y:2.1,z:-24,name:'侍女長・お嬢様',voice:'db80932607',role:'甲板への案内'},
+{x:18,y:2.1,z:24,name:'すみれ',voice:'937a333722',role:'連絡通路の見回り'},
+{x:-42,y:25,z:4,name:'ひなた',voice:'48a9c1d3ca',role:'客船プールデッキの案内'},
+{x:74,y:10,z:5,name:'文',voice:'019d470c28',role:'客船の案内と記録'},
+{x:-98,y:10,z:4,name:'九条',voice:'a9cfb16913',role:'メインダイニングの案内'}
+];
+const maidSkin=mat(0xe4b99c,.78,.02),maidHair=mat(0x29252a,.72,.04),maidDress=mat(0x202a39,.68,.12),maidApron=mat(0xf0eee4,.82,.02),maidTrim=mat(0xc4a66d,.48,.32);
+function createMaid(parent,x,y,z,variant=0){
+ const g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+ const dress=new THREE.Mesh(new THREE.CylinderGeometry(.22,.43,.82,16,1),maidDress);dress.position.y=.78;g.add(dress);
+ const apron=new THREE.Mesh(new THREE.CylinderGeometry(.17,.34,.72,16,1,true,Math.PI*.18,Math.PI*.64),maidApron);apron.position.set(0,.79,.045);apron.rotation.y=Math.PI;g.add(apron);
+ box(g,0,1.17,.205,.27,.31,.035,maidApron);box(g,0,1.29,.02,.34,.09,.28,maidApron);
+ sphere(g,0,1.52,0,.17,maidSkin,.92,1.08,.92);for(const eyeSide of [-1,1])sphere(g,eyeSide*.061,1.55,.151,.018,darkSteel,.9,1,.55);sphere(g,0,1.49,.154,.025,maidTrim,.7,.5,.5);sphere(g,0,1.63,-.015,.185,maidHair,1.02,.78,1);
+ sphere(g,0,1.48,-.14,.105,maidHair,1.15,1.15,.8);
+ box(g,0,1.72,-.005,.28,.055,.2,maidApron);box(g,0,1.69,.12,.11,.08,.035,maidTrim);
+ for(const side of [-1,1]){
+  const sleeve=sphere(g,side*.29,1.06,0,.13,maidApron,.8,1.2,.85);sleeve.rotation.z=side*.2;
+  const arm=cyl(g,side*.34,.88,.025,.065,.075,.38,maidSkin,10);arm.rotation.z=side*.12;
+  sphere(g,side*.35,.67,.04,.075,maidSkin);
+  cyl(g,side*.13,.24,0,.085,.09,.42,maidDress,10);
+  box(g,side*.13,.045,.08,.17,.09,.28,darkSteel);
+ }
+ box(g,0,1.34,.17,.14,.09,.045,variant%2?maidTrim:maidDress);
+ return g;
+}
+
 // LUXURY CRUISE SHIP — separate vessel with tiered decks, balconies, glass atrium and pool.
 const cruise=new THREE.Group();cruise.position.set(0,0,43);scene.add(cruise);hull(cruise,350,52,17);box(cruise,0,-1,0,318,2,45,navy);plate(cruise,330,54,0,teak);
 for(let side of [-1,1]){box(cruise,0,-3,side*25.2,320,2,.7,white);for(let x=-155;x<155;x+=7){box(cruise,x,-2,side*25.5,.3,1.2,.2,gold,false)}}
@@ -134,6 +171,8 @@ for(let x=-190;x<190;x+=75){const buoy=cyl(scene,x,-7,5,1.2,1.2,5,vehicleRed,16)
 // Operational detail: deck lights, floodlights, bollards and anchor gear.
 for(let x=-150;x<150;x+=30){for(let side of [-1,1]){cyl(carrier,x,3,side*31,.18,.18,3,gold,12);const light=sphere(carrier,x,4.7,side*31,.32,mat(0xffe0a3,.25,0));}}
 for(let side of [-1,1]){for(let x=-140;x<140;x+=18){cyl(cruise,x,6,side*27,.18,.18,2,gold,10);sphere(cruise,x,7,side*27,.22,mat(0xffdf9a,.25,0))}}
+const maids=[];
+maidSpots.forEach((s,i)=>{const parent=i<2?carrier:cruise;const holder=new THREE.Group();holder.position.set(s.x,s.y,s.z);parent.add(holder);createMaid(holder,0,0,0,i);maids.push({holder,spot:s})});
 const spots=[
 {x:-25,y:2,z:-64,name:'発艦管制区画',desc:'カタパルト、着艦制動索、甲板作業員の配置を確認できます。',kind:'room'},
 {x:-15,y:-8,z:-50,name:'航空機格納庫',desc:'艦載機の整備ベイ、牽引車、燃料・工具区画を備えた格納庫です。',kind:'room'},
@@ -146,7 +185,7 @@ const spots=[
 {x:0,y:2,z:-42,name:'空母エレベーター',desc:'格納庫・飛行甲板・艦橋デッキを結ぶ大型エレベーターです。',kind:'lift',ship:'carrier'},
 {x:140,y:5,z:43,name:'客船エレベーター',desc:'客室、プール、ブリッジの各デッキへ移動します。',kind:'lift',ship:'cruise'}
 ];
-const crewSpotsWorld=crewSpots.map(s=>({...s,x:s.x,y:s.y,z:s.z-42,kind:'dialogue'}));crewSpotsWorld.forEach(s=>spots.push(s));
+const maidSpotsWorld=maidSpots.map((s,i)=>({...s,x:s.x,y:s.y,z:i<2?s.z-42:s.z,kind:'dialogue'}));maidSpotsWorld.forEach(s=>spots.push(s));
 const markers=[];spots.forEach(s=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,.1,16),new THREE.MeshBasicMaterial({color:0xf0d38a,transparent:true,opacity:.75}));m.position.set(s.x,s.y+.25,s.z);scene.add(m);markers.push({mesh:m,spot:s})});
 const decks=[
 {name:'空母・格納庫',y:-8,x:-15,z:-50,desc:'航空機整備と機体移動区画'},
@@ -156,32 +195,41 @@ const decks=[
 {name:'客船・プールデッキ',y:25,x:-38,z:43,desc:'屋外プール・サンデッキ'},
 {name:'客船・ブリッジ',y:37,x:0,z:43,desc:'操舵室・航海計器'}
 ];
-const player={x:-65,y:2,z:-42,deck:1};let yaw=-Math.PI/2,pitch=-.08,locked=false,keys={},moveTouch={},near=null;
-camera.position.set(player.x,player.y+1.75,player.z+6);
+const player={x:-65,y:2,z:-42,deck:1};let yaw=-Math.PI/2,pitch=-.08,locked=false,keys={},moveTouch={},near=null,lookPointer=null,mouseDrag=false,lastLookX=0,lastLookY=0;
+camera.position.set(player.x,player.y+1.62,player.z);
 function panel(title,body){document.getElementById('ptitle').textContent=title;document.getElementById('pbody').innerHTML=body;document.getElementById('panel').style.display='block'}
 function elevatorOptions(shipName){const ids=shipName==='carrier'?[0,1,2]:[3,4,5];const opts=ids.map(i=>'<button data-deck="'+i+'">'+decks[i].name+'</button>').join(' ');panel('エレベーター','<p>移動するデッキを選択してください。</p><div style="display:flex;gap:8px;flex-wrap:wrap">'+opts+'</div>');document.querySelectorAll('[data-deck]').forEach(b=>b.onclick=()=>{const d=decks[+b.dataset.deck];player.deck=+b.dataset.deck;player.x=d.x;player.y=d.y;player.z=d.z;document.getElementById('panel').style.display='none'})}
-function playCrewVoice(key,name){const line=window.VOICE_AB&&window.VOICE_AB.lines&&window.VOICE_AB.lines[key];if(!line)return;document.getElementById('speaker').textContent=line.who+' — '+name;document.getElementById('dialoguetext').textContent=line.ja;document.getElementById('dialogue').style.display='block';if(window.__carrierVoice){window.__carrierVoice.pause();window.__carrierVoice.currentTime=0}window.__carrierVoice=new Audio('assets/voices/'+line.file);window.__carrierVoice.volume=.9;window.__carrierVoice.play().catch(()=>{})}
+function playCrewVoice(key,name){const line=window.VOICE_AB&&window.VOICE_AB.lines&&window.VOICE_AB.lines[key];if(!line)return;document.getElementById('speaker').textContent=name;document.getElementById('dialoguetext').textContent=line.ja;document.getElementById('dialogue').style.display='block';if(window.__carrierVoice){window.__carrierVoice.pause();window.__carrierVoice.currentTime=0}window.__carrierVoice=new Audio('assets/voices/'+line.file);window.__carrierVoice.volume=.9;window.__carrierVoice.onended=()=>{document.getElementById('dialogue').style.display='none'};window.__carrierVoice.play().catch(()=>{})}
 function interact(){if(!near)return;if(near.kind==='dialogue'){playCrewVoice(near.voice,near.name);return}if(near.kind==='lift'){elevatorOptions(near.ship);return}if(near.kind==='transfer'){panel(near.name,'<p>'+near.desc+'</p><p>この連絡橋を渡ると、空母と客船を行き来できます。</p>');return}panel(near.name,'<p>'+near.desc+'</p><p>現在位置：'+document.getElementById('deckname').textContent+'</p>')}
 function mapOpen(){panel('二つの巨艦・艦内案内','<p><b>航空母艦《鳳翔》</b> — 飛行甲板、格納庫、艦橋、艦載機、発艦管制設備。</p><p><b>豪華客船《セレスティア》</b> — 客室デッキ、メインダイニング、劇場、プール、展望ブリッジ。</p><p><b>連絡通路</b> — 二隻の間を渡る連絡橋。船の間を歩いて移動できます。</p><p>各エレベーターの前で E を押すと上層・下層へ移動できます。</p>')}
 document.getElementById('mapbtn').onclick=mapOpen;document.getElementById('close').onclick=()=>document.getElementById('panel').style.display='none';
 addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='KeyE')interact();if(e.code==='KeyM')mapOpen();if(e.code==='Escape'&&locked)document.exitPointerLock()});addEventListener('keyup',e=>keys[e.code]=false);
-renderer.domElement.addEventListener('click',()=>{if(!locked&&document.getElementById('panel').style.display!=='block')renderer.domElement.requestPointerLock?.()});
+renderer.domElement.addEventListener('click',e=>{if(matchMedia('(pointer: coarse)').matches)return;if(e.pointerType&&e.pointerType!=='mouse')return;if(!locked&&document.getElementById('panel').style.display!=='block')renderer.domElement.requestPointerLock?.()});
 document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);document.addEventListener('mousemove',e=>{if(!locked)return;yaw-=e.movementX*.0021;pitch=Math.max(-1.1,Math.min(1.1,pitch-e.movementY*.0017))});
-document.querySelectorAll('[data-move]').forEach(b=>{const k=b.dataset.move;b.addEventListener('pointerdown',e=>{moveTouch[k]=true;b.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>moveTouch[k]=false))});document.getElementById('usebtn').onclick=interact;
+// 円形スティックを引っ張って移動。画面右半分をドラッグすると360度視点を回せる。
+const stick=document.getElementById('stickBase'),knob=document.getElementById('stickKnob');let stickId=null,stickX=0,stickY=0;
+function resetStick(){moveTouch.forward=moveTouch.back=moveTouch.left=moveTouch.right=false;knob.style.transform='translate(-50%,-50%)';stickId=null}
+function moveStick(e){if(e.pointerId!==stickId)return;const dx=e.clientX-stickX,dy=e.clientY-stickY,lim=42,len=Math.hypot(dx,dy),k=len>lim?lim/len:1,x=dx*k,y=dy*k;knob.style.transform='translate(calc(-50% + '+x+'px),calc(-50% + '+y+'px))';moveTouch.forward=y<-10;moveTouch.back=y>10;moveTouch.left=x<-10;moveTouch.right=x>10}
+stick.addEventListener('pointerdown',e=>{e.preventDefault();stickId=e.pointerId;stick.setPointerCapture(e.pointerId);const r=stick.getBoundingClientRect();stickX=r.left+r.width/2;stickY=r.top+r.height/2;moveStick(e)});
+stick.addEventListener('pointermove',moveStick);['pointerup','pointercancel','lostpointercapture'].forEach(ev=>stick.addEventListener(ev,resetStick));
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'&&e.clientX>innerWidth*.43){lookPointer=e.pointerId;lastLookX=e.clientX;lastLookY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)}else if(e.pointerType==='mouse'&&!locked){mouseDrag=true;lastLookX=e.clientX;lastLookY=e.clientY}});
+renderer.domElement.addEventListener('pointermove',e=>{if(lookPointer===e.pointerId){yaw-=(e.clientX-lastLookX)*.006;pitch=Math.max(-1.42,Math.min(1.42,pitch-(e.clientY-lastLookY)*.004));lastLookX=e.clientX;lastLookY=e.clientY}else if(mouseDrag&&!locked){yaw-=(e.clientX-lastLookX)*.004;pitch=Math.max(-1.42,Math.min(1.42,pitch-(e.clientY-lastLookY)*.003));lastLookX=e.clientX;lastLookY=e.clientY}});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>renderer.domElement.addEventListener(ev,e=>{if(lookPointer===e.pointerId)lookPointer=null;mouseDrag=false}));
+document.getElementById('usebtn').onclick=interact;
 // Deck collision: the gangway is the only walkable connection between the two hulls.
 function onWalkable(x,z){const onCarrier=x>-180&&x<180&&z>-82&&z< -2;const onCruise=x>-180&&x<180&&z>16&&z<72;const onBridge=x>24&&x<48&&z>-22&&z<24;return onCarrier||onCruise||onBridge}
 const clock=new THREE.Clock();function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04),t=clock.elapsedTime;
 const a=seaGeo.attributes.position;for(let i=0;i<a.count;i++){const x=seaBase[i*3],z=seaBase[i*3+2];a.array[i*3+1]=Math.sin(x*.012+t*.55)*.55+Math.sin(z*.019-t*.42)*.34+Math.sin((x+z)*.008+t*.28)*.22}a.needsUpdate=true;if(Math.floor(t*12)%8===0)seaGeo.computeVertexNormals();radar.rotation.y=t*1.2;
 const f=(keys.KeyW||keys.ArrowUp||moveTouch.forward?1:0)-(keys.KeyS||keys.ArrowDown||moveTouch.back?1:0),s=(keys.KeyD||keys.ArrowRight||moveTouch.right?1:0)-(keys.KeyA||keys.ArrowLeft||moveTouch.left?1:0),speed=(keys.ShiftLeft?12:6.5)*dt;
 const nx=player.x+(-Math.sin(yaw)*f+Math.cos(yaw)*s)*speed,nz=player.z+(-Math.cos(yaw)*f-Math.sin(yaw)*s)*speed;if(onWalkable(nx,nz)){player.x=nx;player.z=nz}
-camera.position.set(player.x,player.y+1.75,player.z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
+camera.position.set(player.x,player.y+1.62,player.z);camera.rotation.order='YXZ';camera.rotation.set(pitch,yaw,0);
 let best=1e9;near=null;for(const m of markers){const d=Math.hypot(player.x-m.spot.x,player.z-m.spot.z,player.y-m.spot.y);if(d<best){best=d;near=m.spot}}
 const p=document.getElementById('prompt');p.style.display=best<10?'block':'none';p.textContent=near?(near.kind==='lift'?'E — '+near.name+'（デッキ選択）':near.kind==='dialogue'?'E — '+near.name+'（会話）':'E — '+near.name):'';document.getElementById('deckname').textContent=decks[player.deck].name;document.getElementById('coords').textContent='位置 '+Math.round(player.x)+' / '+Math.round(player.z)+' m';
 for(const m of markers){m.mesh.material.opacity=m.spot===near?.95:.3;m.mesh.scale.setScalar(m.spot===near?1.45:1)}
-for(const c of crew){c.holder.rotation.y=Math.atan2(camera.position.x-c.holder.position.x,camera.position.z-c.holder.position.z)}
+for(const c of maids){const wp=new THREE.Vector3();c.holder.getWorldPosition(wp);c.holder.rotation.y=Math.atan2(camera.position.x-wp.x,camera.position.z-wp.z)}
 for(const j of jets)if(j.userData.prop)j.userData.prop.rotation.x=t*8;
 renderer.render(scene,camera)}
-window.__carrierStage={scene,camera,carrier,cruise,player,spots,crewSpots,renderer,interact,mapOpen,decks};
+renderer.shadowMap.needsUpdate=true;window.__carrierStage={scene,camera,carrier,cruise,player,spots,maidSpots,maids,renderer,interact,mapOpen,decks};
 requestAnimationFrame(tick);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 })();
 </script></body></html>

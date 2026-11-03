@@ -2841,10 +2841,11 @@ function mechHqTick() {
   } else MECH.hqAt = 0;
 }
 function toggleGod() {
-  if (!(BEACH.on || stageName === 'keiku3') || state !== 'play') return;
+  if (!(BEACH.on || stageName === 'keiku3' || CV.on) || state !== 'play') return;
   player.god = !player.god;
-  popup(player.god ? '無敵' : '無敵を解除した');
-  const b = $('bGod'); if (b) { b.textContent = player.god ? '無敵解除' : '無敵'; b.classList.toggle('on', !!player.god); }
+  popup(player.god ? (CV.on ? '無敵モード ON：殿は傷つかず、沈まない' : '無敵') : '無敵を解除した');
+  if (player.god) player.hp = Math.max(player.hp, 1);
+  const b = $('bGod'); if (b) { b.textContent = CV.on ? (player.god ? '無敵モード ON' : '無敵モード OFF') : player.god ? '無敵解除' : '無敵'; b.classList.toggle('on', !!player.god); }
 }
 function lordSecTalk() {
   const e = sec.e;
@@ -11759,6 +11760,7 @@ function cvSinkPhaseStep(dt) {
     if ((CV.abSay = (CV.abSay || 4) - dt) <= 0) { CV.abSay = rand(4, 7); const L = CV_LINES.sink; cvEv(['deck', 'res', 'cab', 'din', 'med'][(Math.random() * 5) | 0], L[(Math.random() * L.length) | 0], 3, 1.6); }
     if (CV.abT < 120 && !CV.abWarn) { CV.abWarn = true; showBanner('傾斜が増している', 'あと二分。舷側の救命艇へ'); cvKing('傾いてきた……もう時間がない'); }
     if (onOy && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph))) { CV.sinkPh = 'going'; CV.goT = 0; cvOyReport(); cvKing(CV_LINES.kingOy[(Math.random() * CV_LINES.kingOy.length) | 0]); cvCapToOyodo(); showBanner('大淀に移乗', '空母が沈んでいく。大淀の上は自由に歩ける。作戦終了ボタンか Q で終える'); }
+    else if (CV.abT <= 0 && player.god) { cvGodSeaStart(); }
     else if (CV.abT <= 0) { CV.sinkPh = 'lost'; cvKing('……間に合わなかったか'); setTimeout(() => { if (CV.on) cvKingDown(); }, 1800); }
   }
   if (CV.sinkPh === 'going') {   // 殿が大淀に移ったあとも、空母はゆっくり傾き沈下を続け、時間が来て最後に沈む
@@ -11770,6 +11772,13 @@ function cvSinkPhaseStep(dt) {
     cvShipXf(CV.listA + k * 0.25, CV.settle + k * k * 40 * S);
     if (k >= 1 && !CV.sunkDone) { CV.sunkDone = true; for (const [o] of CV.sinkObjs) o.visible = false; cvKing('……沈んだか。皆、よく戦った'); { const mis = cvMissingN(); showBanner('桜鳳、沈没', `救助 ${CV.rescued} 名・行方不明 ${mis} 名・戦死 ${CV.R.filter(r => r.st === 'dead').length} 名`); cvShipSay('yukikaze', `収容、終わりました。救助 ${CV.rescued} 名、行方不明 ${mis} 名`); } }
   }
+}
+function cvGodSea() { return !!(player.god && CV.on && CV.phase === 'sink' && (CV.godSea || CV.carrierGone || CV.sinkPh === 'going')); }
+function cvGodSeaStart() {   // 無敵モード：艦に残ったまま時間が来たら、殿を舷外の海面へ。艦は沈み、作戦終了ボタンを押すまで見ていられる
+  const S = CV.S || 1, sd = CV.listSd || 1; CV.godSea = true; CV.sinkPh = 'going'; CV.goT = 0; CV.abT = 0;
+  const K = CV.sk; if (K) { K.mode = 'B'; K.xL = 99; const O = cvOut(); O.position.set(0, 0, 0); O.rotation.set(0, 0, 0); cvShipXf(K.L, K.s); }
+  player.pos.set(-sd * 34 * S, 0.05, player.pos.z); player.vy = 0; player.onGround = true; player.yaw = sd > 0 ? -Math.PI / 2 : Math.PI / 2;
+  cvKing('……俺は沈まん。最後まで見届ける'); showBanner('無敵モード', '殿は海の上に立って見届ける。作戦終了ボタンか Q で終える');
 }
 function cvCapToOyodo() {
   const sh = (CV.fleet || []).find(s => s.d.board); if (!sh) return; const S = CV.S || 1;
@@ -11786,16 +11795,16 @@ function cvRescueBoat() {   // 救命艇は足りない。焼けた艇、傾斜�
   const to = (CV.fleet || [])[(Math.random() * (CV.fleet || []).length) | 0]; if (!to) return;
   const side = Math.random() < 0.5 ? -1 : 1, z = rand(-60, 60) * S, m = new THREE.Group();
   const hull = new THREE.Mesh(new THREE.BoxGeometry(2.2 * S, 0.7 * S, 6.5 * S), CV.M.wood || CV.M.deck); hull.position.y = 0.2 * S; m.add(hull);
-  for (let i = 0; i < 6; i++) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.22 * S, 8, 6), new THREE.MeshLambertMaterial({ color: 0x1a1410 })); h.position.set(rand(-0.6, 0.6) * S, 0.85 * S, rand(-2.4, 2.4) * S); m.add(h); }
+  if (Math.random() >= 0.12) for (let i = 0; i < 6; i++) { const h = cvPerson(); h.position.set((i & 1 ? 0.5 : -0.5) * S, 0.55 * S, (-2.4 + (i >> 1) * 2.2) * S); m.add(h); }   // 立って乗る
   m.position.set(side * 13 * S, 0, z); const n = 10 + ((Math.random() * 12) | 0);
-  const cap = Math.random() < 0.12; const sel = CV.R.filter(r => r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued && !r.swim).slice(0, n);
+  const cap = m.children.length === 1; const sel = CV.R.filter(r => r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued && !r.swim).slice(0, n);
   if (cap) { m.rotation.z = 2.6; cvEv('deck', L[3], 3, 2.3); for (const r of sel) r.swim = true; setTimeout(() => stageRoot.remove(m), 20000); cvRaft(side * 15 * S, z, 4); return; }
   CV.rboats.push({ m, tx: to.x * S, tz: to.z * S, n, t: 0 }); for (const r of sel) { r.rescued = true; r.ship = to.d.nm; } CV.rescued += sel.length;
 }
 function cvRaft(x, z, n) { const S = CV.S || 1; CV.rafts = CV.rafts || []; if (CV.rafts.length > (LITE ? 14 : 40)) return;
   for (let k = 0; k < n; k++) { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(rand(1, 2.2) * S * 0.6, 0.25, rand(1, 2.2) * S * 0.6), CV.M.wood || CV.M.deck); g.add(b);
-    for (let i = 0; i < 2 + ((Math.random() * 3) | 0); i++) { const h = new THREE.Mesh(new THREE.SphereGeometry(0.14 * S, 8, 6), new THREE.MeshLambertMaterial({ color: 0x15110e })); h.position.set(rand(-0.8, 0.8), 0.15, rand(-0.8, 0.8)); g.add(h); }
-    g.position.set(x + rand(-14, 14), 0.1, z + rand(-14, 14)); g.rotation.y = rand(0, 6); (CV.sk ? cvOut() : stageRoot).add(g); CV.rafts.push(g); } }
+    for (let i = 0; i < 2 + ((Math.random() * 3) | 0); i++) { const h = cvPerson(), a = i * 2.1 + rand(-0.3, 0.3); h.position.set(Math.cos(a) * 0.9 * S, cvSwimY(h) - 0.1, Math.sin(a) * 0.9 * S); g.add(h); }   // 筏につかまって泳ぐ
+    g.position.set(x + rand(-14, 14), 0.1, z + rand(-14, 14)); g.rotation.y = rand(0, 6); cvOut().add(g); CV.rafts.push(g); } }
 // 海からの救助の声（女声・edge-tts）。生きている者を先に。浮いている亡骸も、ときどき静かに艇へ上げる（傷の描写はしない）
 const SEA_V = { res: [['r1', 'つかまって！'], ['r2', 'もう大丈夫だよ'], ['r3', '手を伸ばして！']], body: [['b1', '……この子も乗せてあげよう'], ['b2', '一緒に帰ろうね'], ['b3', '冷たい……']], sv: [['s1', 'ありがとう……'], ['s2', '寒い……']] };
 function cvSwimStep(dt) {   // 海に入った者：筏や浮いた残骸につかまる。護衛艦が拾えるだけ拾い、空からの脅威で退く
@@ -11830,7 +11839,7 @@ function cvListStep(dt) {   // 傾斜と沈下：u（退艦からの経過）と
   CV.listA = K.L; CV.settle = K.s;
   if (!CV.sinkObjs) { CV.sinkObjs = []; for (const o of stageRoot.children) if (o !== CV.outG && !(CV.rboats || []).some(b => b.m === o) && !(CV.esc && CV.esc.b === o)) CV.sinkObjs.push([o, o.position.clone(), o.quaternion.clone()]); }
   if (CV.carrierGone) return;
-  const ph = CV.esc && CV.esc.ph, mode = !cvOnOyodo() && !/^(lower|fill|row|moor|boat)$/.test(ph || '') ? 'A' : 'B', O = cvOut();
+  const ph = CV.esc && CV.esc.ph, mode = !cvOnOyodo() && !cvGodSea() && !/^(lower|fill|row|moor|boat)$/.test(ph || '') ? 'A' : 'B', O = cvOut();
   if (mode !== K.mode) { K.mode = mode; K.xL = 99; if (mode === 'A') { cvShipXf(0, 0); } }
   if (mode === 'A') { O.position.set(0, K.s, 0); O.rotation.set(0, 0, -K.L); }
   else { O.position.set(0, 0, 0); O.rotation.set(0, 0, 0); if (Math.abs(K.L - K.xL) > 0.002 || Math.abs(K.s - K.xs) > 0.02) { K.xL = K.L; K.xs = K.s; cvShipXf(K.L, K.s); } }
@@ -11845,12 +11854,17 @@ function cvPGeo() { if (CVP_GEO) return CVP_GEO; const L = c => new THREE.MeshLa
   const torso = new THREE.CylinderGeometry(0.17, 0.21, 0.62, 8); torso.translate(0, 1.08, 0); const skirt = new THREE.CylinderGeometry(0.2, 0.3, 0.62, 8); skirt.translate(0, 0.52, 0);
   const legs = new THREE.CylinderGeometry(0.12, 0.09, 0.3, 6); legs.translate(0, 0.08, 0); const head = new THREE.SphereGeometry(0.13, 10, 8); head.translate(0, 1.55, 0); const hair = new THREE.SphereGeometry(0.145, 10, 8, 0, Math.PI * 2, 0, Math.PI * 0.62); hair.translate(0, 1.57, -0.012);
   return (CVP_GEO = { torso, skirt, legs, head, hair, m: { w: L(0xf1eee8), k: L(0x18181b), s: L(0xe8c4a8), h: L(0x17110d) } }); }
-function cvPerson() { const G = cvPGeo(), g = new THREE.Group(); for (const [geo, m] of [[G.torso, G.m.w], [G.skirt, G.m.k], [G.legs, G.m.s], [G.head, G.m.s], [G.hair, G.m.h]]) g.add(new THREE.Mesh(geo, m)); g.scale.setScalar(1.02 * (CV.S || 1)); return g; }
-function cvBodyMesh() { const g = new THREE.Group(), hair = new THREE.MeshLambertMaterial({ color: 0x17110d }), cam = new THREE.MeshLambertMaterial({ color: 0xf1eee8 }), blk = new THREE.MeshLambertMaterial({ color: 0x141416 });
-  const h = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), hair); h.scale.set(1, 0.7, 1.15); h.position.set(0, 0.02, 0.72); g.add(h);
-  const hl = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.5), hair); hl.rotation.x = -Math.PI / 2; hl.position.set(0, 0.03, 0.5); g.add(hl);
-  const t = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.12, 0.5), cam); t.position.set(0, 0, 0.3); g.add(t);
-  for (const sx of [-0.09, 0.09]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.1, 0.8), blk); l.position.set(sx, -0.03, -0.38); g.add(l); } g.scale.setScalar(CV.S || 1); return g; }
+// 海の人は写真の侍女（いつもの見た目の山札から配る）。立ち姿・泳ぐ姿は立ち絵、亡骸は「倒れた写真」（down）を水面に半分沈めて
+const CVSP = { mat: {} };
+function cvSeaGid(r) { const g = r && (r.gid || r.girl); if (g && GIRLS[g] && GIRLS[g].front && GIRLS[g].front.tex) return g; const P = cvPool(); return mobDeal('cvSea', P) || P[0]; }
+function cvSprMat(gid, down) { const k = gid + (down ? '_d' : ''); if (CVSP.mat[k]) return CVSP.mat[k]; const G = GIRLS[gid], fr = down && G.down && G.down.tex ? G.down : G.front; return (CVSP.mat[k] = new THREE.SpriteMaterial({ map: fr.tex, alphaTest: 0.35, transparent: true, depthWrite: true })); }
+function cvPerson(r, gid) { gid = gid || cvSeaGid(r); const G = GIRLS[gid]; if (!G || !G.front) return new THREE.Group(); const fr = G.front, h = 1.6 * (CV.S || 1) * (fr.hk || 1);
+  const s = new THREE.Sprite(cvSprMat(gid)); s.center.set(0.5, 0); s.scale.set(h * (fr.aspect || 0.3), h, 1); s.userData.gid = gid; s.userData.h = h; return s; }
+function cvSwimY(g) { return -((g.userData && g.userData.h) || 1.6 * (CV.S || 1)) * 0.56; }   // 胸から上だけ水の上
+function cvBodyMesh(r, gid) { gid = gid || cvSeaGid(r); const G = GIRLS[gid], g = new THREE.Group(); if (!G || !G.front) return g; const S = CV.S || 1;
+  if (G.down && G.down.tex) { const fr = G.down, h = 1.6 * S * (fr.hk || 1), s = new THREE.Sprite(cvSprMat(gid, true)); s.center.set(0.5, 0); s.scale.set(h * (fr.aspect || 0.45), h, 1); s.position.y = -h * 0.42; g.add(s); }
+  else { const fr = G.front, h = 1.6 * S * (fr.hk || 1), m = new THREE.Mesh(CVSP.flat || (CVSP.flat = new THREE.PlaneGeometry(1, 1)), CVSP.mat['f_' + gid] || (CVSP.mat['f_' + gid] = new THREE.MeshLambertMaterial({ map: fr.tex, alphaTest: 0.35, transparent: true, side: THREE.DoubleSide }))); m.scale.set(h * (fr.aspect || 0.3), h, 1); m.rotation.x = -Math.PI / 2 + 0.12; m.position.y = -0.02; g.add(m); }
+  g.userData.gid = gid; return g; }
 // ── カッター（浜の舟の形をインスタンスで）。舷側に横付けして網から乗せ、満員で離れ、泳ぐ者を拾い、僚艦へ。次の艇が来る ──
 // ── ピアノラウンジ（サロン x 1.6〜7.1, z 42.3〜51.5、縮尺前）。会議用の机はそのまま、壁ぎわにソファ、奥の角にグランドピアノ ──
 function cvLounge(Y1, boxes) {
@@ -11909,15 +11923,15 @@ function cvLoungeStep(dt) {
 function cvLbInit() {
   const K = CV.sk, S = CV.S || 1, G = boatGeo(), M = beachMats(), N = LITE ? 6 : 10, O = cvOut(), m4 = new THREE.Matrix4().makeScale(0, 0, 0);
   const mk = (geo, mat, n) => { const m = new THREE.InstancedMesh(geo, mat, n); m.frustumCulled = false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); for (let i = 0; i < n; i++) m.setMatrixAt(i, m4); O.add(m); return m; };
-  const P = cvPGeo(), PN = N * 16 + (LITE ? 10 : 24);
-  K.lb = { N, im: [mk(G.wall, M.wood, N), mk(G.bot, M.wood, N), mk(G.keel, M.woodD, N)], pim: [[P.torso, P.m.w], [P.skirt, P.m.k], [P.legs, P.m.s], [P.head, P.m.s], [P.hair, P.m.h]].map(([g, m]) => mk(g, m, PN)), PN, b: [] };
+  const PN = N * 16 + (LITE ? 10 : 24), ps = []; for (let i = 0; i < PN; i++) { const s = cvPerson(); s.visible = false; O.add(s); ps.push(s); }   // 艇の上は立ち姿の写真（座る・膝をつく形は使わない）
+  K.lb = { N, im: [mk(G.wall, M.wood, N), mk(G.bot, M.wood, N), mk(G.keel, M.woodD, N)], ps, PN, b: [] };
   const zs = []; for (let i = 0; i < N / 2; i++) zs.push(-40 + i * 86 / Math.max(1, N / 2 - 1));
   for (let i = 0; i < N; i++) { const sd = i % 2 ? 1 : -1, z = zs[i >> 1] * S; K.lb.b.push({ i, sd, sz: z, x: sd * (34 + i * 3) * S, z: z + rand(-20, 20) * S, yaw: 0, ph: 'come', n: 0, cap: 14 + ((Math.random() * 5) | 0), t: rand(-i * 2.5, 0), climb: [], laid: [], haul: null, to: null }); }
 }
 function cvLbStep(dt) {
   const K = CV.sk, L = K.lb; if (!L) return; const S = CV.S || 1, q = new THREE.Quaternion(), m4 = new THREE.Matrix4(), one = new V3(S, S, S), zero = new V3(0, 0, 0), Y = new V3(0, 1, 0);
   const Yd = CV.Yd, gone = CV.carrierGone || K.final; let pi = 0;
-  const putP = (v, yaw) => { if (pi >= L.PN) return; q.setFromAxisAngle(Y, yaw); m4.compose(v, q, one); for (const im of L.pim) im.setMatrixAt(pi, m4); pi++; };
+  const putP = (v) => { if (pi >= L.PN) return; const s = L.ps[pi++]; s.position.copy(v); s.visible = true; };
   for (const B of L.b) {
     B.t += dt; const sx = B.sd * 12.6 * S, mv = (tx, tz, v) => { const dx = tx - B.x, dz = tz - B.z, d = Math.hypot(dx, dz); if (d > 0.3) { const st = Math.min(d, v * dt); B.x += dx / d * st; B.z += dz / d * st; B.yaw = Math.atan2(dx, dz); } return d; };
     if (B.t < 0) { B.hide = true; continue; } B.hide = false;
@@ -11945,13 +11959,13 @@ function cvLbStep(dt) {
   // 行列を書く（艇・艇の中の人・網を降りる人）
   for (const B of L.b) { const hide = B.hide || B.ph === 'gone'; const yb = 0.12 + Math.sin(time * 1.4 + B.i) * 0.05; q.setFromAxisAngle(Y, B.yaw); m4.compose(new V3(B.x, yb, B.z), q, hide ? zero : one); for (const im of L.im) im.setMatrixAt(B.i, m4); if (hide) continue;
     const cs = Math.cos(B.yaw), sn = Math.sin(B.yaw), loc = (lx, ly, lz) => new V3(B.x + (lx * cs + lz * sn) * S, yb + ly * S, B.z + (-lx * sn + lz * cs) * S);   // 艇の形は浜の舟（10m）を CV の縮尺 S で
-    for (let k = 0; k < Math.min(B.n, 16); k++) { const st = BOAT_SEATS[k % BOAT_SEATS.length]; putP(loc(st[0] * (k >= 12 ? 0.3 : 1), BOAT_DECK, st[1] + (k >= 12 ? -0.5 : 0)), B.yaw + (k & 1 ? 0.3 : -0.3)); }
+    for (let k = 0; k < Math.min(B.n, 16); k++) { const st = BOAT_SEATS[k % BOAT_SEATS.length]; putP(loc(st[0] * (k >= 12 ? 0.3 : 1), BOAT_DECK, st[1] + (k >= 12 ? -0.5 : 0))); }
     for (const c of B.climb) { const top = cvS2T(B.sd * 10.9 * S, Yd - 0.1, B.sz + c.dz), bot = new V3(B.x - B.sd * 0.5 * S, yb + BOAT_DECK * S, B.z + c.dz * 0.3), v = top.lerp(bot, Math.min(1, c.k)); putP(v, B.sd > 0 ? -Math.PI / 2 : Math.PI / 2); }
     B.laid.forEach((g, j) => { g.position.copy(loc((j ? 0.45 : -0.45), BOAT_DECK + 0.08, -2.6)); g.rotation.set(0, B.yaw, 0); });
-    if (B.haul) { const H = B.haul, g = H.g, k = Math.min(1, H.k), tgt = H.body ? loc((B.laid.length ? 0.45 : -0.45), BOAT_DECK + 0.08, -2.6) : loc(0, BOAT_DECK, 0); g.position.set(H.x0 + (tgt.x - H.x0) * k, (H.body ? 0.02 : -1.2) + Math.sin(k * Math.PI) * 1.3 + (tgt.y - (H.body ? 0.02 : -1.2)) * k, H.z0 + (tgt.z - H.z0) * k); if (H.body) g.rotation.set(0, B.yaw, 0); }
+    if (B.haul) { const H = B.haul, g = H.g, k = Math.min(1, H.k), tgt = H.body ? loc((B.laid.length ? 0.45 : -0.45), BOAT_DECK + 0.08, -2.6) : loc(0, BOAT_DECK, 0); g.position.set(H.x0 + (tgt.x - H.x0) * k, (H.body ? 0.02 : cvSwimY(g)) + Math.sin(k * Math.PI) * 1.3 + (tgt.y - (H.body ? 0.02 : cvSwimY(g))) * k, H.z0 + (tgt.z - H.z0) * k); if (H.body) g.rotation.set(0, B.yaw, 0); }
   }
-  for (let i = pi; i < L.PN; i++) { m4.compose(zero, q.identity(), zero); for (const im of L.pim) im.setMatrixAt(i, m4); }
-  for (const im of [...L.im, ...L.pim]) im.instanceMatrix.needsUpdate = true;
+  for (let i = pi; i < L.PN; i++) L.ps[i].visible = false;
+  for (const im of L.im) im.instanceMatrix.needsUpdate = true;
 }
 function cvSeaSay(kind) { const L = SEA_V[kind], i = (Math.random() * L.length) | 0, w = kind === 'sv' ? '救われた侍女' : '救助艇', t = w + '「' + L[i][1] + '」'; subtitle(t); const el = $('subtitle'); if (el) el.textContent = t; if (typeof VoicePack !== 'undefined' && VoicePack.ok) VoicePack.play('cv/sea_' + L[i][0] + '.mp3', 3, 1.6, 1); }
 // ── 海へ：爆風で飛ばされる・飛び込む・傾いた甲板から滑り落ちる。生きている者は泳いで艇へ、亡くなった者は静かに浮く ──
@@ -11959,19 +11973,20 @@ function cvFallSpawn(kind, at) {
   const K = CV.sk, S = CV.S || 1; if (K.fall.length + K.sw.length > (LITE ? 30 : 70)) return;
   const r = CV.R.find(r => r.st === 'ok' && !r.e && !r.cap && !r.capOf && !r.rescued && !r.swim && !r.sea2 && r.d !== 'kg' && r.d !== 'fam' && !r.gid); if (r) r.sea2 = true;
   const sd = CV.listSd || 1, side = kind === 'jump' && Math.random() < 0.3 ? -sd : sd, z = at ? at.z + rand(-6, 6) * S : rand(-55, 60) * S, y = at ? at.y : (Math.random() < 0.7 ? CV.Yd : CV.Yh + 0.4 * S);
-  const p = cvS2T(side * 10.8 * S, y + 0.2, z), g = cvPerson(); g.position.copy(p); cvOut().add(g);
+  const p = cvS2T(side * 10.8 * S, y + 0.2, z), g = cvPerson(r); g.position.copy(p); cvOut().add(g); if (kind === 'blown' && g.isSprite) g.material = g.material.clone();
   const blown = kind === 'blown', v = new V3(side * (blown ? rand(6, 11) : kind === 'jump' ? rand(2, 3.5) : rand(0.8, 2)), blown ? rand(5, 9) : kind === 'jump' ? rand(1.5, 3) : 0.3, rand(-1, 1));
   K.fall.push({ g, v, r, kind, dead: blown ? Math.random() < 0.5 : kind === 'slide' ? Math.random() < 0.2 : Math.random() < 0.08, spin: blown ? rand(-5, 5) : 0 });
 }
 function cvFallStep(dt) {
   const K = CV.sk, S = CV.S || 1;
-  for (let i = K.fall.length - 1; i >= 0; i--) { const F = K.fall[i], g = F.g; F.v.y -= 9.8 * dt; g.position.addScaledVector(F.v, dt); g.rotation.x += F.spin * dt;
+  for (let i = K.fall.length - 1; i >= 0; i--) { const F = K.fall[i], g = F.g; F.v.y -= 9.8 * dt; g.position.addScaledVector(F.v, dt); if (g.isSprite) g.material.rotation += F.spin * dt * 0.6; else g.rotation.x += F.spin * dt;
     if (g.position.y > 0) continue; K.fall.splice(i, 1); const P = g.position.clone(); P.y = 0.2; puff(cvT2Sc(P), 0xf4f8fb, 6, 1.4, 3, 0.9);
-    if (F.dead) { cvOut().remove(g); const b = cvBodyMesh(); b.position.set(P.x, 0.02, P.z); b.rotation.y = rand(0, 6); cvOut().add(b); K.bodies.push({ g: b, x: P.x, z: P.z, r: F.r, ph: rand(0, 6) }); if (F.r) { F.r.st = 'dead'; F.r.loc = '海'; } }
+    if (g.isSprite && g.material !== cvSprMat(g.userData.gid)) { g.material.dispose(); g.material = cvSprMat(g.userData.gid); }
+    if (F.dead) { cvOut().remove(g); const b = cvBodyMesh(F.r, g.userData.gid); b.position.set(P.x, 0.02, P.z); b.rotation.y = rand(0, 6); cvOut().add(b); K.bodies.push({ g: b, x: P.x, z: P.z, r: F.r, ph: rand(0, 6) }); if (F.r) { F.r.st = 'dead'; F.r.loc = '海'; } }
     else { g.rotation.set(0, rand(0, 6), 0); K.sw.push({ g, x: P.x, z: P.z, r: F.r, ph: rand(0, 6) }); if (F.r) F.r.swim = true; } }
   for (const w of K.sw) { let bx = null, bd = 1e9; for (const B of (K.lb ? K.lb.b : [])) { if (B.hide || B.ph === 'gone') continue; const d = Math.hypot(B.x - w.x, B.z - w.z); if (d < bd) { bd = d; bx = B; } }
     if (bx && bd > 2 * S && bd < 60 * S) { w.x += (bx.x - w.x) / bd * 0.7 * dt; w.z += (bx.z - w.z) / bd * 0.7 * dt; w.g.rotation.y = Math.atan2(bx.x - w.x, bx.z - w.z); }
-    w.g.position.set(w.x, -1.25 + Math.sin(time * 1.6 + w.ph) * 0.08, w.z); }
+    w.g.position.set(w.x, cvSwimY(w.g) + Math.sin(time * 1.6 + w.ph) * 0.08, w.z); }
   for (const b of K.bodies) { b.x += Math.sin(time * 0.05 + b.ph) * 0.05 * dt; b.g.position.set(b.x, 0.02 + Math.sin(time * 1.2 + b.ph) * 0.03, b.z); }
 }
 // ── 誘爆：格納庫の爆弾・燃料に火が届くと、下の甲板へ順に広がる。浸水と傾斜が増す ──
@@ -15051,6 +15066,7 @@ function cvStream(dt, force) {
   const wc = window.__cam, c = wc && wc.p ? { x: wc.p[0], y: wc.p[1], z: wc.p[2] } : camera.position, CAP = LITE ? 64 : 210, RAD = LITE ? 34 : 54, R2 = RAD * RAD, cand = [];
   for (const r of CV.R) {
     r.want = false; if (CV.sk && CV.sk.mode === 'B' && r.st === 'ok' && Math.abs(CV.listA || 0) > 0.05 && !r.ship && !r.rescued && r.y > 2 * (CV.S || 1) && !(CV.esc && [...CV.esc.es, ...(CV.esc.rowers || [])].includes(r))) continue;   // 艦外から見るとき、傾いた艦の上の人は描かない（足場は正立のままなので）
+    if (CV.carrierGone && Math.abs(r.x) < 16 * (CV.S || 1) && Math.abs(r.z) < 115 * (CV.S || 1)) continue;   // 沈んだ空母の上にいた者は艦と沈む（宙に残さない）
     if (r.away || r.st === 'air' || r.swim || (r.st !== 'ok' && (r.mg || r.carry) && !r.e)) continue;
     const dx = r.x - c.x, dz = r.z - c.z, dy = (r.y + 1.2 - c.y) * 5, s = dx * dx + dz * dz + dy * dy;
     r.sc = (r.job || r.task || r.st !== 'ok') ? s * 0.25 : s; if (r.sc < R2 * 1.7) cand.push(r);   // 消火・応急に動く人を優先して見せる
@@ -15531,7 +15547,7 @@ function cvSinkStep(dt) {
     const vs = pick(r => Math.hypot(r.x - cx, r.z - cz) < 20 * S && Math.abs(r.y - CV.Yd) < 3, n);
     for (let k = 0; k < Math.max(4, vs.length); k++) { const r = vs[k], x = r ? r.x : cx + rand(-12, 2) * S, z = r ? r.z : cz + rand(-14, 14) * S; const b = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, rand(2, 5)), CV.M.bulk || CV.M.hull); b.position.set(x, CV.Yd + rand(10, 18), z); b.rotation.set(rand(0, 3), rand(0, 3), 0); stageRoot.add(b); CV.debris.push({ m: b, r: r || { x, y: CV.Yd, z, st: 'none' }, vy: -rand(0, 3) }); } }
   else if (ev === 'slide') { const sd = CV.listSd || (CV.listSd = Math.random() < 0.5 ? -1 : 1); cvEv('deck', '甲板が傾く！ 滑る、つかまって！', 2, 2.4);
-    for (const r of pick(r => Math.abs(r.y - CV.Yd) < 3 && r.x * sd > 0, n)) { if (Math.random() < 0.55) r.swim = true; else { cvDownR(r, true, r.x - sd, r.z, 'sea'); cvFloatBody(sd * rand(14, 30) * S, r.z + rand(-6, 6)); } if (r.e) { const e = r.e; let t = 0; const iv = setInterval(() => { t += 0.05; if (!e.s || t > 1.6) { clearInterval(iv); if (r.e === e) cvDespawn(r); return; } e.s.position.x += sd * 0.35; e.s.position.y -= t * 0.5; }, 50); } } }
+    for (const r of pick(r => Math.abs(r.y - CV.Yd) < 3 && r.x * sd > 0, n)) { if (Math.random() < 0.55) r.swim = true; else { cvDownR(r, true, r.x - sd, r.z, 'sea'); cvFloatBody(sd * rand(14, 30) * S, r.z + rand(-6, 6), r); } if (r.e) { const e = r.e; let t = 0; const iv = setInterval(() => { t += 0.05; if (!e.s || t > 1.6) { clearInterval(iv); if (r.e === e) cvDespawn(r); return; } e.s.position.x += sd * 0.35; e.s.position.y -= t * 0.5; }, 50); } } }
   else { cvEv('dc', '下の区画が浸水！ 扉の向こうに人が！', 2, 2.4); for (const r of pick(r => r.y < CV.Y1 + 1 && !r.e, n)) cvDownR(r, Math.random() < 0.7, null, null, 'flood'); }
 }
 function cvDebrisStep(dt) {
@@ -15582,13 +15598,7 @@ function cvCarryStep(dt) {
   setTimeout(() => { if (!CV.on) return; const lost = Math.random() < 0.15; for (const r of all) { if (r.st === 'dead') continue; if (lost && r !== v && Math.random() < 0.6) { cvDownR(r, false, r.x, r.z, 'carry'); continue; } r.rescued = true; CV.rescued++; if (r.e) cvDespawn(r); } if (lost) cvEv('deck', '運んでいた子が倒れた！ 誰か手を！', 3, 2.2); }, 5500);
 }
 // 海の上の後始末（流血なし）：うつ伏せに浮く者（服を着たまま、傷は見せない）。艦内の者は艦と沈む。殿が助かったあと、ティアラやパンプスが流れてくる
-function cvFloatBody(x, z) {
-  const S = CV.S || 1, k = S / 1.62, g = new THREE.Group(), hair = new THREE.MeshLambertMaterial({ color: 0x17110d }), cam = new THREE.MeshLambertMaterial({ color: 0xf1eee8 }), blk = new THREE.MeshLambertMaterial({ color: 0x141416 });
-  const h = new THREE.Mesh(new THREE.SphereGeometry(0.12 * k * 1.62, 10, 8), hair); h.scale.set(1, 0.7, 1.15); h.position.set(0, 0.02, 0.72 * k * 1.62); g.add(h);
-  const hl = new THREE.Mesh(new THREE.PlaneGeometry(0.34 * k * 1.62, 0.5 * k * 1.62), hair); hl.rotation.x = -Math.PI / 2; hl.position.set(0, 0.03, 0.5 * k * 1.62); g.add(hl);
-  const t = new THREE.Mesh(new THREE.BoxGeometry(0.36 * k * 1.62, 0.12, 0.5 * k * 1.62), cam); t.position.set(0, 0, 0.3 * k * 1.62); g.add(t);
-  for (const sx of [-0.09, 0.09]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.13 * k * 1.62, 0.1, 0.8 * k * 1.62), blk); l.position.set(sx * k * 1.62, -0.03, -0.38 * k * 1.62); g.add(l); }
-  g.position.set(x, 0.02, z); g.rotation.y = rand(0, 6); (CV.sk ? cvOut() : stageRoot).add(g); (CV.floats = CV.floats || []).push({ g, ph: rand(0, 6), drift: true }); }
+function cvFloatBody(x, z, r) { const g = cvBodyMesh(r); g.position.set(x, 0.02, z); cvOut().add(g); (CV.floats = CV.floats || []).push({ g, ph: rand(0, 6), drift: true }); }
 function cvDriftItem(kind) {   // ティアラ（銀と石）・パンプス（黒）
   const S = CV.S || 1, oy = (CV.fleet || []).find(s => s.d.board); if (!oy) return; const g = new THREE.Group();
   if (kind === 'tiara') { const m = new THREE.MeshStandardMaterial({ color: 0xd8dce4, metalness: 0.9, roughness: 0.25 }); const r = new THREE.Mesh(new THREE.TorusGeometry(0.11 * S, 0.012 * S, 6, 20, Math.PI), m); r.rotation.x = -Math.PI / 2.4; g.add(r); const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.025 * S), new THREE.MeshStandardMaterial({ color: 0xbfe6ff, metalness: 0.3, roughness: 0.05 })); gem.position.set(0, 0.06 * S, 0.08 * S); g.add(gem); }
@@ -16300,10 +16310,11 @@ function updateCv(dt) {
   const inHd = Math.abs(p.x) < 6.2 * S && p.z > -66 * S && p.z < 34 * S && p.y > -3.3 * S && p.y < 0.2 * S;
   if (fy > 0.02 && p.y < 48 * S && Math.abs(p.x) < 18 * S) CV.back = [p.x, Math.max(fy, p.y), p.z];
   if (fy > -8 && Math.abs(p.y - fy) < 1.6) CV.foot = [p.x, Math.max(fy, p.y), p.z];
-  else if (CV.foot && !player.climbing && !CV.ride && fy < -20 && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
+  else if (CV.foot && !cvGodSea() && !player.climbing && !CV.ride && fy < -20 && p.y < CV.foot[1] - 2.2 && Math.abs(p.x) < 22 * S && p.z > -120 * S && p.z < 110 * S) { p.set(CV.foot[0], CV.foot[1], CV.foot[2]); player.vy = 0; player.onGround = true; }
   const onOy = CV.carrierGone || (CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) || (CV.fleet || []).some(sh => sh.d.board && Math.abs(p.x - sh.x * S) < (sh.hb + 0.4) * S && Math.abs(p.z - sh.z * S) < (sh.hl + 0.5) * S);   // 乗れる艦の上
   const inTh = Math.abs(p.x) < 6.0 * S && p.z > 36 * S && p.z < 74.3 * S && p.y > -1.8 * S;   // 大劇場は水線の下
-  if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh && !inAt && !inHd && !onDeck) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
+  if (cvGodSea()) { CV.godSea = true; if (p.y < 0.05 && !(onDeck && fy > 0.05)) { p.y = 0.05; player.vy = Math.max(0, player.vy || 0); player.onGround = true; } }   // 無敵モード：海面に立って歩ける
+  else if (CV.back && !(CV.esc && /^(boat|lower|fill|row)$/.test(CV.esc.ph)) && ((p.y < -0.4 && !inTh && !inAt && !inHd && !onDeck) || (!onOy && (Math.abs(p.x) > 18 * S || p.z < -108 * S || p.z > 100 * S)))) { p.set(CV.back[0], CV.back[1], CV.back[2]); player.vy = 0; popup('舷外には出られない'); }
   if (CV.poolW && CV.poolW.material && CV.poolW.material.map) CV.poolW.material.map.offset.x = (CV.poolW.material.map.offset.x + dt * 0.02) % 1;
   if (CV.jacW && CV.jacW.material && CV.jacW.material.map) CV.jacW.material.map.offset.y = (CV.jacW.material.map.offset.y + dt * 0.05) % 1;
   if ((CV.brClamp = (CV.brClamp || 0) - dt) <= 0) { CV.brClamp = 0.25; const I = CV.isl; if (I && CV.Yd) for (const e of bodies) { const r = e.cvR; if (!r || e.baseY < CV.Yd - 0.55 * S) continue; const q = e.s.position; const ix0 = I.x0 * S, ix1 = I.x1 * S, iz0 = I.z0 * S, iz1 = I.z1 * S; if (q.x < ix0 - 0.35 * S || q.x > ix1 + 0.35 * S || q.z < iz0 - 0.35 * S || q.z > iz1 + 0.35 * S) continue; const nx = Math.min(ix1 - 0.22 * S, Math.max(ix0 + 0.22 * S, q.x)), nz = Math.min(iz1 - 0.28 * S, Math.max(iz0 + 0.28 * S, q.z)); if (nx !== q.x || nz !== q.z) { q.x = nx; q.z = nz; e.px = nx; e.pz = nz; e.wx = nx; e.wz = nz; r.x = nx; r.z = nz; } } }
@@ -25441,7 +25452,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261102a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261103c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -30038,7 +30049,7 @@ function updateEnemies(dt) {
 
 // ---- プレイヤー被弾（縁が白く光るだけ。血は足元の床と近くの壁に飛び、画面には付かない） ----
 function hurtPlayer(dmg) {
-  if (player.god && (BEACH.on || stageName === 'keiku3')) return;
+  if (player.god && (BEACH.on || stageName === 'keiku3' || CV.on)) return;
   if (state !== 'play' || inHQ()) return;
   if (CAMP.on && (CAMP.frozen || CAMP.ending)) return;
   if (CAMP.on && CAMP.ph === 4 && !CAMP.solo && player.hp - dmg <= 0) { player.hp = 1; yjEnding(); return; }   // 山城：殿は討たれず、自ら幕を引く（何も見せない）
@@ -30338,10 +30349,10 @@ function updateHud(dt) {
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
-    const k3 = stageName === 'keiku3', show = (BEACH.on || k3) && state === 'play';
+    const k3 = stageName === 'keiku3' || CV.on, show = (BEACH.on || k3) && state === 'play';
     bg.style.display = show ? 'block' : 'none';
     if (k3) Object.assign(bg.style, { left: 'auto', right: '8px', bottom: 'auto', top: (innerHeight < 500 ? 132 : 150) + 'px', fontSize: innerHeight < 500 ? '13px' : '16px', padding: innerHeight < 500 ? '5px 10px' : '7px 14px', letterSpacing: '.1em' }); else if (bg.style.top) Object.assign(bg.style, { left: '', right: '', bottom: '', top: '', fontSize: '', padding: '', letterSpacing: '' });
-    if (show) { bg.textContent = player.god ? '無敵解除' : '無敵'; bg.classList.toggle('on', !!player.god); }
+    if (show) { bg.textContent = CV.on ? (player.god ? '無敵モード ON' : '無敵モード OFF') : player.god ? '無敵解除' : '無敵'; bg.classList.toggle('on', !!player.god); }
   }
   const foeN = wave.toSpawn + livingHead('orange');
   const allyN = livingHead('blue');

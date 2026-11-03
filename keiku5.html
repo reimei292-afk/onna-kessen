@@ -117,8 +117,12 @@ const levels=[
 ];
 levels.slice(1).forEach((d,i)=>deckPlate(ship,d.L,d.B,d.y,white));
 const cabinRows=[{y:4.0,L:240,B:34},{y:9.6,L:218,B:30},{y:14.6,L:192,B:27},{y:19.2,L:164,B:23},{y:24.6,L:132,B:20},{y:30.1,L:88,B:15}];
-const windowItems=[],balconyItems=[],balconyRailItems=[],balusterItems=[],outerRailItems=[];
-cabinRows.forEach((d,di)=>{const count=Math.floor(d.L/4.8);for(let side of [-1,1]){for(let i=0;i<count;i++){const x=-d.L*.5+8+i*4.65;windowItems.push({x,y:d.y,z:side*(d.B*.5+.02),w:1.45,h:1.05,d:.12});if(di<4&&i%2===0){balconyItems.push({x,y:d.y-1.05,z:side*(d.B*.5+1.0),w:3.7,h:.16,d:1.55});balconyRailItems.push({x,y:d.y-.35,z:side*(d.B*.5+1.8),w:3.7,h:.09,d:.09});for(let k=-1;k<=1;k++)balusterItems.push({x:x+k*1.25,y:d.y-.75,z:side*(d.B*.5+1.8),w:.07,h:.72,d:.07})}}}});
+function taperAt(x,L){const u=x/L+.5;if(u>.82)return Math.max(.035,1-Math.pow((u-.82)/.18,1.55));if(u<.1)return .76+.24*u/.1;return 1}
+function makeSideWall(L,B,bottom,top,material){const v=[],ind=[],uv=[];for(const side of [-1,1]){const base=v.length/3;for(let i=0;i<=48;i++){const u=i/48,x=(u-.5)*L,z=side*(B*.5*taperAt(x,L));v.push(x,bottom,z,x,top,z);uv.push(u,0,u,1)}for(let i=0;i<48;i++){const a=base+i*2,b=base+(i+1)*2;if(side>0)ind.push(a,b,a+1,b,b+1,a+1);else ind.push(a,a+1,b,b,a+1,b+1)}}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(ind);g.computeVertexNormals();material.side=THREE.DoubleSide;ship.add(new THREE.Mesh(g,material))}
+[{L:240,B:34,bottom:1.65,top:7.65},{L:218,B:30,bottom:7.65,top:12.2},{L:192,B:27,bottom:12.2,top:17},{L:164,B:23,bottom:17,top:21.9},{L:132,B:20,bottom:22.65,top:27.6},{L:88,B:15,bottom:29.65,top:34.8}].forEach(d=>makeSideWall(d.L,d.B,d.bottom,d.top,whiteShade));
+const windowFrameItems=[],windowItems=[],balconyItems=[],balconyRailItems=[],balusterItems=[],outerRailItems=[];
+cabinRows.forEach((d,di)=>{const count=Math.floor(d.L/4.8);for(let side of [-1,1]){for(let i=0;i<count;i++){const x=-d.L*.5+8+i*4.65,taper=taperAt(x,d.L),sideZ=side*(d.B*.5*taper);windowFrameItems.push({x,y:d.y,z:sideZ+side*.05,w:1.72,h:1.3,d:.16});windowItems.push({x,y:d.y,z:sideZ+side*.15,w:1.42,h:1.02,d:.1});if(di<4&&i%2===0){balconyItems.push({x,y:d.y-1.05,z:side*(d.B*.5*taper+1.0),w:3.7,h:.16,d:1.55});balconyRailItems.push({x,y:d.y-.35,z:side*(d.B*.5*taper+1.8),w:3.7,h:.09,d:.09});for(let k=-1;k<=1;k++)balusterItems.push({x:x+k*1.25,y:d.y-.75,z:side*(d.B*.5*taper+1.8),w:.07,h:.72,d:.07})}}}});
+instancedBoxes(ship,dark,windowFrameItems);
 instancedBoxes(ship,glass,windowItems);
 instancedBoxes(ship,deckWood,balconyItems);
 instancedBoxes(ship,steel,balconyRailItems);

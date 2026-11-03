@@ -47,6 +47,7 @@ jobs:
                   renderCalls:S.renderer.info.render.calls,
                   shipChildren:S.ship.children.length,
                   maidCount:S.maids.length,
+                  startDeck:S.player.deck,
                   maidTextures:S.maids.filter(m=>m.material.map).length,
                   maidFrames:S.maids.map(m=>({id:m.id,frame:m.frameName,optimizedWebp:m.frameURL.startsWith('data:image/webp'),directionalFrame:m.frameURL.includes('assets/frames/'+m.id+'_')})),
                   decks:S.levels.length,
@@ -55,7 +56,7 @@ jobs:
                 };
               });
               console.log('CRUISE_INITIAL '+JSON.stringify(initial));
-              if(!initial.canvas||initial.renderCalls<1||initial.renderCalls>300||initial.shipChildren<30||initial.maidCount!==10||initial.maidTextures!==10||initial.decks!==4||initial.hasCarrier||initial.fov<80)throw new Error('Cruise scene failed initial assertions: '+JSON.stringify(initial));
+              if(!initial.canvas||initial.renderCalls<1||initial.renderCalls>140||initial.startDeck!==2||initial.shipChildren<30||initial.maidCount!==10||initial.maidTextures!==10||initial.decks!==4||initial.hasCarrier||initial.fov<80)throw new Error('Cruise scene failed initial assertions: '+JSON.stringify(initial));
               if(!initial.maidFrames.every(x=>x.optimizedWebp||x.directionalFrame))throw new Error('Original optimized maid photos/directional cut-outs not loaded: '+JSON.stringify(initial.maidFrames));
               await page.screenshot({path:'/tmp/cruise-stage.png',fullPage:true,timeout:15000});
               console.log('CRUISE_SCREENSHOT_OK');

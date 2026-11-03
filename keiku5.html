@@ -158,7 +158,7 @@ const pool=new THREE.Mesh(new THREE.PlaneGeometry(29,9),new THREE.MeshPhysicalMa
 const poolPostItems=[],poolTopItems=[];for(let side of [-1,1])for(let x=-65;x<=42;x+=12){poolPostItems.push({x,y:23.0,z:side*8,w:.9,h:.45,d:.9});poolTopItems.push({x,y:23.24,z:side*8,w:.65,h:.08,d:.65})}instancedBoxes(ship,white,poolPostItems);instancedBoxes(ship,glass,poolTopItems);
 const loungerItems=[],loungerBackItems=[],tableItems=[];for(let i=0;i<24;i++){const x=-56+(i%12)*9.2,z=(i<12?-1:1)*5.8;loungerItems.push({x,y:22.72,z,w:1.0,h:.14,d:2.1});loungerBackItems.push({x,y:23.15,z:z-.58,w:1,h:.12,d:1.0,rx:-.42});if(i%3===0)tableItems.push({x:x+2,y:22.95,z:z+1,w:.7,h:.08,d:.7})}
 instancedBoxes(ship,deckWood,loungerItems);instancedBoxes(ship,white,loungerBackItems);instancedBoxes(ship,white,tableItems);
-const canopyItems=[];for(let x=-48;x<=30;x+=26)canopyItems.push({x,y:26.1,z:0,w:18,h:.22,d:10});instancedBoxes(ship,whiteShade,canopyItems);
+// Keep the pool deck open to the sky; no large canopy roofs.
 const lifeBoatItems=[],boatCradleItems=[];for(let i=0;i<14;i++){for(let side of [-1,1]){const x=-94+i*14;lifeBoatItems.push({x,y:10.8,z:side*18.1,w:4.5,h:1.35,d:1.75});boatCradleItems.push({x,y:9.7,z:side*17.7,w:4.9,h:.25,d:1.9})}}
 const boatGeo=new THREE.SphereGeometry(1,12,8);const boats=new THREE.InstancedMesh(boatGeo,new THREE.MeshStandardMaterial({color:0xd77b37,roughness:.58}),lifeBoatItems.length);const obj=new THREE.Object3D();lifeBoatItems.forEach((a,i)=>{obj.position.set(a.x,a.y,a.z);obj.scale.set(a.w*.5,a.h*.5,a.d*.5);obj.updateMatrix();boats.setMatrixAt(i,obj.matrix)});boats.instanceMatrix.needsUpdate=true;ship.add(boats);instancedBoxes(ship,steel,boatCradleItems);
 // Dining promenade: tables, chairs, planters and warm light fixtures.

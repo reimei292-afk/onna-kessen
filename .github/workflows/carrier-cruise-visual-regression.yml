@@ -58,7 +58,7 @@ jobs:
               await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=0;p.y=2;p.z=-42;});
               await page.keyboard.press('e');
               await page.waitForFunction(()=>document.querySelector('#panel').style.display==='block'&&document.querySelectorAll('[data-deck]').length===3);
-              await page.locator('[data-deck="2"]').click({noWaitAfter:true});
+              await page.evaluate(()=>document.querySelector('[data-deck="2"]').click());
               const lift=await page.evaluate(()=>({deck:window.__carrierStage.player.deck,y:window.__carrierStage.player.y}));
               if(lift.deck!==2||lift.y!==17)throw new Error('Carrier elevator failed: '+JSON.stringify(lift));console.log('LIFT_OK');
               await page.evaluate(()=>{const p=window.__carrierStage.player;p.x=36;p.y=3.5;p.z=-19;});

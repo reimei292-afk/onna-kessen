@@ -554,13 +554,45 @@ function thSpawn(x, z, y, girl, prof, tag, lk) {
   e.passive = true; e.silenced = true; e.sq = null; if (e.mk) e.mk.visible = false; e.ukTag = (tag ? tag + ' ' : '') + e.prof.name; e.thY = y; e.baseY = y; e.crouch = 0; e.thLk = lk; e.thHome = [x, z];
   TH.girls.push(e); return e;
 }
+// ================= 人数の照合：部署の定員（TH_DEPT）の 3 交代の 1 直分＝当直人数に、置いた持ち場の数を合わせる =================
+// 足りない部署は、その部署の区画の空き床（壁・家具と重ならず、ほかの持ち場から 1.1m 以上）に当直を立たせる。機銃座は戦闘配置なので多めのまま
+const TH_DEPT_RX = [[5, /機銃|錨|揚錨|甲板員/], [6, /射出機|搭乗員|整備員|クレーン|飛行長|航空/], [4, /主砲|高角砲|弾薬|揚弾|砲塔|砲弾|測距|^旋回手$/], [10, /看護|医|担架|霊安|薬剤|手術|病室/], [7, /近衛|扉番|警備/], [13, /情報|無線|放送|通信|名簿係/],
+  [3, /応急|退避|集合場所|防災|消火/], [1, /見張|信号|航海|操舵|海図|速力/], [0, /秘書|側近|艦長|王室|副官/], [2, /機関|缶|タービン|ボイラー|電機|配電|水圧|見回り|伝令|当直下士官|設営|工作/], [14, /倉庫|糧食|補給|船倉|米庫/],
+  [12, /司書|美容|ネイル|映写|舞台|運動|ピアノ|茶道|監視員|楽|カラオケ|園芸/], [11, /銀行|主計|店員|売店|記念品|証券|保険/], [8, /給養|給仕|バーテン|パン|ビュッフェ|料理|盛り付け|調理|洗い場|菓子|バリスタ|展望バーの係|配膳/], [9, /リネン|客室係|巡回|洗濯|居住係|清掃|案内/]];
+function thDeptOf(tag) { if (!tag) return -1; for (const [d, rx] of TH_DEPT_RX) if (rx.test(tag)) return d; return -1; }
+const TH_WATCH = [   // [部署, 区画（TH.zone の鍵）, 持ち場の名前（順に回す）]
+  [0, ['king', 'suite_o'], ['秘書課 当直', '秘書課 書記', '副官付き']], [1, ['bridge', 'wingL', 'wingR'], ['操舵手', '航海士', '海図係', '速力通信係', '信号員', '見張り（艦橋）', '測深係']],
+  [2, ['engine', 'boiler', 'genroom', 'switch', 'ecr'], ['機関員（当直）', '缶員（当直）', '電機員', '工作員', '機関員（巡回）']], [3, ['dcst', 'magante', 'plaza', 'gunmach'], ['応急員（待機）', '防災当直', '消火班', '区画閉鎖係']],
+  [4, ['gunmach', 'magante', 'shellwork', 'barb04', 'barb14', 'barb06', 'barb16'], ['砲術員', '揚弾係', '弾薬係', '測距員', '砲塔機械員']], [6, ['aftdeck'], ['整備員（当直）', '射出機 操作員', '航空燃料係', '搭乗員（待機）']],
+  [7, ['king', 'prom', 'galleria', 'hall', 'plaza', 'atr'], ['近衛', '近衛（巡回）', '船内警備', '入口管理']], [8, ['buffet', 'pantry', 'wash', 'bar', 'bakery', 'hall'], ['調理係', '給仕', '配膳係', '盛り付け係', '洗い場係']],
+  [9, ['linen8', 'linen9', 'linen10', 'linen11', 'linen12', 'laundry', 'side8', 'side9', 'side10', 'side11', 'side12'], ['客室係', 'リネン係', '清掃係', '洗濯係', '居住係']],
+  [10, ['ward', 'ward2', 'iso', 'exam'], ['看護師', '軍医', '薬剤師', '手術室係', '担架班']], [11, ['bank', 'boutique', 'jewel', 'perfume', 'souvenir', 'book', 'cafe', 'galleria'], ['銀行の窓口係', '証券係', '保険係', '売店の店員', '在庫係']],
+  [12, ['library', 'theater', 'salon', 'nail', 'court', 'pool', 'piano', 'tea', 'cinema'], ['司書', '舞台係', '美容師', '運動係', '楽務係']], [13, ['gallery', 'bridge'], ['通信員（無線）', '放送係', '名簿係', '情報室員']],
+  [14, ['cold_veg', 'cold_dairy', 'cold_frz', 'pantry', 'shellwork', 'genroom'], ['倉庫番', '糧食係', '補給係', '在庫の記録係']]];
+const TH_NAMED_POST = [['kujo', 'exam'], ['tono', 'ward'], ['shizuka', 'dcst'], ['sec4', 'oc_sec4'], ['hiyori', 'king'], ['akari', 'king'], ['midori', 'king'], ['morishita', 'aftdeck'], ['setsuei_imo', 'linen9']];
+function thFreeSpot(k, used) { const r = TH.zone[k]; if (!r) return null; const C = TH.fsC || (TH.fsC = {});
+  if (!C[k]) { const y = r[4] + 0.5, sp = 0.9, B = boxes.filter(b => b.x1 > r[0] - 1 && b.x0 < r[1] + 1 && b.z1 > r[2] - 1 && b.z0 < r[3] + 1 && b.y1 > y + 0.2 && b.y0 < y + 1.7), L = [];
+    for (let z = r[2] + 0.6; z < r[3] - 0.6; z += sp) for (let x = r[0] + 0.6; x < r[1] - 0.6; x += sp) { const fy = thFloorY(x, z, y + 0.3); if (fy == null || Math.abs(fy - y) > 0.12) continue;
+      if (B.some(b => x > b.x0 - 0.45 && x < b.x1 + 0.45 && z > b.z0 - 0.45 && z < b.z1 + 0.45)) continue; if (thZoneAt(x, z, y + 0.5) !== k) continue; L.push([x, z, y]); }
+    for (let i = L.length - 1; i > 0; i--) { const j = thHash(k + i) % (i + 1); [L[i], L[j]] = [L[j], L[i]]; } C[k] = L; }
+  const L = C[k]; for (let i = 0; i < L.length; i++) { const [x, z, y] = L[i]; if (used.some(u => Math.abs(u[2] - y) < 1 && Math.hypot(u[0] - x, u[1] - z) < 1.1)) continue; L.splice(i, 1); return [x, z, y]; } return null; }
+function thWatchCrew() { if (TH.watchDone) return TH.audit; TH.watchDone = true; const P = TH_POSTS().concat(TH.posts2 || []), used = P.map(q => [q[1], q[2], q[3]]), have = TH_DEPT.map(() => 0);
+  for (const q of P) { const d = q[0] ? (TH_NAMED.find(n => n[0] === q[0]) || [])[3] : thDeptOf(q[6]); if (d >= 0) have[d]++; }
+  have[8] += USD_MOB ? 6 : 14; have[9] += 3;   // 宴会場の給養・回廊の当番
+  for (const [key, zk] of TH_NAMED_POST) { if (P.some(q => q[0] === key)) continue; const sp = thFreeSpot(zk, used); if (!sp) continue; used.push(sp); (TH.posts2 = TH.posts2 || []).push([key, sp[0], sp[2], sp[1], 0, key, null]); have[(TH_NAMED.find(n => n[0] === key) || [])[3]]++; }
+  const add = TH_DEPT.map(() => 0);
+  for (const [d, zones, tags] of TH_WATCH) { const want = Math.round(TH_DEPT[d][1] / 3); let n = want - have[d], zi = 0, miss = 0;
+    while (n > 0 && miss < zones.length) { const zk = zones[zi++ % zones.length], sp = thFreeSpot(zk, used); if (!sp) { miss++; continue; } miss = 0; used.push(sp);
+      const tg = tags[(add[d]) % tags.length], lk = d === 10 ? 'hosp' : d === 7 ? 'guard' : [1, 4, 6].includes(d) ? 'bridge' : [2, 3, 14].includes(d) ? 'eng' : [0, 9].includes(d) ? 'cab' : 'shop';
+      (TH.posts2 = TH.posts2 || []).push([null, sp[0], sp[1], sp[2], ((add[d] * 2.39) % (Math.PI * 2)) - Math.PI, lk, tg]); add[d]++; n--; } }
+  TH.audit = TH_DEPT.map(([nm, n], d) => ({ d: nm, total: n, watch: Math.round(n / 3), had: have[d], added: add[d], placed: have[d] + add[d] })); return TH.audit; }
 function thSpawnAll() {
-  const R = thRoster(), pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); let mi = 0;
+  thWatchCrew(); const R = thRoster(), pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); let mi = 0;
   const st = pool.length % 7 ? 7 : 11, mob = () => pool.length ? pool[(mi++ * st) % pool.length] : undefined, mobs = R.filter(p => !p.named); let ri = 0;
   for (const [key, x, z, y, face, lk, tag] of TH_POSTS().concat(TH.posts2 || [])) {
     let e;
     if (key) { const N = TH_NAMED.find(n => n[0] === key), gid = (typeof cvGid === 'function' && cvGid(key)) || mob(); e = thSpawn(x, z, y, gid, { name: N[1], cm: (PAL_NAMED[key] || {}).cm || 160, pers: (PAL_NAMED[key] || {}).pers || '冷静' }, N[2], key); }
-    else { const p = mobs[(ri++ * 37) % mobs.length]; e = thSpawn(x, z, y, mob(), { name: p.name }, tag, lk); if (e) { e.thP = p; if (tag && !p.duty) p.duty = tag; } }
+    else { const dd = thDeptOf(tag), DL = dd >= 0 ? (TH.byDeptM || (TH.byDeptM = TH_DEPT.map((_, i) => mobs.filter(q => q.dept === i))))[dd] : null, di = DL ? (TH.dpi = TH.dpi || {}, TH.dpi[dd] = (TH.dpi[dd] || 0) + 1) : 0, p = DL && DL.length ? DL[(di * 7) % DL.length] : mobs[(ri++ * 37) % mobs.length]; e = thSpawn(x, z, y, mob(), { name: p.name }, tag, lk); if (e) { e.thP = p; if (tag && !p.duty) p.duty = tag; } }
     if (e) { e.face = e.faceWant = face; e.s.rotation.y = face; }
   }
   // 宴会場の卓のそばに立つ侍女（PC 14・スマホ 6）
@@ -572,7 +604,9 @@ function thSpawnAll() {
 }
 function thFreeName() { const M = thRoster().filter(p => !p.named); TH.fni = (TH.fni || 0) + 1; return M[(TH.fni * 53 + 11) % M.length].name; }
 function thClearGirls() { for (const e of TH.girls) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(e); } catch (_) {} } TH.girls = []; }
+function thGirlCull(dt) { if ((TH.gcT = (TH.gcT || 0) - dt) > 0) return; TH.gcT = 0.4; const py = player.pos.y; for (const e of TH.girls) { if (e.thInDrawer != null || e.thGone || (TH.esc && TH.esc.includes(e))) continue; const far = Math.abs(e.s.position.y - py) > 9.5 && !e.thR && !e.thEv && !e.thPara && !e.thFollow && !e.thGuest; if (far !== !!e.thFar) { e.thFar = far; e.s.visible = !far; } } }   // 上下 2 甲板より遠い娘は描かず、動かさない
 function thBrain(e, dt) {
+  if (e.thFar) return true;
   if (e.thPara && e.state !== 'down' && thParaBrain(e, dt)) return true; if (e.thWipe && e.state !== 'down') return thWipeBrain(e, dt); if (e.thEv && e.state !== 'down') return thEvBrain(e, dt); if (e.thR) return thRaidBrain(e, dt); if (e.state === 'down') return true; if (e.thInj === 1 && e.thWalk && Math.random() < 0.5) return true;
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0); e.baseY = e.thY; e.crouch = 0;
   const p = e.s.position; p.y = e.thY; const dK = Math.hypot(player.pos.x - p.x, player.pos.z - p.z), same = Math.abs(player.pos.y - e.thY) < 1.6;
@@ -1014,7 +1048,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107x：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107y：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1115,7 +1149,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107x 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107y 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1803,14 +1837,14 @@ function thMusicTick(dt) {
 }
 function thStopMusic() { for (const k of ['hall', 'atr']) { const a = TH.music[k]; if (a && !a.paused) a.pause(); if (a) a.volume = 0; } }
 function updateTenhou(dt) {
-  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
+  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); thGirlCull(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
   if (TH.sea && TH.sea.material.map) TH.sea.material.map.offset.y += dt * 0.004;
   if (TH.radar) TH.radar.rotation.y += dt * 0.8;
   if (state === 'play') thDeckCull(); const w = thWhere(); if (w && w !== TH.lastW) { TH.lastW = w; TH.log.push('at:' + w); }
   if (player.pos.y < -1) { player.pos.set(8, thY(13) + 0.05, 2); player.vy = 0; }   // 万一落ちたら王室甲板へ
 }
 function buildTenhou() {
-  thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
+  thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.watchDone = false; TH.fsC = null; TH.byDeptM = null; TH.dpi = null; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
   TH.secret = []; thBuildExterior(); thBuildFore(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
   hq = null; thRoster(); thDeckIndex();
 }
@@ -1865,7 +1899,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -15136,7 +15170,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107x）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107y）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27370,7 +27404,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -31238,7 +31272,7 @@ function updateHQ(dt) {
 let frameNo = 0;
 let stepBudget = 3;   // 1フレームに鳴らす娘の足音の上限
 function animateNpc(e, dt, lean) {
-  const p = e.s.position;
+  const p = e.s.position; if (e.thFar) return;
   if (e.palPD && palPDAnim(e, dt)) return;
   if (e.recoil > 0) e.recoil = Math.max(0, e.recoil - dt);
   if (e.clutch > 0) e.clutch = Math.max(0, e.clutch - dt);

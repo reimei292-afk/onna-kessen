@@ -20,3 +20,8 @@
 - assets/th_art/starry.jpg — フィンセント・ファン・ゴッホ「星月夜」（Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg）
 - assets/th_art/sunfl.jpg — フィンセント・ファン・ゴッホ「ひまわり」（Vincent_Willem_van_Gogh_127.jpg）
 - assets/th_art/lilies.jpg — クロード・モネ「睡蓮」1906（Claude_Monet_-_Water_Lilies_-_1906,_Ryerson.jpg）
+
+## 天鳳 2026-11-07c
+- assets/th_art/almond.jpg — フィンセント・ファン・ゴッホ「花咲くアーモンドの枝」, パブリックドメイン（Wikimedia Commons: Vincent_van_Gogh_-_Almond_blossom_-_Google_Art_Project.jpg）。ガレリアの天井に使用。
+- assets/th_models/* — Poly Haven（https://polyhaven.com）, CC0。dining_chair_02, round_wooden_table_01, Sofa_01, ArmChair_01, BarberShopChair_01, outdoor_table_chair_set_01, wooden_bookshelf_worn, metal_office_desk, coffee_table_round_01, dining_table。1k の glTF、色テクスチャのみ 512px に縮小。
+- lib/GLTFLoader.js, lib/BufferGeometryUtils.js — three.js r158（MIT License, © three.js authors）。lib/three_shim.mjs は three.min.js を ES モジュールとして読むための橋（本作）。

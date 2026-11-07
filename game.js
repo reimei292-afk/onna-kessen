@@ -976,7 +976,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107s：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107t：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1077,7 +1077,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107s 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107t 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1664,6 +1664,46 @@ const TH_PERS_L = {   // 人柄ごとの言い回し（持ち場の台詞に混�
   慎重: ['念のため、もう一度だけ確認させてください', '警報の手順は、毎朝見直しています。何かあってからでは遅いので', 'この先は足場が悪いので、ゆっくりお進みください'],
   臆病: ['あっ、殿……！　すみません、急に声をかけられて驚いてしまって', '夜の当直は、まだ少し怖いです。……でも、がんばります', '大きな音がすると、どうしても肩がすくんでしまって'],
   好戦的: ['乗り込んでくるなら、いつでも相手になります', '稽古は欠かしていません。槍なら負けませんよ', '殿、次の訓練はもっと厳しくしてください'] };
+// ================= 天鳳：宴会場のパーティ「死にかけ女たちとのパーティ」。身の上（血縁・出身校・前職）、余興、千年後の子孫、倒れるごっこ =================
+const TH_UNI = ['東北大学', '名古屋大学', '九州大学', '北海道大学', '神戸大学', '早稲田大学', '慶應義塾大学', '上智大学', '立教大学', '同志社大学', 'お茶の水女子大学', '日本女子大学', '津田塾大学', '東京女子大学', '聖心女子大学', '筑波大学'];
+const TH_FAC = [   // 学部 → その学部から自然につける前職だけ
+  ['文学部', ['出版社で編集の補助', '美術館で学芸員の補助', '旅行会社で添乗員', '百貨店で販売']], ['教育学部', ['小学校の講師', '学習塾の講師', '児童館の職員']], ['外国語学部', ['航空会社で客室乗務員', 'ホテルのフロント', '商社で営業事務']],
+  ['経済学部', ['銀行の窓口', '証券会社で営業', '保険会社で営業']], ['商学部', ['商社で営業事務', 'メーカーで経理', '百貨店で外商']], ['法学部', ['法律事務所で事務', '市役所の職員', '保険会社で損害調査']], ['社会学部', ['新聞社で事務', '広告会社で営業', '人材会社で採用の担当']],
+  ['理学部', ['製薬会社で研究補助', '食品メーカーで品質管理', 'システム会社でプログラマー']], ['工学部', ['電機メーカーで設計', '自動車メーカーで生産技術', 'システム会社でエンジニア']], ['農学部', ['食品メーカーで品質管理', '種苗会社で研究補助', '農協の職員']], ['水産学部', ['水産会社で品質管理', '水族館の飼育係', '海洋調査会社で観測補助']],
+  ['薬学部', ['調剤薬局の薬剤師', '病院の薬剤師']], ['看護学部', ['大学病院の看護師', '診療所の看護師']], ['家政学部', ['給食会社で栄養士', '食品メーカーで商品開発', '服飾会社でパタンナー']], ['体育専門学群', ['スポーツクラブのコーチ', '中学校の体育の講師', '警備会社']], ['音楽学部', ['音楽教室の講師', '楽団の事務', 'ホテルのピアノ演奏']]];
+function thBio(e) { if (e.thBio) return e.thBio; const h = thHash((e.prof && e.prof.name || '') + 'bio'), F = TH_FAC[h % TH_FAC.length], u = TH_UNI[(h >>> 5) % TH_UNI.length], j = F[1][(h >>> 9) % F[1].length]; thIsRel(e); return e.thBio = { uni: u, fac: F[0], job: j, rel: e.thRel ? '王の血縁（' + (e.thRelLine || '遠縁') + '）' : '王とは血縁なし' }; }
+const TH_TASK = ['早口言葉を三回', '殿のものまね', '一発芸', '校歌を一番だけ', '変な顔を十秒', '自分の失敗談', '卓のまわりをスキップで一周', '英語で自己紹介'];
+const TH_TASK_RX = { 臆病: 'えっ、む、無理です……。……はい、やります', 冷静: '……ご命令でしたら。一度だけですよ', 陽気: 'えー、恥ずかしい！　……でも、やります！', 慎重: '本当にやるんですか……？　笑わないでくださいね', 好戦的: '受けて立ちます。……でも、これは別の勇気がいりますね' };
+const TH_PD_C = ['この船で死ぬときの事前リハーサル？', 'そんなにきれいに倒れることになるのかな。', '……上手すぎて、ちょっと笑えないです', '起きて起きて、料理が冷めちゃう'];
+function thPartyStart() { if (TH.party) return; const H = TH.hall, T = TH.tables || []; if (!H || !T.length) return; const n = USD_MOB ? 10 : 16, C = TH.girls.filter(e => !e.thR && !e.thFollow && e.state !== 'down' && !e.thEv && !e.thPara && e.thHome && e.thLk !== 'hall' && !TH_NAMED.some(r => r[0] === e.thLk) && Math.abs(e.thY - H.y) > 0.5);
+  const P = TH.party = { g: [], t: 0 }; for (let i = 0; i < n && C.length; i++) { const e = C.splice((thHash('p' + i) % C.length), 1)[0], t = T[(i * 5 + 1) % T.length], a = i * 2.4 + 0.7, x = t.x + Math.sin(a) * 1.25, z = t.z + Math.cos(a) * 1.25;
+    P.g.push({ e, home: e.thHome.slice(), y: e.thY, p: e.s.position.clone() }); e.s.position.set(x, H.y, z); e.thY = e.baseY = H.y; e.thHome = [x, z]; e.thGuest = true; e.face = e.faceWant = Math.atan2(t.x - x, t.z - z); }
+  showBanner('「死にかけ女たちとのパーティ」', '王がそう名づけた。侍女たちは苦笑いしながら宴会場に集まってきた'); TH.banT = performance.now() + 4200; TH.log.push('party:start'); thPartyUI().style.display = 'flex'; }
+function thPartyEnd() { const P = TH.party; if (!P) return; for (const g of P.g) { const e = g.e; if (e.state === 'down' && !e.palPD) continue; e.palPD = null; e.s.position.copy(g.p); e.thY = e.baseY = g.y; e.thHome = g.home; e.thGuest = false; } TH.party = null; thPartyUI().style.display = 'none'; popup('パーティはお開きになりました'); TH.log.push('party:end'); }
+function thPartyTick(dt) { const P = TH.party; if (!P) return; const H = TH.hall, inHall = Math.abs(player.pos.y - H.y) < 1.5 && player.pos.x > H.x0 && player.pos.x < H.x1 && player.pos.z > H.z0 && player.pos.z < H.z1; thPartyUI().style.display = inHall && state === 'play' ? 'flex' : 'none';
+  if (inHall && (P.amb = (P.amb || 6) - dt) <= 0) { P.amb = rand(8, 13); const L = ['乾杯、何回目でしたっけ', 'このパーティの名前、誰が考えたんですか……殿ですよね', '料理はおいしいんですけどね、名前が', '「死にかけ」って言われても、まだ元気です', 'ねえ、次は誰が余興やらされるのかな']; const e = P.g[(Math.random() * P.g.length) | 0].e; if (e && e.state !== 'down') popup((e.prof && e.prof.name || '') + '「' + L[(Math.random() * L.length) | 0] + '」'); } }
+function thPartyUI() { let el = $('thPartyAct'); if (el) return el; el = document.createElement('div'); el.id = 'thPartyAct'; el.style.cssText = 'position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:41;display:none;gap:6px;flex-wrap:wrap;justify-content:center;max-width:96vw';
+  for (const [k, l] of [['b', 'バーン'], ['s1', '懐刀：左胸'], ['s2', '懐刀：下腹部'], ['s3', '懐刀：眉間'], ['w', 'ウインク']]) { const b = document.createElement('button'); b.textContent = l; b.style.cssText = 'font:600 13px sans-serif;padding:7px 10px;border-radius:8px;border:1px solid #c6a15a;background:rgba(14,20,30,.8);color:#f6e7c4;touch-action:manipulation'; const go = ev => { ev.preventDefault(); ev.stopPropagation(); thPretend(k); }; b.addEventListener('click', go); b.addEventListener('touchend', go, { passive: false }); b.addEventListener('touchstart', ev => ev.stopPropagation(), { passive: true }); el.appendChild(b); }
+  document.body.appendChild(el); return el; }
+function thPretend(k) { const P = TH.party; if (!P || state !== 'play' || UK.dlg) return; const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw); let e = null, bs = 1e9;
+  for (const g of P.g) { const o = g.e; if (o.palPD || o.state === 'down') continue; const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d > 5 || d < 0.2) continue; const c = (dx * fx + dz * fz) / d; if (c < 0.5) continue; const sc = d * (1.6 - c); if (sc < bs) { bs = sc; e = o; } }
+  const part = { s1: '左胸', s2: '下腹部', s3: '眉間' }[k]; if (!e) { popup(k === 'b' ? '（バーン！ ……誰もいない）' : k === 'w' ? '（ウインク……誰も見ていない）' : '（懐刀を投げるふり……誰もいない）'); return; }
+  if (e.thPdCd && time < e.thPdCd) { popup('（' + e.prof.name + 'は、まだ息が上がっている）'); return; } e.thPdCd = time + 9; PAL.log = PAL.log || [];
+  if (part) popup('（懐刀を投げるふり：' + part + '）　' + e.prof.name + '「' + (part === '眉間' ? 'うっ……眉間は、ずるいです……' : part === '左胸' ? 'あっ……胸に……！' : 'お、お腹……やられました……') + '」');
+  palPDStart(e, k === 'w' ? 'w' : part ? 's' : 'b', k === 'w' ? 'pd_w_' + ((Math.random() * 3) | 0) : part ? 'pd_s_' + ((Math.random() * 4) | 0) : 'pd_b_' + ((Math.random() * 4) | 0), /陽気|好戦的|臆病/.test(e.prof.pers || '') && Math.random() < 0.6);
+  TH.log.push('party:pd:' + k); setTimeout(() => { if (!TH.party) return; const o = P.g.map(g => g.e).filter(o => o !== e && !o.palPD && o.state !== 'down' && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 7)[0]; if (o) popup(o.prof.name + '「' + TH_PD_C[(Math.random() * TH_PD_C.length) | 0] + '」'); }, k === 'w' ? 7600 : 6000); }
+function thPartyQ(e) { if (!TH.party || !e.thGuest || e.palPD || e.state === 'down') return false; e.ukTalkT = time + 10; const B = thBio(e), nm = e.prof.name, pers = e.prof.pers || '冷静';
+  const guess = () => { const doomed = e.thPara || e.thInj >= 2 || (e.thRel && thHash(nm + 'd') % 3 === 0); if (doomed) return 0; const r = thHash(nm + 'n') % 100; return r < 34 ? 0 : r < 62 ? 1 : r < 86 ? 2 : r < 95 ? 3 + (r % 7) : [120, 340, 800, 2600, 10000][r % 5]; };
+  const N = guess(), rep = N === 0 ? ['0人って……ひどくないですか', '……妹の家系が続けば、私の分も', '0人ですか。……まあ、そう見えますよね'][thHash(nm + 'r') % 3] : N <= 2 ? ['1000年後なんて、想像もつきません', '姉の子の、そのまた子の……ですね。続いていたらいいな', '1人でもいたら、うれしいです'][thHash(nm + 'r') % 3] : N < 100 ? '思ったより多いですね。姪っ子たちががんばるんでしょうか' : 'そんなに！？　……千年って、そういうものなんですね';
+  const task = TH_TASK[(TH.taskN = (TH.taskN || 0) + 1) % TH_TASK.length];
+  ukDlg([{ choice: [
+    { label: '身の上を聞く', sub: '血縁・出身校・前職', then: [{ fn: () => popup(nm + '「' + B.uni + 'の' + B.fac + 'を出て、' + B.job + 'をしていました。……' + (e.thRel ? '殿とは、遠い親戚にあたります' : '殿とは血のつながりはありません') + '」　（' + B.rel + '）') }] },
+    { label: '余興を命じる：' + task, sub: '本人は気が進まない', then: [{ fn: () => { popup(nm + '「' + (TH_TASK_RX[pers] || TH_TASK_RX.冷静) + '」'); setTimeout(() => { popup('（' + nm + 'は、顔を赤くしながら「' + task + '」をやりきった。まわりから笑いと拍手）'); try { palClap(); } catch (_) {} }, 3200); TH.log.push('party:task'); } }] },
+    { label: '「君は1000年後、何人の子孫がいると思うか」', sub: '王の見立て：' + N + '人', then: [{ fn: () => { popup('王「' + N + '人だと思う」　' + nm + '「' + rep + '」'); TH.log.push('party:1000:' + N); } }] },
+    { label: 'パーティをお開きにする', sub: '', then: [{ fn: () => thPartyEnd() }] },
+    { label: 'やめておく', sub: '', then: [] }] }]); return true; }
+function thHallQ(e) { if (TH.party || (TH.raid && TH.raid.on && TH.raid.ph !== 'after') || TH.ev || !TH.hall || Math.abs(e.thY - TH.hall.y) > 0.5 || e.thLk !== 'hall') return false; e.ukTalkT = time + 10;
+  ukDlg([{ choice: [{ label: '話す', sub: e.ukTag || '', then: [{ fn: () => thTalk(e, true) }] }, { label: '宴会を開く：「死にかけ女たちとのパーティ」', sub: '王が名づけて、侍女を宴会場に集める', then: [{ say: '……その名前で、ですか。かしこまりました。皆さんに声をかけてきます' }, { fn: () => thPartyStart() }] }, { label: 'やめておく', sub: '', then: [] }] }]); return true; }
 // パンプスの足音：近くを歩く数人だけ。絨毯はやわらかく、鋼の甲板・階段は硬く響く
 const TH_STEEL_RX = /^(engine|boiler|genroom|switch|ecr|magante|gunmach|coldcor|cold_|d16|wing|stairs|hidden)/, TH_CARPET_RX = /^(cab|hall|king|lounge|library|bookcafe|theater|cinema|salon|nail|powder|chapel|projroom)/;
 function thStepTick(dt) { if (state !== 'play') return; const pp = player.pos, C = [];
@@ -1672,7 +1712,7 @@ function thStepTick(dt) { if (state !== 'play') return; const pp = player.pos, C
     const p = e.s.position, z = thZoneAt(p.x, p.z, e.thY + 0.5), steel = thDeckOf(e.thY + 0.3) <= 2 || TH_STEEL_RX.test(z), soft = !steel && TH_CARPET_RX.test(z), o = Sfx.at(p, 14, 1); if (!o) continue;
     const g = (soft ? 0.05 : steel ? 0.16 : 0.11) * (1 - d / 14); Sfx.noiseBurst(soft ? 0.03 : 0.025, soft ? 'lowpass' : 'bandpass', soft ? 900 : steel ? 3200 : 2400, soft ? 500 : steel ? 2600 : 1900, g, steel ? 6 : 2, 0, o); if (steel) Sfx.tone('sine', 1800, 1500, 0.05, g * 0.35, 0, o); } }
 function thTalk(e, plain) {
-  if (!plain && (thBackQ(e) || thGreenQ(e))) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const PL = !TH_NAMED.some(r => r[0] === e.thLk) && TH_PERS_L[e.prof && e.prof.pers], t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || (PL && TH.talkN % 3 === 1 ? PL[(thHash(e.prof.name) + TH.talkN) % PL.length] : L[(TH.talkN + thHash(e.prof.name || '')) % L.length]);
+  if (!plain && (thPartyQ(e) || thHallQ(e) || thBackQ(e) || thGreenQ(e))) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const PL = !TH_NAMED.some(r => r[0] === e.thLk) && TH_PERS_L[e.prof && e.prof.pers], t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || (PL && TH.talkN % 3 === 1 ? PL[(thHash(e.prof.name) + TH.talkN) % PL.length] : L[(TH.talkN + thHash(e.prof.name || '')) % L.length]);
   $('popup').textContent = (e.ukTag || e.prof.name) + '「' + t + '」'; popupTimer = Math.max(2.2, t.length * 0.12); e.ukTalkT = time + 3; TH.log.push('talk:' + (e.thLk || '') + ':' + e.prof.name);
 }
 function thGoDeck(d, E) {
@@ -1709,7 +1749,7 @@ function thMusicTick(dt) {
 }
 function thStopMusic() { for (const k of ['hall', 'atr']) { const a = TH.music[k]; if (a && !a.paused) a.pause(); if (a) a.volume = 0; } }
 function updateTenhou(dt) {
-  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
+  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
   if (TH.sea && TH.sea.material.map) TH.sea.material.map.offset.y += dt * 0.004;
   if (TH.radar) TH.radar.rotation.y += dt * 0.8;
   if (state === 'play') thDeckCull(); const w = thWhere(); if (w && w !== TH.lastW) { TH.lastW = w; TH.log.push('at:' + w); }
@@ -1771,7 +1811,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -15042,7 +15082,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107s）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107t）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27276,7 +27316,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

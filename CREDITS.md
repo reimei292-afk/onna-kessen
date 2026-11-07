@@ -11,3 +11,12 @@
 - assets/th_music/danube.mp3 — J. Strauss II「美しく青きドナウ」, European Archive 録音, CC0（Wikimedia Commons: "Strauss, An der schönen blauen Donau.ogg"）。64kbps モノラル mp3 に変換。
 - assets/th_music/chopin.mp3 — F. Chopin「夜想曲 第2番 変ホ長調 Op.9-2」, 演奏 Peter Johnston, CC0（Wikimedia Commons: "Chopin Nocturne No. 2 in E Flat Major, Op. 9.ogg"）。64kbps モノラル mp3 に変換。
 - assets/th_tex/*（チーク・絨毯・壁・船体・バルコニー）— 本作のために画像生成で作成。
+
+## 天鳳 D6 画廊の絵（2026-11-07b）— すべてパブリックドメイン、Wikimedia Commons から 512px に縮小
+- assets/th_art/great.jpg — 葛飾北斎「神奈川沖浪裏」（Tsunami_by_hokusai_19th_century.jpg）
+- assets/th_art/fuji.jpg — 葛飾北斎「凱風快晴」（Red_Fuji_southern_wind_clear_morning.jpg）
+- assets/th_art/pearl.jpg — ヨハネス・フェルメール「真珠の耳飾りの少女」（1665_Girl_with_a_Pearl_Earring.jpg）
+- assets/th_art/milk.jpg — ヨハネス・フェルメール「牛乳を注ぐ女」（Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg）
+- assets/th_art/starry.jpg — フィンセント・ファン・ゴッホ「星月夜」（Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg）
+- assets/th_art/sunfl.jpg — フィンセント・ファン・ゴッホ「ひまわり」（Vincent_Willem_van_Gogh_127.jpg）
+- assets/th_art/lilies.jpg — クロード・モネ「睡蓮」1906（Claude_Monet_-_Water_Lilies_-_1906,_Ryerson.jpg）

@@ -163,8 +163,12 @@ function thHA(x, z, y, ry) {   // 高角砲（連装・防盾付き）
   for (const bx of [-0.5, 0.5]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 5.2, 8), M.greyD); b.rotation.x = Math.PI / 2 - 0.5; b.position.set(bx, 2.6, -2.6); g.add(b); }
   g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g); thSolid(x - 1.8, x + 1.8, y, y + 2.6, z - 1.8, z + 1.8);
 }
-function thMG(x, z, y, ry) {   // 三連装機銃と円い銃座
-  const M = thMats(), g = new THREE.Group(); const tub = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.9, 16, 1, true), M.white); tub.position.y = 0.45; tub.material.side = THREE.DoubleSide; g.add(tub);
+function thMG(x, z, y, ry, nc) {   // 三連装機銃と円い銃座（内側に出入口、縁は当たり判定あり、銃員つき）
+  const C = Math.cos(ry), S = Math.sin(ry), W = (lx, lz) => [x + lx * C + lz * S, z - lx * S + lz * C];
+  for (let i = 0; i < 16; i++) { const t = (i + 0.5) / 16 * Math.PI * 2; if (Math.abs(Math.atan2(Math.sin(t), Math.cos(t))) < 0.55) continue; const [wx, wz] = W(Math.sin(t) * 1.5, Math.cos(t) * 1.5); thSolid(wx - 0.22, wx + 0.22, y, y + 0.9, wz - 0.22, wz + 0.22); }
+  const crew = [[0, -0.2, '機銃 射手'], [-0.75, 0.25, '機銃 旋回手'], [0.75, 0.25, '機銃 装填手'], [0, 1.3, '機銃 弾薬手']].slice(0, nc == null ? 4 : nc);
+  for (const [lx, lz, tg] of crew) { const [wx, wz] = W(lx, lz); thPost(wx, wz, y, ry, 'bridge', tg); }
+  const M = thMats(), g = new THREE.Group(); const tub = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.9, 16, 1, true, 0.55, Math.PI * 2 - 1.1), M.white); tub.position.y = 0.45; tub.material.side = THREE.DoubleSide; g.add(tub);
   const p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.8), M.greyD); p.position.y = 1.0; g.add(p);
   for (const bx of [-0.25, 0, 0.25]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 6), M.black); b.rotation.x = Math.PI / 2 - 0.6; b.position.set(bx, 1.4, -0.9); g.add(b); }
   g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g);
@@ -211,7 +215,7 @@ function thBuildExterior() {
   const top = new THREE.Mesh(new THREE.CylinderGeometry(5.05, 5.05, 2.2, 28), M.black); top.scale.set(1, 1, 1.8); top.position.set(0, yTop + 15, fz); stageRoot.add(top);
   const band = new THREE.Mesh(new THREE.CylinderGeometry(5.3, 5.3, 0.6, 28), M.gold); band.scale.set(1, 1, 1.8); band.position.set(0, yTop + 11, fz); stageRoot.add(band);
   const plat = new THREE.Mesh(new THREE.CylinderGeometry(10.5, 10.5, 0.5, 32), M.grey); plat.scale.set(1, 1, 1.45); plat.position.set(0, yTop + 3.0, fz); stageRoot.add(plat);
-  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + 0.39; thMG(Math.sin(a) * 9.0, fz + Math.cos(a) * 13.0, yTop + 3.25, a + Math.PI); }   // 煙突まわり 8 座
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2 + 0.39; thMG(Math.sin(a) * 9.0, fz + Math.cos(a) * 13.0, yTop + 3.25, a + Math.PI, 3); }   // 煙突まわり 8 座
   for (const sx of [-1, 1]) for (const z of [-30, 0, 30, 60]) { thBox(sx * 19.5 - 1.6, sx * 19.5 + 1.6, thY(15) - 0.3, thY(15), z - 1.8, z + 1.8, M.grey, false); thMG(sx * 20.2, z, thY(15), -sx * Math.PI / 2); }   // 左右のバルコニー 各 4 座
   TH.spirals = []; for (const sx of [-1, 1]) thSpiral(sx * 11, 40, thY(15), yTop, sx);   // D15 の吹き抜けの奥から屋上へ
     for (const sx of [-1, 1]) thSpiral(sx * 7, fz - 16, yTop, yTop + 3.25, sx);   // 機銃台への螺旋階段
@@ -843,7 +847,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107n：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107o：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -944,7 +948,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107n 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107o 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1134,7 +1138,7 @@ function thBuildD16() { TH.esc = null; TH.alert = false; const M = thMats(), y =
   // 集合場所（前・中・後）
   for (const [n, x0, x1, z0, z1] of [['A（前）', -6, 6, -52, -44], ['B（中）', 10, 18, 18, 30], ['C（後）', -8, 8, 94, 102]]) { for (const [a, b, c, e] of [[x0, x1, z0, z0 + 0.15], [x0, x1, z1 - 0.15, z1], [x0, x0 + 0.15, z0, z1], [x1 - 0.15, x1, z0, z1]]) thBox(a, b, y + 0.01, y + 0.025, c, e, yel, false); thStandSign('集合場所 ' + n, (x0 + x1) / 2, z0 + 0.3, y, Math.PI, 2.4); thPost((x0 + x1) / 2 - 1.2, (z0 + z1) / 2, y, Math.PI, 'bridge', '集合場所の係'); }
   // 機銃（両舷）と破片よけの見張り所
-  for (const sx of [-1, 1]) { for (const z of [-30, 10, 55]) { thMG(sx * 17.2, z, y, -sx * Math.PI / 2); thPost(sx * 15.6, z + 1.2, y, -sx * Math.PI / 2, 'bridge', '機銃員'); }
+  for (const sx of [-1, 1]) { for (const z of [-33, 10, 55]) { thMG(sx * 17.2, z, y, -sx * Math.PI / 2); }
     for (const z of [-44, 92]) { const x = sx * 15.5; thBox(x - 1.4, x + 1.4, y, y + 1.3, z - 1.45, z - 1.3, shM, true); thBox(x - 1.4, x + 1.4, y, y + 1.3, z + 1.3, z + 1.45, shM, true); thBox(sx > 0 ? x + 1.3 : x - 1.45, sx > 0 ? x + 1.45 : x - 1.3, y, y + 1.3, z - 1.45, z + 1.45, shM, true); thBino(x + sx * 0.8, z, y + 1.45, sx > 0 ? -Math.PI / 2 : Math.PI / 2); thPost(x, z, y, -sx * Math.PI / 2, 'bridge', '見張り（破片よけの中）'); } }
   thSign('見張り所（破片よけ）', 15.5, y + 2.6, -42.5, 0, 2.0);
   // 煙突の陰の退避場所
@@ -14806,7 +14810,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107n）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107o）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27040,7 +27044,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

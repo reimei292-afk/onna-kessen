@@ -468,6 +468,7 @@ function thSpawnAll() {
 }
 function thClearGirls() { for (const e of TH.girls) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(e); } catch (_) {} } TH.girls = []; }
 function thBrain(e, dt) {
+  if (e.thR) return thRaidBrain(e, dt); if (e.state === 'down') return true; if (e.thInj === 1 && e.thWalk && Math.random() < 0.5) return true;
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0); e.baseY = e.thY; e.crouch = 0;
   const p = e.s.position; p.y = e.thY; const dK = Math.hypot(player.pos.x - p.x, player.pos.z - p.z), same = Math.abs(player.pos.y - e.thY) < 1.6;
   if (e.ukTalkT && time < e.ukTalkT) { e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); e.state = 'idle'; return true; }
@@ -480,7 +481,7 @@ function thBrain(e, dt) {
 }
 function thNear() {
   let best = null, bd = 2.6; const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
-  for (const e of TH.girls) { if (Math.abs(e.thY - player.pos.y) > 1.6) continue; const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d < 0.01) continue; const dot = (dx * fx + dz * fz) / d, sc = d - dot * 0.8; if (d < 2.6 && dot > -0.2 && sc < bd) { bd = sc; best = e; } }
+  for (const e of TH.girls) { if (Math.abs(e.thY - player.pos.y) > 1.6 || e.state === 'down') continue; const dx = e.s.position.x - player.pos.x, dz = e.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d < 0.01) continue; const dot = (dx * fx + dz * fz) / d, sc = d - dot * 0.8; if (d < 2.6 && dot > -0.2 && sc < bd) { bd = sc; best = e; } }
   return best;
 }
 // ---------------- 甲板ごとの色合い（歩ける階は D4 病院・D5 遊歩廊・D6 画廊・D8 客室。ほかの客室甲板は配色だけデータで決める） ----------------
@@ -557,7 +558,7 @@ function thBuildD4() {
   // 診察室：x -13〜-1.3、z -8.5〜-13
   thWallZ(-13, -13, -1.3, y, y1, D.wall); thBox(-6, -3, y, y + 0.76, -12.6, -11.6, M.white, true); thBed(-11, -9, -12.6, -10.8, y, M.steel, 'z0', 1, 1);
   // 霊安室：x -13〜-1.3、z -30〜-36。冷蔵の扉の壁と献花台（中に人はいない）
-  thWallZ(-30, -13, -1.3, y, y1, D.wall); thWallZ(-36, -13, -1.3, y, y1, D.wall); thBox(-13, -1.3, y, y1, -44, -36, D.wall, true); thBox(-13, -1.3, y, y1, -30, -13, D.wall, true);
+  thWallZ(-30, -13, -1.3, y, y1, D.wall); thWallZ(-36, -13, -1.3, y, y1, D.wall); thBox(-13, -1.3, y, y1, -30, -13, D.wall, true);
   for (let i = 0; i < 6; i++) for (let j = 0; j < 3; j++) thBox(-12.95, -12.4, y + 0.3 + j * 0.8, y + 1.0 + j * 0.8, -35.6 + i * 0.95, -34.8 + i * 0.95, M.steel, false);
   thBox(-12.4, -12.0, y, y + 2.8, -35.9, -30.1, M.steel, true); thBox(-6.5, -4.5, y, y + 0.8, -35.5, -34.9, M.cloth, true); for (let i = 0; i < 5; i++) thBox(-6.3 + i * 0.4, -6.1 + i * 0.4, y + 0.8, y + 1.0, -35.3, -35.1, M.flower, false);
   thDoor(-1.22, -38.5, y, Math.PI / 2, '霊安準備室');   // 霊安室の隣（閉じた扉。中は見せない）
@@ -842,7 +843,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107i：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107j：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -943,7 +944,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107i 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107j 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1155,6 +1156,92 @@ function thAlertTick(dt) { if (!TH.alert || thDeckOf(player.pos.y + 0.3) !== 16)
   for (const e of TH.esc) { if (!e || !e.s) continue; e.s.visible = true; const p = e.s.position, dx = player.pos.x - p.x, dz = player.pos.z - p.z, dd = Math.hypot(dx, dz); e.thY = thY(16); if (dd > 2.0) { p.x += dx / dd * Math.min(dd - 2.0, 3.2 * dt); p.z += dz / dd * Math.min(dd - 2.0, 3.2 * dt); } e.faceWant = Math.atan2(dx, dz); }
   TH.escT -= dt; if (TH.escT <= 0) { TH.escT = 7; showBanner('「危ないです、お下がりください」', '護衛・秘書'); TH.banT = performance.now() + 2600; TH.log.push('esc:warn'); } }
 
+// ================= 天鳳：昼の戦闘（空襲と移乗攻撃）。血や傷は描かない。倒れた人は消えない =================
+// 負傷：軽傷＝遅く歩き身ぶりなし／重傷＝床に倒れ、手当てが遅れると亡くなる（輸血は無い）／即死。
+// 重傷者は担架班が 病室の寝台 → 病院の通路の担架 → 宴会場 の順に運ぶ。亡くなった人は戦闘後に 霊安室の冷蔵の引き出し 12 → 霊安準備室 約30 → 食料の冷蔵庫（D3 左舷）→ 礼拝室 の順に安置。
+const TH_RAID_N = () => USD_MOB ? 8 : 14;
+function thRaidBtn() { let b = $('bThRaid'); if (!b) { b = document.createElement('div'); b.id = 'bThRaid'; b.textContent = '敵襲'; b.style.cssText = ($('bThRos') ? $('bThRos').style.cssText : '').replace(/right:[^;]*;/, 'right:calc(256px + env(safe-area-inset-right,0px));') + ';background:rgba(110,20,20,.55)';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (!TH.raid || !TH.raid.on) thRaidStart(); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
+function thRaidShow(on) { const b = thRaidBtn(); b.style.display = on ? 'flex' : 'none'; }
+function thPlane() { const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: 0x4a5a6a }), f = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 9, 10), m); f.rotation.x = Math.PI / 2; g.add(f); const w = new THREE.Mesh(new THREE.BoxGeometry(12, 0.25, 2.0), m); w.position.z = -0.5; g.add(w); const t = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 1.2), m); t.position.z = 4; g.add(t); const v = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.6, 1.2), m); v.position.set(0, 0.8, 4); g.add(v); stageRoot.add(g); return g; }
+function thBoom(p, big) { puff(p, 0xffb050, big ? 14 : 6, big ? 1.4 : 0.6, 5, 0.35); puff(p, 0x4a4a4a, big ? 16 : 6, big ? 2.2 : 0.9, 2.2, 2.6); uk2Flash(p, big ? 3 : 1, 0.12);
+  const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), o = Sfx.at(p, 600, 1.5); if (o) { Sfx.noiseBurst(big ? 1.2 : 0.4, 'lowpass', 900, 60, big ? 1.4 : 0.7, 0.7, d / 340, o); Sfx.tone('sine', 70, 30, 0.5, 0.6, d / 340, o); } }
+function thRaidStart() { const R = TH.raid = { on: true, ph: 'air', t: 0, planes: [], bombs: [], tr: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
+  TH.alert = true; showBanner('対空戦闘用意！', '敵機の編隊が接近中。前甲板には敵の移乗部隊'); TH.banT = performance.now() + 3200; TH.log.push('raid:start');
+  for (let i = 0; i < 3; i++) R.med.push({ busy: 0, p: null, crew: [] }); }
+function thRaidEnd(msg) { const R = TH.raid; if (!R || R.ph === 'after') return; R.ph = 'after'; R.t = 0; for (const P of R.planes) P.leave = true;
+  showBanner(msg, `戦死 ${R.st.dead}・重傷 ${R.st.ser}・軽傷 ${R.st.light}　負傷者の収容と遺体の安置を始めます`); TH.banT = performance.now() + 4200; TH.log.push('raid:end'); }
+// ---- 負傷 ----
+function thDownE(e, from) { e.silenced = false; npcSay(e, 'defeat', 2); killEnemy(e, false, from || null); e.thDown = true; }
+function thInjure(e, lv, from) { const R = TH.raid; if (!R || !e || e.thInj >= 2 || e.state === 'down') return; e.silenced = false; e.hurtAt = time;
+  if (lv === 3) { e.thInj = 3; R.st.dead++; thDownE(e, from); R.dead.push(e); if (e.team === 'blue') popup((e.prof && e.prof.name || '') + '、戦死'); return; }
+  if (lv === 2) { e.thInj = 2; R.st.ser++; thDownE(e, from); if (e.team === 'blue') { e.thDie = R.t + rand(45, 130); R.cas.push(e); } return; }
+  if (!e.thInj) { e.thInj = 1; R.st.light++; } e.recoil = 0.36; e.clutch = 0.85; e.clutchArm = Math.random() < 0.5 ? 'l' : 'r'; npcSay(e, 'hit', 1, 0.8); }
+function thHurt(t, from) { if (!t || t.state === 'down') return; const r = Math.random(); if (r < 0.12) return thInjure(t, 3, from);
+  t.thHp = (t.thHp == null ? 3 : t.thHp) - (Math.random() < 0.4 ? 2 : 1); if (t.thHp <= 0) return thInjure(t, Math.random() < 0.3 ? 3 : 2, from); thInjure(t, 1, from); }
+// ---- 遺体と担架の置き場（順番に埋める） ----
+function thBodySlot(kind, i) { const y4 = thY(4);
+  if (kind === 'bed') { if (i >= 6) return null; const x = 3.6 + (i % 3) * 3.3, z = i < 3 ? -9.5 : -16; return [x, y4 + 0.62, z, 0]; }
+  if (kind === 'str') { if (i < 14) return [0.7, y4 + 0.42, -12.5 - i * 2.2, 0]; const H = TH.hall; if (!H) return null; const j = i - 14, c = Math.floor((H.w - 4) / 2.4); return [H.x0 + 2 + (j % c) * 2.4, H.y + 0.42, H.z0 + 2 + Math.floor(j / c) * 2.4, 0]; }
+  if (i < 12) return { drawer: i, at: [-12.7, y4 + 0.35 + (i % 3) * 0.8, -35.2 + Math.floor(i / 3) * 0.95] }; i -= 12;
+  if (i < 30) return [-11.4 + (i % 5) * 2.1, y4 + 0.05, -43.2 + Math.floor(i / 5) * 1.15, Math.PI / 2]; i -= 30;
+  if (i < 15) { const k = Math.floor(i / 5), q = i % 5; return [-16.4, thY(3) + 0.05, 15.2 + k * 14 + (q > 1 ? q + 2 : q) * 1.9 + (q > 1 ? 0.4 : 0), 0]; } i -= 15;
+  return [-11.5 + (i % 4) * 2.2, thY(6) + 0.05, 23.5 + Math.floor(i / 4) * 2.2 % 7, 0]; }
+function thStretcher(x, y, z, ry) { const M = thMats(), g = new THREE.Group(), c = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.04, 1.9), new THREE.MeshLambertMaterial({ color: 0x8a8060 })); g.add(c); for (const sx of [-0.32, 0.32]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 2.3), M.wood); p.position.x = sx; g.add(p); for (const sz of [-0.8, 0.8]) { const l = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.36, 0.04), M.steel); l.position.set(sx, -0.18, sz); g.add(l); } } g.position.set(x, y - 0.03, z); g.rotation.y = ry; stageRoot.add(g); }
+function thPlaceBody(e, s, sheet) { if (!s) return; if (s.drawer != null) { e.s.visible = false; e.thInDrawer = s.drawer; thPlate2(e.prof && e.prof.name || '', s.at[0] + 0.28, s.at[1] + 0.2, s.at[2]); return; }
+  const [x, y, z, ry] = s; e.s.position.set(x, y, z); e.baseY = e.thY = y; e.fallYaw = ry; e.face = ry; if (e.wmk) e.wmk.visible = false;
+  if (sheet) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 1.85), new THREE.MeshLambertMaterial({ color: 0xf2f2ee })); m.position.set(x, y + 0.14, z); m.rotation.y = ry; stageRoot.add(m); } }
+function thPlate2(t, x, y, z) { const tx = canvasTex(128, 32, (g, w, h) => { g.fillStyle = '#f4f0e6'; g.fillRect(0, 0, w, h); g.fillStyle = '#222'; g.font = '18px serif'; g.textAlign = 'center'; g.fillText(t, w / 2, 22); }); const m = new THREE.Mesh(new THREE.PlaneGeometry(0.36, 0.09), new THREE.MeshLambertMaterial({ map: tx })); m.position.set(x, y, z); m.rotation.y = Math.PI / 2; stageRoot.add(m); }
+// ---- 兵 ----
+function thRaidSpawn() { const R = TH.raid, y = thY(4), W = (TH.plazaW || 12) - 1, N = TH_RAID_N(), mk = (x, z, team, girl, kind, yari) => { const e = spawnEnemy(x, z, kind, false, team, { girl, yari: yari ? 1 : -1, y, set: { state: 'idle', th: true } }); if (!e) return null; e.th = true; e.thR = team; e.thY = e.baseY = y; e.passive = true; e.sq = null; e.silenced = false; if (e.mk) e.mk.visible = false; e.thHp = 3; e.thCd = rand(0.5, 2.5); TH.girls.push(e); return e; };
+  for (let i = 0; i < N; i++) { const id = USD_IDS[i % USD_IDS.length], e = mk(-W + (i + 0.5) * 2 * W / N, -90.6, 'orange', GIRLS[id] ? id : undefined, 'mob'); if (e) { e.usdW = i % 3 === 2 ? 'colt' : 'win'; e.ukTag = 'アメリカ兵 ' + e.prof.name; e.face = e.faceWant = 0; R.us.push(e); } }
+  const pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]);
+  for (let i = 0; i < N; i++) { const role = i % 3 === 0 ? 'bow' : i % 3 === 1 ? 'yari' : 'tanto', e = mk(-W + (i + 0.5) * 2 * W / N, -66 - (role === 'bow' ? 0 : 3), 'blue', pool[(i * 7 + 3) % Math.max(1, pool.length)], role === 'bow' ? 'archer' : 'mob', role === 'yari'); if (e) { e.thRole = role; e.melee = role !== 'bow'; e.ukTag = (role === 'bow' ? '弓' : role === 'yari' ? '槍' : '懐刀') + ' ' + e.prof.name; e.face = e.faceWant = Math.PI; R.jp.push(e); } }
+  showBanner('前甲板に敵が乗り込んできた！', '弓・槍・懐刀の侍女が迎え撃つ'); TH.banT = performance.now() + 3000; }
+function thNearest(e, list, R) { let b = null, bd = R; for (const o of list) { if (o.state === 'down') continue; const d = Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z); if (d < bd) { bd = d; b = o; } } return b ? [b, bd] : null; }
+function thArrowFx(a, b) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.8, 4), thMats().wood); m.rotation.x = Math.PI / 2; stageRoot.add(m); TH.raid.tr.push({ m, a: a.clone(), b: b.clone(), t: 0, T: a.distanceTo(b) / 30, arc: 1 }); }
+function thRaidBrain(e, dt) { const R = TH.raid, p = e.s.position; e.knock && e.knock.set(0, 0, 0); e.tgt = null; e.passive = true; p.y = e.thY; if (e.state === 'down') return true;
+  if (!R || R.ph === 'after') { if (e.thR === 'orange' && e.s.visible !== false && !e.thGone) { if (p.z > -90.8) { p.z -= 1.6 * dt; e.faceWant = Math.PI; e.moving = true; e.state = 'approach'; return true; } e.thGone = true; e.s.visible = false; } e.state = 'idle'; e.moving = false; return true; }
+  const sp = (e.thInj ? 0.45 : 1) * (e.thR === 'orange' ? 1.6 : 2.4), W = (TH.plazaW || 12) - 0.6, foes = e.thR === 'orange' ? R.jp : R.us;
+  if (e.thAct) { e.t += dt; if (e.t >= e.thAct.T) { const a = e.thAct; e.thAct = null; e.state = 'recover'; e.t = 0; e.thRec = 0.5; a.f(); } return true; }
+  if (e.thRec > 0) { e.thRec -= dt; if (e.thRec <= 0) e.state = 'idle'; return true; }
+  const n = thNearest(e, foes, 60); if (!n) { e.state = 'idle'; e.moving = false; return true; } const [t, d] = n, tp = t.s.position; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z);
+  const step = (want) => { if (d > want) { const k = Math.min(d - want, sp * dt) / d; p.x = Math.max(-W, Math.min(W, p.x + (tp.x - p.x) * k)); p.z = Math.max(-91, Math.min(-61, p.z + (tp.z - p.z) * k)); e.moving = true; e.state = 'approach'; return true; } e.moving = false; e.state = 'idle'; return false; };
+  e.thCd -= dt;
+  if (e.thR === 'orange') { const want = e.usdW === 'colt' ? 10 : 22; if (d < 1.6) { if (e.thCd <= 0) { e.thCd = rand(1.2, 2); e.state = 'windup'; e.t = 0; e.thAct = { T: 0.4, f: () => { if (Math.random() < 0.35) thHurt(t, p); } }; } return true; }
+    if (step(want) && R.t < 200) return true; if (e.thCd > 0) return true; e.thCd = e.usdW === 'colt' ? rand(1.0, 1.8) : rand(1.8, 2.8);
+    const mz = new V3(p.x + Math.sin(e.face) * 0.6, e.thY + 1.2, p.z + Math.cos(e.face) * 0.6); puff(mz, 0xefeee8, 3, 0.3, 1, 1.2); const o = Sfx.at(mz, 260, 1.2); if (o) Sfx.noiseBurst(0.18, 'lowpass', 3000, 220, 0.8, 0.8, 0, o);
+    if (Math.random() < usdHitP(e.usdW, d) * 0.28) thHurt(t, p); return true; }
+  if (e.thRole === 'bow') { if (d < 4) { step(0); } if (e.thCd > 0) { e.state = 'idle'; return true; } e.thCd = rand(1.6, 2.4); e.state = 'aim'; e.t = 0; e.thAct = { T: 0.9, f: () => { if (t.state === 'down') return; const a = new V3(p.x, e.thY + 1.4, p.z), b = new V3(tp.x, t.thY + 1.1, tp.z); thArrowFx(a, b); if (Math.random() < (d < 20 ? 0.5 : 0.35)) R.later.push([R.t + a.distanceTo(b) / 30, t, a]); } }; return true; }
+  const reach = e.thRole === 'yari' ? 2.3 : 1.3; if (step(reach - 0.2)) return true; if (e.thCd > 0) return true; e.thCd = rand(1.0, 1.6); e.state = 'windup'; e.t = 0;
+  e.thAct = { T: e.thRole === 'yari' ? (typeof YARI !== 'undefined' ? YARI.windup : 0.5) : 0.45, f: () => { if (Math.hypot(tp.x - p.x, tp.z - p.z) < reach + 0.4 && Math.random() < 0.6) { thHurt(t, p); if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 15) Sfx.clash && Sfx.clash(); } } }; return true; }
+// ---- 進行 ----
+function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play'); if (!R || !R.on) return; R.t += dt;
+  // 敵機：横切って爆弾を落とす。高角砲・機銃の曳光弾
+  if (R.ph !== 'after' && R.t < 160 && R.planes.filter(P => !P.leave).length < (USD_MOB ? 3 : 5) && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(3, 6); const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? [0, thY(4), -75] : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
+    const g = thPlane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); }
+  for (const P of R.planes) { const g = P.g; if (P.fall) { P.v.y -= 9.8 * dt; g.position.addScaledVector(P.v, dt); g.rotation.z += dt; if (Math.random() < 0.5) puff(g.position.clone(), 0x333333, 1, 1.2, 0.5, 2); if (g.position.y < 1 && !P.gone) { P.gone = true; g.visible = false; puff(g.position.clone().setY(1), 0xffffff, 10, 1.5, 3, 1.4); } continue; }
+    g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]);
+    if (!P.dropped && !P.leave && hd < 110) { P.dropped = true; R.bombs.push({ a: g.position.clone(), b: new V3(P.tg[0] + rand(-3, 3), P.tg[1], P.tg[2] + rand(-3, 3)), t: 0, T: 2.6, m: (() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); m.scale.z = 2; stageRoot.add(m); return m; })() }); }
+    if (Math.hypot(g.position.x, g.position.z) < 260 && Math.random() < dt * 2.2) { const a = new V3(rand(-15, 15), thY(16) + 1.5, rand(-60, 60)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffd080 })); stageRoot.add(m); R.tr.push({ m, a, b: g.position.clone().add(new V3(rand(-8, 8), rand(-5, 5), rand(-8, 8))), t: 0, T: 0.9 }); if (Math.random() < 0.025) { P.fall = 1; P.v.y = -4; } }
+    if (Math.hypot(g.position.x, g.position.z) > 520) g.visible = false; }
+  R.planes = R.planes.filter(P => P.g.visible || (stageRoot.remove(P.g), false));
+  for (const B of R.bombs) { B.t += dt; const u = Math.min(1, B.t / B.T); B.m.position.lerpVectors(B.a, B.b, u); B.m.position.y = B.a.y + (B.b.y - B.a.y) * u * u; if (u >= 1 && !B.done) { B.done = true; stageRoot.remove(B.m); const q = B.b.clone(); q.y += 0.5;
+    if (B.b.y < 2) { puff(q, 0xffffff, 14, 1.8, 4, 1.6); const o = Sfx.at(q, 400, 1); if (o) Sfx.noiseBurst(0.7, 'lowpass', 500, 60, 0.8, 0.7, 0, o); continue; }
+    thBoom(q, true); for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - B.b.y) > 2.6) continue; const dd = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (dd < 5) thInjure(e, Math.random() < 0.3 ? 3 : Math.random() < 0.6 ? 2 : 1, q); else if (dd < 10 && Math.random() < 0.4) thInjure(e, 1, q); } } }
+  R.bombs = R.bombs.filter(B => !B.done);
+  for (const T of R.tr) { T.t += dt; const u = Math.min(1, T.t / T.T); T.m.position.lerpVectors(T.a, T.b, u); if (T.arc) T.m.position.y += Math.sin(u * Math.PI) * 1.2; T.m.lookAt(T.b); T.m.rotateX(Math.PI / 2); if (u >= 1) { stageRoot.remove(T.m); T.done = true; } }
+  R.tr = R.tr.filter(T => !T.done); R.later = R.later.filter(L => { if (R.t < L[0]) return true; thHurt(L[1], L[2]); return false; });
+  if (R.ph === 'air' && R.t > 20) { R.ph = 'board'; thRaidSpawn(); }
+  if (R.ph === 'board') { const us = R.us.filter(e => e.state !== 'down').length, jp = R.jp.filter(e => e.state !== 'down').length; if (!us) thRaidEnd('敵の移乗部隊を撃退'); else if (!jp || R.t > 240) thRaidEnd('敵が引き揚げた'); }
+  // 手当て：担架班が重傷者のところへ行き、病室 → 通路の担架 → 宴会場へ運ぶ。間に合わなければ亡くなる
+  for (const c of R.cas) { if (c.thInj === 2 && !c.thMed && R.t > c.thDie) { c.thInj = 3; R.st.dead++; R.st.ser--; R.dead.push(c); popup((c.prof && c.prof.name || '') + '、手当てが間に合わなかった'); } }
+  for (const M of R.med) { if (M.busy > 0) { M.busy -= dt; if (M.busy <= 0 && M.p) { const c = M.p; for (const m of M.crew) { const i = enemies.indexOf(m); if (i >= 0) enemies.splice(i, 1); const j = TH.girls.indexOf(m); if (j >= 0) TH.girls.splice(j, 1); try { disposeNpc(m); } catch (_) {} } M.crew = [];
+        let s = thBodySlot('bed', R.slotN.bed || 0); if (s) R.slotN.bed = (R.slotN.bed || 0) + 1; else { s = thBodySlot('str', R.slotN.str || 0); R.slotN.str = (R.slotN.str || 0) + 1; if (s) thStretcher(s[0], s[1], s[2], s[3]); } thPlaceBody(c, s, false); c.thInj = 2.5; M.p = null; } continue; }
+    const c = R.cas.filter(c => c.thInj === 2 && !c.thMed).sort((a, b) => a.thDie - b.thDie)[0]; if (!c) continue; c.thMed = true; M.p = c; M.busy = 9;
+    const pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); for (const dx of [-0.9, 0.9]) { const m = thSpawn(c.s.position.x + dx, c.s.position.z + 0.6, c.thY, pool[((R.t * 13) | 0) % Math.max(1, pool.length)], { name: '担架班' }, '担架班', 'hosp'); if (m) { m.face = m.faceWant = Math.atan2(-dx, -0.6); M.crew.push(m); } } }
+  // 戦闘のあと：亡くなった人を順に安置（霊安室の引き出し → 霊安準備室 → 食料の冷蔵庫 → 礼拝室）
+  if (R.ph === 'after') { if (R.t > 25 && TH.alert) TH.alert = false; R.bodyT -= dt; const jd = R.dead.filter(e => e.team === 'blue'); if (R.bodyT <= 0 && R.bodyI < jd.length && !R.med.some(M => M.busy > 0)) { R.bodyT = 1.2; const e = jd[R.bodyI], s = thBodySlot('body', R.bodyI); R.bodyI++; thPlaceBody(e, s, true); if (R.bodyI === jd.length) { showBanner('亡くなった人を安置しました', R.bodyI <= 12 ? '霊安室' : R.bodyI <= 42 ? '霊安室・霊安準備室' : R.bodyI <= 57 ? '霊安室・霊安準備室・食料の冷蔵庫' : '霊安室・霊安準備室・食料の冷蔵庫・礼拝室'); TH.banT = performance.now() + 3600; } } } }
 // ---- 名簿（右上の小さなボタン。開いた時だけ作る・50 人ずつ）----
 function thRosBtn() { let b = $('bThRos'); if (!b) { b = document.createElement('div'); b.id = 'bThRos'; b.textContent = '名簿'; b.style.cssText = 'position:fixed;top:12px;right:calc(196px + env(safe-area-inset-right,0px));width:52px;height:44px;z-index:40;display:none;align-items:center;justify-content:center;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(20,24,32,.45);color:#fff;font:13px sans-serif;text-shadow:0 1px 2px #000;user-select:none;-webkit-user-select:none;cursor:pointer;touch-action:none';
     const go = ev => { ev.preventDefault(); ev.stopPropagation(); thRosOpen(); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
@@ -1286,7 +1373,7 @@ function thMusicTick(dt) {
 }
 function thStopMusic() { for (const k of ['hall', 'atr']) { const a = TH.music[k]; if (a && !a.paused) a.pause(); if (a) a.volume = 0; } }
 function updateTenhou(dt) {
-  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
+  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
   if (TH.sea && TH.sea.material.map) TH.sea.material.map.offset.y += dt * 0.004;
   if (TH.radar) TH.radar.rotation.y += dt * 0.8;
   if (state === 'play') thDeckCull(); const w = thWhere(); if (w && w !== TH.lastW) { TH.lastW = w; TH.log.push('at:' + w); }
@@ -1305,7 +1392,7 @@ function thDeckCull(force) { const d = thDeckOf(player.pos.y + 0.3); if (!force 
 function thReset() { thClearGirls(); UK.dlg = null; if (typeof ukChoiceOff === 'function') ukChoiceOff(); if ($('ukdlg')) $('ukdlg').style.display = 'none'; TH.log = []; TH.lastW = ''; player.pos.set(7, thY(13) + 0.05, -30); player.yaw = 0; player.pitch = -0.04; }
 function thStart() { thSpawnAll(); thMusic(); showBanner('新武装客船「天鳳」', '全長 350m・幅 40m・16 甲板・乗員 2,600。王の居室から'); TH.banT = performance.now() + 4000; }
 function thLook(name) {
-  TH.on = name === 'tenhou'; thRosShow(TH.on); if (!TH.on) { thStopMusic(); return; }
+  TH.on = name === 'tenhou'; thRosShow(TH.on); thRaidShow(TH.on); TH.raid = null; if (!TH.on) { thStopMusic(); return; }
   ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false;
   const u = sky.material.uniforms; u.top.value.setHex(0x1c6eb8); u.mid.value.setHex(0x9ad4ee); u.bot.value.setHex(0x1a6e90);
   scene.fog.near = 500; scene.fog.far = 3200; scene.fog.color.setHex(0x9ccbe0); scene.background.setHex(0x7ebbd2);
@@ -1348,7 +1435,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -14619,7 +14706,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107i）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107j）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -26853,7 +26940,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -27581,7 +27668,7 @@ function npcSay(e, kind, prio = 0, chance = 1) {
   return Talk.as(e, () => npcSay0(e, kind, prio));
 }
 // ---- 本物の戦の声（荒野の決闘・第二幕の全段・英国淑女編）：倒れる時は短く（うっ…！／無念…／殿…）。手当て・御臨終ですはそのまま ----
-const warOn = () => CV.on || USD.on || CAMP.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on;
+const warOn = () => (TH.on && TH.raid && TH.raid.on) || CV.on || USD.on || CAMP.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on;
 const WAR_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer' };
 const WAR_N = { hit: 3, defeat: 5, spot: 3, attack: 3, kill: 3, allydown: 3, hold: 3 };
 function warKey(e) {

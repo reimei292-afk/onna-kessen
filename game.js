@@ -173,7 +173,7 @@ function thMG(x, z, y, ry, nc) {   // 三連装機銃と円い銃座（内側に
   const M = thMats(), g = new THREE.Group(); const tub = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.9, 16, 1, true, 0.55, Math.PI * 2 - 1.1), M.white); tub.position.y = 0.45; tub.material.side = THREE.DoubleSide; g.add(tub);
   const p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.8), M.greyD); p.position.y = 1.0; g.add(p);
   for (const bx of [-0.25, 0, 0.25]) { const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 6), M.black); b.rotation.x = Math.PI / 2 - 0.6; b.position.set(bx, 1.4, -0.9); g.add(b); }
-  g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g);
+  g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g); (TH.mgs = TH.mgs || []).push({ g, p: p, x, y, z, ry });
 }
 function thPlaneMesh(x, z, y, ry, home) {   // 水上機（双フロートの複座偵察機）：胴体・主翼と補助翼・支柱・フロート・発動機とプロペラ・風防・日の丸
   const M = thMats(), g = new THREE.Group(), ol = M.olive, lt = thPlaneMesh.m || (thPlaneMesh.m = { red: new THREE.MeshLambertMaterial({ color: 0xc8202a }), gl: new THREE.MeshLambertMaterial({ color: 0x9fc4d8, transparent: true, opacity: 0.55 }), belly: new THREE.MeshLambertMaterial({ color: 0xb8bcb4 }) });
@@ -604,9 +604,10 @@ function thSpawnAll() {
 }
 function thFreeName() { const M = thRoster().filter(p => !p.named); TH.fni = (TH.fni || 0) + 1; return M[(TH.fni * 53 + 11) % M.length].name; }
 function thClearGirls() { for (const e of TH.girls) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(e); } catch (_) {} } TH.girls = []; }
-function thGirlCull(dt) { if ((TH.gcT = (TH.gcT || 0) - dt) > 0) return; TH.gcT = 0.4; const py = player.pos.y; for (const e of TH.girls) { if (e.thInDrawer != null || e.thGone || (TH.esc && TH.esc.includes(e))) continue; const far = Math.abs(e.s.position.y - py) > 9.5 && !e.thR && !e.thEv && !e.thPara && !e.thFollow && !e.thGuest; if (far !== !!e.thFar) { e.thFar = far; e.s.visible = !far; } } }   // 上下 2 甲板より遠い娘は描かず、動かさない
+function thGirlCull(dt) { if ((TH.gcT = (TH.gcT || 0) - dt) > 0) return; TH.gcT = 0.4; const py = player.pos.y; for (const e of TH.girls) { if (e.thInDrawer != null || e.thGone || (TH.esc && TH.esc.includes(e))) continue; const far = Math.abs(e.s.position.y - py) > 9.5 && !e.thR && !e.thEv && !e.thPara && !e.thFollow && !e.thGuest && !e.thDC; if (far !== !!e.thFar) { e.thFar = far; e.s.visible = !far; } } }   // 上下 2 甲板より遠い娘は描かず、動かさない
 function thBrain(e, dt) {
   if (e.thFar) return true;
+  if (e.thDC && e.state !== 'down' && !e.thR && !e.thEv) return thDCBrain(e, dt);
   if (e.thPara && e.state !== 'down' && thParaBrain(e, dt)) return true; if (e.thWipe && e.state !== 'down') return thWipeBrain(e, dt); if (e.thEv && e.state !== 'down') return thEvBrain(e, dt); if (e.thR) return thRaidBrain(e, dt); if (e.state === 'down') return true; if (e.thInj === 1 && e.thWalk && Math.random() < 0.5) return true;
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0); e.baseY = e.thY; e.crouch = 0;
   const p = e.s.position; p.y = e.thY; const dK = Math.hypot(player.pos.x - p.x, player.pos.z - p.z), same = Math.abs(player.pos.y - e.thY) < 1.6;
@@ -1048,7 +1049,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107za：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107zb：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1149,7 +1150,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107za 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107zb 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1366,7 +1367,7 @@ function thAlertTick(dt) { if (!TH.alert || thDeckOf(player.pos.y + 0.3) !== 16)
 // 重傷者は担架班が 病室の寝台 → 病院の通路の担架 → 宴会場 の順に運ぶ。亡くなった人は戦闘後に 霊安室の冷蔵の引き出し 12 → 霊安準備室 約30 → 食料の冷蔵庫（D3 左舷）→ 礼拝室 の順に安置。
 const TH_RAID_N = () => USD_MOB ? 8 : 14;
 function thRaidBtn() { let b = $('bThRaid'); if (!b) { b = document.createElement('div'); b.id = 'bThRaid'; b.textContent = '敵襲'; b.style.cssText = ($('bThRos') ? $('bThRos').style.cssText : '').replace(/right:[^;]*;/, 'right:calc(256px + env(safe-area-inset-right,0px));') + ';background:rgba(110,20,20,.55)';
-    let hold = null; const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (TH.raid && TH.raid.on) { if (TH.raid.ph === 'after' && !TH.ev) thEvacStart(); return; } hold = setTimeout(() => { hold = 'long'; if (!TH.ev) thEvacStart(); }, 1500); }, up = ev => { if (hold && hold !== 'long') { clearTimeout(hold); if (!TH.raid || !TH.raid.on || TH.raid.ph === 'after') { if (!TH.raid || !TH.raid.on) thRaidStart('air'); } } hold = null; }; b.addEventListener('touchend', up); b.addEventListener('mouseup', up); b.title = '押す：空襲／長押し（1.5秒）：戦闘なしで総員退船'; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
+    let hold = null; const go = ev => { ev.preventDefault(); ev.stopPropagation(); hold = setTimeout(() => { hold = 'long'; if (!TH.ev) thEvacStart(); }, 1500); }, up = ev => { if (hold && hold !== 'long') { clearTimeout(hold); if (!TH.ev) thRaidStart('air', true); } hold = null; }; b.addEventListener('touchend', up); b.addEventListener('mouseup', up); b.title = '押す：空襲（いつでも第1波から）／長押し（1.5秒）：総員退船'; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
 function thBoardBtn() { let b = $('bThBoard'); if (!b) { const a = thRaidBtn(); b = document.createElement('div'); b.id = 'bThBoard'; b.textContent = '乗込'; b.title = '押す：敵の乗り込み（空襲とは別）'; b.style.cssText = a.style.cssText.replace(/right:[^;]*;/, 'right:calc(318px + env(safe-area-inset-right,0px));');
     const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (!TH.raid || !TH.raid.on) thRaidStart('board'); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
 function thRaidShow(on) { const b = thRaidBtn(); b.style.display = on ? 'flex' : 'none'; const c = thBoardBtn(); c.style.display = on && !(TH.raid && TH.raid.on) ? 'flex' : 'none'; }
@@ -1374,7 +1375,10 @@ function thAirplane() { const g = new THREE.Group(), m = new THREE.MeshLambertMa
 function thBoom(p, big) { puff(p, 0xffb050, big ? 14 : 6, big ? 1.4 : 0.6, 5, 0.35); puff(p, 0x4a4a4a, big ? 16 : 6, big ? 2.2 : 0.9, 2.2, 2.6); uk2Flash(p, big ? 3 : 1, 0.12);
   const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), o = Sfx.at(p, 600, 1.5); if (o) { Sfx.noiseBurst(big ? 1.2 : 0.4, 'lowpass', 900, 60, big ? 1.4 : 0.7, 0.7, d / 340, o); Sfx.tone('sine', 70, 30, 0.5, 0.6, d / 340, o); } }
 const TH_AIR = { waves: 4, per: () => USD_MOB ? 12 : 20, act: () => USD_MOB ? 7 : 12, lull: 22 }, TH_BOARD = { total: 100, cap: () => USD_MOB ? 20 : 35, jp: () => USD_MOB ? 40 : 60 };
-function thRaidStart(kind) { kind = kind === 'board' ? 'board' : 'air'; if (TH.raid && TH.raid.on && TH.raid.ph !== 'after') return; const R = TH.raid = { kind, wave: 1, wSp: 0, wT: 0, lull: 0, usLeft: TH_BOARD.total, jpLeft: 0, boats2: [], fx: [], on: true, ph: kind, t: 0, planes: [], bombs: [], tr: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
+function thRaidStart(kind, force) { kind = kind === 'board' ? 'board' : 'air'; const O = TH.raid; if (O && O.on && O.ph !== 'after' && !force) return;
+  if (O) { for (const P of O.planes || []) stageRoot.remove(P.g); for (const B of O.bombs || []) stageRoot.remove(B.m); for (const T of O.tr || []) stageRoot.remove(T.m); if (O.torp && O.torp.w) stageRoot.remove(O.torp.w); }
+  if (kind === 'air') thDmgClear(); const R = TH.raid = { kind, wave: 1, wSp: 0, wT: 0, lull: 0, usLeft: TH_BOARD.total, jpLeft: 0, boats2: [], fx: [], on: true, ph: kind, t: 0, planes: [], bombs: [], tr: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
+  if (O && force) for (const k of ['us', 'jp', 'cas', 'dead', 'med', 'slotN', 'st', 'boats2', 'guard']) if (O[k] != null && (k !== 'med' || O.med.length)) R[k] = O[k];
   TH.alert = true; TH.dmg = TH.dmg || { mag: 0, cat: 0, boiler: 0, flood: 0, smoke: [] }; TH.log.push('raid:start:' + kind);
   if (kind === 'air') { showBanner('対空戦闘用意！', '敵機の編隊が接近中（第1波）。水上機は射出準備'); for (const S of TH.seaplanes || []) if (S.ph === 'home' && !S.dead) { S.ph = 'prep'; S.t = -(4 + (S.sx > 0 ? 0 : 3)); } }
   else { showBanner('敵の上陸用舟艇が接近！', '前甲板へ。乗り込んでくる米兵を迎え撃て（およそ100名、次々に来る）'); thRaidSpawn(); }
@@ -1433,7 +1437,7 @@ function thRaidBrain(e, dt) { const R = TH.raid, p = e.s.position; e.knock && e.
 // ---- 進行 ----
 // ---- 弱点：火災なし・爆発のみ。被害は残り、沈没につながる ----
 function thHurtNear(q, r, dy, lv) { for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - q.y) > dy) continue; const d = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (d < r) thInjure(e, lv(d / r), q); } }
-function thSmoke(q) { const D = TH.dmg; if (D.smoke.length < 8) D.smoke.push(q.clone()); }
+function thSmoke(q) { const D = TH.dmg; if (D.smoke.length < 16) D.smoke.push(q.clone()); }
 function thFlood(a, why) { const D = TH.dmg; D.flood = Math.min(1.5, D.flood + a); if (why) popup(why + '（浸水 ' + Math.round(Math.min(1, D.flood) * 100) + '%）'); }
 function thFrag(q, n) { for (let k = 0; k < n; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.2), thMats().greyD); stageRoot.add(m); const b = q.clone().add(new V3(rand(-6, 6), rand(-0.5, 1), rand(-6, 6))); TH.raid.tr.push({ m, a: q.clone(), b, t: 0, T: rand(0.3, 0.7), arc: 1 }); } }
 function thWeak(q) { const R = TH.raid, D = TH.dmg; if (!R || R.kind !== 'air') return;
@@ -1441,6 +1445,40 @@ function thWeak(q) { const R = TH.raid, D = TH.dmg; if (!R || R.kind !== 'air') 
     [[0, -130, 4], [0, -108, 4], [0, -130, 6], [0, -108, 6], [0, -130, 8]].forEach(([x, z, dd], k) => R.fx.push([R.t + 0.8 + k * 0.9, () => { const p = new V3(x + (k % 2 ? 2 : -2), thY(dd) + 1.2, z); thBoom(p, true); thFrag(p, 6); thSmoke(p); thHurtNear(p, 12, 6, u => u < 0.4 ? 3 : u < 0.7 ? 2 : 1); thFlood(0.09, k === 4 ? '艦首が沈み始めた' : ''); }])); return; }
   if (q.z > 128 && !D.cat && Math.random() < 0.5) { D.cat = 1; const S = (TH.seaplanes || []).find(S => S.ph === 'home' || S.ph === 'prep') || null; const p = S ? S.g.position.clone().setY(thY(3) + 2) : new V3(0, thY(3) + 1.5, 150);
     if (S) { S.dead = true; S.ph = 'dead'; S.g.visible = false; } thBoom(p, true); thFrag(p, 10); thSmoke(p); R.fx.push([R.t + 0.7, () => { thBoom(p.clone().add(new V3(2, 0.5, -2)), true); }]); thHurtNear(p, 10, 3, u => u < 0.5 ? 3 : u < 0.8 ? 2 : 1); thFlood(0.03); showBanner('航空作業甲板で誘爆！', S ? '水上機の燃料と射出機の火薬が爆発した' : '射出機の火薬庫が爆発した'); TH.banT = performance.now() + 3000; } }
+// ---- 被弾の跡（空襲のあいだ残る。次の空襲で片付く）：穴とすすけた焦げ跡（炎は出さない）、破片、めくれた鉄板、曲がった手すり、壊れた機銃座、煙。画面の揺れ、応急班が駆けつける ----
+function thDmgAdd(o) { stageRoot.add(o); (TH.dmgM = TH.dmgM || []).push(o); return o; }
+function thDmgClear() { for (const o of TH.dmgM || []) stageRoot.remove(o); TH.dmgM = []; TH.holeN = 0; TH.crN = 0; for (const M of TH.mgs || []) if (M.wreck) { M.wreck = 0; M.g.rotation.set(0, M.ry, 0); M.g.position.set(M.x, M.y, M.z); }
+  TH.dmg = { mag: 0, cat: 0, boiler: 0, flood: 0, smoke: [] }; stageRoot.traverse(o => { if (o.isLight && o.userData.thDim) { o.userData.thDim = 0; o.intensity /= 0.55; } }); for (const e of TH.girls) e.thDC = null; }
+function thCraterM() { if (TH.crM) return TH.crM; const t = canvasTex(128, 128, (g, w, h) => { const c = w / 2; for (let k = 0; k < 26; k++) { const a = k / 26 * Math.PI * 2, r = c * (0.78 + Math.random() * 0.2); g.fillStyle = 'rgba(28,24,22,0.55)'; g.beginPath(); g.arc(c + Math.cos(a) * r * 0.55, c + Math.sin(a) * r * 0.55, r * 0.45, 0, 7); g.fill(); }
+    const gr = g.createRadialGradient(c, c, 4, c, c, c * 0.62); gr.addColorStop(0, '#050505'); gr.addColorStop(0.45, '#151210'); gr.addColorStop(1, 'rgba(40,34,30,0.75)'); g.fillStyle = gr; g.beginPath(); for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2, r = c * (0.32 + Math.random() * 0.14); k ? g.lineTo(c + Math.cos(a) * r, c + Math.sin(a) * r) : g.moveTo(c + Math.cos(a) * r, c + Math.sin(a) * r); } g.closePath(); g.fill(); });
+  return TH.crM = new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }); }
+function thDeckTop(x, z, y0) { const f = thFloorY(x, z, y0 == null ? 80 : y0); return f; }
+function thBombDmg(q) { const y = (thDeckTop(q.x, q.z, q.y + 0.6) ?? q.y - 0.5), M = thMats(); if ((TH.crN = (TH.crN || 0) + 1) > 60) return;
+  const cr = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.2), thCraterM()); cr.rotation.x = -Math.PI / 2; cr.rotation.z = Math.random() * 6; cr.position.set(q.x, y + 0.04, q.z); thDmgAdd(cr);
+  const mats = [M.greyD, M.grey, M.white, M.teak || M.wood, M.black];
+  for (let k = 0; k < 12; k++) { const a = Math.random() * 6.28, r = 1.2 + Math.random() * 4, s1 = 0.15 + Math.random() * 0.5, o = new THREE.Mesh(new THREE.BoxGeometry(s1, 0.06 + Math.random() * 0.12, s1 * (0.5 + Math.random())), mats[k % mats.length]); o.position.set(q.x + Math.cos(a) * r, y + 0.08, q.z + Math.sin(a) * r); o.rotation.set(rand(-0.4, 0.4), Math.random() * 6, rand(-0.4, 0.4)); thDmgAdd(o); }
+  for (let k = 0; k < 4; k++) { const a = k * 1.6 + Math.random(), o = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 0.7), M.greyD); o.position.set(q.x + Math.cos(a) * 1.3, y + 0.3, q.z + Math.sin(a) * 1.3); o.rotation.set(0, -a, 0); o.rotateZ(0.7 + Math.random() * 0.5); thDmgAdd(o); }   // 穴の縁でめくれた甲板
+  const hw = thHW(q.z); if (Math.abs(q.x) > hw - 4 && Math.abs(q.x) < hw + 1) { const sx = q.x < 0 ? -1 : 1; for (let k = 0; k < 3; k++) { const o = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.05, 2.0), M.white); o.position.set(sx * (hw - 0.1), y + 0.5, q.z - 2 + k * 2); o.rotation.set(rand(-0.3, 0.3), 0, sx * (0.6 + Math.random() * 0.6)); thDmgAdd(o); } popup('手すりが吹き飛んだ'); }
+  for (const G of TH.mgs || []) { if (G.wreck || Math.abs(G.y - y) > 1.5 || Math.hypot(G.x - q.x, G.z - q.z) > 5) continue; G.wreck = 1; G.g.rotation.set(0.4, G.ry + 0.5, 0.35); G.g.position.y = G.y - 0.25; popup('機銃座が大破'); }
+  thSmoke(new V3(q.x, y + 0.6, q.z)); const d = Math.hypot(q.x - player.pos.x, q.z - player.pos.z, (q.y - player.pos.y) * 0.5); if (d < 90) player.shake = Math.max(player.shake || 0, 0.9 * (1 - d / 90) + 0.15); thDCcall(q, y); }
+function thDCcall(q, y) { const L = TH.girls.filter(e => !e.thDC && e.state !== 'down' && !e.thR && !e.thEv && /応急|防災|消火|区画閉鎖|巡回/.test(e.ukTag || '') && Math.abs(e.thY - y) < 0.6 && Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z) < 70)
+    .sort((a, b) => Math.hypot(a.s.position.x - q.x, a.s.position.z - q.z) - Math.hypot(b.s.position.x - q.x, b.s.position.z - q.z)).slice(0, 3);
+  if (L.length < 2) L.push(...TH.girls.filter(e => !e.thDC && !L.includes(e) && e.state !== 'down' && !e.thR && !e.thEv && !e.thGuest && e.thP && !/機銃|高角砲|砲塔|見張/.test(e.ukTag || '') && Math.abs(e.thY - y) < 0.6 && Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z) < 45).slice(0, 3 - L.length));
+  L.forEach((e, k) => { const a = k * 2.1; e.thDC = { x: q.x + Math.cos(a) * 3, z: q.z + Math.sin(a) * 3, t: 30 }; }); if (L.length) popup('応急班、被弾箇所へ'); }
+function thDCBrain(e, dt) { const C = e.thDC, p = e.s.position; p.y = e.thY; e.passive = true; const tx = C.back ? e.thHome[0] : C.x, tz = C.back ? e.thHome[1] : C.z, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+  if (d > 0.3) { const sp = (C.back ? 1.3 : 3.4) * dt; p.x += dx / d * Math.min(sp, d); p.z += dz / d * Math.min(sp, d); e.faceWant = Math.atan2(dx, dz); e.state = 'approach'; return true; }
+  e.state = 'idle'; if (C.back) { e.thDC = null; return true; } if ((C.t -= dt) <= 0) C.back = true; return true; }
+// ---- 機銃掃射：低く通り抜けながら撃つ。曳光弾、甲板に火花と小さな弾痕、海に水しぶき。むき出しの甲板の乗員に当たる ----
+function thStrafePlane() { const R = TH.raid, dir = Math.random() < 0.5 ? 1 : -1, ox = rand(-14, 14), g = thAirplane(); g.position.set(ox + rand(-30, 30), rand(24, 34), -dir * 420); R.planes.push({ g, strafe: true, dir, ox, v: new V3(0, 0, dir * 95), hp: 1, fall: 0, fT: 0 }); }
+function thStrafeTick(P, dt) { const R = TH.raid, g = P.g; g.position.x += (P.ox - g.position.x) * Math.min(1, dt * 0.8); g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; g.rotation.x = 0.08;
+  if (Math.abs(g.position.z) > 460) { g.visible = false; return; } if (Math.abs(g.position.z) > 210 || R.ph !== 'air') return;
+  if ((P.fT -= dt) > 0) return; P.fT = 0.07; const x = g.position.x + rand(-1.3, 1.3), z = g.position.z + P.dir * rand(26, 40), fy = thDeckTop(x, z), water = fy == null || Math.abs(x) > thHW(z) + 0.2, y = water ? (TH.sea ? TH.sea.position.y : TH_SEA) : fy, hit = new V3(x, y + 0.05, z);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 4), new THREE.MeshBasicMaterial({ color: 0xffe08a })); stageRoot.add(m); R.tr.push({ m, a: g.position.clone(), b: hit.clone(), t: 0, T: 0.14 });
+  R.fx.push([R.t + 0.14, () => { if (water) { puff(hit, 0xf2f8ff, 3, 0.35, 2.6, 0.6); return; } puff(hit, 0xffd070, 2, 0.18, 2.2, 0.18); puff(hit, 0x777777, 1, 0.35, 0.6, 0.8);
+    if ((TH.holeN = (TH.holeN || 0) + 1) < 260 && Math.random() < 0.5) { const o = new THREE.Mesh(new THREE.CircleGeometry(0.09 + Math.random() * 0.06, 7), thCraterM()); o.rotation.x = -Math.PI / 2; o.position.set(x, y + 0.035, z); thDmgAdd(o); }
+    for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || e.thFar || Math.abs(e.thY - y) > 0.8) continue; if (Math.hypot(e.s.position.x - x, e.s.position.z - z) < 1.1 && Math.random() < 0.6) thHurt(e, hit); }
+    if (Math.abs(player.pos.y - 1.6 - y) < 1 && Math.hypot(player.pos.x - x, player.pos.z - z) < 4) player.shake = Math.max(player.shake || 0, 0.25); }]);
+  if ((P.sT = (P.sT || 0) - 1) <= 0) { P.sT = 5; const o = Sfx.at(g.position, 500, 1); if (o) Sfx.noiseBurst(0.35, 'bandpass', 2400, 400, 0.5, 0.5, 0, o); } }
 function thNearMiss(q) { const sx = q.x < 0 ? -1 : 1, z = Math.max(-80, Math.min(120, q.z)), p = new V3(sx * 17.5, thY(3) + 1.2, z); if (Math.abs(q.x) > 30) return; thFrag(p, 8); puff(p, 0xdfe8ee, 10, 0.8, 3, 1.0);
   thHurtNear(p, 7, 3, u => u < 0.3 && Math.random() < 0.3 ? 2 : 1); thFlood(0.035, '至近弾：遊歩甲板の窓が割れ、破片が飛んだ。舷窓から浸水'); }
 function thTorpPlane() { const R = TH.raid, sx = Math.random() < 0.5 ? -1 : 1, g = thAirplane(); g.position.set(sx * 600, 18, rand(10, 45)); R.planes.push({ g, torp: true, sx, v: new V3(-sx * 70, 0, 0), dropped: false, hp: 1, fall: 0 }); }
@@ -1468,17 +1506,17 @@ function thSeaplaneTick(dt) { const R = TH.raid; for (const S of TH.seaplanes ||
   if (S.ph === 'land') { const u = Math.min(1, S.t / 14), sea = (TH.sea ? TH.sea.position.y : TH_SEA) + 0.2, L = new V3(S.sx * 14, sea, 190); g.position.lerpVectors(S.l0, L, u); g.position.y = S.l0.y + (sea - S.l0.y) * Math.min(1, u * 1.2); g.rotation.z = 0; g.rotation.y = 0; if (u >= 1) { S.ph = 'taxi'; S.t = 0; } continue; }
   if (S.ph === 'taxi') { g.position.z -= 3 * dt; if (g.position.z < 178) { S.ph = 'crane'; S.t = 0; S.c0 = g.position.clone(); popup('水上機を回収中（クレーン）'); } continue; }
   if (S.ph === 'crane') { const u = Math.min(1, S.t / 9); g.position.set(S.c0.x + (S.x - S.c0.x) * u, S.c0.y + (S.y - S.c0.y) * u + Math.sin(u * Math.PI) * 6, S.c0.z + (S.z - S.c0.z) * u); g.rotation.y = S.ry * u; if (u >= 1) { S.ph = 'home'; g.rotation.set(0, S.ry, 0); g.position.set(S.x, S.y, S.z); } } } }
-function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play' && !TH.ev); { const b = $('bThRaid'); if (b) b.textContent = R && R.ph === 'after' ? '退船' : '空襲'; } if (!R || !R.on) return; R.t += dt;
+function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play' && !TH.ev); { const b = $('bThRaid'); if (b) b.textContent = '空襲'; } if (!R || !R.on) return; R.t += dt;
   // 敵機：横切って爆弾を落とす。高角砲・機銃の曳光弾
   if (R.ph === 'air') { if (R.lull > 0) { R.lull -= dt; if (R.lull <= 0) { R.wave++; R.wSp = 0; showBanner('第' + R.wave + '波 接近！', R.wave === 3 ? '雷撃機がまじっている。舷側に注意' : '高角砲・機銃、撃ち方用意'); TH.banT = performance.now() + 2600; } }
     else if (R.wSp >= TH_AIR.per() && !R.planes.some(P => !P.leave && !P.fall && !P.ours)) { if (R.wave >= TH_AIR.waves) thRaidEnd('敵の編隊が去った（全' + TH_AIR.waves + '波）'); else { R.lull = TH_AIR.lull; showBanner('第' + R.wave + '波 通過', '次の波まで少し間がある。負傷者を運べ'); TH.banT = performance.now() + 2600; } } }
   if (R.ph === 'air' && R.lull <= 0 && R.wSp < TH_AIR.per() && R.planes.filter(P => !P.leave && !P.ours).length < TH_AIR.act() && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(0.8, 2.2); R.wSp++;
-    if (R.wave === 3 && R.wSp <= 3 && !TH.dmg.boiler) { thTorpPlane(); } else { const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? (Math.random() < 0.5 ? [rand(-6, 6), thY(TH_FORE.top), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
+    if (R.wave === 3 && R.wSp <= 3 && !TH.dmg.boiler) { thTorpPlane(); } else if (Math.random() < 0.3) { thStrafePlane(); } else { const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? (Math.random() < 0.5 ? [rand(-6, 6), thY(TH_FORE.top), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
     const g = thAirplane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); } }
   thSeaplaneTick(dt); thDmgTick(dt); R.fx = R.fx.filter(F => { if (R.t < F[0]) return true; F[1](); return false; });
   if (R.ph === 'board') thBoatTick(dt);
-  for (const P of R.planes) { const g = P.g; if (P.ours) continue; if (P.torp) { thTorpFly(P, dt); continue; } if (P.fall) { P.v.y -= 9.8 * dt; g.position.addScaledVector(P.v, dt); g.rotation.z += dt; if (Math.random() < 0.5) puff(g.position.clone(), 0x333333, 1, 1.2, 0.5, 2); if (g.position.y < 1 && !P.gone) { P.gone = true; g.visible = false; puff(g.position.clone().setY(1), 0xffffff, 10, 1.5, 3, 1.4); } continue; }
-    g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]);
+  for (const P of R.planes) { const g = P.g; if (P.ours) continue; if (P.torp) { thTorpFly(P, dt); continue; } if (P.strafe && !P.fall) { thStrafeTick(P, dt); if (Math.random() < dt * 0.02) { P.fall = 1; P.v.y = -4; } continue; } if (P.fall) { P.v.y -= 9.8 * dt; g.position.addScaledVector(P.v, dt); g.rotation.z += dt; if (Math.random() < 0.5) puff(g.position.clone(), 0x333333, 1, 1.2, 0.5, 2); if (g.position.y < 1 && !P.gone) { P.gone = true; g.visible = false; puff(g.position.clone().setY(1), 0xffffff, 10, 1.5, 3, 1.4); } continue; }
+    g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]); if (!P.dropped && hd < 260) { g.position.y = Math.max(48, g.position.y - 30 * dt); g.rotation.x = -0.35; } else if (P.dropped) { g.position.y += 22 * dt; g.rotation.x = 0.3; }   // 急降下して落とし、引き起こす
     if (!P.dropped && !P.leave && hd < 110) { P.dropped = true; R.bombs.push({ a: g.position.clone(), b: new V3(P.tg[0] + rand(-3, 3), P.tg[1], P.tg[2] + rand(-3, 3)), t: 0, T: 2.6, m: (() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); m.scale.z = 2; stageRoot.add(m); return m; })() }); }
     if (Math.hypot(g.position.x, g.position.z) < 260 && Math.random() < dt * 2.2) { const a = new V3(rand(-15, 15), thY(16) + 1.5, rand(-60, 60)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffd080 })); stageRoot.add(m); R.tr.push({ m, a, b: g.position.clone().add(new V3(rand(-8, 8), rand(-5, 5), rand(-8, 8))), t: 0, T: 0.9 }); if (Math.random() < 0.025) { P.fall = 1; P.v.y = -4; } }
     if (Math.hypot(g.position.x, g.position.z) > 520) g.visible = false; }
@@ -1486,7 +1524,7 @@ function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play
   for (const B of R.bombs) { B.t += dt; const u = Math.min(1, B.t / B.T); B.m.position.lerpVectors(B.a, B.b, u); B.m.position.y = B.a.y + (B.b.y - B.a.y) * u * u; if (u >= 1 && !B.done) { B.done = true; stageRoot.remove(B.m); const q = B.b.clone(); q.y += 0.5;
     if (B.b.y < 2) { puff(q, 0xffffff, 14, 1.8, 4, 1.6); const o = Sfx.at(q, 400, 1); if (o) Sfx.noiseBurst(0.7, 'lowpass', 500, 60, 0.8, 0.7, 0, o); if (Math.abs(q.x) < 40 && Math.abs(q.z) < 150) thNearMiss(q); continue; }
     thWeak(q);
-    thBoom(q, true); for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - B.b.y) > 2.6) continue; const dd = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (dd < 5) thInjure(e, Math.random() < 0.3 ? 3 : Math.random() < 0.6 ? 2 : 1, q); else if (dd < 10 && Math.random() < 0.4) thInjure(e, 1, q); } } }
+    thBoom(q, true); thBombDmg(q); for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - B.b.y) > 2.6) continue; const dd = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (dd < 5) thInjure(e, Math.random() < 0.3 ? 3 : Math.random() < 0.6 ? 2 : 1, q); else if (dd < 10 && Math.random() < 0.4) thInjure(e, 1, q); } } }
   R.bombs = R.bombs.filter(B => !B.done);
   for (const T of R.tr) { T.t += dt; const u = Math.min(1, T.t / T.T); T.m.position.lerpVectors(T.a, T.b, u); if (T.arc) T.m.position.y += Math.sin(u * Math.PI) * 1.2; T.m.lookAt(T.b); T.m.rotateX(Math.PI / 2); if (u >= 1) { stageRoot.remove(T.m); T.done = true; } }
   R.tr = R.tr.filter(T => !T.done); R.later = R.later.filter(L => { if (R.t < L[0]) return true; thHurt(L[1], L[2]); return false; });
@@ -1891,7 +1929,7 @@ function updateTenhou(dt) {
 }
 function buildTenhou() {
   thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.watchDone = false; TH.mk = null; TH.kingBal = null; TH.fsC = null; TH.byDeptM = null; TH.dpi = null; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
-  TH.secret = []; thBuildExterior(); thBuildFore(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
+  TH.secret = []; TH.mgs = []; TH.dmgM = []; TH.crN = 0; TH.holeN = 0; thBuildExterior(); thBuildFore(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
   hq = null; thRoster(); thDeckIndex();
 }
 // 階ごとの表示：今いる階の上下 2 階だけ描く（船内の箱が多いので軽くする）。船体・外壁・海など大きな物はいつも描く
@@ -1945,7 +1983,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thBombDmg, thStrafePlane, thDmgClear, thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -15216,7 +15254,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107za）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107zb）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27450,7 +27488,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107za';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107zb';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

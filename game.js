@@ -27,12 +27,13 @@ const TH_STOPS = [{ d: 16, name: 'D16 最上甲板（展望・観戦甲板）' }
 const TH_DEPT = [['司令・王室・秘書', 60, 13], ['航海・操艦・見張り', 120, 15], ['機関・電気・工作', 240, 1], ['防災・応急・排水', 160, 3], ['主砲・高角砲', 200, 3], ['機銃・甲板作業', 160, 16], ['水上機・航空整備', 100, 3], ['近衛・船内警備', 180, 13],
   ['給養・飲食', 420, 7], ['居住・清掃・洗濯', 330, 9], ['医療・看護・担架', 120, 4], ['商業・銀行・保険', 90, 5], ['文化・楽務・運動・美容', 90, 6], ['情報・通信・名簿', 90, 15], ['補給・倉庫・交代予備', 239, 2]];
 const TH_NAMED = [   // [キー, 姓名, 船での職, 部署, 甲板]
+  ['setsuei', '堀内 真琴', '設営課（内装・修繕）', 2, 3], ['setsuei_imo', '堀内 美琴', '洗濯係', 9, 9],
   ['sumi', '白瀬 澄', '艦隊司令', 0, 15], ['omiya', '大宮 ひなた', '艦長', 0, 15], ['fumi', '綾瀬 文乃', '副長', 0, 7], ['sec2', '早瀬 ことね', '側近・王室運用', 0, 13], ['ojou', '西園寺 すみれ', '王室統括', 0, 13],
   ['shinobu', '氷室 しのぶ', '西園寺秘書', 0, 13], ['chikage', '一条 千景', '西園寺秘書', 0, 13], ['sec3', '桜井 ゆかり', '航海統括補佐', 1, 15], ['sec4', '宮下 千尋', '文書・会計統括補佐', 0, 12], ['reika', '白石 麗華', '警備・迎撃指揮（大佐）', 7, 13],
   ['shizuka', '久遠 静香', '訓練・防災（中佐）', 3, 3], ['hiyori', '小日向 ひより', '側近秘書', 0, 12], ['akari', '夏目 あかり', '側近秘書', 0, 12], ['midori', '村瀬 碧', '側近秘書', 0, 12], ['flute', '小鳥遊 ひびき', '器楽中佐・楽務', 12, 7],
   ['kujo', '九条 紗英', '軍医中将・病院長', 10, 4], ['tono', '遠野 あかり', '看護・担架班連絡', 10, 4], ['sysop', '霧島 怜', '情報室統括（中佐）', 13, 15],
   ['morishita', '森下 千晴', '航空長（少佐）・航空指揮所', 6, 3]];
-const TH_FAMILY = { morishita: '妹がいる（乗艦していない）' };
+const TH_FAMILY = { morishita: '妹がいる（乗艦していない）', setsuei: '妹：堀内 美琴（洗濯係・同じ船）', setsuei_imo: '姉：堀内 真琴（設営課・同じ船）' };
 const TH_PLANES = [['二式水上戦闘機', 3], ['零式水上偵察機', 3]];   // 艦尾：射出機上 2 機＋甲板 4 機＝6 機
 const TH_SN = ['佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村', '小林', '加藤', '吉田', '山田', '佐々木', '山口', '松本', '井上', '木村', '林', '斎藤', '清水', '山崎', '森', '池田', '橋本', '阿部', '石川', '山下', '中島', '石井', '小川', '前田', '岡田', '長谷川', '藤田', '後藤', '近藤', '村上', '遠藤', '青木', '坂本', '斉藤', '福田', '太田', '西村', '藤井', '金子', '岡本', '藤原', '中野', '三浦', '原田', '中川', '松田', '竹内', '小野', '田村', '中山', '和田', '石田', '森田', '上田', '原', '柴田', '酒井', '工藤', '横山', '宮崎', '宮本', '内田', '高木', '安藤', '谷口', '大野', '丸山', '今井', '河野', '藤本', '村田', '武田', '上野', '杉山', '増田', '平野', '大塚', '千葉', '久保', '松井', '小島', '岩崎', '桑原', '野口', '菊地', '木下', '野村', '新井', '渡部', '浅野', '堀', '永井', '早川'];
 const TH_GN = ['美咲', '結衣', '陽菜', '彩花', '七海', '真由', '莉子', '美月', '葵', 'さくら', '愛美', '優花', '美優', '彩乃', '奈々', '茉優', '杏奈', '千尋', '玲奈', '結菜', '日菜子', '楓', '美羽', 'ひなの', '真央', '未来', '萌', '遥', '菜月', '花音', '瑞希', '明日香', '友梨', '紗希', '絵美', '麻衣', '由佳', '佳奈', '里奈', '舞', '沙織', '香織', '恵', '智子', '直美', '久美子', '裕子', '典子', '和子', '洋子', '真理', '理恵', '亜美', '詩織', '琴音', '凛', '咲良', '心春', '芽依', '柚希', '紬', '澪', '朱里', '美緒', '小春', '早紀', '千夏', '若菜', '涼子', '晴香', '菜摘', '真帆', '紗也加', '弥生', '雪乃', '綾香', '環', '梓', '静', '文香'];
@@ -425,7 +426,7 @@ function thBuildD15() {
 }
 
 // ---------------- 人：名のある人は持ち場に、ほかは名簿から近い区画の当番だけ ----------------
-const TH_LINES = {
+const TH_LINES = { setsuei: ['それ、入れられます。ただ、船が重くなります', '看板は頭に当たらない高さに直しました。床から二メートル六十です', '金ぴかにするのは、ちょっと……。落ち着いた色の方が長く好かれます', 'その部屋、今夜中に直しておきます。珈琲は、冷めてしまいましたけど', '図面ではもう一部屋入ります。廊下を狭くしない方法を考えます', '昨夜は三時間寝ました。大丈夫です、手は確かです', '妹は洗濯係にいます。よく働く子です'],
   sumi: ['天鳳、針路そのまま。……殿、たまには休んでくださいね', '艦隊のことは私が見ます。殿は、無理をなさらないで'], omiya: ['はいっ、殿！　艦長の大宮です。操艦は任せてください', '艦橋では帽子を……いえ、殿は良いんです（笑）'],
   sec3: ['針路と速力、海図に引いてあります', 'この船は大きいので、旋回は早めに始めます'], sysop: ['情報室、異常なし。殿のパスワード、そろそろ変えてください'],
   sec2: ['殿のお部屋、整えておきました！……あ、あの、お茶もすぐ', '澄お姉さまは艦橋です。お呼びしますか？'], ojou: ['殿……お部屋の……書類は、わたくしが……確かめて、おきましたわ', 'わたくしは……ゆっくりですけれど、見落としは……いたしませんの'],
@@ -841,7 +842,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107f：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107g：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -942,7 +943,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107f 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107g 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1058,7 +1059,9 @@ function thBuildD3Aft() { const d = 3, y = thY(d), E = thEngMats(), M = thMats()
   thAft(d, 12.8, 119.8, [
     { s: 1, z0: 14, z1: 30, k: 'snack', n: 'シネマ売店', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { thCounter(b - 3.2, b - 2.4, c + 2, e - 2, yy, new THREE.MeshLambertMaterial({ color: 0x8a1c2a }), 1.05); const pop = new THREE.MeshStandardMaterial({ color: 0xfff0c8, transparent: true, opacity: 0.5 }); thBox(b - 3.1, b - 2.5, yy + 1.05, yy + 1.75, c + 2.4, c + 3.2, pop, false); for (let i = 0; i < 30; i++) thSphereAt(0.05, new THREE.MeshLambertMaterial({ color: 0xfff4d8 }), b - 2.8 + (Math.random() - 0.5) * 0.4, yy + 1.15 + Math.random() * 0.3, c + 2.8 + (Math.random() - 0.5) * 0.6); thDrinks(b - 1.0, b - 0.2, c + 5, e - 3, yy, '飲み物'); thPost(b - 1.7, (c + e) / 2, yy, -Math.PI / 2, 'shop', '売店係（シネマ）');
       thPoster(a + 0.12, yy + 1.6, c + 4, Math.PI / 2, '桜鳳', '先代の船の記録映像\n毎回上映', '#5a1a2a'); thPoster(a + 0.12, yy + 1.6, c + 6, Math.PI / 2, 'KIDS', 'Kids Auto Race at Venice\n1914 / Public Domain', '#1a3a5a'); thPoster(a + 0.12, yy + 1.6, c + 8, Math.PI / 2, '劇場', 'D4 劇場の演目\n毎晩', '#3a4a1a'); } },
-    { s: -1, z0: 14, z1: 30, shut: true, n: '映写機材室' }, { s: 1, z0: 30, z1: 44, shut: true, n: '補給品倉庫' }, { s: -1, z0: 30, z1: 44, shut: true, n: '冷蔵庫（食料）' },
+    { s: -1, z0: 14, z1: 30, shut: true, n: '映写機材室' }, { s: 1, z0: 30, z1: 44, k: 'setsuei', n: '設営課の作業室', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { const M = thMats(); thTable(b - 3, c + 3, yy, 2.2, 1.1, M.wood, 0.9); const bp = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#1c4a8a'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(230,240,255,.8)'; g.lineWidth = 1; for (let i = 0; i < 14; i++) { g.strokeRect(10 + i * 16, 10 + (i % 4) * 22, 30 + (i % 3) * 20, 20 + (i % 2) * 18); } g.fillStyle = '#e8f0ff'; g.font = '12px sans-serif'; g.fillText('D3 船尾側 改装図', 12, h - 10); }); const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.95), new THREE.MeshLambertMaterial({ map: bp })); pl.rotation.x = -Math.PI / 2; pl.position.set(b - 3, yy + 0.91, c + 3); stageRoot.add(pl); thCyl(0.045, 0.04, 0.1, new THREE.MeshLambertMaterial({ color: 0xf4f0e8 }), b - 2.1, yy + 0.96, c + 3.3, null, 10); thCyl(0.04, 0.04, 0.005, new THREE.MeshLambertMaterial({ color: 0x3a2412 }), b - 2.1, yy + 1.0, c + 3.3, null, 10);
+      for (let i = 0; i < 6; i++) thBox(a + 0.4, a + 3.6, yy + i * 0.09, yy + i * 0.09 + 0.08, e - 1.6 + (i % 2) * 0.1, e - 1.2 + (i % 2) * 0.1, M.wood, false); thSolid(a + 0.4, a + 3.6, yy, yy + 0.6, e - 1.6, e - 1.1); thBox(b - 1.2, b - 0.3, yy, yy + 0.4, e - 2.6, e - 2.2, new THREE.MeshLambertMaterial({ color: 0xc02a20 }), true); for (let i = 0; i < 3; i++) thBox(b - 0.25, b - 0.2, yy + 0.2, yy + 0.9, c + 6 + i * 1.2, c + 6.8 + i * 1.2, new THREE.MeshLambertMaterial({ color: 0x1c2430 }), false);
+      thSign('設営課　作業中（立入は声をかけてから）', (a + b) / 2, yy + 2.6, c + 0.3, 0, 2.6); (TH.posts2 = TH.posts2 || []).push(['setsuei', b - 3.2, c + 4.2, yy, Math.PI, 'setsuei', '設営課']); } }, { s: -1, z0: 30, z1: 44, shut: true, n: '冷蔵庫（食料）' },
     { s: 0, z0: 46, z1: 82, back: false, k: 'cinema', n: 'シネマ（映画館）', via: [[6, 11], [0, 12], [0, 48]], f: thCinema },
   ], { floorM: cm, wallM: new THREE.MeshLambertMaterial({ color: 0x4a3a40 }), corName: 'シネマへの通路' });
   thPoster(-1.42, y + 1.6, 44.6, Math.PI / 2, '桜鳳', 'シネマ　上映中', '#5a1a2a'); thPoster(1.42, y + 1.6, 44.6, -Math.PI / 2, 'KIDS', 'Chaplin 1914', '#1a3a5a');
@@ -14565,7 +14568,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107f）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107g）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -26799,7 +26802,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

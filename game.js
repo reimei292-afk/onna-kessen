@@ -59,7 +59,8 @@ function thRoster() {   // 一度だけ作る。名のある人も部署の定�
   const put = (p, list) => { for (const r of list) if (r.who.length < r.cap) { p.room = r.id; p.bed = r.beds[r.who.length]; r.who.push(p.id); return true; } return false; };
   const offR = rooms.filter(r => r.type === '1P' || r.type === '2P'), crewR = rooms.filter(r => r.bunk);
   const near = k => R.find(p => p.key === k); if (near('ojou')) put(near('ojou'), offR.filter(r => r.id === 'D13-1P-001')); for (const k of ['shinobu', 'chikage']) if (near(k)) put(near(k), offR.filter(r => r.id === 'D13-2P-001'));   // 西園寺は王の居室のそばの個室、秘書二人はその隣の二人部屋
-  for (const p of R.filter(p => p.named && !p.room)) put(p, offR.filter(r => r.type === '1P' && r.id !== 'D13-1P-001'));
+  ['sumi', 'omiya', 'fumi', 'sec2', 'sec3', 'sec4'].forEach((k, i) => { if (near(k)) put(near(k), offR.filter(r => r.id === 'D12-1P-00' + (i + 1))); });
+  for (const p of R.filter(p => p.named && !p.room)) put(p, offR.filter(r => r.type === '1P' && r.id !== 'D13-1P-001' && !/^D12-1P-00[1-6]$/.test(r.id)));
   rooms.forEach(r => r.plate = r.who.map(id => (R.find(p => p.id === id) || {}).name).filter(Boolean).join('・'));   // 部屋の名札
   for (const p of R.filter(p => p.officer && !p.named)) put(p, offR) || put(p, crewR);
   for (const p of R.filter(p => !p.officer)) put(p, crewR);
@@ -188,6 +189,58 @@ function thPlaneMesh(x, z, y, ry, home) {   // 水上機（双フロートの複
     for (const sz of [-2.2, 0.3]) { add(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 5), M.greyD, fx * 0.75, 1.65, sz, 0, fx * 0.42); add(new THREE.CylinderGeometry(0.04, 0.04, 2.3, 5), M.greyD, fx * 1.6, 1.75, sz - 0.6, 0, 0); } }
   g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g); if (home) (TH.seaplanes = TH.seaplanes || []).push({ g, x, y, z, ry, sx: home, ph: 'home', t: 0 }); return g;
 }
+// ================= 高くした前甲板（D3 から D8 の高さまで）。主砲 2 基をその上に。砲の真下は装甲の円筒（揚弾室と弾薬庫だけ）。居住区と揚錨機室・錨鎖庫は円筒から離して舷側と艦首側に =================
+const TH_FORE = { z0: -146, z1: -92.2, top: 8, b: [[0, -130], [0, -108]], R: 4.2 };
+function thBuildFore() {
+  const M = thMats(), F = TH_FORE, yT = thY(F.top), y3 = thY(3), wallM = M.white, hw = z => Math.max(6, thHW(z) - 0.6), steel = M.grey;
+  const holes = { 4: [[7.8, 10.2, -97.2, -94.8]], 5: [[-10.2, -7.8, -97.2, -94.8]], 6: [[-10.2, -7.8, -97.2, -94.8]], 7: [[7.8, 10.2, -97.2, -94.8]], 8: [[7.8, 10.2, -97.2, -94.8]] };   // 螺旋階段の吹き抜け
+  // 外壁（船体の曲線に沿って 2m ごと）と前後の壁
+  for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const sx of [-1, 1]) { const xa = sx > 0 ? w : -w - 0.3, xb = sx > 0 ? w + 0.3 : -w; if (z >= -100 && z < -96) { thBox(xa, xb, y3 + 2.4, yT, z, z + 2, wallM, true); continue; } thBox(xa, xb, y3, yT, z, z + 2, wallM, true); }
+    for (const d of [4, 6]) for (const sx of [-1, 1]) thBox(sx > 0 ? w + 0.3 : -w - 0.32, sx > 0 ? w + 0.32 : -w - 0.3, thY(d) + 1.2, thY(d) + 1.7, z + 0.3, z + 1.7, M.glass || M.greyD, false); }   // 舷窓の列
+  const wF = hw(F.z0); thBox(-wF, wF, y3, yT, F.z0 - 0.3, F.z0, wallM, true);
+  thWallZ(F.z1, -hw(F.z1), hw(F.z1), thY(4), yT, wallM, [[-6.8, -5.2], [5.2, 6.8]], 0.3, 2.4); thBox(-hw(F.z1), hw(F.z1), y3, thY(4), F.z1 - 0.15, F.z1 + 0.15, wallM, true);
+  thSign('前甲板区画（居住区・主砲弾薬・揚錨機）', 0, thY(4) + 2.9, F.z1 + 0.2, Math.PI, 3.2);
+  // 階ごとの床・天井
+  const band = (y, d, ceil) => { for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const r of thRectSub([-w, w, z, z + 2], (holes[d] || []).filter(h => h[3] > z && h[2] < z + 2))) { if (!ceil) thFloor(r[0], r[1], r[2], r[3], y, d === F.top ? (M.teak || M.deck) : M.carpet, 3); else thPlane(r[0], r[1], r[2], r[3], y - 0.02, M.ceil, true); } } };
+  band(thY(4), 4); band(thY(5), 5, true); band(thY(6), 6); band(thY(7), 7, true); band(yT, F.top); for (const r of thRectSub([-hw(-100), hw(-100), -99.9, F.z1], holes[4])) thPlane(r[0], r[1], r[2], r[3], thY(4) - 0.02, M.ceil, true);
+  // D3 の入口（外舷通路から）：小さな広間と螺旋階段
+  thWallZ(-100, -hw(-100), hw(-100), y3, thY(4), wallM, [], 0.2); thZone('fore3', -hw(-100), hw(-100), -100, F.z1, 3); thSign('前甲板区画の入口（D3）', 0, y3 + 2.9, -99.8, Math.PI, 2.6);
+  // 装甲の円筒（バーベット）：下に弾薬庫（D4）、上に揚弾室（D6）。扉は通路側だけ
+  const ring = (cx, cz, y0, y1, gapA) => { const N = 24, R = F.R; for (let i = 0; i < N; i++) { const a = (i + 0.5) / N * Math.PI * 2; if (gapA != null && Math.abs(Math.atan2(Math.sin(a - gapA), Math.cos(a - gapA))) < 0.2) continue; const x = cx + Math.cos(a) * R, z = cz + Math.sin(a) * R; thSolid(x - 0.35, x + 0.35, y0, y1, z - 0.35, z + 0.35); } };
+  const bm = M.greyD.clone(); bm.side = THREE.DoubleSide; F.b.forEach(([cx, cz], bi) => { for (const [ya, yb, g] of [[y3, thY(4), null], [thY(4), thY(5), Math.PI / 2], [thY(5), thY(6), null], [thY(6), thY(7), Math.PI * 1.5], [thY(7), yT, null]]) { const geo = g == null ? new THREE.CylinderGeometry(F.R + 0.25, F.R + 0.25, yb - ya, 32, 1, true) : new THREE.CylinderGeometry(F.R + 0.25, F.R + 0.25, yb - ya, 32, 1, true, g + 0.22, Math.PI * 2 - 0.44); const cyl = new THREE.Mesh(geo, bm); cyl.position.set(cx, (ya + yb) / 2, cz); stageRoot.add(cyl); if (g != null) { const lin = new THREE.Mesh(new THREE.CylinderGeometry(F.R + 0.25, F.R + 0.25, yb - ya - 2.3, 8, 1, true, g - 0.22, 0.44), bm); lin.position.set(cx, yb - (yb - ya - 2.3) / 2, cz); stageRoot.add(lin); } }
+    ring(cx, cz, y3, thY(4), null); ring(cx, cz, thY(4), thY(5), 0); ring(cx, cz, thY(5), thY(6), null); ring(cx, cz, thY(6), thY(7), Math.PI); ring(cx, cz, thY(7), yT, null);
+    for (const [d, sx, n] of [[4, 1, '弾薬庫'], [6, -1, '揚弾室']]) { const y = thY(d), t = (bi ? '第二' : '第一') + '主砲 ' + n; thSign(t, cx + sx * (F.R + 0.3), y + 2.6, cz, sx > 0 ? Math.PI / 2 : -Math.PI / 2, 2.0); thZone('barb' + bi + d, cx - F.R + 0.3, cx + F.R - 0.3, cz - F.R + 0.3, cz + F.R - 0.3, d); (TH.zn = TH.zn || {})['barb' + bi + d] = t;
+      thCyl(0.45, 0.45, thH(d), M.red || M.orange, cx, y + thH(d) / 2, cz, null, 12); thSolid(cx - 0.5, cx + 0.5, y, y + thH(d), cz - 0.5, cz + 0.5);   // 揚弾筒（上下を貫く）
+      if (d === 4) { for (const a of [Math.PI * 0.6, Math.PI, Math.PI * 1.4]) { const x = cx + Math.cos(a) * 3.1, z = cz + Math.sin(a) * 3.1; thBox(x - 0.5, x + 0.5, y, y + 1.6, z - 0.5, z + 0.5, M.steel, true); for (let k = 0; k < 3; k++) thCyl(0.2, 0.2, 0.9, steel, x, y + 0.4 + k * 0.5, z, 'x', 10); } thSign('火気厳禁', cx - F.R + 0.4, y + 2.4, cz, Math.PI / 2, 1.4); thPost(cx + 1.6, cz + 1.2, y, Math.PI / 2, 'eng', '弾薬係（' + (bi ? '第二' : '第一') + '主砲）'); }
+      else { for (const a of [0.4, -0.4]) { const x = cx + Math.cos(a) * 3.0, z = cz + Math.sin(a) * 3.0; thBox(x - 0.45, x + 0.45, y, y + 1.0, z - 0.6, z + 0.6, M.steel, true); thCyl(0.2, 0.2, 0.9, steel, x, y + 1.25, z, 'z', 10); } thPost(cx - 1.6, cz - 1.2, y, -Math.PI / 2, 'eng', '揚弾係（' + (bi ? '第二' : '第一') + '主砲）'); } } });
+  // D4・D6：両舷の通路（x ±5〜7）と、舷側の居室（4 人部屋）。円筒とは隔壁で隔てる
+  for (const d of [4, 6]) { const y = thY(d), y1 = thY(d + 1), Rz = [];
+    for (const sx of [-1, 1]) { thWallX(sx * 5, -140, -98, y, y1, M.wall, d === 4 ? (sx > 0 ? [[-108.6, -107.4], [-130.6, -129.4]] : []) : (sx < 0 ? [[-108.6, -107.4], [-130.6, -129.4]] : []), 0.16); }
+    // 居室：z -140〜-98 を 7m ずつ（各舷 6 室）
+    let n = 0; for (let z = -140; z < -98; z += 7) for (const sx of [-1, 1]) { const w = Math.min(hw(z), hw(z + 7)) - 0.2, xa = sx > 0 ? 7 : -w, xb = sx > 0 ? w : -7, xi = sx * 7;
+      thWallZ(z, xa, xb, y, y1, M.wall, [], 0.16); n++; const nm = `前部${d === 4 ? '下' : '上'}段居室 ${sx > 0 ? '右' : '左'}${Math.round((z + 140) / 7) + 1}`;
+      { const t = 0.16, a = z + 3, b = z + 4; thBox(xi - t / 2, xi + t / 2, y, y1, z, a, M.wall, true); thBox(xi - t / 2, xi + t / 2, y + 2.3, y1, a, b, M.wall, false); thBox(xi - t / 2, xi + t / 2, y, y1, b, z + 7, M.wall, true); }
+      for (const bz of [z + 1.0, z + 6.0]) { const x0 = sx > 0 ? w - 2.1 : -w + 0.1; for (const hh of [0.45, 1.6]) thBox(x0, x0 + 2.0, y + hh, y + hh + 0.22, bz - 0.45, bz + 0.45, M.white, false); thSolid(x0, x0 + 2.0, y, y + 1.9, bz - 0.5, bz + 0.5); }
+      thLockers && thLockers(sx > 0 ? w - 1.0 : -w + 0.2, sx > 0 ? w - 0.2 : -w + 1.0, z + 3.5, y, 2); thSign(nm, xi + sx * -0.1, y + 2.55, z + 3.5, sx > 0 ? -Math.PI / 2 : Math.PI / 2, 1.6);
+      thZone('fcab' + d + (sx > 0 ? 'r' : 'l') + n, Math.min(xa, xb) + 0.2, Math.max(xa, xb) - 0.2, z + 0.2, z + 6.8, d); (TH.zn = TH.zn || {})['fcab' + d + (sx > 0 ? 'r' : 'l') + n] = nm; }
+    thWallZ(-140, -7, 7, y, y1, M.wall, [[-6.8, -5.2], [5.2, 6.8]], 0.2, 2.3); thWallZ(-98, -5, 5, y, y1, M.wall, [], 0.16);
+    thZone('forecor' + d, -7, 7, -140, F.z1, d); (TH.zn = TH.zn || {})['forecor' + d] = `前甲板区画の通路（D${d}）`;
+    // 艦首側：D4 は錨鎖庫、D6 は揚錨機室（円筒から離して）
+    const zb = F.z0 + 0.3, ze = -140, w0 = hw(zb) - 0.3; thZone(d === 4 ? 'chain' : 'windlass', -w0, w0, zb, ze, d); (TH.zn = TH.zn || {})[d === 4 ? 'chain' : 'windlass'] = d === 4 ? '錨鎖庫' : '揚錨機室';
+    thSign(d === 4 ? '錨鎖庫' : '揚錨機室', 0, y + 2.55, -140.1, 0, 1.6);
+    if (d === 4) { for (const sx of [-1, 1]) { thCyl(1.0, 1.0, 2.6, M.greyD, sx * 2.6, y + 1.3, -143, null, 16); thSolid(sx * 2.6 - 1.0, sx * 2.6 + 1.0, y, y + 2.6, -144, -142); for (let k = 0; k < 6; k++) thBox(sx * 2.6 - 0.15, sx * 2.6 + 0.15, y + 2.6 + k * 0.3, y + 2.8 + k * 0.3, -143.1, -142.9, M.black, false); } thPost(0, -142, y, Math.PI, 'eng', '錨係（錨鎖庫）'); }
+    else { for (const sx of [-1, 1]) { thCyl(0.9, 0.9, 1.6, M.greyD, sx * 3, y + 1.0, -143, 'x', 18); thBox(sx * 3 - 1.0, sx * 3 + 1.0, y, y + 0.3, -144, -142, M.steel, false); thSolid(sx * 3 - 1.0, sx * 3 + 1.0, y, y + 1.8, -144, -142); thCyl(0.12, 0.12, thH(6), M.black, sx * 3, y + thH(6) / 2, -144.5, null, 8); } thPost(0, -141.4, y, Math.PI, 'eng', '揚錨機の係'); thPost(4.8, -141.4, y, Math.PI, 'eng', '揚錨機の係'); }
+    thPost(6, -118, y, Math.PI, 'cab', '巡回（前甲板区画）'); }
+  // 螺旋階段：D3→D4（右舷）、D4→D6（左舷）、D6→D8 上甲板（右舷）
+  thSpiral(9, -96, y3, thY(4), 1); thSpiral(-9, -96, thY(4), thY(6), -1); thSpiral(9, -96, thY(6), yT, 1);
+  // 上甲板：手すり・主砲 2 基（第二砲塔は一段高い）
+  for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const sx of [-1, 1]) thBox(sx > 0 ? w : -w - 0.12, sx > 0 ? w + 0.12 : -w, yT, yT + 1.05, z, z + 2, M.white, true); }
+  thBox(-hw(F.z0), hw(F.z0), yT, yT + 1.05, F.z0, F.z0 + 0.12, M.white, true); thBox(-hw(F.z1), hw(F.z1), yT, yT + 1.05, F.z1 - 0.12, F.z1, M.white, true);
+  thTurret(0, F.b[0][1], yT, 0, true); thSolid(-4.6, 5.2, yT, yT + 3.4, F.b[0][1] - 4.4, F.b[0][1] + 4.4);
+  thBox(-5, 5, yT, yT + 3, F.b[1][1] - 5, F.b[1][1] + 5, M.grey, true); thTurret(0, F.b[1][1], yT + 3, 0, true);
+  thSign('主砲射界　立入禁止', 0, yT + 2.0, F.z0 + 1.2, 0, 4); thSign('前甲板（上甲板）', 9, yT + 2.6, -98.5, Math.PI, 2.2); thZone('foretop', -hw(-100), hw(-100), F.z0, F.z1, F.top); Object.assign(TH.zn = TH.zn || {}, { foretop: '高い前甲板（主砲）', fore3: '前甲板区画の入口（D3）' });
+  for (const sx of [-1, 1]) thPost(sx * 8, -118, yT, Math.PI, 'bridge', '見張り（前甲板）');
+  (TH.rooms3 = TH.rooms3 || []).push({ k: 'forecor4', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -100], [6, -118]] }, { k: 'barb14', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -108], [2, -108]] }, { k: 'chain', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -138], [6, -141.5], [4.6, -141.5]] }); }
 function thBuildExterior() {
   TH.seaplanes = [];
   for (const sx of [-1, 1]) thSolid(sx > 0 ? 19.3 : -19.8, sx > 0 ? 19.8 : -19.3, thY(1) - 0.2, thY(2), -160, 175);   // D1 の外板（当たり判定）
@@ -234,8 +287,7 @@ function thBuildExterior() {
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 14, 8), M.white); mast.position.set(0, yTop + 7, TH_SZ0 + 10); stageRoot.add(mast);
   const radar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.8, 0.4), M.greyD); radar.position.set(0, yTop + 12, TH_SZ0 + 10); stageRoot.add(radar); TH.radar = radar;
   // 主砲：艦首 2 基（二番は背負い式）・艦尾 1 基
-  thTurret(0, -128, yD3, 0, true); thBox(-5, 5, yD3, yD3 + 3, -108, -98, M.grey, true); thTurret(0, -103, yD3 + 3, 0, true); thTurret(0, 136, yD3, Math.PI, true);
-  thSign('主砲射界　立入禁止', 0, yD3 + 2.0, -142.5, 0, 4); thBox(-9, 9, yD3, yD3 + 0.9, -143, -142.8, M.orange, true);
+  thTurret(0, 136, yD3, Math.PI, true);   // 艦首の 2 基は高くした前甲板の上（thBuildFore）
   // 高角砲 6 基：D3 遊歩甲板の外側に左右 3 基ずつ。4 基目の跡は花のテラス（左舷）と野外カフェ（右舷）
   for (const sx of [-1, 1]) for (const z of [-40, 10, 60]) thHA(sx * 17.2, z, yD3, sx < 0 ? -Math.PI / 2 : Math.PI / 2);
   for (let i = 0; i < 6; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), M.wood); f.position.set(-17 + (i % 2) * 1.6, yD3 + 0.3, 92 + i * 2.2); stageRoot.add(f); const b = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), i % 2 ? M.flower : M.leaf); b.position.set(f.position.x, yD3 + 0.95, f.position.z); stageRoot.add(b); }
@@ -260,10 +312,10 @@ function thBuildExterior() {
   crane.position.set(0, yD3, 168); stageRoot.add(crane);
   thSign('航空作業甲板', 0, yD3 + 3, 124.5, Math.PI, 3.2);
   // 外舷通路：航空作業甲板から舷側を通って前甲板の主砲まで（床・手すり・当たり判定・案内）
-  for (const sx of [-1, 1]) { const xa = sx > 0 ? 19.8 : -21.4, xb = sx > 0 ? 21.4 : -19.8, xo = sx > 0 ? 21.3 : -21.45, z0 = -96, z1 = 128;
+  for (const sx of [-1, 1]) { const xa = sx > 0 ? 19.8 : -21.4, xb = sx > 0 ? 21.4 : -19.8, xo = sx > 0 ? 21.3 : -21.45, z0 = -99, z1 = 128;
     thFloor(xa, xb, z0, z1, yD3, M.teak || M.grey, 2.2); thBox(xo, xo + 0.15, yD3, yD3 + 1.05, z0, z1, M.white, true);
     for (let z = z0; z <= z1; z += 4) thBox(xo - 0.05, xo + 0.2, yD3 + 0.95, yD3 + 1.1, z - 0.05, z + 0.05, M.greyD, false);
-    thSign('外舷通路 → 主砲（前甲板）', sx * 20.6, yD3 + 2.4, 124, Math.PI, 2.6); thSign('外舷通路 → 航空作業甲板', sx * 20.6, yD3 + 2.4, -92, 0, 2.6); }
+    thSign('外舷通路 → 主砲（前甲板）', sx * 20.6, yD3 + 2.4, 124, Math.PI, 2.6); thSign('外舷通路 → 航空作業甲板', sx * 20.6, yD3 + 2.4, -94, 0, 2.6); thFloor(sx > 0 ? 18.6 : -19.9, sx > 0 ? 19.9 : -18.6, -100, -96, yD3, M.teak || M.grey, 2.2); }
 
 }
 
@@ -393,6 +445,24 @@ function thBuildAtrium() {
   TH.zone = TH.zone || {}; TH.zone.atr = [-13, 13, A.z0 - 1, A.z1 + 2, y7 - 0.5, yTop + 2];
 }
 // ---------------- D13：王の居室（前室・書斎・私的食堂・寝室、浴室と専用便所は扉だけ）＋階段前の広間 ----------------
+// 王の居室の調度：書斎（本棚・地球儀・海図・ソファ・敷物・机の灯り）、寝室（敷物・小卓と灯り・飾り棚・衣装箪笥）、前室（飾り棚・鉢植え）
+function thKingFurnish(y) { const M = thMats(), K = TH.kfM || (TH.kfM = { rug: new THREE.MeshLambertMaterial({ color: 0x6a1e24 }), rug2: new THREE.MeshLambertMaterial({ color: 0x1e2e4a }), sofa: new THREE.MeshLambertMaterial({ color: 0x3a2418 }), glass: new THREE.MeshLambertMaterial({ color: 0xcfe4ee, transparent: true, opacity: 0.35 }), bk: [0x5a1c1c, 0x1c2a4a, 0x2a3a2a, 0x6a5a2a, 0x3a2a1a, 0x4a3a5a].map(c => new THREE.MeshLambertMaterial({ color: c })), lamp: new THREE.MeshBasicMaterial({ color: 0xffe2a8 }) });
+  const shelf = (x0, x1, z0, z1) => { thBox(x0, x1, y, y + 2.2, z0, z1, M.woodD || M.wood, true); for (let k = 0; k < 4; k++) for (let i = 0; i < 6; i++) { const w = (x1 - x0) / 6; thBox(x0 + i * w + 0.03, x0 + (i + 1) * w - 0.03, y + 0.35 + k * 0.5, y + 0.7 + k * 0.5, z0 - 0.02, z1 + 0.02, K.bk[(i + k) % 6], false); } };
+  const sofa = (x, z, ry) => { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.85), K.sofa); b.position.y = 0.22; g.add(b); const bk = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.55, 0.2), K.sofa); bk.position.set(0, 0.7, -0.33); g.add(bk); for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.35, 0.85), K.sofa); a.position.set(sx * 0.92, 0.55, 0); g.add(a); } g.position.set(x, y, z); g.rotation.y = ry; stageRoot.add(g); thSolid(x - 1.05, x + 1.05, y, y + 0.9, z - 1.05, z + 1.05); };
+  const lamp = (x, z, h) => { thCyl(0.03, 0.05, h, M.brass || M.gold, x, y + h / 2, z, null, 8); const sh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.24, 0.26, 14, 1, true), K.lamp); sh.material.side = THREE.DoubleSide; sh.position.set(x, y + h + 0.08, z); stageRoot.add(sh); };
+  const cab = (x0, x1, z0, z1, items) => { thBox(x0, x1, y, y + 0.8, z0, z1, M.woodD || M.wood, true); thBox(x0 + 0.03, x1 - 0.03, y + 0.8, y + 1.9, z0 + 0.03, z1 - 0.03, K.glass, false); thBox(x0, x1, y + 1.9, y + 1.95, z0, z1, M.woodD || M.wood, false);
+    items.forEach((m, i) => { const t = (i + 0.5) / items.length, o = new THREE.Mesh(m === 'ship' ? new THREE.BoxGeometry(0.7, 0.14, 0.16) : m === 'cup' ? new THREE.CylinderGeometry(0.08, 0.05, 0.22, 10) : new THREE.SphereGeometry(0.1, 10, 8), m === 'cup' ? (M.gold || M.brass) : M.greyD); o.position.set(x0 + (x1 - x0) * t, y + 1.0 + (m === 'ship' ? 0.4 : 0), (z0 + z1) / 2); stageRoot.add(o); }); };
+  // 書斎（x -13〜1、z -14〜-6）
+  thPlane(-10.5, -3.5, -11, -7, y + 0.012, K.rug, false); shelf(-6, -1.4, -13.95, -13.55); sofa(-7.5, -7.3, Math.PI); thBox(-8.3, -6.7, y, y + 0.42, -9.6, -8.8, M.woodD || M.wood, true);
+  { const st = thCyl(0.04, 0.04, 0.9, M.brass || M.gold, -3.0, y + 0.45, -8.2, null, 8); const gl = new THREE.Mesh(new THREE.SphereGeometry(0.26, 22, 16), new THREE.MeshLambertMaterial({ color: 0x3a6aa0 })); gl.position.set(-3.0, y + 1.1, -8.2); stageRoot.add(gl); thSolid(-3.3, -2.7, y, y + 1.3, -8.5, -7.9); }
+  lamp(-10.6, -12.2, 0.95); lamp(-1.8, -7.0, 1.5); thPhoto('chart_2', 0.86, y + 1.6, -8.4, -Math.PI / 2, 1.4, 0.9);
+  thBox(-12.4, -11.4, y, y + 0.9, -9.0, -7.6, M.wood, true); thBox(-12.3, -11.5, y + 0.9, y + 0.92, -8.9, -7.7, M.paper || M.white, false);   // 海図台
+  // 寝室（z -36〜-24）
+  thPlane(-9.5, -0.5, -31.5, -26.5, y + 0.012, K.rug2, false); for (const x of [-8.7, -1.3]) { thBox(x - 0.3, x + 0.3, y, y + 0.55, -35.7, -35.1, M.woodD || M.wood, true); lamp(x, -35.4, 0.75); }
+  cab(10.0, 12.6, -28.2, -27.6, ['ship', 'cup', 'ball']); thBox(-12.9, -11.9, y, y + 2.2, -30, -27, M.woodD || M.wood, true); thSign('衣装箪笥', -11.95, y + 2.4, -28.5, Math.PI / 2, 1.0); sofa(4.6, -31.0, Math.PI / 2); thPlant(12.2, -25.0, y); thPhoto('map_1', 12.85, y + 1.7, -30.5, -Math.PI / 2, 1.0, 0.7); thPhoto('warship_1', 0.0, y + 1.7, -35.85, 0, 1.2, 0.8);
+  // 前室（x 1〜13、z -14〜-6）
+  cab(1.6, 4.0, -13.8, -13.2, ['ship', 'ball']); thPlant(12.3, -7.0, y); thPlant(1.8, -7.0, y);
+  (TH.kf = 1); }
 function thBuildD13() {
   const M = thMats(), y = thY(13), h = thH(13), y1 = y + h, zS = TH_SH.z0 - 0.2;
   // 階段・エレベーターのまわりの広間（z -6〜13）と居室（z -36〜-6）
@@ -400,7 +470,7 @@ function thBuildD13() {
   for (const r of thRectSub([-13, 13, -36, TH_ATR.z0 - 1], [[TH_SH.x0 - 0.2, TH_SH.x1 + 0.2, zS, TH_SH.z1 + 0.2]])) thPlane(r[0], r[1], r[2], r[3], y1 - 0.02, M.ceil, true);
   thBox(-13.1, -12.9, y, y1, -36, TH_ATR.z0 - 1, M.wall, true); thWallX(13, -36, TH_ATR.z0 - 1, y, y1, M.wall, [[-27.2, -25.6]], 0.2, 0.01); thBox(12.92, 13.08, y, y1, -27.2, -25.6, M.wall, false);   // 右舷の壁に羽目板（隠し通路の出口）
   // 居室の外壁と間仕切り
-  thBox(-13, 13, y, y1, -36.2, -36, M.stWall, true);
+  thWallZ(-36.1, -13, 13, y, y1, M.stWall, [[6.3, 7.7]], 0.2, 2.4); thBuildD13Suite();
   thWallZ(-6, -13, 13, y, y1, M.stWall, [[6, 8.6]], 0.16, 2.4);   // 前室の扉口（右舷の通路から）
   thWallX(1, -14, -6, y, y1, M.stWall, [[-12, -9.5]]);            // 前室 ↔ 書斎
   thWallZ(-14, -13, 13, y, y1, M.stWall, [[6, 8.6]]);              // 前室 ↔ 私的食堂
@@ -418,6 +488,7 @@ function thBuildD13() {
   for (const [x, z] of [[7, -10], [-6, -10], [7, -19], [0, -30]]) { const c = new THREE.Group(); const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.04, 6, 18), M.gold); ring.rotation.x = Math.PI / 2; c.add(ring); for (let i = 0; i < 8; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 5), M.glow); const a = i / 8 * 6.283; b.position.set(Math.sin(a) * 0.6, 0, Math.cos(a) * 0.6); c.add(b); } c.position.set(x, y1 - 0.45, z); stageRoot.add(c); thPL(x, y1 - 0.7, z, 0.55, 12); }
   thPL(8, y + 2.6, 0, 0.6, 14); thPL(-8, y + 2.6, 0, 0.6, 14);
   thSign('近衛詰所', 11.5, y + 2.6, -5.88, 0, 1.6); thDoor(11.5, -5.9, y, 0);
+  thKingFurnish(y);
   TH.zone = TH.zone || {}; TH.zone.king = [-13, 13, -36, -6, y - 0.5, y1];
 }
 // ---------------- D15：艦橋（前面は窓、左右の張り出し）と司令室 ----------------
@@ -669,10 +740,39 @@ function thCabAft(d) {
   const L = TH_LOOK[d] || TH_LOOK[8], D = thDeckMats(d), R = [];
   R.push({ s: -1, z0: 45, z1: 52, k: 'linen' + d, n: 'リネン室', f: (a, b, c, e, y) => { for (let z = c + 1; z < e - 0.5; z += 1.6) thBox(a + 0.2, a + 1.0, y, y + 2.1, z - 0.6, z + 0.6, thMats().cloth, true); thTable((a + b) / 2, (c + e) / 2, y, 2.4, 1.0, thMats().white, 0.9); thPost((a + b) / 2 + 1.2, (c + e) / 2, y, -Math.PI / 2, 'cab', 'リネン係'); } });
   R.push({ s: 1, z0: 45, z1: 50, k: 'cab2_' + d, n: '2 人部屋', f: (a, b, c, e, y) => { const M = thMats(); for (const z of [c + 0.9, e - 0.9]) { thBed(b - 2.2, b - 0.2, z - 0.5, z + 0.5, y, M.wood, 'x1', 1); } thTable(a + 3.6, e - 0.6, y, 1.0, 0.6); thLockers(a + 0.2, a + 1.4, e - 0.05, y, 2); } });
-  for (let z = 50; z < 98; z += 4) { if (z + 4 > 99) break; R.push({ s: 1, z0: z, z1: z + 4, shut: true, n: '' }); if (z >= 52) R.push({ s: -1, z0: z, z1: z + 4, shut: true, n: '' }); }
+  const OC = d === 12 ? { 's1_50': 'sumi', 's1_54': 'omiya', 's1_58': 'fumi', 's-1_54': 'sec2', 's-1_58': 'sec3', 's-1_62': 'sec4' } : {};
+  for (let z = 50; z < 98; z += 4) { if (z + 4 > 99) break; for (const s of [1, -1]) { if (s < 0 && z < 52) continue; const zz = s < 0 ? z + 2 - 2 : z, ok = OC['s' + s + '_' + zz]; if (ok) R.push({ s, z0: zz, z1: zz + 4, k: 'oc_' + ok, n: TH_OFFCAB[ok][0] + 'の個室', f: (a, b, c, e, y) => thOffCab(ok, s, a, b, c, e, y) }); else R.push({ s, z0: zz, z1: zz + 4, shut: true, n: '' }); } }
   thAft(d, 44, 100, R, { floorM: D.carpet, wallM: D.wall, corName: `客室の主通路（${L[0].replace('客室：', '')}）`, side: true });
   thPost(0.6, 70, thY(d), Math.PI, 'cab', '巡回');
 }
+
+// 扉の名札（真鍮の小さな札。壁に貼る）
+function thPlate(text, x, y, z, ry) { const t = canvasTex(256, 64, (g, w, h) => { g.fillStyle = '#b8954a'; g.fillRect(0, 0, w, h); g.strokeStyle = '#5a4520'; g.lineWidth = 4; g.strokeRect(4, 4, w - 8, h - 8); g.fillStyle = '#2a1e0c'; g.font = 'bold 30px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, w / 2, h / 2 + 1); });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.125), new THREE.MeshLambertMaterial({ map: t })); m.position.set(x, y, z); m.rotation.y = ry; stageRoot.add(m); }
+// 士官の個室：人柄ごとの調度（敷物・寝台・机・小物）
+const TH_OFFCAB = { sumi: ['白瀬', 0x2a3a5a, 'globe'], omiya: ['大宮', 0x5a3a2a, 'scope'], fumi: ['綾瀬', 0x3a4a3a, 'books'], sec2: ['早瀬', 0x7a4a5a, 'flower'], sec3: ['桜井', 0x6a5a3a, 'files'], sec4: ['宮下', 0x3a5a5a, 'plant'], ojou: ['西園寺', 0x6a2a3a, 'vanity'] };
+function thOffCab(key, s, a, b, c, e, y, noPlate) { const M = thMats(), [nm, rc, it] = TH_OFFCAB[key], out = s > 0 ? b : a, inn = s > 0 ? a : b, zc = (c + e) / 2;
+  thPlane(Math.min(out, inn) + 0.8, Math.max(out, inn) - 0.8, c + 0.5, e - 0.5, y + 0.012, new THREE.MeshLambertMaterial({ color: rc }), false);
+  thBed(s > 0 ? out - 2.2 : out + 0.2, s > 0 ? out - 0.2 : out + 2.2, e - 1.2, e - 0.2, y, M.wood, s > 0 ? 'x1' : 'x0', 1);
+  const dx = out - s * 1.0; thTable(dx, c + 0.6, y, 1.2, 0.6, M.woodD || M.wood); thBox(out - s * 3.4 - 0.45, out - s * 3.4 + 0.45, y, y + 2.0, c + 0.05, c + 0.65, M.woodD || M.wood, true);
+  const ty = y + 0.75;
+  if (it === 'globe') { const g = new THREE.Mesh(new THREE.SphereGeometry(0.18, 20, 14), new THREE.MeshLambertMaterial({ color: 0x3a6aa0 })); g.position.set(dx, ty + 0.25, c + 0.6); stageRoot.add(g); thPhoto('chart_2', out - s * 0.05, y + 1.6, zc - 0.6, s > 0 ? -Math.PI / 2 : Math.PI / 2, 1.0, 0.7); }
+  if (it === 'scope') { const t = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.06, 0.9, 12), M.brass); t.rotation.z = Math.PI / 2.4; t.position.set(dx, ty + 0.2, c + 0.6); stageRoot.add(t); thPhoto('warship_1', out - s * 0.05, y + 1.6, zc - 0.6, s > 0 ? -Math.PI / 2 : Math.PI / 2, 1.0, 0.7); }
+  if (it === 'books' || it === 'files') { for (let i = 0; i < 5; i++) thBox(dx - 0.5 + i * 0.12, dx - 0.42 + i * 0.12, ty, ty + 0.24, c + 0.4, c + 0.6, new THREE.MeshLambertMaterial({ color: [0x5a1c1c, 0x1c2a4a, 0x2a3a2a, 0x6a5a2a, 0x3a2a1a][i] }), false); if (it === 'files') thBox(out - s * 0.05 - 0.3, out - s * 0.05 + 0.3, y, y + 1.3, zc - 0.5, zc + 0.1, new THREE.MeshLambertMaterial({ color: 0x7a7e80 }), true); }
+  if (it === 'flower' || it === 'plant' || it === 'vanity') { const v = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.05, 0.2, 12), M.white); v.position.set(dx, ty + 0.1, c + 0.6); stageRoot.add(v); const f = new THREE.Mesh(new THREE.SphereGeometry(it === 'plant' ? 0.22 : 0.14, 12, 8), new THREE.MeshLambertMaterial({ color: it === 'plant' ? 0x3a6a3a : 0xd86a8a })); f.position.set(dx, ty + 0.32, c + 0.6); stageRoot.add(f); }
+  if (it === 'vanity') thPhotoMirror(out - s * 0.03, y, zc - 0.4, s);
+  if (!noPlate) thPlate(nm, inn - s * 0.1, y + 1.55, c + 0.55, s > 0 ? -Math.PI / 2 : Math.PI / 2); }
+// D13 王の寝室の前：西園寺の個室（寝室から扉）と、その奥の氷室・一条の二人部屋
+function thBuildD13Suite() { const M = thMats(), y = thY(13), h = thH(13), y1 = y + h;
+  thFloor(-13, 13, -44, -36.2, y, M.stCarpet, 3); thPlane(-13, 13, -44, -36.2, y1 - 0.02, M.ceil, true);
+  thBox(-13.1, -12.9, y, y1, -44.2, -36, M.wall, true); thBox(12.9, 13.1, y, y1, -44.2, -36, M.wall, true); thBox(-13.1, 13.1, y, y1, -44.4, -44.2, M.wall, true);
+  thWallX(1, -44.2, -36.2, y, y1, M.wall, [[-41.2, -39.8]], 0.16, 2.3);
+  thPlate('西園寺', 7, y + 1.55, -36.0, 0); thPlate('氷室・一条', 1.1, y + 1.55, -39.2, Math.PI / 2);
+  thOffCab('ojou', 1, 1, 13, -44, -36.2, y, true);
+  for (const [x0, k] of [[-12.8, 0], [-6.8, 1]]) { thBed(x0, x0 + 2, -44, -42, y, M.wood, 'z0', 1); thTable(x0 + 1, -38.6 + 0, y, 1.2, 0.6, M.wood); thBox(x0 + 3.0, x0 + 3.9, y, y + 2.0, -44.15, -43.55, M.wood, true); }
+  thPhoto('map_1', -6.6, y + 1.6, -44.18, 0, 1.0, 0.7);
+  thZone('suite_o', 1, 13, -44, -36.2, 13); thZone('suite_t', -13, 1, -44, -36.2, 13); Object.assign(TH.zn = TH.zn || {}, { suite_o: '西園寺の個室', suite_t: '氷室・一条の二人部屋' });
+  (TH.rooms3 = TH.rooms3 || []).push({ k: 'suite_o', d: 13, x: 9, z: -40, via: [[8.3, -3], [8.3, -30], [7, -37]] }, { k: 'suite_t', d: 13, x: -4, z: -40, via: [[8.3, -3], [8.3, -30], [7, -37], [4, -40.5], [-1, -40.5]] }); }
 // ---------------- 写実的な家具：Poly Haven（CC0）の glTF を一度だけ読み、複製して置く ----------------
 function thModel(n, x, y, z, ry = 0, s = 1, col) {
   TH.mq = TH.mq || {};
@@ -806,9 +906,9 @@ function thBuildPlaza() {
   for (let x = -W + 1; x < W; x += 2.2) thBox(x - 0.02, x + 0.02, y4 + 0.013, y4 + 0.016, za, zb, M.brass, false);
   const cr = canvasTex(256, 256, (c, w, h) => { c.translate(128, 128); c.fillStyle = '#b08a48'; c.beginPath(); c.arc(0, 0, 124, 0, 6.29); c.fill(); c.fillStyle = '#3a2a16'; c.beginPath(); c.arc(0, 0, 112, 0, 6.29); c.fill(); for (let i = 0; i < 16; i++) { c.rotate(Math.PI / 8); c.fillStyle = i % 2 ? '#d8b878' : '#a07838'; c.beginPath(); c.moveTo(0, -(i % 4 === 3 ? 108 : 70)); c.lineTo(10, 0); c.lineTo(-10, 0); c.fill(); } c.rotate(0); c.fillStyle = '#e8d098'; c.font = 'bold 22px serif'; c.textAlign = 'center'; c.fillText('N', 0, -88); });
   const rose = new THREE.Mesh(new THREE.CircleGeometry(3, 40), new THREE.MeshLambertMaterial({ map: cr })); rose.rotation.x = -Math.PI / 2; rose.position.set(0, y4 + 0.02, (za + zb) / 2); stageRoot.add(rose);
-  thRail(-W, za + 0.2, W, za + 0.2, y4); thRail(-W + 0.2, za, -W + 0.2, zb - 0.5, y4); thRail(W - 0.2, za, W - 0.2, zb - 0.5, y4);
+  thRail(-W, za + 0.2, -7.0, za + 0.2, y4); thRail(-4.6, za + 0.2, 4.6, za + 0.2, y4); thRail(7.0, za + 0.2, W, za + 0.2, y4);   // 前甲板区画の扉口（x ±5.2〜6.8） thRail(-W + 0.2, za, -W + 0.2, zb - 0.5, y4); thRail(W - 0.2, za, W - 0.2, zb - 0.5, y4);
   for (const [x, z] of [[-W + 1.2, za + 1.2], [W - 1.2, za + 1.2], [-W + 1.2, -72], [W - 1.2, -72]]) thLantern(x, z, y4);
-  for (const x of [-6, -2, 2, 6]) thBinoStand(x, za + 1.0, y4, Math.PI);
+  for (const x of [-3.4, -1.2, 1.2, 3.4]) thBinoStand(x, za + 1.0, y4, Math.PI);
   thBox(-1.5, 1.5, y4 + 2.62, y4 + 3.12, zb - 0.12, zb - 0.02, bronze, false); thSign('前甲板 展望広場', 0, y4 + 2.87, zb - 0.14, Math.PI, 2.6);
   thDoor(-5, za - 0.05, y3, Math.PI, '主砲弾薬庫'); thDoor(5, za - 0.05, y3, Math.PI, '主砲機械室');
   thPost(3, -76, y4, Math.PI, 'bridge', '見張り（前甲板）'); thBino(3 + 0.0, -76 - 0.35, y4 + 1.45, Math.PI);
@@ -876,7 +976,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107r：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107s：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -977,7 +1077,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107r 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107s 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1266,7 +1366,7 @@ function thFlood(a, why) { const D = TH.dmg; D.flood = Math.min(1.5, D.flood + a
 function thFrag(q, n) { for (let k = 0; k < n; k++) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.06, 0.2), thMats().greyD); stageRoot.add(m); const b = q.clone().add(new V3(rand(-6, 6), rand(-0.5, 1), rand(-6, 6))); TH.raid.tr.push({ m, a: q.clone(), b, t: 0, T: rand(0.3, 0.7), arc: 1 }); } }
 function thWeak(q) { const R = TH.raid, D = TH.dmg; if (!R || R.kind !== 'air') return;
   if (q.z < -92 && Math.abs(q.x) < 12 && !D.mag && Math.random() < 0.45) { D.mag = 1; showBanner('前部弾薬庫に被弾！', '誘爆が続いている。前甲板から離れろ'); TH.banT = performance.now() + 3400;
-    [[0, -128], [0, -103], [-4, -118], [4, -112], [0, -136]].forEach(([x, z], k) => R.fx.push([R.t + 0.8 + k * 0.9, () => { const p = new V3(x, thY(3) + 1 + (k % 2) * 3, z); thBoom(p, true); thFrag(p, 6); thSmoke(p); thHurtNear(p, 12, 6, u => u < 0.4 ? 3 : u < 0.7 ? 2 : 1); thFlood(0.09, k === 4 ? '艦首が沈み始めた' : ''); }])); return; }
+    [[0, -130, 4], [0, -108, 4], [0, -130, 6], [0, -108, 6], [0, -130, 8]].forEach(([x, z, dd], k) => R.fx.push([R.t + 0.8 + k * 0.9, () => { const p = new V3(x + (k % 2 ? 2 : -2), thY(dd) + 1.2, z); thBoom(p, true); thFrag(p, 6); thSmoke(p); thHurtNear(p, 12, 6, u => u < 0.4 ? 3 : u < 0.7 ? 2 : 1); thFlood(0.09, k === 4 ? '艦首が沈み始めた' : ''); }])); return; }
   if (q.z > 128 && !D.cat && Math.random() < 0.5) { D.cat = 1; const S = (TH.seaplanes || []).find(S => S.ph === 'home' || S.ph === 'prep') || null; const p = S ? S.g.position.clone().setY(thY(3) + 2) : new V3(0, thY(3) + 1.5, 150);
     if (S) { S.dead = true; S.ph = 'dead'; S.g.visible = false; } thBoom(p, true); thFrag(p, 10); thSmoke(p); R.fx.push([R.t + 0.7, () => { thBoom(p.clone().add(new V3(2, 0.5, -2)), true); }]); thHurtNear(p, 10, 3, u => u < 0.5 ? 3 : u < 0.8 ? 2 : 1); thFlood(0.03); showBanner('航空作業甲板で誘爆！', S ? '水上機の燃料と射出機の火薬が爆発した' : '射出機の火薬庫が爆発した'); TH.banT = performance.now() + 3000; } }
 function thNearMiss(q) { const sx = q.x < 0 ? -1 : 1, z = Math.max(-80, Math.min(120, q.z)), p = new V3(sx * 17.5, thY(3) + 1.2, z); if (Math.abs(q.x) > 30) return; thFrag(p, 8); puff(p, 0xdfe8ee, 10, 0.8, 3, 1.0);
@@ -1301,7 +1401,7 @@ function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play
   if (R.ph === 'air') { if (R.lull > 0) { R.lull -= dt; if (R.lull <= 0) { R.wave++; R.wSp = 0; showBanner('第' + R.wave + '波 接近！', R.wave === 3 ? '雷撃機がまじっている。舷側に注意' : '高角砲・機銃、撃ち方用意'); TH.banT = performance.now() + 2600; } }
     else if (R.wSp >= TH_AIR.per() && !R.planes.some(P => !P.leave && !P.fall && !P.ours)) { if (R.wave >= TH_AIR.waves) thRaidEnd('敵の編隊が去った（全' + TH_AIR.waves + '波）'); else { R.lull = TH_AIR.lull; showBanner('第' + R.wave + '波 通過', '次の波まで少し間がある。負傷者を運べ'); TH.banT = performance.now() + 2600; } } }
   if (R.ph === 'air' && R.lull <= 0 && R.wSp < TH_AIR.per() && R.planes.filter(P => !P.leave && !P.ours).length < TH_AIR.act() && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(0.8, 2.2); R.wSp++;
-    if (R.wave === 3 && R.wSp <= 3 && !TH.dmg.boiler) { thTorpPlane(); } else { const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? (Math.random() < 0.5 ? [rand(-6, 6), thY(3), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
+    if (R.wave === 3 && R.wSp <= 3 && !TH.dmg.boiler) { thTorpPlane(); } else { const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? (Math.random() < 0.5 ? [rand(-6, 6), thY(TH_FORE.top), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
     const g = thAirplane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); } }
   thSeaplaneTick(dt); thDmgTick(dt); R.fx = R.fx.filter(F => { if (R.t < F[0]) return true; F[1](); return false; });
   if (R.ph === 'board') thBoatTick(dt);
@@ -1617,7 +1717,7 @@ function updateTenhou(dt) {
 }
 function buildTenhou() {
   thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
-  TH.secret = []; thBuildExterior(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
+  TH.secret = []; thBuildExterior(); thBuildFore(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
   hq = null; thRoster(); thDeckIndex();
 }
 // 階ごとの表示：今いる階の上下 2 階だけ描く（船内の箱が多いので軽くする）。船体・外壁・海など大きな物はいつも描く
@@ -14942,7 +15042,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107r）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107s）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27176,7 +27276,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107r';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107s';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

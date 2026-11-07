@@ -1014,7 +1014,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107w：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107x：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1115,7 +1115,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107w 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107x 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1730,7 +1730,7 @@ const TH_TASK = ['早口言葉を三回', '殿のものまね', '一発芸', '�
 const TH_TASK_RX = { 臆病: 'えっ、む、無理です……。……はい、やります', 冷静: '……ご命令でしたら。一度だけですよ', 陽気: 'えー、恥ずかしい！　……でも、やります！', 慎重: '本当にやるんですか……？　笑わないでくださいね', 好戦的: '受けて立ちます。……でも、これは別の勇気がいりますね' };
 const TH_PD_C = ['この船で死ぬときの事前リハーサル？', 'そんなにきれいに倒れることになるのかな。', '……上手すぎて、ちょっと笑えないです', '起きて起きて、料理が冷めちゃう'];
 function thPartyStart() { if (TH.party) return; const H = TH.hall, T = TH.tables || []; if (!H || !T.length) return; const n = USD_MOB ? 10 : 16, C = TH.girls.filter(e => !e.thR && !e.thFollow && e.state !== 'down' && !e.thEv && !e.thPara && e.thHome && e.thLk !== 'hall' && !TH_NAMED.some(r => r[0] === e.thLk) && Math.abs(e.thY - H.y) > 0.5);
-  const P = TH.party = { g: [], t: 0 }; for (let i = 0; i < n && C.length; i++) { const e = C.splice((thHash('p' + i) % C.length), 1)[0], t = T[(i * 5 + 1) % T.length], a = i * 2.4 + 0.7, x = t.x + Math.sin(a) * 1.25, z = t.z + Math.cos(a) * 1.25;
+  const P = TH.party = { g: [], t: 0 }; for (let i = 0; i < n && C.length; i++) { const e = C.splice((thHash('p' + i) % C.length), 1)[0], t = T[(Math.floor(i / 4) * 3 + 1) % T.length], a = (i % 4) * Math.PI / 2 + 0.7, x = t.x + Math.sin(a) * 1.25, z = t.z + Math.cos(a) * 1.25;
     P.g.push({ e, home: e.thHome.slice(), y: e.thY, p: e.s.position.clone() }); e.s.position.set(x, H.y, z); e.thY = e.baseY = H.y; e.thHome = [x, z]; e.thGuest = true; e.face = e.faceWant = Math.atan2(t.x - x, t.z - z); }
   showBanner('「死にかけ女たちとのパーティ」', '王がそう名づけた。侍女たちは苦笑いしながら宴会場に集まってきた'); TH.banT = performance.now() + 4200; TH.log.push('party:start'); thPartyUI().style.display = 'flex'; }
 function thPartyEnd() { const P = TH.party; if (!P) return; for (const g of P.g) { const e = g.e; if (e.state === 'down' && !e.palPD) continue; e.palPD = null; e.s.position.copy(g.p); e.thY = e.baseY = g.y; e.thHome = g.home; e.thGuest = false; } TH.party = null; thPartyUI().style.display = 'none'; popup('パーティはお開きになりました'); TH.log.push('party:end'); }
@@ -1740,9 +1740,9 @@ function thPartyUI() { let el = $('thPartyAct'); if (el) return el; el = documen
   for (const [k, l] of [['b', 'バーン'], ['s1', '懐刀：左胸'], ['s2', '懐刀：下腹部'], ['s3', '懐刀：眉間'], ['w', 'ウインク']]) { const b = document.createElement('button'); b.textContent = l; b.style.cssText = 'font:600 13px sans-serif;padding:7px 10px;border-radius:8px;border:1px solid #c6a15a;background:rgba(14,20,30,.8);color:#f6e7c4;touch-action:manipulation'; const go = ev => { ev.preventDefault(); ev.stopPropagation(); thPretend(k); }; b.addEventListener('click', go); b.addEventListener('touchend', go, { passive: false }); b.addEventListener('touchstart', ev => ev.stopPropagation(), { passive: true }); el.appendChild(b); }
   document.body.appendChild(el); return el; }
 function thPretend(k) { const P = TH.party; if (!P || state !== 'play' || UK.dlg) return; const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw); let e = null, bs = 1e9;
-  for (const g of P.g) { const o = g.e; if (o.palPD || o.state === 'down') continue; const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d > 5 || d < 0.2) continue; const c = (dx * fx + dz * fz) / d; if (c < 0.5) continue; const sc = d * (1.6 - c); if (sc < bs) { bs = sc; e = o; } }
-  const part = { s1: '左胸', s2: '下腹部', s3: '眉間' }[k]; if (!e) { popup(k === 'b' ? '（バーン！ ……誰もいない）' : k === 'w' ? '（ウインク……誰も見ていない）' : '（懐刀を投げるふり……誰もいない）'); return; }
-  if (e.thPdCd && time < e.thPdCd) { popup('（' + e.prof.name + 'は、まだ息が上がっている）'); return; } e.thPdCd = time + 9; PAL.log = PAL.log || [];
+  for (const g of P.g) { const o = g.e; if (o.palPD || o.state === 'down' || (o.thPdCd && time < o.thPdCd)) continue; const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d > 9 || d < 0.2) continue; const c = (dx * fx + dz * fz) / d; const sc = d * (1.6 - c) + (c < 0.5 ? 50 : 0); if (sc < bs) { bs = sc; e = o; } }
+  const part = { s1: '左胸', s2: '下腹部', s3: '眉間' }[k]; if (e) e.thPdCd = time + 9; if (!e) { popup(k === 'b' ? '（バーン！ ……誰もいない）' : k === 'w' ? '（ウインク……誰も見ていない）' : '（懐刀を投げるふり……誰もいない）'); return; }
+  PAL.log = PAL.log || []; PAL.log = PAL.log || [];
   if (part) popup('（懐刀を投げるふり：' + part + '）　' + e.prof.name + '「' + (part === '眉間' ? 'うっ……眉間は、ずるいです……' : part === '左胸' ? 'あっ……胸に……！' : 'お、お腹……やられました……') + '」');
   palPDStart(e, k === 'w' ? 'w' : part ? 's' : 'b', k === 'w' ? 'pd_w_' + ((Math.random() * 3) | 0) : part ? 'pd_s_' + ((Math.random() * 4) | 0) : 'pd_b_' + ((Math.random() * 4) | 0), /陽気|好戦的|臆病/.test(e.prof.pers || '') && Math.random() < 0.6);
   TH.log.push('party:pd:' + k); setTimeout(() => { if (!TH.party) return; const o = P.g.map(g => g.e).filter(o => o !== e && !o.palPD && o.state !== 'down' && Math.hypot(o.s.position.x - e.s.position.x, o.s.position.z - e.s.position.z) < 7)[0]; if (o) popup(o.prof.name + '「' + TH_PD_C[(Math.random() * TH_PD_C.length) | 0] + '」'); }, k === 'w' ? 7600 : 6000); }
@@ -2212,7 +2212,7 @@ const VoicePack = {
   pump() {
     while (this.inflight < 8 && this.q.length) {
       const fn = this.q.shift(); this.inflight++; if (this.pq) this.pq--;
-      const get = () => fetch('assets/voices/' + fn).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      const get = () => fetch('assets/voices/' + fn + (fn.startsWith('cvbg/m') ? '?v=' + ASSET_V : '')).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
         .then(ab => new Promise((res, rej) => Sfx.ctx.decodeAudioData(ab, res, rej)));
       get().catch(() => new Promise(r => setTimeout(r, 1500)).then(get))
         .then(b => { this.buf[fn] = b; this.touch(fn); this.flush(fn); }, () => { this.buf[fn] = null; this.stats.failed++; this.flush(fn); })
@@ -15136,7 +15136,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107w）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107x）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27370,7 +27370,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107w';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107x';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

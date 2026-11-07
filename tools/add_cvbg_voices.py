@@ -35,13 +35,17 @@ NAMED = {   # 名のある人（共通の設定。殿との血縁：白瀬・早
   'midori': ('早稲田大学の文学部で日本史を学んで、出版社で歴史の本を編集していました。家の推薦です', '早稲田大学です', '城の縄張りを見て、どこから攻めるか当てることです', '遠い親戚らしいです。城の話で家系図を調べたら出てきました'),
   'tono': ('聖路加国際大学を出て、聖路加国際病院で看護師をしていました。看護の家の推薦です', '聖路加国際大学です', '手品です。祖母に習いました', '遠い親戚だと祖母が言っていました'),
 }
+FIX = {   # 学部と前職が合わない者だけ、学部に合う前職へ（声は bg だけ作り直し）
+  11: ('講談社', '書籍の編集'), 54: ('日立製作所', 'システムエンジニア'), 138: ('博報堂', '広告の企画'), 20: ('三井物産', '営業事務'), 33: ('キリンビール', '広報'), 60: ('日本航空', '客室乗務員'),
+  68: ('帝国ホテル', 'フロント'), 110: ('NTT東日本', '法人営業'), 132: ('野村證券', '営業'), 8: ('トヨタ自動車', '経理'), 47: ('全日空', '空港の地上係員'), 82: ('伊勢丹', '婦人服の販売'),
+  69: ('高島屋', '外商'), 70: ('第一生命', '保険の窓口'), 79: ('全日空', '空港の地上係員')}
 def mob(i):
     rg = random.Random(1000 + i * 7919); t = rg.random()
     kind = 'fam' if t < 0.6 else 'vol' if t < 0.9 else 'oth'
     st = rg.choices(['hs', 'uni', 'work'], [0.2, 0.25, 0.55])[0]; how = rg.choice(HOW[kind])
     if st == 'hs': s = rg.choice(HS); bg = f'{s}を出てすぐ、{how}'; sc = f'{s}です'
     elif st == 'uni': u, f = rg.choice(UNI); bg = f'{u}の{f}にいたときに、{how}'; sc = f'{u}の{f}です'
-    else: u, f = rg.choice(UNI); c, j = rg.choice(JOB); bg = f'{u}を出て、{c}で{j}をしていました。{how}'; sc = f'{u}の{f}です'
+    else: u, f = rg.choice(UNI); c, j = rg.choice(JOB); c, j = FIX.get(i, (c, j)); bg = f'{u}を出て、{c}で{j}をしていました。{how}'; sc = f'{u}の{f}です'
     rel = 'none' if kind == 'oth' else ('close' if rg.random() < 0.15 else 'dist') if kind == 'fam' else ('none' if rg.random() < 0.4 else 'dist')
     return {'bg': bg, 'sc': sc, 'sk': rg.choice(SKILL), 'rel': rg.choice(REL[rel]), 'kind': kind, 'relk': rel, 'v': (rg.randint(-8, 8), rg.randint(-8, 10))}
 NMOB = 140

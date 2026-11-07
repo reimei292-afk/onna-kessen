@@ -842,7 +842,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107h：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107i：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -910,7 +910,7 @@ function thTheaterBalcony(y) {   // 劇場の二階席：弧を描く前縁・�
 }
 function thBuildD3() {   // D3：弾薬庫の前室・主砲機械室（前部広場の下）・閉じた弾薬庫・揚弾機
   const d = 3, y = thY(d), h = thH(d), E = thEngMats(), M = thMats();
-  thFloor(-13, 13, -8.5, 12.6, y, E.deck, 3); thPlane(-13, 13, -8.5, 12.6, y + h - 0.02, M.ceil, true); thBox(-13.2, -13, y, y + h, -8.5, 12.6, E.wall, true); thWallX(13.1, -8.5, 12.6, y, y + h, E.wall, [[2, 5]], 0.2, 2.6);
+  thFloor(-13, 13, -8.5, 12.6, y, E.deck, 3); thPlane(-13, 13, -8.5, 12.6, y + h - 0.02, M.ceil, true); thWallX(-13.1, -8.5, 12.6, y, y + h, E.wall, [[0.6, 2.4]], 0.2, 2.4); thBuildColdStore(); thWallX(13.1, -8.5, 12.6, y, y + h, E.wall, [[2, 5]], 0.2, 2.6);
   thPlane(13.2, 19.4, -8.6, 120, y + h - 0.02, M.ceil, true); thBox(19.4, 19.6, y, y + h, -8.6, 120, M.win, true); thBox(13.2, 19.4, y, y + h, -8.8, -8.6, E.wall, true);
   thBox(TH_SH.x0 - 0.2, TH_SH.x1 + 0.2, y, y + h, TH_SH.z0 - 0.2, TH_SH.z1 + 0.2, E.wall, true); thWallZ(12.7, -13, 13, y, y + h, E.wall, [[-1.5, 1.5]], 0.2, 2.6); thSign('D3 弾薬庫前室・主砲機械室', 0, y + 2.6, TH_SH.z1 + 0.25, 0, 3.0);
   thPipes(-12.5, 12.5, -8.5, 12.6, y + h - 0.35, 4); thBox(-13, 13, y, y + h, -92.2, -92, E.wall, true);
@@ -943,7 +943,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107h 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107i 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1033,7 +1033,7 @@ function thCinema(a, b, c, e, y, cy) { const M = thMats(), dark = new THREE.Mesh
   for (const sx of [-1, 1]) thBox(sx * (W / 2 + 0.3), sx * (W / 2 + 1.4), y + 0.2, cy - 0.1, e - 0.5, e - 0.2, new THREE.MeshLambertMaterial({ color: 0x5a0c18 }), false);
   for (let k = 0; k < 9; k++) { const zr = e - 4.6 - k * 1.25, hh = 0.2 * k; for (const sx of [-1, 1]) { const x0 = sx > 0 ? 2.0 : -11.6, x1 = sx > 0 ? 11.6 : -2.0; if (hh > 0) { thBox(x0, x1, y, y + hh, zr - 0.62, zr + 0.62, carpet, false); thSolid(x0, x1, y, y + hh, zr - 0.62, zr + 0.62); floors.push({ x0, x1, z0: zr - 0.62, z1: zr + 0.62, y: y + hh }); }
       for (let x = x0 + 0.35; x < x1 - 0.2; x += 0.62) { const g = new THREE.Group(), s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.45), seat), bk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.08), seat); s.position.set(0, 0.42, 0); bk.position.set(0, 0.72, -0.24); g.add(s, bk); g.position.set(x, y + hh, zr); stageRoot.add(g); } } }
-  const pw = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.6), new THREE.MeshBasicMaterial({ color: 0xfff0c0 })); pw.position.set(3.5, cy - 0.6, c + 0.15); stageRoot.add(pw); thBox(2.6, 4.4, cy - 1.0, cy - 0.15, c + 0.05, c + 0.13, M.woodD, false);
+  thProjRoom(c, y, cy); const pw = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.6), new THREE.MeshBasicMaterial({ color: 0xfff0c0 })); pw.position.set(3.5, cy - 0.6, c + 3.72); stageRoot.add(pw); thBox(2.6, 4.4, cy - 1.0, cy - 0.15, c + 3.62, c + 3.7, M.woodD, false);
   for (const sx of [-1, 1]) for (let z = c + 3; z < e - 3; z += 6) { const l = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff9a50 })); l.position.set(sx * 12.8, y + 1.8, z); stageRoot.add(l); }
   thSign('シネマ　本日の上映：「桜鳳」／ Kids Auto Race at Venice (1914)', 0, y + 2.7, c - 0.12, Math.PI, 4.2);
   thPost(0.9, c + 2.0, y, Math.PI, 'shop', '案内係（シネマ）'); thPost(-0.9, e - 3.2, y, 0, 'shop', '案内係（シネマ）'); thPost(12.2, c + 1.2, y, Math.PI, 'shop', '映写技師');
@@ -1077,6 +1077,34 @@ function thBakery(a, b, c, e, y) { const R = 5.2, cx = b - R - 0.5, cz = (c + e)
   for (const dz of [-1.6, 0, 1.6]) { thBox(cx - R + 0.5, cx - R + 1.5, y, y + 1.6, cz + dz - 0.7, cz + dz + 0.7, steel, true); thBox(cx - R + 1.49, cx - R + 1.52, y + 0.5, y + 1.1, cz + dz - 0.45, cz + dz + 0.45, new THREE.MeshBasicMaterial({ color: 0x8a3a10 }), false); }
   thTable(cx - 2.6, cz + 3.0, y, 1.6, 0.8, M.wood, 0.9); thDish('bread', cx - 2.6, y + 0.9, cz + 3.0); thTable(cx + 2.4, cz - 3.0, y, 0.8, 0.8, M.white); thTable(cx + 2.4, cz + 3.0, y, 0.8, 0.8, M.white);
   thPost(cx - 1.4, cz, y, Math.PI / 2, 'shop', 'パン職人'); thPost(cx + 0.8, cz + 1.0, y, -Math.PI / 2, 'shop', 'パン屋の店員'); }
+
+// D3 映写室：シネマの後ろの映写窓の奥（客席より後ろの空いた床に囲う）
+function thProjRoom(c, y, cy) { const M = thMats(), wm = new THREE.MeshLambertMaterial({ color: 0x3a2a30 }), blk = new THREE.MeshStandardMaterial({ color: 0x1a1a1c, roughness: 0.4, metalness: 0.6 }), z1 = c + 3.6;
+  thWallZ(z1, 1.8, 6.2, y, cy, wm, [], 0.16); thWallX(1.8, c, z1, y, cy, wm, [], 0.16); thWallX(6.2, c, z1, y, cy, wm, [[c + 1.0, c + 2.4]], 0.16, 2.3); thPlane(1.8, 6.2, c, z1, y + 2.6, M.ceil, true);
+  thBox(2.9, 4.1, y, y + 1.0, z1 - 1.3, z1 - 0.5, blk, true); thBox(3.1, 3.9, y + 1.0, y + 1.6, z1 - 1.25, z1 - 0.55, blk, false); thCyl(0.12, 0.16, 0.4, M.brass, 3.5, y + 1.6, z1 - 0.3, 'z');
+  for (const dz of [-0.95, -0.85]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.05, 24), blk); r.rotation.x = Math.PI / 2; r.position.set(3.5, y + 2.0, z1 + dz - 0.2 + (dz > -0.9 ? 0.85 : 0)); stageRoot.add(r); }
+  thBox(2.0, 2.6, y, y + 1.9, c + 0.3, c + 2.2, M.steel, true); for (let i = 0; i < 4; i++) thCyl(0.17, 0.17, 0.06, blk, 2.3, y + 0.5 + i * 0.4, c + 1.2, 'x', 16);
+  thTable(5.2, c + 0.6, y, 1.0, 0.5, M.wood); thSign('映写室', 6.3, y + 2.6, c + 1.7, Math.PI / 2, 1.2);
+  thPost(4.6, z1 - 1.0, y, 0, 'shop', '映写技師'); thZone('projroom', 1.8, 6.2, c, z1, 3); (TH.zn = TH.zn || {}).projroom = '映写室';
+  (TH.rooms3 = TH.rooms3 || []).push({ k: 'projroom', d: 3, x: 4, z: c + 1.7, via: [[6, 11], [0, 12], [0, c + 4.5], [7.2, c + 4.5], [7.2, c + 1.7], [4.2, c + 1.7]] }); }
+// D3 左舷：食料の冷蔵庫（広間の左舷の扉 → 通路 → 青果・乳製品・冷凍の三室）
+function thBuildColdStore() { const y = thY(3), h = thH(3), M = thMats(), E = thEngMats(), frost = new THREE.MeshLambertMaterial({ color: 0xdfeaf0 }), steel = M.steel, crate = new THREE.MeshLambertMaterial({ color: 0x9a7a4a }), y1 = y + h;
+  const X0 = -19.3, XI = -15.35, XC = -13.2;
+  thBox(XC - 2.15, XC, y, y1, 0.4, 0.6, E.wall, true); thBox(XI - 0.05, XI + 0.05, y, y1, 0.6, 14, E.wall, true); thPlane(XI, XC, 0.6, 56, y1 - 0.02, M.ceil, true); thPlane(X0, XI, 14, 56, y1 - 0.02, M.ceil, true);
+  thWallX(XI, 14, 56, y, y1, frost, [[19.6, 21.0], [33.6, 35.0], [47.6, 49.0]], 0.12, 2.3); thBox(X0 - 0.1, X0, y, y1, 14, 56, frost, true); thBox(X0, XI, y, y1, 13.8, 14, frost, true); thBox(X0, XC, y, y1, 56, 56.2, frost, true);
+  thWallZ(28, X0, XI, y, y1, frost); thWallZ(42, X0, XI, y, y1, frost); thSign('食料の冷蔵庫（主計科）', XC - 0.08, y + 2.6, 6, -Math.PI / 2, 2.4); thSign('← 冷蔵庫（食料）', -12.95, y + 2.6, 1.5, Math.PI / 2, 2.2);
+  const rooms = [[14, 28, '青果（野菜・果物）', 'veg'], [28, 42, '乳製品・卵・パン生地', 'dairy'], [42, 56, '冷凍（箱詰めの食材）', 'frz']];
+  for (const [a, b, n, k] of rooms) { const zd = a + 6.3;
+    thSign(n, XI + 0.08, y + 2.6, zd, Math.PI / 2, 2.0); for (let i = 0; i < 10; i++) thBox(XI - 0.02, XI + 0.02, y + 0.2, y + 2.3, zd - 0.7 + i * 0.14, zd - 0.64 + i * 0.14, new THREE.MeshLambertMaterial({ color: 0xcfe0e8, transparent: true, opacity: 0.45 }), false);   // ビニールのすだれ
+    for (let z = a + 0.6; z < b - 0.6; z += 3.2) { if (Math.abs(z + 1 - zd) < 1.6) continue; thBox(X0 + 0.05, X0 + 0.75, y, y + 2.2, z, z + 2.2, steel, true); for (let j = 0; j < 4; j++) { thBox(X0 + 0.05, X0 + 0.75, y + 0.35 + j * 0.5, y + 0.38 + j * 0.5, z, z + 2.2, steel, false); for (let q = 0; q < 3; q++) thBox(X0 + 0.15, X0 + 0.65, y + 0.38 + j * 0.5, y + 0.62 + j * 0.5, z + 0.1 + q * 0.72, z + 0.62 + q * 0.72, k === 'frz' ? M.white : crate, false); } }
+    for (let i = 0; i < 4; i++) thBox(X0 + 1.6, X0 + 2.3, y, y + 0.45 + (i % 2) * 0.45, a + 2 + i * 2.6, a + 2.6 + i * 2.6, crate, true);
+    if (k === 'veg') for (let i = 0; i < 6; i++) { const col = [0xe8c840, 0xc87a30, 0x6a9a3a, 0xd04a30, 0xe8d8a0, 0x8a4a8a][i], z = a + 1.5 + i * 2; thCyl(0.006, 0.006, 0.6, steel, X0 + 1.2, y1 - 0.5, z); for (let q = 0; q < 5; q++) { const f = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), new THREE.MeshLambertMaterial({ color: col })); f.position.set(X0 + 1.2 + (q % 2) * 0.08, y1 - 0.85 - q * 0.08, z + (q % 3) * 0.06); stageRoot.add(f); } }
+    if (k === 'dairy') for (let i = 0; i < 8; i++) thCyl(0.12, 0.12, 0.5, M.white, X0 + 1.95, y + 0.9 + 0.25, a + 2.3 + i * 0.3);
+    if (k === 'frz') { const fog = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 13.6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.12, depthWrite: false })); fog.rotation.x = -Math.PI / 2; fog.position.set((X0 + XI) / 2, y + 0.15, (a + b) / 2); stageRoot.add(fog); }
+    thPost(XI - 1.0, zd + 2.2, y, -Math.PI / 2, 'eng', '糧食係（冷蔵庫）');
+    thZone('cold_' + k, X0, XI, a, b, 3); (TH.zn = TH.zn || {})['cold_' + k] = '冷蔵庫：' + n;
+    (TH.rooms3 = TH.rooms3 || []).push({ k: 'cold_' + k, d: 3, x: -17, z: zd, via: [[8.3, 1], [8.3, 10], [-11, 10], [-11, 1.5], [-14.3, 1.5], [-14.3, zd], [-17.4, zd]] }); }
+  thPost(-14.3, 24, y, Math.PI / 2, 'eng', '主計科の倉庫番'); thZone('coldcor', XI, XC, 0.6, 56, 3); TH.zn.coldcor = '冷蔵庫への通路'; }
 function thBuildD3Aft() { const d = 3, y = thY(d), E = thEngMats(), M = thMats(), cm = new THREE.MeshLambertMaterial({ color: 0x3a2a30 });
   thAft(d, 12.8, 119.8, [
     { s: 1, z0: 14, z1: 30, k: 'snack', n: 'シネマ売店', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { thCounter(b - 3.2, b - 2.4, c + 2, e - 2, yy, new THREE.MeshLambertMaterial({ color: 0x8a1c2a }), 1.05); const pop = new THREE.MeshStandardMaterial({ color: 0xfff0c8, transparent: true, opacity: 0.5 }); thBox(b - 3.1, b - 2.5, yy + 1.05, yy + 1.75, c + 2.4, c + 3.2, pop, false); for (let i = 0; i < 30; i++) thSphereAt(0.05, new THREE.MeshLambertMaterial({ color: 0xfff4d8 }), b - 2.8 + (Math.random() - 0.5) * 0.4, yy + 1.15 + Math.random() * 0.3, c + 2.8 + (Math.random() - 0.5) * 0.6); thDrinks(b - 1.0, b - 0.2, c + 5, e - 3, yy, '飲み物'); thPost(b - 1.7, (c + e) / 2, yy, -Math.PI / 2, 'shop', '売店係（シネマ）');
@@ -1086,6 +1114,7 @@ function thBuildD3Aft() { const d = 3, y = thY(d), E = thEngMats(), M = thMats()
       thSign('設営課　作業中（立入は声をかけてから）', (a + b) / 2, yy + 2.6, c + 0.3, 0, 2.6); (TH.posts2 = TH.posts2 || []).push(['setsuei', b - 3.2, c + 4.2, yy, Math.PI, 'setsuei', '設営課']); } }, { s: -1, z0: 30, z1: 44, k: 'karaoke', n: 'カラオケ室', w: 1.4, f: (a, b, c, e, yy) => thKaraoke(a, b, c, e, yy) },
     { s: 0, z0: 46, z1: 82, back: false, k: 'cinema', n: 'シネマ（映画館）', via: [[6, 11], [0, 12], [0, 48]], f: thCinema },
   ], { floorM: cm, wallM: new THREE.MeshLambertMaterial({ color: 0x4a3a40 }), corName: 'シネマへの通路' });
+  { const Z = TH.zone, E = Object.entries(Z).filter(([k]) => k !== 'projroom'), pz = Z.projroom; for (const k in Z) delete Z[k]; Z.projroom = pz; for (const [k, v] of E) Z[k] = v; }
   thPoster(-1.42, y + 1.6, 44.6, Math.PI / 2, '桜鳳', 'シネマ　上映中', '#5a1a2a'); thPoster(1.42, y + 1.6, 44.6, -Math.PI / 2, 'KIDS', 'Chaplin 1914', '#1a3a5a');
   thBox(-13, 13, y, thY(4), 82, 82.2, E.wall, true); thBox(-13.5, 13.5, y, thY(4), 82.2, TH_SZ1, M.win, true);
   // 右舷の出口（D3 の広間）→ 屋根付きの舷側甲板 → 後部甲板（射出機・水上機）
@@ -14590,7 +14619,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107h）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107i）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -26824,7 +26853,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

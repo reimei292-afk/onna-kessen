@@ -1048,7 +1048,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107y：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107z：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1149,7 +1149,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107y 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107z 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1649,12 +1649,37 @@ const thYen = man => man >= 10000 ? (Math.floor(man / 10000) + '億' + (man % 10
 function thBankQ(e) { if (!/銀行/.test(e.ukTag || '') || TH.party) return false; e.ukTalkT = time + 10; const L = thRosData().map(x => x.p), say = t => popup('窓口係「' + t + '」');
   const top = () => { const T = L.slice().sort((a, b) => thAsset(b) - thAsset(a)).slice(0, 5); popup('個人資産ランキング（ゲーム内の架空口座です）：' + T.map((p, i) => (i + 1) + '. ' + p.name + ' ' + thYen(thAsset(p))).join('　')); };
   ukDlg([{ choice: [
-    { label: '王の口座を見る', sub: '王室費（架空口座）', then: [{ fn: () => { TH.kingBal = TH.kingBal == null ? 12000 : TH.kingBal; say('陛下の口座は ' + thYen(TH.kingBal) + ' です。公務の予算とは別の、私的なお財布ですね'); } }] },
+    { label: '王の口座を見る', sub: '王室費（架空口座）', then: [{ fn: () => { thMk(); say('陛下の口座は ' + thYen(Math.round(thMkEq())) + ' です（建玉の評価込み）。公務の予算とは別の、私的なお財布ですね'); } }] },
     { label: '給与の仕組み', sub: '公務員としての月給', then: [{ fn: () => say('皆、船の公務員です。月給は一般 22〜32 万円、技能職 28〜45 万円、士官 40〜70 万円、幹部 70〜120 万円。お店も公務なので、儲けは個人に入りません') }] },
     { label: '資産ランキング', sub: 'ゲーム内の架空口座', then: [{ fn: top }] },
     { label: 'お手伝い制度', sub: '日当 2,000〜5,000 円', then: [{ fn: () => say('非番の人が布団干し・洗濯・皿洗い・品出し・掃除を手伝う制度です。本人の申請、担当の確認、最後は綾瀬さんの決裁で、大宮さんと西園寺さんに回覧。警報中と戦闘中は新しいお手伝いを止めて、本来の配置に戻ります') }] },
     { label: '保険のこと', sub: 'ケガ・病気は定額', then: [{ fn: () => say('ケガ保険と病気保険は定額の給付です。綾瀬さんの「王からのハラスメント保険」は……半分冗談です。相談と救護は、加入していなくても誰でも使えます。名簿を陛下にお渡しすることもありません') }] },
+    { label: '証券窓口（殿の機嫌株）', sub: '買い・売り・空売り', then: [{ fn: () => thMkMenu() }] }, { label: '破産の相談', sub: '仕組みを聞く', then: [{ fn: () => say(TH.mk && TH.mk.bk ? '陛下の口座は整理中です。投機と掛け買いは止めて、王室費から月 1,000 万円ずつ返済します。食事・医療・お部屋は今までどおりです' : '破産しそうなときは、まず銀行に相談です。投機と掛け買いを止めて、返済か整理の計画を立てます。食事・医療・お部屋は止めません。おむすび一個だけ、なんてことはしませんよ') }] },
     { label: '話す', sub: '', then: [{ fn: () => thTalk(e, true) }] }, { label: 'やめておく', sub: '', then: [] }] }]); return true; }
+// ---- 殿の機嫌株：記録係（綾瀬）が殿の機嫌を採点して定時発表、株価はそれに連動。買い・空売り（証拠金・追証・取引停止は簡略）。現実の投資の勧めではない ----
+function thMk() { return TH.mk || (TH.mk = { mood: 55, px: 1000, pos: 0, cost: 0, li: 0, t: 150, stop: 0, call: 0, bk: false, raid: false, dead: 0 }), TH.kingBal == null && (TH.kingBal = 100000), TH.mk; }
+function thMkEq() { const M = thMk(); return TH.kingBal + M.pos * M.px / 10000; }
+function thMkTick(dt) { if (!TH.on) return; const M = thMk(); const D = { 'party:start': 6, 'party:task': 2, 'party:end': 1 };
+  for (; M.li < TH.log.length; M.li++) { const l = TH.log[M.li] || ''; M.mood += D[l] || (/^party:pd/.test(l) ? 1 : /^party:1000/.test(l) ? 1 : 0); }
+  const raid = !!(TH.raid && TH.raid.on && TH.raid.ph !== 'after'); if (raid && !M.raid) M.mood -= 10; M.raid = raid; const dead = (TH.para && TH.para.dead) || 0; if (dead > M.dead) { M.mood -= 3 * (dead - M.dead); M.dead = dead; }
+  M.mood = Math.max(0, Math.min(100, M.mood + (55 - M.mood) * 0.002 * dt));
+  if (state !== 'play' || (M.t -= dt) > 0) return; M.t = 180; const tg = 400 + M.mood * 12; M.px = Math.max(50, Math.round(M.px + (tg - M.px) * 0.5 + (Math.random() - 0.5) * 40));
+  let note = ''; if (M.stop > 0) M.stop--; if (M.bk) { TH.kingBal += 1000; note = '　（整理中：王室費から 1,000 万円を返済）'; if (TH.kingBal >= 0) { M.bk = false; note = '　陛下の口座の整理が終わりました。取引を再開できます'; } } const eq = thMkEq(), need = M.pos < 0 ? 0.3 * -M.pos * M.px / 10000 : 0;
+  if (M.pos < 0 && eq < need) { if (M.call) { thMkClose(true); note = '　追証が入らなかったので、空売りを強制的に買い戻しました。次の発表まで取引停止です'; M.stop = 1; } else { M.call = 1; note = '　空売りの証拠金が足りません（追証）。次の発表までに入れてください'; } } else M.call = 0;
+  popup('綾瀬「定時発表。本日の殿の機嫌指数は ' + Math.round(M.mood) + '。機嫌株は ' + M.px.toLocaleString() + ' 円です」' + note); if (thMkEq() < 0 && !M.bk) thMkBk(); }
+function thMkClose(force) { const M = thMk(); if (!M.pos) return; TH.kingBal += M.pos * M.px / 10000; M.pos = 0; M.cost = 0; if (TH.kingBal < 0) thMkBk(); }
+function thMkBk() { const M = thMk(); M.bk = true; ukDlg([{ say: '陛下、口座が赤字です。……破産の手続きに入ります' }, { say: '一、銀行で相談。二、投機と掛け買いを止める。三、返済と整理の計画' }, { say: '王室費から、月 1,000 万円ずつ返済します。お食事も医療もお部屋も、今までどおりです' }]); }
+function thMkMenu() { const M = thMk(), v = M.pos * M.px / 10000, pl = M.pos ? (M.px - M.cost) * M.pos / 10000 : 0;
+  const head = `機嫌指数 ${Math.round(M.mood)}・機嫌株 ${M.px.toLocaleString()} 円／口座 ${thYen(Math.round(TH.kingBal))}・建玉 ${M.pos ? (M.pos > 0 ? '買い ' : '空売り ') + Math.abs(M.pos).toLocaleString() + ' 株（損益 ' + Math.round(pl).toLocaleString() + ' 万円）' : 'なし'}`;
+  const lock = M.bk ? '破産の整理中：投機は止めています' : M.stop ? '取引停止中（次の発表まで）' : null, tr = (n) => { if (lock) { popup(lock); return; } const cost = n * M.px / 10000;
+    if (n > 0 && M.pos >= 0 && cost > TH.kingBal) { popup('窓口係「残高が足りません」'); return; } if (n < 0 && M.pos <= 0 && thMkEq() < 0.5 * (-n - M.pos) * M.px / 10000) { popup('窓口係「空売りには建玉の半分の証拠金が要ります」'); return; }
+    TH.kingBal -= n * M.px / 10000; const np = M.pos + n; M.cost = np && Math.sign(np) === Math.sign(M.pos || n) && Math.abs(np) > Math.abs(M.pos) ? (M.cost * Math.abs(M.pos) + M.px * Math.abs(n)) / Math.abs(np) : np ? M.cost : 0; M.pos = np; if (!np) M.cost = 0;
+    popup('窓口係「' + (n > 0 ? '買い' : '売り') + ' ' + Math.abs(n).toLocaleString() + ' 株、約定しました」'); if (TH.kingBal < 0 && !M.pos) thMkBk(); };
+  ukDlg([{ say: head }, { choice: [
+    { label: '買う 1 万株', sub: `約 ${Math.round(M.px)} 万円`, then: [{ fn: () => tr(10000) }] }, { label: '買う 10 万株', sub: `約 ${thYen(Math.round(M.px * 10))}`, then: [{ fn: () => tr(100000) }] },
+    { label: '空売り 1 万株', sub: '値下がりで得・上がると損', then: [{ fn: () => { tr(-10000); popup('窓口係「空売りは、値上がりすると損が元金を超えることもあります。証拠金が 3 割を切ると追証、入らなければ強制決済と取引停止です」'); } }] },
+    { label: '建玉を全部手じまう', sub: M.pos ? '' : '建玉なし', then: [{ fn: () => { if (!M.pos) return; if (M.bk) { popup('窓口係「整理の手じまいとして受け付けます」'); } TH.kingBal += 0; const n = -M.pos; M.pos = 0; TH.kingBal -= n * M.px / 10000; M.cost = 0; popup('窓口係「手じまいました。口座は ' + thYen(Math.round(TH.kingBal)) + ' です」'); if (TH.kingBal < 0) thMkBk(); } }] },
+    { label: 'やめておく', sub: '綾瀬「機嫌を損ねて儲けるのは、なしですよ」', then: [] }] }]); }
 function thRosStat(p) { const s = (TH.stat || {})[p.id]; if (s) return s; if (p.named) return '当直'; return p.shift === (Math.floor(Date.now() / 3600000) % 3) ? '当直' : '非番'; }
 function thRosOpen() { if (!TH.on) return; if (document.exitPointerLock) document.exitPointerLock(); if (state === 'play') { state = 'pause'; TH.rosPaused = true; }
   let d = $('thRos'); if (!d) { d = document.createElement('div'); d.id = 'thRos'; d.style.cssText = 'position:fixed;inset:2% 3%;z-index:90;background:rgba(12,14,20,.97);color:#f2ead2;border:1px solid #cdb98a;border-radius:8px;display:flex;flex-direction:column;font:12px/1.4 sans-serif;padding:8px 10px'; document.body.appendChild(d);
@@ -1837,14 +1862,14 @@ function thMusicTick(dt) {
 }
 function thStopMusic() { for (const k of ['hall', 'atr']) { const a = TH.music[k]; if (a && !a.paused) a.pause(); if (a) a.volume = 0; } }
 function updateTenhou(dt) {
-  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); thGirlCull(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
+  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); thGirlCull(dt); thMkTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
   if (TH.sea && TH.sea.material.map) TH.sea.material.map.offset.y += dt * 0.004;
   if (TH.radar) TH.radar.rotation.y += dt * 0.8;
   if (state === 'play') thDeckCull(); const w = thWhere(); if (w && w !== TH.lastW) { TH.lastW = w; TH.log.push('at:' + w); }
   if (player.pos.y < -1) { player.pos.set(8, thY(13) + 0.05, 2); player.vy = 0; }   // 万一落ちたら王室甲板へ
 }
 function buildTenhou() {
-  thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.watchDone = false; TH.fsC = null; TH.byDeptM = null; TH.dpi = null; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
+  thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.watchDone = false; TH.mk = null; TH.kingBal = null; TH.fsC = null; TH.byDeptM = null; TH.dpi = null; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
   TH.secret = []; thBuildExterior(); thBuildFore(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
   hq = null; thRoster(); thDeckIndex();
 }
@@ -1899,7 +1924,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -15170,7 +15195,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107y）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107z）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27404,7 +27429,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107y';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107z';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

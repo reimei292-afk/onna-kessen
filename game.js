@@ -1003,7 +1003,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107u：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107v：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1104,7 +1104,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107u 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107v 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1594,6 +1594,22 @@ function thRosShow(on) { const b = thRosBtn(); b.style.display = on ? 'flex' : '
 function thRosData() { if (TH.rosD) return TH.rosD; const R = thRoster(), L = R.map(p => ({ p, rel: [] })), by = {}; L.forEach(x => by[x.p.id] = x); const rnd = thRng(77);
   for (let i = 0; i + 1 < L.length; i += 1) { const a = L[i], b = L[(i + 1 + ((rnd() * 40) | 0)) % L.length]; if (a.p.named || b.p.named || rnd() > 0.06 || a.rel.length || b.rel.length) continue; const k = rnd(), t = k < 0.5 ? ['姉', '妹'] : k < 0.8 ? ['いとこ', 'いとこ'] : ['叔母', '姪']; a.rel.push(`${t[1]}：${b.p.name}（${b.p.id}）`); b.rel.push(`${t[0]}：${a.p.name}（${a.p.id}）`); }
   L.forEach(x => { if (x.p.family) x.rel.push(x.p.family); else if (!x.p.named && thHash(x.p.name) % 6 === 0) x.rel.push('王の血縁：' + (thHash(x.p.name + 'x') % 2 ? '父方の遠縁' : '母方の遠縁')); }); TH.rosD = L; return L; }
+// ---- お金：公務員としての月給（帯で決まる）と個人資産（ゲーム内の架空口座）。銀行の窓口で説明・ランキング・お手伝い制度・保険 ----
+const TH_ASSET = { ojou: 42000, omiya: 18000, fumi: 9500, sumi: 8000, sec2: 3200 };   // 万円（仕様の仮案）
+const TH_EXEC = ['sumi', 'omiya', 'fumi', 'sec2', 'ojou', 'reika', 'kujo', 'sec3', 'sec4', 'sysop', 'shizuka', 'morishita'];
+function thPay(p) { if (p.pay) return p.pay; const h = thHash(p.name + 'pay'), r = (a, b) => a + h % (b - a + 1), sk = /医|看護|機関|缶|整備|情報|航空|砲|電|通信|航海|楽/.test((p.post || '') + (p.duty || ''));
+  return p.pay = p.named && TH_EXEC.includes(p.key) ? r(70, 120) : p.officer ? r(40, 70) : sk ? r(28, 45) : r(22, 32); }
+function thAsset(p) { if (p.asset != null) return p.asset; const h = thHash(p.name + 'as'); return p.asset = TH_ASSET[p.key] != null ? TH_ASSET[p.key] : p.named ? 800 + h % 2400 : /銀行/.test(p.post || '') && h % 4 === 0 ? 2100 : 200 + h % 401; }
+const thYen = man => man >= 10000 ? (Math.floor(man / 10000) + '億' + (man % 10000 ? (man % 10000).toLocaleString() + '万' : '') + '円') : man.toLocaleString() + '万円';
+function thBankQ(e) { if (!/銀行/.test(e.ukTag || '') || TH.party) return false; e.ukTalkT = time + 10; const L = thRosData().map(x => x.p), say = t => popup('窓口係「' + t + '」');
+  const top = () => { const T = L.slice().sort((a, b) => thAsset(b) - thAsset(a)).slice(0, 5); popup('個人資産ランキング（ゲーム内の架空口座です）：' + T.map((p, i) => (i + 1) + '. ' + p.name + ' ' + thYen(thAsset(p))).join('　')); };
+  ukDlg([{ choice: [
+    { label: '王の口座を見る', sub: '王室費（架空口座）', then: [{ fn: () => { TH.kingBal = TH.kingBal == null ? 12000 : TH.kingBal; say('陛下の口座は ' + thYen(TH.kingBal) + ' です。公務の予算とは別の、私的なお財布ですね'); } }] },
+    { label: '給与の仕組み', sub: '公務員としての月給', then: [{ fn: () => say('皆、船の公務員です。月給は一般 22〜32 万円、技能職 28〜45 万円、士官 40〜70 万円、幹部 70〜120 万円。お店も公務なので、儲けは個人に入りません') }] },
+    { label: '資産ランキング', sub: 'ゲーム内の架空口座', then: [{ fn: top }] },
+    { label: 'お手伝い制度', sub: '日当 2,000〜5,000 円', then: [{ fn: () => say('非番の人が布団干し・洗濯・皿洗い・品出し・掃除を手伝う制度です。本人の申請、担当の確認、最後は綾瀬さんの決裁で、大宮さんと西園寺さんに回覧。警報中と戦闘中は新しいお手伝いを止めて、本来の配置に戻ります') }] },
+    { label: '保険のこと', sub: 'ケガ・病気は定額', then: [{ fn: () => say('ケガ保険と病気保険は定額の給付です。綾瀬さんの「王からのハラスメント保険」は……半分冗談です。相談と救護は、加入していなくても誰でも使えます。名簿を陛下にお渡しすることもありません') }] },
+    { label: '話す', sub: '', then: [{ fn: () => thTalk(e, true) }] }, { label: 'やめておく', sub: '', then: [] }] }]); return true; }
 function thRosStat(p) { const s = (TH.stat || {})[p.id]; if (s) return s; if (p.named) return '当直'; return p.shift === (Math.floor(Date.now() / 3600000) % 3) ? '当直' : '非番'; }
 function thRosOpen() { if (!TH.on) return; if (document.exitPointerLock) document.exitPointerLock(); if (state === 'play') { state = 'pause'; TH.rosPaused = true; }
   let d = $('thRos'); if (!d) { d = document.createElement('div'); d.id = 'thRos'; d.style.cssText = 'position:fixed;inset:2% 3%;z-index:90;background:rgba(12,14,20,.97);color:#f2ead2;border:1px solid #cdb98a;border-radius:8px;display:flex;flex-direction:column;font:12px/1.4 sans-serif;padding:8px 10px'; document.body.appendChild(d);
@@ -1609,7 +1625,7 @@ function thRosDraw() { const L = thRosData(), dp = $('thRosDept').value, dk = $(
   const per = 50, pages = Math.max(1, Math.ceil(F.length / per)); TH.rosPg = Math.min(TH.rosPg || 0, pages - 1); const pg = F.slice(TH.rosPg * per, TH.rosPg * per + per);
   $('thRosN').textContent = `${F.length.toLocaleString()} / ${L.length.toLocaleString()} 人（＋王）`; $('thRosPg').textContent = `${TH.rosPg + 1}/${pages}`;
   const esc = s => String(s == null ? '' : s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
-  $('thRosT').innerHTML = `<table style="border-collapse:collapse;width:100%"><tr style="color:#d8b76a;text-align:left"><th>番号</th><th>氏名</th><th>職・持ち場</th><th>部署</th><th>勤務甲板</th><th>部屋・寝台</th><th>状態</th><th>親族</th></tr>${pg.map(({ p, rel }) => `<tr style="border-top:1px solid rgba(255,255,255,.08)${p.named ? ';color:#ffe0a0' : ''}"><td>${p.id}</td><td>${esc(p.name)}${p.age ? `（${p.age}）` : ''}</td><td>${esc(p.duty ? p.duty + '・' : '')}${esc(p.post)}</td><td>${esc(TH_DEPT[p.dept][0])}</td><td>D${p.deck}</td><td>${esc((p.bed || p.room || '').replace('/', ' '))}</td><td>${thRosStat(p)}</td><td>${esc(rel.join('、'))}</td></tr>`).join('')}</table>`;
+  $('thRosT').innerHTML = `<table style="border-collapse:collapse;width:100%"><tr style="color:#d8b76a;text-align:left"><th>番号</th><th>氏名</th><th>職・持ち場</th><th>部署</th><th>勤務甲板</th><th>部屋・寝台</th><th>状態</th><th>月給</th><th>所持金</th><th>親族</th></tr>${pg.map(({ p, rel }) => `<tr style="border-top:1px solid rgba(255,255,255,.08)${p.named ? ';color:#ffe0a0' : ''}"><td>${p.id}</td><td>${esc(p.name)}${p.age ? `（${p.age}）` : ''}</td><td>${esc(p.duty ? p.duty + '・' : '')}${esc(p.post)}</td><td>${esc(TH_DEPT[p.dept][0])}</td><td>D${p.deck}</td><td>${esc((p.bed || p.room || '').replace('/', ' '))}</td><td>${thRosStat(p)}</td><td>${thPay(p)}万円</td><td>${thYen(thAsset(p))}</td><td>${esc(rel.join('、'))}</td></tr>`).join('')}</table>`;
   $('thRosT').scrollTop = 0; }
 
 // ---- 図書館の古書店風の詰め込み・ブックカフェ「栞珈琲」・銀行の奥（主計室へ）----
@@ -1739,7 +1755,7 @@ function thStepTick(dt) { if (state !== 'play') return; const pp = player.pos, C
     const p = e.s.position, z = thZoneAt(p.x, p.z, e.thY + 0.5), steel = thDeckOf(e.thY + 0.3) <= 2 || TH_STEEL_RX.test(z), soft = !steel && TH_CARPET_RX.test(z), o = Sfx.at(p, 14, 1); if (!o) continue;
     const g = (soft ? 0.05 : steel ? 0.16 : 0.11) * (1 - d / 14); Sfx.noiseBurst(soft ? 0.03 : 0.025, soft ? 'lowpass' : 'bandpass', soft ? 900 : steel ? 3200 : 2400, soft ? 500 : steel ? 2600 : 1900, g, steel ? 6 : 2, 0, o); if (steel) Sfx.tone('sine', 1800, 1500, 0.05, g * 0.35, 0, o); } }
 function thTalk(e, plain) {
-  if (!plain && (thPartyQ(e) || thHallQ(e) || thBackQ(e) || thGreenQ(e))) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const PL = !TH_NAMED.some(r => r[0] === e.thLk) && TH_PERS_L[e.prof && e.prof.pers], t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || (PL && TH.talkN % 3 === 1 ? PL[(thHash(e.prof.name) + TH.talkN) % PL.length] : L[(TH.talkN + thHash(e.prof.name || '')) % L.length]);
+  if (!plain && (thPartyQ(e) || thHallQ(e) || thBankQ(e) || thBackQ(e) || thGreenQ(e))) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const PL = !TH_NAMED.some(r => r[0] === e.thLk) && TH_PERS_L[e.prof && e.prof.pers], t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || (PL && TH.talkN % 3 === 1 ? PL[(thHash(e.prof.name) + TH.talkN) % PL.length] : L[(TH.talkN + thHash(e.prof.name || '')) % L.length]);
   $('popup').textContent = (e.ukTag || e.prof.name) + '「' + t + '」'; popupTimer = Math.max(2.2, t.length * 0.12); e.ukTalkT = time + 3; TH.log.push('talk:' + (e.thLk || '') + ':' + e.prof.name);
 }
 function thGoDeck(d, E) {
@@ -1838,7 +1854,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -15109,7 +15125,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107u）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107v）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27343,7 +27359,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107u';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107v';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

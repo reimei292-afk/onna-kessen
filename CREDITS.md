@@ -25,3 +25,26 @@
 - assets/th_art/almond.jpg — フィンセント・ファン・ゴッホ「花咲くアーモンドの枝」, パブリックドメイン（Wikimedia Commons: Vincent_van_Gogh_-_Almond_blossom_-_Google_Art_Project.jpg）。ガレリアの天井に使用。
 - assets/th_models/* — Poly Haven（https://polyhaven.com）, CC0。dining_chair_02, round_wooden_table_01, Sofa_01, ArmChair_01, BarberShopChair_01, outdoor_table_chair_set_01, wooden_bookshelf_worn, metal_office_desk, coffee_table_round_01, dining_table。1k の glTF、色テクスチャのみ 512px に縮小。
 - lib/GLTFLoader.js, lib/BufferGeometryUtils.js — three.js r158（MIT License, © three.js authors）。lib/three_shim.mjs は three.min.js を ES モジュールとして読むための橋（本作）。
+
+## 天鳳：写真・古地図・海図（パブリックドメイン、Wikimedia Commons）
+512px 以下に縮小して assets/th_photo/ に置いています。
+
+- liner_1.jpg: Photograph of the main dining room on the salon deck of White Star Liner "Olympic" ... LCCN96503966.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Photograph_of_the_main_dining_room_on_the_salon_deck_of_White_Star_Liner_%22Olympic%22_..._LCCN96503966.jpg
+- liner_3.jpg: Prinses Juliana photo.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Prinses_Juliana_photo.jpg
+- liner_4.jpg: Zeelandia Liverpool Museums cropped.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Zeelandia_Liverpool_Museums_cropped.jpg
+- warship_1.jpg: Brazilian battleship Minas Geraes (1910-1952) (35534459624).jpg — Public domain — https://commons.wikimedia.org/wiki/File:Brazilian_battleship_Minas_Geraes_(1910-1952)_(35534459624).jpg
+- warship_2.jpg: USS Indiana ggbain 09989.jpg — Public domain — https://commons.wikimedia.org/wiki/File:USS_Indiana_ggbain_09989.jpg
+- land_1.jpg: Tagonoura.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Tagonoura.jpg
+- land2_1.jpg: Scottish painter - Scottish lake landscape in front of mountains.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Scottish_painter_-_Scottish_lake_landscape_in_front_of_mountains.jpg
+- land2_2.jpg: Mountain lake landscape.JPG — Public domain — https://commons.wikimedia.org/wiki/File:Mountain_lake_landscape.JPG
+- map_1.jpg: 1794 Samuel Dunn Wall Map of the World in Hemispheres - Geographicus - World2-dunn-1794.jpg — Public domain — https://commons.wikimedia.org/wiki/File:1794_Samuel_Dunn_Wall_Map_of_the_World_in_Hemispheres_-_Geographicus_-_World2-dunn-1794.jpg
+- map_2.jpg: 17th century world map - Nova Totius Terrarum Orbis Tabula.jpg — Public domain — https://commons.wikimedia.org/wiki/File:17th_century_world_map_-_Nova_Totius_Terrarum_Orbis_Tabula.jpg
+- map_3.jpg: 17th century world map - Nova Totius Terrarum Orbis Tabula (Aquita).jpg — Public domain — https://commons.wikimedia.org/wiki/File:17th_century_world_map_-_Nova_Totius_Terrarum_Orbis_Tabula_(Aquita).jpg
+- chart_1.jpg: Admiralty Chart No 2613 France N. Coast Sheet XI Cape Levi to Fecamp, Published 1894.jpg — Public domain — https://commons.wikimedia.org/wiki/File:Admiralty_Chart_No_2613_France_N._Coast_Sheet_XI_Cape_Levi_to_Fecamp,_Published_1894.jpg
+- chart_2.jpg: A general chart of the west coast and western islands of Scotland from Cantire to Cape Wrath and Butt of the Lewis Mackenzie 74400887.jpg — Public domain — https://commons.wikimedia.org/wiki/File:A_general_chart_of_the_west_coast_and_western_islands_of_Scotland_from_Cantire_to_Cape_Wrath_and_Butt_of_the_Lewis_Mackenzie_74400887.jpg
+- chart_3.jpg: 1853 U.S. Coast Survey Nautical Chart or Map of Nantucket, Massachusetts - Geographicus - Nantucket-uscs-1853.jpg — Public domain — https://commons.wikimedia.org/wiki/File:1853_U.S._Coast_Survey_Nautical_Chart_or_Map_of_Nantucket,_Massachusetts_-_Geographicus_-_Nantucket-uscs-1853.jpg
+- chart_4.jpg: 1854 U.S. Coast Survey Nautical Chart or Map of Nantucket, Massachusetts - Geographicus - NantucketShoals-uscs-1854.jpg — Public domain — https://commons.wikimedia.org/wiki/File:1854_U.S._Coast_Survey_Nautical_Chart_or_Map_of_Nantucket,_Massachusetts_-_Geographicus_-_NantucketShoals-uscs-1854.jpg
+
+## 天鳳：シネマの映画
+- assets/th_film/kids_auto_race_1914.mp4: Charlie Chaplin "Kids Auto Race at Venice" (1914, Keystone) — Public Domain（Internet Archive の表示: http://creativecommons.org/licenses/publicdomain/）— https://archive.org/details/CC_1914_02_07_KidsAutoRaceAtVenice — 240p・音声なしに再エンコード
+- assets/th_film/ouhou_*.jpg: 本作「桜鳳」ステージのゲーム内画面（自作）

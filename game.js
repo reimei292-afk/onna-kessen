@@ -709,7 +709,7 @@ function thAft(d, z0, z1, rooms, o = {}) {
   for (const r of thRectSub([-13, 13, z0, z1], o.holesF || [])) thFloor(r[0], r[1], r[2], r[3], y, fm, 3);
   if (!o.noCeil) for (const r of thRectSub([-13, 13, z0, z1], o.holesC || [])) thPlane(r[0], r[1], r[2], r[3], cy - 0.02, M.ceil, true);
   for (const sx of [-1, 1]) { if (o.side && sx > 0) thWallX(13, z0, z1, y, cy, wm, [[z0 + 1, z0 + 4]], 0.2, 2.6); else thBox(sx > 0 ? 13 : -13.2, sx > 0 ? 13.2 : -13, y, cy, z0, z1, wm, true); }
-  if (o.endGap) thWallZ(z1 + 0.1, -13, 13, y, cy, wm, [[-1.5, 1.5]], 0.2, 2.6); else thBox(-13, 13, y, cy, z1, z1 + 0.2, wm, true);
+  if (o.endGaps) thWallZ(z1 + 0.1, -13, 13, y, cy, wm, o.endGaps, 0.2, 2.4); else if (o.endGap) thWallZ(z1 + 0.1, -13, 13, y, cy, wm, [[-1.5, 1.5]], 0.2, 2.6); else thBox(-13, 13, y, cy, z1, z1 + 0.2, wm, true);
   const cm = o.corM || fm; thPlane(-1.5, 1.5, z0, z1, y + 0.015, cm, false, 3);
   for (const sx of [-1, 1]) { const gaps = [], R = rooms.filter(r => r.s === sx || r.s === 0);
     for (const r of R) { if (r.s === 0) { gaps.push([r.z0, r.z1]); continue; } const zc = (r.z0 + r.z1) / 2, w = r.w || 1.4; if (!r.shut && !r.lock) gaps.push([zc - w / 2, zc + w / 2]); }
@@ -720,7 +720,7 @@ function thAft(d, z0, z1, rooms, o = {}) {
       if (r.lock) (TH.locks = TH.locks || []).push({ x: sx * 1.0, z: zc, y, msg: r.lock }); }
   }
   for (const r of rooms) { const xa = r.s === 0 ? -13 : r.s > 0 ? 1.6 : -13, xb = r.s === 0 ? 13 : r.s > 0 ? 13 : -1.6;
-    if (r.s === 0) { thWallZ(r.z0, -13, 13, y, cy, wm, [[-1.5, 1.5]], 0.16, 2.6); thWallZ(r.z1, -13, 13, y, cy, wm, r.back === false ? [] : [[-1.5, 1.5]], 0.16, 2.6); if (r.n) thSign(r.n, 0, y + 2.8, r.z0 - 0.1, Math.PI, 2.4); }
+    if (r.s === 0) { thWallZ(r.z0, -13, 13, y, cy, wm, [[-1.5, 1.5]], 0.16, 2.6); thWallZ(r.z1, -13, 13, y, cy, wm, r.back === false ? (r.backGaps || []) : [[-1.5, 1.5]], 0.16, 2.6); if (r.n) thSign(r.n, 0, y + 2.8, r.z0 - 0.1, Math.PI, 2.4); }
     if (r.k && !r.shut && !r.lock) { thZone(r.k, xa, xb, r.z0, r.z1, d); (TH.zn = TH.zn || {})[r.k] = r.n; (TH.rooms3 = TH.rooms3 || []).push({ k: r.k, d, x: (xa + xb) / 2, z: (r.z0 + r.z1) / 2, z0: r.z0, s: r.s, n: r.n, via: r.via ? r.via.concat(r.s ? [[0, (r.z0 + r.z1) / 2], [r.s * 2.2, (r.z0 + r.z1) / 2]] : []) : null }); }
     if (r.f && !r.shut && !r.lock) r.f(xa, xb, r.z0, r.z1, y, cy); }
   thZone('cor' + d, -1.5, 1.5, z0, z1, d); (TH.zn = TH.zn || {})['cor' + d] = o.corName || '主通路';
@@ -804,6 +804,32 @@ function thRail(x0, z0, x1, z1, y, m) { const M = thMats(), l = Math.hypot(x1 - 
   const n = Math.max(1, Math.round(l / 1.5)); for (let i = 0; i <= n; i++) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.08, 6), m || M.black); p.position.set(x0 + (x1 - x0) * i / n, y + 0.54, z0 + (z1 - z0) * i / n); stageRoot.add(p); }
   thSolid(Math.min(x0, x1) - 0.06, Math.max(x0, x1) + 0.06, y, y + 1.1, Math.min(z0, z1) - 0.06, Math.max(z0, z1) + 0.06); }
 // ---------------- D4 船尾側：美容院・ネイル・パウダールーム・洗濯室・劇場（一層） ----------------
+// ---------------- D4 艦尾の曲がり回廊：劇場の奥（舞台の左右の扉）から半円を描いて回る通路。頂点に艦尾展望室。内側は閉じた機械室 ----------------
+function thBuildSternCor() {
+  const d = 4, M = thMats(), D = thDeckMats(d), y = thY(d), h = thH(d), y1 = y + h, cz = 100.2, Ri = 10.3, Ro = 12.7, wm = D.wall;
+  thFloor(-13, 13, 100.2, 113.2, y, D.carpet, 3); thPlane(-13, 13, 100.2, 113.2, y1 - 0.02, M.ceil, true);
+  const arcM = (R, a0, a1, hh) => { const g = new THREE.CylinderGeometry(R, R, hh, 40, 1, true, a0, a1 - a0), mm = wm.clone(); mm.side = THREE.DoubleSide; const o = new THREE.Mesh(g, mm); o.position.set(0, y + hh / 2, cz); stageRoot.add(o); return o; };
+  const arcS = (R, a0, a1, skip) => { const n = Math.ceil(R * (a1 - a0) / 0.5); for (let i = 0; i < n; i++) { const a = a0 + (i + 0.5) / n * (a1 - a0); if (skip && skip(a)) continue; const x = Math.sin(a) * R, z = cz + Math.cos(a) * R; thSolid(x - 0.28, x + 0.28, y, y1, z - 0.28, z + 0.28); } };
+  // 角度 a：x = sin a·R, z = cz + cos a·R（a=0 が艦尾の頂点、±π/2 が舞台の左右）
+  const gapA = 0.6 / Ro; arcM(Ri, -Math.PI / 2, Math.PI / 2, h); arcS(Ri, -Math.PI / 2, Math.PI / 2);
+  arcM(Ro, -Math.PI / 2, -gapA * 1.7, h); arcM(Ro, gapA * 1.7, Math.PI / 2, h); { const lin = arcM(Ro, -gapA * 1.7, gapA * 1.7, h - 2.3); lin.position.y = y + 2.3 + (h - 2.3) / 2; } arcS(Ro, -Math.PI / 2, Math.PI / 2, a => Math.abs(a) < gapA * 1.7);
+  thPlane(-13, 13, 100.2, 113.2, y + 0.015, D.carpet, false, 3);
+  // 床の真鍮の帯と吊り灯（曲がりが分かるように）
+  for (let i = 0; i <= 12; i++) { const a = -Math.PI / 2 + i / 12 * Math.PI, R = (Ri + Ro) / 2, x = Math.sin(a) * R, z = cz + Math.cos(a) * R; const b = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.02, 0.08), M.brass); b.position.set(x, y + 0.03, z); b.rotation.y = a; stageRoot.add(b); if (i % 3 === 0) thPL(x, y1 - 0.4, z, 0.55, 9);
+    if (i % 2 === 1 && i !== 5 && i !== 7) { const xo = Math.sin(a) * (Ro - 0.12), zo = cz + Math.cos(a) * (Ro - 0.12); thPhoto(['chart_2', 'warship_1', 'map_1'][i % 3], xo, y + 1.6, zo, a + Math.PI, 1.3, 0.9); } }
+  for (const a of [-1.0, 1.0]) { const R = (Ri + Ro) / 2; thSign(a < 0 ? '艦尾回廊（左舷側）' : '艦尾回廊（右舷側）', Math.sin(a) * (Ri + 0.12), y + 2.6, cz + Math.cos(a) * (Ri + 0.12), a, 1.8); thPlant(Math.sin(a * 1.35) * (Ro - 0.5), cz + Math.cos(a * 1.35) * (Ro - 0.5), y); }
+  thDoor(0, cz + Ri + 0.05, y, Math.PI, '機械室'); thSign('艦尾機械室（関係者のみ）', 0, y + 2.6, cz + Ri + 0.15, 0, 1.8);
+  for (const sx of [-1, 1]) thSign('艦尾回廊へ', sx * 11.5, y + 2.6, 99.9, Math.PI, 1.4);
+  // 頂点の先：艦尾展望室（窓は艦尾の外へ）
+  const z0 = cz + Ro, z1 = 119.6; thFloor(-6, 6, z0 - 0.2, z1, y, D.carpet, 3); thPlane(-6, 6, z0, z1, y1 - 0.02, M.ceil, true);
+  thWallX(-6, z0, z1, y, y1, wm); thWallX(6, z0, z1, y, y1, wm); thBox(-6, 6, y, y + 0.9, z1, z1 + 0.15, wm, true); thBox(-6, 6, y + 0.9, y1, z1 + 0.05, z1 + 0.1, M.glass || M.white, true);
+  for (const x of [-4, 0, 4]) thBox(x - 0.06, x + 0.06, y + 0.9, y1, z1 - 0.02, z1 + 0.15, M.white, false);
+  thBox(-5.4, -3.2, y, y + 0.45, z1 - 1.6, z1 - 1.0, M.woodD, true); thBox(3.2, 5.4, y, y + 0.45, z1 - 1.6, z1 - 1.0, M.woodD, true); thPlant(-5.4, z0 + 0.6, y); thPlant(5.4, z0 + 0.6, y); thPL(0, y1 - 0.4, (z0 + z1) / 2, 0.7, 10);
+  thSign('艦尾展望室', 0, y + 2.6, z0 + 0.1, Math.PI, 1.6); thPost(3.0, z0 + 2.4, y, 0, 'cab', '巡回（艦尾回廊）');
+  thZone('sterncor', -13, 13, 100.2, 113.2, d); thZone('sternview', -6, 6, z0, z1, d); Object.assign(TH.zn = TH.zn || {}, { sterncor: '艦尾の曲がり回廊', sternview: '艦尾展望室' });
+  const v0 = [[6, 11], [0, 12], [0, 66], [0, 89], [11.5, 89], [11.5, 101.5]], arc = []; for (let i = 1; i <= 8; i++) { const a = Math.PI / 2 - i / 8 * Math.PI / 2, R = (Ri + Ro) / 2; arc.push([+(Math.sin(a) * R).toFixed(2), +(cz + Math.cos(a) * R).toFixed(2)]); }
+  (TH.rooms3 = TH.rooms3 || []).push({ k: 'sterncor', d, via: v0.concat(arc.slice(0, 4)) }, { k: 'sternview', d, via: v0.concat(arc, [[0, 116]]) });
+}
 function thBuildD4Aft() {
   const d = 4, D = thDeckMats(d), M = thMats();
   thAft(d, 12.6, 100, [
@@ -812,9 +838,10 @@ function thBuildD4Aft() {
     { s: -1, z0: 14, z1: 24, k: 'powder', n: 'パウダールーム', f: (a, b, c, e, y) => { thCounter(a, a + 0.7, c + 0.8, e - 0.8, y, M.white, 0.85); thBox(a + 0.02, a + 0.06, y + 1.1, y + 2.1, c + 0.8, e - 0.8, M.glass, false); thPlant(b - 0.6, e - 0.7, y); } },
     { s: -1, z0: 24, z1: 40, k: 'laundry', n: '洗濯室（業務）', f: (a, b, c, e, y) => { for (let z = c + 1.2; z < e - 0.8; z += 1.4) { thBox(a + 0.1, a + 0.9, y, y + 0.95, z - 0.4, z + 0.4, M.white, true); const dr = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 20), M.glass); dr.rotation.z = Math.PI / 2; dr.position.set(a + 0.92, y + 0.5, z); stageRoot.add(dr); } thTable((a + b) / 2 + 1, (c + e) / 2, y, 1.4, 3.0, M.white, 0.9); thPost((a + b) / 2 + 2.2, (c + e) / 2, y, -Math.PI / 2, 'cab', '洗濯係'); } },
     { s: 1, z0: 38, z1: 50, shut: true, n: '隔離病棟' }, { s: -1, z0: 40, z1: 50, shut: true, n: '手術準備室' }, { s: 1, z0: 50, z1: 62, shut: true, n: 'スパ（準備中）' }, { s: -1, z0: 50, z1: 62, shut: true, n: 'リネン庫' },
-    { s: 0, z0: 64, z1: 100, back: false, k: 'theater', n: '劇場', f: (a, b, c, e, y, cy) => { const R = new THREE.MeshLambertMaterial({ color: 0x7a1420 }); thBox(-9, 9, y, y + 0.9, 92, 99.8, M.woodD, true); thBox(-9, 9, y + 0.9, cy, 99.6, 99.8, R, false); for (const sx of [-1, 1]) thBox(sx * 9 - 0.4, sx * 9 + 0.4, y, cy, 91.6, 99.8, R, false);
+    { s: 0, z0: 64, z1: 100, back: false, backGaps: [[-12.4, -10.6], [10.6, 12.4]], k: 'theater', n: '劇場', f: (a, b, c, e, y, cy) => { const R = new THREE.MeshLambertMaterial({ color: 0x7a1420 }); thBox(-9, 9, y, y + 0.9, 92, 99.8, M.woodD, true); thBox(-9, 9, y + 0.9, cy, 99.6, 99.8, R, false); for (const sx of [-1, 1]) thBox(sx * 9 - 0.4, sx * 9 + 0.4, y, cy, 91.6, 99.8, R, false);
       for (let r = 0; r < 6; r++) for (let i = -4; i <= 4; i++) { if (i === 0) continue; thModel('dining_chair_02', i * 1.1, y, 71.2 + r * 2.5, 0, 0.95); } floors.push({ x0: -9, x1: 9, z0: 92, z1: 99.8, y: y + 0.9 }); thPost(0, 95, y + 0.9, Math.PI, 'shop', '舞台係'); thTheaterBalcony(y); } },
-  ], { floorM: D.carpet, wallM: D.wall, corName: '病院・美容の主通路' });
+  ], { floorM: D.carpet, wallM: D.wall, corName: '病院・美容の主通路', endGaps: [[-12.4, -10.6], [10.6, 12.4]] });
+  thBuildSternCor();
 }
 // ---------------- D5〜D6 ガレリア：二層吹き抜けの通り（花の絵の天井・白い手すり・時計の正面・店） ----------------
 function thBuildGalleria() {
@@ -976,7 +1003,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107t：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107u：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -1077,7 +1104,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107t 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107u 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -15082,7 +15109,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107t）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107u）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27316,7 +27343,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107t';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107u';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

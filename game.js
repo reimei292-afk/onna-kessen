@@ -28,7 +28,7 @@ const TH_DEPT = [['司令・王室・秘書', 60, 13], ['航海・操艦・見�
   ['給養・飲食', 420, 7], ['居住・清掃・洗濯', 330, 9], ['医療・看護・担架', 120, 4], ['商業・銀行・保険', 90, 5], ['文化・楽務・運動・美容', 90, 6], ['情報・通信・名簿', 90, 15], ['補給・倉庫・交代予備', 239, 2]];
 const TH_NAMED = [   // [キー, 姓名, 船での職, 部署, 甲板]
   ['setsuei', '堀内 真琴', '設営課（内装・修繕）', 2, 3], ['setsuei_imo', '堀内 美琴', '洗濯係', 9, 9],
-  ['sumi', '白瀬 澄', '艦隊司令', 0, 15], ['omiya', '大宮 ひなた', '艦長', 0, 15], ['fumi', '綾瀬 文乃', '副長', 0, 7], ['sec2', '早瀬 ことね', '側近・王室運用', 0, 13], ['ojou', '西園寺 すみれ', '王室統括', 0, 13],
+  ['sumi', '白瀬 澄', '艦長（秘書課筆頭）', 0, 15], ['omiya', '大宮 ひなた', '王室付き（作法・勤務規律）', 0, 13], ['fumi', '綾瀬 文乃', '秘書課・記録係', 0, 7], ['sec2', '早瀬 ことね', '側近・王室運用', 0, 13], ['ojou', '西園寺 すみれ', '秘書課（お嬢さま秘書）', 0, 13],
   ['shinobu', '氷室 しのぶ', '西園寺秘書', 0, 13], ['chikage', '一条 千景', '西園寺秘書', 0, 13], ['sec3', '桜井 ゆかり', '航海統括補佐', 1, 15], ['sec4', '宮下 千尋', '文書・会計統括補佐', 0, 12], ['reika', '白石 麗華', '警備・迎撃指揮（大佐）', 7, 13],
   ['shizuka', '久遠 静香', '訓練・防災（中佐）', 3, 3], ['hiyori', '小日向 ひより', '側近秘書', 0, 12], ['akari', '夏目 あかり', '側近秘書', 0, 12], ['midori', '村瀬 碧', '側近秘書', 0, 12], ['flute', '小鳥遊 ひびき', '器楽中佐・楽務', 12, 7],
   ['kujo', '九条 紗英', '軍医中将・病院長', 10, 4], ['tono', '遠野 あかり', '看護・担架班連絡', 10, 4], ['sysop', '霧島 怜', '情報室統括（中佐）', 13, 15],
@@ -427,17 +427,17 @@ function thBuildD15() {
 
 // ---------------- 人：名のある人は持ち場に、ほかは名簿から近い区画の当番だけ ----------------
 const TH_LINES = { setsuei: ['それ、入れられます。ただ、船が重くなります', '看板は頭に当たらない高さに直しました。床から二メートル六十です', '金ぴかにするのは、ちょっと……。落ち着いた色の方が長く好かれます', 'その部屋、今夜中に直しておきます。珈琲は、冷めてしまいましたけど', '図面ではもう一部屋入ります。廊下を狭くしない方法を考えます', '昨夜は三時間寝ました。大丈夫です、手は確かです', '妹は洗濯係にいます。よく働く子です'],
-  sumi: ['天鳳、針路そのまま。……殿、たまには休んでくださいね', '艦隊のことは私が見ます。殿は、無理をなさらないで'], omiya: ['はいっ、殿！　艦長の大宮です。操艦は任せてください', '艦橋では帽子を……いえ、殿は良いんです（笑）'],
+  sumi: ['天鳳、針路そのまま。……殿、たまには休んでくださいね', '艦のことは私が見ます。会議には遅れないでください'], omiya: ['はいっ、殿！　ただいま勤務中です！', '殿、艦の中でも作法は守ってくださいね。規定に決めたの殿ですよね？（笑）'],
   sec3: ['針路と速力、海図に引いてあります', 'この船は大きいので、旋回は早めに始めます'], sysop: ['情報室、異常なし。殿のパスワード、そろそろ変えてください'],
   sec2: ['殿のお部屋、整えておきました！……あ、あの、お茶もすぐ', '澄お姉さまは艦橋です。お呼びしますか？'], ojou: ['殿……お部屋の……書類は、わたくしが……確かめて、おきましたわ', 'わたくしは……ゆっくりですけれど、見落としは……いたしませんの'],
   shinobu: ['居室の前は、交代で固めています'], chikage: ['回覧の書類、西園寺様の赤ペンが入りました'], reika: ['近衛、配置よし。怪しい者は一歩も通さないわ'],
-  fumi: ['宴会場の席次、帳簿につけておきました。殿の席は一の卓です', '早瀬がまたお皿を三枚運んでましたよ'], flute: ['桜鳳の大広間、そのまま運んできたんですよ。音の響きも同じです', '今夜は何を吹きましょうか'],
+  fumi: ['宴会場の席次、帳簿につけておきました。殿の席は一の卓です', 'ことねがまたお皿を三枚運んでましたよ'], flute: ['桜鳳の大広間、そのまま運んできたんですよ。音の響きも同じです', '今夜は何を吹きましょうか'],
   morgue: ['葬儀社にいた頃と同じく、きれいに送り出すのが務めです', '白布と花はいつも揃えてあります', 'お名前の札は一枚ずつ確かめます'], shop: ['いらっしゃいませ', 'ご用があればお声がけください', '今日の分の準備はできています'], cab: ['客室の見回り中です', 'リネンは毎朝替えています'],
   guard: ['こちらは王の居室です。お通りください', '交代までここを離れません'], hall: ['桜鳳のときと同じ卓の並びなんですね', '料理、まだまだ出てきますよ'], atr: ['吹き抜け、上まで見えますね', '天窓の光がきれいです', 'この噴水、夜は灯りが入るそうです'], bridge: ['見張り、異常なし', '前方、波は穏やかです'],
 };
 const TH_POSTS = () => { const y7 = thY(7), y13 = thY(13), y15 = thY(15), zf = TH_SZ0 + 0.3, H = TH.hall || {};
   return [
-    ['omiya', 1.6, zf + 3.6, y15, Math.PI], ['sumi', -1.8, -27, y15, 0], ['sec3', -10, -48, y15, Math.PI], ['sysop', 3.5, -27, y15, Math.PI / 2],
+    ['omiya', -5.5, 3, thY(13), Math.PI], ['sumi', -1.8, -27, y15, 0], ['sec3', -10, -48, y15, Math.PI], ['sysop', 3.5, -27, y15, Math.PI / 2],
     [null, -12, zf + 2.2, y15, Math.PI, 'bridge', '見張り'], [null, 12, zf + 2.2, y15, Math.PI, 'bridge', '見張り'], [null, 6, zf + 2.0, y15, Math.PI, 'bridge', '信号'],
     ['sec2', 10, -9, y13, -Math.PI / 2], ['ojou', -7, 2, y13, Math.PI / 2], ['shinobu', -9, 6, y13, Math.PI / 2], ['chikage', -10.5, 3, y13, Math.PI / 2], ['reika', 10.6, -3.8, y13, 0],
     [null, 5.4, -4.8, y13, 0, 'guard', '近衛'], [null, 9.6, -4.8, y13, 0, 'guard', '近衛'], [null, -2, -31, y13, 0, 'guard', '近衛（寝室）'],
@@ -468,7 +468,7 @@ function thSpawnAll() {
 }
 function thClearGirls() { for (const e of TH.girls) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); try { disposeNpc(e); } catch (_) {} } TH.girls = []; }
 function thBrain(e, dt) {
-  if (e.thEv && e.state !== 'down') return thEvBrain(e, dt); if (e.thR) return thRaidBrain(e, dt); if (e.state === 'down') return true; if (e.thInj === 1 && e.thWalk && Math.random() < 0.5) return true;
+  if (e.thWipe && e.state !== 'down') return thWipeBrain(e, dt); if (e.thEv && e.state !== 'down') return thEvBrain(e, dt); if (e.thR) return thRaidBrain(e, dt); if (e.state === 'down') return true; if (e.thInj === 1 && e.thWalk && Math.random() < 0.5) return true;
   e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0); e.baseY = e.thY; e.crouch = 0;
   const p = e.s.position; p.y = e.thY; const dK = Math.hypot(player.pos.x - p.x, player.pos.z - p.z), same = Math.abs(player.pos.y - e.thY) < 1.6;
   if (e.ukTalkT && time < e.ukTalkT) { e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); e.state = 'idle'; return true; }
@@ -817,8 +817,8 @@ function thArcCounter(cx, cz, y, r, a0, a1, dep = 0.6, h = 1.05, m) { const M = 
   const top = new THREE.Mesh(new THREE.RingGeometry(r - 0.05, r + dep + 0.05, 40, 1, a0, a1 - a0), M.marble); top.rotation.x = -Math.PI / 2; top.position.set(cx, y + h + 0.04, cz); stageRoot.add(top);
   for (let i = 0; i <= 16; i++) { const a = a0 + (a1 - a0) * i / 16, x = cx + Math.cos(a) * (r + dep / 2), z = cz - Math.sin(a) * (r + dep / 2); thSolid(x - 0.3, x + 0.3, y, y + h, z - 0.3, z + 0.3); } }
 function thRoundRoom(d, cx, cz, R, doorA, wm, ceil) {   // doorA: 戸口の向き（ラジアン、0=+x、π/2=-z）
-  const M = thMats(), y = thY(d), h = thH(d), wall = new THREE.Mesh(new THREE.CylinderGeometry(R, R, h, 64, 1, true), new THREE.MeshLambertMaterial({ color: wm, side: THREE.DoubleSide })); wall.position.set(cx, y + h / 2, cz); stageRoot.add(wall);
-  for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; let da = Math.abs(((a - doorA + Math.PI * 3) % (Math.PI * 2)) - Math.PI); if (da < 0.09) continue; const x = cx + Math.cos(a) * R, z = cz - Math.sin(a) * R; thSolid(x - 0.25, x + 0.25, y, y + h, z - 0.25, z + 0.25); }
+  const M = thMats(), y = thY(d), h = thH(d), gap = 1.3 / R, th0 = Math.atan2(Math.cos(doorA), -Math.sin(doorA)), wall = new THREE.Mesh(new THREE.CylinderGeometry(R, R, h, 64, 1, true, th0 + gap, Math.PI * 2 - gap * 2), new THREE.MeshLambertMaterial({ color: wm, side: THREE.DoubleSide })); wall.position.set(cx, y + h / 2, cz); stageRoot.add(wall);
+  for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2; let da = Math.abs(((a - doorA + Math.PI * 3) % (Math.PI * 2)) - Math.PI); if (da < 1.3 / R) continue; const x = cx + Math.cos(a) * R, z = cz - Math.sin(a) * R; thSolid(x - 0.25, x + 0.25, y, y + h, z - 0.25, z + 0.25); }
   if (ceil) { const dome = new THREE.Mesh(new THREE.SphereGeometry(R, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), ceil); dome.scale.y = 0.08; dome.material.side = THREE.BackSide; dome.position.set(cx, y + h - 0.35, cz); stageRoot.add(dome); }
 }
 // D13 船尾側：丸いドームラウンジ（円弧のバー・ソファ）
@@ -843,7 +843,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107l：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107m：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -944,7 +944,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107l 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107m 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1110,9 +1110,9 @@ function thBuildD3Aft() { const d = 3, y = thY(d), E = thEngMats(), M = thMats()
   thAft(d, 12.8, 119.8, [
     { s: 1, z0: 14, z1: 30, k: 'snack', n: 'シネマ売店', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { thCounter(b - 3.2, b - 2.4, c + 2, e - 2, yy, new THREE.MeshLambertMaterial({ color: 0x8a1c2a }), 1.05); const pop = new THREE.MeshStandardMaterial({ color: 0xfff0c8, transparent: true, opacity: 0.5 }); thBox(b - 3.1, b - 2.5, yy + 1.05, yy + 1.75, c + 2.4, c + 3.2, pop, false); for (let i = 0; i < 30; i++) thSphereAt(0.05, new THREE.MeshLambertMaterial({ color: 0xfff4d8 }), b - 2.8 + (Math.random() - 0.5) * 0.4, yy + 1.15 + Math.random() * 0.3, c + 2.8 + (Math.random() - 0.5) * 0.6); thDrinks(b - 1.0, b - 0.2, c + 5, e - 3, yy, '飲み物'); thPost(b - 1.7, (c + e) / 2, yy, -Math.PI / 2, 'shop', '売店係（シネマ）');
       thPoster(a + 0.12, yy + 1.6, c + 4, Math.PI / 2, '桜鳳', '先代の船の記録映像\n毎回上映', '#5a1a2a'); thPoster(a + 0.12, yy + 1.6, c + 6, Math.PI / 2, 'KIDS', 'Kids Auto Race at Venice\n1914 / Public Domain', '#1a3a5a'); thPoster(a + 0.12, yy + 1.6, c + 8, Math.PI / 2, '劇場', 'D4 劇場の演目\n毎晩', '#3a4a1a'); } },
-    { s: -1, z0: 14, z1: 30, k: 'bakery', n: 'パン工房・洋菓子「麦の灯」', w: 1.4, f: (a, b, c, e, yy) => thBakery(a, b, c, e, yy) }, { s: 1, z0: 30, z1: 44, k: 'setsuei', n: '設営課の作業室', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { const M = thMats(); thTable(b - 3, c + 3, yy, 2.2, 1.1, M.wood, 0.9); const bp = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#1c4a8a'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(230,240,255,.8)'; g.lineWidth = 1; for (let i = 0; i < 14; i++) { g.strokeRect(10 + i * 16, 10 + (i % 4) * 22, 30 + (i % 3) * 20, 20 + (i % 2) * 18); } g.fillStyle = '#e8f0ff'; g.font = '12px sans-serif'; g.fillText('D3 船尾側 改装図', 12, h - 10); }); const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.95), new THREE.MeshLambertMaterial({ map: bp })); pl.rotation.x = -Math.PI / 2; pl.position.set(b - 3, yy + 0.91, c + 3); stageRoot.add(pl); thCyl(0.045, 0.04, 0.1, new THREE.MeshLambertMaterial({ color: 0xf4f0e8 }), b - 2.1, yy + 0.96, c + 3.3, null, 10); thCyl(0.04, 0.04, 0.005, new THREE.MeshLambertMaterial({ color: 0x3a2412 }), b - 2.1, yy + 1.0, c + 3.3, null, 10);
+    { s: -1, z0: 14, z1: 30, k: 'bakery', n: 'パン工房・洋菓子「麦の灯」', w: 2.6, f: (a, b, c, e, yy) => thBakery(a, b, c, e, yy) }, { s: 1, z0: 30, z1: 44, k: 'setsuei', n: '設営課の作業室', via: [[6, 11], [0, 12]], f: (a, b, c, e, yy) => { const M = thMats(); thTable(b - 3, c + 3, yy, 2.2, 1.1, M.wood, 0.9); const bp = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#1c4a8a'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(230,240,255,.8)'; g.lineWidth = 1; for (let i = 0; i < 14; i++) { g.strokeRect(10 + i * 16, 10 + (i % 4) * 22, 30 + (i % 3) * 20, 20 + (i % 2) * 18); } g.fillStyle = '#e8f0ff'; g.font = '12px sans-serif'; g.fillText('D3 船尾側 改装図', 12, h - 10); }); const pl = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 0.95), new THREE.MeshLambertMaterial({ map: bp })); pl.rotation.x = -Math.PI / 2; pl.position.set(b - 3, yy + 0.91, c + 3); stageRoot.add(pl); thCyl(0.045, 0.04, 0.1, new THREE.MeshLambertMaterial({ color: 0xf4f0e8 }), b - 2.1, yy + 0.96, c + 3.3, null, 10); thCyl(0.04, 0.04, 0.005, new THREE.MeshLambertMaterial({ color: 0x3a2412 }), b - 2.1, yy + 1.0, c + 3.3, null, 10);
       for (let i = 0; i < 6; i++) thBox(a + 0.4, a + 3.6, yy + i * 0.09, yy + i * 0.09 + 0.08, e - 1.6 + (i % 2) * 0.1, e - 1.2 + (i % 2) * 0.1, M.wood, false); thSolid(a + 0.4, a + 3.6, yy, yy + 0.6, e - 1.6, e - 1.1); thBox(b - 1.2, b - 0.3, yy, yy + 0.4, e - 2.6, e - 2.2, new THREE.MeshLambertMaterial({ color: 0xc02a20 }), true); for (let i = 0; i < 3; i++) thBox(b - 0.25, b - 0.2, yy + 0.2, yy + 0.9, c + 6 + i * 1.2, c + 6.8 + i * 1.2, new THREE.MeshLambertMaterial({ color: 0x1c2430 }), false);
-      thSign('設営課　作業中（立入は声をかけてから）', (a + b) / 2, yy + 2.6, c + 0.3, 0, 2.6); (TH.posts2 = TH.posts2 || []).push(['setsuei', b - 3.2, c + 4.2, yy, Math.PI, 'setsuei', '設営課']); } }, { s: -1, z0: 30, z1: 44, k: 'karaoke', n: 'カラオケ室', w: 1.4, f: (a, b, c, e, yy) => thKaraoke(a, b, c, e, yy) },
+      thSign('設営課　作業中（立入は声をかけてから）', (a + b) / 2, yy + 2.6, c + 0.3, 0, 2.6); (TH.posts2 = TH.posts2 || []).push(['setsuei', b - 3.2, c + 4.2, yy, Math.PI, 'setsuei', '設営課']); } }, { s: -1, z0: 30, z1: 44, k: 'karaoke', n: 'カラオケ室', w: 2.6, f: (a, b, c, e, yy) => thKaraoke(a, b, c, e, yy) },
     { s: 0, z0: 46, z1: 82, back: false, k: 'cinema', n: 'シネマ（映画館）', via: [[6, 11], [0, 12], [0, 48]], f: thCinema },
   ], { floorM: cm, wallM: new THREE.MeshLambertMaterial({ color: 0x4a3a40 }), corName: 'シネマへの通路' });
   { const Z = TH.zone, E = Object.entries(Z).filter(([k]) => k !== 'projroom'), pz = Z.projroom; for (const k in Z) delete Z[k]; Z.projroom = pz; for (const [k, v] of E) Z[k] = v; }
@@ -1161,9 +1161,9 @@ function thAlertTick(dt) { if (!TH.alert || thDeckOf(player.pos.y + 0.3) !== 16)
 // 重傷者は担架班が 病室の寝台 → 病院の通路の担架 → 宴会場 の順に運ぶ。亡くなった人は戦闘後に 霊安室の冷蔵の引き出し 12 → 霊安準備室 約30 → 食料の冷蔵庫（D3 左舷）→ 礼拝室 の順に安置。
 const TH_RAID_N = () => USD_MOB ? 8 : 14;
 function thRaidBtn() { let b = $('bThRaid'); if (!b) { b = document.createElement('div'); b.id = 'bThRaid'; b.textContent = '敵襲'; b.style.cssText = ($('bThRos') ? $('bThRos').style.cssText : '').replace(/right:[^;]*;/, 'right:calc(256px + env(safe-area-inset-right,0px));') + ';background:rgba(110,20,20,.55)';
-    const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (!TH.raid || !TH.raid.on) thRaidStart(); else if (TH.raid.ph === 'after' && !TH.ev) thEvacStart(); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
+    let hold = null; const go = ev => { ev.preventDefault(); ev.stopPropagation(); if (TH.raid && TH.raid.on) { if (TH.raid.ph === 'after' && !TH.ev) thEvacStart(); return; } hold = setTimeout(() => { hold = 'long'; if (!TH.ev) thEvacStart(); }, 1500); }, up = ev => { if (hold && hold !== 'long') { clearTimeout(hold); if (!TH.raid || !TH.raid.on) thRaidStart(); } hold = null; }; b.addEventListener('touchend', up); b.addEventListener('mouseup', up); b.title = '押す：敵襲／長押し（1.5秒）：戦闘なしで総員退船'; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
 function thRaidShow(on) { const b = thRaidBtn(); b.style.display = on ? 'flex' : 'none'; }
-function thPlane() { const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: 0x4a5a6a }), f = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 9, 10), m); f.rotation.x = Math.PI / 2; g.add(f); const w = new THREE.Mesh(new THREE.BoxGeometry(12, 0.25, 2.0), m); w.position.z = -0.5; g.add(w); const t = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 1.2), m); t.position.z = 4; g.add(t); const v = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.6, 1.2), m); v.position.set(0, 0.8, 4); g.add(v); stageRoot.add(g); return g; }
+function thAirplane() { const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: 0x4a5a6a }), f = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 9, 10), m); f.rotation.x = Math.PI / 2; g.add(f); const w = new THREE.Mesh(new THREE.BoxGeometry(12, 0.25, 2.0), m); w.position.z = -0.5; g.add(w); const t = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 1.2), m); t.position.z = 4; g.add(t); const v = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.6, 1.2), m); v.position.set(0, 0.8, 4); g.add(v); stageRoot.add(g); return g; }
 function thBoom(p, big) { puff(p, 0xffb050, big ? 14 : 6, big ? 1.4 : 0.6, 5, 0.35); puff(p, 0x4a4a4a, big ? 16 : 6, big ? 2.2 : 0.9, 2.2, 2.6); uk2Flash(p, big ? 3 : 1, 0.12);
   const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), o = Sfx.at(p, 600, 1.5); if (o) { Sfx.noiseBurst(big ? 1.2 : 0.4, 'lowpass', 900, 60, big ? 1.4 : 0.7, 0.7, d / 340, o); Sfx.tone('sine', 70, 30, 0.5, 0.6, d / 340, o); } }
 function thRaidStart() { const R = TH.raid = { on: true, ph: 'air', t: 0, planes: [], bombs: [], tr: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
@@ -1220,7 +1220,7 @@ function thRaidBrain(e, dt) { const R = TH.raid, p = e.s.position; e.knock && e.
 function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play' && !TH.ev); { const b = $('bThRaid'); if (b) b.textContent = R && R.ph === 'after' ? '退船' : '敵襲'; } if (!R || !R.on) return; R.t += dt;
   // 敵機：横切って爆弾を落とす。高角砲・機銃の曳光弾
   if (R.ph !== 'after' && R.t < 160 && R.planes.filter(P => !P.leave).length < (USD_MOB ? 3 : 5) && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(3, 6); const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? [0, thY(4), -75] : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
-    const g = thPlane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); }
+    const g = thAirplane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); }
   for (const P of R.planes) { const g = P.g; if (P.fall) { P.v.y -= 9.8 * dt; g.position.addScaledVector(P.v, dt); g.rotation.z += dt; if (Math.random() < 0.5) puff(g.position.clone(), 0x333333, 1, 1.2, 0.5, 2); if (g.position.y < 1 && !P.gone) { P.gone = true; g.visible = false; puff(g.position.clone().setY(1), 0xffffff, 10, 1.5, 3, 1.4); } continue; }
     g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]);
     if (!P.dropped && !P.leave && hd < 110) { P.dropped = true; R.bombs.push({ a: g.position.clone(), b: new V3(P.tg[0] + rand(-3, 3), P.tg[1], P.tg[2] + rand(-3, 3)), t: 0, T: 2.6, m: (() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); m.scale.z = 2; stageRoot.add(m); return m; })() }); }
@@ -1285,30 +1285,33 @@ const TH_SIT = {
   hurt: ['……かすり傷です。歩けます', '腕が上がらなくて。ゆっくりなら動けます', '大丈夫です、持ち場に戻ります'],
   rough: ['今日は揺れますね……お盆を両手で持ってます', '床が濡れてたら言ってください、すぐ拭きます', '揺れる日はスープを半分しか注がないんです', '階段は手すりを持ってくださいね'],
 };
-const TH_BACK = ['eng', 'cab', 'hall', 'morgue', 'setsuei'];
-const TH_DL = {
-  th_q1: { who: 'thx', ja: '陛下……ひとつ、うかがってもいいですか', dur: 2.4 },
-  th_q2: { who: 'thx', ja: '上の甲板の子たちに、叩かれたことがある子がいるんです。裏方の私たちは、黙っていればいいんでしょうか', dur: 4.2 },
-  th_a1: { who: 'king', ja: '誰であっても、手を上げることは許さない。名前は伏せていい、俺に言え', dur: 3.4 },
-  th_a2: { who: 'king', ja: 'まず白瀬に話を通せ。俺も一緒に聞く。黙っている必要はない', dur: 3.4 },
-  th_a3: { who: 'king', ja: '……話してくれてありがとう。続けてくれ', dur: 2.6 },
-  th_r1: { who: 'thx', ja: '……はい。言っていいんですね。皆にも伝えます', dur: 2.8 },
-  th_r2: { who: 'thx', ja: '白瀬さんなら、聞いてくださると思います。ありがとうございます', dur: 3.0 },
-  th_r3: { who: 'thx', ja: '叩かれた子は、配膳の子です。揺れる日にお皿を落として……それで', dur: 3.6 },
-};
 function thSitLine(e) { const R = TH.raid, V = TH.ev; let k = null;
   if (V && e.thEv && e.thEv.ph !== 'stay') k = 'evac'; else if (R && R.on && R.ph !== 'after') k = 'raid'; else if (R && R.ph === 'after' && R.t < 300) k = 'after';
   if (e.thInj === 1 && Math.random() < 0.6) k = 'hurt'; else if (!k && TH.rough && Math.random() < 0.4) k = 'rough'; if (!k) return null; const L = TH_SIT[k]; return L[(Math.random() * L.length) | 0]; }
-function thBackQ(e) { if (TH.backQ || TH.raid && TH.raid.on && TH.raid.ph !== 'after' || TH.ev || !TH_BACK.includes(e.thLk) || (TH.talkN || 0) < 3) return false; TH.backQ = true; TH.dlgE = e; UK_WHO_NAME.thx = e.ukTag || e.prof.name; e.ukTalkT = time + 30;
-  ukDlg([{ say: 'th_q1' }, { say: 'th_q2' }, { choice: [{ label: '誰であっても手を上げるのは許さない', sub: '俺に言え', then: [{ say: 'th_a1' }, { say: 'th_r1' }] }, { label: 'まず白瀬に話を通せ', sub: '一緒に聞く', then: [{ say: 'th_a2' }, { say: 'th_r2' }] }, { label: '（黙って話を聞く）', sub: '', then: [{ say: 'th_a3' }, { say: 'th_r3' }] }] }], () => { TH.log.push('backq'); });
-  return true; }
+const TH_BACK_RX = /洗濯|洗い場|調理|料理長|盛り付け|リネン|缶焚|ボイラー|機関|タービン|糧食|倉庫番/;
+const thIsBack = e => e.thLk === 'eng' || e.thLk === 'morgue' || e.thLk === 'setsuei' || TH_BACK_RX.test(e.ukTag || '');
+const TH_DL = { th_kq: { who: 'king', ja: '上の階で遊んでいる子たちを、殴りたいと思うことはあるか', dur: 3.2 } };
+const TH_PUNCH = { 冷静: ['いえ、そんな……私たちの仕事ですから', '上の子たちも、影では大変なんです'], 臆病: ['い、いえ！ そんなこと……考えたこともないです', 'いえ、そんな……私たちの仕事ですから'], 陽気: ['正直、たまには……。でも殴りませんよ', 'せめて一度、ここの暑さを味わってほしいです'], 好戦的: ['正直、たまには……。でも殴りませんよ。手が汚れますから', 'せめて一度、ここの暑さを味わってほしいです'], 慎重: ['上の子たちも、影では大変なんです', 'いえ、そんな……私たちの仕事ですから'] };
+function thPunchQ(e) { const L = TH_PUNCH[e.prof.pers] || TH_PUNCH['冷静'], a = L[(e.prof.name.length + (TH.talkN || 0)) % L.length]; TH_DL.th_kr = { who: 'thx', ja: a, dur: Math.max(2.4, a.length * 0.12) }; TH.dlgE = e; UK_WHO_NAME.thx = e.ukTag || e.prof.name; e.ukTalkT = time + 8; return [{ say: 'th_kq' }, { say: 'th_kr' }, { fn: () => TH.log.push('punchq:' + e.prof.pers) }]; }
+function thBackQ(e) { if (!thIsBack(e) || (TH.raid && TH.raid.on && TH.raid.ph !== 'after') || TH.ev) return false; e.ukTalkT = time + 10;
+  ukDlg([{ choice: [{ label: '話す', sub: e.ukTag || '', then: [{ fn: () => thTalk(e, true) }] }, { label: '「上の階で遊んでいる子たちを、殴りたいと思うことはあるか」', sub: '王が尋ねる', then: thPunchQ(e) }, { label: 'やめておく', sub: '', then: [] }] }]); return true; }
 // 荒れた日：宴会場や配膳の子が時々こぼす（白い湯気と水たまり。しばらくで拭き取られる）
-function thSpillTick(dt) { if (!TH.rough || TH.ev) return; if ((TH.spT = (TH.spT == null ? 25 : TH.spT) - dt) > 0) return; TH.spT = rand(40, 90);
-  const c = TH.girls.filter(e => (e.thLk === 'hall' || e.thLk === 'shop') && e.state !== 'down' && Math.abs(e.thY - player.pos.y) < 1.6 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 14); if (!c.length) return;
-  const e = c[(Math.random() * c.length) | 0], p = e.s.position, q = new V3(p.x + Math.sin(e.face) * 0.5, e.thY + 0.9, p.z + Math.cos(e.face) * 0.5); puff(q, 0xf4ecd8, 6, 0.12, 1.4, 0.5);
-  const m = new THREE.Mesh(new THREE.CircleGeometry(0.45, 16), new THREE.MeshBasicMaterial({ color: 0xc8b890, transparent: true, opacity: 0.45, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(q.x, e.thY + 0.02, q.z); stageRoot.add(m); setTimeout(() => stageRoot.remove(m), 35000);
-  const o = Sfx.at(q, 30, 1); if (o) { Sfx.noiseBurst(0.12, 'highpass', 4000, 1500, 0.4, 1, 0, o); Sfx.tone('triangle', 1400, 900, 0.08, 0.15, 0.05, o); }
-  e.ukTalkT = time + 3; e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); popup((e.ukTag || e.prof.name) + '「あっ……！ 申し訳ありません、すぐ拭きます」'); popupTimer = 2.6; TH.log.push('spill'); }
+const TH_SPILL_RX = /給仕|給養|ビュッフェ|盛り付け|カフェ|バーテンダー|売店|パン屋/;
+function thSpillTick(dt) { if (TH.ev || (TH.raid && TH.raid.on && TH.raid.ph !== 'after')) return; if ((TH.spT = (TH.spT == null ? (TH.rough ? 25 : 90) : TH.spT) - dt) > 0) return; TH.spT = TH.rough ? rand(40, 90) : rand(150, 300);
+  const near = e => e.state !== 'down' && !e.thWipe && Math.abs(e.thY - player.pos.y) < 1.6 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 16;
+  const c = TH.girls.filter(e => near(e) && (e.thLk === 'hall' || TH_SPILL_RX.test(e.ukTag || ''))); if (!c.length) return;
+  const e = c[(Math.random() * c.length) | 0], p = e.s.position, food = Math.random() < 0.5, q = new V3(p.x + Math.sin(e.face) * 0.5, e.thY + 0.9, p.z + Math.cos(e.face) * 0.5); puff(q, food ? 0xd8b070 : 0xf4ecd8, 6, 0.12, 1.4, 0.5);
+  const g = new THREE.Group(), pd = new THREE.Mesh(new THREE.CircleGeometry(0.45, 16), new THREE.MeshBasicMaterial({ color: food ? 0xb88a50 : 0xc8b890, transparent: true, opacity: 0.45, depthWrite: false })); pd.rotation.x = -Math.PI / 2; g.add(pd);
+  if (food) { const pl = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.02, 18), thMats().white); pl.position.set(0.15, 0.02, 0.1); pl.rotation.z = 0.3; g.add(pl); for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 4), new THREE.MeshLambertMaterial({ color: [0xd8a050, 0x6a9a3a, 0xc84a30, 0xf0e0b0][i] })); b.position.set(rand(-0.25, 0.25), 0.03, rand(-0.25, 0.25)); g.add(b); } }
+  g.position.set(q.x, e.thY + 0.02, q.z); stageRoot.add(g);
+  const o = Sfx.at(q, 30, 1); if (o) { Sfx.noiseBurst(0.12, 'highpass', 4000, 1500, 0.4, 1, 0, o); Sfx.tone('triangle', food ? 900 : 1400, food ? 500 : 900, 0.08, 0.15, 0.05, o); }
+  e.ukTalkT = time + 3; e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); popup((e.ukTag || e.prof.name) + '「あっ、すみません！」'); popupTimer = 2.4; TH.log.push('spill:' + (food ? 'food' : 'drink'));
+  const h = TH.girls.filter(o => o !== e && near(o) && !o.thR && !o.thEv && !o.thWalk && (o.thLk === 'hall' || TH_SPILL_RX.test(o.ukTag || '') || /給養|清掃/.test(o.ukTag || ''))).sort((a, b) => a.s.position.distanceTo(q) - b.s.position.distanceTo(q))[0];
+  if (h) h.thWipe = { x: q.x + 0.5, z: q.z, home: [h.s.position.x, h.s.position.z, h.face], t: 0, g }; else setTimeout(() => stageRoot.remove(g), 30000); }
+function thWipeBrain(e, dt) { const W = e.thWipe, p = e.s.position; p.y = e.thY; e.passive = true; const go = (x, z) => { const d = Math.hypot(x - p.x, z - p.z); if (d < 0.12) { e.moving = false; return true; } const k = Math.min(d, 1.3 * dt) / d; p.x += (x - p.x) * k; p.z += (z - p.z) * k; e.faceWant = Math.atan2(x - p.x, z - p.z); e.moving = true; e.state = 'approach'; return false; };
+  if (!W.at) { if (go(W.x, W.z)) { W.at = 1; W.t = 0; e.faceWant = Math.atan2(W.g.position.x - p.x, W.g.position.z - p.z); } return true; }
+  if (W.at === 1) { e.state = 'idle'; W.t += dt; if (W.t > 1 && !W.said) { W.said = 1; if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 10) { popup((e.ukTag || e.prof.name) + '「大丈夫、すぐ拭きます」'); popupTimer = 2; } } W.g.scale.setScalar(Math.max(0.05, 1 - W.t / 4.5)); if (W.t > 4.5) { stageRoot.remove(W.g); W.at = 2; } return true; }
+  if (go(W.home[0], W.home[1])) { e.face = e.faceWant = W.home[2]; e.thWipe = null; e.state = 'idle'; } return true; }
 // ---- 名簿（右上の小さなボタン。開いた時だけ作る・50 人ずつ）----
 function thRosBtn() { let b = $('bThRos'); if (!b) { b = document.createElement('div'); b.id = 'bThRos'; b.textContent = '名簿'; b.style.cssText = 'position:fixed;top:12px;right:calc(196px + env(safe-area-inset-right,0px));width:52px;height:44px;z-index:40;display:none;align-items:center;justify-content:center;border-radius:10px;border:1px solid rgba(255,255,255,.55);background:rgba(20,24,32,.45);color:#fff;font:13px sans-serif;text-shadow:0 1px 2px #000;user-select:none;-webkit-user-select:none;cursor:pointer;touch-action:none';
     const go = ev => { ev.preventDefault(); ev.stopPropagation(); thRosOpen(); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); } return b; }
@@ -1402,8 +1405,8 @@ function thHumTick(dt) { const w = thWhere(), want = TH.on && state === 'play' &
 function thEvNear() { for (const E of TH_EV) for (const S of TH_STOPS) { const y = thY(S.d); if (Math.abs(player.pos.y - y) < 1.2 && Math.hypot(player.pos.x - (E.x - E.side * 2.6), player.pos.z - E.z) < 1.8) return { E, S }; } return null; }
 function thLockNear() { const p = player.pos; return (TH.locks || []).find(l => Math.abs(p.y - l.y) < 1.5 && Math.hypot(p.x - l.x, p.z - l.z) < 1.6) || null; }
 function thSpotHint() { if (UK.dlg) return ''; const v = thEvNear(); if (v) return v.E.name + 'に乗る（E / 頼むボタン）'; const l = thLockNear(); if (l) return '扉の札を読む（E）'; const s = thSecretNear(); return s ? s.label + '（E）' : ''; }
-function thTalk(e) {
-  if (thBackQ(e)) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || L[TH.talkN % L.length];
+function thTalk(e, plain) {
+  if (!plain && thBackQ(e)) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || L[TH.talkN % L.length];
   $('popup').textContent = (e.ukTag || e.prof.name) + '「' + t + '」'; popupTimer = Math.max(2.2, t.length * 0.12); e.ukTalkT = time + 3; TH.log.push('talk:' + (e.thLk || '') + ':' + e.prof.name);
 }
 function thGoDeck(d, E) {
@@ -1459,7 +1462,7 @@ function thDeckCull(force) { const d = thDeckOf(player.pos.y + 0.3); if (!force 
 function thReset() { thClearGirls(); UK.dlg = null; if (typeof ukChoiceOff === 'function') ukChoiceOff(); if ($('ukdlg')) $('ukdlg').style.display = 'none'; TH.log = []; TH.lastW = ''; player.pos.set(7, thY(13) + 0.05, -30); player.yaw = 0; player.pitch = -0.04; }
 function thStart() { thSpawnAll(); thMusic(); showBanner('新武装客船「天鳳」', '全長 350m・幅 40m・16 甲板・乗員 2,600。王の居室から'); TH.banT = performance.now() + 4000; }
 function thLook(name) {
-  TH.on = name === 'tenhou'; thRosShow(TH.on); thRaidShow(TH.on); TH.raid = null; TH.ev = null; TH.backQ = false; TH.rough = /rough=1/.test(location.search) || (!/rough=0/.test(location.search) && Math.random() < 0.3); TH.spT = null; if (TH.on && TH.rough) setTimeout(() => { if (TH.on && state === 'play') { showBanner('今日は海が荒れている', '揺れる日は、配膳の子が時々こぼしてしまう'); TH.banT = performance.now() + 3000; } }, 7000); TH.lboats = []; if (!TH.on) { thStopMusic(); return; }
+  TH.on = name === 'tenhou'; thRosShow(TH.on); thRaidShow(TH.on); TH.raid = null; TH.ev = null; TH.backQ = false; TH.rough = /rough=1/.test(location.search) || (!/rough=0/.test(location.search) && Math.random() < 0.3); TH.spT = null; if (TH.on && /sink=1/.test(location.search)) setTimeout(() => { if (TH.on && state === 'play' && !TH.ev) thEvacStart(); }, 8000); if (TH.on && TH.rough) setTimeout(() => { if (TH.on && state === 'play') { showBanner('今日は海が荒れている', '揺れる日は、配膳の子が時々こぼしてしまう'); TH.banT = performance.now() + 3000; } }, 7000); TH.lboats = []; if (!TH.on) { thStopMusic(); return; }
   ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = false;
   const u = sky.material.uniforms; u.top.value.setHex(0x1c6eb8); u.mid.value.setHex(0x9ad4ee); u.bot.value.setHex(0x1a6e90);
   scene.fog.near = 500; scene.fog.far = 3200; scene.fog.color.setHex(0x9ccbe0); scene.background.setHex(0x7ebbd2);
@@ -14773,7 +14776,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107l）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107m）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27007,7 +27010,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107l';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

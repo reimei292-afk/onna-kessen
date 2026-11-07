@@ -843,7 +843,7 @@ function thPipes(x0, x1, z0, z1, y, n, m) { const g = new THREE.CylinderGeometry
 function thLadder(x, z, y0, y1, ry) { const M = thMats(), g = new THREE.Group(); for (const sx of [-0.22, 0.22]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.05, y1 - y0, 0.05), M.steel); s.position.set(sx, (y1 - y0) / 2, 0); g.add(s); } for (let yy = 0.3; yy < y1 - y0; yy += 0.3) { const r = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), M.steel); r.rotation.z = Math.PI / 2; r.position.y = yy; g.add(r); } g.position.set(x, y0, z); g.rotation.y = ry; stageRoot.add(g); }
 function thCatwalk(x0, x1, z0, z1, y, railSide) { const M = thMats(), gr = TH.grateM || (TH.grateM = new THREE.MeshLambertMaterial({ map: (() => { const t = canvasTex(64, 64, (c, w, h) => { c.fillStyle = '#5a6066'; c.fillRect(0, 0, w, h); c.fillStyle = '#2a2e32'; for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) c.fillRect(i * 8 + 2, j * 8 + 2, 4, 4); }); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; })() }));
   thFloor(x0, x1, z0, z1, y, gr, 0.8); thBox(x0, x1, y - 0.12, y, z0, z1, M.greyD, false); if (railSide) { const x = railSide > 0 ? x1 : x0; thRail(x, z0, x, z1, y, M.orange); } }
-// ---- 20261107m：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
+// ---- 20261107n：機関の質感・タービン・寝台・螺旋階段・劇場の二階席・D3 弾薬区画 ----
 function thEngMats() {
   if (TH.engM) return TH.engM;
   const plate = (base, rust) => { const t = canvasTex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h);
@@ -944,7 +944,7 @@ function thMorePosts() {   // 空いていた所にも女官を立たせる（�
   thPost(16.5, -30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係'); thPost(-16.5, 0, y5, -Math.PI / 2, 'shop', '遊歩廊の清掃係'); thPost(16.5, 30, y5, Math.PI / 2, 'shop', '遊歩廊の案内係');
 }
 
-// ---- 20261107m 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
+// ---- 20261107n 後半：看板の高さ・案内板・ビュッフェの厨房と料理・飲み物・銀行と店・屋外バー・ヨガ・写真と海図・シネマ・D16 観戦甲板 ----
 function thFloorY(x, z, y) { let b = null; for (const f of floors) if (x >= f.x0 - 0.3 && x <= f.x1 + 0.3 && z >= f.z0 - 0.3 && z <= f.z1 + 0.3 && f.y <= y + 0.05 && (b === null || f.y > b)) b = f.y; return b; }
 const TH_PHOTOS = ['liner_1', 'liner_3', 'liner_4', 'warship_1', 'warship_2', 'land_1', 'land2_1', 'land2_2'], TH_CHARTS = ['chart_1', 'chart_2', 'chart_3', 'chart_4', 'map_1', 'map_2', 'map_3'];
 function thPhoto(f, x, y, z, ry, w = 1.1, h = 0.8) {   // 額装の写真・古地図（パブリックドメイン）
@@ -1256,12 +1256,42 @@ function thEvacStart() { if (TH.ev) return; const V = TH.ev = { t: 0, ph: 'muste
     const z = e.s.position.z, g = z < -10 ? 'A' : z < 60 ? 'B' : 'C', k = V.n[g]++, R = TH_MUSTER[g], cols = Math.max(4, Math.floor((R[1] - R[0] - 1) / 0.75));
     const mx = R[0] + 0.6 + (k % cols) * 0.75, mz = R[2] + 0.6 + Math.floor(k / cols) * 0.75; e.thEv = { ph: 'wait', w: rand(0.5, 12), g, mx, mz, d16: Math.abs(e.thY - thY(16)) < 0.5 }; }
   V.total = V.n.A + V.n.B + V.n.C; }
+// ---- 退船の道順：持ち場 → 部屋の戸口 → 廊下 → 大階段を一階ずつ（D4〜D15）→ D15 の右舷の螺旋階段 → D16 の集合場所。D1〜D3 は非常用脱出筒（はしご）で D4 へ。エレベーターは使わない ----
+const TH_UP = [[-2, 7], [-2, 5.5], [-2, -5], [2, -5], [2, 5.5], [2, 7]], TH_TRUNK = { x: 10.3, z: 10.6 };
+function thTrunks() { const E = thEngMats ? thEngMats() : null, M = thMats(), wm = E ? E.wall : M.steel, red = new THREE.MeshLambertMaterial({ color: 0xb03020 });
+  for (const d of [1, 2, 3, 4]) { const y = thY(d), h = thH(d); thBox(10.6, 12.4, y, y + h, 9.6, 11.6, wm, true); thDoor(10.56, 10.6, y, -Math.PI / 2, d === 4 ? '非常用脱出筒（D1〜D3 から）' : '非常用脱出筒（はしご）→ D4'); thBox(10.54, 10.58, y + 2.2, y + 2.35, 9.7, 11.5, red, false); thSign(d === 4 ? '非常用脱出筒　出口' : '非常用脱出筒（はしご）　上 D4', 10.5, y + 2.6, 10.6, -Math.PI / 2, 2.2); } }
+function thZoneAt(x, z, y) { const Z = TH.zone || {}; for (const k in Z) { const r = Z[k]; if (x > r[0] && x < r[1] && z > r[2] && z < r[3] && y > r[4] && y < r[5]) return k; } return ''; }
+function thEvRoute(e) { const p = e.s.position, y = e.thY, d = thDeckOf(y + 0.3), out = []; let L = [];
+  const k = thZoneAt(p.x, p.z, y + 0.3), r = (TH.rooms3 || []).find(q => q.k === k && q.d === d);
+  if (r) { let via = r.via; if (!via) { const lane = d >= 8 ? [[6, 11], [10.5, 11.5], [10.5, 43], [0, 43]] : d === 7 ? [[6, 11], [6, 43], [0, 43]] : [[6, 11], [0, 12]]; via = lane.concat([[0, r.z]], r.s ? [[r.s * 2.2, r.z]] : []); } L = via.slice().reverse(); }
+  else if (d >= 4 && d <= 15 && Math.abs(p.x) < 13 && p.z > -8.5 && p.z < 12.6) L = [];
+  else if (p.z < -8) L = [[0, p.z], [0, -7.5], [6, -7.5], [6, 11]];
+  else if (d >= 8 && p.z > 43) L = [[0, p.z], [0, 43], [10.5, 43], [10.5, 11.5], [6, 11]];
+  else if (d === 7 && p.z > 12) L = [[0, p.z], [0, 43], [6, 43], [6, 11]];
+  else L = [[0, p.z], [0, 12], [6, 11]];
+  for (const q of L) out.push({ x: q[0], z: q[1] });
+  let dd = d;
+  if (d <= 3) { out.push({ x: 6, z: 10.6 }, { x: TH_TRUNK.x - 0.3, z: TH_TRUNK.z }, { trunk: true, from: d }); dd = 4; out.push({ x: TH_TRUNK.x - 0.6, z: TH_TRUNK.z }, { x: 6, z: 11 }); }
+  if (dd <= 15 && dd !== 16) { out.push({ x: 0, z: 10.5 }, { x: 0, z: 7 }); for (let q = dd; q < 15; q++) for (const u of TH_UP) out.push({ x: u[0], z: u[1] }); out.push({ x: 0, z: 7 }, { x: 0, z: 10.5 }, { x: 6, z: 11 }, { x: 10.5, z: 11.5 }, { x: 10.5, z: 38 });
+    const S = (TH.spirals || []).find(s => s.y0 < thY(15) + 0.5 && s.y0 > thY(15) - 0.5 && s.pts[0][0] > 0); if (S) for (const q of S.pts) out.push({ x: q[0], z: q[1] }); }
+  const g = e.thEv.g; if (dd <= 15) for (const q of g === 'A' ? [[13, 38], [13, -40]] : g === 'C' ? [[13, 45], [13, 90]] : [[13, 32]]) out.push({ x: q[0], z: q[1] });
+  out.push({ x: e.thEv.mx, z: e.thEv.mz, last: true }); return out; }
+function thEvWalk(e, dt) { const E = e.thEv, p = e.s.position; if (!E.rt) { E.rt = thEvRoute(e); E.i = 0; }
+  const w = E.rt[E.i]; if (!w) return true;
+  if (w.trunk) { e.s.visible = false; E.tt = (E.tt || 0) + dt; if (E.tt > (4 - w.from) * 3.5) { E.tt = 0; e.thY = thY(4); p.set(TH_TRUNK.x - 0.3, e.thY, TH_TRUNK.z); e.s.visible = true; E.i++; } return false; }
+  const sp = (e.thInj === 1 ? 1.0 : 2.0) * dt, dx = w.x - p.x, dz = w.z - p.z, d = Math.hypot(dx, dz);
+  if (d < 0.12) { E.i++; E.stk = 0; return !!w.last; }
+  const s = Math.min(sp, d), ox = p.x, oz = p.z; p.x += dx / d * s; p.z += dz / d * s; const ny = floorUnder(p.x, p.z, e.thY); if (ny > e.thY - 2.5) e.thY = ny; p.y = e.thY;
+  const vis = Math.abs(player.pos.y - e.thY) < 9 && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 40;
+  if (vis) { const q = { x: p.x, z: p.z }; pushOutBoxes(q, 0.3, e.thY + 0.15, e.thY + 1.6); p.x = q.x; p.z = q.z; }
+  if (Math.hypot(p.x - ox, p.z - oz) < s * 0.3) { E.stk = (E.stk || 0) + dt; if (E.stk > 3) { E.stk = 0; E.snaps = (E.snaps || 0) + 1; TH.ev.snaps = (TH.ev.snaps || 0) + 1; if (!vis || E.stk2 > 2) { p.x = w.x; p.z = w.z; E.stk2 = 0; } else { E.stk2 = (E.stk2 || 0) + 1; p.x += dz / d * 0.4; p.z -= dx / d * 0.4; } } } else E.stk = 0;
+  e.faceWant = Math.atan2(dx, dz); e.moving = true; e.state = 'approach'; return false; }
 function thEvBrain(e, dt) { const V = TH.ev, E = e.thEv, p = e.s.position; p.y = e.thY; e.passive = true; e.tgt = null; if (e.knock) e.knock.set(0, 0, 0);
   const walk = (x, z, sp) => { const d = Math.hypot(x - p.x, z - p.z); if (d < 0.15) { e.moving = false; return true; } const k = Math.min(d, sp * dt) / d; p.x += (x - p.x) * k; p.z += (z - p.z) * k; e.faceWant = Math.atan2(x - p.x, z - p.z); e.moving = true; e.state = 'approach'; return false; };
   const sp = e.thInj === 1 ? 0.8 : 1.4;
   if (E.ph === 'stay') { e.state = 'idle'; if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 2.5 && Math.abs(player.pos.y - e.thY) < 1.6 && (!E.said || time - E.said > 12)) { E.said = time; subtitle(`${e.prof.name}「${E.line}」`); } return true; }
-  if (E.ph === 'wait') { e.state = 'idle'; if ((E.w -= dt) <= 0) E.ph = E.d16 ? 'muster' : 'lobby'; return true; }
-  if (E.ph === 'lobby') { const vis = Math.abs(player.pos.y - e.thY) < 3; if (!vis || walk(8.3, -3, sp)) { e.thY = thY(16); p.set(8.3 + rand(-1, 1), e.thY, 1 + rand(-1, 1)); E.ph = 'muster'; } return true; }
+  if (E.ph === 'wait') { e.state = 'idle'; if ((E.w -= dt) <= 0) E.ph = E.d16 ? 'muster' : 'route'; return true; }
+  if (E.ph === 'route') { if (thEvWalk(e, dt)) { E.ph = 'here'; V.here = (V.here || 0) + 1; e.faceWant = Math.PI; e.state = 'idle'; e.moving = false; } return true; }
   if (E.ph === 'muster') { if (walk(E.mx, E.mz, sp)) { E.ph = 'here'; V.here = (V.here || 0) + 1; e.faceWant = Math.PI; e.state = 'idle'; } return true; }
   if (E.ph === 'boat') { const B = E.b; e.state = 'idle'; e.moving = false; e.faceWant = B.x < 0 ? -Math.PI / 2 : Math.PI / 2; return true; }
   e.state = 'idle'; return true; }
@@ -1272,7 +1302,7 @@ function thEvacTick(dt) { const V = TH.ev; if (!V) return; V.t += dt;
       if (e) { const E = e.thEv, prefer = E.g === 'A' ? -1 : E.g === 'C' ? 1 : 0, bs = V.boats.filter(B => B.girls.length < 40 && B.ph === 'hang').sort((a, b) => Math.abs(a.z - (prefer < 0 ? -50 : prefer > 0 ? 100 : 30)) - Math.abs(b.z - (prefer < 0 ? -50 : prefer > 0 ? 100 : 30))); const B = bs[0];
         if (B) { const i = B.girls.length; B.girls.push(e); E.ph = 'boat'; E.b = B; E.ox = -0.8 + (i % 4) * 0.55; E.oz = -3.0 + Math.floor(i / 4) * 0.6; V.aboard++; if (B.girls.length >= 40) B.ph = 'lower'; } }
       else if (pts.length && !kujoStay()) { const c = pts[0], B = V.boats.find(B => B.ph === 'hang' && B.girls.length < 37); if (B) { c.thBoat = B; const i = B.girls.length; B.girls.push(c); c.thEv = { ph: 'boat', b: B, ox: 0, oz: -3 + Math.floor(i / 4) * 0.6, lie: true }; V.aboard++; i; } else c.thBoat = 1; }
-      else if (!V.allIn) { V.allIn = true; for (const B of V.boats) if (B.ph === 'hang' && B.girls.length) B.ph = 'lower'; showBanner('全員乗艇', `${V.aboard}名が救命艇に。残留 ${V.stay.length}名（${V.stay.map(e => e.prof.name).join('・')}）`); TH.banT = performance.now() + 4500; TH.log.push('evac:aboard'); } } }
+      else if (!V.allIn && !TH.girls.some(o => o.thEv && (o.thEv.ph === 'route' || o.thEv.ph === 'wait' || o.thEv.ph === 'muster'))) { V.allIn = true; for (const B of V.boats) if (B.ph === 'hang' && B.girls.length) B.ph = 'lower'; showBanner('全員乗艇', `${V.aboard}名が救命艇に。残留 ${V.stay.length}名（${V.stay.map(e => e.prof.name).join('・')}）`); TH.banT = performance.now() + 4500; TH.log.push('evac:aboard'); } } }
   for (const B of V.boats) for (const e of B.girls) { const E = e.thEv, p = e.s.position; p.set(B.m[0].position.x + E.ox, B.m[0].position.y + (E.lie ? 0.75 : 0.9), B.m[0].position.z + E.oz); e.thY = e.baseY = p.y; if (E.lie) e.fallYaw = 0; }
   for (const B of V.boats) { const m = B.m; if (B.ph === 'lower') { B.t += dt; const sy = (TH.sea ? TH.sea.position.y : TH_SEA) + 0.3; for (const o of m) o.position.y = Math.max(sy + (o === m[1] ? 0.9 : 0), o.position.y - 1.2 * dt); if (m[0].position.y <= sy + 0.01) { B.ph = 'away'; } }
     else if (B.ph === 'away') { const sx = Math.sign(B.x) || 1, sy = (TH.sea ? TH.sea.position.y : TH_SEA) + 0.3; for (const o of m) { if (Math.abs(o.position.x) < 70) o.position.x += sx * 2.0 * dt; o.position.y = sy + (o === m[1] ? 0.9 : 0); } } } }
@@ -1451,7 +1481,7 @@ function updateTenhou(dt) {
 }
 function buildTenhou() {
   thMats(); TH.zone = {}; TH.girls = []; TH.posts2 = []; TH.rooms3 = []; TH.locks = []; TH.zn = {}; TH.bid = Date.now();
-  thBuildExterior(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
+  thBuildExterior(); thTrunks(); thBuildStairs(); thBuildElevators(); thBuildD7(); thBuildAtrium(); thBuildD13(); thBuildD15(); thBuildD4(); thBuildD5(); thBuildD6(); for (const d of [8, 9, 10, 11, 12]) thBuildCab(d); thBuildD4Aft(); thBuildGalleria(); thBuildD6Aft(); thBuildD7Aft(); thBuildD14(); thBuildPlaza(); thBuildBridgePlus(); thBuildDome(); thBuildEngine(); thBuildD3(); thBuildD3Aft(); thBuildD16(); thYoga(); thHangArt(); thDirectories(); thStandSign('室内プール（この先・前方）', 6.5, -7.2, thY(14), 0, 2.6); thMorePosts();
   hq = null; thRoster(); thDeckIndex();
 }
 // 階ごとの表示：今いる階の上下 2 階だけ描く（船内の箱が多いので軽くする）。船体・外壁・海など大きな物はいつも描く
@@ -14776,7 +14806,7 @@ function buildKeiku() {
     cvStairs(Math.min(s0 * 11.55, s0 * 12.75), Math.max(s0 * 11.55, s0 * 12.75), g0 - 3.6, g0, CV.galY, Yd, '機銃ギャラリー');
   }
   rail(-11.4, -7.8, -90.2, -90.05, Yd); rail(7.8, 11.4, -90.2, -90.05, Yd);
-  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107m）
+  cvSpiral(-7.0, -45.6, Yh, Yd);   // 左舷ギャラリーの内側：格納庫と飛行甲板をつなぐ螺旋階段（20261107n）
   // 艦尾の端は平ら（着艦の邪魔をしない）。甲板より下に低い安全網だけ
   cvSlab(-11.4, 11.4, Yd - 0.95, Yd - 0.9, 74.05, 75.6, M.dark); for (let x = -11; x <= 11; x += 2.2) cvSlab(x - 0.04, x + 0.04, Yd - 0.95, Yd - 0.2, 74.05, 75.6, M.steel);
   cvSign(9.2, Yd + 1.6, 66, '飛行甲板　全長約三百', Math.PI);
@@ -27010,7 +27040,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261107n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

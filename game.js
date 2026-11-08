@@ -198,7 +198,7 @@ function thBuildFore() {
   for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const sx of [-1, 1]) { const xa = sx > 0 ? w : -w - 0.3, xb = sx > 0 ? w + 0.3 : -w; if (z >= -100 && z < -96) { thBox(xa, xb, y3 + 2.4, yT, z, z + 2, wallM, true); continue; } thBox(xa, xb, y3, yT, z, z + 2, wallM, true); }
     for (const d of [4, 6]) for (const sx of [-1, 1]) thBox(sx > 0 ? w + 0.3 : -w - 0.32, sx > 0 ? w + 0.32 : -w - 0.3, thY(d) + 1.2, thY(d) + 1.7, z + 0.3, z + 1.7, M.glass || M.greyD, false); }   // 舷窓の列
   const wF = hw(F.z0); thBox(-wF, wF, y3, yT, F.z0 - 0.3, F.z0, wallM, true);
-  thWallZ(F.z1, -hw(F.z1), hw(F.z1), thY(4), yT, wallM, [[-6.8, -5.2], [5.2, 6.8]], 0.3, 2.4); thBox(-hw(F.z1), hw(F.z1), y3, thY(4), F.z1 - 0.15, F.z1 + 0.15, wallM, true);
+  thWallZ(F.z1, -hw(F.z1), hw(F.z1), thY(4), yT, wallM, [[-6.8, -5.2], [5.2, 6.8]], 0.3, 2.4); thWallZ(F.z1, -hw(F.z1), hw(F.z1), y3, thY(4), wallM, [[-19.2, -15.4], [15.4, 19.2]], 0.2, 2.3);   // D3 は両舷の主砲への道から入る
   thSign('前甲板区画（居住区・主砲弾薬・揚錨機）', 0, thY(4) + 2.9, F.z1 + 0.2, Math.PI, 3.2);
   // 階ごとの床・天井
   const band = (y, d, ceil) => { for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const r of thRectSub([-w, w, z, z + 2], (holes[d] || []).filter(h => h[3] > z && h[2] < z + 2))) { if (!ceil) thFloor(r[0], r[1], r[2], r[3], y, d === F.top ? (M.teak || M.deck) : M.carpet, 3); else thPlane(r[0], r[1], r[2], r[3], y - 0.02, M.ceil, true); } } };
@@ -252,6 +252,50 @@ function thBuildFore() {
   thSign('主砲射界　立入禁止', 0, yT + 2.0, F.z0 + 1.2, 0, 4); thSign('前甲板（上甲板）', 9, yT + 2.6, -98.5, Math.PI, 2.2); thZone('foretop', -hw(-100), hw(-100), F.z0, F.z1, F.top); Object.assign(TH.zn = TH.zn || {}, { foretop: '高い前甲板（主砲）', fore3: '前甲板区画の入口（D3）' });
   for (const sx of [-1, 1]) thPost(sx * 8, -118, yT, Math.PI, 'bridge', '見張り（前甲板）');
   (TH.rooms3 = TH.rooms3 || []).push({ k: 'forecor4', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -100], [6, -118]] }, { k: 'barb14', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -108], [2, -108]] }, { k: 'chain', d: 4, via: [[6, -7.5], [0, -7.5], [0, -62], [0, -80], [6, -88], [6, -138], [6, -141.5], [4.6, -141.5]] }); }
+// 主砲への道：航空作業甲板から両舷を通り、前部主砲の螺旋階段まで。第三主砲塔の内部もここ。
+function thBuildGunRoad() {
+  const M = thMats(), y = thY(3), z0 = -100, z1 = 126, teak = M.teak || M.grey;
+  for (const sx of [-1, 1]) {
+    const xin = sx * 19.25, xout = sx * 21.35, X0 = Math.min(xin, xout), X1 = Math.max(xin, xout), xo = sx * 21.22;
+    thFloor(X0, X1, z0, z1, y, teak, 1.6);
+    thBox(Math.min(xo, xo + sx * 0.12), Math.max(xo, xo + sx * 0.12), y, y + 1.05, z0, z1, M.white, true);
+    for (let z = z0; z <= z1; z += 4) thBox(xo - 0.05, xo + sx * 0.16, y + 0.95, y + 1.08, z - 0.04, z + 0.04, M.greyD, false);
+    for (let z = z0 + 3; z < z1; z += 8) {
+      const xi = sx * 19.4; thBox(Math.min(xi, xi + sx * 0.1), Math.max(xi, xi + sx * 0.1), y, y + 2.35, z - 0.06, z + 0.06, M.white, false);
+      thBox(X0, X1, y + 2.28, y + 2.4, z - 0.08, z + 3.2, M.grey, false);
+      thBox(Math.min(sx * 19.7, sx * 21.05), Math.max(sx * 19.7, sx * 21.05), y - 0.55, y - 0.32, z - 0.07, z + 0.07, M.greyD, false);
+      thBox(sx * 19.85 - 0.07, sx * 19.85 + 0.07, y - 1.7, y, z - 0.07, z + 0.07, M.white, false);
+    }
+    for (const z of [-40, 10, 60]) thSign(sx < 0 ? '高角砲の脇　通行可' : '高角砲の脇　通行可', sx * 20.3, y + 2.05, z + 3.4, sx < 0 ? Math.PI / 2 : -Math.PI / 2, 2.0);
+    thSign(sx < 0 ? '左舷　主砲への道' : '右舷　主砲への道', sx * 20.3, y + 2.15, 116, Math.PI, 2.8);
+    thSign('この先　前部主砲', sx * 20.3, y + 2.15, -88, 0, 2.2);
+    thSign('後部主砲・航空甲板', sx * 20.3, y + 2.15, 70, Math.PI, 2.2);
+    for (let z = z0 + 10; z < z1; z += 18) thPL(sx * 20.3, y + 2.15, z, 0.28, 7);
+    thPost(sx * 20.15, 96, y, Math.PI, 'bridge', '伝令（主砲への道）');
+    thPost(sx * 20.15, 8, y, 0, 'bridge', '甲板員（主砲への道）');
+    thPost(sx * 20.15, -62, y, 0, 'bridge', '砲員（前部主砲へ）');
+    thFloor(Math.min(sx * 8.2, sx * 19.25), Math.max(sx * 8.2, sx * 19.25), -100, -90, y, teak, 2);
+    thSign('螺旋階段　主砲甲板へ', sx * 11.2, y + 2.2, -93.4, Math.PI, 2.2);
+    thSign('主砲への入口', sx * 14.6, y + 2.15, -91.3, 0, 2.4);
+    thPost(sx * 13.5, -96.4, y, Math.PI, 'bridge', '案内（主砲への入口）');
+    thZone(sx < 0 ? 'gunroadL' : 'gunroadR', X0, X1, z0, z1, 3);
+  }
+  Object.assign(TH.zn = TH.zn || {}, { gunroadL: '左舷　主砲への道', gunroadR: '右舷　主砲への道' });
+  const cz = 136, h = 4.6, zf = cz - 3.6, za = cz + 3.6;
+  thWallX(-3.7, zf, za, y, y + h, M.greyD); thWallX(3.7, zf, za, y, y + h, M.greyD);
+  thWallZ(za, -3.7, 3.7, y, y + h, M.greyD); thWallZ(zf, -3.7, 3.7, y, y + h, M.greyD, [[-0.6, 0.6]], 0.2, 2.2);
+  thPlane(-3.7, 3.7, zf, za, y + h - 0.02, M.ceil, true); thPlane(-3.7, 3.7, zf, za, y + 0.025, M.steel, false, 2);
+  for (const sx of [-1, 1]) thBox(sx * 0.6, sx * 0.75, y, y + 2.2, zf - 0.05, zf + 0.05, M.black, false);
+  thBox(-0.75, 0.75, y + 2.15, y + 2.3, zf - 0.05, zf + 0.05, M.black, false);
+  thSign('第三主砲塔の内部（入口）', 0, y + 2.55, zf - 0.08, Math.PI, 2.2);
+  for (const bx of [-1.5, 1.5]) { thBox(bx - 0.5, bx + 0.5, y + 1.3, y + 2.3, cz + 1.5, cz + 3.3, M.steel, false); thSolid(bx - 0.5, bx + 0.5, y, y + 2.3, cz + 1.5, cz + 3.3); }
+  thCyl(0.42, 0.42, h, M.red || M.orange, 0, y + h / 2, cz, null, 12); thSolid(-0.45, 0.45, y, y + h, cz - 0.45, cz + 0.45);
+  thPL(0, y + 3.5, cz - 1.4, 0.55, 8); thSign('第三主砲塔の内部', 0, y + 2.4, cz - 2.4, Math.PI, 2.0);
+  for (const [x, z, f, tg] of [[0, cz - 2.3, Math.PI, '砲塔長'], [-2.3, cz - 0.2, Math.PI / 2, '射手（俯仰）'], [2.3, cz - 0.2, -Math.PI / 2, '旋回手'], [-1.3, cz + 0.9, Math.PI, '装填手'], [1.3, cz + 0.9, Math.PI, '装填手'], [0.9, cz - 1.1, 0, '揚弾手']]) thPost(x, z, y, f, 'bridge', '第三主砲塔 ' + tg);
+  thZone('turA', -3.4, 3.4, zf + 0.25, za - 0.3, 3); TH.zn.turA = '第三主砲塔の内部';
+  thBox(2.3, 3.5, y, y + 1.05, cz - 6.4, cz - 4.8, M.steel, true); thSign('第三主砲　即応弾', 2.9, y + 2.15, cz - 5.6, Math.PI, 1.6);
+  thPost(-2.5, cz - 5.4, y, 0, 'bridge', '第三主砲 弾薬手');
+}
 function thBuildExterior() {
   TH.seaplanes = [];
   for (const sx of [-1, 1]) thSolid(sx > 0 ? 19.3 : -19.8, sx > 0 ? 19.8 : -19.3, thY(1) - 0.2, thY(2), -160, 175);   // D1 の外板（当たり判定）
@@ -298,7 +342,7 @@ function thBuildExterior() {
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 14, 8), M.white); mast.position.set(0, yTop + 7, TH_SZ0 + 10); stageRoot.add(mast);
   const radar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.8, 0.4), M.greyD); radar.position.set(0, yTop + 12, TH_SZ0 + 10); stageRoot.add(radar); TH.radar = radar;
   // 主砲：艦首 2 基（二番は背負い式）・艦尾 1 基
-  thTurret(0, 136, yD3, Math.PI, true);   // 艦首の 2 基は高くした前甲板の上（thBuildFore）
+  thTurret(0, 136, yD3, Math.PI, true, true);   // 艦尾の第三主砲（中は thBuildGunRoad）。艦首の 2 基は高くした前甲板の上（thBuildFore）
   // 高角砲 6 基：D3 遊歩甲板の外側に左右 3 基ずつ。4 基目の跡は花のテラス（左舷）と野外カフェ（右舷）
   for (const sx of [-1, 1]) for (const z of [-40, 10, 60]) thHA(sx * 17.2, z, yD3, sx < 0 ? -Math.PI / 2 : Math.PI / 2);
   for (let i = 0; i < 6; i++) { const f = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 1.2), M.wood); f.position.set(-17 + (i % 2) * 1.6, yD3 + 0.3, 92 + i * 2.2); stageRoot.add(f); const b = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 6), i % 2 ? M.flower : M.leaf); b.position.set(f.position.x, yD3 + 0.95, f.position.z); stageRoot.add(b); }
@@ -322,12 +366,7 @@ function thBuildExterior() {
   const crane = new THREE.Group(), col = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 9, 10), M.grey); col.position.y = 4.5; crane.add(col); const boom = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 16), M.grey); boom.position.set(0, 8.5, 7); boom.rotation.x = -0.35; crane.add(boom);
   crane.position.set(0, yD3, 168); stageRoot.add(crane);
   thSign('航空作業甲板', 0, yD3 + 3, 124.5, Math.PI, 3.2);
-  // 外舷通路：航空作業甲板から舷側を通って前甲板の主砲まで（床・手すり・当たり判定・案内）
-  for (const sx of [-1, 1]) { const xa = sx > 0 ? 19.8 : -21.4, xb = sx > 0 ? 21.4 : -19.8, xo = sx > 0 ? 21.3 : -21.45, z0 = -99, z1 = 128;
-    thFloor(xa, xb, z0, z1, yD3, M.teak || M.grey, 2.2); thBox(xo, xo + 0.15, yD3, yD3 + 1.05, z0, z1, M.white, true);
-    for (let z = z0; z <= z1; z += 4) thBox(xo - 0.05, xo + 0.2, yD3 + 0.95, yD3 + 1.1, z - 0.05, z + 0.05, M.greyD, false);
-    thSign('外舷通路 → 主砲（前甲板）', sx * 20.6, yD3 + 2.4, 124, Math.PI, 2.6); thSign('外舷通路 → 航空作業甲板', sx * 20.6, yD3 + 2.4, -94, 0, 2.6); thFloor(sx > 0 ? 18.6 : -19.9, sx > 0 ? 19.9 : -18.6, -100, -96, yD3, M.teak || M.grey, 2.2); }
-
+  thBuildGunRoad();
 }
 
 // ---------------- 大階段（D7〜D15）：壁で囲った折り返し。踊り場は各階の間 ----------------
@@ -1120,7 +1159,7 @@ function thTheaterBalcony(y) {   // 劇場の二階席：弧を描く前縁・�
 function thBuildD3() {   // D3：弾薬庫の前室・主砲機械室（前部広場の下）・閉じた弾薬庫・揚弾機
   const d = 3, y = thY(d), h = thH(d), E = thEngMats(), M = thMats();
   thFloor(-13, 13, -8.5, 12.6, y, E.deck, 3); thPlane(-13, 13, -8.5, 12.6, y + h - 0.02, M.ceil, true); thWallX(-13.1, -8.5, 12.6, y, y + h, E.wall, [[0.6, 2.4]], 0.2, 2.4); thBuildColdStore(); thWallX(13.1, -8.5, 12.6, y, y + h, E.wall, [[2, 5]], 0.2, 2.6);
-  thPlane(13.2, 19.4, -8.6, 120, y + h - 0.02, M.ceil, true); thBox(19.4, 19.6, y, y + h, -8.6, 120, M.win, true); thBox(13.2, 19.4, y, y + h, -8.8, -8.6, E.wall, true);
+  thPlane(13.2, 19.4, -8.6, 120, y + h - 0.02, M.ceil, true); thWallX(19.5, -8.6, 120, y, y + h, M.win, [[-2.2, 0.4], [36, 40], [96, 100]], 0.2, 2.3); thBox(13.2, 19.4, y, y + h, -8.8, -8.6, E.wall, true);
   thBox(TH_SH.x0 - 0.2, TH_SH.x1 + 0.2, y, y + h, TH_SH.z0 - 0.2, TH_SH.z1 + 0.2, E.wall, true); thWallZ(12.7, -13, 13, y, y + h, E.wall, [[-1.5, 1.5]], 0.2, 2.6); thSign('D3 弾薬庫前室・主砲機械室', 0, y + 2.6, TH_SH.z1 + 0.25, 0, 3.0);
   thPipes(-12.5, 12.5, -8.5, 12.6, y + h - 0.35, 4); thBox(-13, 13, y, y + h, -92.2, -92, E.wall, true);
   const shell = (x, z, yy, lay) => { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.9, 12), E.grey), t = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.45, 12), E.grey), r = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.08, 12), E.brassS); t.position.y = 0.67; r.position.y = -0.3; g.add(b, t, r); if (lay) g.rotation.z = Math.PI / 2; g.position.set(x, yy, z); stageRoot.add(g); };
@@ -1926,7 +1965,7 @@ function thWhere() {
 const TH_WN = { king: '王の居室', bridge: '艦橋・司令室', hall: '宴会場（大広間）', atr: '大吹き抜け', stairs: '大階段', wc: '女子トイレ・洗面所', cab6: '6 人部屋', cab4: '4 人部屋', cab1: '士官室（個室）', cabins: '客室の通路', ward: '病室', exam: '診察室', morgue: '霊安室', hosp: '病院の通路', prom: '遊歩廊', gallery: '画廊' };
 function thDeckOf(y) { let d = 1; for (let i = 0; i < TH_DY.length; i++) if (y >= TH_DY[i] - 0.4) d = i + 1; return d; }
 function thPhaseLabel() { const w = thWhere(), d = thDeckOf(player.pos.y), n = w && (TH_WN[w] || (TH.zn || {})[w] || (/^wc/.test(w) ? '女子トイレ・洗面所' : /^cor/.test(w) ? '主通路' : '')); return `天鳳　D${d} ${TH_DNAME[d - 1]}` + (n ? '・' + n : ''); }
-function thGoal() { return 'D4〜D15 を大階段と左右のエレベーターで。各階の主通路（幅 3m）から部屋へ。前甲板の展望広場は D4 の前の通路から'; }
+function thGoal() { return '両舷の主砲への道を航空甲板から前部の螺旋階段へ。階段を上れば第一・第二主砲塔、航空甲板の中央からは第三主砲塔に入れる'; }
 // 音楽：権利の切れた録音（CREDITS.md）。宴会場はシュトラウス、吹き抜けはショパン
 function thMusic() {
   if (TH.music.ready) return; TH.music.ready = true;
@@ -1995,12 +2034,33 @@ function thRoomWalk() {   // 各階のエレベーター前から、作った部
     if (ok) { const sv = player.pos.clone(); player.pos.set(w.end[0], w.y, w.end[1]); const at = thWhere(); player.pos.copy(sv); res[res.length - 1].at = at; } }
   return { n: res.length, bad: res.filter(r => !r.ok || r.at !== r.k), all: res.map(r => r.k + (r.ok ? '' : '✗')) };
 }
+function thGunRoadWalk() {   // 主砲への道：両舷から入口を抜け螺旋階段の足元へ。階段を上って第一・第二主砲塔、航空甲板から第三主砲塔
+  const y0 = thY(3) + 0.05, W = (pts, y) => { const r = thWalk(pts, y == null ? y0 : y); return { ok: !r.blocks.length && r.maxRise < 0.45, y: r.y, rise: r.maxRise, b: r.blocks[0] || null, end: r.end }; };
+  const R = W([[8, 3.5], [12.2, 3.5], [14.3, 3.5], [14.3, 121], [20.2, 122], [20.2, -90.2], [17.3, -90.2], [17.3, -94.2], [11.2, -94.6], [7.8, -94.6]]);
+  const L = W([[-6, 122], [-16, 122], [-20.2, 122], [-20.2, -90.2], [-17.3, -90.2], [-17.3, -94.2], [-11.2, -94.6], [7.8, -94.6]]);
+  const A = W([[6, 122], [0, 124], [0, 131.2], [0, 133.2]]);
+  const pick = (cx, ya, yb) => (TH.spirals || []).find(s => s.pts && s.pts.length && Math.abs(s.pts[s.pts.length - 1][0] - cx) < 0.2 && Math.abs(s.y0 - ya) < 0.05 && Math.abs(s.y1 - yb) < 0.05);
+  const s1 = pick(9, thY(3), thY(4)), s2 = pick(-9, thY(4), thY(6)), s3 = pick(9, thY(6), thY(8));
+  let up = { miss: !s1 || !s2 || !s3 };
+  if (s1 && s2 && s3) {
+    const a = W([[7.8, -94.6], s1.pts[0]].concat(s1.pts), y0);
+    const b = a.ok ? W([s1.pts[s1.pts.length - 1], [6.2, -94.3], [-6.2, -94.3], s2.pts[0]].concat(s2.pts), a.y) : a;
+    const c = b.ok ? W([s2.pts[s2.pts.length - 1], [-6.2, -94.2], [6.2, -94.2], s3.pts[0]].concat(s3.pts), b.y) : b;
+    const gunY = c.ok ? c.y : thY(8) + 0.05, top = s3.pts[s3.pts.length - 1];
+    const t2 = c.ok ? W([top, [6.2, -94.4], [6.2, -100], [0, -100], [0, -106]], gunY) : c;
+    const t1 = c.ok ? W([top, [6.5, -94.4], [8, -102], [8, -122], [0, -122], [0, -127.5]], gunY) : c;
+    up = { ok: !!(a.ok && b.ok && c.ok && t1.ok && t2.ok), a, b, c, t1, t2 };
+  }
+  const sv = player.pos.clone();
+  const at = (x, z, y) => { player.pos.set(x, y == null ? y0 : y, z); const w = thWhere(); player.pos.copy(sv); return w; };
+  return { R, L, A, up, atR: at(20.2, 40), atL: at(-20.2, -40), atA: at(0, 133.4), atF: at(11.2, -94.6), at1: at(0, -127.5, thY(8) + 0.05), at2: at(0, -106, thY(8) + 0.05) };
+}
 function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通路・王専用トイレ
   const W = (pts, d) => { const r = thWalk(pts, thY(d) + 0.05); return { ok: !r.blocks.length, y: r.y, b: r.blocks[0] || null, end: r.end }; };
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thFallGuard, thBombDmg, thStrafePlane, thDmgClear, thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thFallGuard, thBombDmg, thStrafePlane, thDmgClear, thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thGunRoadWalk, thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -18531,7 +18591,7 @@ const STAGES = {
   ukLanding: { name: '英国淑女編 第五幕「本土」', desc: '屈辱的な和睦を退け、英国の本土へ逆襲。英国南岸の港町に上陸する。岬の砲台の破裂弾をくぐって広場を押さえ、内陸から来る援軍三波を退けよ。補給は無い。徴兵の娘の近くで E を押すと殿が声をかける。' },
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
-  tenhou: { name: '新武装客船「天鳳」', desc: '桜鳳の後を継ぐ新しい武装客船。全長 350m・幅 40m・16 甲板・乗員 2,600（名簿と居室はデータ）。外観：白い上部構造とバルコニー、主砲 3 基・高角砲 6 基・機銃 16 座・艦尾の射出機と水上機。今回歩けるのは王の居室（D13）・艦橋（D15）・桜鳳から原寸で移した宴会場と大吹き抜け（D7）。大階段とエレベーター 2 基で行き来する。戦いは無い。' },
+  tenhou: { name: '新武装客船「天鳳」', desc: '桜鳳の後を継ぐ新しい武装客船。全長 350m・幅 40m・16 甲板・乗員 2,600。両舷の「主砲への道」を航空作業甲板から前部主砲まで歩ける。第三主砲塔の中にも入れる。大階段とエレベーターで船内を行き来する。戦いは無い。' },
   palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。3階の会議室では、主要メンバーと不正アクセスの緊急会議がひらかれる（行事の「緊急会議へ」、または上座で E）。' },
   usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。本丸が落ちれば裏の抜け道へ。⑤総構えの大城（小田原城に倣う）：急ぎの徴募の娘たちも加わり、町ぐるみの土塁と空堀で三方からの寄せを止めよ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
   usRaid: { name: 'アメリカ西部編 第三幕「陸攻出撃」', desc: '試製 嶺雲（双発の陸上攻撃機）の編隊でアメリカ軍の前進飛行場を叩く。殿は一番機に乗り、1〜6 で持ち場を移る（操縦席・爆撃照準・前方／左／右／後方機銃。V で外から）。ほかは搭乗員が受け持つ。米軍の戦闘機が上方前方・側方・後方から一撃をかけ、目標の上では対空機銃が待つ。破裂爆弾を落として帰る。搭乗員が全員倒れた機は、自動操縦でひとりで基地へ帰り着陸する。殿が被弾するか一番機が落ちれば作戦中止。' },
@@ -27505,7 +27565,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261107zc';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261108b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

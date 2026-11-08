@@ -233,6 +233,9 @@ function thBuildFore() {
     thPost(6, -118, y, Math.PI, 'cab', '巡回（前甲板区画）'); }
   // 螺旋階段：D3→D4（右舷）、D4→D6（左舷）、D6→D8 上甲板（右舷）
   thSpiral(9, -96, y3, thY(4), 1); thSpiral(-9, -96, thY(4), thY(6), -1); thSpiral(9, -96, thY(6), yT, 1);
+  thSign('左の階段へ　D6 まで', -1.6, thY(4) + 2.55, -93.2, Math.PI, 2.2); thPost(3.4, -93.6, thY(4), Math.PI, 'bridge', '案内（左舷の階段）');
+  thSign('右の階段へ　主砲甲板', 1.6, thY(6) + 2.55, -93.2, Math.PI, 2.4); thPost(-3.4, -93.6, thY(6), Math.PI, 'bridge', '案内（主砲甲板）');
+  thSign('第二主砲塔　入口は後方', 6.2, yT + 2.55, -99.2, Math.PI, 2.2); thSign('第一主砲塔　この先', 7.4, yT + 2.55, -116, 0, 2.0);
   // 上甲板：手すり・主砲 2 基（第二砲塔は一段高い）
   for (let z = F.z0; z < F.z1; z += 2) { const w = Math.min(hw(z), hw(z + 2)); for (const sx of [-1, 1]) thBox(sx > 0 ? w : -w - 0.12, sx > 0 ? w + 0.12 : -w, yT, yT + 1.05, z, z + 2, M.white, true); }
   thBox(-hw(F.z0), hw(F.z0), yT, yT + 1.05, F.z0, F.z0 + 0.12, M.white, true); thBox(-hw(F.z1), hw(F.z1), yT, yT + 1.05, F.z1 - 0.12, F.z1, M.white, true);
@@ -277,20 +280,32 @@ function thBuildGunRoad() {
     thFloor(Math.min(sx * 8.2, sx * 19.25), Math.max(sx * 8.2, sx * 19.25), -100, -90, y, teak, 2);
     thSign('螺旋階段　主砲甲板へ', sx * 11.2, y + 2.2, -93.4, Math.PI, 2.2);
     thSign('主砲への入口', sx * 14.6, y + 2.15, -91.3, 0, 2.4);
+    const ja = sx * 15.5, jb = sx * 19.05, jz0 = -92.35, jz1 = -91.95;
+    thBox(Math.min(ja, ja + sx * 0.16), Math.max(ja, ja + sx * 0.16), y, y + 2.4, jz0, jz1, M.white, false);
+    thBox(Math.min(jb, jb + sx * 0.16), Math.max(jb, jb + sx * 0.16), y, y + 2.4, jz0, jz1, M.white, false);
+    thBox(Math.min(ja, jb), Math.max(ja, jb), y + 2.28, y + 2.46, jz0, jz1, M.white, false);
+    thBox(Math.min(sx * 15.4, sx * 19.2), Math.max(sx * 15.4, sx * 19.2), y + 2.46, y + 2.58, -92.2, -89.4, M.grey, false);
     thPost(sx * 13.5, -96.4, y, Math.PI, 'bridge', '案内（主砲への入口）');
     thZone(sx < 0 ? 'gunroadL' : 'gunroadR', X0, X1, z0, z1, 3);
   }
   Object.assign(TH.zn = TH.zn || {}, { gunroadL: '左舷　主砲への道', gunroadR: '右舷　主砲への道' });
-  const cz = 136, h = 4.6, zf = cz - 3.6, za = cz + 3.6;
+  const cz = 136, h = 4.6, zf = cz - 3.6, za = cz + 3.6, ze0 = 129.2;
+  thWallX(-2.2, ze0, zf, y, y + 3.2, M.greyD); thWallX(2.2, ze0, zf, y, y + 3.2, M.greyD);
+  thWallZ(ze0, -2.2, 2.2, y, y + 3.2, M.greyD, [[-0.7, 0.7]], 0.2, 2.3);
+  thPlane(-2.2, 2.2, ze0, zf, y + 3.15, M.grey, true); thFloor(-2.05, 2.05, ze0 + 0.1, zf, y, teak, 2);
+  thPL(0, y + 2.7, (ze0 + zf) / 2, 0.45, 8); thSign('第三主砲塔', 0, y + 2.7, ze0 - 0.06, Math.PI, 2.2);
+  for (const sx of [-1, 1]) thBox(sx * 0.72, sx * 0.88, y, y + 2.3, ze0 - 0.06, ze0 + 0.06, M.black, false);
+  thBox(-0.9, 0.9, y + 2.2, y + 2.35, ze0 - 0.06, ze0 + 0.06, M.black, false);
   thWallX(-3.7, zf, za, y, y + h, M.greyD); thWallX(3.7, zf, za, y, y + h, M.greyD);
   thWallZ(za, -3.7, 3.7, y, y + h, M.greyD); thWallZ(zf, -3.7, 3.7, y, y + h, M.greyD, [[-0.6, 0.6]], 0.2, 2.2);
   thPlane(-3.7, 3.7, zf, za, y + h - 0.02, M.ceil, true); thPlane(-3.7, 3.7, zf, za, y + 0.025, M.steel, false, 2);
   for (const sx of [-1, 1]) thBox(sx * 0.6, sx * 0.75, y, y + 2.2, zf - 0.05, zf + 0.05, M.black, false);
   thBox(-0.75, 0.75, y + 2.15, y + 2.3, zf - 0.05, zf + 0.05, M.black, false);
-  thSign('第三主砲塔の内部（入口）', 0, y + 2.55, zf - 0.08, Math.PI, 2.2);
-  for (const bx of [-1.5, 1.5]) { thBox(bx - 0.5, bx + 0.5, y + 1.3, y + 2.3, cz + 1.5, cz + 3.3, M.steel, false); thSolid(bx - 0.5, bx + 0.5, y, y + 2.3, cz + 1.5, cz + 3.3); }
+  thSign('第三主砲塔の内部（入口）', 0, y + 2.55, zf + 0.12, 0, 2.0);
+  const yb = y + 2.35; for (const bx of [-1.5, 1.5]) { thBox(bx - 0.55, bx + 0.55, yb, yb + 1.15, cz - 1.15, cz + 0.35, M.steel, false); thSolid(bx - 0.55, bx + 0.55, y, yb + 1.15, cz - 1.15, cz + 0.35); thBox(bx - 0.16, bx + 0.16, y, yb, cz - 0.55, cz + 0.05, M.greyD, false); thBox(bx - 0.22, bx + 0.22, yb + 0.28, yb + 0.48, cz - 2.15, cz - 1.15, M.grey, false); }
+  for (const sx of [-1, 1]) { thBox(sx * 3.35 - 0.22, sx * 3.35 + 0.22, y + 0.9, y + 1.7, cz - 0.7, cz + 0.7, M.greyD, true); thSign(sx < 0 ? '俯仰' : '旋回', sx * 3.0, y + 2.15, cz, sx < 0 ? Math.PI / 2 : -Math.PI / 2, 0.9); }
   thCyl(0.42, 0.42, h, M.red || M.orange, 0, y + h / 2, cz, null, 12); thSolid(-0.45, 0.45, y, y + h, cz - 0.45, cz + 0.45);
-  thPL(0, y + 3.5, cz - 1.4, 0.55, 8); thSign('第三主砲塔の内部', 0, y + 2.4, cz - 2.4, Math.PI, 2.0);
+  thPL(0, y + 3.5, cz - 1.6, 0.7, 10); thSign('第三主砲塔の内部', 0, y + 2.4, cz - 2.5, Math.PI, 2.0); thSign('砲尾に近づかない', 2.4, y + 1.9, cz - 2.5, Math.PI, 1.4);
   for (const [x, z, f, tg] of [[0, cz - 2.3, Math.PI, '砲塔長'], [-2.3, cz - 0.2, Math.PI / 2, '射手（俯仰）'], [2.3, cz - 0.2, -Math.PI / 2, '旋回手'], [-1.3, cz + 0.9, Math.PI, '装填手'], [1.3, cz + 0.9, Math.PI, '装填手'], [0.9, cz - 1.1, 0, '揚弾手']]) thPost(x, z, y, f, 'bridge', '第三主砲塔 ' + tg);
   thZone('turA', -3.4, 3.4, zf + 0.25, za - 0.3, 3); TH.zn.turA = '第三主砲塔の内部';
   thBox(2.3, 3.5, y, y + 1.05, cz - 6.4, cz - 4.8, M.steel, true); thSign('第三主砲　即応弾', 2.9, y + 2.15, cz - 5.6, Math.PI, 1.6);
@@ -365,7 +380,7 @@ function thBuildExterior() {
     thBox(-4.5, 4.5, y, y + 3.0, z - 2.5, z + 2.5, M.grey, false); thBox(-4.4, 4.4, y + 1.2, y + 2.6, z + 2.5, z + 2.6, M.glass || M.grey, false); thSign('航空指揮所', 0, y + 3.4, z + 2.7, 0); }
   const crane = new THREE.Group(), col = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 9, 10), M.grey); col.position.y = 4.5; crane.add(col); const boom = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 16), M.grey); boom.position.set(0, 8.5, 7); boom.rotation.x = -0.35; crane.add(boom);
   crane.position.set(0, yD3, 168); stageRoot.add(crane);
-  thSign('航空作業甲板', 0, yD3 + 3, 124.5, Math.PI, 3.2);
+  thSign('航空作業甲板', -7.2, yD3 + 2.7, 118, Math.PI / 2, 2.6);
   thBuildGunRoad();
 }
 
@@ -27565,7 +27580,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261108b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261108c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

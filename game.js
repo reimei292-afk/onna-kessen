@@ -2430,7 +2430,7 @@ const Sfx = {
 // 攻め手 約1500（六つの隊）・守り手 約1000。近くの者は一人ずつ（実体）、遠くの者・人数の多くは簡単な絵（群れ）で出す。
 // 中国の現地兵の絵は KS2_CN_LOOKS の一か所だけ差し替えれば変わる（Grok で作った画像を frames/ に入れて id を並べる）。
 // ===================================================================
-const KS2_CN_LOOKS = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'];   // ← 中国の現地兵の絵（ここだけ差し替える）
+const KS2_CN_LOOKS = ['girl46', 'girl47', 'girl48', 'girl49', 'girl50', 'girl51', 'girl52', 'girl53', 'girl54', 'girl55'];   // Grok で作った中国の現地兵（守り手だけ）   // ← 中国の現地兵の絵（ここだけ差し替える）
 const KS2_CN_NAMES = ['李 梅', '王 芳', '張 静', '劉 麗', '陳 玲', '楊 雪', '趙 婷', '黄 蘭', '周 燕', '呉 敏', '徐 霞', '孫 莉', '馬 蕾', '朱 慧', '胡 琳', '郭 娜'];
 const KS2 = { on: false, ph: 'off', t: 0 };
 const KS2_W = 70, KS2_T = 3, KS2_H = 9, KS2_IW = 36, KS2_IH = 7, KS2_GATE = 3.5, KS2_IG = 1.8;   // 外の城壁（±70・厚さ3・高さ9）、内の城壁（±36・高さ7）、門の半幅
@@ -2596,7 +2596,7 @@ function ks2PxKill(o) { if (!o || !o.alive) return; o.alive = false; o.laid = fa
 function ks2Mk(x, z, kind, team, gid, prof, y) { const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: { special: true } }); if (!e) return null;
   if (prof) Object.assign(e.prof, prof); if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
   e.ks2 = true; e.passive = true; e.sq = null; e.state = 'idle'; if (e.mk) e.mk.visible = false; e.shadow.visible = false; e.hp = e.hpMax = 3; e.dmg = 8; e.ks2Y = y || 0; e.baseY = e.ks2Y; e.s.position.y = e.ks2Y; e.ks2T = rand(0, 1); e.ks2Cd = rand(1, 5); e.ks2V = [0, 0]; e.speed = rand(2.2, 2.6); return e; }
-const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl31', 'girl34', 'girl37', 'girl45', MEDIC_ID, 'surgeon']);
+const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl31', 'girl34', 'girl37', 'girl45', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
 function ks2KLook() { const off = KS2_KINGDOM_OFF(); const L = (KS2.kLooks = KS2.kLooks || Object.keys(GIRLS).filter(k => /^(mob\d+|girl\d+)$/.test(k) && !off.has(k) && GIRLS[k].front)); return L[(Math.random() * L.length) | 0]; }
 function ks2Spawn() {
   KS2.units = []; KS2.def = []; KS2.by = {}; KS2.px = []; KS2.pxg = {}; KS2.pxLostA = 0; KS2.pxLostD = 0; KS2.all = [];
@@ -2609,7 +2609,7 @@ function ks2Spawn() {
     const guardsN = D.k === 'H' ? 10 : 3, n0 = U.mem.length;
     for (let j = n0; j < nReal; j++) { const arch = j % 10 < 3, ukm = D.uk && j < Math.round(nReal * D.uk / D.n) + n0, mixm = D.mix && !ukm && Math.random() < 0.15;
       let gid = ukm ? 'uk' + String(1 + (j % 10)).padStart(2, '0') : mixm ? D.mix + String(1 + (j % 9)).padStart(2, '0') : null; if (gid === 'uk06' || gid === 'us08' || (gid && !GIRLS[gid])) gid = ukm ? 'uk07' : null;
-      const kind = arch && !ukm ? 'archer' : 'mob', e = ks2Mk(U.ax + rand(-6, 6), U.az + rand(0, 12), kind, 'blue', gid || (kind === 'mob' ? ks2KLook() : undefined), null); if (!e) continue;
+      const kind = arch && !ukm ? 'archer' : 'mob', e = ks2Mk(U.ax + rand(-6, 6), U.az + rand(0, 12), kind, 'blue', gid || ks2KLook(), null); if (!e) continue;
       e.ks2U = U; e.ks2Slot = i++; e.ks2Role = j - n0 < guardsN ? 'guard' : arch ? (ukm ? 'musket' : 'archer') : 'melee'; if (ukm) { e.ukId = gid; e.ks2Uk = true; } U.mem.push(e); }
     // 群れ：残りの人数
     const pn = D.n - U.mem.length; for (let j = 0; j < pn; j++) { const ukm = D.uk && j < D.uk * 0.6, gid = ukm ? 'uk0' + (1 + (j % 5)) : ks2KLook(); const o = ks2PxAdd(gid, { team: 'blue', U, slot: U.mem.length + j, x: U.ax, z: U.az + 10, y: 0, arch: j % 10 < 3 }); if (o) U.px.push(o); }
@@ -28201,7 +28201,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261110e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261110f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

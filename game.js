@@ -2570,34 +2570,159 @@ function buildKs2() {
   { const t = new THREE.Mesh(new THREE.ConeGeometry(4.2, 3.2, 4), M.cloth); t.position.set(10, 1.6, 176); t.rotation.y = Math.PI / 4; stageRoot.add(t); const c = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.05), new THREE.MeshLambertMaterial({ color: 0xffffff })); c.position.set(10, 2.2, 173.1); stageRoot.add(c); KS2.tent = [10, 172];
     for (let i = 0; i < 4; i++) { ks2Box(-14 + i * 3.2, -12 + i * 3.2, 0.5, 1.4, 178, 180.5, M.wood, false); } }
   // 破城槌（屋根つき）と攻城塔
-  { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.2, 6), M.woodD); b.position.y = 1.4; g.add(b); const r = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.2, 6.4), M.wood); r.position.y = 2.6; g.add(r); const log = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 6.8, 8), M.wood); log.rotation.x = Math.PI / 2; log.position.y = 1.2; g.add(log); g.position.set(0, 0, 116); stageRoot.add(g); KS2.ram = { g, log, z: 116, hitT: 3, pushers: [] }; }
-  { const g = new THREE.Group(), b = new THREE.Mesh(new THREE.BoxGeometry(4, 11, 4), M.wood); b.position.y = 5.5; g.add(b); const h = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.3, 4.4), M.woodD); h.position.y = 11.1; g.add(h); const br = new THREE.Mesh(new THREE.BoxGeometry(2, 0.15, 2.6), M.woodD); br.position.set(0, KS2_H + 0.1, -3.2); g.add(br); br.visible = false; g.position.set(16, 0, 118); stageRoot.add(g); KS2.tower = { g, br, z: 118, pushers: [] }; }
-  // 東の梯子（掛けるまでは寝かせて置く）
-  KS2.ladders = [-22, 14, 26].map(u => { const [x, z] = ks2Rot('E', u, KS2_W + KS2_T + 1.4); const g = new THREE.Group(); for (const sx of [-0.35, 0.35]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.08, 10, 0.08), M.wood); r.position.set(sx, 5, 0); g.add(r); } for (let y = 0.4; y < 10; y += 0.45) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.06), M.wood); r.position.set(0, y, 0); g.add(r); } ks2Merge(g.children.slice(), g); g.position.set(x + 30, 0.1, z); g.rotation.set(0, Math.PI / 2, Math.PI / 2); stageRoot.add(g); return { u, x, z, g, up: false, q: [] }; });
+  ks2BuildEngines(M);
   // 北の陽動：旗をたくさん
   for (let i = 0; i < 14; i++) { const x = -40 + i * 6, z = -128 - (i % 3) * 3; const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 4, 4), M.woodD); pole.position.set(x, 2, z); stageRoot.add(pole); const f = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.8), new THREE.MeshLambertMaterial({ color: i % 2 ? 0xffffff : 0xb8282a, side: THREE.DoubleSide })); f.position.set(x + 0.6, 3.5, z); stageRoot.add(f); (KS2.flags = KS2.flags || []).push(f); }
   ks2Merge(KS2.stat, stageRoot); KS2.stat = null;
 }
+// ---- 攻城の道具：破城槌（屋根つきの小屋・車輪・吊るした丸太）、攻城塔（四層の木組み・獣皮・回る車輪・渡り板）、梯子（二本の親木と横木） ----
+function ks2BuildEngines(M) { const L = c => new THREE.MeshLambertMaterial({ color: c }), hide = L(0x6e5641), hideW = L(0x54432f), plank = L(0x7a5634), iron = L(0x4a4e54), rope = L(0x9c8a64);
+  const box = (g, w, h, d, m, x, y, z, rx, rz) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); if (rx) o.rotation.x = rx; if (rz) o.rotation.z = rz; g.add(o); return o; };
+  const wheel = (g, r, w, x, y, z) => { const wg = new THREE.Group(); wg.position.set(x, y, z); const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, w, 14), M.woodD); t.rotation.z = Math.PI / 2; wg.add(t); const hub = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.22, r * 0.22, w + 0.08, 8), iron); hub.rotation.z = Math.PI / 2; wg.add(hub); for (let k = 0; k < 3; k++) { const sp = new THREE.Mesh(new THREE.BoxGeometry(w + 0.04, r * 1.9, 0.07), M.woodD); sp.rotation.x = k * Math.PI / 3; wg.add(sp); } ks2Merge(wg.children.slice(), wg); g.add(wg); return wg; };
+  // 破城槌
+  { const g = new THREE.Group(), W = [];
+    for (const x of [-1.3, 1.3]) { box(g, 0.26, 0.26, 6.2, M.woodD, x, 0.75, 0); for (const z of [-2.8, -0.9, 0.9, 2.8]) box(g, 0.2, 2.3, 0.2, M.wood, x, 2.0, z); box(g, 0.18, 0.18, 6.2, M.wood, x, 3.05, 0); for (const z of [-2.2, 0, 2.2]) W.push(wheel(g, 0.55, 0.24, x * 1.12, 0.55, z)); }
+    for (const z of [-2.8, 2.8]) box(g, 2.8, 0.2, 0.2, M.woodD, 0, 0.75, z);
+    box(g, 0.2, 0.2, 6.4, M.woodD, 0, 4.0, 0);   // 棟木
+    for (const sx of [-1, 1]) { const r = box(g, 1.75, 0.1, 6.5, hideW, sx * 0.72, 3.55, 0); r.rotation.z = -sx * 0.62; for (let k = 0; k < 5; k++) { const b = box(g, 1.8, 0.05, 0.1, plank, sx * 0.72, 3.62, -2.6 + k * 1.3); b.rotation.z = -sx * 0.62; } }   // 濡らした獣皮の屋根
+    const sw = new THREE.Group(); sw.position.set(0, 3.9, 0); g.add(sw); const log = new THREE.Group(); sw.add(log);
+    const lg = new THREE.Mesh(new THREE.CylinderGeometry(0.27, 0.3, 7.2, 10), M.wood); lg.rotation.x = Math.PI / 2; lg.position.set(0, -2.6, -0.6); log.add(lg); const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.31, 0.5, 10), iron); cap.rotation.x = Math.PI / 2; cap.position.set(0, -2.6, -4.2); log.add(cap);
+    for (const z of [-1.8, 1.0]) { const rp = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.6, 4), rope); rp.position.set(0, -1.3, z); log.add(rp); }
+    ks2Merge(g.children.filter(c => c.isMesh), g); ks2Merge(log.children.slice(), log); g.position.set(0, 0, 116); stageRoot.add(g); KS2.ram = { g, log: sw, z: 116, hitT: 3, pushers: [], wheels: W, z0: 116, r: 0.55 }; }
+  // 攻城塔：四層、正面と両脇は獣皮張り、背面は開いて梯子。最上段の渡り板が城壁へ倒れる
+  { const g = new THREE.Group(), W = [], Hs = [0, 2.9, 5.95, KS2_H, 11.4];
+    for (const x of [-2, 2]) for (const z of [-2, 2]) box(g, 0.32, 11.6, 0.32, M.woodD, x, 5.8, z);
+    for (let k = 1; k < Hs.length; k++) { const y = Hs[k]; if (k < 4) box(g, 4.3, 0.16, 4.3, plank, 0, y, 0); for (const z of [-2, 2]) box(g, 4.3, 0.2, 0.22, M.wood, 0, y - 0.1, z); for (const x of [-2, 2]) box(g, 0.22, 0.2, 4.3, M.wood, x, y - 0.1, 0); }
+    for (let k = 0; k < 3; k++) { const y0 = Hs[k] + 0.2, y1 = Hs[k + 1] - 0.15, h = y1 - y0, c = (y0 + y1) / 2, m = (k % 2 ? hide : hideW);
+      box(g, 4.1, h, 0.08, m, 0, c, -2.12); for (const x of [-2.12, 2.12]) { box(g, 0.08, h, 4.1, m, x, c, 0); const br = box(g, 0.1, Math.hypot(h, 3.8), 0.12, M.wood, x * 1.03, c, 0); br.rotation.x = Math.atan2(3.8, h) * (k % 2 ? 1 : -1); }
+      for (let q = 0; q < 3; q++) box(g, 4.2, 0.07, 0.12, plank, 0, y0 + h * (q + 0.5) / 3, -2.2); }   // 皮を押さえる横木
+    box(g, 4.1, 1.1, 0.1, hide, 0, KS2_H + 0.65, 2.1); for (const x of [-2.1, 2.1]) box(g, 0.1, 1.1, 4.1, hide, x, KS2_H + 0.65, 0);   // 最上段の胸壁
+    box(g, 4.6, 0.14, 4.6, hideW, 0, 11.6, 0);   // 屋根
+    for (let y = 0.5; y < KS2_H; y += 0.42) box(g, 0.7, 0.05, 0.06, M.wood, 0, y, 2.3);   // 背面の梯子
+    for (const x of [-0.33, 0.33]) box(g, 0.08, KS2_H, 0.08, M.wood, x, KS2_H / 2, 2.3);
+    for (const x of [-2.3, 2.3]) for (const z of [-1.5, 0, 1.5]) W.push(wheel(g, 0.8, 0.3, x, 0.8, z)); box(g, 4.4, 0.3, 0.3, M.woodD, 0, 0.8, -1.5); box(g, 4.4, 0.3, 0.3, M.woodD, 0, 0.8, 1.5);
+    const br = new THREE.Group(); br.position.set(0, KS2_H + 0.05, -2.15); g.add(br); box(br, 2.4, 0.12, 3.3, plank, 0, 0, -1.65); for (let q = 0; q < 6; q++) box(br, 2.45, 0.05, 0.08, M.woodD, 0, 0.07, -0.3 - q * 0.55); for (const x of [-1.15, 1.15]) { const rp = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.4, 4), rope); rp.position.set(x, 1.2, -1.6); rp.rotation.x = 0.82; br.add(rp); }
+    br.rotation.x = Math.PI / 2;   // 立てて閉じている
+    ks2Merge(g.children.filter(c => c.isMesh), g); ks2Merge(br.children.slice(), br); g.position.set(16, 0, 118); stageRoot.add(g); KS2.tower = { g, br, z: 118, pushers: [], wheels: W, z0: 118, r: 0.8, brA: Math.PI / 2 }; }
+  // 梯子：親木二本＋横木。地面に寝かせておき、担いで運び、根元を支点に起こして城壁の上へ掛ける
+  KS2.ladders = [-22, 14, 26].map(u => { const [x, z] = ks2Rot('E', u, KS2_W + KS2_T + 1.4), g = new THREE.Group(), LEN = 10.4, tn = Math.tan(0.235), parts = [];
+    for (const sx of [-0.3, 0.3]) { const r = new THREE.Mesh(new THREE.BoxGeometry(0.09, LEN, 0.1), M.wood); r.position.set(0, LEN / 2, sx); parts.push(r); g.add(r); }
+    for (let y = 0.35; y < LEN - 0.2; y += 0.36) { const r = new THREE.Mesh(KS2.rungG || (KS2.rungG = new THREE.CylinderGeometry(0.035, 0.035, 0.62, 5)), M.woodD); r.rotation.x = Math.PI / 2; r.position.set(0, y, 0); parts.push(r); g.add(r); }
+    ks2Merge(parts, g); const bx = KS2_W + KS2_T + KS2_H * tn + 0.05, sx0 = bx + 30 + Math.abs(u) * 0.3;
+    g.position.set(sx0, 0.12, z); g.rotation.set(0, 0, -Math.PI / 2 + 0.01); stageRoot.add(g); return { u, x, z, g, up: false, q: [], ph: 'lie', bx, tn, cx: sx0, ang: -Math.PI / 2, car: [] }; });
+}
+function ks2Equip(dt) { const R = KS2.ram, T = KS2.tower; if (!R) return;
+  for (const E of [R, T]) { const dz = E.g.position.z - E.zp; if (E.zp != null && Math.abs(dz) > 1e-4) for (const w of E.wheels) w.rotation.x += dz / E.r; E.zp = E.g.position.z; }   // 車輪が回る
+  R.log.rotation.x = clamp(R.log.position.z * 0.18, -0.25, 0.25) + Math.sin(KS2.t * 1.3) * 0.015; R.log.position.z = R.log.position.z;   // 打つたびに揺れる
+  if (T.at) { T.brA = Math.max(0.03, T.brA - dt * 1.6); T.br.rotation.x = T.brA; if (!T.brSnd && T.brA <= 0.031) { T.brSnd = 1; ks2GateThud({ x: T.g.position.x, z: KS2_W + 1 }, 0.7); } }   // 渡り板が城壁へ倒れる
+  if (KS2.ph !== 'siege' && KS2.ph !== 'keep') return;
+  for (const L of KS2.ladders) { if (L.ph === 'lie' && KS2.t - KS2.goT > 1) L.ph = 'carry';
+    if (L.ph === 'carry') { L.car = L.car.filter(e => isUp(e) && e.ks2Carry === L);
+      if (L.car.length < 4) { const c = KS2.U.E.mem.filter(e => isUp(e) && e.ks2Role === 'melee' && !e.ks2Bun && !e.ks2Carry && !e.ks2Climb && e.ks2Y < 1 && !e.ks2In).sort((a, b) => Math.abs(a.s.position.z - L.z) - Math.abs(b.s.position.z - L.z)); for (const e of c) { if (L.car.length >= 4) break; e.ks2Carry = L; L.car.push(e); } }
+      const near = L.car.filter((e, k) => Math.hypot(e.s.position.x - (L.cx + 1.5 + k * 2.2), e.s.position.z - L.z - (k % 2 ? 0.7 : -0.7)) < 1.6).length;
+      if (near >= 2) L.cx = Math.max(L.bx, L.cx - 1.25 * Math.min(1, near / 3) * dt);
+      L.g.position.set(L.cx, near >= 2 ? 1.05 : 0.12, L.z); if (L.cx <= L.bx + 0.01) { L.ph = 'raise'; L.rt = 0; } }
+    else if (L.ph === 'raise') { L.rt += dt; const k = Math.min(1, L.rt / 3.2), q = k * k * (3 - 2 * k); L.ang = -Math.PI / 2 + (Math.PI / 2 + 0.235) * q; L.g.position.set(L.bx, 1.05 * (1 - q), L.z); L.g.rotation.set(0, 0, L.ang);
+      if (k >= 1) { L.ph = 'up'; L.up = true; for (const e of L.car) e.ks2Carry = null; L.car = []; ks2GateThud({ x: KS2_W + 2, z: L.z }, 0.5); } }
+    if (L.ph === 'carry') L.g.rotation.set(0, 0, -Math.PI / 2 + (L.g.position.y > 0.5 ? 0.02 : 0.01)); } }
 function ks2Look() { scene.fog.near = 120; scene.fog.far = 720; scene.background.setHex(0xb9cbd8); sun.intensity = 1.05; ambL.intensity = 0.85; }
 function ks2GY(x, z) { const d = Math.max(Math.abs(x), Math.abs(z - 150)); return d < 8 ? 0.75 : d < 12.5 ? 0.5 : d < 17 ? 0.25 : 0; }
 // ---- 群れ（遠くの兵・人数の多くは簡単な絵）：InstancedMesh のビルボード。倒れた絵は寝かせたまま残す ----
 function ks2PxGroup(gid, cap) { const g = GIRLS[gid]; if (!g || !g.front || !g.front.tex) return null; const t = g.front.tex, im0 = t.image, asp = im0 && im0.width ? im0.width / im0.height : 0.4;
   const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, 0.5, 0); const mat = new THREE.MeshBasicMaterial({ map: t, transparent: true, alphaTest: 0.45, depthWrite: true, side: THREE.DoubleSide, fog: true });
-  const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; stageRoot.add(im); return { im, asp, list: [], h: ((EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof && EXTRA_GIRLS[gid].prof.cm) || 160) / 100 }; }
+  const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; stageRoot.add(im);
+  let dn = null, dw = 1, dh = 0.5; const D = g.down; if (D && D.tex) { const hh = ((EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof && EXTRA_GIRLS[gid].prof.cm) || 160) / 100; dw = hh; dh = clamp(hh * (D.hk || 0.32), 0.42, 0.56); const dg = new THREE.PlaneGeometry(1, 1); dg.translate(0, 0.5, 0); dn = new THREE.InstancedMesh(dg, new THREE.MeshBasicMaterial({ map: D.tex, transparent: true, alphaTest: 0.4, side: THREE.DoubleSide, fog: true }), cap); dn.count = 0; dn.frustumCulled = false; stageRoot.add(dn); }
+  return { im, dn, dw, dh, asp, list: [], h: ((EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof && EXTRA_GIRLS[gid].prof.cm) || 160) / 100 }; }
 function ks2PxAdd(gid, o) { const G = KS2.pxg[gid] || (KS2.pxg[gid] = ks2PxGroup(gid, 1400)); if (!G || G.list.length >= 1400) return null; o.G = G; o.i = G.list.length; G.list.push(o); G.im.count = G.list.length; o.alive = true; KS2.px.push(o); return o; }
 const KS2_Q = new THREE.Object3D(); let KS2_C1 = null, KS2_C2 = null;
-function ks2PxDraw() { const cy = camera.rotation.y, cam = camera.position; KS2.pxT = (KS2.pxT || 0) + 1; const every = LITE ? 2 : 1; if (KS2.pxT % every) return;
-  for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (!G) continue; const w = G.h * G.asp * 1.0;
-    for (const o of G.list) { if (!o.alive) { if (o.laid) continue; o.laid = true; KS2_Q.position.set(o.x, o.y + 0.04, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, o.ry || 0, 'YXZ'); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotateZ(o.ry || 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); continue; }
-      const a = Math.atan2(cam.x - o.x, cam.z - o.z); KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, a, 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); }
-    G.im.instanceMatrix.needsUpdate = true; } }
+function ks2PxDraw() { const cam = camera.position; KS2.pxT = (KS2.pxT || 0) + 1; const every = LITE ? 2 : 1; if (KS2.pxT % every) return; const redo = KS2.pxT % (every * 3) === 0;
+  const SH = ks2PxShadow(); let sn = 0;
+  for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (!G) continue; const w = G.h * G.asp * 1.0; let dn = 0;
+    for (const o of G.list) { if (!o.alive) { KS2_Q.scale.set(0, 0, 0); KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.updateMatrix(); if (!o.laid) { o.laid = true; if (!G.dn) { KS2_Q.position.set(o.x, o.y + 0.04, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotateZ(o.ry || 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); } G.im.setMatrixAt(o.i, KS2_Q.matrix); } if (!G.dn) continue;
+        // 倒れた絵：横たわった写真を体の軸に沿って置き、軸のまわりでこちらへ向ける（厚みが見える）。下に接地影
+        if (redo || o.dj == null) { const ax = Math.cos(o.ry), az = -Math.sin(o.ry), vx = cam.x - o.x, vy = cam.y - o.y, vz = cam.z - o.z, px = vx - (vx * ax + vz * az) * ax, pz = vz - (vx * ax + vz * az) * az, tilt = Math.atan2(Math.hypot(px, pz), vy); KS2_Q.position.set(o.x, o.y + 0.03, o.z); KS2_Q.rotation.set(0, o.ry, 0); KS2_Q.rotateX(-Math.min(1.35, tilt) * (px * -Math.sin(o.ry) + pz * -Math.cos(o.ry) > 0 ? 1 : -1)); KS2_Q.scale.set(G.dw, G.dh, 1); KS2_Q.updateMatrix(); o.dm = (o.dm || new THREE.Matrix4()).copy(KS2_Q.matrix); }
+        G.dn.setMatrixAt(dn++, o.dm); o.dj = 1;
+        if (SH && sn < SH.count0) { KS2_Q.position.set(o.x, o.y + 0.02, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotation.set(0, o.ry, 0); KS2_Q.rotateX(-Math.PI / 2); KS2_Q.scale.set(G.h * 1.15, 0.62, 1); KS2_Q.updateMatrix(); SH.setMatrixAt(sn++, KS2_Q.matrix); } continue; }
+      const dx = cam.x - o.x, dz = cam.z - o.z, a = Math.atan2(dx, dz), close = dx * dx + dz * dz < 81; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, a, 0); if (close) KS2_Q.scale.set(0, 0, 0); else KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); }   // カメラのすぐ前の絵は描かない（近い人は本物の兵）
+    G.im.instanceMatrix.needsUpdate = true; if (G.dn) { G.dn.count = dn; G.dn.instanceMatrix.needsUpdate = true; } }
+  if (SH) { SH.count = sn; SH.instanceMatrix.needsUpdate = true; } }
+function ks2PxShadow() { if (KS2.pxSh && KS2.pxSh.parent) return KS2.pxSh; const geo = new THREE.PlaneGeometry(1, 1); const m = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }), 2600); m.count0 = 2600; m.count = 0; m.frustumCulled = false; stageRoot.add(m); return KS2.pxSh = m; }
 function ks2PxKill(o) { if (!o || !o.alive) return; o.alive = false; o.laid = false; o.ry = rand(0, Math.PI * 2); if (o.team === 'blue') KS2.pxLostA++; else KS2.pxLostD++; }
 // ---- 人：攻め手の隊と守り手 ----
 function ks2Mk(x, z, kind, team, gid, prof, y) { const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: { special: true } }); if (!e) return null;
   if (prof) Object.assign(e.prof, prof); if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
   e.ks2 = true; e.passive = true; e.sq = null; e.state = 'idle'; if (e.mk) e.mk.visible = false; e.shadow.visible = false; e.hp = e.hpMax = 3; e.dmg = 8; e.ks2Y = y || 0; e.baseY = e.ks2Y; e.s.position.y = e.ks2Y; e.ks2T = rand(0, 1); e.ks2Cd = rand(1, 5); e.ks2V = [0, 0]; e.speed = rand(2.2, 2.6); return e; }
-const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl31', 'girl34', 'girl37', 'girl45', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
+const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl27', 'girl28', 'girl29', 'girl30', 'girl31', 'girl34', 'girl37', 'girl45', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
 function ks2KLook() { const off = KS2_KINGDOM_OFF(); const L = (KS2.kLooks = KS2.kLooks || Object.keys(GIRLS).filter(k => /^(mob\d+|girl\d+)$/.test(k) && !off.has(k) && GIRLS[k].front)); return L[(Math.random() * L.length) | 0]; }
+// ---- v g：一人ひとり（名前・性格・身長・持ち物）と分隊 ----
+const KS2_UK_FN = ['アリス', 'ベアトリス', 'シャーロット', 'デイジー', 'イーディス', 'フローレンス', 'グレース', 'ハリエット', 'イザベル', 'ジェーン', 'キティ', 'ルーシー', 'メアリー', 'ノラ', 'オリーヴ', 'フィービー', 'ローズ', 'ソフィア', 'ヴァイオレット', 'アグネス', 'クララ', 'エマ', 'ハンナ', 'リディア', 'マチルダ', 'エイダ', 'エヴリン', 'アイヴィ', 'メイベル', 'ドロシー'];
+const KS2_UK_LN = ['アシュフォード', 'ブレイク', 'カーター', 'ダルトン', 'エリス', 'フレッチャー', 'グレイヴス', 'ヒューズ', 'アーヴィング', 'ジェニングス', 'ケント', 'ローソン', 'マーシュ', 'ノリス', 'オズボーン', 'パーカー', 'クイン', 'リード', 'ショウ', 'ターナー', 'ヴォーン', 'ウォルシュ', 'ウェルズ', 'ヤング', 'ヘイル', 'ブルック', 'レーン', 'プライス', 'コール', 'ウォード'];
+const KS2_CN_SN = ['李', '王', '張', '劉', '陳', '楊', '趙', '黄', '周', '呉', '徐', '孫', '馬', '朱', '胡', '郭', '何', '林', '高', '羅', '鄭', '梁', '謝', '宋', '唐', '許', '韓', '馮', '鄧', '曹'];
+const KS2_CN_GN = ['梅', '芳', '静', '麗', '玲', '雪', '婷', '蘭', '燕', '敏', '霞', '莉', '蕾', '慧', '琳', '娜', '紅', '秀英', '桂英', '海燕', '麗華', '小紅', '春梅', '月', '暁', '佳', '穎', '欣', '悦', '晶'];
+const ks2R = a => a[(Math.random() * a.length) | 0];
+function ks2Name(k) { return k === 'uk' ? ks2R(KS2_UK_FN) + '・' + ks2R(KS2_UK_LN) : ks2R(KS2_CN_SN) + ' ' + ks2R(KS2_CN_GN); }
+const KS2_RN = { rifle: '英国銃兵', bow: '弓兵', xbow: '連弩', res: '予備隊', keep: '本丸', post: '番所', look: '物見', cmd: '総大将' };
+function ks2TagPre(e) { if (e.team === 'blue') { const Q = e.ks2Sq; return ((e.ks2U && e.ks2U.name) || '') + (Q ? ' ' + Q.nm + (Q.ld === e ? '長' : '') : ''); } return (e.ks2Side ? ({ S: '南', E: '東', W: '西', N: '北' })[e.ks2Side] : '') + (KS2_RN[e.ks2Role] || ''); }
+function ks2PickLook(kind) { const off = KS2_KINGDOM_OFF(); for (let i = 0; i < 10; i++) { const g = pickGirl(kind); if (g && GIRLS[g.id] && !off.has(g.id) && g.front && (kind !== 'archer' || g.bow || i > 6)) return g.id; } return ks2KLook(); }
+function ks2Arm(e) { const r = e.ks2Role, uk = e.ks2Uk || !!(e.girl && /^(uk|us|fr)\d/.test(e.girl.id));
+  if (!e.ks2Named && e !== KS2.cmd) { if (uk) e.prof.name = ks2Name('uk'); else if (e.ks2Cn) e.prof.name = ks2Name('cn'); }
+  e.ks2Wk = ''; if (e === KS2.cmd || r === 'xbow') return;
+  if (r === 'musket' || r === 'rifle') e.ks2Wk = 'musket';
+  else if (r === 'archer' || r === 'bow' || r === 'look') { e.ks2Wk = 'yumi'; e.kind = 'archer'; }
+  else if (uk) e.ks2Wk = e.ks2Named ? '' : 'musket';   // 英国兵：銃剣つきのマスケット
+  else if (!e.ks2Named && Math.random() < (e.team === 'orange' ? 0.6 : 0.3)) { e.yari = true; makeYari(e); }   // 槍（鉄の穂先）
+  else e.ks2Wk = 'kaiken'; }
+// 構え・突き・射る：模擬戦と同じ状態（windup / recover / aim）で写真と持ち物を動かす
+function ks2Pose(e, dt, dP) { const A = e.ks2Act;
+  if (A) { A.t += dt; e.moving = false; const ka = e.aimK || 1;
+    if (A.k === 'stab') { e.melee = true; if (A.t < 0.3) { e.state = 'windup'; e.t = A.t; } else { e.state = 'recover'; e.t = A.t - 0.3; } if (A.t > 0.85) e.ks2Act = null; }
+    else if (A.k === 'aim') { e.state = 'aim'; e.t = KY_SET * ka + A.t; if (A.t > (A.T || 1.1)) e.ks2Act = null; }
+    else if (A.t > 0.8) e.ks2Act = null;
+    if (!e.ks2Act) { e.state = 'idle'; e.melee = false; } }
+  // 待機中：ときどき横を見る・向きを少し変える（並んだ人形にしない）
+  if (!e.moving && !e.ks2Act && dP < 45) { if ((e.ks2GlT = (e.ks2GlT == null ? rand(0, 6) : e.ks2GlT) - dt) <= 0) { e.ks2GlT = rand(3, 9); e.ks2GlA = rand(-0.9, 0.9); e.ks2GlE = rand(1, 2.6); } }
+  const want = e.ks2GlE > 0 && !e.moving && !e.ks2Act ? e.ks2GlA : 0; if (e.ks2GlE > 0) e.ks2GlE -= dt;
+  const base = e.faceWant !== e.ks2FW ? e.faceWant : (e.ks2Base != null ? e.ks2Base : e.faceWant); e.ks2GlO = (e.ks2GlO || 0) + (want - (e.ks2GlO || 0)) * Math.min(1, dt * 3); e.ks2Base = base; e.faceWant = e.ks2FW = base + e.ks2GlO;
+  e.ks2Bar = dP > 2.6 && dP < (LITE ? 14 : 18) && e !== KS2.cmd;
+  if (dP < 1.5 && Math.abs(e.ks2Y - (player.pos.y - 1.6)) < 1.2 && !e.ks2Climb) { const p = e.s.position, dx = p.x - player.pos.x, dz = p.z - player.pos.z, d = Math.hypot(dx, dz) || 0.01, k = Math.min(1.5 - d, dt * 3); p.x += dx / d * k; p.z += dz / d * k; } }   // カメラに近づきすぎない（写真が画面をふさがない）
+// ---- 刺さった矢：地面・城壁・竹束に残る（まとめて描く） ----
+function ks2Stk() { if (KS2.stk && KS2.stk.a.parent) return KS2.stk; const N = LITE ? 500 : 1400, sg = new THREE.CylinderGeometry(0.011, 0.011, 0.8, 4), hg = new THREE.ConeGeometry(0.02, 0.11, 4); sg.translate(0, -0.4, 0); hg.translate(0, 0.05, 0);
+  const a = new THREE.InstancedMesh(sg, new THREE.MeshLambertMaterial({ color: 0xc8a96a }), N), b = new THREE.InstancedMesh(hg, new THREE.MeshLambertMaterial({ color: 0x80878f }), N); a.count = b.count = 0; a.frustumCulled = b.frustumCulled = false; stageRoot.add(a); stageRoot.add(b); return KS2.stk = { a, b, N, i: 0, n: 0 }; }
+function ks2Stick(p, dir) { const S = ks2Stk(); { const h = Math.hypot(dir.x, dir.z) || 1, k = rand(0.7, 1.3); dir.set(dir.x / h, -k, dir.z / h).normalize(); if (p.y < 0.6) p.y = 0.02 - rand(0, 0.12); } KS2_Q.position.copy(p); KS2_Q.quaternion.setFromUnitVectors(KS2_UP, dir); KS2_Q.scale.set(1, 1, 1); KS2_Q.updateMatrix(); const i = S.i; S.a.setMatrixAt(i, KS2_Q.matrix); S.b.setMatrixAt(i, KS2_Q.matrix); S.i = (S.i + 1) % S.N; S.n = Math.min(S.N, S.n + 1); S.a.count = S.b.count = S.n; S.a.instanceMatrix.needsUpdate = S.b.instanceMatrix.needsUpdate = true; }
+const KS2_UP = new V3(0, 1, 0);
+// ---- 分隊：弓（2〜3列で斉射）・竹束・白兵（竹束の後ろで待ち、城壁の射撃が弱まったら門・梯子へ） ----
+function ks2Squads() { KS2.sq = []; KS2.supp = {}; KS2.volN = { S: 0, E: 0, W: 0, N: 0 }; KS2.bun = [];
+  for (const U of KS2.units) { if (!U.side || U.k === 'N') continue; const free = U.mem.filter(e => isUp(e) && e.ks2Role !== 'lead' && e.ks2Role !== 'sec' && e.ks2Role !== 'guard'), arch = free.filter(e => e.ks2Role === 'archer' || e.ks2Role === 'musket'), mel = free.filter(e => e.ks2Role === 'melee');
+    const mk = (k, L, sz) => { const out = []; for (let i = 0; i < L.length; i += sz) { const m = L.slice(i, i + sz); if (m.length < 4 && out.length) { out[out.length - 1].mem.push(...m); continue; } out.push({ U, k, mem: m, n0: m.length, vol: 0, volT: rand(1, 3), ret: 0 }); } return out; };
+    const nb = Math.min(LITE ? 4 : 7, Math.floor(mel.length * 0.2)), bun = mk('bun', mel.slice(0, nb), 99), A = mk('arch', arch, arch.length > 30 ? 12 : 10), M = mk('mel', mel.slice(nb), 12);
+    let n = 1; for (const Q of [...bun, ...A, ...M]) { Q.nm = '第' + n++ + '分隊'; Q.ld = Q.mem[0]; Q.rows = Q.k === 'arch' ? (Q.mem.length >= 9 ? 3 : 2) : 1; for (const e of Q.mem) { e.ks2Sq = Q; if (Q.k === 'bun') e.ks2Bun = true; } KS2.sq.push(Q); }
+    A.forEach((Q, i) => { Q.u = (i - (A.length - 1) / 2) * 17; Q.d = U.k === 'W' ? 112 : 114; Q.dMin = U.k === 'W' ? 104 : 100; });
+    M.forEach((Q, i) => { Q.u = (i - (M.length - 1) / 2) * 14 + (i % 2 ? 4 : -4); Q.d = 118 + (i % 2) * 3; });
+    bun.forEach(Q => { Q.u = 0; Q.d = 110; Q.mem.forEach((e, i) => { const cv = bamboobundle(e.s.position.x, e.s.position.z, 0, { noCol: true, hp: 99 }); ks2Merge(cv.mesh.children.slice(), cv.mesh); e.ks2Cv = cv; KS2.bun.push(cv); }); }); } }
+function ks2SqLead(Q) { if (!isUp(Q.ld)) { const nx = Q.mem.find(isUp); if (nx && Q.ld) { Q.ld = nx; nx.tagKey = null; } } return Q.ld; }
+function ks2SqTick(dt) { if (!KS2.sq) return;
+  for (const s of ['S', 'E', 'W']) { if (KS2.supp[s]) continue; const W = KS2.zone[s + ':wall'], r = W ? W.real : []; const up = r.filter(isUp).length; if (KS2.volN[s] >= 14 || (r.length && up < r.length * 0.72) || KS2.t - KS2.goT > 80) { KS2.supp[s] = KS2.t; const Q = KS2.sq.find(Q => Q.U.side === s && Q.k === 'mel' && isUp(Q.ld)); if (Q) ks2Say(Q.ld, KS2_RV.siege[1], 1.3); } }
+  for (const Q of KS2.sq) { const L = ks2SqLead(Q); const up = Q.mem.filter(isUp); Q.up = up.length;
+    if (!Q.ret && up.length && up.length < Q.n0 * 0.5 && Q.k !== 'bun') { Q.ret = KS2.t; if (L && isUp(L)) ks2Say(L, KS2_RV.siege[9], 1.1); }   // 大きく減った分隊は下がって立て直す
+    if (Q.ret && KS2.t - Q.ret > 18) { const o = KS2.sq.filter(o => o !== Q && o.k === Q.k && o.U === Q.U && !o.ret && o.up).sort((a, b) => a.up - b.up)[0]; if (o) { for (const e of up) { e.ks2Sq = o; o.mem.push(e); e.tagKey = null; } Q.mem = []; o.n0 = Math.max(o.n0, o.mem.filter(isUp).length); } else { Q.n0 = up.length; } Q.ret = 0; }
+    if (Q.k !== 'arch' || Q.ret || !up.length || KS2.gates[Q.U.side].open) continue; if (Q.U.k === 'W' && !KS2.wFire) continue;
+    if ((Q.volT -= dt) > 0) continue; Q.volT = 2.3; const rk = Q.vol % Q.rows; Q.vol++; KS2.volN[Q.U.side]++;
+    const T = KS2.live.orange.filter(o => o.ks2Side === Q.U.side && o.ks2Y > 5 && Math.abs(o.ks2Y - KS2_H) < 1.5); if (!T.length) continue;
+    if (L && isUp(L) && rk === 0 && (!KS2.volSay || KS2.t - KS2.volSay > 25) && Math.hypot(L.s.position.x - player.pos.x, L.s.position.z - player.pos.z) < 40) { KS2.volSay = KS2.t; ks2Say(L, KS2_RV.siege[7], 1.2); }
+    Q.mem.forEach((e, i) => { if (!isUp(e) || i % Q.rows !== rk || e.ks2Push || e.ks2Climb) return; const t = T[(Math.random() * T.length) | 0]; ks2Shoot(e, t, e.ks2Role); });
+    if (Q.vol % (Q.rows * 3) === 0 && Q.d > Q.dMin) Q.d -= 3; } }   // 三巡ごとに少し前へ
+function ks2SqBrain(e, dt, t, U, Q) { const s = U.side, p = e.s.position, i = Q.mem.indexOf(e);
+  if (Q.k === 'mel' && KS2.supp[s] && !Q.ret) return false;   // 突撃：門・梯子・攻城塔へ（いつもの動き）
+  if (e.ks2Push || e.ks2Climb) return false;
+  if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 3 && Math.abs(t.s.position.y - p.y) < 1.5) { const d = Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z); if (d > 1.1) ks2Walk(e, t.s.position.x, t.s.position.z, e.speed, dt); else ks2Hit(e, t); return true; }
+  const bunD = KS2.sq.filter(o => o.k === 'arch' && o.U === U && !o.ret).reduce((a, o) => Math.min(a, o.d), 112) - 3.5;
+  let u, d;
+  if (Q.k === 'arch') { const nf = Math.ceil(Q.mem.length / Q.rows), r = i % Q.rows, f = Math.floor(i / Q.rows); u = Q.u + (f - (nf - 1) / 2) * 1.35 + (r % 2) * 0.6; d = Q.d + r * 1.7 + (Q.ret ? 16 : 0); }
+  else if (Q.k === 'bun') { const nb = Q.mem.length; u = (i - (nb - 1) / 2) * (U.k === 'S' ? 7 : 8) + (U.k === 'S' ? (i % 2 ? 3 : -3) : 0); d = KS2.gates[s].open ? bunD + 2 : bunD; }
+  else { const f = i % 6, r = Math.floor(i / 6); u = Q.u + (f - 2.5) * 1.3; d = Q.d + r * 1.6 + (Q.ret ? 14 : 0); }
+  const [x, z] = ks2Rot(s, u, d); ks2Walk(e, x, z, Q.ret ? e.speed * 1.3 : e.speed, dt); if (!e.moving) e.faceWant = Math.atan2(-x, -z);
+  if (e.ks2Cv) { const cv = e.ks2Cv, fw = Math.atan2(-p.x, -p.z); cv.x = p.x + Math.sin(fw) * 0.65; cv.z = p.z + Math.cos(fw) * 0.65; cv.y = 0; cv.h = 1.5; cv.mesh.position.set(cv.x, 0, cv.z); cv.mesh.rotation.y = fw; }
+  return true; }
 function ks2Spawn() {
   KS2.units = []; KS2.def = []; KS2.by = {}; KS2.px = []; KS2.pxg = {}; KS2.pxLostA = 0; KS2.pxLostD = 0; KS2.all = [];
   const totA = KS2_UNITS.reduce((a, U) => a + U.n, 0), fa = KS2_REAL.a / totA;
@@ -2609,7 +2734,7 @@ function ks2Spawn() {
     const guardsN = D.k === 'H' ? 10 : 3, n0 = U.mem.length;
     for (let j = n0; j < nReal; j++) { const arch = j % 10 < 3, ukm = D.uk && j < Math.round(nReal * D.uk / D.n) + n0, mixm = D.mix && !ukm && Math.random() < 0.15;
       let gid = ukm ? 'uk' + String(1 + (j % 10)).padStart(2, '0') : mixm ? D.mix + String(1 + (j % 9)).padStart(2, '0') : null; if (gid === 'uk06' || gid === 'us08' || (gid && !GIRLS[gid])) gid = ukm ? 'uk07' : null;
-      const kind = arch && !ukm ? 'archer' : 'mob', e = ks2Mk(U.ax + rand(-6, 6), U.az + rand(0, 12), kind, 'blue', gid || ks2KLook(), null); if (!e) continue;
+      const kind = arch && !ukm ? 'archer' : 'mob', e = ks2Mk(U.ax + rand(-6, 6), U.az + rand(0, 12), kind, 'blue', gid || ks2PickLook(kind), null); if (!e) continue;
       e.ks2U = U; e.ks2Slot = i++; e.ks2Role = j - n0 < guardsN ? 'guard' : arch ? (ukm ? 'musket' : 'archer') : 'melee'; if (ukm) { e.ukId = gid; e.ks2Uk = true; } U.mem.push(e); }
     // 群れ：残りの人数
     const pn = D.n - U.mem.length; for (let j = 0; j < pn; j++) { const ukm = D.uk && j < D.uk * 0.6, gid = ukm ? 'uk0' + (1 + (j % 5)) : ks2KLook(); const o = ks2PxAdd(gid, { team: 'blue', U, slot: U.mem.length + j, x: U.ax, z: U.az + 10, y: 0, arch: j % 10 < 3 }); if (o) U.px.push(o); }
@@ -2642,6 +2767,7 @@ function ks2Spawn() {
   { const need = 1000 - KS2.def.length - KS2.px.filter(o => o.team === 'orange').length; if (need > 0) DP(need, i => { const s = KS2_SIDES[i % 4], [x, z] = ks2Rot(s, rand(-15, 15), rand(39, 48)); return [x, z, 0, s, i % 3 === 0, 'res']; }); }   // 守り手の合計を 1000 に（残りは中庭の予備）
   KS2.defTotal = 1000; KS2.defReal0 = KS2.def.length; KS2.atkReal0 = KS2.units.reduce((a, U) => a + U.mem.length, 0);
   for (const e of enemies) if (e.ks2) KS2.all.push(e);
+  for (const e of KS2.all) ks2Arm(e);
 }
 function ks2Counts() { const A = {}; let a = 0; for (const U of KS2.units) { const n = U.mem.filter(isUp).length + U.px.filter(o => o.alive).length; A[U.k] = n; a += n; } const d = KS2.def.filter(isUp).length + KS2.px.filter(o => o.team === 'orange' && o.alive).length; return { A, a, d }; }
 // ---- 近い者を探す（4m の格子・高さも見る） ----
@@ -2660,18 +2786,21 @@ function ks2Walk(e, tx, tz, sp, dt) { const p = e.s.position, V = e.ks2V, dx = t
   return d < 0.6; }
 // ---- 撃つ：弓・マスケット・ライフル・連弩。見える範囲だけ矢と煙を描く ----
 const KS2_TRN = 120;
-function ks2TrIM() { if (KS2.trIM && KS2.trIM.parent) return KS2.trIM; const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.03, 0.03, 1.1, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), KS2_TRN); im.count = 0; im.frustumCulled = false; stageRoot.add(im); return KS2.trIM = im; }   // 矢と弾の筋はまとめて一つ
-function ks2Tracer(a, b, col, T) { if (KS2.tr.length >= (LITE ? 40 : KS2_TRN)) return; KS2.tr.push({ a, b, t: 0, T, c: col }); }
+function ks2TrIM() { if (KS2.trIM && KS2.trIM.parent) return KS2.trIM; const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 0.85, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), KS2_TRN); im.count = 0; im.frustumCulled = false; stageRoot.add(im); const hg = new THREE.ConeGeometry(0.024, 0.12, 4); hg.translate(0, 0.48, 0); im.head = new THREE.InstancedMesh(hg, new THREE.MeshBasicMaterial({ color: 0x6f767e }), KS2_TRN); im.head.count = 0; im.head.frustumCulled = false; stageRoot.add(im.head); return KS2.trIM = im; }   // 矢（尖った鉄の鏃）と弾の筋   // 矢と弾の筋はまとめて一つ
+function ks2Tracer(a, b, col, T, stick) { if (KS2.tr.length >= (LITE ? 40 : KS2_TRN)) { if (stick) ks2Stick(b, b.clone().sub(a).setY(Math.min(-0.3, b.y - a.y)).normalize()); return; } KS2.tr.push({ a, b, t: 0, T, c: col, stick }); }
 function ks2Shoot(e, t, kind) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z), dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
-  e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.lungeT = 0.2;
+  e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.lungeT = 0.2; e.ks2Act = { k: kind === 'musket' || kind === 'rifle' ? 'gun' : 'aim', t: 0, T: 1.1 };
   const gun = kind === 'musket' || kind === 'rifle', a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.6, 0.6), (t.isPlayer ? tp.y - 0.4 : tp.y + 1.1), tp.z + rand(-0.6, 0.6));
+  const hc0 = (kind === 'xbow' ? 0.11 : gun ? 0.13 : 0.15) * (t.ks2Climb ? 1.3 : 1) * (d > 35 ? 0.35 : d > 25 ? 0.7 : 1) * (t.ks2Named ? (KS2.ph === 'march' || KS2.ph === 'deploy' ? 0.04 : 0.3) : 1) * (t.ks2Push === 'ram' ? 0.3 : 1) * (!t.isPlayer && t.team === 'blue' && !t.ks2Climb && t.ks2Y < 1 && ks2Cover(t) ? 0.35 : 1), hit = Math.random() < hc0;
+  if (dP >= 70 && !gun && !hit) ks2Stick(new V3(tp.x + rand(-2, 2), (t.isPlayer ? player.pos.y - 1.6 : t.baseY) + 0.12, tp.z + rand(-2, 2)), new V3(tp.x - p.x, -d * 0.6, tp.z - p.z).normalize());
   if (dP < 70) { if (gun) { if (KS2.fx > 0) { KS2.fx -= 2; puff(a.clone(), 0xe9e6de, 2, 0.45, 1.0, 1.2); uk2Flash(a, 1, 0.07); } ks2Tracer(a, b, 2, 0.12); const o = Sfx.at(p, 140, 1.1); if (o) Sfx.noiseBurst(0.22, 'lowpass', 2200, 300, 0.55, 1, 0, o); }
-    else { ks2Tracer(a, b, 1, Math.min(1.2, 0.25 + d / 45)); if (dP < 30) { const o = Sfx.at(p, 40, 0.6); if (o) Sfx.noiseBurst(0.08, 'bandpass', 1400, 900, 0.18, 3, 0, o); } } }
-  const hc = (kind === 'xbow' ? 0.11 : gun ? 0.13 : 0.15) * (t.ks2Climb ? 1.3 : 1) * (d > 35 ? 0.35 : d > 25 ? 0.7 : 1) * (t.ks2Named ? (KS2.ph === 'march' || KS2.ph === 'deploy' ? 0.04 : 0.3) : 1) * (t.ks2Push === 'ram' ? 0.3 : 1) * (!t.isPlayer && t.team === 'blue' && !t.ks2Climb && t.ks2Y < 1 && ks2Cover(t) ? 0.35 : 1);
+    else { if (!hit) { const fx = (tp.x - p.x) / (d || 1), fz = (tp.z - p.z) / (d || 1), k = rand(0.6, 4); b.x += fx * k + rand(-1.2, 1.2); b.z += fz * k + rand(-1.2, 1.2); const gy = t.isPlayer ? player.pos.y - 1.6 : t.baseY; b.y = gy + (gy > 5 && Math.random() < 0.5 ? rand(-2.2, 0.6) : 0.12); }
+      ks2Tracer(a, b, 1, Math.min(1.2, 0.25 + d / 45), !hit); if (dP < 30) { const o = Sfx.at(p, 40, 0.6); if (o) Sfx.noiseBurst(0.08, 'bandpass', 1400, 900, 0.18, 3, 0, o); } } }
   const lag = gun ? 0.1 : Math.min(1.2, 0.25 + d / 45);
-  if (Math.random() < hc) KS2.later.push([KS2.t + lag, () => { if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(kind === 'xbow' ? 4 : 6); popup(gun ? '銃弾がかすめた！' : '矢がかすめた！'); } } else if (isUp(t)) { if (t.ks2Climb) { t.ks2Fall = { t: 0, y0: t.ks2Y }; t.ks2Climb = null; npcSay(t, 'hit', 1); } else damageEnemy(t, 1, p, false, null, null); } }]); }
+  if (hit) KS2.later.push([KS2.t + lag, () => { if (!gun && !t.isPlayer && isUp(t) && dP < 40 && (KS2.stkB = (KS2.stkB || 0) + 1) < 160) stickArrow(t, b, b.clone().sub(a)); if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(kind === 'xbow' ? 4 : 6); popup(gun ? '銃弾がかすめた！' : '矢がかすめた！'); } } else if (isUp(t)) { if (t.ks2Climb) { t.ks2Fall = { t: 0, y0: t.ks2Y }; t.ks2Climb = null; npcSay(t, 'hit', 1); } else damageEnemy(t, 1, p, false, null, null); } }]); }
 // ---- 攻め手の頭脳 ----
-function ks2Cover(t) { const p = t.s.position, m = Math.max(Math.abs(p.x), Math.abs(p.z)); if (m < 90.5 || m > 95) return false; const s = ks2Side(p.x, p.z), u = s === 'S' ? p.x : s === 'N' ? -p.x : s === 'E' ? -p.z : p.z; return Math.abs(u) > 4 && Math.abs(u) < 17; }   // 土塁の陰
+function ks2Cover(t) { if (t.ks2Bun || (t.ks2Sq && t.ks2Sq.k === 'arch' && KS2.bun && KS2.bun.length && !KS2.gates[t.ks2Sq.U.side].open)) return true;   // 竹束の陰
+  const p = t.s.position, m = Math.max(Math.abs(p.x), Math.abs(p.z)); if (m < 90.5 || m > 95) return false; const s = ks2Side(p.x, p.z), u = s === 'S' ? p.x : s === 'N' ? -p.x : s === 'E' ? -p.z : p.z; return Math.abs(u) > 4 && Math.abs(u) < 17; }   // 土塁の陰
 function ks2Slot(e) { const U = e.ks2U, i = e.ks2Slot || 0, cols = U.k === 'H' ? 10 : 14, c = i % cols, r = Math.floor(i / cols), lat = (c - (cols - 1) / 2) * 1.5, dep = r * 1.6 + 2;
   const dd = U.cmd ? Math.hypot(e.s.position.x - U.cmd.s.position.x, e.s.position.z - U.cmd.s.position.z) : 0, lag = Math.min(U.hist.length - 1, Math.round((0.3 + dd / 9 + ((e.id || 0) % 5) * 0.1) / 0.25)), A = U.hist[Math.max(0, lag)] || [U.ax, U.az, U.hd];   // 伝令・太鼓の届く遅れ
   const fx = Math.sin(A[2]), fz = Math.cos(A[2]); return [A[0] + fz * lat - fx * dep, A[1] - fx * lat - fz * dep]; }   // 隊長の後ろに並ぶ
@@ -2680,7 +2809,7 @@ function ks2Atk(e, dt, dP) { const U = e.ks2U, p = e.s.position, far = dP > 45;
     if (!far) { const m = KS2.grid && ks2NearMate(e); if (m) { const dx = p.x - m.s.position.x, dz = p.z - m.s.position.z, d = Math.hypot(dx, dz) || 0.01; p.x += dx / d * 0.15; p.z += dz / d * 0.15; } } }
   const ph = KS2.ph, t = e.tgt && isUp(e.tgt) ? e.tgt : null; e.cd -= dt;
   // 近衛：殿のまわり（殿が先へ走ると、近衛だけが追う）
-  if (e.ks2Role === 'guard' && U.k === 'H') { const n = 10, a = ((e.ks2Slot || 0) % n + 0.5) / n * Math.PI * 2, tx = player.pos.x + Math.sin(a) * 2.4, tz = player.pos.z + Math.cos(a) * 2.6; ks2Walk(e, tx, tz, Math.hypot(tx - p.x, tz - p.z) > 5 ? e.speed * 1.5 : e.speed, dt); if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 1.2) ks2Hit(e, t); return; }
+  if (e.ks2Role === 'guard' && U.k === 'H') { const n = 10, a = ((e.ks2Slot || 0) % n + 0.5) / n * Math.PI * 2, tx = player.pos.x + Math.sin(a) * 3.3, tz = player.pos.z + Math.cos(a) * 3.5; ks2Walk(e, tx, tz, Math.hypot(tx - p.x, tz - p.z) > 5 ? e.speed * 1.5 : e.speed, dt); if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 1.2) ks2Hit(e, t); return; }
   // 担架：後方の担ぎ手
   if (e.ks2Bear) { ks2BearBrain(e, dt); return; }
   if (e.ks2Run) { const R = e.ks2Run; R.t += dt; const wp = R.wp && R.wp.length ? R.wp[0] : null, c = wp || (R.back ? [U.ax, U.az] : R.to && isUp(R.to) ? [R.to.s.position.x, R.to.s.position.z] : null); if (!c || R.t > 120) { e.ks2Run = null; return; }
@@ -2697,7 +2826,7 @@ function ks2Atk(e, dt, dP) { const U = e.ks2U, p = e.s.position, far = dP > 45;
     ks2Walk(e, tx, tz, e.speed * (Math.hypot(tx - p.x, tz - p.z) > 8 ? (U.k === 'N' ? 1.85 : 1.35) : (U.k === 'N' && !KS2.peeled ? 1 : U.k === 'N' ? 1.6 : 1)), dt); return; }
   ks2Siege(e, dt, t, U); }
 function ks2NearMate(e) { const p = e.s.position, a = KS2.grid.get((Math.floor(p.x / 4) + 500) * 2000 + Math.floor(p.z / 4) + 500); if (!a) return null; for (const o of a) if (o !== e && o.team === e.team && Math.abs(o.s.position.y - p.y) < 1 && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 0.6) return o; return null; }
-function ks2Hit(e, t) { e.state = 'idle'; e.moving = false; e.faceWant = Math.atan2(t.s.position.x - e.s.position.x, t.s.position.z - e.s.position.z); if (e.ks2Sp > 0 || e.cd > 0) return; e.cd = rand(1.2, 2.1); e.lungeT = 0.25; if (Math.random() < 0.32) damageEnemy(t, 1, e.s.position, false, null, null);
+function ks2Hit(e, t) { e.state = 'idle'; e.moving = false; e.faceWant = Math.atan2(t.s.position.x - e.s.position.x, t.s.position.z - e.s.position.z); if (e.ks2Sp > 0 || e.cd > 0) return; e.cd = rand(1.2, 2.1); e.lungeT = 0.25; e.ks2Act = { k: 'stab', t: 0 }; if (Math.random() < 0.32) damageEnemy(t, 1, e.s.position, false, null, null);
   if (Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 25 && (KS2.clank -= 1) <= 0) { KS2.clank = 2; const o = Sfx.at(e.s.position, 40, 1); if (o) Sfx.noiseBurst(0.06, 'bandpass', 3800, 2600, 0.25, 5, 0, o); } }
 // 攻城：側ごとの動き（南＝破城槌と攻城塔、東＝梯子、西＝呼びかけとマスケット、北＝陽動）。門が開けば中へ
 function ks2InPath(s) { const P = [[0, KS2_W + 8], [0, KS2_W - 6], [0, 52], [0, KS2_IW + 4], [0, KS2_IW - 4], [0, 22], [0, 15.5]]; return P.map(q => ks2Rot(s, q[0], q[1])); }
@@ -2712,15 +2841,17 @@ function ks2Siege(e, dt, t, U) { const p = e.s.position, s = U.side, G = KS2.gat
     const IG = KS2.igates[ws]; if (i >= 4 && !IG.open) { const [x, z] = ks2Rot(ws, ((e.ks2Slot || 0) % 7 - 3) * 0.5, KS2_IW + 2.4); if (ks2Walk(e, x, z, e.speed, dt)) { e.faceWant = Math.atan2(-x, -z); if (e.cd <= 0) { e.cd = rand(1, 1.6); e.lungeT = 0.25; IG.hp -= 1; ks2GateThud(IG, 0.4); } } return; }
     const tgt = i === P.length - 1 ? [P[i][0] + ((e.ks2Slot || 0) % 9 - 4) * 1.2, P[i][1]] : P[i]; if (ks2Walk(e, tgt[0] + (i ? ((e.ks2Slot || 0) % 5 - 2) * 0.7 : 0), tgt[1], e.speed * 1.05, dt) && i < P.length - 1) e.ks2Pi = i + 1; return; }
   // 外：弓・マスケットは射撃の列から、白兵は番所→門・梯子・攻城塔へ
+  if (e.ks2Carry) { const L = e.ks2Carry, k = L.car.indexOf(e); if (L.ph !== 'carry' || k < 0) { e.ks2Carry = null; } else { ks2Walk(e, L.cx + 1.5 + k * 2.2, L.z + (k % 2 ? 0.7 : -0.7), e.speed * 1.1, dt); if (!e.moving) e.faceWant = -Math.PI / 2; return; } }   // 梯子を担いで運ぶ
+  if (e.ks2Sq && !G.open && !e.ks2In && ks2SqBrain(e, dt, t, U, e.ks2Sq)) return;
   const vS = (U.k === 'W' ? 104 : 102), j = e.ks2Slot || 0;
   if (rng) { const [x, z] = ks2Rot(s, ((j % 24) - 11.5) * 1.6, vS + Math.floor((j % 48) / 24) * 1.8 + (G.open ? -20 : 0)); if (t && (e.ks2Ld = (e.ks2Ld == null ? rand(1, 5) : e.ks2Ld) - dt) <= 0) { e.ks2Ld = r === 'musket' ? rand(8, 12) : rand(2.6, 4.2); if (U.k === 'W' && !KS2.wFire) return; ks2Shoot(e, t, r); return; } ks2Walk(e, x, z, e.speed, dt); return; }
   if (e.ks2Lead) { const [x, z] = ks2Rot(s, 0, U.k === 'W' && KS2.wCall && KS2.wCall.ph < 2 ? 93 : vS - 3); ks2Walk(e, x, z, e.speed, dt); e.faceWant = Math.atan2(-x, -z); return; }   // 隊長：南は攻城塔と破城槌の見える中央のやや後ろ、東は梯子の後ろ（弓の列の前）、北は旗のそば
   if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 8 && t.ks2Y < 1.5) { const d = Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z); if (d > 1.1) ks2Walk(e, t.s.position.x, t.s.position.z, e.speed * 1.1, dt); else ks2Hit(e, t); return; }
   if (U.k === 'S') { const R = KS2.ram, T = KS2.tower;
-    if (e.ks2Push === 'ram') { const k = R.pushers.indexOf(e), [x, z] = [(k % 2 ? 1.6 : -1.6), R.z + 2 + Math.floor(k / 2) * 1.2]; ks2Walk(e, x, z, e.speed * 1.2, dt); e.faceWant = Math.PI; return; }
+    if (e.ks2Push === 'ram') { const k = R.pushers.indexOf(e), [x, z] = [(k % 2 ? 0.75 : -0.75), R.z - 1.6 + Math.floor(k / 2) * 1.5]; ks2Walk(e, x, z, e.speed * 1.2, dt); e.faceWant = Math.PI; return; }
     if (e.ks2Push === 'tower') { const k = T.pushers.indexOf(e), [x, z] = [16 + (k % 2 ? 1.4 : -1.4), T.z + 2.6 + Math.floor(k / 2) * 1.0]; ks2Walk(e, x, z, e.speed * 1.2, dt); e.faceWant = Math.PI; return; }
     if (T.at && !G.open && (j % 2 === 0) && KS2.wallS < 60) { if (ks2Walk(e, 16 + ((j % 3) - 1) * 0.8, KS2_W + KS2_T + 3.2, e.speed, dt)) { e.ks2Climb = { y0: 0, y1: KS2_H, t: 0, T: 4.5, x: 16, z: KS2_W + 1.2, wall: 'S' }; KS2.wallS = (KS2.wallS || 0) + 1; } return; } }
-  if (U.k === 'E' && !G.open) { const L = KS2.ladders[j % 3]; if (L.up && KS2.wallE < 70) { const [bx, bz] = [L.x + 1.6 + (L.q.length % 3) * 0.6, L.z + ((j % 2) ? 0.5 : -0.5)]; if (ks2Walk(e, bx, bz, e.speed, dt)) { if (!L.busyT || KS2.t > L.busyT) { L.busyT = KS2.t + 1.6; e.ks2Climb = { y0: 0, y1: KS2_H, t: 0, T: 5.5, x: L.x - 2.9, z: L.z, wall: 'E', lx: L.x + 0.6 }; KS2.wallE = (KS2.wallE || 0) + 1; } } return; } }
+  if (U.k === 'E' && !G.open) { const L = KS2.ladders[j % 3]; if (L.up && KS2.wallE < 70) { const [bx, bz] = [L.bx + 0.9 + (j % 3) * 0.7, L.z + ((j % 2) ? 0.6 : -0.6)]; if (ks2Walk(e, bx, bz, e.speed, dt)) { if (!L.busyT || KS2.t > L.busyT) { L.busyT = KS2.t + 1.6; e.ks2Climb = { y0: 0, y1: KS2_H, t: 0, T: 5.5, x: L.x - 2.9, z: L.z, wall: 'E', lad: L }; KS2.wallE = (KS2.wallE || 0) + 1; } } return; } }
   // 門の前で待つ（城壁の近くは上から撃たれる・ラーメンが落ちてくる）
   const wait = U.k === 'N' ? 100 : 91.5 + (j % 3) * 1.2, [x, z] = ks2Rot(s, (j % 2 ? 1 : -1) * (5 + (j % 18) * 0.65), KS2.posts.find(P => P.s === s && !P.clear) ? 95 : wait); ks2Walk(e, x, z, e.speed, dt); }
 function ks2GateThud(G, k) { if (Math.hypot(G.x - player.pos.x, G.z - player.pos.z) < 60) { const o = Sfx.at(new V3(G.x, 1, G.z), 160, 1.3); if (o) { Sfx.noiseBurst(0.25 * k + 0.1, 'lowpass', 300, 60, 0.9 * k + 0.2, 1, 0, o); Sfx.tone('sine', 70, 40, 0.3, 0.5 * k, 0, o); } if (k > 0.8 && Math.hypot(G.x - player.pos.x, G.z - player.pos.z) < 25) player.shake = Math.max(player.shake || 0, 0.25); } }
@@ -2741,11 +2872,11 @@ function ks2Def(e, dt, dP) { const p = e.s.position, r = e.ks2Role, far = dP > 4
 function ks2Brain(e, dt) { if (!KS2.on || !e.ks2) return false; const p = e.s.position; e.passive = true; e.kneel = false; e.crouch = 0; if (e.knock) e.knock.set(0, 0, 0); e.t += dt;
   if (e.ks2Sp > 0) e.ks2Sp -= dt;
   if (e.ks2Fall) { const F = e.ks2Fall; F.t += dt; const k = Math.min(1, F.t / 0.9); p.y = e.baseY = F.y0 * (1 - k * k); if (k >= 1) { e.ks2Fall = null; e.ks2Y = 0; e.baseY = 0; p.y = 0; killEnemy(e, false, null); } return true; }   // 梯子から落ちて、その場に残る
-  if (e.ks2Climb) { const C = e.ks2Climb; C.t += dt; const k = Math.min(1, C.t / C.T); if (C.lx != null) p.x = C.lx; p.y = e.baseY = C.y0 + (C.y1 - C.y0) * k; e.moving = true; e.state = 'idle'; e.faceWant = C.wall === 'E' ? -Math.PI / 2 : Math.PI;
+  if (e.ks2Climb) { const C = e.ks2Climb; C.t += dt; const k = Math.min(1, C.t / C.T); if (C.lx != null) p.x = C.lx; p.y = e.baseY = C.y0 + (C.y1 - C.y0) * k; if (C.lad) { p.x = C.lad.bx - (p.y + 0.4) * C.lad.tn + 0.34; p.z = C.lad.z; } e.moving = true; e.state = 'idle'; e.faceWant = C.wall === 'E' ? -Math.PI / 2 : Math.PI;
     if (k >= 1) { e.ks2Climb = null; e.ks2Y = C.y1; p.x = C.x + rand(-0.5, 0.5); p.z = C.z + (C.wall === 'E' ? rand(-0.5, 0.5) : 0); e.ks2Wall = C.wall; } return true; }
   p.y = e.baseY = e.ks2Y + (e.ks2Y < 0.1 && Math.abs(p.z - 150) < 18 && Math.abs(p.x) < 18 ? ks2GY(p.x, p.z) : 0);
-  const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.shadow.visible = dP < 20 && e.ks2Y < 1;
-  if (e.team === 'blue') ks2Atk(e, dt, dP); else ks2Def(e, dt, dP); return true; }
+  const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.shadow.visible = dP < 25;
+  if (e.team === 'blue') ks2Atk(e, dt, dP); else ks2Def(e, dt, dP); ks2Pose(e, dt, dP); return true; }
 // ---- 担架 ----
 function ks2BearBrain(e, dt) { const p = e.s.position, J = e.ks2Job;
   if (!J) { const H = [KS2.tent[0] - 8 + (e.ks2Bear % 6) * 1.4, KS2.tent[1] + 3]; ks2Walk(e, H[0], H[1], e.speed, dt); if (!e.moving) e.faceWant = Math.PI; return; }
@@ -2762,7 +2893,7 @@ function ks2BearTick() { const fr = KS2.bearers.filter(e => isUp(e) && !e.ks2Job
     const J = { b, ph: 'go', lead: L, mate, st, dst: [KS2.tent[0] - 10 + (n % 12) * 1.3, KS2.tent[1] - 6 - Math.floor(n / 12) * 2.4] }; L.ks2Job = J; mate.ks2Job = J; } }
 // ---- 進行 ----
 function ks2Reset() { KS2.ph = 'off'; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false;
-  KS2.tr.length = 0; KS2.trIM = null; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
+  KS2.tr.length = 0; KS2.trIM = null; KS2.pxSh = null; KS2.stk = null; KS2.stkB = 0; KS2.sq = null; KS2.supp = {}; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
   player.pos.set(4, 1.6 + 0, 232); player.yaw = 0; player.pitch = -0.04; CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
 function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; KS2.t = 0; KS2.bearers = [];
   { let b = 0; for (const e of KS2.U.R.mem) if (e.ks2Role === 'melee' && b < (LITE ? 6 : 12)) { e.ks2Bear = b++; KS2.bearers.push(e); } }
@@ -2791,7 +2922,7 @@ function ks2UnitMove(U, dt) { const H = KS2.U.H; let tgt;
   if ((U.ht -= dt) <= 0) { U.ht = 0.25; U.hist.unshift([U.ax, U.az, U.hd]); if (U.hist.length > 48) U.hist.pop(); } }
 // ---- 攻城の仕掛け ----
 function ks2Pushers(R, U, n) { R.pushers = R.pushers.filter(e => { if (isUp(e)) return true; if (!R.saidDown || KS2.t - R.saidDown > 12) { R.saidDown = KS2.t; ks2SayK('omiya', KS2_L.S[3][1], 1.5); } return false; });
-  if (R.pushers.length >= n) return; const zz = R.g.position.z; const cand = U.mem.filter(e => isUp(e) && e.ks2Role === 'melee' && !e.ks2Push && !e.ks2Climb && e.ks2Y < 1 && !e.ks2In).sort((a, b) => Math.hypot(a.s.position.x, a.s.position.z - zz) - Math.hypot(b.s.position.x, b.s.position.z - zz));
+  if (R.pushers.length >= n) return; const zz = R.g.position.z; const cand = U.mem.filter(e => isUp(e) && e.ks2Role === 'melee' && !e.ks2Bun && !e.ks2Push && !e.ks2Climb && e.ks2Y < 1 && !e.ks2In).sort((a, b) => Math.hypot(a.s.position.x, a.s.position.z - zz) - Math.hypot(b.s.position.x, b.s.position.z - zz));
   for (const e of cand) { if (R.pushers.length >= n) break; e.ks2Push = R === KS2.ram ? 'ram' : 'tower'; R.pushers.push(e); } }
 function ks2GateOpen(G, why) { if (G.open) return; G.open = true; G.leaf.visible = false; if (G.bands) for (const b of G.bands) b.visible = false; const i = boxes.indexOf(G.box); if (i >= 0) boxes.splice(i, 1);
   for (const sg of [-1, 1]) { const inner = !!KS2.igates[G.s] && KS2.igates[G.s] === G, v = inner ? KS2_IW - 1.5 : KS2_W - 1.2, [x, z] = ks2Rot(G.s, sg * ((inner ? KS2_IG : KS2_GATE) - 0.2), v), m = new THREE.Mesh(new THREE.BoxGeometry(0.35, inner ? 4 : 5.2, (inner ? KS2_IG : KS2_GATE) * 0.95), ks2Mats().gate); m.position.set(x, inner ? 2 : 2.6, z); m.rotation.y = G.s === 'S' || G.s === 'N' ? 0 : Math.PI / 2; stageRoot.add(m); }
@@ -2819,7 +2950,7 @@ function ks2Siege2(dt) { const S = KS2.U.S, E = KS2.U.E, W = KS2.U.W, N = KS2.U.
     R.log.position.z += (0 - R.log.position.z) * Math.min(1, dt * 3); }
   if (!T.at) { ks2Pushers(T, S, 4); const n = T.pushers.filter(e => Math.hypot(e.s.position.x - T.g.position.x, e.s.position.z - T.g.position.z) < 4.5).length; if (n >= 2) { T.z = Math.max(KS2_W + KS2_T + 2.3, T.z - 0.45 * Math.min(1, n / 4) * dt); T.g.position.z = T.z; } if (T.z <= KS2_W + KS2_T + 2.31) { T.at = true; T.br.visible = true; for (const e of T.pushers) e.ks2Push = null; T.pushers = []; popup('攻城塔が城壁に着いた！ 渡り板を下ろせ'); KS2.log.push(['tower', Math.round(KS2.t)]); } }
   // 東：梯子
-  if (st > 5) for (const L of KS2.ladders) if (!L.up) { L.up = true; L.g.position.set(L.x + 1.0, 0, L.z); L.g.rotation.set(0, Math.PI / 2, 0); L.g.rotateX(-0.17); }
+
   // 城壁の上から下りた者が内側から門を開ける（守り手が門のそばにいない時）
   for (const s of ['S', 'E']) { const G = KS2.gates[s]; if (G.open || KS2.inS[s] < (LITE ? 4 : 7)) continue; const [ix, iz] = ks2Rot(s, 0, KS2_W - 4); let near = 0; for (const o of KS2.live.orange) if (o.ks2Y < 1 && Math.hypot(o.s.position.x - ix, o.s.position.z - iz) < 9) near++; if (near <= 1) ks2GateOpen(G, 'wall'); }
   // 西：呼びかけ
@@ -2853,7 +2984,7 @@ function ks2VoicePre() { if (KS2.vPre || !VoicePack.ok || !window.VOICE_KS2) ret
   for (const k in KS2_L) { const v = KS2_L[k]; if (k === 'succ') for (const n in v) add(v[n]); else if (k === 'hir') for (const g in v) for (const q of v[g]) add(q[1]); else for (const q of v) add(q[1]); } for (const k in KS2_EN) add(KS2_EN[k][1]); for (const t of KS2_RV.ramen) add(t);
   for (let i = fs.length - 1; i >= 0; i--) VoicePack.load(fs[i], i < 12); }
 function ks2Seq(L, t0, gap) { (L || []).forEach((q, i) => KS2.later.push([KS2.t + t0 + i * (gap || 4.2), () => { if (KS2.on && state === 'play') ks2SayK(q[0], q[1], 1.7); }])); }
-function ks2Go() { if (KS2.ph !== 'deploy') return; KS2.ph = 'siege'; KS2.goT = KS2.t; ks2SayK('sumi', KS2_L.go[0][1], 2); const b = $('bKs2Go'); if (b) b.style.display = 'none'; ks2Seq(KS2_L.hir.sg, 40); showBanner('総攻撃', '南は破城槌と攻城塔、東は梯子、西は呼びかけ、北は陽動'); bannerTimer = 3;
+function ks2Go() { if (KS2.ph !== 'deploy') return; KS2.ph = 'siege'; KS2.goT = KS2.t; ks2Squads(); ks2SayK('sumi', KS2_L.go[0][1], 2); const b = $('bKs2Go'); if (b) b.style.display = 'none'; ks2Seq(KS2_L.hir.sg, 40); showBanner('総攻撃', '南は破城槌と攻城塔、東は梯子、西は呼びかけ、北は陽動'); bannerTimer = 3;
   setTimeout(() => ks2SayK('ojou', KS2_L.S[0][1], 1.5), 3000); setTimeout(() => ks2SayK('fumi', KS2_L.E[0][1], 1.5), 6000); setTimeout(() => ks2SayK('sec4', KS2_L.N[0][1], 1.4), 9000); setTimeout(() => ks2En('hold', KS2.def.find(e => e.ks2Uk && isUp(e) && e.ks2Side === 'S'), 1.2), 4500); setTimeout(() => { if (KS2.on && state === 'play') ks2En('defy1', KS2.cmd, 2, 22); }, 12000); }
 function ks2Remain() { const c = ks2Counts(), A = c.A; return `南${A.S} 東${A.E} 西${A.W} 北${A.N} 本隊${A.H} 後方${A.R}`; }
 function ks2Label() { const c = ks2Counts(), P = { march: '進軍', deploy: '布陣（総攻撃の合図を）', siege: '攻城', keep: '本丸', won: '開城' }[KS2.ph] || ''; return `決戦2「白壁城」 ${P}　攻 ${c.a}　守 ${c.d}`; }
@@ -2870,14 +3001,15 @@ function ks2Chat(dt) { if ((KS2.chatT -= dt) > 0) return; KS2.chatT = rand(3, 6)
 function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; if (!KS2.vPre) ks2VoicePre(); KS2.fx = Math.min(LITE ? 3 : 8, KS2.fx + dt * (LITE ? 4 : 10));
   if ((KS2.gT = (KS2.gT || 0) - dt) <= 0) { KS2.gT = 0.2; ks2Grid(); }
   for (let i = KS2.later.length - 1; i >= 0; i--) if (KS2.later[i][0] <= KS2.t) { const f = KS2.later[i][1]; KS2.later.splice(i, 1); f(); }
-  { const im = ks2TrIM(), C1 = KS2_C1 || (KS2_C1 = new THREE.Color(0x5a4a32)), C2 = KS2_C2 || (KS2_C2 = new THREE.Color(0xffe2a0)); let n = 0; for (let i = KS2.tr.length - 1; i >= 0; i--) { const T = KS2.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { KS2.tr.splice(i, 1); continue; } KS2_Q.position.lerpVectors(T.a, T.b, k); KS2_Q.position.y += Math.sin(k * Math.PI) * (T.T > 0.3 ? 1.2 : 0); KS2_Q.scale.set(1, 1, 1); KS2_Q.lookAt(T.b); KS2_Q.rotateX(Math.PI / 2); KS2_Q.updateMatrix(); im.setMatrixAt(n, KS2_Q.matrix); im.setColorAt(n, T.c === 1 ? C1 : C2); n++; } im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+  { const im = ks2TrIM(), C1 = KS2_C1 || (KS2_C1 = new THREE.Color(0x5a4a32)), C2 = KS2_C2 || (KS2_C2 = new THREE.Color(0xffe2a0)); let n = 0, hn = 0; for (let i = KS2.tr.length - 1; i >= 0; i--) { const T = KS2.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { if (T.stick) ks2Stick(T.b, T.b.clone().sub(T.a).setY(Math.min(-0.3 * T.a.distanceTo(T.b), T.b.y - T.a.y)).normalize()); KS2.tr.splice(i, 1); continue; } KS2_Q.position.lerpVectors(T.a, T.b, k); KS2_Q.position.y += Math.sin(k * Math.PI) * (T.T > 0.3 ? 1.2 : 0); KS2_Q.scale.set(T.c === 1 ? 1 : 1.6, T.c === 1 ? 1 : 1.3, T.c === 1 ? 1 : 1.6); KS2_Q.lookAt(T.b); KS2_Q.rotateX(Math.PI / 2); KS2_Q.updateMatrix(); im.setMatrixAt(n, KS2_Q.matrix); im.setColorAt(n, T.c === 1 ? C1 : C2); if (T.c === 1) im.head.setMatrixAt(hn++, KS2_Q.matrix); n++; } im.count = n; im.head.count = hn; im.head.instanceMatrix.needsUpdate = true; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+  ks2Equip(dt);
   for (const P of KS2.pots) if (P.t < P.T) { P.t += dt; const k = Math.min(1, P.t / P.T); P.m.position.y = P.y0 * (1 - k * k) + 0.2; P.m.rotation.x += dt * 6; if (k >= 1) ks2PotLand(P); }
   for (const U of KS2.units) ks2UnitMove(U, dt);
   const H = KS2.U.H;
   if (KS2.ph === 'march') { if (!KS2.peeled && H.az < 197) { KS2.peeled = true; ks2SayK('sumi', KS2_L.peel[0][1], 1.9); popup('東門隊・西門隊・北門隊が隊列を離れ、城を回り込む'); popupTimer = 3; }
     if (KS2.peeled && KS2.units.every(U => U.at || !U.side) && H.at) { KS2.ph = 'deploy'; KS2.depT = KS2.t; ks2SayK('sumi', KS2_L.ready[0][1], 2); ks2Seq(KS2_L.hir.dep, 5); const b = $('bKs2Go'); if (b) b.style.display = 'block'; } }
   else if (KS2.ph === 'deploy') { if (KS2.t - KS2.depT > 25) ks2Go(); }
-  if (KS2.ph === 'siege' || KS2.ph === 'keep') { ks2Siege2(dt); for (const s of KS2_SIDES) { const IG = KS2.igates[s]; if (!IG.open && IG.hp <= 0) ks2GateOpen(IG, 'ram'); } }
+  if (KS2.ph === 'siege' || KS2.ph === 'keep') { ks2Siege2(dt); ks2SqTick(dt); for (const s of KS2_SIDES) { const IG = KS2.igates[s]; if (!IG.open && IG.hp <= 0) ks2GateOpen(IG, 'ram'); } }
   // 隊長が倒れたら副官が引き継ぐ
   if ((KS2.sT = (KS2.sT || 0) - dt) <= 0) { KS2.sT = 0.5;
     for (const U of KS2.units) { if (U.cmd && isUp(U.cmd)) continue; const nx = U.chain.map(k => KS2.by[k]).find(e => e && isUp(e)) || U.mem.find(e => isUp(e) && e.ks2Role === 'guard') || U.mem.find(isUp); if (!nx || nx === U.cmd) continue; const old = U.cmd; U.cmd = nx; nx.ks2Lead = true; if (old) old.ks2Lead = false; const ln = KS2_L.succ[nx.ks2Named]; if (ln) ks2SayK(nx.ks2Named, ln, 1.9); popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); KS2.log.push(['succ', U.k, nx.prof.name, Math.round(KS2.t)]); }
@@ -7095,7 +7227,9 @@ function makeYari(e) {
     gS: new THREE.CylinderGeometry(0.016, 0.019, 2.9, 6), gT: new THREE.SphereGeometry(0.055, 8, 6), gB: new THREE.CylinderGeometry(0.024, 0.024, 0.09, 6) };   // 形は共有
   const h = e.figH, g = new THREE.Group(), L = 2.9;
   const shaft = new THREE.Mesh(YARI_MAT.gS, YARI_MAT.shaft); shaft.rotation.x = Math.PI / 2; shaft.position.z = L / 2 - 0.9; g.add(shaft);
-  const tip = new THREE.Mesh(YARI_MAT.gT, YARI_MAT.tip); tip.scale.set(1, 1, 1.5); tip.position.z = L - 0.9 + 0.04; g.add(tip);   // たんぽ（布を巻いた穂先）
+  if (KS2.on) { if (!YARI_MAT.gI) { YARI_MAT.gI = new THREE.ConeGeometry(0.032, 0.3, 4); YARI_MAT.gI.rotateX(Math.PI / 2); YARI_MAT.iron = new THREE.MeshLambertMaterial({ color: 0x8d949c }); }   // 決戦2：本物の鉄の穂先（尖った刃）
+    const tip = new THREE.Mesh(YARI_MAT.gI, YARI_MAT.iron); tip.scale.set(1, 0.35, 1); tip.position.z = L - 0.9 + 0.15; g.add(tip); }
+  else { const tip = new THREE.Mesh(YARI_MAT.gT, YARI_MAT.tip); tip.scale.set(1, 1, 1.5); tip.position.z = L - 0.9 + 0.04; g.add(tip); }   // たんぽ（布を巻いた穂先）
   const band = new THREE.Mesh(YARI_MAT.gB, YARI_MAT.band); band.rotation.x = Math.PI / 2; band.position.z = L - 0.9 - 0.12; g.add(band);
   g.position.set(-0.17 * h / 1.6, 0.55 * h, 0.12); g.rotation.x = -1.3;
   e.s.add(g); e.spear = g; e.spAng = -1.3; e.spPush = 0;
@@ -28201,7 +28335,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261110f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261110g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -28448,7 +28582,7 @@ function hitSurface(e, pt, from) {
 function stickArrow(e, pt, dir) {
   const d = dir.clone().normalize(), p = e.s.position;
   const hz = new V3(-d.x, 0, -d.z); if (hz.lengthSq() < 1e-6) hz.set(0, 0, 1); hz.normalize();
-  const m = arrowTpl.player.clone();
+  const m = (KS2.on ? arrowWar : arrowTpl.player).clone();
   const surf = new V3(p.x + hz.x * 0.1, clamp(pt.y, e.baseY + 0.2, e.baseY + e.figH * 0.92), p.z + hz.z * 0.1);
   m.quaternion.setFromUnitVectors(Z, d);
   m.position.copy(surf).addScaledVector(d, -0.36); m.updateMatrixWorld(true);
@@ -29150,6 +29284,7 @@ function hpInit() {
 // 誰が何を持つか（一度決めたら覚える）
 function hpKindOf(e) {
   if (PAL.on || TH.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on || AIRPORT.on || TRENCH.on) return '';
+  if (KS2.on && e.ks2) return e.ks2Wk || '';   // 決戦2：役ごとに（弓・懐刀・マスケット）
   if (e.usdW) return e.usdW === 'colt' ? 'colt' : e.usdW === 'spr' ? 'musket' : 'rifle';
   if (e.nagi) return 'naginata';
   if (e.armed || e.special || e.yari || e.bayo || e.ramCrew || e.uk2Gun || e.team === 'none') return '';
@@ -29168,6 +29303,7 @@ function hpHands(e, fr) {
 // アニメーションごとに：持ち物の板の位置（tilt の座標）を e.hpL に入れる。描くのは hpFlush（描画の直前）
 function hpPose(e, fr, mirror, sgn) {
   if (!HP.ok) return;
+  if (KS2.on && e.ks2 && (e.s.position.x - camera.position.x) ** 2 + (e.s.position.z - camera.position.z) ** 2 > 2500) return;   // 決戦2：遠い者の持ち物は描かない
   if (e.hpk === undefined) e.hpk = hpKindOf(e);
   const k = e.hpk; if (!k || !fr) return;
   const g = e.girl;
@@ -29996,6 +30132,7 @@ function tagLabel(e) {
   const p = (e.prof.name || '').split(' '), nm = p.length >= 2 ? p.slice(0, -2).concat(p.slice(-2).join('')).join(' ') : e.prof.name;
   if (e.seated && PLANE.intro) return nm;   // 奇襲の前：乗客として名前だけ
   if (e.ukTag) return e.ukTag;
+  if (KS2.on && e.ks2) return ks2TagPre(e) + ' ' + nm;
   const o = e.sq && sqOrd(e.sq), mk = e.escort ? '【後送】' : e.reinfT > time ? '【増援】' : o ? '【' + SQ_ORD[o.type] + '】' : '';
   const pre = e.ojou ? '侍大将' : e.sq ? e.sq.name + (e.sq.leader === e ? '長' : '') + mk : (e.runner || e.saiRunner) ? '伝令' : e.medic ? '医務班' : '';
   return (pre ? pre + ' ' : '') + nm;
@@ -30017,7 +30154,7 @@ function updateTags() {
     if (e.tag) e.tag.visible = false;
     if (e.state === 'down') continue;
     const d = Math.hypot(e.s.position.x - camera.position.x, e.s.position.z - camera.position.z);
-    if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic || e.ojou || e.ukTag)) tagNear.push([d, e]);
+    if (d < TAG_R && (e.sq || e.runner || e.saiRunner || e.medic || e.ojou || e.ukTag || (KS2.on && e.ks2 && !e.ks2Gave))) tagNear.push([d, e]);
   }
   tagNear.sort((a, b) => a[0] - b[0]);
   if (UK.on) { const n = tagNear.findIndex(t => t[0] > UK_TAG_R); if (n >= 0) tagNear.length = n; if (tagNear.length > 4) tagNear.length = 4; }   // 英国淑女編：近い 4 人だけ（遠くの名札は重なるので出さない）
@@ -32805,7 +32942,8 @@ function updateEnemies(dt) {
     const top = e.baseY + e.figH * (1 - 0.38 * e.crouch);
     e.mk.position.set(p.x, top + (e.hp < e.hpMax ? 0.5 : 0.32), p.z);
     if (e.wmk && e.wounded) e.wmk.position.set(p.x, top + 0.74, p.z);
-    if (e.hp < e.hpMax) {
+    if (KS2.on && e.ks2 && !e.ks2Bar) { if (e.bg.visible) e.bg.visible = e.fg.visible = false; }   // 決戦2：近い者だけ（遠くの棒は描かない）
+    else if (e.hp < e.hpMax || (KS2.on && e.ks2Bar)) {
       const f = Math.max(0, e.hp / e.hpMax);
       e.bg.visible = e.fg.visible = true;
       e.bg.position.set(p.x, top + 0.25, p.z);
@@ -32847,9 +32985,10 @@ function makeArrowTemplate(tipColor) {
 }
 const arrowTpl = { player: makeArrowTemplate(0xd9d4c6), orange: makeArrowTemplate(0xd9d4c6) };
 arrowTpl.blue = arrowTpl.player;
+const arrowWar = (() => { const g = arrowTpl.player.clone(); const h = g.children[1]; g.remove(h); const m = new THREE.Mesh(new THREE.ConeGeometry(0.022, 0.12, 4), new THREE.MeshLambertMaterial({ color: 0x80878f })); m.rotation.x = Math.PI / 2; m.position.z = 0.48; g.add(m); return g; })();   // 決戦2：尖った鉄の鏃
 const Z = new V3(0, 0, 1);
 function addArrow(team, pos, vel, extra) {
-  const m = arrowTpl[team].clone(); m.position.copy(pos); scene.add(m);
+  const m = (KS2.on ? arrowWar : arrowTpl[team]).clone(); m.position.copy(pos); scene.add(m);
   m.quaternion.setFromUnitVectors(Z, tmp.copy(vel).normalize());
   arrows.push(Object.assign({ m, vel, team, stuck: false, life: 0 }, extra));
   if (arrows.length > 120) { const a = arrows.shift(); scene.remove(a.m); }
@@ -33211,7 +33350,7 @@ function updateTargetInfo(dt) {
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
     const tm = PAL.on ? '<u style="color:#e8c97a">宮殿の侍女</u>' : UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
-    const html = PAL.on ? (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.ukTag || t.prof.name}</b><span>${t.P.desc}・${Math.round((t.figH || 1.6) * 100)}cm</span>` : t.ukInfo ? ukTargetHtml(t, pic) : (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
+    const html = KS2.on && t.ks2 ? (pic ? `<img src="${pic}" alt="">` : '') + `<u style="color:${t.team === 'blue' ? '#7cc0ff' : '#ffa040'}">${t.team === 'blue' ? '王国軍・' + ((t.ks2U && t.ks2U.name) || '') : '反乱軍・' + ks2TagPre(t)}</u><b>${t.ukTag || t.prof.name}</b><span>${t.P.desc}・${Math.round((t.figH || 1.6) * 100)}cm</span>` + (dead ? '<em>倒れた</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`) : PAL.on ? (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.ukTag || t.prof.name}</b><span>${t.P.desc}・${Math.round((t.figH || 1.6) * 100)}cm</span>` : t.ukInfo ? ukTargetHtml(t, pic) : (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
     if (el._h !== html) { el.innerHTML = html; el._h = html; }
     el.style.opacity = Math.min(1, targetHold * 3);
@@ -36603,5 +36742,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get KS2(){return KS2;}, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get KS2(){return KS2;}, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

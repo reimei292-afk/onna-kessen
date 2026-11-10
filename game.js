@@ -604,7 +604,7 @@ const TH_POSTS = () => { const y7 = thY(7), y13 = thY(13), y15 = thY(15), zf = T
   ]; };
 function thSpawn(x, z, y, girl, prof, tag, lk) {
   const e = spawnEnemy(x, z, 'mob', false, 'blue', { girl, yari: -1, y, set: { state: 'idle', silenced: true, th: true } }); if (!e) return null;
-  if (prof) { Object.assign(e.prof, prof); if (prof.cm) e.figH = prof.cm / 100; }
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[e.prof.pers] || e.P; if (prof.cm) e.figH = prof.cm / 100; }
   e.passive = true; e.silenced = true; e.sq = null; if (e.mk) e.mk.visible = false; e.ukTag = (tag ? tag + ' ' : '') + e.prof.name; e.thY = y; e.baseY = y; e.crouch = 0; e.thLk = lk; e.thHome = [x, z];
   TH.girls.push(e); return e;
 }
@@ -2444,16 +2444,16 @@ const KS2_UNITS = [
   { k: 'E', name: '東門隊', n: 250, side: 'E', chain: ['fumi', 'reika'], secs: [], tag: '東門隊長', mix: 'us', off: [26, -18], path: [[72, 140], [124, 0]], sp: 2.4 },
   { k: 'W', name: '西門隊', n: 250, side: 'W', chain: ['uk06', 'shizuka'], secs: [], tag: '西門隊長', uk: 150, off: [-26, -18], path: [[-72, 140], [-124, 0]], sp: 2.4 },
   { k: 'N', name: '北門隊', n: 200, side: 'N', chain: ['sec4', 'sysop'], secs: [], tag: '北門隊長', mix: 'us', off: [112, -58], path: [[142, 95], [142, -88], [62, -126], [0, -124]], sp: 4.0 },
-  { k: 'H', name: '本隊', n: 200, side: null, chain: ['sumi', 'sec2'], secs: ['hirose', 'akari', 'hiyori', 'flute'], tag: '総大将', off: [0, 0], path: [[0, 150]], sp: 1.4 },
+  { k: 'H', name: '本隊', n: 200, side: null, chain: ['sumi', 'sec2'], secs: ['hirose', 'sanjo', 'akari', 'hiyori', 'flute'], tag: '総大将', off: [0, 0], path: [[0, 150]], sp: 1.4 },
   { k: 'R', name: '後方', n: 150, side: null, chain: ['sec3', 'kujo'], secs: [], tag: '後方', off: [0, 26], path: [[0, 172]], sp: 1.3 },
 ];
 const KS2_NM = { ojou: ['西園寺 すみれ', '冷静', 158], omiya: ['大宮 ひなた', '陽気', 147], shinobu: ['氷室 しのぶ', '冷静', 170], chikage: ['一条 千景', '慎重', 160], fumi: ['綾瀬 文乃', '冷静', 159], reika: ['白石 麗華', '好戦的', 165],
   uk06: ['エレノア・アシュコム', '冷静', 170], shizuka: ['久遠 静香', '冷静', 167], sec4: ['宮下 千尋', '慎重', 161], sysop: ['霧島 怜', '冷静', 161], sumi: ['白瀬 澄', '冷静', 160], sec2: ['早瀬 ことね', '陽気', 156],
-  akari: ['夏目 あかり', '陽気', 162], hiyori: ['小日向 ひより', '慎重', 152], flute: ['小鳥遊 ひびき', '陽気', 155], sec3: ['桜井 ゆかり', '冷静', 158], kujo: ['九条 紗英', '冷静', 162], hirose: ['広瀬 千夏', '陽気', 0] };
+  akari: ['夏目 あかり', '陽気', 162], hiyori: ['小日向 ひより', '慎重', 152], flute: ['小鳥遊 ひびき', '陽気', 155], sec3: ['桜井 ゆかり', '冷静', 158], kujo: ['九条 紗英', '冷静', 162], hirose: ['広瀬 千夏', '陽気', 160], sanjo: ['三条 玲奈', '豪胆', 158] };
 const KS2_TITLE = { ojou: '南門隊長 西園寺', omiya: '南門隊 副官 大宮', shinobu: '西園寺の秘書 氷室', chikage: '西園寺の秘書 一条', fumi: '東門隊長 綾瀬', reika: '東門隊 副官 白石大佐', uk06: '西門隊長 エレノア', shizuka: '西門隊 副官 久遠中佐',
-  sec4: '北門隊長 宮下大佐', sysop: '北門隊 副官 霧島中佐', sumi: '総大将 白瀬', sec2: '本隊 早瀬', akari: '本隊の秘書 夏目', hiyori: '本隊の秘書 小日向', flute: '器楽中佐 小鳥遊', sec3: '後方 桜井大佐', kujo: '軍医中将 九条', hirose: '本隊 広瀬' };
-const KS2_VK = { ojou: 'ojou', omiya: 'omiya', shinobu: 'shinobu', chikage: 'chikage', fumi: 'fumi', reika: 'reika', uk06: 'uk06', shizuka: 'shizuka', sec4: 'sec4', sysop: 'sysop', sumi: 'sumi', sec2: 'sec2', akari: 'akari', hiyori: 'hiyori', flute: 'flute', sec3: 'sec3', kujo: 'kujo', hirose: 'hirose' };
-function ks2Gid(k) { if (k === 'uk06') return 'uk06'; if (k === 'hirose') return GIRLS.girl45 ? 'girl45' : null; const P = PAL_NAMED[k]; const g = P && P.girl(); return g && GIRLS[g] ? g : null; }
+  sec4: '北門隊長 宮下大佐', sysop: '北門隊 副官 霧島中佐', sumi: '総大将 白瀬', sec2: '本隊 早瀬', akari: '本隊の秘書 夏目', hiyori: '本隊の秘書 小日向', flute: '器楽中佐 小鳥遊', sec3: '後方 桜井大佐', kujo: '軍医中将 九条', hirose: '本隊 広瀬', sanjo: '本隊 三条' };
+const KS2_VK = { ojou: 'ojou', omiya: 'omiya', shinobu: 'shinobu', chikage: 'chikage', fumi: 'fumi', reika: 'reika', uk06: 'uk06', shizuka: 'shizuka', sec4: 'sec4', sysop: 'sysop', sumi: 'sumi', sec2: 'sec2', akari: 'akari', hiyori: 'hiyori', flute: 'flute', sec3: 'sec3', kujo: 'kujo', hirose: 'hirose', sanjo: 'sanjo' };
+function ks2Gid(k) { if (k === 'uk06') return 'uk06'; if (k === 'hirose') return GIRLS.girl45 ? 'girl45' : null; if (k === 'sanjo') return GIRLS.girl58 ? 'girl58' : null; const P = PAL_NAMED[k]; const g = P && P.girl(); return g && GIRLS[g] ? g : null; }
 // ---- 台詞（声は tools/add_ks2_voices.py → assets/voices/ks2/） ----
 const KS2_L = {
   march: [['sumi', '全軍、前へ。隊列を崩さないで'], ['flute', 'さあ、行進曲です！ 歩調を合わせて'], ['sec2', '伝令、各隊へ走って！']],
@@ -2473,7 +2473,11 @@ const KS2_L = {
     m2: [['hirose', '文乃さん、東門でしくじらないでくださいね'], ['fumi', 'そっちこそ。殿の横で転ばないでね、千夏さん']],
     m3: [['hirose', 'ことねちゃん、震えてない？……私も、少しだけ'], ['sec2', '千夏さん……はい。一緒に、がんばりましょう']],
     dep: [['hirose', '殿、後ろは私が見ています']], sg: [['hirose', '矢って、こんなに近くを飛ぶんですね……平気です、平気']],
-    kp: [['hirose', '澄さん、私だって最後まで行けます'], ['sumi', 'ええ、見ていました。よくやっています'], ['hirose', '……い、今それを言わないでください']] },
+    kp0: [], kp: [['hirose', '澄さん、私だって最後まで行けます'], ['sumi', 'ええ、見ていました。よくやっています'], ['hirose', '……い、今それを言わないでください']] },
+  // 三条 玲奈：初陣。面倒くさがりの度胸で緊張を隠す。西園寺・大宮は「玲奈さま」
+  san: { m1: [['sanjo', 'はいはい、行きますよ。……って、誰も行かないなら私が行きます'], ['omiya', '玲奈さま、先頭は駄目です！ 本隊の列にいてください'], ['sanjo', '玲奈さまって呼ぶのやめて、今はただの侍女だから']],
+    m2: [['ojou', '玲奈さま、お怪我だけはなさいませんように'], ['sanjo', 'すみれさんまで……序列とかいいですから。家を出た身なんで']],
+    m3: [['hirose', '三条さん、初陣でしょう。私も。……離れないでね'], ['sanjo', '別に怖くないですけど。……まあ、近くにはいます']] },
   succ: { omiya: '西園寺に代わって、私が南門隊を預かります！', reika: '綾瀬隊長に代わって、私が東門隊の指揮を執ります', shizuka: '西門隊は、久遠が指揮を引き継ぎます', sysop: '宮下大佐に代わり、霧島が指揮を執ります', sec2: '澄お姉さま……！ 本隊は、私が引き継ぎます', kujo: '後方は、九条が預かります' },
 };
 const KS2_RV = { siege: ['えいえい、おう！', '押せ、押せ！', '門を破れ！', '梯子を押さえて！', '上から来る、頭を下げて！', '連弩だ、伏せて！', '連弩の射手を狙って！', '弓隊、放て！', '衛生兵！', '負傷者を後ろへ！'],
@@ -2491,12 +2495,247 @@ const KS2_EN = { call1: ['uk06', 'Soldiers of Britain! The war is over. Lay down
   araRep: ['uk00', 'Eleanor... you of all people. I will answer at the keep, and not before.', 'エレノア……あなたまで。答えは本丸で。それまでは退きません。'],
   cmd1: ['uk00', 'Enough. The castle is yours. I surrender.', 'もう十分です。城はそちらのもの。降伏します。'], cmd2: ['uk00', 'Tell your King my soldiers are not to blame.', '王に伝えて。兵たちに罪はありません。'],
   elThanks: ['uk06', 'Thank you, Your Highness.', 'ありがとうございます、殿下。'] };
+// ---- 名のある娘の状況の台詞（決戦2）。sit: march 進軍／dep 布陣／vol 斉射／fire 撃たれる／mate 隊の仲間が倒れる／gate 門が破れる／tower 渡り板／fall 名のある者が倒れた／near 本丸／sur 降伏／talk 殿に話しかけられた ----
+const KS2_X = {
+  sumi: { march: ['歩調はそのまま。急がなくていい、乱れないことが大事です', 'ことね、各隊の位置を、こまめに知らせて', '千夏、三条さん、列から離れないで。初陣は、まず生きて帰ることです'],
+    dep: ['各隊、配置よし。……殿、ご合図はいつでも', '南は数で押す。東は速さ、西は言葉、北は音。役目を忘れないで'],
+    fire: ['下がりません。この距離の矢は、まず当たりません。落ち着いて', '盾を前へ。殿をお守りして'],
+    mate: ['倒れた人は後方へ。担架を呼んで、列を詰めて', '……止まらないで。その人の分まで、前へ'],
+    gate: ['門が開きました。焦らず、隊ごとに入りなさい', '……よくやりました。続きなさい'],
+    fall: ['……っ。報告を続けて。泣くのは、終わってからです'],
+    near: ['本丸はもうすぐです。最後の一歩で気を抜かないで', '殿、ここまで来ました。あと少しです'],
+    sur: ['降伏を受けます。武器を置いた者には、決して手を出さないで', '……終わりました。皆、よく戦いました'],
+    talk: ['殿、ご無事で何よりです。前には出すぎないでくださいね', 'ご心配なく。全隊の様子は、私が見ています', '殿のお声があると、皆の足が軽くなります', '私ですか？ 平気です。総大将が揺れては、皆が揺れますから', '千夏も三条さんも、初陣にしては上出来です。……本人たちには内緒ですよ'] },
+  sec2: { march: ['伝令、行ってきまーす！ ……あ、まだでした', '澄お姉さま、南門隊、予定どおりです！', '笛の音、いいですね。歩くのが楽しくなります！'],
+    dep: ['東西南北、全部そろいました！ ……たぶん！ いえ、確かです！', '殿、合図の旗はこちらです。振るのは私がやります！'],
+    fire: ['ひゃっ！ い、今の、すごく近かった……！', '大丈夫です、当たってません！ 当たってませんから！'],
+    mate: ['しっかりして！ 担架、こっちです！', 'さっきまで、一緒に歩いてたのに……'],
+    gate: ['門が開きました！ みんな、続いて続いて！'],
+    fall: ['……う、嘘。そんな……っ。いえ、泣いてません、走ります！'],
+    near: ['あと少し、あと少しです！ 本丸、見えてます！'],
+    sur: ['こ、降伏……？ 本当に？ ……やった、やりました、澄お姉さま！'],
+    talk: ['殿！ 伝令なら任せてください、足は速くないですけど！', '澄お姉さま、ずっと地図を見てるんです。たまには休んでほしいなあ', '怖くないかって？ ……ちょっとだけです。ちょっとだけ', '千夏さんと三条さん、さっき二人で水を分け合ってました。仲良しです'] },
+  fumi: { march: ['東門隊、ここから回り込みます。足元、ぬかるんでるので気をつけて', '的が大きいのは助かりますね。城壁は外しようがありませんから'],
+    dep: ['梯子は三本。担ぎ手は四人ずつ、交代も決めてあります', '弓隊、構えて。私が放てと言うまで、指は離さないで'],
+    vol: ['弓隊、放て！ ……もう一度、放て！', '上の胸壁、右から三つ目。そこを狙って'],
+    fire: ['当たりませんよ、その腕じゃ。……でも頭は下げておいて', '撃ち返して。黙らせれば、梯子が掛けられます'],
+    mate: ['後ろへ運んで。……大丈夫、すぐ手当てしてもらえるから', 'ひとり倒れたら、ふたりで埋める。列を詰めて'],
+    gate: ['東門、開きました。中へ。走りすぎないで', '的は外さないって、言ったでしょう'],
+    fall: ['……っ。今は数えない。終わってから、ちゃんと数えます'],
+    near: ['あと少し。ここで転ぶ人は、私が笑いますからね'],
+    sur: ['降伏、ですね。……ふう。弦を緩めていいですよ、皆さん'],
+    talk: ['殿、東門まで見に来てくださったんですか。……物好きですね', '澄さんは顔に出さないけど、たぶん一番緊張してます', '千夏さん、張り合ってくるんですよ。可愛いでしょう', '的は私が外しませんけど、殿は流れ矢に気をつけて'] },
+  hirose: { march: ['初陣だからって、甘く見ないでくださいね', '三条さん、靴ひも、ほどけてる。……ほら、結んであげるから止まって'],
+    dep: ['……手が冷たい。平気、平気です', '三条さん、私の後ろにいて。……べ、別に心配してるわけじゃないから'],
+    fire: ['きゃっ……！ ち、違います、今のは驚いただけです', '頭、下げて！ 三条さんも！'],
+    mate: ['しっかり！ 目を開けて……担架、こっちです！', '……私、まだ立ってる。だったら、立ってる分だけ働きます'],
+    gate: ['門が開いた……！ 澄さん、見ました？ 見ましたよね！'],
+    fall: ['……嘘でしょう。……っ、だめ、今は泣かない'],
+    near: ['ここまで来たら、最後まで行きます。澄さんより先に'],
+    sur: ['終わった……の？ ……三条さん、ほら、終わったって。もう大丈夫'],
+    talk: ['殿、ちゃんとお水飲みました？ 顔、ほこりだらけですよ', '褒めないでください。……む、むっとしてません', '三条さん、強がってるけど手が震えてるんです。私が見てます', '初陣の感想ですか？ ……思ってたより、ずっと音が大きいです'] },
+  sanjo: { march: ['歩くの長くないですか。……いや、文句じゃないです、確認です', 'あー、面倒。……でも帰るのはもっと面倒なんで、行きます', '殿、いとこだからって特別扱いしないでくださいね'],
+    dep: ['殿、そこ立ってると当たりますよ', '……別に緊張とかしてないです。指が勝手に冷たいだけ'],
+    fire: ['うわ、近っ。……はい、平気。全然平気なんで', '頭下げてって言われても、もう下げてますって'],
+    mate: ['……ちょっと、起きてってば。……担架！ こっち、早く！', '面倒だけど、ここで引いたらもっと面倒なんで。行きます'],
+    gate: ['開いた。……じゃ、行きますか。誰も行かないなら私が先に'],
+    fall: ['……は？ 嘘でしょ。……いい、後で。今は前だけ見る'],
+    near: ['もうちょいで終わりですね。終わったら、ちょっと寝ていいですか'],
+    sur: ['……終わった？ はあ……膝、今になって震えてきた。見ないでくださいね'],
+    talk: ['殿、いとこだから話しかけやすいとか思ってます？ ……まあ、いいですけど', '家を出た身なんで、序列とかいいです。普通に扱ってください', '怖いかって？ ……聞かないでくださいよ、そういうの', '広瀬さん、世話焼きすぎ。……まあ、助かってますけど'] },
+  ojou: { march: ['南門隊、参りますわよ。急がず、乱れず、でございます', '玲奈さま、列の外へお出になってはいけませんわ'],
+    dep: ['破城槌は中央、攻城塔は三基。左右に広く構えましょう', '数は力でございます。広く、厚く、同時に参りますわ'],
+    vol: ['弓隊、放ちなさいませ', '二の列、前へ。……放ちなさいませ'],
+    fire: ['まあ、無作法な矢ですこと。……皆さま、竹束の陰へ', 'わたくしは平気ですわ。しのぶ、そんなに前に出なくてよろしくてよ'],
+    mate: ['お運びして。……あの方のお名前、わたくしは忘れませんわ', '列をお詰めになって。悲しむのは、あとでございます'],
+    gate: ['南の門、開きましたわ。ひなた、皆さまを中へ', '破城槌の皆さま、ご苦労さまでございました'],
+    tower: ['渡り板が下りましたわ。塔の皆さま、城壁へお渡りなさいませ', '塔が着きましたわね。……数の勝ちでございます'],
+    fall: ['……まあ。……いえ、取り乱してはなりませんわね。続けましょう'],
+    near: ['本丸でございますわ。殿、もう少しのご辛抱を'],
+    sur: ['降伏を、お受けいたしますわ。……兵の皆さまに、お水を'],
+    talk: ['殿、南門は数が多うございますから、ご安心くださいませ', 'わたくしの話し方、遅うございますか？ ……戦場では、少し急ぎますわ', '玲奈さまは昔から面倒がりで……でも、いざとなると誰より先に動かれる方ですの', 'ひなたがいてくれますもの。南門は大丈夫でございます'] },
+  omiya: { march: ['ほら、歩調！ そこ、おしゃべりしない！ 勤務中です！', '玲奈さま、本隊の列から出ちゃだめですってば！'],
+    dep: ['押し手、前へ！ 交代の順番、頭に入れておいて！', '塔の組は塔の後ろ！ 自分の塔、間違えないでね！'],
+    vol: ['弓、放て！ 休まない、次！'],
+    fire: ['うわっと！ ……へへ、今のは避けたもんね！', '頭下げて！ 竹束から顔出さない！'],
+    mate: ['担架ー！ こっち一人！ ……大丈夫、すぐ運ぶから', '押し手が倒れた、次の人、代わって！'],
+    gate: ['開いたあ！ 南門隊、行くよ！ 遅れない！', 'やった、すみれ！ 門、破れたよ！'],
+    tower: ['渡り板、下りた！ 塔の組、渡れ渡れ！', '塔の上、押さないで！ 一人ずつ！'],
+    fall: ['……くっ。止まらない！ 止まったら、あの子に怒られる！'],
+    near: ['あと一押し！ ここで気を抜いたら承知しないからね！'],
+    sur: ['降伏だって！ ……はああ、よかったあ。みんな、無事？'],
+    talk: ['殿！ 南門、すっごい人数でしょ？ 押し負けません！', 'すみれ、昔は木登り下手だったんですよ。今は塔を三つも押してますけど', '玲奈さま、全然言うこと聞いてくれないんです。殿からも言ってください！', '勤務中です！ ……でも、殿とならちょっとだけ話します'] },
+  reika: { march: ['ぐずぐずしないで。東門まで走るわよ', '梯子が重い？ 文句は城壁の上で言いなさい'],
+    dep: ['梯子の組、私の合図で走りなさい。遅れた子は置いていくわよ'],
+    vol: ['撃ちなさい！ 胸壁の上、顔を出した子から！'],
+    fire: ['その程度？ 当てたいなら、もっと狙いなさいな', '下がらない！ 下がったら余計に狙われるわよ'],
+    mate: ['運んで！ ……あなたの分は、私が上まで持っていく', '一人倒れたくらいで足を止めない！'],
+    gate: ['東門、開いたわ！ 突っ込みなさい！'],
+    fall: ['……ふざけないで。こんな所で……っ。いいわ、倍にして返す'],
+    near: ['本丸よ！ 最後まで、私の前を走りなさい！'],
+    sur: ['降伏？ ……ふん、賢明ね。武器は丁寧に置かせなさい'],
+    talk: ['見に来たの？ だったら、私が一番に上るところを見ていなさい', '文乃は甘いのよ。……でも、矢は外さないから許してあげる', '殿、前に出すぎ。私の邪魔だけはしないでちょうだい'] },
+  shizuka: { march: ['西門隊、静かに。声を出すのは、撃つ時だけです', '足音をそろえて。……そう、それでいい'],
+    dep: ['マスケットの後ろへ。撃ち方用意、まだ撃たないで', 'エレノアさんの呼びかけが終わるまで、待ちます'],
+    vol: ['撃て。……弾込め、急いで。慌てないで'],
+    fire: ['……落ち着いて。音ほどには当たりません', '伏せて。煙が晴れるまで動かないで'],
+    mate: ['後ろへ。……大丈夫、あなたは十分やりました', '列を詰めて。間を空けると狙われます'],
+    gate: ['西門、開きました。……銃を置いた人には、手を出さないで'],
+    fall: ['…………。続けます。今は、それしかできません'],
+    near: ['あと少しです。最後まで、静かに確実に'],
+    sur: ['降伏、確認しました。……皆さん、よく耐えました'],
+    talk: ['殿。……ここは撃ち合いになります。お下がりください', 'エレノアさんの言葉で、何人も銃を置きました。言葉も武器です', '視聴覚室の指定席、戦が終わったら空けておいてくださいね'] },
+  kujo: { march: ['後方、担架は八台。手当ての場所は丘の裏に決めてあります'],
+    dep: ['負傷者はこちらへ。歩ける人は自分で来てください'],
+    fire: ['後方まで矢が届くのね。……幕を張って、手当てを続けます'],
+    mate: ['息はあります。運んで。……次の人'],
+    gate: ['門が破れたなら、怪我人も増えます。担架を前へ'],
+    fall: ['……そう。手は止めません。止めたら、もっと失います'],
+    near: ['もう少しで終わるわ。手当ての手は、最後まで止めない'],
+    sur: ['降伏ね。……向こうの怪我人も、こちらで診ます'],
+    talk: ['殿、お怪我は？ ……ないなら結構。後ろにいてください', '外科医五年でも、戦場は初めてよ。手順は同じ。落ち着いてやるだけ', '西園寺さんや大宮さんより、私は少し遠い親戚。でも、診る手は同じです'] },
+  sec4: { march: ['北門隊、遠回りになります。遅れても構いません、数を減らさないで'],
+    dep: ['太鼓の位置、旗の位置、記録しました。始めましょう'],
+    fire: ['……被弾なし。記録を続けます'],
+    mate: ['一名、後送。名前は控えました'],
+    gate: ['門の開いた時刻、控えました。……北は、引きつけ役で十分です'],
+    fall: ['……記録します。忘れないために'],
+    near: ['本丸。……ここまでの損害、思ったより少ないです'],
+    sur: ['降伏、確認。時刻を記録しました'],
+    talk: ['殿、北は陽動です。守り手を引きつけるのが、私たちの仕事です', '忠義と正確な記録。……それしか取り柄がないので', '霧島さんの読みは、いつも当たります。今日も'] },
+  sec3: { march: ['矢の残り、一人あたり二十四本。足りています'],
+    dep: ['荷車三台、前へ出しました。矢と弾は十分です'],
+    fire: ['後方は安全……とは言い切れませんね。荷車の陰に'],
+    mate: ['担架、二台目を出します。九条先生へ'],
+    gate: ['門が開いたなら、補給を前へ。荷車、続いて'],
+    fall: ['……数字だけ見ていれば、平気だと思っていました'],
+    near: ['残りの矢、まだ三割あります。最後まで持ちます'],
+    sur: ['降伏。……向こうの兵の分の食事も、計算に入れます'],
+    talk: ['殿、補給は計算どおりです。ご心配なく', '船の設計と同じです。余裕を二割、持たせておくんです'] },
+  sysop: { march: ['北へ回ります。城の見張りの目、こちらに向いています'],
+    dep: ['太鼓を叩けば、守り手が北に寄ります。読みどおりなら'],
+    fire: ['弓の届く距離です。旗持ちは土塁の陰へ'],
+    mate: ['一人、後ろへ。……陽動でも、痛いものは痛いですね'],
+    gate: ['南と東の門が開けば、北の守りは薄くなります'],
+    fall: ['……情報、更新します。……すみません、少し待って'],
+    near: ['守り手の動き、止まりました。もう指揮が届いていません'],
+    sur: ['降伏。……殿、パスワードを変えるのは、帰ってからで結構です'],
+    talk: ['殿のパスワード、そろそろ変えてください。……今言うことじゃないですね', '守り手が北に寄っています。陽動、効いています'] },
+  flute: { march: ['行進曲、もう一回いきますよ！ 歩調、合わせて！', '笛は私ひとりなので、ちょっと寂しいですけど……がんばります！'],
+    dep: ['布陣、完了ですね。笛はお休み、耳は起きてます'],
+    fire: ['わわっ……！ 笛は無事です！ 私も無事です！'],
+    mate: ['……音が、ひとつ減っちゃった'],
+    gate: ['門が開いた音、ここまで聞こえました！'],
+    fall: ['……っ。笛、吹けない。……ううん、吹きます'],
+    near: ['勝ったら、凱旋の曲、吹かせてくださいね'],
+    sur: ['降伏！ ……凱旋の曲、練習しておいてよかったあ'],
+    talk: ['殿、皆の足音、そろってますよ。音で分かるんです', '音で人の気分を読むのが特技なんです。殿は……ちょっと緊張してますね？'] },
+  shinobu: { march: ['西園寺様の右は、私が歩きます'],
+    dep: ['西園寺様、ここから前へは私が先に'],
+    fire: ['矢筋は見えています。問題ありません'],
+    mate: ['……下がって。私が前を埋めます'],
+    gate: ['門が開きました。西園寺様、お足元に気をつけて'],
+    tower: ['塔に上る組、私が先頭を見ます'],
+    fall: ['……っ。西園寺様は、私が守ります。何があっても'],
+    near: ['本丸です。最後まで、お側を離れません'],
+    sur: ['降伏、ですか。……刀を納めます'],
+    talk: ['殿。西園寺様のお側を離れるわけにはいきません。手短に', '早撃ちと居合は、守るためのものです'] },
+  chikage: { march: ['南門隊、四百五十名。点呼、合っています'],
+    dep: ['塔の組、三つに分けました。名簿もそろえてあります'],
+    fire: ['ひゃ……っ。だ、大丈夫です、記録は無事です'],
+    mate: ['……お名前、控えました。後で必ず、お家に'],
+    gate: ['門の破れた時刻、記録しました'],
+    tower: ['一基目、着きました。……二基目、三基目も！'],
+    fall: ['……っ、西園寺様に、なんとお伝えすれば……'],
+    near: ['本丸まで、あと少しです'],
+    sur: ['降伏の文書、すぐに用意いたします'],
+    talk: ['殿、西園寺様の赤ペン、本当に容赦ないんですよ。……内緒です', '慎重すぎると言われます。でも、戦場ではそれくらいが丁度いいんです'] },
+  akari: { march: ['伝令、行ってきます！ 足の速さは大宮さまの次です！', '歩くの楽しいですね！ ……え、楽しくない？'],
+    dep: ['殿、旗、持ちましょうか！ 腕相撲なら負けません！'],
+    fire: ['うわっ、来た来た！ 伏せまーす！'],
+    mate: ['つかまって！ 私、力持ちだから、背負っていきます！'],
+    gate: ['門が開いたって！ 伝えてきます！'],
+    fall: ['……う、うそ。……走ります、走って伝えます！'],
+    near: ['あと少し！ 本丸まで競走ですね！'],
+    sur: ['降伏！？ やったあ！ 皆に伝えてきます！'],
+    talk: ['殿！ 何でも走って届けます！', '親戚じゃないです！ たぶん！ でも殿の味方です！'] },
+  hiyori: { march: ['列の皆さんのお名前、半分は覚えました'],
+    dep: ['各隊の隊長さんのお顔、全部覚えています。伝令、任せてください'],
+    fire: ['きゃっ……。殿、お怪我は？ ……よかった'],
+    mate: ['……あの人のお名前、覚えています。ちゃんと、覚えています'],
+    gate: ['門が開きました！ 白瀬さまにお伝えします'],
+    fall: ['……っ。……書類、ちゃんと届けます。最後まで'],
+    near: ['もうすぐですね。……殿、お水、もう一杯どうぞ'],
+    sur: ['降伏……。よかった……本当に、よかった……'],
+    talk: ['顔と名前は一度で覚えるんです。殿のお顔は、とっくに', '白瀬さま、綾瀬さま、大宮さま……書類運びは毎日です'] },
+  // エレノア：英語で話し、字幕は日本語（[英語, 日本語]）
+  uk06: { march: [['Keep the line steady. We are not here to frighten them, only to end this.', '列を乱さないで。脅すためではなく、終わらせるために来たのです。']],
+    dep: [['West gate company, hold your fire until I have spoken.', '西門隊、私が話し終えるまで撃たないで。']],
+    fire: [['Steady. They are frightened, not cruel.', '落ち着いて。彼らは怯えているだけ。残酷なのではありません。']],
+    mate: [['Carry her back. Gently.', '後ろへ運んで。そっとね。']],
+    gate: [['The gate is open. No one harms a soldier who has laid down her arms.', '門が開きました。武器を置いた兵には、誰も手を出さないこと。']],
+    fall: [['No. Not now. Keep going.', '……そんな。今は駄目。進みましょう。']],
+    near: [['The keep. Her Highness is close. Let me speak to her first.', '本丸です。殿下はすぐそこに。まず私に話させて。']],
+    sur: [['It is over. Thank you, all of you.', '終わりました。皆さん、ありがとう。']],
+    talk: [['Your Majesty. Thank you for this chance to bring my people home.', '陛下。仲間を連れ帰る機会をくださって、感謝しています。'], ['Arabella is proud, not wicked. Please remember that.', 'アラベラは誇り高いだけで、悪い人ではありません。覚えておいてください。']] },
+};
+// 名のある者が倒れた時、その人をよく知る者の声
+const KS2_XF = {
+  ojou: [['omiya', 'すみれ！？ ……っ、すみれ！ ……南門隊、私が預かる！'], ['shinobu', '西園寺様……！'], ['sanjo', 'すみれさん……。……何やってんの、私が先に行けばよかった']],
+  omiya: [['ojou', 'ひなた……？ ……ひなた。……いいえ、続けますわ'], ['sanjo', 'ひなたさん……嘘でしょ'], ['sec2', '大宮さまが……！']],
+  sumi: [['sec2', '澄お姉さま……！ ……本隊は、私が……私が！'], ['hirose', '澄さん！？ 嘘、負けないって言ったのに……！'], ['fumi', '……澄さん。……東門、手を止めないで']],
+  sec2: [['sumi', 'ことね……。……っ。伝令を、誰か代わりに'], ['hirose', 'ことねちゃん！ しっかりして、ことねちゃん！'], ['fumi', 'ことね……。……後で、ちゃんと叱ってあげるから']],
+  fumi: [['reika', '文乃！？ ……東門隊、私に続きなさい！'], ['sumi', '文乃……。……東門は、白石大佐に'], ['hirose', '文乃さん……しくじらないでって、言ったのに']],
+  hirose: [['sanjo', '広瀬さん！？ ……ちょっと、世話焼くだけ焼いといて、何倒れてるの……！'], ['sumi', '千夏……！ ……担架を、早く'], ['sec2', '千夏さん！']],
+  sanjo: [['hirose', '三条さん！ 三条さん、しっかり！ 目を開けて！'], ['omiya', '玲奈さま！？ ……だから前に出ないでって……！'], ['ojou', '玲奈さま……。……わたくしが、お止めすべきでした']],
+  reika: [['fumi', '麗華さん……。……あとは私が、上まで持っていきます']],
+  shizuka: [['sumi', '久遠中佐が……。西門は、エレノアさんに']],
+  sec4: [['sysop', '宮下大佐……。……北門隊、霧島が預かります。陽動は続けます']],
+  sysop: [['sec4', '霧島さん……。……記録します。忘れません']],
+  kujo: [['sec3', '九条先生……！ ……手当ての手を止めないで。私が回します']],
+  sec3: [['kujo', '桜井さん……。……補給の計算は……いいえ、続けます']],
+  flute: [['sec2', 'ひびきさん……。笛の音が……']],
+  shinobu: [['ojou', 'しのぶ……。……わたくしを、守ってくださいましたのね'], ['chikage', '氷室さん……！']],
+  chikage: [['ojou', '千景……。……あなたの記録、わたくしが続けますわ']],
+  akari: [['hiyori', '夏目さん……走るの、あんなに速かったのに……']],
+  hiyori: [['akari', 'ひよりちゃん……！ ……伝令、私が二人分走る！']],
+  uk06: [['shizuka', 'エレノアさん……。……西門隊、撃ち方やめ。まず、手当てを']],
+};
+// 門ごとの掛け合い（見ている所で、攻城の途中に一つずつ）。'uk06en' は「英語|日本語」
+const KS2_XG = {
+  S: [[['omiya', 'すみれ、塔が三つって、ちょっと欲張りじゃない？'], ['ojou', '数が多いのですもの。使わなければ、もったいのうございますわ'], ['omiya', '……そういうとこ、昔から変わんないね']],
+    [['chikage', '西園寺様、二基目の押し手が足りません'], ['ojou', 'では、ひなたの組から四人。……しのぶ、伝えてくださる？'], ['shinobu', '承知しました']],
+    [['shinobu', '西園寺様、竹束の列が乱れています'], ['ojou', '構いませんわ。広く散らばれば、矢も散りますもの']]],
+  E: [[['reika', '文乃、梯子はまだ？ 待つのは嫌いなのよ'], ['fumi', '知ってます。だから先に弓で黙らせるんです'], ['reika', '……はいはい。外さないでよ'], ['fumi', '的は私が外しませんけど']],
+    [['fumi', '麗華さん、一番に上るって言ってましたよね'], ['reika', '言ったわ。見てなさい']]],
+  W: [[['shizuka', 'エレノアさん、本当に話だけで開くと思いますか'], ['uk06en', 'I do not know. But I must try.|分かりません。でも、試さなければ。'], ['shizuka', '……分かりました。撃つのは、そのあとで']],
+    [['shizuka', '銃を置いた人がいます。……撃たないで、そのまま']]],
+  N: [[['sysop', '宮下大佐、守り手が北に寄ってきました'], ['sec4', '記録しました。……太鼓、もっと大きく'], ['sysop', '了解。旗も振らせます']],
+    [['sec4', '霧島さん、私たちは門を破らなくていい'], ['sysop', 'ええ。引きつけて、生きて帰る。それが仕事です']]],
+  H: [[['hirose', '三条さん、顔色悪い。水、飲んで'], ['sanjo', '平気です。……いや、もらいます'], ['hirose', 'ほら。初陣なんて、みんなそうだから'], ['sanjo', '広瀬さんも初陣でしょ'], ['hirose', '……う、うるさい']],
+    [['sec2', '澄お姉さま、千夏さんと三条さん、ずっと一緒にいますね'], ['sumi', 'いいことです。初陣同士、支え合えるなら']],
+    [['sanjo', '広瀬さん、さっきから私の世話ばっかり'], ['hirose', '放っておけないの。そういう性分なの'], ['sanjo', '……ありがとうございます。面倒なんで一回しか言いませんけど']],
+    [['flute', '殿、もう一曲どうですか？'], ['akari', '私、歩きながら踊れます！'], ['hiyori', '夏目さん、列から出ないでくださいね']]],
+};
 function ks2VoiceFile(t, vk) { const M = ((window.VOICE_KS2 || {}).byText || {})[t]; if (!M || !M.length) return null; const L = (vk && M.find(x => x.v === vk)) || M[(Math.random() * M.length) | 0]; return L.file; }
 function ks2Say(e, t, prio, vk) {   // 声と字幕。e が無ければ本隊のそばの声として
   const p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + Math.abs(p.y - player.pos.y + 1.6) * 0.5;
   const f = ks2VoiceFile(t, vk || (e && e.ks2Vk)); if (f && VoicePack.ok) Talk.as(e || null, () => VoicePack.play(f, Math.min(d, 55), prio == null ? 1.4 : prio, 1));
   if (d < 45 || (prio || 0) >= 1.8) { const nm = e ? (e.ks2Title || (e.prof && e.prof.name) || '') : ''; subtitle(t); const el = $('subtitle'); if (el) el.textContent = (nm ? nm + '「' : '「') + t + '」'; }
 }
+function ks2LnOk(k, cd) { return !KS2.lnK || KS2.lnK[k] == null || KS2.t - KS2.lnK[k] > cd; }
+function ks2EnT(e, en, ja, prio, dmax) { const f = ks2VoiceFile(en, 'uk06'), p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > (dmax || 50) && (prio || 0) < 1.8) return; if (f && VoicePack.ok) VoicePack.play(f, Math.min(d, dmax || 50), prio || 1.6, 1); popup((e ? (e.ks2Title || e.prof.name) + '：' : '') + en + ' ／ ' + ja); popupTimer = Math.max(popupTimer, 4); }
+function ks2Ln(k, sit, prio, near) {   // 名のある娘の状況の台詞（同じものを続けて言わない）
+  const L = KS2_X[k] && KS2_X[k][sit]; if (!L || !L.length) return false; const e = KS2.by && KS2.by[k]; if (!e || !isUp(e)) return false;
+  if (near && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) > near) return false;
+  const U = KS2.lnU || (KS2.lnU = {}), used = U[k + sit] || (U[k + sit] = new Set()); let c = L.map((_, i) => i).filter(i => !used.has(i)); if (!c.length) { used.clear(); c = L.map((_, i) => i); }
+  const i = c[(Math.random() * c.length) | 0]; used.add(i); (KS2.lnK || (KS2.lnK = {}))[k] = KS2.t; const q = L[i];
+  if (Array.isArray(q)) ks2EnT(e, q[0], q[1], prio); else ks2Say(e, q, prio == null ? 1.4 : prio, KS2_VK[k]); return true; }
+function ks2LnSeq(L, t0, gap) { (L || []).forEach((q, i) => KS2.later.push([KS2.t + t0 + i * (gap || 4.3), () => { if (!KS2.on || state !== 'play') return; const e = KS2.by[q[0] === 'uk06en' ? 'uk06' : q[0]]; if (!e || !isUp(e)) return; (KS2.lnK || (KS2.lnK = {}))[q[0]] = KS2.t; if (q[0] === 'uk06en') { const [en, ja] = q[1].split('|'); ks2EnT(e, en, ja, 1.7); } else ks2SayK(q[0], q[1], 1.7); }])); }
+function ks2Named(pred) { const out = []; for (const k in KS2.by) { const e = KS2.by[k]; if (e && isUp(e) && (!pred || pred(e, k))) out.push(k); } return out; }
+function ks2Pick(L) { return L.length ? L[(Math.random() * L.length) | 0] : null; }
+function ks2TalkNear() { if (!KS2.on || !KS2.by) return null; let best = null, bd = 3.2; for (const k in KS2.by) { const e = KS2.by[k]; if (!e || !isUp(e) || e.ks2Hid || !KS2_X[k]) continue; const p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < bd && Math.abs(p.y - (player.pos.y - 1.6)) < 1.5) { bd = d; best = e; } } return best; }
+function ks2Talk() { const e = ks2TalkNear(); if (!e) return false; const k = e.ks2Named; e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); e.state = 'idle'; e.moving = false; ks2Ln(k, 'talk', 2); return true; }   // 殿が話しかける（E／「話す」）
 function ks2SayK(k, t, prio) { const e = KS2.by && KS2.by[k]; if (e && !isUp(e)) return; ks2Say(e || null, t, prio, KS2_VK[k]); }
 function ks2En(key, e, prio, dmax) { const L = KS2_EN[key]; if (!L) return; const f = ks2VoiceFile(L[1], L[0]), p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z);
   if (f && VoicePack.ok) VoicePack.play(f, Math.min(d, dmax || 50), prio || 1.9, 1); popup((e ? (e.ks2Title || e.prof.name) + '：' : '') + L[1] + ' ／ ' + L[2]); popupTimer = Math.max(popupTimer, 4.2); }
@@ -2622,7 +2861,7 @@ function ks2TwOf(e) { const T = KS2.towers; if (!T || e.ks2U !== KS2.U.S || e.ks
 function ks2Equip(dt) { const R = KS2.ram, T = KS2.tower; if (!R) return;
   for (const E of [R, ...KS2.towers]) { const dz = E.g.position.z - E.zp; if (E.zp != null && Math.abs(dz) > 1e-4) { for (const w of E.wheels) w.rotation.x += dz / E.r; if (E.fl) { const x = E.g.position.x; if (player.pos.y > 0.4 && Math.abs(player.pos.x - x) < 2.6 && player.pos.z > E.zp - 2.4 && player.pos.z < E.zp + 3.2) player.pos.z += dz; ks2TwSync(E); } } E.zp = E.g.position.z; }   // 車輪が回る（上にいる殿も一緒に動く）
   R.log.rotation.x = clamp(R.log.position.z * 0.18, -0.25, 0.25) + Math.sin(KS2.t * 1.3) * 0.015; R.log.position.z = R.log.position.z;   // 打つたびに揺れる
-  for (const T of KS2.towers) if (T.at) { T.brA = Math.max(0.03, T.brA - dt * 1.6); T.br.rotation.x = T.brA; if (!T.brSnd && T.brA <= 0.031) { T.brSnd = 1; ks2GateThud({ x: T.g.position.x, z: KS2_W + 1 }, 0.7); const x = T.g.position.x; floors.push(T.bf = { x0: x - 1.2, x1: x + 1.2, z0: KS2_W + KS2_T - 0.5, z1: T.g.position.z - 1.9, y: KS2_H }); } }   // 渡り板が城壁へ倒れる（殿も渡れる）
+  for (const T of KS2.towers) if (T.at) { T.brA = Math.max(0.03, T.brA - dt * 1.6); T.br.rotation.x = T.brA; if (!T.brSnd && T.brA <= 0.031) { T.brSnd = 1; ks2GateThud({ x: T.g.position.x, z: KS2_W + 1 }, 0.7); { const ti = KS2.towers.indexOf(T), sp = [['ojou', 'chikage'], ['omiya', 'shinobu'], ['chikage', 'omiya']][ti] || ['omiya']; const k = sp.find(k => KS2.by[k] && isUp(KS2.by[k])); if (k && KS2.view === 'S') KS2.later.push([KS2.t + 0.8, () => ks2Ln(k, 'tower', 1.7)]); } const x = T.g.position.x; floors.push(T.bf = { x0: x - 1.2, x1: x + 1.2, z0: KS2_W + KS2_T - 0.5, z1: T.g.position.z - 1.9, y: KS2_H }); } }   // 渡り板が城壁へ倒れる（殿も渡れる）
   if (KS2.ph !== 'siege' && KS2.ph !== 'keep') return;
   for (const L of KS2.ladders) { if (L.ph === 'lie' && KS2.t - KS2.goT > 1) L.ph = 'carry';
     if (L.ph === 'carry') { L.car = L.car.filter(e => isUp(e) && e.ks2Carry === L);
@@ -2658,9 +2897,9 @@ function ks2PxShadow() { if (KS2.pxSh && KS2.pxSh.parent) return KS2.pxSh; const
 function ks2PxKill(o) { if (!o || !o.alive) return; o.alive = false; o.laid = false; o.ry = rand(0, Math.PI * 2); if (o.team === 'blue') KS2.pxLostA++; else KS2.pxLostD++; }
 // ---- 人：攻め手の隊と守り手 ----
 function ks2Mk(x, z, kind, team, gid, prof, y) { const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: { special: true } }); if (!e) return null;
-  if (prof) Object.assign(e.prof, prof); if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
+  if (prof) { Object.assign(e.prof, prof); e.P = PERS[e.prof.pers] || e.P; } if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
   e.ks2 = true; e.passive = true; e.sq = null; e.state = 'idle'; if (e.mk) e.mk.visible = false; e.shadow.visible = false; e.hp = e.hpMax = 3; e.dmg = 8; e.ks2Y = y || 0; e.baseY = e.ks2Y; e.s.position.y = e.ks2Y; e.ks2T = rand(0, 1); e.ks2Cd = rand(1, 5); e.ks2V = [0, 0]; e.speed = rand(2.2, 2.6); return e; }
-const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl27', 'girl28', 'girl29', 'girl30', 'girl31', 'girl34', 'girl37', 'girl45', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
+const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl27', 'girl28', 'girl29', 'girl30', 'girl31', 'girl34', 'girl37', 'girl45', 'girl58', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
 function ks2KLook() { const off = KS2_KINGDOM_OFF(); const L = (KS2.kLooks = KS2.kLooks || Object.keys(GIRLS).filter(k => /^(mob\d+|girl\d+)$/.test(k) && !off.has(k) && GIRLS[k].front)); return L[(Math.random() * L.length) | 0]; }
 // ---- v g：一人ひとり（名前・性格・身長・持ち物）と分隊 ----
 const KS2_UK_FN = ['アリス', 'ベアトリス', 'シャーロット', 'デイジー', 'イーディス', 'フローレンス', 'グレース', 'ハリエット', 'イザベル', 'ジェーン', 'キティ', 'ルーシー', 'メアリー', 'ノラ', 'オリーヴ', 'フィービー', 'ローズ', 'ソフィア', 'ヴァイオレット', 'アグネス', 'クララ', 'エマ', 'ハンナ', 'リディア', 'マチルダ', 'エイダ', 'エヴリン', 'アイヴィ', 'メイベル', 'ドロシー'];
@@ -2751,15 +2990,15 @@ function ks2BarPick() { const L = [], cx = camera.position.x, cz = camera.positi
 function ks2AreaUI() { const el = $('ks2Area'); if (!el) return; el.style.display = KS2.on && state === 'play' ? 'flex' : 'none'; for (const b of el.children) b.classList.toggle('on', b.dataset.a === KS2.view); }
 function ks2SqLead(Q) { if (!isUp(Q.ld)) { const nx = Q.mem.find(isUp); if (nx && Q.ld) { Q.ld = nx; nx.tagKey = null; } } return Q.ld; }
 function ks2SqTick(dt) { if (!KS2.sq) return;
-  for (const s of ['S', 'E', 'W']) { if (KS2.supp[s]) continue; const W = KS2.zone[s + ':wall'], r = W ? W.real : []; const up = r.filter(isUp).length; if (KS2.volN[s] >= 14 * Math.max(1, KS2.sq.filter(Q => Q.U.side === s && Q.k === 'arch').length / 3) || (r.length && up < r.length * 0.72) || KS2.t - KS2.goT > 80) { KS2.supp[s] = KS2.t; const Q = KS2.sq.find(Q => Q.U.side === s && Q.k === 'mel' && isUp(Q.ld)); if (Q) ks2Say(Q.ld, KS2_RV.siege[1], 1.3); } }
+  for (const s of ['S', 'E', 'W']) { if (KS2.supp[s]) continue; const W = KS2.zone[s + ':wall'], r = W ? W.real : []; const up = r.filter(isUp).length; if (KS2.volN[s] >= 14 * Math.max(1, KS2.sq.filter(Q => Q.U.side === s && Q.k === 'arch').length) || (r.length && up < r.length * 0.72) || KS2.t - KS2.goT > 80) { KS2.supp[s] = KS2.t; const Q = KS2.sq.find(Q => Q.U.side === s && Q.k === 'mel' && isUp(Q.ld)); if (Q) ks2Say(Q.ld, KS2_RV.siege[1], 1.3); } }
   for (const Q of KS2.sq) { const L = ks2SqLead(Q); const up = Q.mem.filter(isUp); Q.up = up.length;
     if (!Q.ret && up.length && up.length < Q.n0 * 0.5 && Q.k !== 'bun') { Q.ret = KS2.t; if (L && isUp(L)) ks2Say(L, KS2_RV.siege[9], 1.1); }   // 大きく減った分隊は下がって立て直す
     if (Q.ret && KS2.t - Q.ret > 18) { const o = KS2.sq.filter(o => o !== Q && o.k === Q.k && o.U === Q.U && !o.ret && o.up).sort((a, b) => a.up - b.up)[0]; if (o) { for (const e of up) { e.ks2Sq = o; o.mem.push(e); e.tagKey = null; } Q.mem = []; o.n0 = Math.max(o.n0, o.mem.filter(isUp).length); } else { Q.n0 = up.length; } Q.ret = 0; }
     if (Q.k !== 'arch' || Q.ret || !up.length || KS2.gates[Q.U.side].open) continue; if (Q.U.k === 'W' && !KS2.wFire) continue;
-    if ((Q.volT -= dt) > 0) continue; Q.volT = 2.3; const rk = Q.vol % Q.rows; Q.vol++; KS2.volN[Q.U.side]++;
+    if ((Q.volT -= dt) > 0) continue; Q.volT = 2.3; const rk = Q.vol % Q.rows; Q.vol++; KS2.volN[Q.U.side]++; if (KS2.volN[Q.U.side] === 1 || KS2.volN[Q.U.side] % 60 === 0) { const k = ks2Pick(ks2Named((e, k) => e.ks2U === Q.U && KS2_X[k] && KS2_X[k].vol)); if (k) ks2Ln(k, 'vol', 1.6, 60); }
     const T = KS2.live.orange.filter(o => o.ks2Side === Q.U.side && o.ks2Y > 5 && Math.abs(o.ks2Y - KS2_H) < 1.5); if (!T.length) continue;
     if (L && isUp(L) && rk === 0 && (!KS2.volSay || KS2.t - KS2.volSay > 25) && Math.hypot(L.s.position.x - player.pos.x, L.s.position.z - player.pos.z) < 40) { KS2.volSay = KS2.t; ks2Say(L, KS2_RV.siege[7], 1.2); }
-    Q.mem.forEach((e, i) => { if (!isUp(e) || i % Q.rows !== rk || e.ks2Push || e.ks2Climb) return; const mp = e.s.position; if (Math.max(Math.abs(mp.x), Math.abs(mp.z)) > KS2_W + KS2_T + 46) return; let t = null, bd = 1e9; for (let q = 0; q < 4; q++) { const c = T[(Math.random() * T.length) | 0], dd = Math.hypot(c.s.position.x - mp.x, c.s.position.z - mp.z); if (dd < bd) { bd = dd; t = c; } } ks2Shoot(e, t, e.ks2Role); });   // 射程の内から、近くの城兵を狙う
+    Q.mem.forEach((e, i) => { if (!isUp(e) || i % Q.rows !== rk || e.ks2Push || e.ks2Climb) return; const mp = e.s.position; if (Math.max(Math.abs(mp.x), Math.abs(mp.z)) > KS2_W + KS2_T + 46) return; let t = null, bd = 1e9; for (let q = 0; q < 4; q++) { const c = T[(Math.random() * T.length) | 0], dd = Math.hypot(c.s.position.x - mp.x, c.s.position.z - mp.z); if (dd < bd) { bd = dd; t = c; } } ks2Shoot(e, t, e.ks2Role, true); });   // 射程の内から、近くの城兵を狙う
     if (Q.vol % (Q.rows * 3) === 0 && Q.d > Q.dMin) Q.d -= 3; } }   // 三巡ごとに少し前へ
 function ks2SqBrain(e, dt, t, U, Q) { const s = U.side, p = e.s.position, i = Q.mem.indexOf(e);
   if (Q.k === 'mel' && KS2.supp[s] && !Q.ret) return false;   // 突撃：門・梯子・攻城塔へ（いつもの動き）
@@ -2838,17 +3077,18 @@ function ks2Walk(e, tx, tz, sp, dt) { const p = e.s.position, V = e.ks2V, dx = t
 const KS2_TRN = 120;
 function ks2TrIM() { if (KS2.trIM && KS2.trIM.parent) return KS2.trIM; const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 0.85, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), KS2_TRN); im.count = 0; im.frustumCulled = false; stageRoot.add(im); const hg = new THREE.ConeGeometry(0.024, 0.12, 4); hg.translate(0, 0.48, 0); im.head = new THREE.InstancedMesh(hg, new THREE.MeshBasicMaterial({ color: 0x6f767e }), KS2_TRN); im.head.count = 0; im.head.frustumCulled = false; stageRoot.add(im.head); return KS2.trIM = im; }   // 矢（尖った鉄の鏃）と弾の筋   // 矢と弾の筋はまとめて一つ
 function ks2Tracer(a, b, col, T, stick) { if (KS2.tr.length >= (LITE ? 40 : KS2_TRN)) { if (stick) ks2Stick(b, b.clone().sub(a).setY(Math.min(-0.3, b.y - a.y)).normalize()); return; } KS2.tr.push({ a, b, t: 0, T, c: col, stick, h: col === 1 ? Math.min(7, 0.8 + a.distanceTo(b) * 0.1) : 0 }); }
-function ks2Shoot(e, t, kind) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z), dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
+function ks2Shoot(e, t, kind, vol) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z), dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
   e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.lungeT = 0.2; e.ks2Act = { k: kind === 'musket' || kind === 'rifle' ? 'gun' : 'aim', t: 0, T: 1.1 };
   const gun = kind === 'musket' || kind === 'rifle', a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.6, 0.6), (t.isPlayer ? tp.y - 0.4 : tp.y + 1.1), tp.z + rand(-0.6, 0.6));
-  const hc0 = (kind === 'xbow' ? 0.11 : gun ? 0.13 : 0.15) * (t.ks2Climb ? 1.3 : 1) * (d > 55 ? 0.25 : d > 40 ? 0.55 : d > 30 ? 0.85 : 1) * (t.ks2Climb && t.ks2Climb.tw && t.ks2Climb.ph === 0 ? 0 : 1) * (!t.isPlayer && t.team === 'orange' && t.ks2Y > 5 ? 0.75 : 1) * (t.ks2Named ? (KS2.ph === 'march' || KS2.ph === 'deploy' ? 0.04 : 0.3) : 1) * (t.ks2Push === 'ram' ? 0.3 : 1) * (!t.isPlayer && t.team === 'blue' && !t.ks2Climb && t.ks2Y < 1 && ks2Cover(t) ? 0.35 : 1), hit = Math.random() < hc0;
+  const hc0 = (kind === 'xbow' ? 0.11 : gun ? 0.13 : vol ? 0.2 : 0.15) * (t.ks2Climb ? 1.3 : 1) * (d > 55 ? 0.25 : d > 40 ? 0.55 : d > 30 ? 0.85 : 1) * (t.ks2Climb && t.ks2Climb.tw && t.ks2Climb.ph === 0 ? 0 : 1) * (!t.isPlayer && t.team === 'orange' && t.ks2Y > 5 ? 0.75 : 1) * (t.ks2Named ? (KS2.ph === 'march' || KS2.ph === 'deploy' ? 0.04 : 0.3) : 1) * (t.ks2Push === 'ram' ? 0.3 : 1) * (!t.isPlayer && t.team === 'blue' && !t.ks2Climb && t.ks2Y < 1 && ks2Cover(t) ? 0.35 : 1), hit = Math.random() < hc0;
   { const sk = e.team === 'blue' ? (e.ks2U ? e.ks2U.k : '?') : 'd' + (e.ks2Side || ''), S = (KS2.st || (KS2.st = {}))[sk] || (KS2.st[sk] = { n: 0, h: 0, d: 0 }); S.n++; S.d += d; if (hit) S.h++; }   // 射撃の記録（試験用）
   if ((dP >= 70 || e.ks2Hid) && !gun && !hit) ks2Stick(new V3(tp.x + rand(-2, 2), (t.isPlayer ? player.pos.y - 1.6 : t.baseY) + 0.12, tp.z + rand(-2, 2)), new V3(tp.x - p.x, -d * 0.6, tp.z - p.z).normalize());
   if (dP < 70 && !e.ks2Hid) { if (gun) { if (KS2.fx > 0) { KS2.fx -= 2; puff(a.clone(), 0xe9e6de, 2, 0.45, 1.0, 1.2); uk2Flash(a, 1, 0.07); } ks2Tracer(a, b, 2, 0.12); const o = Sfx.at(p, 140, 1.1); if (o) Sfx.noiseBurst(0.22, 'lowpass', 2200, 300, 0.55, 1, 0, o); }
     else { if (!hit) { const fx = (tp.x - p.x) / (d || 1), fz = (tp.z - p.z) / (d || 1), k = rand(0.6, 4); b.x += fx * k + rand(-1.2, 1.2); b.z += fz * k + rand(-1.2, 1.2); const gy = t.isPlayer ? player.pos.y - 1.6 : t.baseY; b.y = gy + (gy > 5 && Math.random() < 0.5 ? rand(-2.2, 0.6) : 0.12); }
       ks2Tracer(a, b, 1, Math.min(1.2, 0.25 + d / 45), !hit); if (dP < 30) { const o = Sfx.at(p, 40, 0.6); if (o) Sfx.noiseBurst(0.08, 'bandpass', 1400, 900, 0.18, 3, 0, o); } } }
   const lag = gun ? 0.1 : Math.min(1.2, 0.25 + d / 45);
-  if (hit) KS2.later.push([KS2.t + lag, () => { if (!gun && !t.isPlayer && isUp(t) && dP < 40 && (KS2.stkB = (KS2.stkB || 0) + 1) < (LITE ? 90 : 160)) stickArrow(t, b, b.clone().sub(a)); if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(kind === 'xbow' ? 4 : 6); popup(gun ? '銃弾がかすめた！' : '矢がかすめた！'); } } else if (isUp(t)) { if (t.ks2Climb && !t.ks2Climb.tw) { t.ks2Fall = { t: 0, y0: t.s.position.y }; t.ks2Climb = null; npcSay(t, 'hit', 1); } else damageEnemy(t, 1, p, false, null, null); } }]); }
+  if (!t.isPlayer && t.ks2Named && (hit || Math.random() < 0.06)) KS2.later.push([KS2.t + lag + 0.4, () => { if (isUp(t) && ks2LnOk(t.ks2Named, 28)) ks2Ln(t.ks2Named, 'fire', 1.5, 50); }]);   // 撃たれた名のある娘の声
+  if (hit) KS2.later.push([KS2.t + lag, () => { if (!gun && !t.isPlayer && isUp(t) && dP < 40 && (KS2.stkB = (KS2.stkB || 0) + 1) < (LITE ? 90 : 160)) stickArrow(t, b, b.clone().sub(a)); if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(kind === 'xbow' ? 4 : 6); popup(gun ? '銃弾がかすめた！' : '矢がかすめた！'); } } else if (isUp(t)) { if (t.ks2Climb && !t.ks2Climb.tw) { t.ks2Fall = { t: 0, y0: t.s.position.y }; t.ks2Climb = null; npcSay(t, 'hit', 1); } else damageEnemy(t, vol && !gun ? 2 : 1, p, false, null, null); } }]); }
 // ---- 攻め手の頭脳 ----
 function ks2Cover(t) { if (t.ks2Bun || (t.ks2Sq && t.ks2Sq.k === 'arch' && KS2.bun && KS2.bun.length && !KS2.gates[t.ks2Sq.U.side].open)) return true;   // 竹束の陰
   const p = t.s.position, m = Math.max(Math.abs(p.x), Math.abs(p.z)); if (m < 90.5 || m > 95) return false; const s = ks2Side(p.x, p.z), u = s === 'S' ? p.x : s === 'N' ? -p.x : s === 'E' ? -p.z : p.z; return Math.abs(u) > 4 && Math.abs(u) < 17; }   // 土塁の陰
@@ -2960,7 +3200,7 @@ function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; K
   for (const U of KS2.units) { for (const e of U.mem) { const [x, z] = ks2Slot(e); e.s.position.x = x; e.s.position.z = z; e.ks2Lead = e === U.cmd; } U.mem0 = U.mem.length; U.px0 = U.px.length; ks2PxPlace(U, true); }
   KS2.zone = {}; for (const e of KS2.def) { const z = ks2Zone(e.ks2Side, e.ks2Y === KS2_IH ? 'gal' : e.ks2Role); (KS2.zone[z] = KS2.zone[z] || { real: [], px: [] }).real.push(e); }
   for (const o of KS2.px) if (o.team === 'orange') { const z = ks2Zone(o.side, o.role); (KS2.zone[z] = KS2.zone[z] || { real: [], px: [] }).px.push(o); }
-  showBanner('決戦2「白壁城」', '英国の反乱軍が奪った白壁城へ――全軍、進め'); bannerTimer = 4.5; for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (G) { G.im.visible = false; if (G.dn) G.dn.visible = false; } } KS2.view = null; ks2View('H', true); ks2Seq(KS2_L.hir.m1, 13); ks2Seq(KS2_L.hir.m2, 27); ks2Seq(KS2_L.hir.m3, 40);
+  showBanner('決戦2「白壁城」', '英国の反乱軍が奪った白壁城へ――全軍、進め'); bannerTimer = 4.5; for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (G) { G.im.visible = false; if (G.dn) G.dn.visible = false; } } KS2.view = null; ks2View('H', true); ks2Seq(KS2_L.hir.m1, 13); ks2Seq(KS2_L.hir.m2, 27); ks2Seq(KS2_L.hir.m3, 40); ks2Seq(KS2_L.san.m1, 53); ks2Seq(KS2_L.san.m2, 68); ks2Seq(KS2_L.san.m3, 80);
   if (TEST) window.__ks2 = { KS2, updateKs2, ks2Counts, ks2Spawn };
   setTimeout(() => { if (KS2.on && state === 'play') ks2SayK('sumi', KS2_L.march[0][1], 1.9); }, 2500); setTimeout(() => { if (KS2.on && state === 'play') ks2SayK('flute', KS2_L.march[1][1], 1.6); }, 7000); }
 function ks2Zone(s, r) { const g = r === 'rifle' || r === 'bow' || r === 'xbow' || r === 'wall' ? 'wall' : r === 'gal' ? 'gal' : r === 'res' || r === 'post' ? 'res' : r === 'keep' ? 'keep' : r; return (g === 'keep' ? 'K' : s) + ':' + g; }
@@ -2989,8 +3229,9 @@ function ks2GateOpen(G, why) { if (G.open) return; G.open = true; G.leaf.visible
   for (const sg of [-1, 1]) { const inner = !!KS2.igates[G.s] && KS2.igates[G.s] === G, v = inner ? KS2_IW - 1.5 : KS2_W - 1.2, [x, z] = ks2Rot(G.s, sg * ((inner ? KS2_IG : KS2_GATE) - 0.2), v), m = new THREE.Mesh(new THREE.BoxGeometry(0.35, inner ? 4 : 5.2, (inner ? KS2_IG : KS2_GATE) * 0.95), ks2Mats().gate); m.position.set(x, inner ? 2 : 2.6, z); m.rotation.y = G.s === 'S' || G.s === 'N' ? 0 : Math.PI / 2; stageRoot.add(m); }
   puff(new V3(G.x, 2, G.z), 0xc8b48a, 14, 1.6, 3, 1.8); ks2GateThud(G, 1.2); KS2.log.push(['open', G.s, Math.round(KS2.t), why]);
   for (const e of KS2.all) if (e.ks2Push && e.ks2Push === 'ram' && G === KS2.gates.S) e.ks2Push = null;
-  if (G === KS2.gates[G.s]) { if (!KS2.said.defy2) { KS2.said.defy2 = 1; KS2.later.push([KS2.t + 5, () => ks2En('defy2', KS2.cmd, 1.9, 22)]); } showBanner(({ S: '南', E: '東', W: '西', N: '北' })[G.s] + '門、' + (why === 'ram' ? '破れた！' : '開いた！'), why === 'ram' ? '破城槌が門を破った――門の内側で押し合いになる' : why === 'wall' ? '城壁に上った者が内側から門を開けた' : '銃を置いた英国兵が門を開けた'); bannerTimer = 3.5; if (!KS2.said.gate) { KS2.said.gate = 1; setTimeout(() => ks2SayK('sumi', KS2_L.gate[0][1], 1.8), 1500); } ks2Reinforce(G.s, 0.6); }
-  else { popup(({ S: '南', E: '東', W: '西', N: '北' })[G.s] + 'の第二の門が破れた！ 本丸の中庭へ'); popupTimer = 3; if (KS2.ph === 'siege') { KS2.ph = 'keep'; setTimeout(() => ks2SayK('sumi', KS2_L.keep[0][1], 1.8), 1200); ks2Seq(KS2_L.hir.kp, 8); } } }
+  if (G === KS2.gates[G.s]) { { const U = KS2.units.find(U => U.side === G.s); if (U) ks2Named((e, k) => e.ks2U === U && KS2_X[k] && KS2_X[k].gate).slice(0, 2).forEach((k, i) => KS2.later.push([KS2.t + 2 + i * 4.2, () => ks2Ln(k, 'gate', 1.8)])); const h = ks2Pick(ks2Named((e, k) => e.ks2U === KS2.U.H && KS2_X[k] && KS2_X[k].gate)); if (h) KS2.later.push([KS2.t + 11, () => ks2Ln(h, 'gate', 1.5, 45)]); }
+    if (!KS2.said.defy2) { KS2.said.defy2 = 1; KS2.later.push([KS2.t + 5, () => ks2En('defy2', KS2.cmd, 1.9, 22)]); } showBanner(({ S: '南', E: '東', W: '西', N: '北' })[G.s] + '門、' + (why === 'ram' ? '破れた！' : '開いた！'), why === 'ram' ? '破城槌が門を破った――門の内側で押し合いになる' : why === 'wall' ? '城壁に上った者が内側から門を開けた' : '銃を置いた英国兵が門を開けた'); bannerTimer = 3.5; if (!KS2.said.gate) { KS2.said.gate = 1; setTimeout(() => ks2SayK('sumi', KS2_L.gate[0][1], 1.8), 1500); } ks2Reinforce(G.s, 0.6); }
+  else { popup(({ S: '南', E: '東', W: '西', N: '北' })[G.s] + 'の第二の門が破れた！ 本丸の中庭へ'); popupTimer = 3; if (KS2.ph === 'siege') { KS2.ph = 'keep'; setTimeout(() => ks2SayK('sumi', KS2_L.keep[0][1], 1.8), 1200); ks2Seq(KS2_L.hir.kp, 8); ks2Named((e, k) => k !== 'sumi' && k !== 'hirose' && KS2_X[k] && KS2_X[k].near).sort(() => Math.random() - 0.5).slice(0, 4).forEach((k, i) => KS2.later.push([KS2.t + 22 + i * 4.5, () => ks2Ln(k, 'near', 1.5, 50)])); } } }
 // 守り手の援軍：ほかの側の中庭から、角の細い通路を通って走る
 function ks2Route(a, b) { const C = s => ks2Rot(s, 0, 46), cor = (s1, s2) => { const [x1, z1] = ks2Rot(s1, 0, 1), [x2, z2] = ks2Rot(s2, 0, 1), sx = Math.sign(x1 + x2), sz = Math.sign(z1 + z2); return [[sx * (Math.abs(x1) ? 61 : 33), sz * (Math.abs(z1) ? 61 : 33)], [sx * (Math.abs(x1) ? 61 : 42), sz * (Math.abs(z1) ? 61 : 42)], [sx * 61, sz * 61], [sx * (Math.abs(x2) ? 61 : 42), sz * (Math.abs(z2) ? 61 : 42)], [sx * (Math.abs(x2) ? 61 : 33), sz * (Math.abs(z2) ? 61 : 33)]]; };
   const nb = { S: ['E', 'W'], N: ['E', 'W'], E: ['S', 'N'], W: ['S', 'N'] }; if (a === b) return [C(b)]; if (nb[a].includes(b)) return cor(a, b).concat([C(b)]); const m = nb[a][Math.random() < 0.5 ? 0 : 1]; return [C(a)].concat(cor(a, m), [C(m)], cor(m, b), [C(b)]); }
@@ -3009,7 +3250,7 @@ function ks2Siege2(dt) { const S = KS2.U.S, E = KS2.U.E, W = KS2.U.W, N = KS2.U.
     if (R.z > zT) { if (n >= 3) { R.z = Math.max(zT, R.z - 0.7 * Math.min(1, n / 5) * dt); R.g.position.z = R.z; } }
     else if (n >= 3 && (R.hitT -= dt) <= 0) { R.hitT = 3; GS.hp -= 12 * Math.min(1.5, n / 4); R.log.position.z = -0.8; ks2GateThud(GS, 1); puff(new V3(0, 1.5, KS2_W + KS2_T + 0.2), 0xc8b48a, 4, 0.6, 1.2, 0.8); if (GS.hp <= 0) ks2GateOpen(GS, 'ram'); }
     R.log.position.z += (0 - R.log.position.z) * Math.min(1, dt * 3); }
-  for (const T of KS2.towers) if (!T.at) { ks2Pushers(T, S, 4); const n = T.pushers.filter(e => Math.hypot(e.s.position.x - T.g.position.x, e.s.position.z - T.g.position.z) < 4.5).length; if (n >= 2) { T.z = Math.max(KS2_W + KS2_T + 2.3, T.z - 0.6 * Math.min(1, n / 4) * dt); T.g.position.z = T.z; } if (T.z <= KS2_W + KS2_T + 2.31) { T.at = true; T.br.visible = true; for (const e of T.pushers) { e.ks2Push = null; e.ks2PT = null; } T.pushers = []; if (KS2.view === 'S') popup('攻城塔が城壁に着いた！ 渡り板を下ろせ（殿も背面の梯子から上れる）'); KS2.log.push(['tower', Math.round(KS2.t), T.x]); } }
+  for (const T of KS2.towers) if (!T.at) { ks2Pushers(T, S, 4); const n = T.pushers.filter(e => Math.hypot(e.s.position.x - T.g.position.x, e.s.position.z - T.g.position.z) < 4.5).length; if (n >= 1) { T.z = Math.max(KS2_W + KS2_T + 2.3, T.z - 0.95 * Math.min(1, 0.4 + n / 4) * dt); T.g.position.z = T.z; } if (T.z <= KS2_W + KS2_T + 2.31) { T.at = true; T.br.visible = true; for (const e of T.pushers) { e.ks2Push = null; e.ks2PT = null; } T.pushers = []; if (KS2.view === 'S') popup('攻城塔が城壁に着いた！ 渡り板を下ろせ（殿も背面の梯子から上れる）'); KS2.log.push(['tower', Math.round(KS2.t), T.x]); } }
   // 東：梯子
 
   // 城壁の上から下りた者が内側から門を開ける（守り手が門のそばにいない時）
@@ -3040,9 +3281,10 @@ function ks2Siege2(dt) { const S = KS2.U.S, E = KS2.U.E, W = KS2.U.W, N = KS2.U.
 function ks2Surrender() { KS2.sur = { t: KS2.t }; KS2.ph = 'won'; KS2.log.push(['surrender', Math.round(KS2.t)]); for (const e of KS2.def) if (isUp(e)) { e.ks2Gave = true; e.tgt = null; } for (const o of KS2.px) if (o.team === 'orange') o.gave = true;
   const c = KS2.cmd; if (c) { c.s.position.set(0, 0, 13.5); c.ks2Home = [0, 13.5, 0]; } ks2En('cmd1', c, 2, 20); setTimeout(() => { if (KS2.on) ks2En('cmd2', c, 2, 20); }, 5500); setTimeout(() => { const el = KS2.by.uk06; if (KS2.on && el && isUp(el)) ks2En('elThanks', el, 1.8, 25); }, 9000);
   setTimeout(() => { if (!KS2.on || state !== 'play') return; showBanner('白壁城、開城！', '反乱軍を率いたアラベラ王女が本丸で降伏した'); bannerTimer = 5; Sfx.fanfare && Sfx.fanfare(); }, 10500);
-  setTimeout(() => { if (!KS2.on || state !== 'play') return; gameOver(true); const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / 1500・守り手の残り <b>${c2.d}</b> / 1000（降伏）。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 15500); }
+  { const L = ['sumi', 'uk06', ...ks2Named((e, k) => k !== 'sumi' && k !== 'uk06' && KS2_X[k] && KS2_X[k].sur && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 60).sort(() => Math.random() - 0.5).slice(0, 4)]; L.forEach((k, i) => KS2.later.push([KS2.t + 12 + i * 4.3, () => ks2Ln(k, 'sur', 1.8)])); }
+  setTimeout(() => { if (!KS2.on || state !== 'play') return; gameOver(true); const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / 1500・守り手の残り <b>${c2.d}</b> / 1000（降伏）。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 38000); }
 function ks2VoicePre() { if (KS2.vPre || !VoicePack.ok || !window.VOICE_KS2) return; KS2.vPre = true; const M = window.VOICE_KS2.byText, fs = [], add = t => { for (const x of M[t] || []) fs.push(x.file); };   // 号令・名のある娘の台詞・英語の呼びかけは先に読む
-  for (const k in KS2_L) { const v = KS2_L[k]; if (k === 'succ') for (const n in v) add(v[n]); else if (k === 'hir') for (const g in v) for (const q of v[g]) add(q[1]); else for (const q of v) add(q[1]); } for (const k in KS2_EN) add(KS2_EN[k][1]); for (const t of KS2_RV.ramen) add(t);
+  for (const k in KS2_L) { const v = KS2_L[k]; if (k === 'succ') for (const n in v) add(v[n]); else if (k === 'hir' || k === 'san') for (const g in v) for (const q of v[g]) add(q[1]); else for (const q of v) add(q[1]); } for (const k in KS2_EN) add(KS2_EN[k][1]); for (const t of KS2_RV.ramen) add(t);
   for (let i = fs.length - 1; i >= 0; i--) VoicePack.load(fs[i], i < 12); }
 function ks2Seq(L, t0, gap) { (L || []).forEach((q, i) => KS2.later.push([KS2.t + t0 + i * (gap || 4.2), () => { if (KS2.on && state === 'play') ks2SayK(q[0], q[1], 1.7); }])); }
 function ks2Go() { if (KS2.ph !== 'deploy') return; KS2.ph = 'siege'; KS2.goT = KS2.t; ks2Squads(); ks2SayK('sumi', KS2_L.go[0][1], 2); const b = $('bKs2Go'); if (b) b.style.display = 'none'; ks2Seq(KS2_L.hir.sg, 40); showBanner('総攻撃', '南は破城槌と攻城塔、東は梯子、西は呼びかけ、北は陽動'); bannerTimer = 3;
@@ -3073,8 +3315,13 @@ function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; i
   if (KS2.ph === 'siege' || KS2.ph === 'keep') { ks2Siege2(dt); ks2SqTick(dt); for (const s of KS2_SIDES) { const IG = KS2.igates[s]; if (!IG.open && IG.hp <= 0) ks2GateOpen(IG, 'ram'); } }
   // 隊長が倒れたら副官が引き継ぐ
   if ((KS2.sT = (KS2.sT || 0) - dt) <= 0) { KS2.sT = 0.5;
+    if ((KS2.ph === 'march' || KS2.ph === 'deploy') && KS2.t > 20 && (KS2.mcT = (KS2.mcT == null ? 6 : KS2.mcT) - 0.5) <= 0) { KS2.mcT = rand(9, 15); const sit = KS2.ph === 'march' ? 'march' : 'dep', k = ks2Pick(ks2Named((e, k) => KS2_X[k] && KS2_X[k][sit] && ks2LnOk(k, 45) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 32)); if (k) ks2Ln(k, sit, 1.3); }   // 行軍・布陣の声
+    { const A = KS2.view, G0 = KS2_XG[A], X = KS2.xg || (KS2.xg = {}), i = X[A] || 0, st = KS2.t - (KS2.goT || 0); if (G0 && i < G0.length && (!KS2.xgT || KS2.t - KS2.xgT > 22) && (A === 'H' ? KS2.t > 95 : (KS2.ph === 'siege' || KS2.ph === 'keep') && st > 12 + i * 30)) { X[A] = i + 1; KS2.xgT = KS2.t; ks2LnSeq(G0[i], 0.5); } }   // 門ごとの掛け合い
     for (const U of KS2.units) { if (U.cmd && isUp(U.cmd)) continue; const nx = U.chain.map(k => KS2.by[k]).find(e => e && isUp(e)) || U.mem.find(e => isUp(e) && e.ks2Role === 'guard') || U.mem.find(isUp); if (!nx || nx === U.cmd) continue; const old = U.cmd; U.cmd = nx; nx.ks2Lead = true; if (old) old.ks2Lead = false; const ln = KS2_L.succ[nx.ks2Named]; if (ln) ks2SayK(nx.ks2Named, ln, 1.9); popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); KS2.log.push(['succ', U.k, nx.prof.name, Math.round(KS2.t)]); }
     // 倒れた攻め手：城の外なら負傷者として担架で後方へ（一部）
+    let mateSaid = false; for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { const p0 = e.s.position;
+      if (e.ks2Named) { const v = e.ks2Named, R0 = (KS2_XF[v] || []).filter(q => KS2.by[q[0]] && isUp(KS2.by[q[0]])).slice(0, 2); if (R0.length) R0.forEach((q, i) => KS2.later.push([KS2.t + 1.5 + i * 4.5, () => { const r = KS2.by[q[0]]; if (r && isUp(r)) { (KS2.lnK || (KS2.lnK = {}))[q[0]] = KS2.t; ks2SayK(q[0], q[1], 1.8); } }])); else { const k = ks2Pick(ks2Named((o, k) => o.ks2U === U && KS2_X[k] && KS2_X[k].fall)); if (k) KS2.later.push([KS2.t + 1.5, () => ks2Ln(k, 'fall', 1.7)]); } }
+      else if (!mateSaid) { const k = ks2Pick(ks2Named((o, k) => o.ks2U === U && KS2_X[k] && KS2_X[k].mate && ks2LnOk(k, 40) && Math.hypot(o.s.position.x - p0.x, o.s.position.z - p0.z) < 14)); if (k && ks2Ln(k, 'mate', 1.4, 45)) mateSaid = true; } }
     for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { e.ks2Dn = true; const p = e.s.position; if (Math.max(Math.abs(p.x), Math.abs(p.z)) > KS2_W + KS2_T + 1 && Math.random() < 0.4) KS2.wq.push(e); }
     if (KS2.bearers) ks2BearTick();
     // 群れの人数：実体の生き残りの割合に合わせて減らす
@@ -3302,7 +3549,7 @@ const VoicePack = {
 // ---- 状況台詞（v9）：青組の娘が戦況に合わせて短く話す（assets/voices/voices_situ.js、tools/make_voices_situ.py）
 //   ・声の同時再生上限（VoicePack.MAXV）と低優先の間隔を守り、さらに全体 4.5 秒・同じ種類 16 秒・同じ娘 18 秒の間隔
 //   ・撃たれた娘は黙る（被弾から 4 秒・会話を打ち切られた娘・倒れた娘は話さない）
-const SITU_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer' };
+const SITU_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer', 豪胆: 'calm' };
 const SITU = {
   man: window.VOICE_SITU || null, t: 0, last: -99, catAt: {}, downAt: -99, downWho: null, log: [], said: 0,
   reset() { this.t = 1.5; this.last = -99; this.catAt = {}; this.downAt = -99; this.downWho = null; this.log = []; this.said = 0; },
@@ -26109,6 +26356,21 @@ const PAL_NAMED = {
   akari: { girl: () => 'sec7', name: '側近付き秘書 夏目 あかり', pers: '陽気', cm: 162, at: ['gym', 'walk', 'yuagari', null] },
   midori: { girl: () => 'girl37', name: '側近付き秘書 村瀬 碧', pers: '好戦的', cm: 164, at: ['secr', 'secr', 'walk', null] },
 };
+// ---- 名のある娘の決まった性格と背丈（どのステージでも、名札・照準の表示もこれ）。外れていたら直して記録する ----
+let NAMED_C = null, NAMED_LOOKS = null;
+function namedCanon() { if (NAMED_C) return NAMED_C; if (typeof GIRLS === 'undefined' || !Object.keys(GIRLS).length) return null; const L = [];
+  const add = (nm, pers, cm, look) => { const core = /\s/.test(nm) ? nm.trim().split(/\s+/).slice(-2).join(' ') : nm; let c = L.find(c => c.core === core); if (!c) { c = { core, flat: core.replace(/\s/g, ''), pers, cm, looks: new Set() }; L.push(c); } if (look) c.looks.add(look); };
+  for (const k in PAL_NAMED) { const P = PAL_NAMED[k]; let g = null; try { g = P.girl(); } catch (_) { } add(P.name, P.pers, P.cm, g); }
+  for (const k in KS2_NM) { const q = KS2_NM[k]; if (q[2]) add(q[0], q[1], q[2], k === 'hirose' ? 'girl45' : k === 'sanjo' ? 'girl58' : k === 'uk06' ? 'uk06' : null); }
+  add('アラベラ王女', '冷静', 165, 'uk00');
+  NAMED_C = L; NAMED_LOOKS = new Map(); for (const c of L) for (const g of c.looks) NAMED_LOOKS.set(g, c); return L; }
+function namedOfName(nm) { const L = namedCanon(); if (!L || !nm) return null; const f = String(nm).replace(/\s/g, ''); for (const c of L) if (f.includes(c.flat)) return c; return null; }
+const NAMED_BAD = [];
+function namedFix(e) { if (!e || !e.prof) return; const nm = (e.ukTag || '') + '|' + (e.prof.name || ''); if (e._nmN !== nm) { e._nmN = nm; e._nmC = namedOfName(e.prof.name) || namedOfName(e.ukTag); const gid = e.girl && e.girl.id, lc = gid && NAMED_LOOKS && NAMED_LOOKS.get(gid); if (lc && lc !== e._nmC && !/^uk/.test(gid) && !e._nmLk) { e._nmLk = 1; const m = '[named-look] ' + gid + ' (' + lc.core + ') shown as ' + e.prof.name; NAMED_BAD.push(m); console.warn(m); } }
+  const C = e._nmC; if (!C) return; const P = PERS[C.pers];
+  if (e.prof.pers !== C.pers || (P && e.P !== P) || e.prof.cm !== C.cm || Math.abs((e.figH || 0) * 100 - C.cm) > 0.6) { const m = '[named] ' + C.core + ': ' + (e.P && e.P.desc) + '/' + e.prof.pers + ' ' + Math.round((e.figH || 0) * 100) + 'cm → ' + C.pers + ' ' + C.cm + 'cm'; if (NAMED_BAD.length < 200) NAMED_BAD.push(m); console.warn(m); e.prof.pers = C.pers; e.prof.cm = C.cm; if (P) e.P = P; e.figH = C.cm / 100; } }
+let namedT = 0;
+function namedSweep(dt) { if ((namedT -= dt) > 0) return; namedT = 0.5; if (!namedCanon()) return; for (const e of enemies) namedFix(e); for (const e of bodies) namedFix(e); }
 const PAL_TAG = { dock: '兵站室（搬入）', eizen: '営繕室', throne: '侍女', dining: '給仕の侍女', study: '侍女', balcony: '侍女', secr: '秘書室', seimu: '政務室', zaimu: '財務室', gunmu: '軍務室', kaigi: '会議室', dorm: '侍女', rest: '侍女', game: '侍女', manga: '侍女', av: '侍女', book: '書店の侍女', zakka: '雑貨店の侍女', beauty: '美容室の侍女',
   cafe: 'カフェの侍女', rest_r: '侍女', bar: '侍女', lounge: '侍女', conv: 'コンビニの侍女', gym: '侍女', dance: '侍女', banquet: '侍女', karaoke: '侍女', bath_e: '侍女', yuagari: '侍女', hall: '取次の侍女', guard: '近衛室', post: '詰所の侍女', armory: '武器庫係', gunnery: '砲術室', med: '医務室 看護役', logi: '兵站室', kitchen: '厨房の侍女', costume: '衣装室', info: '情報室', kyudo: '弓の侍女', gymnasium: '侍女', budokan: '武術の侍女', practice: '侍女', tennis: '侍女', soccer: '侍女', walk: '侍女' };
 const PAL_CAT = { dock: 'work', eizen: 'work', throne: 'throne', dining: 'throne', study: 'throne', balcony: 'throne', secr: 'office', seimu: 'office', zaimu: 'office', gunmu: 'office', kaigi: 'office', ojou_ante: 'office', dorm: 'dorm', rest: 'rest', game: 'rest', manga: 'rest', av: 'rest', book: 'shop', zakka: 'shop', beauty: 'shop',
@@ -26597,7 +26859,7 @@ function palSpots(R) {
   if (R.type === 'banquet') S.sort((a, b) => b.tab - a.tab);   // 宴会場：卓のそばの立ち位置から埋める
 }
 // ---- 人：時間帯ごとに、いまの階にいる娘だけを出す ----
-const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);
+const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'girl31', 'girl26', 'girl34', 'girl37', 'girl45', 'girl58', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);   // 名のある娘の絵は、名の無い侍女に使わない
 // 日本の名の無い侍女の見た目すべて：侍女（旧 雑兵）mob・girl と、弓を持たない姿のある弓兵（archer01〜10）。名のある娘の写真は除く
 // 名の無い侍女の見た目を、山札のように切って均等に配る（どの見た目も同じ回数ずつ）
 const MOB_DECK = {};
@@ -28396,7 +28658,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261110j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261110k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -28524,7 +28786,7 @@ const EXTRA_GIRLS = {
   girl42: { type: 'mob', anyRole: true, prof: { name: '田中 あおい', pers: '陽気', cm: 160, vv: 1, pitch: 1.2 } },  // 普通の兵。黒髪は前髪だけ残して耳の後ろで束ねる。白のキャミソール、銀のティアラは正面だけ
   girl43: { type: 'mob', anyRole: true, prof: { name: '遠藤 加那', pers: '冷静', cm: 163, vv: 1, pitch: 1.0 } },  // 普通の侍女。短い黒髪で耳が出る。白キャミ、細い黒革ベルト。銀のティアラは後ろ以外
   girl44: { type: 'mob', anyRole: true, prof: { name: '長谷川 まい', pers: '陽気', cm: 162, vv: 1, pitch: 1.25 } },  // 普通の侍女。肩までの黒髪に前髪。白キャミはベルトまで。銀のティアラは後ろ以外
-  girl45: { type: 'mob', anyRole: true, prof: { name: '広瀬', pers: '慎重', cm: 160, vv: 2, pitch: 1.1 } },  // 普通の侍女。ぱっつん前髪と左肩のポニーテール。銀のティアラは後ろ以外
+  girl45: { type: 'mob', anyRole: true, prof: { name: '広瀬 千夏', pers: '陽気', cm: 160, vv: 2, pitch: 1.1 } },  // 普通の侍女。ぱっつん前髪と左肩のポニーテール。銀のティアラは後ろ以外
   girl46: { type: 'mob', anyRole: true, prof: { name: '成都', pers: '陽気', cm: 158, vv: 0, pitch: 1.05 } },  // 普通の侍女。丸い顔、低いお団子。銀のティアラは後ろ以外。名前は土地のみ
   girl47: { type: 'mob', anyRole: true, prof: { name: '北京', pers: '冷静', cm: 168, vv: 1, pitch: 0.92 } },  // 普通の侍女。面長、髪をきつく後ろへ。銀のティアラは後ろ以外。名前は土地のみ
   girl48: { type: 'mob', anyRole: true, prof: { name: '南京', pers: '慎重', cm: 162, vv: 2, pitch: 1.18 } },  // 普通の侍女。色白の面長、長いストレート。銀のティアラは後ろ以外。名前は土地のみ
@@ -28537,7 +28799,7 @@ const EXTRA_GIRLS = {
   girl55: { type: 'mob', anyRole: true, prof: { name: '蘇州', pers: '臆病', cm: 160, vv: 0, pitch: 1.16 } },  // 普通の侍女。細い顔、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
   girl56: { type: 'mob', anyRole: true, prof: { name: '新人', pers: '陽気', cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は新人
   girl57: { type: 'mob', anyRole: true, prof: { name: '眼鏡', pers: '物静か', cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。呼び名はまだ無いので表示は眼鏡
-  girl58: { type: 'mob', anyRole: true, prof: { name: 'ボブ', pers: '慎重', cm: 158, vv: 2, pitch: 1.18 } },  // 普通の侍女。短い黒髪ボブ、眉の上の前髪、口元のほくろ。両目は出ている。銀のティアラは後ろ以外。呼び名はまだ無いので表示はボブ
+  girl58: { type: 'mob', anyRole: true, prof: { name: '三条 玲奈', pers: '豪胆', cm: 158, vv: 2, pitch: 1.18 } },  // 普通の侍女。短い黒髪ボブ、眉の上の前髪、口元のほくろ。両目は出ている。銀のティアラは後ろ以外。呼び名はまだ無いので表示はボブ
 
   vn01: { type: 'vn', prof: { name: 'ハノイのアイン', pers: '冷静', cm: 162, vv: 1 } },
   vn02: { type: 'vn', prof: { name: 'ハノイのフォン', pers: '慎重', cm: 158, vv: 2 } },
@@ -28577,7 +28839,7 @@ function fallImages(e) {
   g.fallSeq = seq; return seq;
 }
 function pickGirl(kind, perch) {
-  const all = Object.values(GIRLS).filter(g => g.id !== SEC_ID && g.id !== SEC2_ID && g.id !== FLUTE_ID && g.id !== MEDIC_ID && (g.type === 'mob' || g.type === 'archer'));
+  const nl = namedCanon() && NAMED_LOOKS, inUse0 = new Set(enemies.filter(e => e.state !== 'down').map(e => e.girl && e.girl.id)), all = Object.values(GIRLS).filter(g => g.id !== SEC_ID && g.id !== SEC2_ID && g.id !== FLUTE_ID && g.id !== MEDIC_ID && g.id !== 'girl45' && g.id !== 'girl58' && !(nl && nl.has(g.id) && inUse0.has(g.id)) && (g.type === 'mob' || g.type === 'archer'));   // 広瀬・三条は決戦2が初陣（ほかで群れの絵に使わない）。名のある娘の絵は同時に二人出さない
   // 弓兵：弓を引く写真（bow）のある娘、または横・後ろがそろった弓兵の写真。近接兵：侍女（mob）
   let fit = all.filter(g => kind === 'archer' ? (g.bow || g.anyRole || (g.type === 'archer' && g.side && g.back)) : g.type === 'mob');
   if (!fit.length) fit = all.filter(g => kind === 'archer' ? g.type === 'archer' : g.stab);
@@ -29083,7 +29345,7 @@ const PERS = {
   陽気: { desc: '陽気', pitch: 1.4, rate: 1.15, speed: 1.1, atkCd: [0.9, 1.5], hideT: [1.0, 2.0], aimErr: 0.045, aimT: 0.8, keep: [14, 24], retreat: false,
     lines: { spot: ['みーつけたっ！', 'いっくよー！', 'あ、いたいた！ 勝負〜！'], attack: ['それっ！', 'くらえ〜っ！', 'えーいっ！'], hit: ['わっ、やったなー！', 'あはは、当たっちゃった！', 'もー、ずるい〜！', 'きゃっ！ やったなー！', 'うっ…！ 今のは効いた！', 'いやっ！ 当てられちゃった！', 'きゃっ！', 'いたっ！ もー！', 'あっ…！ やられたかも！', 'ちょ、待って！', 'うそ、当たった…', 'えっ、私？ うそでしょ！', 'あうっ！', 'いっ…！', 'えっ…！', 'うっ'], defeat: ['やられた〜！', 'あちゃ〜、負けちゃった！', 'あー、楽しかった〜！', 'きゃあっ！ やられた〜！', '悔しい〜！ 次は勝つからね！', 'すみません、脱落です！', 'やられたー…！', 'ごめん…先に抜けるね！', 'くやしい〜！', 'おつかれー…私はここまで！', 'あっ…！', 'うっ…', 'うっ'], callR: ['右から来てるよー！'], callL: ['左、回り込まれてる！'], cover: ['援護お願い！'], ammo: ['矢、あと少ししかないよー！'], push: ['いけるいける、押して！'], fall: ['無理無理、下がるー！'], seiran: ['せいらん狙ってー！'], ladder: ['はしご、登ってきてるよ！'], allydown: ['うそでしょ…！', '仇とるからね！', 'えっ、やだ…！'], kill: ['よっしゃ！', 'やったー！', 'おつかれー！'], order_m: ['分隊、前へー！', 'みんな、行くよー！'], order_a: ['撃てー！', 'たけたばに隠れてー！'], lead: ['私が指揮とるね！ ついてきて！'] } },
 };
-const PERS_KEYS = Object.keys(PERS);
+const PERS_KEYS = Object.keys(PERS);   // 豪胆（三条 玲奈だけ）は下で足す：群れの娘には出さない
 // 分隊どうしの助け合いの掛け声（援護射撃・負傷者の後送・迂回・救援・増援）。収録が無いものは読み上げ
 const SUP_LINES = {
   好戦的: { support: ['援護に回るよ！ そっちの敵、こっちで引き受けた！', '加勢する！ 押し返すよ！'], carry: ['ほら、肩貸して！ 救護所まで下がるよ！', 'つかまって！ 後ろまで連れてく！'], flank: ['横から回り込むよ、ついてきて！', '脇から一気に崩す！'], relieve: ['隊長がいないなら、こっちが支える！', '今行く！ 持ちこたえて！'], reinf: ['増援に来たよ！ ここから一緒に！', '助っ人到着！ 任せて！'] },
@@ -29093,6 +29355,7 @@ const SUP_LINES = {
   陽気: { support: ['援護するよー！ そっちは任せて！', '助けに来たよ、いっしょに押し返そう！'], carry: ['ほら、つかまって！ いったん下がろ！', '救護所まで一緒に行こっ！'], flank: ['横から回っちゃおう！', 'こっそり回り込むね！'], relieve: ['大丈夫、こっちが支えるから！', '今行くね！ もうちょっとがんばって！'], reinf: ['増援だよー！ よろしくね！', '合流！ にぎやかになるよ！'] },
 };
 for (const k of PERS_KEYS) if (SUP_LINES[k]) Object.assign(PERS[k].lines, SUP_LINES[k]);
+PERS.豪胆 = Object.assign({}, PERS.冷静, { desc: '豪胆' });   // 面倒くさがりだが度胸がある
 // v7：名前の幅を広げる（よくある苗字と名前）。名のある娘（秘書課・固有の娘）はそのまま、一般の兵（同じ写真の二人目も）はこの合わせた中から
 const NEW_NAMES = ['佐藤 美咲', '鈴木 陽菜', '高橋 結衣', '田中 愛美', '伊藤 莉子', '渡辺 彩花', '山本 優奈', '中村 美月', '小林 紗希', '加藤 七海',
   '吉田 真央', '山田 葵', '佐々木 凛', '松本 遥', '井上 千尋', '木村 瑞希', '林 里奈', '清水 明日香', '森 沙織', '池田 菜々子'];
@@ -29139,7 +29402,7 @@ function npcSay(e, kind, prio = 0, chance = 1) {
 }
 // ---- 本物の戦の声（荒野の決闘・第二幕の全段・英国淑女編）：倒れる時は短く（うっ…！／無念…／殿…）。手当て・御臨終ですはそのまま ----
 const warOn = () => (TH.on && ((TH.raid && TH.raid.on) || !!TH.ev)) || CV.on || USD.on || CAMP.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on || KS2.on;
-const WAR_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer' };
+const WAR_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer', 豪胆: 'calm' };
 const WAR_N = { hit: 3, defeat: 5, spot: 3, attack: 3, kill: 3, allydown: 3, hold: 3 };
 function warKey(e) {
   if (e.campKey) return e.campKey;
@@ -29501,6 +29764,7 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   if (opt.fumi) Object.assign(prof, { name: fumi.name, pers: '冷静', cm: 157, vv: 1 });
   if (opt.sysop) Object.assign(prof, { name: sysop.name, pers: '冷静', cm: 162, vv: 0 });
   if (opt.medic && opt.medCm) Object.assign(prof, { cm: opt.medCm, pers: opt.medPers || prof.pers });
+  { const C = namedOfName(prof.name); if (C) { prof.pers = C.pers; prof.cm = C.cm; } }   // 名のある娘は、いつも決まった性格と背丈
   const P = PERS[prof.pers] || PERS['冷静'];
   if (!opt.cv) VoicePack.prioritize(prof.pers);
   if (captain) prof.name = '組頭 ' + prof.name;
@@ -31615,7 +31879,7 @@ function buildMedPost(x, z, team, y) {
 function spawnMedic(team, m) {
   removeMedic(m);
   const hp = medPost[team]; if (!hp) return;
-  const i = medics[team].indexOf(m), gid = m.gid && GIRLS[m.gid] ? m.gid : m.role === 'surgeon' && GIRLS[SURGEON_ID] ? SURGEON_ID : MEDIC_ID;
+  const i = medics[team].indexOf(m), gid = m.gid && GIRLS[m.gid] ? m.gid : MEDIC_ID;   // 外科医の写真は九条 紗英だけ（名の違う外科医に使わない）
   if (!GIRLS[gid]) return;
   const [dx, dz] = (PLANE.on ? PLANE_MED[team][i] : MED_HOME[i]) || [0, 0], sg = PLANE.on || team === 'blue' ? 1 : -1;
   const y = hp[2] || 0;
@@ -33352,7 +33616,7 @@ function updateHud(dt) {
   $('popup').style.transform = `translate(-50%,${-50 - (0.9 - Math.max(0, popupTimer)) * 40}%)`;
   hitTimer -= dt; $('hitmark').style.opacity = hitTimer > 0 ? 1 : 0;
   player.hurtT -= dt; $('hurt').style.opacity = Math.max(0, player.hurtT * 1.6) + (player.hp < 25 ? 0.25 + Math.sin(time * 5) * 0.1 : 0);
-  updateTargetInfo(dt);
+  updateTargetInfo(dt); namedSweep(dt);
   // レーダー
   const R = 75, sc = R / 45;
   radar.clearRect(0, 0, 150, 150);
@@ -34033,7 +34297,7 @@ $('quitBtn').onclick = toTitle;
 // 梯子の案内：近くに梯子があれば「W で上る／E で自動」などを出す（スマホは「梯子」ボタン）
 function ladderGo() {
   if (player.autoClimb) { player.autoClimb = null; return; }
-  const n = ladderNear(player.pos); if (!n) return;
+  const n = ladderNear(player.pos); if (!n) { if (KS2.on) ks2Talk(); return; }
   player.autoClimb = { L: n.L, up: n.up, t: 0 };
 }
 let ladHintTxt = '';
@@ -34046,6 +34310,7 @@ function updateLadderHint() {
   let t = '';
   if (player.autoClimb) t = player.autoClimb.up ? '上っています…' : '下りています…';
   else if (n) { const what = n.L.seiran ? '井闌の梯子' : '梯子'; t = MOBILE ? `${what}：スティックを${n.up ? '前' : '後ろ'}に倒す／「梯子」ボタン` : `${what}：${n.up ? 'W（前進）で上る' : 'S（後退）で下りる'}　E で自動`; }
+  const kt = !n && !player.autoClimb && KS2.on && state === 'play' && !menuOpen ? ks2TalkNear() : null; if (kt) t = MOBILE ? `${kt.prof.name}：「話す」ボタン` : `${kt.prof.name}：E で話す`;   // 決戦2：名のある娘に話しかける
   const dr = !n && !player.autoClimb && state === 'play' && !menuOpen ? castleDoorNearHint() : null;   // 城：襖
   if (dr) t = MOBILE ? `襖：「襖」ボタンで${dr.open ? '閉める' : '開ける'}` : `襖：E で${dr.open ? '閉める' : '開ける'}`;
   const tire = !menuOpen && MECH.on && state === 'play' && mechNearLame();
@@ -34060,9 +34325,9 @@ function updateLadderHint() {
     else if (cvNearBoard()) t = '定員表：E';
     else t = MOBILE ? '終わるときは上の作戦終了' : '終わるときは作戦終了ボタン、または Q';
   }
-  if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr || car);
-    const bl = $('bLadL'); if (bl) bl.textContent = car ? (CAR.riding ? '降りる' : '乗る') : dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : n && !n.up ? '下りる' : '上る';
-    const bt = document.querySelector('#bLad span'); if (bt) bt.textContent = car ? '車' : dr ? '襖' : '梯子'; }
+  if (t !== ladHintTxt) { ladHintTxt = t; if (el) { el.textContent = t; el.classList.toggle('on', !!t); } document.documentElement.classList.toggle('canlad', !!n || !!player.autoClimb || !!dr || car || !!kt);
+    const bl = $('bLadL'); if (bl) bl.textContent = car ? (CAR.riding ? '降りる' : '乗る') : dr ? (dr.open ? '閉める' : '開ける') : player.autoClimb ? '止める' : kt ? '話す' : n && !n.up ? '下りる' : '上る';
+    const bt = document.querySelector('#bLad span'); if (bt) bt.textContent = car ? '車' : dr ? '襖' : kt ? '話す' : '梯子'; }
   document.documentElement.classList.toggle('canfix', !!anyTire);
 }
 function updatePlayer(dt) {
@@ -36813,5 +37078,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, scene, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, scene, get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

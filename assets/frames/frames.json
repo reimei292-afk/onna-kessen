@@ -2487,5 +2487,15 @@
    "dir": -1,
    "file": "assets/frames/girl44_down.png"
   }
+ },
+ "girl45": {
+  "front": {
+   "hk": 1.0095,
+   "aspect": 0.2656,
+   "ax": 0.4931,
+   "dir": 0,
+   "file": "assets/frames/girl45_front.png",
+   "ref": 634
+  }
  }
 }

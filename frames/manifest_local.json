@@ -67,5 +67,8 @@
     "front_diag": "assets/jp_new/girl44_front_diag.jpg",
     "front_diag_dir": 1,
     "down": "assets/jp_new/girl44_down.jpg"
+  },
+  "girl45": {
+    "front": "assets/jp_new/girl45_front.jpg"
   }
 }

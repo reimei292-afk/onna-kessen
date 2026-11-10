@@ -3,7 +3,7 @@
 ## リポジトリ / 公開
 - repo: https://github.com/reimei292-afk/onna-kessen （作業コピー: /workspace/repo_onna）
 - live: https://reimei292-afk.github.io/onna-kessen/ （GitHub Pages、main へ push で数分後に反映）
-- 現在のバージョン: `20261110c`
+- 現在のバージョン: `20261110e`
 - **公開手順**
   1. `game.js` の `ASSET_V` と `index.html` の全 `?v=` を同じ新しい値に揃えて上げる（例 `sed -i 's/20261018k/20261018l/g' index.html game.js`）。片方だけだとキャッシュで古いJSが混ざる。`v.txt` も同じ値。
   2. `node --check game.js`
@@ -34,7 +34,7 @@
   - 第七幕に殿の問い: ハトコ確認 → 解禁で「結婚したいし…」「お姉ちゃん・妹」「呼び捨て」。誰も無理に受け入れない（照れる/時間がほしい/やんわり断る）。
 - **桜井（sec3）**: 長い茶色ウェーブ髪。 **宮下（sec4）**: 黒ボブ＋バッグ、二正面戦で西園寺の秘書。
 - 霧島（システム担当）、笛役、伝令、久遠、白石、九条（外科医）など本陣スタッフ。
-- **徴兵の侍女**: 士気低め、前職/大学は1人ずつ固有（大きなプール、決定的割当て）。2026-10-19：girl36 黒田 紗良と girl38 高梨 ゆずは登録から外した（素材は残す）。ゲームにいるのは girl35 神崎 真白 24（黒髪の低いシニヨン。正面は実物のベルト貼り付け。斜めのベルトの白抜けは塗りつぶし済み。横・後ろ・斜め・倒れあり）/ girl37 村瀬 碧 22（顎までの黒髪、白い筋なし。横・後ろ・斜め・倒れあり）/ girl39 谷口 のぞみ 19（茶髪ぱっつんボブ、ややふくよか。正面・横・後ろ・斜め・倒れ）/ girl40 青葉 みお / girl41 藤崎 ほのか / girl42 田中 あおい / girl43 遠藤 加那（短い黒髪、耳が出る、前髪なし。銀のティアラは後ろ以外。正面・横・斜め・後ろ・遺体）/ girl45 広瀬（ぱっつん前髪と左肩のポニーテール。銀のティアラは後ろ以外。正面・横・斜め・後ろ・遺体）。年齢は17〜25。衣装は既存と同じ。元写真は `assets/jp_new/`。
+- **徴兵の侍女**: 士気低め、前職/大学は1人ずつ固有（大きなプール、決定的割当て）。2026-10-19：girl36 黒田 紗良と girl38 高梨 ゆずは登録から外した（素材は残す）。ゲームにいるのは girl35 神崎 真白 24（黒髪の低いシニヨン。正面は実物のベルト貼り付け。斜めのベルトの白抜けは塗りつぶし済み。横・後ろ・斜め・倒れあり）/ girl37 村瀬 碧 22（顎までの黒髪、白い筋なし。横・後ろ・斜め・倒れあり）/ girl39 谷口 のぞみ 19（茶髪ぱっつんボブ、ややふくよか。正面・横・後ろ・斜め・倒れ）/ girl40 青葉 みお / girl41 藤崎 ほのか / girl42 田中 あおい / girl43 遠藤 加那（短い黒髪、耳が出る、前髪なし。銀のティアラは後ろ以外。正面・横・斜め・後ろ・遺体）/ girl45 広瀬（ぱっつん前髪と左肩のポニーテール。銀のティアラは後ろ以外。正面・横・斜め・後ろ・遺体）/ girl46 成都 / girl47 北京 / girl48 南京 / girl49 重慶 / girl50 洛陽 / girl51 広州 / girl52 ハルビン / girl53 西安 / girl54 長沙 / girl55 蘇州（いずれも土地の名のみ。普通の侍女。銀のティアラは後ろ以外。正面・横・斜め・後ろ・遺体）。年齢は17〜25。衣装は既存と同じ。元写真は `assets/jp_new/`。
 - **英国娘 uk01〜uk10** ＋ **アラベラ王女**（死なない。第七幕ではウェイトレス）。uk09 は衛生兵。英語音声＋日本語字幕。
 
 ## 厳守ルール
@@ -273,7 +273,7 @@
 - **archer01-10 の素手の絵**：`assets/archer_un/archerNN_sheet.jpg`（今の絵を参考に同じ顔・髪・体つき・標準の装いで生成）を `tools/make_archer_unarmed.py` で front / front_diag / side / back / walk に分け、down は元の絵から弓を取り除いた。戦では弓の小道具を持ち、弓を引く瞬間だけ元の写真（`g.bow`）。宮殿の日常では部署のある普通の侍女として出る（`PAL.poolAll` が `g.unarmed` の弓兵も含む）。
 - **薙刀**：`NAGI`（間合い 2.6m・振りかぶり 0.55s・前方の扇に最大4人・押し返し）。`nagiSweep` は血を出さない（`nagiKO`）。大宮の近衛隊（宮殿の大階段の踊り場の組：`palNagi`）と西園寺（`opt.ojou` / `campNamed('ojou')`、戦では薙刀で戦う）。
 - **骨格タイプ（骨格診断）**：`KOKKAKU[gid]` = 'S'（ストレート）／'W'（ウェーブ）／'N'（ナチュラル）。`tools/make_kokkaku.py` が今の絵の肩幅・腰幅の比から中立に判定（絵は変えていない）。動きは `KK` で少しだけ変える（上下の揺れ・歩幅と足の速さ・横揺れ・姿勢の傾き）。弓兵の素手の絵は元の絵と同じ体つきで作ったので、タイプはそのまま。今後絵を作り直すときも同じタイプを保つこと。
-- S（ストレート） 34人：archer01、archer02、archer03、archer05、archer06、girl21、girl22、girl23、girl26、girl28、girl29、girl31、girl34、girl37、girl40、girl42、girl43、girl44、girl45、medic、mob02、mob03、mob05、mob08、mob09、mob10、ojou、sec6、sysop、uk01、uk07、uk09、uk10、us04
+- S（ストレート） 44人：archer01、archer02、archer03、archer05、archer06、girl21、girl22、girl23、girl26、girl28、girl29、girl31、girl34、girl37、girl40、girl42、girl43、girl44、girl45、girl46、girl47、girl48、girl49、girl50、girl51、girl52、girl53、girl54、girl55、medic、mob02、mob03、mob05、mob08、mob09、mob10、ojou、sec6、sysop、uk01、uk07、uk09、uk10、us04
 - W（ウェーブ） 35人：archer07、archer09、archer10、fr03、fr07、fr08、fumi、girl24、girl25、girl27、girl30、girl32、girl35、girl36、girl38、girl39、girl41、mob01、mob04、mob06、mob07、nurse2、omiya、sec3、sec5、sec7、uk00、uk04、uk06、us02、us07、us10、us11、us12、us14
 - N（ナチュラル） 33人：arch01、arch02、arch03、arch04、arch05、arch06、archer04、archer08、fr01、fr02、fr04、fr05、fr06、fr09、fr10、girl33、sec4、surgeon、uk02、uk03、uk05、uk08、us01、us03、us05、us06、us09、us13、us15、us16、us17、us18、us19
 - **山城の山砲**：引き上げる間、近くの小銃兵が最大4人（スマホ2人）護衛として砲の前と左右に付き、膝をついて撃ち返す（`usEscortTick` / `usEscortGoal`）。組が倒れたら護衛から補う（4回まで、スマホ3回）。砲のそばで引く組は、矢・弾の6割ほどを砲の盾が受け、引き手は体力が1多い（刃は防げない）。組を倒し切れば砲は止まる。離れた組・護衛は斜面をまっすぐ行かず、砲が通ったつづら折りをたどる（`usViaRoute`。以前は斜面で詰まって追いつけなかった）。

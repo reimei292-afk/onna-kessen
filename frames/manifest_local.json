@@ -76,5 +76,95 @@
     "front_diag": "assets/jp_new/girl45_front_diag.jpg",
     "front_diag_dir": -1,
     "down": "assets/jp_new/girl45_down.jpg"
+  },
+  "girl46": {
+    "front": "assets/jp_new/girl46_front.jpg",
+    "side": "assets/jp_new/girl46_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl46_back.jpg",
+    "front_diag": "assets/jp_new/girl46_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl46_down.jpg"
+  },
+  "girl47": {
+    "front": "assets/jp_new/girl47_front.jpg",
+    "side": "assets/jp_new/girl47_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl47_back.jpg",
+    "front_diag": "assets/jp_new/girl47_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl47_down.jpg"
+  },
+  "girl48": {
+    "front": "assets/jp_new/girl48_front.jpg",
+    "side": "assets/jp_new/girl48_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl48_back.jpg",
+    "front_diag": "assets/jp_new/girl48_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl48_down.jpg"
+  },
+  "girl49": {
+    "front": "assets/jp_new/girl49_front.jpg",
+    "side": "assets/jp_new/girl49_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl49_back.jpg",
+    "front_diag": "assets/jp_new/girl49_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl49_down.jpg"
+  },
+  "girl50": {
+    "front": "assets/jp_new/girl50_front.jpg",
+    "side": "assets/jp_new/girl50_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl50_back.jpg",
+    "front_diag": "assets/jp_new/girl50_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl50_down.jpg"
+  },
+  "girl51": {
+    "front": "assets/jp_new/girl51_front.jpg",
+    "side": "assets/jp_new/girl51_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl51_back.jpg",
+    "front_diag": "assets/jp_new/girl51_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl51_down.jpg"
+  },
+  "girl52": {
+    "front": "assets/jp_new/girl52_front.jpg",
+    "side": "assets/jp_new/girl52_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl52_back.jpg",
+    "front_diag": "assets/jp_new/girl52_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl52_down.jpg"
+  },
+  "girl53": {
+    "front": "assets/jp_new/girl53_front.jpg",
+    "side": "assets/jp_new/girl53_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl53_back.jpg",
+    "front_diag": "assets/jp_new/girl53_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl53_down.jpg"
+  },
+  "girl54": {
+    "front": "assets/jp_new/girl54_front.jpg",
+    "side": "assets/jp_new/girl54_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl54_back.jpg",
+    "front_diag": "assets/jp_new/girl54_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl54_down.jpg"
+  },
+  "girl55": {
+    "front": "assets/jp_new/girl55_front.jpg",
+    "side": "assets/jp_new/girl55_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl55_back.jpg",
+    "front_diag": "assets/jp_new/girl55_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl55_down.jpg"
   }
 }

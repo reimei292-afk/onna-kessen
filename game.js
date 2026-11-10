@@ -1160,8 +1160,27 @@ function thSpiral(cx, cz, y0, y1, sx) {   // 円い螺旋階段（段ごとの�
     const s = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.05, 0.42), M.grey); s.position.set(cx + Math.cos(a) * 0.6, yy - 0.025, cz + Math.sin(a) * 0.6); s.rotation.y = -a; stageRoot.add(s);
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.0, 5), M.steel); p.position.set(cx + Math.cos(a) * 1.15, yy + 0.5, cz + Math.sin(a) * 1.15); stageRoot.add(p); }
   const rail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(Array.from({ length: n }, (_, i) => { const a = Math.PI / 2 - (n - 1 - i) * da; return new THREE.Vector3(cx + Math.cos(a) * 1.15, y0 + (i + 1) * rise + 1.0, cz + Math.sin(a) * 1.15); })), n * 3, 0.03, 5), M.steel); stageRoot.add(rail);
-  (TH.spirals = TH.spirals || []).push({ y0, y1, pts: [[cx + Math.cos(Math.PI / 2 - (n - 1) * da) * 1.7, cz + Math.sin(Math.PI / 2 - (n - 1) * da) * 1.7]].concat(pts, [[cx, cz + 1.6]]) });
+  (TH.spirals = TH.spirals || []).push({ cx, cz, n, da, R, rise, a0: Math.PI / 2 - (n - 1) * da, y0, y1, pts: [[cx + Math.cos(Math.PI / 2 - (n - 1) * da) * 1.7, cz + Math.sin(Math.PI / 2 - (n - 1) * da) * 1.7]].concat(pts, [[cx, cz + 1.6]]) });
 }
+// 螺旋階段の歩き補助（20261110a）：踏み板の円の上にいる間は、入力の向きを螺旋に沿った上り下りに直し、高さもなめらかに合わせる。上下の端で普通の歩きに戻す
+function thSpiralAt(x, z, y) { const X = player.thSpX; for (const S of TH.spirals || []) { if (S.cx == null || (X && X.S === S && X.t > 0) || y < S.y0 - 0.3 || y > S.y1 + 0.45) continue; const dx = x - S.cx, dz = z - S.cz, r2 = dx * dx + dz * dz; if (r2 > 1.8 * 1.8) continue;
+    let a = Math.atan2(dz, dx); const aY = S.a0 + ((y - S.y0) / S.rise - 1) * S.da; a += Math.round((aY - a) / (Math.PI * 2)) * Math.PI * 2; const u = (a - S.a0) / S.da; if (u < -1.3 || u > S.n - 0.4 || (r2 > 1.45 * 1.45 && u >= 0)) continue;   // 下の入口だけは少し外から
+    const yh = S.y0 + (Math.max(-1, Math.min(S.n - 1, u)) + 1) * S.rise; if (Math.abs(yh - y) > 0.5) continue; return { S, u, a }; } return null; }
+function thSpiralMove(dt, mx, mz, ml, sp, mag, fin) { const X = player.thSpX; if (X && (X.t -= dt) <= 0) player.thSpX = null;   // 出た直後は同じ螺旋に引き戻さない（踊り場へ歩き出せる）
+  const L = thSpiralAt(player.pos.x, player.pos.z, player.pos.y); if (!L) { player.thSp = null; player.thSpD = 0; return false; } const { S } = L; let u = L.u;
+  const tx = -Math.sin(L.a), tz = Math.cos(L.a); let dir = 0;
+  const pd = player.thSpD && player.thSpS === S ? player.thSpD : 0;
+  if (ml > 0.05) { const t = (mx * tx + mz * tz) / ml; if (pd && fin >= -0.3 && t * pd > -0.75) dir = pd; else if (Math.abs(t) > 0.3) dir = Math.sign(t); else { const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw), c = fx * tx + fz * tz; dir = (Math.abs(c) > 0.15 ? Math.sign(c) : (u > S.n - 2 ? -1 : 1)) * (fin < 0 ? -1 : 1); } }   // 柱に向かって押したとき：上の端なら下り、それ以外は上り
+  const sx = Math.min(sp, CFG.walk * 0.45) * Math.max(0.6, mag);   // 一段ずつ（毎秒 7 段ほど）
+  player.thSpD = dir; player.thSpS = S;   // 押し続ける間は同じ向き（上りなら上り続ける）
+  if (dir) { const wy = u > S.n - 1 && dir > 0 ? Math.PI : Math.atan2(-tx * dir, -tz * dir); let dy = wy - player.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); player.yaw += dy * Math.min(1, dt * 3.5);   // 視線を螺旋の進む向きへ寄せる
+    u += dir * sx * dt / (S.R * S.da); player.bob += dt * sx * 1.6; const ph = Math.floor(player.bob / Math.PI); if (ph !== player.stepPh) { player.stepPh = ph; Sfx.step(true, 0.75); } }
+  if (u > S.n - 1 + 0.35 || u < -1.05) { const top = u > 0, ao = top ? Math.PI / 2 : S.a0 - 1.05 * S.da, ro = S.R + 0.95;   // 端：踊り場（上）か床（下）へ一歩出して、普通の歩きへ
+    player.pos.x = S.cx + Math.cos(ao) * ro; player.pos.z = S.cz + Math.sin(ao) * ro; player.pos.y = top ? S.y1 : S.y0; player.vy = 0; player.onGround = true; player.thSpX = { S, t: 0.9 }; player.thSp = null; player.thSpD = 0;
+    if (top) player.yaw = Math.atan2(-Math.cos(ao), -Math.sin(ao)); return false; }
+  const uc = Math.max(-1, Math.min(S.n - 1, u)), a = S.a0 + u * S.da, r = u > S.n - 1 ? S.R + (u - (S.n - 1)) * 2.4 : u < 0 ? S.R + (-u) * 0.9 : S.R;
+  player.pos.x = S.cx + Math.cos(u > S.n - 1 ? Math.PI / 2 : a) * r; player.pos.z = S.cz + Math.sin(u > S.n - 1 ? Math.PI / 2 : a) * r;
+  player.thSp = S.y0 + (uc + 1) * S.rise; player.seated = false; return true; }
 function thTheaterBalcony(y) {   // 劇場の二階席：弧を描く前縁・金の手すり・左右の階段
   const M = thMats(), Y = y + 1.6, R = new THREE.MeshLambertMaterial({ color: 0x7a1420 }), fz = x => 54 + Math.sqrt(225 - x * x);
   for (const sx of [-1, 1]) { for (let x = 2.5; x < 10.4; x += 0.5) { const xa = sx > 0 ? x : -x - 0.5, xb = xa + 0.5, zf = fz(x + 0.5); if (zf < 64.6) break;
@@ -1430,13 +1449,13 @@ function thRaidShow(on) { const b = thRaidBtn(); b.style.display = on ? 'flex' :
 function thAirplane() { const g = new THREE.Group(), m = new THREE.MeshLambertMaterial({ color: 0x4a5a6a }), f = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.45, 9, 10), m); f.rotation.x = Math.PI / 2; g.add(f); const w = new THREE.Mesh(new THREE.BoxGeometry(12, 0.25, 2.0), m); w.position.z = -0.5; g.add(w); const t = new THREE.Mesh(new THREE.BoxGeometry(4, 0.2, 1.2), m); t.position.z = 4; g.add(t); const v = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.6, 1.2), m); v.position.set(0, 0.8, 4); g.add(v); stageRoot.add(g); return g; }
 function thBoom(p, big) { puff(p, 0xffb050, big ? 14 : 6, big ? 1.4 : 0.6, 5, 0.35); puff(p, 0x4a4a4a, big ? 16 : 6, big ? 2.2 : 0.9, 2.2, 2.6); uk2Flash(p, big ? 3 : 1, 0.12);
   const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), o = Sfx.at(p, 600, 1.5); if (o) { Sfx.noiseBurst(big ? 1.2 : 0.4, 'lowpass', 900, 60, big ? 1.4 : 0.7, 0.7, d / 340, o); Sfx.tone('sine', 70, 30, 0.5, 0.6, d / 340, o); } }
-const TH_AIR = { waves: 4, per: () => USD_MOB ? 12 : 20, act: () => USD_MOB ? 7 : 12, lull: 22 }, TH_BOARD = { total: 100, cap: () => USD_MOB ? 20 : 35, jp: () => USD_MOB ? 40 : 60 };
+const TH_AIR = { waves: 4, per: w => (USD_MOB ? [8, 14, 14, 12] : [12, 20, 20, 16])[Math.max(0, Math.min(3, (w || 1) - 1))], act: () => USD_MOB ? 7 : 12, lull: 22 }, TH_BOARD = { total: 100, cap: () => USD_MOB ? 20 : 35, jp: () => USD_MOB ? 40 : 60 };
 function thRaidStart(kind, force) { kind = kind === 'board' ? 'board' : 'air'; const O = TH.raid; if (O && O.on && O.ph !== 'after' && !force) return;
-  if (O) { for (const P of O.planes || []) stageRoot.remove(P.g); for (const B of O.bombs || []) stageRoot.remove(B.m); for (const T of O.tr || []) stageRoot.remove(T.m); if (O.torp && O.torp.w) stageRoot.remove(O.torp.w); }
-  if (kind === 'air') thDmgClear(); const R = TH.raid = { kind, wave: 1, wSp: 0, wT: 0, lull: 0, usLeft: TH_BOARD.total, jpLeft: 0, boats2: [], fx: [], on: true, ph: kind, t: 0, planes: [], bombs: [], tr: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
+  if (O) { for (const P of O.planes || []) stageRoot.remove(P.g); for (const B of O.bombs || []) stageRoot.remove(B.m); for (const T of O.tr || []) stageRoot.remove(T.m); for (const T of O.torps || []) if (T.w) stageRoot.remove(T.w); }
+  if (kind === 'air') thDmgClear(); const R = TH.raid = { kind, wave: 1, wSp: 0, wT: 0, lull: 0, usLeft: TH_BOARD.total, jpLeft: 0, boats2: [], fx: [], on: true, ph: kind, t: 0, planes: [], bombs: [], tr: [], torps: [], us: [], jp: [], cas: [], dead: [], med: [], beds: 0, slotN: {}, st: { dead: 0, ser: 0, light: 0 }, bodyI: 0, bodyT: 0, later: [] };
   if (O && force) for (const k of ['us', 'jp', 'cas', 'dead', 'med', 'slotN', 'st', 'boats2', 'guard']) if (O[k] != null && (k !== 'med' || O.med.length)) R[k] = O[k];
   TH.alert = true; TH.dmg = TH.dmg || { mag: 0, cat: 0, boiler: 0, flood: 0, smoke: [] }; TH.log.push('raid:start:' + kind);
-  if (kind === 'air') { showBanner('対空戦闘用意！', '敵機の編隊が接近中（第1波）。水上機は射出準備'); for (const S of TH.seaplanes || []) if (S.ph === 'home' && !S.dead) { S.ph = 'prep'; S.t = -(4 + (S.sx > 0 ? 0 : 3)); } }
+  if (kind === 'air') { showBanner('対空戦闘用意！', '第1波は戦闘機の群れ。機銃掃射で対空砲火を潰しに来る。水上機は射出準備'); for (const S of TH.seaplanes || []) if (S.ph === 'home' && !S.dead) { S.ph = 'prep'; S.t = -(4 + (S.sx > 0 ? 0 : 3)); } }
   else { showBanner('敵の上陸用舟艇が接近！', '前甲板へ。乗り込んでくる米兵を迎え撃て（およそ100名、次々に来る）'); thRaidSpawn(); }
   TH.banT = performance.now() + 3200;
   for (let i = 0; i < 3; i++) R.med.push({ busy: 0, p: null, crew: [] }); }
@@ -1454,8 +1473,8 @@ function thCond() { const D = TH.dmg || {}, wr = (TH.mgs || []).filter(m => m.wr
 function thHud() { let el = $('thHud'); const on = TH.on && state === 'play'; if (!el) { if (!on) return; el = document.createElement('div'); el.id = 'thHud'; el.style.cssText = 'position:fixed;left:calc(12px + env(safe-area-inset-left,0px));top:calc(150px + env(safe-area-inset-top,0px));z-index:30;font:600 11px/1.25 sans-serif;color:#eef;background:rgba(10,16,26,.55);border:1px solid rgba(200,190,150,.45);border-radius:6px;padding:4px 7px;width:132px;pointer-events:none'; document.body.appendChild(el); }
   el.style.display = on ? 'block' : 'none'; if (!on || (TH.hudT = (TH.hudT || 0) + 1) % 10) return; const f = Math.round(Math.min(1, (TH.dmg && TH.dmg.flood) || 0) * 100), c = thCond(), bar = (v, col) => `<div style="height:5px;background:rgba(255,255,255,.15);border-radius:3px;margin:1px 0 3px"><div style="width:${v}%;height:100%;background:${col};border-radius:3px"></div></div>`;
   el.innerHTML = `浸水 ${f}%${f >= 100 ? '（総員退船）' : ''}${bar(f, f > 66 ? '#e05050' : f > 33 ? '#e0a040' : '#5aa0e0')}船の状態 ${c}%${bar(c, c < 35 ? '#e05050' : c < 70 ? '#e0c040' : '#60c070')}`; }
-function thRosMark(e, st, cause, lv) { const p = e && e.thP; if (!p) return; const S = TH.stat = TH.stat || {}, o = S[p.id], ol = o && (typeof o === 'string' ? { st: o } : o); if (ol && ol.st === '死亡') return; if (ol && ol.st === st && (ol.lv || 0) >= (lv || 0)) return;
-  const pp = e.s.position, zk = thZoneAt(pp.x, pp.z, pp.y + 0.5), d = new Date(); S[p.id] = { st, lv: lv || 0, cause: cause || (TH.cz) || '不明', at: (TH.zn && TH.zn[zk]) || ('D' + thDeckOf(pp.y + 0.3)), t: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }; }
+function thRosMark(e, st, cause, lv, at) { const p = e && e.thP; if (!p) return; const S = TH.stat = TH.stat || {}, o = S[p.id], ol = o && (typeof o === 'string' ? { st: o } : o); if (ol && ol.st === '死亡') return; if (ol && ol.st === st && (ol.lv || 0) >= (lv || 0)) return;
+  const pp = e.s.position, zk = thZoneAt(pp.x, pp.z, pp.y + 0.5), d = new Date(); S[p.id] = { st, lv: lv || 0, cause: cause || (TH.cz) || '不明', at: at || (TH.zn && TH.zn[zk]) || ('D' + thDeckOf(pp.y + 0.3)), t: String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }; }
 function thCause(from) { if (TH.cz) return TH.cz; if (from && from.s) return '米兵の銃撃'; const R = TH.raid; return R && R.kind === 'board' ? '乗り込み戦闘' : R ? '空襲（爆弾・破片）' : '事故'; }
 function thDownE(e, from) { thRosMark(e, e.thInj === 2 ? '負傷' : '死亡', e.thPara ? '寄生（花）' : thCause(from), e.thInj === 2 ? 2 : 3); e.silenced = false; npcSay(e, 'defeat', 2); killEnemy(e, false, from || null); e.thDown = true; }
 function thInjure(e, lv, from) { const R = TH.raid; if (!R || !e || e.thInj >= 2 || e.state === 'down') return; e.silenced = false; e.hurtAt = time;
@@ -1560,36 +1579,53 @@ function thDCcall(q, y) { const L = TH.girls.filter(e => !e.thDC && e.state !== 
 function thDCBrain(e, dt) { const C = e.thDC, p = e.s.position; p.y = e.thY; e.passive = true; const tx = C.back ? e.thHome[0] : C.x, tz = C.back ? e.thHome[1] : C.z, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
   if (d > 0.3) { const sp = (C.back ? 1.3 : 3.4) * dt; p.x += dx / d * Math.min(sp, d); p.z += dz / d * Math.min(sp, d); e.faceWant = Math.atan2(dx, dz); e.state = 'approach'; return true; }
   e.state = 'idle'; if (C.back) { e.thDC = null; return true; } if ((C.t -= dt) <= 0) C.back = true; return true; }
+// ---- 爆撃機：急降下（低く突っ込んで一発）と水平爆撃（高いところから三発の束）----
+function thBomber(level) { const R = TH.raid; const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [true ? (Math.random() < 0.5 ? [rand(-6, 6), thY(TH_FORE.top), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
+    const g = thAirplane(), y0 = level ? rand(125, 150) : rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, level, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); }
 // ---- 機銃掃射：低く通り抜けながら撃つ。曳光弾、甲板に火花と小さな弾痕、海に水しぶき。むき出しの甲板の乗員に当たる ----
-function thStrafePlane() { const R = TH.raid, dir = Math.random() < 0.5 ? 1 : -1, ox = rand(-14, 14), g = thAirplane(); g.position.set(ox + rand(-30, 30), rand(24, 34), -dir * 420); R.planes.push({ g, strafe: true, dir, ox, v: new V3(0, 0, dir * 95), hp: 1, fall: 0, fT: 0 }); }
+function thAA() { const L = TH.mgs || []; return L.length ? L.filter(G => !G.wreck).length / L.length : 1; }   // 生きている機銃座の割合
+function thStrafeAim() { const L = (TH.mgs || []).filter(G => !G.wreck); if (Math.random() < 0.15) return rand(-5, 5); return L.length && Math.random() < 0.8 ? L[(Math.random() * L.length) | 0].x + rand(-0.8, 0.8) : rand(-14, 14); }   // 機銃座を狙う
+function thStrafePlane(multi) { const R = TH.raid, dir = Math.random() < 0.5 ? 1 : -1, ox = thStrafeAim(), g = thAirplane(); g.position.set(ox + rand(-30, 30), rand(24, 34), -dir * 420); R.planes.push({ g, strafe: true, dir, ox, v: new V3(0, 0, dir * 95), hp: 1, fall: 0, fT: 0, passes: multi ? 3 + ((Math.random() * 2) | 0) : 1 }); }
 function thStrafeTick(P, dt) { const R = TH.raid, g = P.g; g.position.x += (P.ox - g.position.x) * Math.min(1, dt * 0.8); g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; g.rotation.x = 0.08;
-  if (Math.abs(g.position.z) > 460) { g.visible = false; return; } if (Math.abs(g.position.z) > 210 || R.ph !== 'air') return;
-  if ((P.fT -= dt) > 0) return; P.fT = 0.07; const x = g.position.x + rand(-1.3, 1.3), z = g.position.z + P.dir * rand(26, 40), fy = thDeckTop(x, z), water = fy == null || Math.abs(x) > thHW(z) + 0.2, y = water ? (TH.sea ? TH.sea.position.y : TH_SEA) : fy, hit = new V3(x, y + 0.05, z);
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.2, 4), new THREE.MeshBasicMaterial({ color: 0xffe08a })); stageRoot.add(m); R.tr.push({ m, a: g.position.clone(), b: hit.clone(), t: 0, T: 0.14 });
+  if (Math.abs(g.position.z) > 460) { if (--P.passes > 0 && R.ph === 'air' && !P.leave) { P.dir = -Math.sign(g.position.z); P.v.set(0, 0, P.dir * 95); g.position.z = -P.dir * 455; P.ox = thStrafeAim(); g.position.x = P.ox + rand(-30, 30); g.position.y = rand(22, 34); return; } g.visible = false; return; } if (Math.abs(g.position.z) > 210 || R.ph !== 'air') return;   // 何度も引き返して掃射する
+  if ((P.fT -= dt) > 0) return; P.fT = 0.05; const x = g.position.x + (Math.random() < 0.5 ? -1.6 : 1.6) + rand(-0.5, 0.5), z = g.position.z + P.dir * rand(26, 40), fy = thDeckTop(x, z), water = fy == null || Math.abs(x) > thHW(z) + 0.2, y = water ? (TH.sea ? TH.sea.position.y : TH_SEA) : fy, hit = new V3(x, y + 0.05, z);
+  const m = new THREE.Mesh(TH.trG || (TH.trG = new THREE.CylinderGeometry(0.05, 0.05, 3.2, 4)), TH.trM || (TH.trM = new THREE.MeshBasicMaterial({ color: 0xffe08a }))); stageRoot.add(m); R.tr.push({ m, a: g.position.clone(), b: hit.clone(), t: 0, T: 0.14 });
   R.fx.push([R.t + 0.14, () => { if (water) { puff(hit, 0xf2f8ff, 3, 0.35, 2.6, 0.6); return; } puff(hit, 0xffd070, 2, 0.18, 2.2, 0.18); puff(hit, 0x777777, 1, 0.35, 0.6, 0.8);
     if ((TH.holeN = (TH.holeN || 0) + 1) < 260 && Math.random() < 0.5) { const o = new THREE.Mesh(new THREE.CircleGeometry(0.09 + Math.random() * 0.06, 7), thCraterM()); o.rotation.x = -Math.PI / 2; o.position.set(x, y + 0.035, z); thDmgAdd(o); }
-    TH.cz = '機銃掃射'; for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || e.thFar || Math.abs(e.thY - y) > 0.8) continue; if (Math.hypot(e.s.position.x - x, e.s.position.z - z) < 1.1 && Math.random() < 0.6) thHurt(e, hit); } TH.cz = null;
+    TH.cz = '機銃掃射'; let G0 = null; for (const G of TH.mgs || []) if (!G.wreck && Math.abs(G.y - y) < 1.2 && Math.hypot(G.x - x, G.z - z) < 2.2) { G0 = G; if (Math.random() < 0.1) { G.wreck = 1; G.g.rotation.set(0.25, G.ry + 0.3, 0.2); popup('機銃座が掃射で沈黙'); } break; }
+    for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || e.thEv || Math.abs(e.thY - y) > 0.8) continue; const dd = Math.hypot(e.s.position.x - x, e.s.position.z - z); if (dd < 1.5 && Math.random() < 0.8) { const u = dd / 1.5; thInjure(e, Math.random() < (u < 0.5 ? 0.45 : 0.25) ? 3 : Math.random() < 0.5 ? 2 : 1, hit); } else if (G0 && dd < 2.8 && Math.random() < 0.3) thInjure(e, Math.random() < 0.2 ? 3 : Math.random() < 0.45 ? 2 : 1, hit); } TH.cz = null;   // 当たるのは甲板に出ている者だけ。近いほど重い
     if (Math.abs(player.pos.y - 1.6 - y) < 1 && Math.hypot(player.pos.x - x, player.pos.z - z) < 4) player.shake = Math.max(player.shake || 0, 0.25); }]);
   if ((P.sT = (P.sT || 0) - 1) <= 0) { P.sT = 5; const o = Sfx.at(g.position, 500, 1); if (o) Sfx.noiseBurst(0.35, 'bandpass', 2400, 400, 0.5, 0.5, 0, o); } }
 function thNearMiss(q) { const sx = q.x < 0 ? -1 : 1, z = Math.max(-80, Math.min(120, q.z)), p = new V3(sx * 17.5, thY(3) + 1.2, z); if (Math.abs(q.x) > 30) return; thFrag(p, 8); puff(p, 0xdfe8ee, 10, 0.8, 3, 1.0);
   TH.cz = '至近弾の破片'; thHurtNear(p, 7, 3, u => u < 0.3 && Math.random() < 0.3 ? 2 : 1); TH.cz = null; thFlood(0.035, '至近弾：遊歩甲板の窓が割れ、破片が飛んだ。舷窓から浸水'); }
-function thTorpPlane() { const R = TH.raid, sx = Math.random() < 0.5 ? -1 : 1, g = thAirplane(); g.position.set(sx * 600, 18, rand(10, 45)); R.planes.push({ g, torp: true, sx, v: new V3(-sx * 70, 0, 0), dropped: false, hp: 1, fall: 0 }); }
+function thTorpPlane() { const R = TH.raid, sx = Math.random() < 0.5 ? -1 : 1, g = thAirplane(), tz = !TH.dmg.boiler && Math.random() < 0.35 ? rand(12, 44) : rand(-110, 125); g.position.set(sx * 600, 18, tz + rand(-6, 6)); R.planes.push({ g, torp: true, sx, tz, v: new V3(-sx * 70, 0, 0), dropped: false, hp: 1, fall: 0 }); }
 function thTorpFly(P, dt) { const R = TH.raid, g = P.g; g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI;
-  if (!P.dropped && Math.abs(g.position.x) < 260) { P.dropped = true; P.v.y = 12; const w = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 6), new THREE.MeshBasicMaterial({ color: 0xf4f8fa })); w.position.set(g.position.x, (TH.sea ? TH.sea.position.y : TH_SEA) + 0.05, g.position.z); w.rotation.y = Math.PI / 2; stageRoot.add(w); R.torp = { w, sx: P.sx, z: 28 }; showBanner('雷跡！　右舷・左舷を見張れ', '魚雷が缶室へ向かっている'); TH.banT = performance.now() + 2400; }
+  if (!P.dropped && Math.abs(g.position.x) < 260) { P.dropped = true; P.v.y = 12; const w = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.05, 6), new THREE.MeshBasicMaterial({ color: 0xf4f8fa })); w.position.set(g.position.x, (TH.sea ? TH.sea.position.y : TH_SEA) + 0.05, g.position.z); w.rotation.y = Math.PI / 2; stageRoot.add(w); R.torps.push({ w, sx: P.sx, z: P.tz, miss: Math.random() < 0.3 }); if (!R.torpSaid || R.t - R.torpSaid > 12) { R.torpSaid = R.t; showBanner('雷跡！　' + (P.sx > 0 ? '右舷' : '左舷'), '魚雷が舷側へ向かってくる'); TH.banT = performance.now() + 2400; } }
   if (Math.abs(g.position.x) > 700) g.visible = false;
  }
-function thTorpHit(sx) { const R = TH.raid, D = TH.dmg, p = new V3(sx * 19, TH_SEA + 1, 28); if (D.boiler) return; D.boiler = 1; thBoom(p, true); puff(p, 0xffffff, 20, 2.5, 8, 2.2); thSmoke(new V3(0, thY(16) + 2, 28));
+function thTorpSide(sx, z) { const R = TH.raid, p = new V3(sx * 19, TH_SEA + 1, z), eng = z > 44 && z < 85; thBoom(p, true); puff(p, 0xffffff, 22, 2.6, 9, 2.4); thFrag(new V3(sx * 15, thY(eng ? 1 : 2) + 1, z), 8); player.shake = Math.max(player.shake || 0, 0.8);
+  TH.cz = eng ? '魚雷（機関室）' : '魚雷（舷側）'; thHurtNear(new V3(sx * 12, thY(eng ? 1 : 2), z), 12, 2.5, u => u < 0.35 ? 3 : u < 0.65 ? 2 : 1); TH.cz = null;
+  thFlood(eng ? 0.16 : 0.13, (sx > 0 ? '右舷' : '左舷') + (eng ? 'の機関室' : '') + 'に魚雷命中、浸水'); if (eng) thSmoke(new V3(sx * 6, thY(3) + 1, z)); }
+function thTorpHit(sx, z) { const R = TH.raid, D = TH.dmg, p = new V3(sx * 19, TH_SEA + 1, 28); if (D.boiler || (z != null && (z < 10 || z > 46))) return thTorpSide(sx, z == null ? 28 : z); D.boiler = 1; thBoom(p, true); puff(p, 0xffffff, 20, 2.5, 8, 2.2); thSmoke(new V3(0, thY(16) + 2, 28));
   TH.cz = '魚雷（缶室）'; thHurtNear(new V3(sx * 10, thY(1), 28), 14, 2.5, u => u < 0.3 ? 3 : u < 0.6 ? 2 : 1); TH.cz = null; thFlood(0.35); showBanner('缶室に魚雷命中！', '速力・電力が落ちた。非常灯に切り替え'); TH.banT = performance.now() + 3800;
   stageRoot.traverse(o => { if (o.isLight && !o.userData.thDim) { o.userData.thDim = 1; o.intensity *= 0.55; } }); }
-function thDmgTick(dt) { const D = TH.dmg; if (!D) return; const R = TH.raid, T = R && R.torp; if (T && !T.done) { T.w.position.x += -T.sx * 22 * dt; T.w.position.z += (T.z - T.w.position.z) * dt; if (Math.abs(T.w.position.x) < 19.5) { T.done = true; stageRoot.remove(T.w); thTorpHit(T.sx); } } if ((D.sT = (D.sT || 0) - dt) <= 0) { D.sT = 0.7; for (const q of D.smoke) puff(q.clone().add(new V3(rand(-1, 1), 0.5, rand(-1, 1))), 0x8a8a8a, 1, 2.2, 0.6, 3.5); } }
+function thDmgTick(dt) { const D = TH.dmg; if (!D) return; const R = TH.raid; if (R && R.torps) { for (const T of R.torps) { if (T.done) continue; T.w.position.x += -T.sx * 22 * dt; T.w.position.z += ((T.miss ? (T.z > 0 ? 190 : -190) : T.z) - T.w.position.z) * dt * (T.miss ? 0.5 : 1); if (!T.miss && Math.abs(T.w.position.x) < 19.5) { T.done = true; stageRoot.remove(T.w); thTorpHit(T.sx, T.z); } else if (T.miss && T.w.position.x * T.sx < -80) { T.done = true; stageRoot.remove(T.w); } } R.torps = R.torps.filter(T => !T.done); } if ((D.sT = (D.sT || 0) - dt) <= 0) { D.sT = 0.7; for (const q of D.smoke) puff(q.clone().add(new V3(rand(-1, 1), 0.5, rand(-1, 1))), 0x8a8a8a, 1, 2.2, 0.6, 3.5); } }
 function thBoatTick(dt) { const R = TH.raid, cap = TH_BOARD.cap(), us = R.us.filter(e => e.state !== 'down').length;
   if (R.usLeft > 0 && !R.boats2.some(b => b.ph === 'in') && us + Math.min(R.usLeft, 10) <= cap) thRaidBoat();
   for (const B of R.boats2) { B.t += dt; const m = B.m; if (B.ph === 'in') { m.position.x += -B.sx * 14 * dt; if (Math.abs(m.position.x) <= 21) { B.ph = 'out'; thRaidUS(B.n, B.sx * 6); popup('上陸用舟艇が横付け：米兵 ' + B.n + ' 名（残り ' + R.usLeft + '）'); } }
     else if (B.ph === 'out') { m.position.x += B.sx * 10 * dt; if (Math.abs(m.position.x) > 120) { B.ph = 'gone'; stageRoot.remove(m); } } }
   R.boats2 = R.boats2.filter(B => B.ph !== 'gone'); }
+// 搭乗員：名簿の水上機・航空整備から、船の上に置かれていない人を順に（名のある人は乗せない）
+function thAirCrew(n) { const on = new Set(TH.girls.map(e => e.thP && e.thP.id).filter(Boolean)), used = TH.airUsed = TH.airUsed || new Set(), st = TH.stat || {}; return thRoster().filter(p => p.dept === 6 && !p.named && !on.has(p.id) && !used.has(p.id) && !st[p.id]).slice(0, n).map(p => (used.add(p.id), p)); }
+function thSeaplaneDown(S, F) { const R = TH.raid, g = S.g; const m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3, 4), new THREE.MeshBasicMaterial({ color: 0xffe08a })); stageRoot.add(m); R.tr.push({ m, a: F.g.position.clone(), b: g.position.clone(), t: 0, T: 0.5 });
+  S.ph = 'hit'; R.fx.push([R.t + 0.5, () => { thBoom(g.position.clone(), false); S.ph = 'down'; S.v = new V3(-Math.sin(g.rotation.y - Math.PI) * 30, -2, -Math.cos(g.rotation.y - Math.PI) * 30); let n = 0;
+    for (const p of S.crew || []) { thRosMark({ thP: p, s: { position: g.position } }, '死亡', '水上機の撃墜（空戦）', 3, '艦の上空（水上機）'); R.st.dead++; n++; }
+    popup('味方の水上機が撃墜された' + (n ? '（搭乗員 ' + n + ' 名 戦死）' : '')); TH.log.push('raid:seaplaneDown'); }]); }
 // ---- 水上機：空襲で射出 → 上空で敵機を追う → 戦闘のあと着水、クレーンで回収 ----
-function thSeaplaneTick(dt) { const R = TH.raid; for (const S of TH.seaplanes || []) { const g = S.g; if (S.ph === 'home' || S.ph === 'dead') continue; S.t += dt; const pr = g.userData.prop; if (pr) pr.rotation.z += dt * (S.ph === 'prep' && S.t < 0 ? 4 : 40);
-  if (S.ph === 'prep') { if (S.t >= 0) { S.ph = 'shot'; S.t = 0; puff(g.position.clone().setY(thY(3) + 1.5), 0xeeeeee, 8, 0.8, 3, 1); const o = Sfx.at(g.position, 300, 1); if (o) Sfx.noiseBurst(0.3, 'lowpass', 1600, 100, 0.9, 0.6, 0, o); popup('水上機、射出！'); } continue; }
+function thSeaplaneTick(dt) { const R = TH.raid; for (const S of TH.seaplanes || []) { const g = S.g; if (S.ph === 'home' || S.ph === 'dead' || S.ph === 'wreck') continue; S.t += dt;
+  if (S.ph === 'down') { S.v.y -= 9.8 * dt; g.position.addScaledVector(S.v, dt); g.rotation.z += dt * 1.6 * S.sx; g.rotation.x += dt * 0.5; if (Math.random() < 0.6) puff(g.position.clone(), 0x3a3a3a, 1, 1.1, 0.5, 2.2); const sea = TH.sea ? TH.sea.position.y : TH_SEA; if (g.position.y < sea + 0.3) { S.ph = 'wreck'; g.position.y = sea - 0.35; g.rotation.set(0.5, g.rotation.y, 1.2 * S.sx); puff(g.position.clone().setY(sea + 0.5), 0xffffff, 14, 1.8, 4, 1.6); } continue; }   // 撃墜：煙を引いて海へ。残骸は海面に残る
+  if (S.ph === 'fly' && R && R.ph === 'air' && Math.random() < dt * 0.012) { const F = R.planes.find(P => P.strafe && !P.fall && !P.leave && P.g.visible); if (F) { thSeaplaneDown(S, F); continue; } } const pr = g.userData.prop; if (pr) pr.rotation.z += dt * (S.ph === 'prep' && S.t < 0 ? 4 : 40);
+  if (S.ph === 'prep') { if (S.t >= 0) { S.ph = 'shot'; S.t = 0; puff(g.position.clone().setY(thY(3) + 1.5), 0xeeeeee, 8, 0.8, 3, 1); if (!S.crew) S.crew = thAirCrew(2); const o = Sfx.at(g.position, 300, 1); if (o) Sfx.noiseBurst(0.3, 'lowpass', 1600, 100, 0.9, 0.6, 0, o); popup('水上機、射出！'); } continue; }
   if (S.ph === 'shot') { const u = Math.min(1, S.t / 1.1); g.position.set(S.x - Math.sin(S.ry) * 22 * u * u, S.y + u * 1.5, S.z - Math.cos(S.ry) * 22 * u * u); if (u >= 1) { S.ph = 'fly'; S.t = 0; S.a = Math.atan2(g.position.x, g.position.z); } continue; }
   if (S.ph === 'fly') { const tgt = Math.min(1, S.t / 8); S.a += dt * 0.25 * S.sx; const r = 60 + 140 * tgt, x = Math.sin(S.a) * r, z = Math.cos(S.a) * r, y = S.y + 2 + 70 * tgt; const nx = g.position.x + (x - g.position.x) * Math.min(1, dt * 1.5), nz = g.position.z + (z - g.position.z) * Math.min(1, dt * 1.5);
     g.rotation.y = Math.atan2(nx - g.position.x, nz - g.position.z) + Math.PI; g.rotation.z = -0.4 * S.sx; g.position.set(nx, g.position.y + (y - g.position.y) * Math.min(1, dt), nz);
@@ -1600,23 +1636,22 @@ function thSeaplaneTick(dt) { const R = TH.raid; for (const S of TH.seaplanes ||
   if (S.ph === 'crane') { const u = Math.min(1, S.t / 9); g.position.set(S.c0.x + (S.x - S.c0.x) * u, S.c0.y + (S.y - S.c0.y) * u + Math.sin(u * Math.PI) * 6, S.c0.z + (S.z - S.c0.z) * u); g.rotation.y = S.ry * u; if (u >= 1) { S.ph = 'home'; g.rotation.set(0, S.ry, 0); g.position.set(S.x, S.y, S.z); } } } }
 function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play' && !TH.ev); { const b = $('bThRaid'); if (b) b.textContent = '空襲'; } if (!R || !R.on) return; R.t += dt;
   // 敵機：横切って爆弾を落とす。高角砲・機銃の曳光弾
-  if (R.ph === 'air') { if (R.lull > 0) { R.lull -= dt; if (R.lull <= 0) { R.wave++; R.wSp = 0; showBanner('第' + R.wave + '波 接近！', R.wave === 3 ? '雷撃機がまじっている。舷側に注意' : '高角砲・機銃、撃ち方用意'); TH.banT = performance.now() + 2600; } }
-    else if (R.wSp >= TH_AIR.per() && !R.planes.some(P => !P.leave && !P.fall && !P.ours)) { if (R.wave >= TH_AIR.waves) thRaidEnd('敵の編隊が去った（全' + TH_AIR.waves + '波）'); else { R.lull = TH_AIR.lull; showBanner('第' + R.wave + '波 通過', '次の波まで少し間がある。負傷者を運べ'); TH.banT = performance.now() + 2600; } } }
-  if (R.ph === 'air' && R.lull <= 0 && R.wSp < TH_AIR.per() && R.planes.filter(P => !P.leave && !P.ours).length < TH_AIR.act() && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(0.8, 2.2); R.wSp++;
-    if (R.wave === 3 && R.wSp <= 3 && !TH.dmg.boiler) { thTorpPlane(); } else if (Math.random() < 0.3) { thStrafePlane(); } else { const sx = Math.random() < 0.5 ? -1 : 1, tz = rand(-150, 150); const tg = Math.random() < 0.3 ? [sx * rand(28, 60), 1, tz] : [R.ph === 'air' ? (Math.random() < 0.5 ? [rand(-6, 6), thY(TH_FORE.top), rand(-132, -98)] : [0, thY(4), -75]) : [rand(-9, 9), thY(14), rand(-40, 60)], [rand(-10, 10), thY(16), rand(-40, 40)], [0, thY(3), 140], [rand(-8, 8), thY(16), rand(-30, 30)]][(Math.random() * 4) | 0];
-    const g = thAirplane(), y0 = rand(70, 110); g.position.set(-sx * 420 + tg[0], y0, tg[2] + rand(-80, 80)); R.planes.push({ g, tg, v: new V3(tg[0] - g.position.x, 0, tg[2] - g.position.z).setLength(85), dropped: false, hp: 1, fall: 0 }); } }
+  if (R.ph === 'air') { if (R.lull > 0) { R.lull -= dt; if (R.lull <= 0) { R.wave++; R.wSp = 0; showBanner('第' + R.wave + '波 接近！', R.wave === 2 ? '爆撃機の編隊。急降下と水平爆撃に注意' : R.wave === 3 ? '爆撃機と雷撃機。舷側の雷跡を見張れ' : '戦闘機・爆撃機・雷撃機の混成。高角砲・機銃、撃ち方用意'); TH.banT = performance.now() + 2600; } }
+    else if (R.wSp >= TH_AIR.per(R.wave) && !R.planes.some(P => !P.leave && !P.fall && !P.ours)) { if (R.wave >= TH_AIR.waves) thRaidEnd('敵の編隊が去った（全' + TH_AIR.waves + '波）'); else { R.lull = TH_AIR.lull; showBanner('第' + R.wave + '波 通過', '次の波まで少し間がある。負傷者を運べ'); TH.banT = performance.now() + 2600; } } }
+  if (R.ph === 'air' && R.lull <= 0 && R.wSp < TH_AIR.per(R.wave) && R.planes.filter(P => !P.leave && !P.ours).length < TH_AIR.act() && (R.nextP = (R.nextP || 0) - dt) <= 0) { R.nextP = rand(0.8, 2.2); R.wSp++;
+    const w = R.wave, r = Math.random(); if (w === 1) thStrafePlane(true); else if (w === 2) { if (r < 0.15) thStrafePlane(); else thBomber(r < 0.5); } else if (w === 3) { if (r < 0.4) thTorpPlane(); else if (r < 0.88) thBomber(r < 0.6); else thStrafePlane(true); } else { if (r < 0.35) thStrafePlane(true); else if (r < 0.6) thTorpPlane(); else thBomber(r < 0.75); } }
   thSeaplaneTick(dt); thDmgTick(dt); R.fx = R.fx.filter(F => { if (R.t < F[0]) return true; F[1](); return false; });
   if (R.ph === 'board') thBoatTick(dt);
   for (const P of R.planes) { const g = P.g; if (P.ours) continue; if (P.torp) { thTorpFly(P, dt); continue; } if (P.strafe && !P.fall) { thStrafeTick(P, dt); if (Math.random() < dt * 0.02) { P.fall = 1; P.v.y = -4; } continue; } if (P.fall) { P.v.y -= 9.8 * dt; g.position.addScaledVector(P.v, dt); g.rotation.z += dt; if (Math.random() < 0.5) puff(g.position.clone(), 0x333333, 1, 1.2, 0.5, 2); if (g.position.y < 1 && !P.gone) { P.gone = true; g.visible = false; puff(g.position.clone().setY(1), 0xffffff, 10, 1.5, 3, 1.4); } continue; }
-    g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]); if (!P.dropped && hd < 260) { g.position.y = Math.max(48, g.position.y - 30 * dt); g.rotation.x = -0.35; } else if (P.dropped) { g.position.y += 22 * dt; g.rotation.x = 0.3; }   // 急降下して落とし、引き起こす
-    if (!P.dropped && !P.leave && hd < 110) { P.dropped = true; R.bombs.push({ a: g.position.clone(), b: new V3(P.tg[0] + rand(-3, 3), P.tg[1], P.tg[2] + rand(-3, 3)), t: 0, T: 2.6, m: (() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); m.scale.z = 2; stageRoot.add(m); return m; })() }); }
-    if (Math.hypot(g.position.x, g.position.z) < 260 && Math.random() < dt * 2.2) { const a = new V3(rand(-15, 15), thY(16) + 1.5, rand(-60, 60)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffd080 })); stageRoot.add(m); R.tr.push({ m, a, b: g.position.clone().add(new V3(rand(-8, 8), rand(-5, 5), rand(-8, 8))), t: 0, T: 0.9 }); if (Math.random() < 0.025) { P.fall = 1; P.v.y = -4; } }
+    g.position.addScaledVector(P.v, dt); g.rotation.y = Math.atan2(P.v.x, P.v.z) + Math.PI; const hd = Math.hypot(g.position.x - P.tg[0], g.position.z - P.tg[2]); if (P.level) g.rotation.x = 0; else if (!P.dropped && hd < 260) { g.position.y = Math.max(48, g.position.y - 30 * dt); g.rotation.x = -0.35; } else if (P.dropped && !P.level) { g.position.y += 22 * dt; g.rotation.x = 0.3; }   // 急降下して落とし、引き起こす
+    if (!P.dropped && !P.leave && hd < (P.level ? 175 : 110)) { P.dropped = true; const vd = P.v.clone().setY(0).normalize(); for (let k = P.level ? -1 : 0; k <= (P.level ? 1 : 0); k++) { const sp = P.level ? 7 : 3, tx = P.tg[0] + vd.x * k * 7 + rand(-sp, sp), tz = P.tg[2] + vd.z * k * 7 + rand(-sp, sp), ty = P.level ? (thDeckTop(tx, tz) ?? 1) : P.tg[1]; R.bombs.push({ a: g.position.clone(), b: new V3(tx, Math.abs(tx) > thHW(tz) + 0.5 ? 1 : ty, tz), t: 0, T: P.level ? 4.4 : 2.6, m: (() => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), new THREE.MeshLambertMaterial({ color: 0x2a2a2a })); m.scale.z = 2; stageRoot.add(m); return m; })() }); } }
+    if (Math.hypot(g.position.x, g.position.z) < 260 && Math.random() < dt * 2.2 * (0.25 + 0.75 * thAA())) { const a = new V3(rand(-15, 15), thY(16) + 1.5, rand(-60, 60)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 4), new THREE.MeshBasicMaterial({ color: 0xffd080 })); stageRoot.add(m); R.tr.push({ m, a, b: g.position.clone().add(new V3(rand(-8, 8), rand(-5, 5), rand(-8, 8))), t: 0, T: 0.9 }); if (Math.random() < 0.025) { P.fall = 1; P.v.y = -4; } }
     if (Math.hypot(g.position.x, g.position.z) > 520) g.visible = false; }
   R.planes = R.planes.filter(P => P.g.visible || (stageRoot.remove(P.g), false));
   for (const B of R.bombs) { B.t += dt; const u = Math.min(1, B.t / B.T); B.m.position.lerpVectors(B.a, B.b, u); B.m.position.y = B.a.y + (B.b.y - B.a.y) * u * u; if (u >= 1 && !B.done) { B.done = true; stageRoot.remove(B.m); const q = B.b.clone(); q.y += 0.5;
     if (B.b.y < 2) { puff(q, 0xffffff, 14, 1.8, 4, 1.6); const o = Sfx.at(q, 400, 1); if (o) Sfx.noiseBurst(0.7, 'lowpass', 500, 60, 0.8, 0.7, 0, o); if (Math.abs(q.x) < 40 && Math.abs(q.z) < 150) thNearMiss(q); continue; }
     thWeak(q);
-    thBoom(q, true); thBombDmg(q); TH.cz = '爆弾'; for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - B.b.y) > 2.6) continue; const dd = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (dd < 5) thInjure(e, Math.random() < 0.3 ? 3 : Math.random() < 0.6 ? 2 : 1, q); else if (dd < 10 && Math.random() < 0.4) thInjure(e, 1, q); } TH.cz = null; } }
+    thBoom(q, true); thBombDmg(q); TH.cz = '爆弾'; for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || Math.abs(e.thY - B.b.y) > 2.6) continue; const dd = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (dd < 5.5) thInjure(e, Math.random() < 0.5 ? 3 : Math.random() < 0.7 ? 2 : 1, q); else if (dd < 11 && Math.random() < 0.55) thInjure(e, Math.random() < 0.12 ? 3 : Math.random() < 0.35 ? 2 : 1, q); } TH.cz = null; } }
   R.bombs = R.bombs.filter(B => !B.done);
   for (const T of R.tr) { T.t += dt; const u = Math.min(1, T.t / T.T); T.m.position.lerpVectors(T.a, T.b, u); if (T.arc) T.m.position.y += Math.sin(u * Math.PI) * 1.2; T.m.lookAt(T.b); T.m.rotateX(Math.PI / 2); if (u >= 1) { stageRoot.remove(T.m); T.done = true; } }
   R.tr = R.tr.filter(T => !T.done); R.later = R.later.filter(L => { if (R.t < L[0]) return true; thHurt(L[1], L[2]); return false; });
@@ -1650,6 +1685,8 @@ function thTrunks() { const E = thEngMats ? thEngMats() : null, M = thMats(), wm
   for (const d of [1, 2, 3, 4]) { const y = thY(d), h = thH(d); thBox(10.6, 12.4, y, y + h, 9.6, 11.6, wm, true); thDoor(10.56, 10.6, y, -Math.PI / 2, d === 4 ? '非常用脱出筒（D1〜D3 から）' : '非常用脱出筒（はしご）→ D4'); thBox(10.54, 10.58, y + 2.2, y + 2.35, 9.7, 11.5, red, false); thSign(d === 4 ? '非常用脱出筒　出口' : '非常用脱出筒（はしご）　上 D4', 10.5, y + 2.6, 10.6, -Math.PI / 2, 2.2); } }
 function thZoneAt(x, z, y) { const Z = TH.zone || {}; for (const k in Z) { const r = Z[k]; if (x > r[0] && x < r[1] && z > r[2] && z < r[3] && y > r[4] && y < r[5]) return k; } return ''; }
 function thEvRoute(e) { const p = e.s.position, y = e.thY, d = thDeckOf(y + 0.3), out = []; let L = [];
+  if (y > thY(16) + 1.5) { const S = (TH.spirals || []).filter(s => Math.abs(s.y1 - y) < 0.7).sort((a, b) => Math.hypot(a.cx - p.x, a.cz - p.z) - Math.hypot(b.cx - p.x, b.cz - p.z))[0];   // 機銃台・屋上から：螺旋階段を下りて D16 の集合場所へ
+    if (S) { const t = S.pts[S.pts.length - 1]; out.push({ x: t[0], z: t[1] }); for (let i = S.pts.length - 2; i >= 0; i--) out.push({ x: S.pts[i][0], z: S.pts[i][1] }); out.push({ x: e.thEv.mx, z: e.thEv.mz, last: true }); return out; } }
   const k = thZoneAt(p.x, p.z, y + 0.3), r = (TH.rooms3 || []).find(q => q.k === k && q.d === d);
   if (r) { let via = r.via; if (!via) { const lane = d >= 8 ? [[6, 11], [10.5, 11.5], [10.5, 43], [0, 43]] : d === 7 ? [[6, 11], [6, 43], [0, 43]] : [[6, 11], [0, 12]]; via = lane.concat([[0, r.z]], r.s ? [[r.s * 2.2, r.z]] : []); } L = via.slice().reverse(); }
   else if (d >= 4 && d <= 15 && Math.abs(p.x) < 13 && p.z > -8.5 && p.z < 12.6) L = [];
@@ -1667,8 +1704,9 @@ function thEvRoute(e) { const p = e.s.position, y = e.thY, d = thDeckOf(y + 0.3)
 function thEvWalk(e, dt) { const E = e.thEv, p = e.s.position; if (!E.rt) { E.rt = thEvRoute(e); E.i = 0; }
   const w = E.rt[E.i]; if (!w) return true;
   if (w.trunk) { e.s.visible = false; E.tt = (E.tt || 0) + dt; if (E.tt > (4 - w.from) * 3.5) { E.tt = 0; e.thY = thY(4); p.set(TH_TRUNK.x - 0.3, e.thY, TH_TRUNK.z); e.s.visible = true; E.i++; } return false; }
-  const sp = (e.thInj === 1 ? 1.0 : 2.0) * dt, dx = w.x - p.x, dz = w.z - p.z, d = Math.hypot(dx, dz);
-  if (d < 0.12) { E.i++; E.stk = 0; return !!w.last; }
+  const far0 = Math.abs(player.pos.y - e.thY) > 9 || Math.hypot(player.pos.x - p.x, player.pos.z - p.z) > 45, sp = (e.thInj === 1 ? 1.2 : 2.6) * (far0 ? 3.5 : 1) * dt, dx = w.x - p.x, dz = w.z - p.z, d = Math.hypot(dx, dz);
+  if (d < 0.12) { E.i++; E.stk = 0; E.best = 1e9; E.bt = 0; return !!w.last; }
+  if (E.wi !== E.i) { E.wi = E.i; E.best = d; E.bt = 0; } if (d < E.best - 0.3) { E.best = d; E.bt = 0; } else if ((E.bt = (E.bt || 0) + dt) > 5) { E.bt = 0; E.best = 1e9; TH.ev.snaps = (TH.ev.snaps || 0) + 1; if (d < 1.4) { E.i++; return !!w.last; } p.x = w.x; p.z = w.z; return false; }   // 押し合いで 5 秒近づけないとき：すぐそばなら次の目印へ、遠ければその場所へ（人の詰まりで退船が止まらないように）
   const s = Math.min(sp, d), ox = p.x, oz = p.z; p.x += dx / d * s; p.z += dz / d * s; const ny = floorUnder(p.x, p.z, e.thY); if (ny > e.thY - 2.5) e.thY = ny; p.y = e.thY;
   const vis = Math.abs(player.pos.y - e.thY) < 9 && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 40;
   if (vis) { const q = { x: p.x, z: p.z }; pushOutBoxes(q, 0.3, e.thY + 0.15, e.thY + 1.6); p.x = q.x; p.z = q.z; }
@@ -1679,12 +1717,12 @@ function thEvBrain(e, dt) { const V = TH.ev, E = e.thEv, p = e.s.position; p.y =
   const sp = e.thInj === 1 ? 0.8 : 1.4;
   if (E.ph === 'stay') { e.state = 'idle'; if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 2.5 && Math.abs(player.pos.y - e.thY) < 1.6 && (!E.said || time - E.said > 12)) { E.said = time; subtitle(`${e.prof.name}「${E.line}」`); } return true; }
   if (E.ph === 'wait') { e.state = 'idle'; if ((E.w -= dt) <= 0) E.ph = E.d16 ? 'muster' : 'route'; return true; }
-  if (E.ph === 'route') { if (thEvWalk(e, dt)) { E.ph = 'here'; V.here = (V.here || 0) + 1; e.faceWant = Math.PI; e.state = 'idle'; e.moving = false; } return true; }
+  if (E.ph === 'route') { if (thEvWalk(e, dt) || (e.thWet > 0 && thEvWalk(e, dt * 0.8))) { E.ph = 'here'; V.here = (V.here || 0) + 1; e.faceWant = Math.PI; e.state = 'idle'; e.moving = false; } return true; }
   if (E.ph === 'muster') { if (walk(E.mx, E.mz, sp)) { E.ph = 'here'; V.here = (V.here || 0) + 1; e.faceWant = Math.PI; e.state = 'idle'; } return true; }
   if (E.ph === 'boat') { const B = E.b; e.state = 'idle'; e.moving = false; e.faceWant = B.x < 0 ? -Math.PI / 2 : Math.PI / 2; return true; }
   e.state = 'idle'; return true; }
 function thEvacTick(dt) { const V = TH.ev; if (!V) return; V.t += dt;
-  if (TH.sea) TH.sea.position.y = V.sea0 + Math.min(1, V.t / 420) * (thY(3) - 1 - V.sea0);   // 海面が上がる（浸水）
+  thSinkTick(dt);   // 傾斜・浸水・海へ落ちる人・爆発（20261110a）
   if (V.ph === 'muster' && ((V.here || 0) >= V.total * 0.95 || V.t > 120)) { V.ph = 'board'; V.bt = 0; showBanner('点呼完了', `A ${V.n.A}名・B ${V.n.B}名・C ${V.n.C}名　残留 ${V.stay.length}名　乗艇はじめ`); TH.banT = performance.now() + 4000; TH.log.push('evac:roll'); }
   if (V.ph === 'board') { V.bt += dt; if ((V.bi = (V.bi || 0) - dt) <= 0) { V.bi = 0.25; const e = TH.girls.find(o => o.thEv && (o.thEv.ph === 'here' || (o.thEv.ph === 'muster' && V.bt > 40))); const pts = (TH.raid && TH.raid.cas || []).filter(c => c.thInj === 2.5 && !c.thBoat && c.state === 'down');
       if (e) { const E = e.thEv, prefer = E.g === 'A' ? -1 : E.g === 'C' ? 1 : 0, bs = V.boats.filter(B => B.girls.length < 40 && B.ph === 'hang').sort((a, b) => Math.abs(a.z - (prefer < 0 ? -50 : prefer > 0 ? 100 : 30)) - Math.abs(b.z - (prefer < 0 ? -50 : prefer > 0 ? 100 : 30))); const B = bs[0];
@@ -1692,8 +1730,50 @@ function thEvacTick(dt) { const V = TH.ev; if (!V) return; V.t += dt;
       else if (pts.length && !kujoStay()) { const c = pts[0], B = V.boats.find(B => B.ph === 'hang' && B.girls.length < 37); if (B) { c.thBoat = B; const i = B.girls.length; B.girls.push(c); c.thEv = { ph: 'boat', b: B, ox: 0, oz: -3 + Math.floor(i / 4) * 0.6, lie: true }; V.aboard++; i; } else c.thBoat = 1; }
       else if (!V.allIn && !TH.girls.some(o => o.thEv && (o.thEv.ph === 'route' || o.thEv.ph === 'wait' || o.thEv.ph === 'muster'))) { V.allIn = true; for (const B of V.boats) if (B.ph === 'hang' && B.girls.length) B.ph = 'lower'; showBanner('全員乗艇', `${V.aboard}名が救命艇に。残留 ${V.stay.length}名（${V.stay.map(e => e.prof.name).join('・')}）`); TH.banT = performance.now() + 4500; TH.log.push('evac:aboard'); } } }
   for (const B of V.boats) for (const e of B.girls) { const E = e.thEv, p = e.s.position; p.set(B.m[0].position.x + E.ox, B.m[0].position.y + (E.lie ? 0.75 : 0.9), B.m[0].position.z + E.oz); e.thY = e.baseY = p.y; if (E.lie) e.fallYaw = 0; }
-  for (const B of V.boats) { const m = B.m; if (B.ph === 'lower') { B.t += dt; const sy = (TH.sea ? TH.sea.position.y : TH_SEA) + 0.3; for (const o of m) o.position.y = Math.max(sy + (o === m[1] ? 0.9 : 0), o.position.y - 1.2 * dt); if (m[0].position.y <= sy + 0.01) { B.ph = 'away'; } }
-    else if (B.ph === 'away') { const sx = Math.sign(B.x) || 1, sy = (TH.sea ? TH.sea.position.y : TH_SEA) + 0.3; for (const o of m) { if (Math.abs(o.position.x) < 70) o.position.x += sx * 2.0 * dt; o.position.y = sy + (o === m[1] ? 0.9 : 0); } } } }
+  for (const B of V.boats) { const m = B.m; if (B.ph === 'lower') { B.t += dt; const sy = thSeaY(m[0].position.x) + 0.3; for (const o of m) o.position.y = Math.max(sy + (o === m[1] ? 0.9 : 0), o.position.y - 1.2 * dt); if (m[0].position.y <= sy + 0.01) { B.ph = 'away'; } }
+    else if (B.ph === 'away') { const sx = Math.sign(B.x) || 1; B.t += dt; for (const o of m) { if (Math.abs(o.position.x) < 70) o.position.x += sx * 2.0 * dt; o.position.y = thSeaY(o.position.x) + 0.3 + (o === m[1] ? 0.9 : 0) + Math.sin(V.t * 1.3 + B.z) * 0.08; o.rotation.z = V.lt || 0; } } } }
+// ---- 沈没（桜鳳の見え方を移植）：殿が艦上にいる間は艦を正立のまま、海と艦内の水面を逆に傾ける。海面が上がり、艦内の水が甲板を一つずつ上ってくる ----
+function thSeaY(x) { const G = TH.outG, h = TH.sea ? TH.sea.position.y : TH_SEA, a = G ? G.rotation.z : 0; return (x || 0) * Math.tan(a) + h / Math.cos(a); }
+function thSinkKill(e, cause, at, sea) { if (!e || e.state === 'down') return; const R = TH.raid; e.thInj = 3; e.silenced = false; TH.cz = cause; if (R) { R.st.dead++; R.dead.push(e); } thRosMark(e, '死亡', cause, 3, at); npcSay(e, 'defeat', 2); killEnemy(e, false, null); e.thDown = true; TH.cz = null; if (sea) TH.ev.float.push(e); }
+function thSinkHurt(q, r, dy, cause) { const R = TH.raid; for (const e of TH.girls) { if (e.thFollow || e.state === 'down' || e.thR === 'orange' || (e.thEv && e.thEv.ph === 'boat') || Math.abs(e.thY - q.y) > dy) continue; const d = Math.hypot(e.s.position.x - q.x, e.s.position.z - q.z); if (d > r) continue; const u = d / r;
+    if (Math.random() < (u < 0.35 ? 0.85 : u < 0.7 ? 0.4 : 0.12)) thSinkKill(e, cause); else if (!e.thInj) { e.thInj = 1; if (R) R.st.light++; thRosMark(e, '負傷', cause, 1); e.recoil = 0.36; npcSay(e, 'hit', 1, 0.8); } } }
+function thSinkBoom(p, n, cause, r, dy, msg, sub) { thBoom(p, true); if (TH.raid) thFrag(p, n); thSmoke(p.clone().add(new V3(0, 2, 0))); puff(p, 0x6a6a6a, 18, 2.4, 3, 3.2); const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z, (p.y - player.pos.y) * 0.5); if (d < 120) player.shake = Math.max(player.shake || 0, 1.0 * (1 - d / 120) + 0.2); const o = Sfx.at(p, 600, 1); if (o) Sfx.noiseBurst(1.2, 'lowpass', 400, 40, 1, 1, 0, o); thSinkHurt(p, r, dy, cause); if (msg) { showBanner(msg, sub || ''); TH.banT = performance.now() + 3200; } }
+function thSinkTick(dt) { const V = TH.ev, D = TH.dmg = TH.dmg || { mag: 0, cat: 0, boiler: 0, flood: 0, smoke: [] }; if (!TH.sea) return; if (!V.float) { V.float = []; V.slip = []; V.sd = V.sd || (Math.random() < 0.5 ? -1 : 1); V.ex = {}; }
+  if (!TH.outG) { const G = new THREE.Group(); stageRoot.add(G); TH.outG = G; } const G = TH.outG; if (TH.sea.parent !== G) G.add(TH.sea);
+  if ((V.rT = (V.rT || 0) - dt) <= 0) { V.rT = 1; let n = 0; for (const e of TH.girls) { const E = e.thEv; if (E && e.state !== 'down' && (E.ph === 'route' || E.ph === 'wait' || E.ph === 'muster' || E.ph === 'here')) n++; } V.rem = n; }
+  V.sk = (V.sk || 0) + dt * ((V.rem || 0) > (V.total || 1) * 0.12 ? 0.4 : 1);   // 沈む速さ：まだ大勢が艦内を上っている間はゆっくり（防水扉・排水でもたせる）。大半が出たら一気に
+  const u = Math.min(1, V.sk / 600), L = Math.min(0.21, 0.012 + 0.2 * Math.pow(u, 1.5)); V.L = L; G.rotation.z = V.lt = V.sd * L;
+  TH.sea.position.y = V.sea0 + u * (thY(5) - V.sea0);   // 海面が上がる（艦が沈む）
+  const fl = V.fl = Math.min(TH.sea.position.y, -0.5 + V.sk * 0.032);   // 艦内の水位（外の海より上には来ない）
+  if (!V.flood) { const m = new THREE.Mesh(new THREE.PlaneGeometry(38, 300), new THREE.MeshLambertMaterial({ color: 0x2c4c5a, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false })); m.rotation.x = -Math.PI / 2; G.add(m); V.flood = m; }
+  V.flood.position.set(0, fl, 0); V.flood.visible = fl > -0.3;
+  const dk = thDeckOf(fl + 0.3); if (dk >= 2 && dk !== V.flD) { V.flD = dk; popup('D' + dk + ' に水が上がってきた（艦内の浸水）'); }
+  if (Math.abs(player.pos.y - fl) < 1.2 && !V.kingB && (!V.pw || V.t - V.pw > 20)) { V.pw = V.t; popup('足もとまで水が来ている。上へ'); }
+  // 爆発：缶に海水（水蒸気爆発）→ 弾薬庫 → 傾いて水上機の燃料。炎は出さない
+  if (fl > thY(1) + 1.5 && !V.ex.boil) { V.ex.boil = 1; for (const [k, z] of [[0, 22], [1, 36]]) TH.raid && TH.raid.fx ? TH.raid.fx.push([TH.raid.t + k * 1.4, () => thSinkBoom(new V3(k ? 6 : -6, thY(1) + 2, z), 12, '缶の水蒸気爆発（沈没）', 16, 3, k ? '' : 'ボイラー室に海水、缶が爆発！', '機関室の水密扉が吹き飛んだ')]) : thSinkBoom(new V3(0, thY(1) + 2, 28), 12, '缶の水蒸気爆発（沈没）', 16, 3, 'ボイラー室に海水、缶が爆発！', ''); }
+  if (fl > thY(3) + 0.5 && !V.ex.mag && !D.mag) { V.ex.mag = 1; D.mag = 1; [[-130, 3], [-108, 3], [-130, 4]].forEach(([z, d], k) => setTimeout(() => { if (TH.ev === V) thSinkBoom(new V3(k % 2 ? 2 : -2, thY(d) + 1.2, z), 10, '弾薬庫の誘爆（沈没）', 14, 4, k ? '' : '前部弾薬庫が誘爆！', '艦首から破片が飛んだ。前甲板から離れろ'); }, k * 1100)); }
+  if (L > 0.12 && !V.ex.cat && !D.cat) { V.ex.cat = 1; D.cat = 1; const S = (TH.seaplanes || []).find(S => S.ph === 'home'), p = S ? S.g.position.clone().setY(thY(3) + 1.5) : new V3(0, thY(3) + 1.5, 150); if (S) { S.ph = 'wreck'; S.g.rotation.set(0.3, S.ry, 0.4); S.g.position.y -= 0.3; } thSinkBoom(p, 12, '水上機の燃料の爆発（沈没）', 11, 3, '航空作業甲板で燃料が爆発！', '傾いて漏れた燃料に火花が飛んだ'); }
+  // 水に呑まれる：逃げ遅れた人・残った人
+  if ((V.dT = (V.dT || 0) - dt) <= 0) { V.dT = 0.5; for (const e of TH.girls) { if (e.state === 'down' || e.thFollow || e.thR === 'orange' || !e.thEv || e.thEv.ph === 'boat' || e.thSlip) continue; const wet = fl > e.thY + 1.5; if (!wet) { e.thWet = 0; continue; } if (e.thEv.ph === 'stay') { thSinkKill(e, '沈没（持ち場に残って）'); continue; } e.thWet = (e.thWet || 0) + 0.5; if (e.thWet > 22) thSinkKill(e, '沈没（退船が間に合わず）'); } }   // 退船中の人は水に追われて急ぐ。逃げ場のない所で長く水に浸かったときだけ
+  // 傾斜で甲板から滑り落ちる（D16 の集合場所で待つ人）
+  if (L > 0.08) for (const e of TH.girls) { const E = e.thEv; if (!E || e.thSlip || e.state === 'down' || !(E.ph === 'here' || E.ph === 'muster') || Math.abs(e.thY - thY(16)) > 0.6) continue; if (Math.random() < dt * 0.00025 * Math.pow(L / 0.21, 2) * 3) { e.thSlip = { ph: 'slide', t: 0, sx: V.sd }; E.ph = 'slip'; npcSay(e, 'hit', 1, 0.9); V.slip.push(e); } }
+  V.slip = V.slip.filter(e => { const S = e.thSlip, p = e.s.position; S.t += dt; e.passive = true; e.tgt = null;
+    if (S.ph === 'slide') { const hw = thHW(p.z) + 0.6; p.x += S.sx * Math.min(4, 1 + S.t * 2) * dt; e.faceWant = S.sx > 0 ? Math.PI / 2 : -Math.PI / 2; e.moving = true; if (p.x * S.sx > hw) { S.ph = 'fall'; S.t = 0; S.y0 = e.thY; } return true; }
+    if (S.ph === 'fall') { const sy = thSeaY(p.x), k = Math.min(1, S.t / 2.2); p.x += S.sx * 2 * dt; e.thY = e.baseY = S.y0 + (sy - S.y0) * k * k; p.y = e.thY; if (k >= 1) { S.ph = 'sea'; const R = TH.raid; if (Math.random() < 0.45) thSinkKill(e, '沈没時に海へ転落', '海上（転落）', true); else { S.alive = true; if (R) R.st.light++; thRosMark(e, '負傷', '沈没時に海へ転落（漂流・救助待ち）', 1, '海上（転落）'); V.float.push(e); puff(p.clone(), 0xffffff, 8, 0.8, 2, 1); } return false; } return true; } return false; });
+  for (const e of V.float) { const p = e.s.position, sy = thSeaY(p.x) + Math.sin(V.t * 1.1 + e.s.id) * 0.08; if (e.state === 'down') { e.baseY = e.thY = sy + 0.02; p.y = sy + 0.02; } else { e.thY = e.baseY = sy - 1.05; p.y = e.thY; e.passive = true; e.moving = false; e.state = 'idle'; } }   // 浮いている人と亡骸は消えない。波にゆれる
+  thKingBoatBtn(); }
+// ---- 殿の乗艇：総員退船のあと、D16 の集合場所に立つと「救命艇に乗る」。艇が降りて離れる ----
+function thInMuster() { if (Math.abs(player.pos.y - thY(16)) > 1.2) return null; for (const k in TH_MUSTER) { const r = TH_MUSTER[k]; if (player.pos.x > r[0] - 1.5 && player.pos.x < r[1] + 1.5 && player.pos.z > r[2] - 1.5 && player.pos.z < r[3] + 1.5) return k; } return null; }
+function thKingBoatBtn() { let b = $('bThBoat'); const V = TH.ev, on = !!(TH.on && V && !V.kingB && state === 'play' && thInMuster());
+  if (!b && !on) return; if (!b) { b = document.createElement('div'); b.id = 'bThBoat'; b.textContent = '救命艇に乗る（E）'; b.style.cssText = 'position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:10px 18px;z-index:41;display:none;align-items:center;justify-content:center;color:#fff;font:600 15px sans-serif;background:rgba(20,70,110,.78);border:1px solid rgba(255,255,255,.5);border-radius:10px;user-select:none;cursor:pointer';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); thKingBoard(); }; b.addEventListener('touchstart', go, { passive: false }); b.addEventListener('mousedown', go); document.body.appendChild(b); }
+  b.style.display = on ? 'flex' : 'none'; }
+function thKingBoard() { const V = TH.ev, g = thInMuster(); if (!V || V.kingB || !g) return false; const zc = g === 'A' ? -50 : g === 'C' ? 100 : 30;
+  const B = V.boats.filter(B => B.ph === 'hang' || B.ph === 'lower').sort((a, b) => Math.abs(a.z - zc) - Math.abs(b.z - zc))[0] || V.boats.slice().sort((a, b) => Math.abs(a.z - zc) - Math.abs(b.z - zc))[0]; if (!B) return false;
+  V.kingB = B; B.king = true; if (B.ph === 'hang') B.ph = 'lower'; player.vy = 0; showBanner('殿、救命艇へ', '侍女たちが手を貸して艇に乗せた。艇が降りていく'); TH.banT = performance.now() + 3400; TH.log.push('evac:kingBoat'); const b = $('bThBoat'); if (b) b.style.display = 'none'; return true; }
+function thKingInBoat(dt) { const V = TH.ev, B = V && V.kingB; if (!B) return false; const m = B.m[0].position; player.pos.set(m.x - Math.sign(m.x || 1) * 0.2, m.y + 0.75, m.z + 1.8); player.vy = 0; player.onGround = true; player.climbing = false;
+  if (B.ph === 'away' && !V.kingDone && (B.t || 0) > 35) { V.kingDone = true; showBanner('殿は救命艇で天鳳を離れた', '傾いた天鳳が、ゆっくりと沈んでいく'); TH.banT = performance.now() + 5000; TH.log.push('evac:kingAway'); }
+  camera.position.set(player.pos.x, player.pos.y + CFG.eyeH, player.pos.z); camera.rotation.set(player.pitch, player.yaw, 0); return true; }
 function kujoStay() { return TH.ev && TH.ev.stay.some(e => e.thLk === 'kujo'); }
 // ================= 天鳳：会話（状況に合わせた台詞・裏方の問い・荒れた日にこぼす） =================
 // ================= 天鳳：温室の珍しい果物（寄生虫）。王が配らせたときだけ。うつらない。症状が出るのは王の血縁の人だけ。中は見せない =================
@@ -1727,6 +1807,14 @@ function thParaBrain(e, dt) { const S = e.thPara; if (!S || (S.st !== 'drift' &&
     setTimeout(() => popup(nm + '「……見える……' + era + 'の、' + TH_PLACE[era] + '……王様のご先祖の、' + kin + '……」'), 4000); return true; }
   e.moving = false; e.state = 'idle'; return true; }
 const TH_PARA_RUMOR = ['あの果物の子たち、うつるんじゃないかって……隔離室がいっぱいです', 'どうして、あの子たちだけなんでしょう。同じものを食べたのに', '温室の果物、私も食べました。……なんともないんですけど', '倒れた子、みんな殿のご親戚だって聞きました', 'うつる病気じゃないって、九条先生は言ってましたけど……'];
+// 空襲・沈没の掛け声（20261110a・実戦の言い回し。収録は tools/add_th_voices.py → assets/voices/th/）
+const TH_RV = { air: ['敵機、右舷上空！', '左舷から低空で来ます！', '戦闘機、また来ます！', '急降下、真上です！', '撃ち方始め！', '給弾、急いで！', '弾、持ってきて！', '照準そのまま、撃て！', '射手、交代します！'],
+  strafe: ['掃射が来る、伏せて！', '頭を下げて！', '機銃座がやられた、次の座へ！', '弾が跳ねてる、離れて！'],
+  torp: ['雷跡、右舷！', '雷跡、左舷！', '魚雷、来ます！ つかまって！'],
+  hit: ['被弾！ 応急班を！', '破片に気をつけて！', '煙が来る、下がって！', '浸水、区画を閉めます！'],
+  cas: ['衛生兵、こっち！', '担架をお願いします！', 'しっかりして、目を開けて！', '動ける人は手を貸して！'],
+  evac: ['総員退船です、前の人に続いて！', '押さないで、ゆっくり！', '救命胴衣を確かめて！', '艇はまだあります、落ち着いて！', '傾いてる、手すりにつかまって！', '足もとに気をつけて！', '水が上がってきた、上へ！', '艇、降ろします！'],
+  after: ['生きている人、返事をして！', '負傷者はこちらへ', '点呼を取ります、名前を言って'] };
 const TH_SIT = {
   raid: ['陛下、ここは危ないです！ 中へ！', '弾が来ます、頭を下げて！', '持ち場は離れません。陛下はお下がりください', '担架を通して！ 道をあけて！'],
   after: ['……終わったんですね。手が、まだ震えてます', '担架班が足りないんです。私も運びます', '霊安室の方へは、私たちが静かにお連れします', '捕虜の人にも、水は配りました'],
@@ -1734,6 +1822,18 @@ const TH_SIT = {
   hurt: ['……かすり傷です。歩けます', '腕が上がらなくて。ゆっくりなら動けます', '大丈夫です、持ち場に戻ります'],
   rough: ['今日は揺れますね……お盆を両手で持ってます', '床が濡れてたら言ってください、すぐ拭きます', '揺れる日はスープを半分しか注がないんです', '階段は手すりを持ってくださいね'],
 };
+// ---- 声（20261110a）：台詞は収録の声で。名のある人は本人の声、ほかは一人ずつ高さ・速さを少し変える。別の甲板の声は遠くに聞こえる ----
+function thVoice(e, t, prio) { const M = ((window.VOICE_TH || {}).byText || {})[t]; if (!M || !M.length || !e || !e.s) return false; const L = M.find(x => x.v === e.thLk) || M[(thHash((e.prof && e.prof.name) || '') % M.length)];
+  const p = e.s.position, dy = Math.abs((e.thY != null ? e.thY : p.y) - player.pos.y), d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + (dy > 2.5 ? dy * 2.5 : 0), named = TH_NAMED.some(r => r[0] === e.thLk), rt = named ? 1 : 0.92 + (thHash((e.prof && e.prof.name) || '') % 17) / 100;
+  TH.vN = (TH.vN || 0) + 1; return Talk.as(e, () => VoicePack.play(L.file, d, prio == null ? 1 : prio, rt)); }
+function thVoicePre() { if (TH.vPre || !VoicePack.ok || !window.VOICE_TH) return; TH.vPre = true; const M = window.VOICE_TH.byText, fs = [];   // 掛け声は先に読む（読み込みの列の先頭へ。話しかけの台詞は話すときに読む）
+  for (const k in TH_RV) for (const t of TH_RV[k]) for (const x of M[t] || []) fs.push(x.file); for (let i = fs.length - 1; i >= 0; i--) VoicePack.load(fs[i], true); }
+function thRaidChat(dt) { thVoicePre(); if ((TH.rcT = (TH.rcT || 2) - dt) > 0) return; TH.rcT = rand(3.5, 7); const R = TH.raid, V = TH.ev; if (!(R && R.on) && !V) return; if (UK.dlg) return;
+  let k = V ? 'evac' : R.ph === 'after' ? (R.t < 200 ? 'after' : null) : R.ph === 'air' ? 'air' : null; if (!k) return;
+  if (k === 'air') { if ((R.torps || []).some(T => !T.done)) k = 'torp'; else if (R.planes.some(P => P.strafe && !P.fall && Math.abs(P.g.position.z) < 220)) k = Math.random() < 0.5 ? 'strafe' : 'air'; if ((TH.crN || 0) !== TH.rcCr) { TH.rcCr = TH.crN || 0; k = 'hit'; } else if (R.cas.some(c => c.thInj === 2 && !c.thMed) && Math.random() < 0.35) k = 'cas'; }
+  const C = TH.girls.filter(e => e.state !== 'down' && !e.thFar && !e.thFollow && e.thR !== 'orange' && !(e.thEv && (e.thEv.ph === 'boat' || e.thEv.ph === 'slip')) && Math.abs(e.thY - player.pos.y) < 3 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 24);
+  if (!C.length) return; const e = C[(Math.random() * C.length) | 0], L = TH_RV[k], t = L[(Math.random() * L.length) | 0];
+  if (thVoice(e, t, 1.2) && state === 'play') { subtitle(t); const el = $('subtitle'); if (el) el.textContent = ((e.prof && e.prof.name) || '') + '「' + t + '」'; } }
 function thSitLine(e) { const R = TH.raid, V = TH.ev; let k = null;
   if (V && e.thEv && e.thEv.ph !== 'stay') k = 'evac'; else if (R && R.on && R.ph !== 'after') k = 'raid'; else if (R && R.ph === 'after' && R.t < 300) k = 'after';
   if (TH.para && TH.para.cases.length && !k && Math.random() < 0.35) return TH_PARA_RUMOR[(Math.random() * TH_PARA_RUMOR.length) | 0];
@@ -1978,7 +2078,7 @@ function thStepTick(dt) { if (state !== 'play') return; const pp = player.pos, C
     const g = (soft ? 0.05 : steel ? 0.16 : 0.11) * (1 - d / 14); Sfx.noiseBurst(soft ? 0.03 : 0.025, soft ? 'lowpass' : 'bandpass', soft ? 900 : steel ? 3200 : 2400, soft ? 500 : steel ? 2600 : 1900, g, steel ? 6 : 2, 0, o); if (steel) Sfx.tone('sine', 1800, 1500, 0.05, g * 0.35, 0, o); } }
 function thTalk(e, plain) {
   if (!plain && (thPartyQ(e) || thHallQ(e) || thBankQ(e) || thShukeiQ(e) || thBackQ(e) || thGreenQ(e))) return; const L = TH_LINES[e.thLk] || TH_LINES.atr; TH.talkN = (TH.talkN || 0) + 1; const PL = !TH_NAMED.some(r => r[0] === e.thLk) && TH_PERS_L[e.prof && e.prof.pers], t = (e.thEv && e.thEv.ph === 'stay' && e.thEv.line) || thSitLine(e) || (PL && TH.talkN % 3 === 1 ? PL[(thHash(e.prof.name) + TH.talkN) % PL.length] : L[(TH.talkN + thHash(e.prof.name || '')) % L.length]);
-  $('popup').textContent = (e.ukTag || e.prof.name) + '「' + t + '」'; popupTimer = Math.max(2.2, t.length * 0.12); e.ukTalkT = time + 3; TH.log.push('talk:' + (e.thLk || '') + ':' + e.prof.name);
+  $('popup').textContent = (e.ukTag || e.prof.name) + '「' + t + '」'; popupTimer = Math.max(2.2, t.length * 0.12); e.ukTalkT = time + 3; thVoice(e, t, 1.5); TH.log.push('talk:' + (e.thLk || '') + ':' + e.prof.name);   // 収録の声で話す
 }
 function thGoDeck(d, E) {
   if (TH.busy) return; TH.busy = true; const fd = $('palFade') || (() => { const f = document.createElement('div'); f.id = 'palFade'; document.body.appendChild(f); return f; })(); fd.style.opacity = 1;
@@ -1987,6 +2087,7 @@ function thGoDeck(d, E) {
 }
 function thElevator(v) { ukDlg([{ choice: TH_STOPS.filter(s => s.d !== v.S.d).map(s => ({ label: s.name, sub: v.E.name, then: [{ fn: () => thGoDeck(s.d, v.E) }] })).concat([{ label: 'やめておく', sub: '', then: [] }]) }]); }
 function thKey() {
+  if (TH.ev && !TH.ev.kingB && thKingBoard()) return;   // 集合場所で E：救命艇に乗る
   if (UK.dlg) { if (!UK.choice) ukDlgSkip(); return; } if (TH.busy) return;
   const e = thNear(); if (e) { thTalk(e); return; }
   const v = thEvNear(); if (v) { thElevator(v); return; }
@@ -2014,7 +2115,7 @@ function thMusicTick(dt) {
 }
 function thStopMusic() { for (const k of ['hall', 'atr']) { const a = TH.music[k]; if (a && !a.paused) a.pause(); if (a) a.volume = 0; } }
 function updateTenhou(dt) {
-  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); thGirlCull(dt); thMkTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
+  ukDlgTick(dt); thMusicTick(dt); thHumTick(dt); thCinemaTick(dt); thAlertTick(dt); thRaidTick(dt); thEvacTick(dt); thRaidChat(dt); thSpillTick(dt); thParaTick(dt); thStepTick(dt); thPartyTick(dt); thGirlCull(dt); thMkTick(dt); if (TH.raid && TH.raid.on) thSecretGuardTick(); if (TH.banT && performance.now() > TH.banT) { TH.banT = 0; bannerTimer = 0; $('banner').style.opacity = 0; }   // 案内の帯は実時間で消える（重い端末でも残らない）
   if (TH.sea && TH.sea.material.map) TH.sea.material.map.offset.y += dt * 0.004;
   if (TH.radar) TH.radar.rotation.y += dt * 0.8;
   if (state === 'play') thDeckCull(); const w = thWhere(); if (w && w !== TH.lastW) { TH.lastW = w; TH.log.push('at:' + w); }
@@ -2097,7 +2198,7 @@ function thSpecWalk() {   // 個別の道：前甲板・見張り所・隠し通
   return { wingR: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [18, -55.5], [22.5, -55.5]], 15), wingL: W([[8.3, -3], [6, -20], [0, -44], [0, -50], [-18, -55.5], [-22.5, -55.5]], 15),
     hidden: W([[8.3, -3], [6, -20], [0, -44], [0, -49], [13.8, -49], [13.8, -45], [13.8, -26.4], [11, -26.4]], 15), ktoilet: W([[8.3, -3], [6, -20], [11, -41], [11, -44.5]], 15), plaza: W([[8.3, -3], [6, -7.5], [0, -7.5], [0, -62], [0, -80]], 4) };
 }
-window.__th = { thFallGuard, thBombDmg, thStrafePlane, thDmgClear, thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thGunRoadWalk, thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
+window.__th = { thSpiralAt, thRaidChat, thVoice, thGirlCull, get updatePlayer() { return updatePlayer; }, get keys() { return keys; }, get updateEnemies() { return updateEnemies; }, thKingBoard, thFallGuard, thBombDmg, thStrafePlane, thDmgClear, thShukeiQ, thMk, thMkMenu, thMkTick, thMkEq, thAudit: () => TH.audit, thDeptOf, thTurretWalk: () => [thWalk([[6, -118], [0, -120], [0, -129]], thY(8)), thWalk([[9, -99], [0, -100], [0, -106]], thY(8))], thGunRoadWalk, thRosOpen, thPay, thAsset, thYen, thBankQ, thPartyStart, thPartyEnd, thPretend, thPartyQ, thBio, thPool: () => jpMobLooks().filter(id => GIRLS[id]), thDmgTest: e => damageEnemy(e, 5, player.pos.clone(), false, null, 'player'), thBrain, thParaStart, thParaTick, thGreenQ, thIsRel, thTalk, thSpillTick, thSitLine, thEvacStart, thEvacTick, thEvBrain, thRaidStart, thRaidTick, thRaidBrain, TH, thVerify, thStairCheck, thStairWalk, thWalk, thRoomWalk, thSpecWalk, thGoDeck: (d, i = 1) => thGoDeck(d, TH_EV[i]), thWhere, thY, TH_EV, TH_SH, thSecretGo, player: () => player, setAlert: v => { TH.alert = !!v; if (!v && TH.esc) TH.esc.forEach(e => e && e.s && (e.s.visible = false)); }, root: () => stageRoot, boxes: () => boxes, floors: () => floors };
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
@@ -20863,6 +20964,7 @@ function fbSpawn() {
   for (let i = 0; i < FB_DRAW.col; i++) { const e = fbSp(rand(-6, 6), z0 + 6 + i * 0.25, Math.random() < 0.32 ? 'archer' : 'mob', 'blue'); if (!e) continue; e.fbSq = Math.floor(i / 10) + 1; FB.col.push(e); }
   for (let i = 0; i < FB_DRAW.port; i++) { const e = fbSp(rand(-3, 3), z0 + 14 + i * 0.4, 'mob', 'blue'); if (!e) continue; e.fbPort = true; e.passive = true; const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); FB.col.push(e); }
   FB.col.forEach((e, i) => { e.fbSlot = i; });
+  { const mob = FB.col.filter(e => !e.fbNamed && !e.fbPort), nv = Math.round(mob.length * 0.2), nm = Math.round(mob.length * 0.45); mob.forEach((e, i) => { e.fbRole = i < nv ? 'van' : i < nv + nm ? (i < nv + Math.min(8, Math.round(nm * 0.2)) ? 'guard' : 'main') : 'rear'; }); FB.col.forEach(e => { if (e.fbPort) e.fbRole = 'rear'; }); fbFormIdx(); FB.form = null; fbFormTick(0); for (const e of FB.col) if (e.fbRole === 'van' || e.fbRole === 'main' || e.fbRole === 'guard') { const q = fbFormSlot(e); if (q) e.s.position.set(q[0], e.s.position.y, q[1]); } }   // 先鋒・本隊・後続（荷役も）
   // 綾瀬のしんがり（荷の大半も背負う）
   const f = fbSp(0, z0 + 40, 'archer', 'blue', FUMI_ID, { name: '秘書課 綾瀬 文乃', pers: '冷静', cm: 159, vv: 1 }); if (f) { f.fbNamed = 'fumi'; f.fbRg = true; f.ukTag = FB_NAME.fumi; f.hp = f.hpMax = 12; FB.by.fumi = f; FB.rg.push(f); }
   for (let i = 0; i < FB_DRAW.rg; i++) { const e = fbSp(rand(-8, 8), z0 + 38 + rand(0, 8), Math.random() < 0.4 ? 'archer' : 'mob', 'blue'); if (!e) continue; e.fbRg = true; if (i % 3 === 0) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.4, 0.3), WOOD_L); b.position.set(0, 1.05, 0.22); e.s.add(b); } FB.rg.push(e); }
@@ -20882,7 +20984,7 @@ function fbSquad(from, n, cz) {
 }
 // ---- 進行 ----
 function fbReset() {
-  Object.assign(FB, { on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, ft: 0, sally: false, falling: [], dmgWin: 0, nomRu: FB_NOM.ru });
+  Object.assign(FB, { form: null, on: true, ph: 'intro', t: 0, said: {}, log: [], ch: {}, trust: 0, temp: 100, food: 6, coldK: 1, ruPool: FB_NOM.ru, lostCol: 0, lostRg: 0, crossed: false, bridgeDown: false, ended: false, ask: false, ambT: 40, avT: 70, fightT: 0, endHint: false, gateOpen: false, ft: 0, sally: false, falling: [], dmgWin: 0, nomRu: FB_NOM.ru });
   CFG.maxBodies = LITE ? 220 : 600;
   player.pos.set(0, 0, FB_Z.start); player.yaw = 0; player.pitch = -0.02;
   UK.dlg = null; UK.choice = false; UK.log = UK.log || [];
@@ -20994,26 +21096,51 @@ function fbBrain(e, dt) {
   if (!FB.bridgeDown && ((p.z > FB_Z.bridge1 && tz < FB_Z.bridge1) || onB)) { if (Math.abs(p.x) > 0.6 && p.z > FB_Z.bridge1 - 0.3) { tx = rand(-0.4, 0.4); tz = Math.max(tz, FB_Z.bridge1 + 0.6); } else tx = 0; }
   if (FB.bridgeDown) { if (p.z > FB_Z.bridge1 - 0.5) tz = Math.max(tz, FB_Z.bridge1 + 1); else tz = Math.min(tz, FB_Z.bridge0 - 0.5); }
   const d = Math.hypot(tx - p.x, tz - p.z);
-  if (d > 0.4) { const sp = e.speed * (d > 6 ? 1.15 : 0.8); const k = Math.min(d, sp * dt) / d; p.x += (tx - p.x) * k; p.z += (tz - p.z) * k; e.moving = true; e.faceWant = Math.atan2(tx - p.x, tz - p.z); }
-  else e.faceWant = Math.PI;
+  const V = e.fbV || (e.fbV = [0, 0]); if (e.fbGo == null) e.fbGo = false; if (d > (e.fbGo ? 0.45 : 1.3)) e.fbGo = true; else if (d < 0.45) e.fbGo = false;   // 少しのずれでは動かない（間合い）
+  const ws = e.fbGo ? e.speed * (d > 6 ? (e.fbRole === 'guard' || e.fbNamed === 'omiya' ? 1.45 : 1.15) : 0.85) * Math.min(1, d / 2.2) : 0, wx = e.fbGo ? (tx - p.x) / d * ws : 0, wz = e.fbGo ? (tz - p.z) / d * ws : 0, ak = Math.min(1, dt * (e.fbGo ? 1.8 : 3.5));
+  V[0] += (wx - V[0]) * ak; V[1] += (wz - V[1]) * ak; const vv = Math.hypot(V[0], V[1]);   // 歩き出しも止まりも少しずつ（惰性）
+  if (vv > 0.05) { p.x += V[0] * dt; p.z += V[1] * dt; e.moving = vv > 0.3; e.faceWant = Math.atan2(V[0], V[1]); } else e.faceWant = Math.PI;
   if (onB) p.y = e.baseY = -0.05 - Math.sin(Math.PI * clamp((p.z - FB_Z.bridge0) / (FB_Z.bridge1 - FB_Z.bridge0), 0, 1)) * 0.9 + 0.05; else if (e.baseY < 0) p.y = e.baseY = 0;
   return true;
 }
 function fbNearFoe(e, R) { const p = e.s.position; for (const o of FB.ru) { if (!isUp(o)) continue; if (Math.abs(o.s.position.z - p.z) < R && Math.abs(o.s.position.x - p.x) < R) return o; } return null; }
+// ---- 隊列（20261110a）：本隊は殿を囲み、殿が 2.5m 以上離れた分だけ少し遅れて寄る。先鋒は殿が進んだ先へ 16m 前に出る（殿が戻っても退かない）。後続は本隊のさらに後ろを遅れて歩く ----
+function fbFormIdx() { const R = { van: [], main: [], rear: [], guard: [] }; for (const e of FB.col || []) if (e.fbRole && isUp(e)) R[e.fbRole].push(e); for (const k in R) R[k].forEach((e, i) => { e.fbRi = i; }); FB.formN = { van: R.van.length, main: R.main.length, rear: R.rear.length, guard: R.guard.length }; }
+// 行軍の止まり場所（段取りの所で待つ）。殿の歩みではなく総指揮（白瀬）が決める
+function fbStopZ() { const ph = FB.ph; if (!FB.crossed) return FB_Z.bridge1 + 5; if (/^march1/.test(ph)) return FB_Z.hut + 12; if (ph === 'march2') return FB_Z.slope1 + 8; if (ph === 'march2b') return FB_Z.coat + 6; if (ph === 'march3') return FB_Z.fort + 43; return FB.gateOpen ? FB_Z.fort - 4 : FB_Z.fort + 8; }
+function fbFormTick(dt) { const kx = player.pos.x, kz = player.pos.z; let F = FB.form; if (!F) F = FB.form = { x: kx, z: kz, v: 0, go: false, hist: [], ht: 0, why: '', said: -99, kAway: 0 };
+  // 総指揮の判断：敵が近い・会話中・待ちの段取り・殿が遅れている → 止まる。そうでなければ次の止まり場所へ進む
+  const cmd = FB.by && FB.by.sumi && isUp(FB.by.sumi) ? FB.by.sumi : null, foe = FB.ru.some(o => isUp(o) && !o.fbFlee && Math.abs(o.s.position.z - F.z) < 30 && Math.abs(o.s.position.x - F.x) < 30);
+  const stop = fbStopZ(), wait = /Wait|Talk|Send|intro/.test(FB.ph) || !!UK.dlg, lag = kz > F.z + 14, go = !foe && !wait && !lag && F.z > stop + 0.5;
+  if (go !== F.go) { F.go = go; F.oT = time; F.why = foe ? 'foe' : wait ? 'wait' : lag ? 'lag' : 'stop'; if (!go && foe && cmd && time - F.said > 40) { F.said = time; popup('白瀬「全隊、止まれ。弓、構え」'); } else if (go && cmd && time - F.said > 60) { F.said = time; popup('白瀬「前進、再開」'); } }
+  const vt = go ? 1.15 : 0; F.v += (vt - F.v) * Math.min(1, dt * (go ? 0.5 : 1.2)); F.z -= F.v * dt; if (F.z < stop && go) F.z = stop; F.x += (Math.max(-6, Math.min(6, kx)) * 0.5 - F.x) * Math.min(1, dt * 0.15);
+  if ((F.ht += dt) >= 0.25 || !F.hist.length) { F.ht = 0; F.hist.unshift([F.x, F.z]); if (F.hist.length > 40) F.hist.pop(); }
+  // 殿が本隊から離れたら近衛だけが追う
+  const away = Math.hypot(kx - F.x, kz - F.z) > 10; if (away) { F.kAway += dt; if (F.kAway > 3 && time - (F.kSaid || -99) > 30) { F.kSaid = time; popup((FB.by.omiya && isUp(FB.by.omiya) ? '大宮' : '近衛') + '「殿、お一人で先へ出ないでください！」'); } } else F.kAway = 0; F.away = away;
+  if ((F.i = (F.i || 0) + dt) > 2) { F.i = 0; fbFormIdx(); } }
+function fbFormAt(e) { const F = FB.form, c = FB.by && FB.by.sumi, p = e.s.position, dd = c ? Math.hypot(p.x - c.s.position.x, p.z - c.s.position.z) : 0, lag = 0.4 + dd / 9 + ((e.id || 0) % 5) * 0.12;   // 太鼓・旗・伝令で伝わる遅れ（遠いほど遅い）
+  const k = Math.min(F.hist.length - 1, Math.round(lag / 0.25)); return F.hist[Math.max(0, k)] || [F.x, F.z]; }
+function fbFormSlot(e) { const F = FB.form, i = e.fbRi || 0; if (!F) return null; const A = fbFormAt(e);
+  if (e.fbRole === 'guard') { const n = Math.max(1, FB.formN.guard || 8), a = (i + 0.5) / n * Math.PI * 2, kx = player.pos.x, kz = player.pos.z; return [kx + Math.sin(a) * 2.2, kz + Math.cos(a) * 2.4]; }   // 近衛は殿のまわり
+  if (e.fbRole === 'van') { const c = i % 5, r = Math.floor(i / 5); return [A[0] + (c - 2) * 1.8, A[1] - 16 + r * 1.7]; }
+  if (e.fbRole === 'main') { const ring = i < 14 ? 0 : i < 36 ? 1 : 2; if (ring < 2) { const j = ring ? i - 14 : i, n = ring ? 22 : 14, a = (j + 0.5) / n * Math.PI * 2, rx = ring ? 5.2 : 3.6, rz = ring ? 6.5 : 4.4; return [A[0] + Math.sin(a) * rx, A[1] + Math.cos(a) * rz]; }
+    const j = i - 36; return [A[0] + ((j % 6) - 2.5) * 1.5, A[1] + 8 + Math.floor(j / 6) * 1.5]; }
+  const c = i % 6, r = Math.floor(i / 6); return [A[0] + (c - 2.5) * 1.5, A[1] + 12 + r * 1.5]; }
 function fbHome(e) {
   const kx = player.pos.x, kz = player.pos.z;
   if (e.fbToHut) return [9 + (e.fbSlot % 3) * 0.6, FB_Z.hut + ((e.fbSlot % 5) - 2) * 0.7];
   if (e.fbRg) {
     if (FB.rgGone) return null;
     if (FB.ph === 'bridgeWait' && FB.bt > 6) return [rand(-0.5, 0.5) + ((e.fbSlot || 0) % 2), FB.bt > 20 || (FB.rgCross) ? FB_Z.bridge0 - 4 - (e.id % 10) : FB_Z.bridge1 + 3 + (e.id % 12)];
-    const tail = FB.bridgeDown && !FB.rgAcross ? FB_Z.bridge1 + 8 : kz + 40; return [((e.id % 9) - 4) * 1.8, tail + (e.id % 5) * 1.5];
+    const tail = FB.bridgeDown && !FB.rgAcross ? FB_Z.bridge1 + 8 : (FB.form ? fbFormAt(e)[1] + 38 : kz + 40); return [((e.id % 9) - 4) * 1.8, tail + (e.id % 5) * 1.5];
   }
   if (e.fbNamed === 'ojou') return [0, FB_Z.fort - 6];
   if (e.fbLast && FB.ph === 'bridgeSend' && !FB.sendDone) return [((e.id % 5) - 2) * 1.2, FB_Z.bridge0 - 4 - (e.id % 3)];   // 十人は先に向こう岸へ
   if (e.fbLast && !FB.crossed && FB.ph !== 'bridgeSend' && !(FB.ph === 'bridgeWait' && FB.lastGo)) return [((e.id % 5) - 2) * 1.2, FB_Z.bridge1 + 3 + (e.id % 2) * 1.2];
   if (FB.ph === 'slopeWait' && FB.st < 34) { const s = e.fbSlot, gone = FB.st / 34 * FB.col.length; if (s > gone) return [((s % 6) - 2.5) * 1.3, FB_Z.slope1 + 4 + Math.floor((s - gone) / 6) * 1.4]; }
   if (FB.gateOpen && FB.ph !== 'fortFight') { const s = e.fbSlot || 0; return [((s % 12) - 5.5) * 1.6, FB_Z.fort - 5 - Math.floor(s / 12) * 1.5]; }
-  if (e.fbNamed) { const o = { sumi: [1.4, 1.6], sec2: [-1.4, 1.8], omiya: [2.5, 3.5], m35: [-2.6, 4], m37: [0.8, 5], m39: [-0.8, 6], m43: [3, -2] }[e.fbNamed] || [0, 3]; return [kx + o[0], kz + o[1]]; }
+  const F = FB.form; if (e.fbNamed) { const o = { sumi: [1.4, 1.6], sec2: [-1.4, 1.8], omiya: [2.5, 3.5], m35: [-2.6, 4], m37: [0.8, 5], m39: [-0.8, 6], m43: [3, -2] }[e.fbNamed] || [0, 3]; if (!F) return [kx + o[0], kz + o[1]]; if (e.fbNamed === 'sumi') return [F.x + 1.2, F.z + 0.6]; const A = e.fbNamed === 'omiya' || e.fbNamed === 'm43' || e.fbNamed === 'm35' ? [kx, kz] : fbFormAt(e); return [A[0] + o[0], A[1] + o[1]]; }   // 白瀬は総指揮（本隊の中心）、大宮たちは殿のそば
+  if (F && e.fbRole) return fbFormSlot(e);
   const s = e.fbSlot, row = Math.floor(s / 8), col = s % 8; return [kx + (col - 3.5) * 1.5, kz + 7 + row * 1.5];
 }
 function updateFb(dt) {
@@ -21029,7 +21156,7 @@ function updateFb(dt) {
   if (FB.shake > 0) { player.shake = Math.max(player.shake || 0, 0.3); FB.shake -= dt; }
   // 橋の板が落ちる
   if (FB.bridgeDown) for (const P of FB.planks) if (P.m.position.y > -30) { P.v -= 18 * dt; P.m.position.y += P.v * dt; P.m.rotation.x += dt * 1.3; }
-  medPost.blue = [player.pos.x + 3, player.pos.z + 8, 0];
+  if (state === 'play') fbFormTick(dt); medPost.blue = FB.form ? [FB.form.x + 3, FB.form.z + 12, 0] : [player.pos.x + 3, player.pos.z + 8, 0];   // 衛生兵は後続と歩く
   if (state !== 'play') return;
   FB.dmgWin = Math.max(0, (FB.dmgWin || 0) - dt * 8);
   if (FB.falling && FB.falling.length) FB.falling = FB.falling.filter(e => fbFallTick(e, dt));
@@ -21069,12 +21196,12 @@ function updateFb(dt) {
         for (const e of FB.rg) if (isUp(e)) { e.fbRg = false; e.fbSlot = FB.col.length; FB.col.push(e); } FB.rg = [];
         ukDlg([fbS('w_fall'), { wait: 1.5 }, fbS('w_after'), fbS('w_fumi2'), fbS('w_m35')], () => { FB.ph = 'march1'; }); } }
   }
-  if (/^march1$/.test(FB.ph) && pz < FB_Z.hut + 14) fbHut();
-  if (FB.ph === 'march2' && pz < FB_Z.slope1 + 10) fbSlope();
+  if (/^march1$/.test(FB.ph) && Math.min(pz, FB.form ? FB.form.z : 1e9) < FB_Z.hut + 14) fbHut();
+  if (FB.ph === 'march2' && Math.min(pz, FB.form ? FB.form.z : 1e9) < FB_Z.slope1 + 10) fbSlope();
   if (FB.ph === 'slopeWait') { FB.st += dt; player.pos.z = Math.max(player.pos.z, FB_Z.slope1 + 2); if (FB.st > 34) { FB.ph = 'march2b'; ukDlg([fbS('sp_done')]); fbAvalanche(FB_Z.slope1 + 18, true); } else if ((FB.st | 0) % 5 === 0) setText('wavetxt', `一人ずつ渡っている…… 残り ${Math.ceil(34 - FB.st)} 秒`); }
   if (FB.ph === 'slopeRush') { FB.st += dt; if (FB.st > 5 && !FB.rushAv) { FB.rushAv = true; fbAvalanche((FB_Z.slope0 + FB_Z.slope1) / 2, false); setTimeout(() => FB.on && ukDlg([fbS('ru_after')]), 6000); FB.ph = 'march2b'; } }
-  if (FB.ph === 'march2b' && pz < FB_Z.coat + 8) fbCoat();
-  if (FB.ph === 'march3' && pz < FB_Z.fort + 45) fbFort();
+  if (FB.ph === 'march2b' && Math.min(pz, FB.form ? FB.form.z : 1e9) < FB_Z.coat + 8) fbCoat();
+  if (FB.ph === 'march3' && Math.min(pz, FB.form ? FB.form.z : 1e9) < FB_Z.fort + 45) fbFort();
   if (FB.ph === 'fortFight' && !UK.dlg) { FB.ft = (FB.ft || 0) + dt; if (FB.ft > (FB.ch.bridge === 'send' ? 14 : 35) && !FB.sally) { FB.sally = true; for (const e of FB.ru) if (isUp(e)) e.fbFlee = true; popup('砦の門が開き、守備隊が打って出た！ ロシアのスキー部隊が退いていく'); popupTimer = 4; } }
   if (FB.ph === 'fortFight') { const near = FB.ru.filter(e => isUp(e) && !e.fbFlee && e.s.position.z < FB_Z.fort + 50).length; if (!UK.dlg && (near === 0 || (pz < FB_Z.fort + 4 && near < 3))) fbArrive(); }
   for (const e of FB.col) if (e.fbToHut && isUp(e) && Math.hypot(e.s.position.x - 9, e.s.position.z - FB_Z.hut) < 1.5 && !e.fbHidden) { e.fbHidden = true; const i = enemies.indexOf(e); if (i >= 0) { enemies.splice(i, 1); disposeNpc(e); } }
@@ -27602,7 +27729,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261108d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261110a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -28330,7 +28457,7 @@ function npcSay(e, kind, prio = 0, chance = 1) {
   return Talk.as(e, () => npcSay0(e, kind, prio));
 }
 // ---- 本物の戦の声（荒野の決闘・第二幕の全段・英国淑女編）：倒れる時は短く（うっ…！／無念…／殿…）。手当て・御臨終ですはそのまま ----
-const warOn = () => (TH.on && TH.raid && TH.raid.on) || CV.on || USD.on || CAMP.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on;
+const warOn = () => (TH.on && ((TH.raid && TH.raid.on) || !!TH.ev)) || CV.on || USD.on || CAMP.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on;
 const WAR_ROM = { 好戦的: 'aggr', 慎重: 'caut', 臆病: 'timid', 冷静: 'calm', 陽気: 'cheer' };
 const WAR_N = { hit: 3, defeat: 5, spot: 3, attack: 3, kill: 3, allydown: 3, hold: 3 };
 function warKey(e) {
@@ -33242,6 +33369,7 @@ function updatePlayer(dt) {
   if (CV.on && CV.ride) { cvFly(dt); return; }
   if (player.kei) { keiSeatPlayer(); keiCam(dt); return; }   // 浜の軽自動車
   if (CAR.riding && carOn()) { carSeatPlayer(); carCamera(dt); return; }   // 平原の助手席
+  if (TH.on && TH.ev && TH.ev.kingB && thKingInBoat(dt)) return;   // 天鳳：殿は救命艇の上
   // 移動
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
   let mx = 0, mz = 0;
@@ -33290,7 +33418,8 @@ function updatePlayer(dt) {
   const midLadder = lad && player.pos.y > lad.y0 + 0.08 && player.pos.y < lad.y1 - 0.45;
   player.climbing = !!lad && (Math.abs(fin) > 0.2 || midLadder);
   if (player.climbing && lad && lad.mech) mechLadPass = true;
-  if (ml > 0 && !(player.climbing && midLadder) && !player.autoClimb) {
+  const thSpOn = TH.on && !player.climbing && !player.autoClimb && player.vy <= 0.5 && thSpiralMove(dt, mx, mz, ml, sp, mag, fin);
+  if (ml > 0 && !thSpOn && !(player.climbing && midLadder) && !player.autoClimb) {
     const hk = player.climbing && fin < 0 && player.pos.y > lad.y0 + 0.08 ? 0.2 : 1;
     player.pos.x += mx / ml * sp * mag * dt * hk; player.pos.z += mz / ml * sp * mag * dt * hk; player.seated = false;
     if (player.onGround) {
@@ -33360,6 +33489,7 @@ function updatePlayer(dt) {
     if (player.pos.y > PL_IN.yMax) { player.pos.y = PL_IN.yMax; player.vy = Math.min(0, player.vy); }   // 頭が天井（2.34m）に届かない高さまで
   }
   if (player.pos.y <= gh && !player.climbing) { player.pos.y = gh; player.vy = 0; player.onGround = true; }
+  if (thSpOn && player.thSp != null) { player.pos.y = player.thSp; player.vy = 0; player.onGround = true; }   // 螺旋階段：段の高さをなめらかに
   if (MTN.on && player.onGround) {
     const slot = player.mtnFoot;
     if (slot && player.pos.y > 0.35 && gh < slot[2] - 1.05 && gh < 0.25) {
@@ -35982,5 +36112,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

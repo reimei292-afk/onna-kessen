@@ -2720,6 +2720,8 @@ const KS2_XG = {
 function ks2VoiceFile(t, vk) { const M = ((window.VOICE_KS2 || {}).byText || {})[t]; if (!M || !M.length) return null; const L = (vk && M.find(x => x.v === vk)) || M[(Math.random() * M.length) | 0]; return L.file; }
 function ks2Say(e, t, prio, vk) {   // 声と字幕。e が無ければ本隊のそばの声として
   const p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + Math.abs(p.y - player.pos.y + 1.6) * 0.5;
+  if ((prio == null ? 1.4 : prio) < 2 && time < (KS2.subLock || 0) && d < 45) return;   // 殿が話しかけた相手の返事の間は、近くの雑談で字幕・声を上書きしない
+  if ((prio || 0) >= 2) KS2.subLock = time + Math.max(2.5, String(t).length * 0.13 + 1.2);
   const f = ks2VoiceFile(t, vk || (e && e.ks2Vk)); if (f && VoicePack.ok) Talk.as(e || null, () => VoicePack.play(f, Math.min(d, 55), prio == null ? 1.4 : prio, 1));
   if (d < 45 || (prio || 0) >= 1.8) { const nm = e ? (e.ks2Title || (e.prof && e.prof.name) || '') : ''; subtitle(t); const el = $('subtitle'); if (el) el.textContent = (nm ? nm + '「' : '「') + t + '」'; }
 }
@@ -3192,7 +3194,7 @@ function ks2BearTick() { const fr = KS2.bearers.filter(e => isUp(e) && !e.ks2Job
     const n = KS2.cotN++, st = new THREE.Mesh(KS2.stG || (KS2.stG = new THREE.BoxGeometry(0.7, 0.08, 2.1)), ks2Mats().cloth); st.visible = false; stageRoot.add(st);
     const J = { b, ph: 'go', lead: L, mate, st, dst: [KS2.tent[0] - 10 + (n % 12) * 1.3, KS2.tent[1] - 6 - Math.floor(n / 12) * 2.4] }; L.ks2Job = J; mate.ks2Job = J; } }
 // ---- 進行 ----
-function ks2Reset() { KS2.ph = 'off'; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false;
+function ks2Reset() { KS2.ph = 'off'; KS2.subLock = 0; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false;
   KS2.tr.length = 0; KS2.trIM = null; KS2.pxSh = null; KS2.stk = null; KS2.stkB = 0; KS2.sq = null; KS2.supp = {}; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
   player.pos.set(4, 1.6 + 0, 232); player.yaw = 0; player.pitch = -0.04; CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
 function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; KS2.t = 0; KS2.bearers = [];
@@ -3282,7 +3284,7 @@ function ks2Surrender() { KS2.sur = { t: KS2.t }; KS2.ph = 'won'; KS2.log.push([
   const c = KS2.cmd; if (c) { c.s.position.set(0, 0, 13.5); c.ks2Home = [0, 13.5, 0]; } ks2En('cmd1', c, 2, 20); setTimeout(() => { if (KS2.on) ks2En('cmd2', c, 2, 20); }, 5500); setTimeout(() => { const el = KS2.by.uk06; if (KS2.on && el && isUp(el)) ks2En('elThanks', el, 1.8, 25); }, 9000);
   setTimeout(() => { if (!KS2.on || state !== 'play') return; showBanner('白壁城、開城！', '反乱軍を率いたアラベラ王女が本丸で降伏した'); bannerTimer = 5; Sfx.fanfare && Sfx.fanfare(); }, 10500);
   { const L = ['sumi', 'uk06', ...ks2Named((e, k) => k !== 'sumi' && k !== 'uk06' && KS2_X[k] && KS2_X[k].sur && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 60).sort(() => Math.random() - 0.5).slice(0, 4)]; L.forEach((k, i) => KS2.later.push([KS2.t + 12 + i * 4.3, () => ks2Ln(k, 'sur', 1.8)])); }
-  setTimeout(() => { if (!KS2.on || state !== 'play') return; gameOver(true); const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / 1500・守り手の残り <b>${c2.d}</b> / 1000（降伏）。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 38000); }
+  setTimeout(() => { if (!KS2.on || state !== 'play') return; try { localStorage.setItem('ks2_fallen', JSON.stringify(Object.keys(KS2.by || {}).filter(k => KS2.by[k] && !isUp(KS2.by[k])))); } catch (_) {} gameOver(true); if ($('kfBtn')) $('kfBtn').style.display = ''; const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / 1500・守り手の残り <b>${c2.d}</b> / 1000（降伏）。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 38000); }
 function ks2VoicePre() { if (KS2.vPre || !VoicePack.ok || !window.VOICE_KS2) return; KS2.vPre = true; const M = window.VOICE_KS2.byText, fs = [], add = t => { for (const x of M[t] || []) fs.push(x.file); };   // 号令・名のある娘の台詞・英語の呼びかけは先に読む
   for (const k in KS2_L) { const v = KS2_L[k]; if (k === 'succ') for (const n in v) add(v[n]); else if (k === 'hir' || k === 'san') for (const g in v) for (const q of v[g]) add(q[1]); else for (const q of v) add(q[1]); } for (const k in KS2_EN) add(KS2_EN[k][1]); for (const t of KS2_RV.ramen) add(t);
   for (let i = fs.length - 1; i >= 0; i--) VoicePack.load(fs[i], i < 12); }
@@ -6700,7 +6702,7 @@ function stageLook(name) {
   document.documentElement.classList.toggle('mtn', mt);
   CASTLE.on = name === 'castle'; BEACH.on = name === 'beach';
   PLANE.on = pl; document.documentElement.classList.toggle('plane', pl);   // 機内だけのメニュー項目
-  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4 || name === 'frSea', uk3 = name === 'ukNight' || name === 'ukParty'; UK7.on = name === 'ukParty'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
+  const uk = name === 'ukMeet', uk4 = name === 'ukPrincess' || name === 'ukLanding', uk2 = name === 'ukHarbor' || uk4 || name === 'frSea', uk3 = name === 'ukNight' || name === 'ukParty' || name === 'ks2Feast'; UK7.on = name === 'ukParty' || name === 'ks2Feast'; UK7.kf = KF.on = name === 'ks2Feast'; UK.on = uk; UK2.on = uk2 && !uk4; UK3.on = uk3 && !UK7.on; UK4.on = uk4; document.documentElement.classList.toggle('ukmeet', uk); document.documentElement.classList.toggle('uk7', UK7.on); if (!uk && $('talk')) { $('talk').textContent = '秘書課の侍女に頼む（E / 頼むボタン）'; if ($('ukdlg')) $('ukdlg').style.display = 'none'; }
   FRS.on = name === 'frSea'; USD.on = name === 'usDuel'; RK.on = name === 'usRaid'; UD.on = name === 'usDrop'; document.documentElement.classList.toggle('ud', !!UD.on); if (UD.on) { document.documentElement.classList.remove('rk'); const rh = $('rkHud'); if (rh) rh.style.display = 'none'; } camera.far = (RK.on || UD.on) ? 24000 : 1200; camera.near = (RK.on || UD.on) ? 0.2 : 0.05; camera.updateProjectionMatrix(); if (!RK.on && !UD.on) { document.documentElement.classList.remove('rk'); if ($('rkHud')) $('rkHud').style.display = 'none'; } PAL.on = name === 'palace'; if (PAL.on) document.documentElement.classList.add('ukmeet'); document.documentElement.classList.toggle('pal', PAL.on); if (!PAL.on && $('palClock')) $('palClock').style.display = 'none';
   ground.visible = !pl && !uk && !uk2 && !uk3 && name !== 'beach' && !sn && !mt && !tr && !nr && !isl; sky.visible = !pl && !nr && !uk3; for (const m of mountains) m.visible = !pl && !mt && !nr && !uk && !uk2 && !uk3;   // 英国淑女編：沖の水平線（雪山は出さない）
   scene.fog.near = uk3 ? 30 : uk2 ? 70 : uk ? 60 : pl ? 200 : nr ? 9 : sn ? 8 : mt ? 22 : isl ? 28 : tf ? 48 : LOOK0.fogN; scene.fog.far = uk3 ? 260 : uk2 ? 620 : uk ? 520 : pl ? 600 : nr ? 105 : sn ? (SNOW.blizzard ? 32 : 95) : mt ? 150 : isl ? 220 : tf ? 340 : LOOK0.fogF;
@@ -19643,6 +19645,7 @@ const STAGES = {
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
   kessen2: { name: '決戦2「白壁城」', desc: '天鳳のあと。英国が中国で反乱を起こし、平野の白壁城（高い城壁・東西南北の四門）を奪った。攻め手 約1500・守り手 約1000。南は破城槌と攻城塔、東は梯子、西はエレノアの呼びかけ、北は陽動。門が破れても中庭・第二の門・本丸と戦いは続く。司令官が降伏すれば勝ち。' },
+  ks2Feast: { name: '白壁城祝勝会', desc: '決戦2「白壁城」に勝った夜。本丸御殿の大広間で祝勝会（立食）。卓は序列の順——第1卓 殿・三条・西園寺・大宮・白瀬・綾瀬・早瀬／第2卓 広瀬・九条・宮下・桜井・白石・久遠／第3卓 小鳥遊・霧島・氷室・一条・夏目・小日向。卓を回って話し（E）、卓の話に加わろう。決戦2 で倒れた者の場所は空けてある。白瀬に中締めを頼むとお開き。' },
   tenhou: { name: '新武装客船「天鳳」', desc: '桜鳳の後を継ぐ新しい武装客船。全長 350m・幅 40m・16 甲板・乗員 2,600。両舷の「主砲への道」を航空作業甲板から前部主砲まで歩ける。第三主砲塔の中にも入れる。大階段とエレベーターで船内を行き来する。戦いは無い。' },
   palace: { name: '宮殿の日常', desc: '戦いの無い日。殿の宮殿（外は和の城、中は擬洋風）を歩き、侍女たちと話す。階段・エレベーターで各階へ。右上の時計で朝・昼・夕・夜。3階の会議室では、主要メンバーと不正アクセスの緊急会議がひらかれる（行事の「緊急会議へ」、または上座で E）。' },
   usTown: { name: 'アメリカ西部編 第二幕「城下町・平城・宮殿・山城・総構え」', desc: '霧の朝、アメリカ勢が戦わずして上陸した。宮殿へはこの城下町と平城を抜けるほか道はない。①城下町（綾瀬が指揮・英国の娘も加勢）：落とし穴・行き止まりの横丁と屋根の弓組・竹束・柵・破裂弾で 4〜6 分は粘れ。②平城（西園寺が守る）：堀と土橋、梯子と小舟で寄せてくる。③宮殿（大宮が近衛を率いる）：抜け道から来る敵を大階段の上で止めよ。④山城：曲輪を一つずつ。本丸が落ちれば裏の抜け道へ。⑤総構えの大城（小田原城に倣う）：急ぎの徴募の娘たちも加わり、町ぐるみの土塁と空堀で三方からの寄せを止めよ。名のある大将は前に出ず後ろで采配する。殿が倒れれば負け。結果は最後に一度だけ。' },
@@ -28005,8 +28008,8 @@ function buildUkParty() {
   // 立食の台（東西の壁沿い）
   for (const sx of [-1, 1]) for (const z of [-10, 2, 14, 24]) { u7Box(1.1, 0.9, 7, M.buf, sx * (U7.BUF + 0.9), 0.45, z, true); if (sx < 0 && z === 24) { u7Drinks(sx * (U7.BUF + 0.9), z); continue; } for (let k = -2; k <= 2; k++) u7Food(sx * (U7.BUF + 0.9), 0.915, z + k * 1.3, (k + 2 + (z > 10 ? 3 : 0) + (sx > 0 ? 1 : 0)) % 6); }
   // 円卓 22：殿の卓（中央・入口から最も遠い）、隣の卓、ほか 20（南の列も 5 卓。侍女の見た目が均等に出るように 2 卓増やした）
-  u7Table(U7.KING[0], U7.KING[1], true); u7Table(U7.T2[0], U7.T2[1], false);
-  for (const z of [-8, 3, 14, 24]) for (const x of [-18, -9, 0, 9, 18]) u7Table(x, z, false);
+  if (UK7.kf) kfTables(); else { u7Table(U7.KING[0], U7.KING[1], true); u7Table(U7.T2[0], U7.T2[1], false);
+  for (const z of [-8, 3, 14, 24]) for (const x of [-18, -9, 0, 9, 18]) u7Table(x, z, false); }   // 白壁城祝勝会：序列の三卓＋名の無い侍女の卓
   // 厨房（南東の隅、配膳台ごしに見える）：ステンレスの調理台・コンロ・鍋・換気フード
   { const st = new THREE.MeshLambertMaterial({ color: 0xb8bcc2 }), dk = new THREE.MeshLambertMaterial({ color: 0x2a2c30 }), tile = new THREE.MeshLambertMaterial({ color: 0xdfe4e6 });
     const tf = new THREE.Mesh(new THREE.PlaneGeometry(10.4, 5.4), tile); tf.rotation.x = -Math.PI / 2; tf.position.set(19.6, 0.02, 30.2); stageRoot.add(tf);
@@ -28022,7 +28025,7 @@ function buildUkParty() {
   const dk = new THREE.Mesh(new THREE.PlaneGeometry(W * 2, 12), M.deck); dk.rotation.x = -Math.PI / 2; dk.position.set(0, 0.01, Z0 - 6); stageRoot.add(dk);
   u7Box(W * 2, 1.0, 0.1, M.rail, 0, 0.5, Z0 - 11.8, true);
   for (const sx of [-1, 1]) u7Box(0.3, 1.0, 12, M.rail, sx * W, 0.5, Z0 - 6, true);
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), M.sea); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -6, -900); stageRoot.add(sea);
+  const sea = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), UK7.kf ? new THREE.MeshBasicMaterial({ color: 0x070a07 }) : M.sea);   // 白壁城：露台の下は夜の平野 sea.rotation.x = -Math.PI / 2; sea.position.set(0, -6, -900); stageRoot.add(sea);
   { const n = 500, pos = new Float32Array(n * 3); for (let i = 0; i < n; i++) { const a = rand(-1.4, 1.4), el = rand(0.06, 1.1), r = 380; pos[i * 3] = Math.sin(a) * Math.cos(el) * r; pos[i * 3 + 1] = Math.sin(el) * r; pos[i * 3 + 2] = -Math.cos(a) * Math.cos(el) * r + Z0; }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); stageRoot.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xf4f0e0, size: 1.6, sizeAttenuation: false }))); }
   for (const x of [-16, -6, 6, 16]) { const l = new THREE.PointLight(0xffd8a0, 0.5, 9, 1.6); l.position.set(x, 2.4, Z0 - 2); stageRoot.add(l); const lb = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), M.glow); lb.position.set(x, 2.4, Z0 - 0.4); stageRoot.add(lb); }
@@ -28042,8 +28045,8 @@ function u7SpawnAll() {
   const K = UK7.tables[0], T2 = UK7.tables[1];
   UK7.kingSeat = K.seats[3];   // 殿の席（南向き：入口を見渡す）
   const vip = (key, girl, T, si, pers, cm) => { const e = u7Spawn(T.seats[si].x, T.seats[si].z, GIRLS[girl] ? girl : undefined, { name: UK7_NAME[key], pers, cm, vv: 1 }, { uk7Vip: key }); if (!e) return; e.ukTag = UK7_NAME[key]; u7Seat(e, T.seats[si], T); UK7.vip[key] = e; };
-  vip('ojou', OJOU_ID, K, 0, '冷静', 163); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
-  vip('fumi', FUMI_ID, T2, 0, '慎重', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
+  vip('ojou', OJOU_ID, K, 0, '冷静', 158); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
+  vip('fumi', FUMI_ID, T2, 0, '冷静', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
   // 名の無い侍女：日本の侍女の見た目（旧 雑兵・弓を持たない弓兵も）を混ぜて順に配る → どの見た目も同じ回数（差は 1 まで）
   const looks = jpMobLooks(); for (let i = looks.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [looks[i], looks[j]] = [looks[j], looks[i]]; }
   let li = 0; const look = () => looks.length ? looks[li++ % looks.length] : undefined; UK7.looks = looks;
@@ -28137,6 +28140,7 @@ function u7Ambient(dt) {
   u7Say(a, a.uk7Con ? V.con[(Math.random() * V.con.length) | 0] : V.talk[(Math.random() * V.talk.length) | 0]);
 }
 function uk7Key() {
+  if (UK7.kf) return kfKey();   // 白壁城祝勝会
   if (UK.dlg && !UK.choice) { ukDlgSkip(); return true; }
   if (UK.dlg || UK7.phase === 'confess' || UK7.phase === 'end') return true;
   const V = window.VOICE_UK7, P = player.pos, dist = e => Math.hypot(e.s.position.x - P.x, e.s.position.z - P.z);
@@ -28150,7 +28154,7 @@ function uk7Key() {
   popup('近くに誰もいない'); return true;
 }
 function u7Near() { let best = null, bd = 2.6; for (const e of UK7.girls) { const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) - (e.uk7Crew && e.uk7Crew !== 'jp' ? 0.9 : 0); if (d < bd && isUp(e)) { bd = d; best = e; } } return best; }
-function u7AtSeat() { return UK7.kingSeat && Math.hypot(player.pos.x - UK7.kingSeat.x, player.pos.z - UK7.kingSeat.z) < 2.2; }
+function u7AtSeat() { return !UK7.kf && UK7.kingSeat && Math.hypot(player.pos.x - UK7.kingSeat.x, player.pos.z - UK7.kingSeat.z) < 2.2; }
 // 殿の問い（字幕だけ）→ 娘が声で答える。白瀬たちが近くにいれば口をはさむ（諫める）
 function u7Line(key, o) { UK7_FIX[key] = o; return { say: key }; }
 function u7Ans(e, i) {
@@ -28225,6 +28229,7 @@ function u7MurInit() {
   UK7.mur = { g, n: 0, acc: 0, pool: null }; return UK7.mur;
 }
 function u7MurPool() {
+  if (UK7.kf) return kfMurPool();
   const V = window.VOICE_UK7; if (!V) return [];
   const a = [...V.talk, ...V.con, ...V.pairs.flat(), ...V.qv.flat(), ...V.qc, ...V.laugh, ...V.laugh, ...V.laugh, ...(V.dropr || [])].map(o => o.file);
   return a;
@@ -28413,17 +28418,18 @@ function uk7Start() {
   showBanner('英国淑女編 第七幕「祝勝会」', '日本へ帰る客船「瑞鳳丸」の大広間');
   ukDlg([{ wait: 1.2 }, { say: 'n7_1' }, { say: 'open' }, { say: 'k_toast' }], () => { UK7.phase = 'party'; UK7.pt = 0; UK7.log.push('phase:party'); });
 }
-function uk7PhaseLabel() { return UK7.phase === 'mid' ? '祝勝会　中締め' : UK7.phase === 'after' || UK7.phase === 'confess' || UK7.phase === 'end' ? '祝勝会　中締めのあと' : '祝勝会'; }
-function uk7Goal() { return UK7.phase === 'party' ? 'E：侍女と話す／英国の給仕を呼んで注文（殿の席でも E）／頃合いを見て西園寺に中締めを頼む' : UK7.phase === 'after' ? 'E：心に決めた娘（殿の卓・隣の卓）に声をかける' : ''; }
+function uk7PhaseLabel() { if (UK7.kf) return UK7.phase === 'end' ? '白壁城祝勝会　お開き' : '白壁城祝勝会'; return UK7.phase === 'mid' ? '祝勝会　中締め' : UK7.phase === 'after' || UK7.phase === 'confess' || UK7.phase === 'end' ? '祝勝会　中締めのあと' : '祝勝会'; }
+function uk7Goal() { if (UK7.kf) return UK7.phase === 'party' ? 'E：卓を回って話す（卓に近づくと話が始まる）／広瀬を呼ぶ／白瀬に中締めを頼むと終わる' : ''; return UK7.phase === 'party' ? 'E：侍女と話す／英国の給仕を呼んで注文（殿の席でも E）／頃合いを見て西園寺に中締めを頼む' : UK7.phase === 'after' ? 'E：心に決めた娘（殿の卓・隣の卓）に声をかける' : ''; }
 function updateUk7(dt) {
   if (!UK7.on) return;
   scene.background.setHex(0x0a0f1c); if (scene.fog) { scene.fog.color.setHex(0x0a0f1c); scene.fog.near = 60; scene.fog.far = 400; }
   player.drawing = false;
   UK7.t += dt; UK7.pt += dt;
   player.pos.x = clamp(player.pos.x, -U7.X + 0.6, U7.X - 0.6); player.pos.z = clamp(player.pos.z, U7.Z0 - 11.2, U7.Z1 - 0.6);
-  if (UK7.phase === 'party' || UK7.phase === 'after' || UK7.phase === 'mid') { if (UK7.phase !== 'after' || (UK7.gone || 0) < (UK7.crowd0 || 1) * 0.5) u7WalkTick(dt); u7Ambient(dt); u7DropTick(dt); u7OfferTick(dt); u7T2Tick(dt); }
+  if (UK7.kf) kfTick(dt);
+  else if (UK7.phase === 'party' || UK7.phase === 'after' || UK7.phase === 'mid') { if (UK7.phase !== 'after' || (UK7.gone || 0) < (UK7.crowd0 || 1) * 0.5) u7WalkTick(dt); u7Ambient(dt); u7DropTick(dt); u7OfferTick(dt); u7T2Tick(dt); }
   u7MurTick(dt);
-  u7LeaveTick(dt);
+  if (!UK7.kf) u7LeaveTick(dt);
   if (UK7.phase === 'end' && UK7.pt > 1.0) uk7Ending();
   ukDlgTick(dt);
   document.documentElement.classList.toggle('ukdlgon', !!UK.dlg);
@@ -28432,6 +28438,7 @@ function uk7Ending() {
   if (UK7.ended) return; UK7.ended = true;
   state = 'over'; $('banner').style.opacity = 0; bannerTimer = 0; if ($('ukdlg')) $('ukdlg').style.display = 'none';
   const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'), C = UK7.conf;
+  if (UK7.kf) { kfEnding(); if (document.exitPointerLock) document.exitPointerLock(); $('over').style.display = 'flex'; return; }
   if (h1) h1.textContent = '英国淑女編 完'; if (h2) h2.textContent = '第七幕「祝勝会」';
   const nm = C ? UK7_NAME[C.who] : '', ans = C ? (C.kind === 'yes' ? 'はにかみながら、うなずいた' : C.kind === 'no' ? 'やさしく、首を横に振った' : '「少し、時間をください」と答えた') : '';
   $('result').innerHTML = `日本へ帰る客船「瑞鳳丸」の大広間で、侍女たちと英国の娘たちが同じ灯りの下に集った。` + (C ? `<br>夜の甲板で、殿は想いを告げた——${nm}は${ans}。` : '') + `<br><span style="opacity:.8">長い戦いは終わった。ご覧いただき、ありがとうございました。</span>`;
@@ -28439,6 +28446,267 @@ function uk7Ending() {
   $('over').style.display = 'flex';
 }
 if (TEST) window.__uk7 = { UK7, dlg: () => !!UK.dlg, cancel: () => { UK.dlg = null; ukChoiceOff(); $('ukdlg').style.display = 'none'; }, skip: () => ukDlgSkip(), pick: i => ukPick(i), order: k => u7Order(k), key: () => uk7Key(), mid: () => { u7MidStart(); }, confess: k => u7Confess(UK7.vip[k]) };
+// =====================================================================
+//  白壁城祝勝会（?stage=ks2Feast）：決戦2 のあと。英国淑女編 第七幕の大広間と立食の卓をそのまま使う（新しい絵は無い）。
+//   卓の並びは序列の順（第1卓が上座＝舞台側・入口から最も遠い）。卓の中も序列の順に、上座（北）から時計回りに立つ。
+//   乾杯のひとことも序列の順。決戦2 で倒れた名のある娘の立ち位置は空けて、杯をひとつ置く（皆が自然に触れる）。
+// =====================================================================
+const KF_T = [['king', 'sanjo', 'ojou', 'omiya', 'sumi', 'fumi', 'sec2'], ['hirose', 'kujo', 'sec4', 'sec3', 'reika', 'shizuka'], ['flute', 'sysop', 'shinobu', 'chikage', 'akari', 'hiyori']];
+/*KF_DATA_BEGIN*/
+const KF_D = {
+  open: [['narr', '白壁城を取り戻した夜。本丸御殿の大広間で、祝勝会が開かれた。'],
+    ['king', '皆、よく戦ってくれた。今夜は堅いことは抜きだ。……と言いたいが、乾杯の前に、上の卓からひとことずつ頼む'],
+    ['sanjo', 'え、私からですか。……はいはい。初陣でしたけど、生きてます。以上です'],
+    ['ojou', '玲奈さま、短すぎますわ。……南門は、皆がよく踏みとどまってくれました。わたくしからも、お礼を申し上げますわ'],
+    ['omiya', 'はいっ！ 南門の副官として、全員の名前を帳面につけてあります！ 今夜は勤務外です！'],
+    ['sumi', '総大将として申し上げます。四つの門、すべて落としました。……殿、乾杯の前の長話はなさらないでくださいね'],
+    ['fumi', '東門からも、と言いたいところですが、澄さんに先に釘を刺されましたね。短くいたします'],
+    ['sec2', 'は、早瀬です！ えっと、本隊は、その、みんな、いえ、ほとんど、元気です！ あの、以上です！'],
+    ['hirose', '第二卓を代表して、広瀬です。……初陣で何をしたかは、あまり聞かないでください'],
+    ['flute', '第三卓は、笛で失礼します。……では、殿、どうぞ'],
+    ['king', 'よし。白壁城に、そして倒れた者たちに。……乾杯！'],
+    ['narr', '乾杯の声が、大広間の高い天井に響いた。']],
+  x: [
+    [ // 第1卓
+      [['omiya', '玲奈さま、お皿、お取りしましょうか'], ['sanjo', 'いいって。自分で取れるから。あと、玲奈さまはやめて'], ['ojou', 'そうはまいりませんわ、玲奈さま。席次は席次ですもの'],
+        ['sanjo', '家を出た身だし、序列とかいいから。今夜はただの侍女'], ['omiya', 'ただの侍女は、殿のすぐ隣には立ちません！'], ['sanjo', '……それは、ここに立てって言われたから立ってるだけ'],
+        ['king', '俺が言った。いとこを端に立たせたら、叔父上に叱られる'], ['sanjo', '父の話はやめてくださいよ、殿。家に連れ戻されるんで'], ['ojou', 'でも、白壁城に名乗らずに加わっていらしたのには、本当に驚きましたわ'],
+        ['omiya', '三日でばれてましたけどね！ 歩き方が宮家なんですよ、玲奈さま'], ['sanjo', '歩き方って何。……もう、面倒くさいなあ'], ['king', '面倒くさいと言いながら、本隊で俺の前に出たのは誰だった？'],
+        ['sanjo', '……誰も行かないから行っただけです。それも言わないで']],
+      [['hirose', '三条さん、ちゃんと食べてます？ さっきから飲み物しか持ってないでしょう'], ['sanjo', '広瀬さん、わざわざ第二卓から来たんですか'], ['hirose', '来ますよ。初陣の夜は、食べないとあとで手が震えるんです'],
+        ['sanjo', '広瀬さんも初陣でしたよね。震えてます？'], ['hirose', '……少しだけ。だから人の世話を焼いて、紛らわしてるんです'], ['sumi', '千夏、正直でよろしい。三条さまも、何か召し上がってください'],
+        ['sanjo', '白瀬さんまで。……わかりました、食べます。食べますから'], ['sec2', 'あ、あの、このローストビーフ、すごくおいしいです！ 三条さま、取ります、取りますね！'], ['sanjo', '早瀬さん、お皿三枚持ってる。落とすよ'],
+        ['fumi', 'ことね、一枚ずつ。……千夏、三条さんの面倒を見るのはいいけれど、自分のお皿も空ですよ'], ['hirose', '文乃さんに言われなくても、わかってます'], ['king', '二人とも、よく生きて帰った。それで十分だ'],
+        ['sanjo', '……はい。広瀬さんも'], ['hirose', 'ええ。三条さんも']],
+      [['fumi', '殿、白壁城の記録、もう帳簿にまとめてあります。殿が転んだ回数も'], ['king', 'それは書かなくていい'], ['fumi', '三回です。梯子で一回、井闌の上で一回、本丸の石段で一回'],
+        ['sec2', 'えっ、ふ、文乃さん、そんなの書いたら殿がかわいそうです、あ、でも三回なのは本当で、私も見てて'], ['king', 'ことね、かばってるのか追い打ちなのか、どっちだ'], ['sec2', 'か、かばってます！ たぶん！'],
+        ['sumi', '文乃。殿の前で数え上げるのは、おやめなさい'], ['fumi', '殿のいないところで数えたら、もっと意地悪になりますよ、澄さん'], ['sumi', '……それも困ります'],
+        ['king', '白瀬、お前だけが味方だ'], ['sumi', '味方ですから申し上げます。殿、井闌には二度とお一人で登らないでください'], ['king', '……味方の言い方が一番きつい'],
+        ['fumi', '記録しておきますね。「殿、総大将に叱られる」']],
+      [['omiya', 'すみれ、南門で何回前に出たか、覚えてる？'], ['ojou', '……覚えておりませんわ'], ['omiya', '七回！ 私が後ろから袖を引っぱったのが七回！'],
+        ['ojou', 'ひなたが引っぱるから、なかなか進めなかったのですわ'], ['omiya', '進まなくていいんです、隊長は！ 昔から木に登っては落ちて、下で受け止めるのは私なんですから'], ['sanjo', 'すみれ、昔から変わってないんだ'],
+        ['ojou', '玲奈さままで。……わたくし、そんなに前に出ておりましたかしら'], ['sumi', '西園寺殿。南門の旗は、ずっと一番前に見えておりました'], ['ojou', '白瀬さんにまで言われては、言い返せませんわね'],
+        ['king', '次からは、旗は大宮に持たせる'], ['omiya', 'はいっ、殿！ 私なら後ろで振ります！'], ['ojou', '……それでは、わたくしが旗を追い越してしまいますわ']],
+    ],
+    [ // 第2卓
+      [['hirose', '九条先生、こちらへ。……あの、私が上座でいいんでしょうか。先生は中将で、一番年上なのに'], ['kujo', '席次は家の順よ、広瀬さん。軍の階級とは別。私は端のほうが、呼ばれたときに出やすいの'],
+        ['sec4', '先生、今夜も呼ばれるおつもりですか'], ['kujo', '救護所にまだ十二人いるもの。皆、命に別状はないけれど、熱の出る子がいるかもしれない'],
+        ['sec3', '担架で運んだのは、延べで三百人を超えました。四つの門の合計です'], ['reika', '桜井、こんな夜まで数えてるの？'],
+        ['sec3', '数えていないと落ち着かないんです。白石大佐こそ、東門で三回も突っ込んでいましたよね'], ['reika', '三回じゃないわ。四回よ'], ['shizuka', '……数え直すところは、そこではないと思います'],
+        ['kujo', '白石さん、四回目に肩をぶつけたでしょう。あとで見せてね'], ['reika', '平気よ。フェンシングのときは、もっとひどかったもの'], ['kujo', '平気な人ほど、あとで来るのよ。待ってるから'],
+        ['hirose', '先生、私も救護所を手伝います'], ['kujo', 'ありがとう。でも初陣の夜は、まず自分が眠ること。それが一番の手伝いよ']],
+      [['sec4', '殿、北門の記録です。誰がどこで何をしたか、全員分、書き留めてあります'], ['king', '宮下、宴会の最中に帳面を広げるな'], ['sec4', '忠義と正確な記録だけが、私の取り柄ですので'],
+        ['reika', '宮下、それ、前にも言ってたわよね。靴磨きのときも'], ['sec4', '……その話は、記録から消しました'], ['sec3', '消しても、私が覚えています。殿の靴、十四足でした'],
+        ['king', '数えるな'], ['shizuka', '北門は、霧島さんとうまく回っていましたね。門が開くのが一番早かった'], ['sec4', '霧島中佐が、見張りの交代の刻をきっちり読んでくださったので'],
+        ['hirose', '宮下大佐、その記録、私のところもありますか'], ['sec4', '本隊の広瀬さん。三条さんの前に出て、矢を二本、盾で受けた。書いてあります'], ['hirose', '……そんなこと、書かなくていいです'],
+        ['reika', 'いいじゃない。書かれるうちが華よ']],
+      [['reika', '久遠、あなた、西門で一度も声を荒らげなかったわね。怖くないの？'], ['shizuka', '怖いですよ。怖いときほど、声を低くするようにしているだけです'], ['sec3', 'バレーのときの癖ですか'],
+        ['shizuka', 'ええ。東レにいたころ、マッチポイントで叫ぶ子から崩れていきましたから'], ['reika', '私は商社で、叫んでも取れない契約ばかりだったわ。だから剣を取ったのよ'], ['sec3', '白石大佐、伊藤忠を辞めた理由、それなんですか'],
+        ['reika', '退屈だったの。数字を眺めるのは、桜井に任せるわ'], ['sec3', '数字は眺めるものじゃありません。……南門の井闌、三台とも予定より早く城壁に着きました。設計どおりです'], ['hirose', '桜井大佐、あれ、設計したんですか'],
+        ['sec3', '船の設計の応用です。三菱にいたころは、まさか攻城塔の図面を引くとは思いませんでした'], ['shizuka', 'エレノアさんが西門で車輪の音を聞いて、驚いていましたよ'], ['reika', '英国の娘まで驚かせたなら、上出来ね']],
+      [['kujo', 'アラベラ王女、本丸で降伏したとき、少しも震えていなかったわね'], ['sec4', '記録には「剣を差し出し、礼をした」とあります'], ['reika', '敵ながら立派だったわ。私なら、もう少し粘ったけど'],
+        ['shizuka', '粘っていたら、白石さんがまた突っ込んでいましたね'], ['reika', '……否定はしないわ'], ['sec3', '降伏のとき、本丸に残っていた守り手は二十人ほどでした。あれ以上は、誰のためにもなりません'],
+        ['hirose', '王女は、今どこに'], ['kujo', '北の客間。さっき様子を見てきたわ。怪我はなかった'], ['sec4', '殿のご指示で、見張りは付けても、鍵はかけていません'],
+        ['king', '降った相手を閉じ込める趣味はない'], ['reika', '殿らしいわね。……甘いとも言うけど'], ['shizuka', '甘いところに救われた人も、たくさんいますよ']],
+    ],
+    [ // 第3卓
+      [['shinobu', '千景、南門で西園寺様が何度前に出たか、数えていた？'], ['chikage', '七回。大宮様の数と同じです。報告書にも書きました'], ['shinobu', '私は八回と数えた。一回、大宮様が見ていないところで出ていらした'],
+        ['chikage', '……その一回は、報告書には書かないでおきましょう。赤ペンが飛んできます'], ['flute', '西園寺さまの赤ペン、そんなに怖いんですか'], ['chikage', '句読点ひとつでも直されます。でも、直されたほうが、必ずいい文になるんです'],
+        ['shinobu', '居合と同じ。無駄がない'], ['akari', '氷室さん、前に出る西園寺さまを、どうやって止めてたんですか'], ['shinobu', '止めない。隣を走る。私の仕事は、西園寺様より半歩前にいること'],
+        ['hiyori', 'だから氷室さん、南門で一番走ってたんですね'], ['akari', '足の速さなら、私も負けません！ 大宮さまの次ですけど！'], ['shinobu', '夏目は速い。でも、まっすぐすぎる']],
+      [['sysop', '小日向、今夜ここにいる人、全員の名前を言える？'], ['hiyori', '言えます。一度お会いすれば、顔と名前は忘れません'], ['sysop', '情報室に欲しい人材だね。パスワードも覚えられる？'],
+        ['hiyori', 'それは、覚えないほうがいいものだと思います'], ['flute', '霧島中佐、殿のパスワード、まだ変わってないんですか'], ['sysop', '白壁城の前の日に、やっと変えてもらった。……三日で前のに戻されたけど'],
+        ['akari', '殿、ずぼらですね！'], ['sysop', '夏目、声が大きい。第一卓まで届く'], ['flute', '大丈夫。今、第一卓の空気は笑ってます。笛の音で言うと、明るい長調'],
+        ['hiyori', '小鳥遊中佐、空気が音で聞こえるんですか'], ['flute', 'なんとなくね。白壁城の朝は、皆、低い短調だった。今夜やっと、ここまで上がったの'], ['sysop', '数値にできたら、情報室で使えるのに'],
+        ['flute', 'できないから、笛なんですよ']],
+      [['akari', '本隊で、三条さんが「はいはい、行きますよ」って前に出たとき、びっくりしました'], ['hiyori', '私もです。誰も動かなかったのに、一人だけ'], ['flute', 'あのとき、本隊の音が一瞬止まったの。そのあと、全部が前に動いた'],
+        ['chikage', '三条様、宮家の方なのに、一番下の侍女として加わっていたんですよね'], ['shinobu', '西園寺様も、最初は気づいていなかった。歩き方で、大宮様が見抜いた'], ['akari', 'あと広瀬さん。三条さんの前に盾で出たの、見ました。かっこよかったです'],
+        ['hiyori', '広瀬さん、そのあとずっと、三条さんの袖をつかんでましたね'], ['sysop', '初陣の二人が支え合っていた、と。記録としては悪くない'], ['akari', 'よし、今夜は腕相撲で初陣のお祝いを！ 広瀬さんと三条さんに挑戦します！'],
+        ['flute', '夏目、無敗の人が初陣の人に挑んでどうするの'], ['akari', '……じゃあ、氷室さんで'], ['shinobu', '断る']],
+      [['flute', '殿、第三卓までようこそ。ここは一番入口に近い、下座ですけど'], ['king', '下座のほうが楽しそうだ。料理も近い'], ['akari', '料理が近いのは本当です！ もう二回おかわりしました'],
+        ['hiyori', '三回です、夏目さん'], ['sysop', '殿、第一卓を離れていいんですか。白瀬さんが見ていますよ'], ['king', '見てるか？'],
+        ['shinobu', '見ています。今、こちらに会釈をされました'], ['chikage', 'おそらく「殿をあまり引き止めないように」という意味かと'], ['flute', '……では、一曲だけ。殿が戻る前に、白壁城の朝の続きを'],
+        ['king', '頼む'], ['narr', '小鳥遊の横笛が、ざわめきの上をやわらかく渡っていった。']],
+    ]],
+  mix: [['king', '綾瀬、ちょっといいか'], ['fumi', 'はい？ 殿、お呼びですか'], ['hirose', '……殿。今、私のほうを見て「綾瀬」って言いましたよね'],
+    ['king', 'あ。……広瀬だ。広瀬に言ったんだ'], ['fumi', 'あら。わざわざ振り向いたのに。殿、私と千夏は、そんなに似ていますか？'], ['hirose', '似てません。文乃さんより、私のほうが背は高いですから'],
+    ['fumi', '一センチですよ、千夏'], ['sec2', 'あ、あの、殿、わかります！ 私も、親戚の集まりで、みんな「なんとか瀬さん」で、誰が誰だか、えっと、えっと'], ['sumi', 'ことね、落ち着いて。殿、お間違えになるのも、無理はありません'],
+    ['king', 'だってな、白瀬、早瀬、綾瀬、広瀬……紛らわしいんだよ'], ['sumi', 'みんな白瀬の一族ですから'], ['king', '……それで片づけるのか'],
+    ['sumi', '祖父の代に、白瀬の家から分かれた家です。祖父同士が兄弟ですから、私たちは皆ハトコです。殿も、母方ではそうでしょう'], ['fumi', '殿だけ「瀬」がつかないのは、ずるいですね'],
+    ['hirose', '……べつに、間違えられて怒ってなんかいません。文乃さんと一緒にされたのが、少し悔しいだけです'], ['fumi', '正直でよろしい'], ['king', 'ことねは名前で呼んでるから大丈夫だ'],
+    ['sec2', 'えっ、あっ、は、はい！ ことねです！ 一度も間違えられたことないです！ あの、でも、それって、千夏さんに悪いような、えっと'], ['hirose', 'ことねちゃんは、気にしなくていいの']],
+  talk: {
+    sanjo: [['初陣、どうだった', 'どうって……。終わってみたら、手が震えてました。今は止まってます。たぶん'], ['家には帰らないのか', '帰りませんよ。父に会ったら、「だから言っただろう」って言われるだけですから'],
+      ['家を出ていた頃は何をしてた', 'シーシャバーにいました。煙を眺めてると、王家のことを考えなくて済むんで'], ['玲奈さまと呼ばれるのは嫌か', '嫌っていうか、面倒くさいんです。殿は普通に呼んでくれるから、楽です']],
+    ojou: [['南門、よく持ちこたえた', '皆のおかげですわ。わたくしは、少し前に出すぎたかもしれませんけれど'], ['大宮とは昔から仲がいいな', 'ひなたは一つ下の従姉妹ですの。小さい頃から、わたくしの落ちるところに、必ずおりましたわ'],
+      ['薙刀は今も稽古しているのか', '毎朝、武道館で。四段になっても、まだ足りないところばかりですわ'], ['玲奈とは話したか', '玲奈さまは、わたくしより上のお席の方ですのに、ちっとも偉ぶられませんの。かえって困りますわ']],
+    omiya: [['大宮、元気だな', 'はいっ、殿！ 今夜は勤務外なので、全力で元気です！'], ['南門の副官、大変だったろう', 'すみれの袖を引っぱるのが、一番大変でした！ 次は縄を用意します'],
+      ['テニスと戦、どっちが疲れる', '戦です！ でも、コーチ時代の夏合宿も、なかなかでしたよ'], ['玲奈のことをどう思う', '玲奈さまは、面倒くさがりなのに、いざとなると一番前なんです。すみれと、ちょっと似てます']],
+    sumi: [['総大将、ご苦労だった', '殿こそ。……ですが、井闌の上にお一人で登られたことは、まだ許しておりません'], ['少しは休め', '殿にそう言われるのは珍しいですね。では、乾杯の一杯だけ、ゆっくりいただきます'],
+      ['ことねと文乃はどうだ', 'ことねはお皿を持ちすぎていますし、文乃は殿の転んだ回数を数えています。いつもどおりです'], ['三井物産の頃と、どっちが忙しい', '秘書室の予定表より、四つの門の予定表のほうが、ずっと書き込みが多うございました']],
+    fumi: [['東門、見事だった', 'ありがとうございます。的は外しませんでしたよ。殿は三回転びましたけど'], ['帳簿はつけ終わったか', 'ほぼ。あとは今夜の分です。誰が何杯飲んだかも、つけておきますね'],
+      ['千夏とは仲がいいのか', '千夏は張り合ってくるので、面白いですよ。私も、少しは張り合ってあげています'], ['お茶の水の頃は何を', '理学部で、物の落ちる速さを測っていました。矢の落ち方を読むのに、案外役に立っています']],
+    sec2: [['ことね、落ち着け', 'お、落ち着いてます！ あの、お皿は三枚ですけど、これは殿と澄お姉さまと私の分で'], ['本隊はどうだった', 'こ、怖かったです。でも、三条さまと千夏さんが前に出てくださって、私も、ついていけました'],
+      ['靴磨き、また頼めるか', 'はいっ！ 白壁城の泥、全部落とします！ 殿の靴、今夜のうちに！'], ['白瀬の後ろを追いかけてきたんだろう', 'はい、小さい頃から。……今日も、澄お姉さまの背中、ずっと見てました']],
+    hirose: [['初陣、よく頑張った', '……べつに、頑張ったわけじゃありません。三条さんが危なかったから、出ただけです'], ['白瀬や綾瀬に張り合っているのか', '張り合ってなんかいません。……ただ、澄さんと文乃さんに置いていかれるのは、嫌なんです'],
+      ['第二卓の筆頭だな', '九条先生も宮下大佐もいらっしゃるのに、私が上なんて。ことねちゃんより下なのは、べつにいいんですけど'], ['世話焼きだな', '一族のお姉さん役なんです。ことねちゃんも三条さんも、放っておくと食べないから']],
+    kujo: [['救護所はどうだ', '十二人、皆落ち着いています。明日の朝には、半分は歩けるわ'], ['少しは飲んでいいぞ', 'ありがとう、殿。でも今夜は一杯だけ。呼ばれたら、すぐ行けるように'],
+      ['聖路加の頃と比べてどうだ', '病院では、運ばれてくる人を待っていた。ここでは、こちらから迎えに行ける。そこが違うわね'], ['父方の親戚だったな', 'ええ、西園寺さんや大宮さんより、少し遠い縁。でも殿の手当ては、一番近くでさせてもらうわ']],
+    sec4: [['宮下、記録ご苦労', '北門の全員分、名前と持ち場を書き終えました。忘れられる人は、一人も出しません'], ['北門は早かったな', '霧島中佐のおかげです。それと、門が古くて、蝶番が錆びていましたので'],
+      ['明治安田の頃は', '保険の書類を、毎日何百枚も。ここでの記録のほうが、ずっと読み返したくなります'], ['いつも忠義をありがとう', '……殿、それを言っていただけるなら、靴磨きでも何でもいたします']],
+    sec3: [['桜井、数字は合ったか', '九割九分は。残りは、今夜誰が何皿食べたかです。夏目さんが三皿目です'], ['井闌、よく動いたな', '三台とも、車輪の軸を、船の舵の軸と同じ考え方で作りました。押す人の数も、計算どおりです'],
+      ['三菱の頃は', '船の設計をしていました。まさか、攻城塔の図面を引く日が来るとは'], ['少しは数えるのを休め', '休むと、かえって落ち着かないんです。殿の乾杯は四秒でした。短くてよかったです']],
+    reika: [['白石、東門は見事だった', '当然よ。四回突っ込んだんだから。……見ててくれた？'], ['肩は大丈夫か', '九条先生にも言われたわ。大丈夫よ、フェンシングで慣れてるもの'],
+      ['伊藤忠に戻る気は', 'ないわ。数字で勝つより、こっちのほうがよっぽど面白い'], ['アラベラをどう思う', '骨のある王女ね。今度は正面から、剣の試合で相手をしてみたいわ']],
+    shizuka: [['久遠、静かだな', '宴会の声を聞いているのが好きなんです。皆、生きている声ですから'], ['西門はどうだった', 'エレノアさんが前を、私が後ろを。崩れなかったのは、皆が声を荒らげなかったからです'],
+      ['バレーはもうやらないのか', 'たまに。浴場別館の前の庭で、夏目さんたちと。手加減はしていません'], ['決闘で一番強いんだってな', '数字の上では。でも、白石さんとは、やるたびに冷や汗が出ます']],
+    flute: [['小鳥遊、笛を頼む', 'はい、あとで一曲。今は、皆の声のほうが、きれいな音なので'], ['藝大の頃は', '邦楽科で、毎日横笛ばかり。こんなに大勢の前で吹くとは、思っていませんでした'],
+      ['器楽中佐というのは', '殿がつけてくださった階級ですよ。楽隊は私ひとりなので、隊長で、兵で、楽譜係です'], ['今の空気はどんな音だ', '明るい長調です。ただ、第一卓のほうから、ときどき笑いをこらえる音がします']],
+    sysop: [['霧島、情報室はどうだ', '白壁城の地図、全部取り込みました。次に来るときは、迷いません'], ['パスワード、変えたぞ', '三日で戻しましたよね。記録に残っています'],
+      ['NTTデータの頃は', '夜中に呼び出されてばかりでした。戦のほうが、始まる刻が決まっているだけ、まだ楽です'], ['北門、よく見張ってくれた', '宮下大佐と、交代の刻を秒まで合わせました。数字が合うと、気持ちがいいですね']],
+    shinobu: [['氷室、西園寺を守ってくれたな', '仕事です。西園寺様の半歩前。それだけは、誰にも譲りません'], ['居合を見せてくれ', '宴会では抜きません。鞘のまま、気持ちだけ'],
+      ['筑波の頃は', '警備の会社に入ってから、西園寺家のご推薦をいただきました。走るのは、学生の頃から得意です'], ['少しは笑え', '……笑っています。顔に出ないだけです']],
+    chikage: [['一条、報告書は', '南門の分、仕上げました。西園寺様の赤ペンが入る前提で、余白を広めにとっています'], ['東大法の頃は', '判例ばかり読んでいました。戦の報告書も、書き方は判決文と少し似ています'],
+      ['法律事務所に戻りたいか', 'いいえ。一条家のご推薦でここに来て、今は、ここでの文書のほうが大切です'], ['西園寺は前に出すぎだったな', '七回です。……八回という説もあります。氷室さんの説です']],
+    akari: [['夏目、元気だな', 'はいっ！ 腕相撲の相手、募集中です！ 殿、いかがですか！'], ['日体大の頃は', '陸上と、腕相撲です！ 在学中に志願したので、卒業はまだなんです'],
+      ['足が速かったな', '大宮さまの次です！ 本隊の伝令、三回走りました！'], ['おかわりは何皿目だ', 'さ、三皿目です。小日向さんに数えられてます']],
+    hiyori: [['小日向、皆の名前を覚えたか', 'はい。今夜の大広間、全員です。殿のお顔は、最初の日から'], ['雙葉の頃は', '人の名前と顔ばかり覚えていました。それが、ここで役に立つとは'],
+      ['親戚ではないんだったな', 'はい。行列で殿をお見かけして、志願しました。親戚ばかりの卓で、ちょっと場違いですけど'], ['書類運び、ご苦労', '白瀬さま、綾瀬さま、大宮さま、宮下大佐、全部お届けしました。今夜はお休みです']],
+  },
+  mourn: {
+    sanjo: [['omiya', '玲奈さまの場所、空けてあります。……誰も、そこには立たせません'], ['ojou', '家を出た方でしたのに、最後まで一番前に……。玲奈さま'], ['hirose', '三条さん。……もう一回、面倒くさいって言ってほしかった'], ['sumi', '三条さまは、殿の前に立ってくださいました']],
+    ojou: [['omiya', 'すみれの場所……。いつも私が受け止めてたのに、今度は届かなかった'], ['sanjo', 'すみれ。あんたが前に出るの、止めればよかった'], ['shinobu', '西園寺様の半歩前に、いられませんでした'], ['sumi', '西園寺殿の旗は、最後まで一番前にありました']],
+    omiya: [['ojou', 'ひなたが、いつもわたくしを受け止めてくれましたのに……'], ['sanjo', '大宮、帳面、ちゃんと最後まで書いてあったよ'], ['sumi', '大宮さんの明るい声がないと、この卓は静かすぎますね']],
+    sumi: [['fumi', '澄さんの場所に、杯をひとつ置いておきました'], ['sec2', '澄お姉さま……。私、ずっと後ろを追いかけてたのに'], ['hirose', '澄さん。今夜は、私が叱る役をやります'], ['ojou', '白瀬さんがいらっしゃらない宴は、初めてですわ']],
+    fumi: [['sumi', '文乃の帳簿、最後のページは私が書きます'], ['sec2', '文乃さん、いつもからかうくせに……'], ['hirose', '文乃さんと張り合う相手が、いなくなっちゃった']],
+    sec2: [['sumi', 'ことね。……手のかかる子ほど、いなくなると広く感じます'], ['fumi', 'ことねの分のお皿、三枚並べておきました'], ['hirose', 'ことねちゃんの場所、私より上座だったのに']],
+    hirose: [['kujo', '広瀬さんの場所、空けておきましょう。第二卓の筆頭ですもの'], ['sec4', '広瀬さんのこと、記録に最後まで書きました'], ['sanjo', '広瀬さん。……世話を焼かれっぱなしで、お礼も言ってない'], ['fumi', '千夏、張り合う相手がいないと、つまらないですよ']],
+    kujo: [['hirose', '九条先生の場所……。先生がいないと、皆、どこへ行けばいいのか'], ['reika', '先生、肩を見てもらう約束だったのに'], ['sec3', '救護所の数、先生の分だけ合わないんです']],
+    sec4: [['sec3', '宮下さんの帳面、最後まで書いてありました'], ['reika', '宮下、あなたの記録、私が引き継ぐわ。下手だけど'], ['sysop', '北門は、宮下大佐と二人で守ったんです']],
+    sec3: [['sec4', '桜井さんがいないと、数字が合いません'], ['shizuka', '桜井さん、井闌の車輪、設計どおりに回っていましたよ'], ['reika', '桜井、数えるのはやめなさいって、もう言えないのね']],
+    reika: [['shizuka', '白石さんの場所……。一番にぎやかな人がいないと、変な感じです'], ['kujo', '白石さん、肩を見せてって言ったのに'], ['sec3', '白石大佐の突撃、四回でした。記録に残します']],
+    shizuka: [['reika', '久遠、あなたが黙ってるのはいつもだけど、今夜は返事がないのね'], ['sec3', '久遠中佐の西門、最後まで崩れませんでした'], ['kujo', '静かな人ほど、いなくなると静けさが違うわね']],
+    flute: [['sysop', '小鳥遊中佐の笛がない宴は、初めてだ'], ['hiyori', '小鳥遊中佐の音、まだ耳に残っています'], ['akari', '中佐、今夜は明るい長調だって、言ってほしかった']],
+    sysop: [['flute', '霧島中佐の場所、空けてあります。……パスワード、私たちで守ります'], ['hiyori', '霧島中佐のこと、一度で覚えました。忘れません'], ['sec4', '霧島中佐の見張りの交代、最後まで正確でした']],
+    shinobu: [['chikage', 'しのぶの場所、空けておきます。西園寺様の半歩前は、もう誰も……'], ['ojou', 'しのぶ……。わたくしの前を、走ってくれていたのですね'], ['akari', '氷室さん、腕相撲、一度でいいから受けてほしかった']],
+    chikage: [['shinobu', '千景の報告書、最後の一枚は私が書く'], ['ojou', '千景の字には、赤ペンを入れるところがありませんでしたわ'], ['hiyori', '一条さんの字、すぐわかるんです。きれいで']],
+    akari: [['hiyori', '夏目さんの場所……。おかわり、取っておいたのに'], ['flute', '夏目の足音が聞こえないと、拍子がとれない'], ['omiya', 'あかり、練習、また付き合ってほしかったな']],
+    hiyori: [['akari', 'ひよりの場所、空けてあります。私が名前を間違えたら、誰が直してくれるの'], ['sysop', '小日向は、全員の名前を覚えていた。……今度は私たちが、小日向の名前を覚えておく'], ['flute', '小日向の明るい声、もう一度聞きたかった']],
+  },
+  mob: ['白壁城の城壁、下から見たら本当に高かったね', '明日、何時に起きればいいんだろう', 'この料理、誰が作ったの？ すごくおいしい', '南門の井闌、押してたの、私の班だよ', '殿、今夜はゆっくりしてくださいね',
+    '北門が一番に開いたんだって', '梯子の三段目で足が震えたけど、なんとか登れた', '早く宮殿に帰って、お風呂に入りたいな', '第一卓、なんだか賑やかですね', 'アラベラ王女、すごくきれいな人だったな'],
+  end: {
+    sumi: [['sumi', 'では、僭越ながら、総大将として中締めを'], ['sumi', '白壁城は、私たちの手に戻りました。四つの門、どこも、誰かが一番前に立ってくれたおかげです'],
+      ['sumi', '今夜ここにいない人の分まで、明日からまた、殿をお支えしましょう'], ['sumi', '全員で帰ってこられたことを、今夜は何より喜びましょう'], ['sumi', 'それでは、お手を拝借。……よーっ']],
+    ojou: [['ojou', '白瀬さんの代わりに、わたくしが締めさせていただきますわ'], ['ojou', '白壁城は戻りました。……白瀬さんの分まで、明日からも殿をお支えいたしましょう'], ['ojou', 'それでは、お手を拝借いたしますわ。……よーっ']],
+    omiya: [['omiya', 'では、私が締めます！ 白瀬さんの分も、すみれの分も！'], ['omiya', '明日からも、殿をお支えします！ お手を拝借！ よーっ！']],
+  },
+};
+/*KF_DATA_END*/
+const KF = { on: false, fallen: new Set(), done: [new Set(), new Set(), new Set()], auto: [false, false, false], mourned: [false, false, false], asked: {}, mix: false, closed: false, cool: 0, ambT: 8, n: 0, log: [] };
+const KF_NAME = k => (KS2_NM[k] || [k])[0];
+for (const k in KS2_NM) UK_WHO_NAME['kf_' + k] = KF_NAME(k);
+function kfTableOf(k) { for (let t = 0; t < 3; t++) if (KF_T[t].includes(k)) return t; return -1; }
+function kfVoice(k, t) { const M = window.VOICE_KF && window.VOICE_KF.byText[t]; if (!M) return null; return M.find(x => x.v === k) || M[0]; }
+function kfHere(k) { const e = UK7.vip['kf_' + k]; return !!(e && isUp(e) && !e.uk7Gone); }
+function kfOk(L) { return L.every(q => q[0] === 'king' || q[0] === 'narr' || kfHere(q[0])); }
+function kfFallenLoad() {   // 決戦2 で倒れた名のある娘（?kfFallen=a,b で試せる。無ければ最後に勝った決戦2 の結果）
+  const q = new URLSearchParams(location.search).get('kfFallen'); let a = [];
+  if (q != null) a = q.split(',').filter(Boolean); else { try { a = JSON.parse(localStorage.getItem('ks2_fallen') || '[]'); } catch (_) { a = []; } }
+  KF.fallen = new Set(a.filter(k => KS2_NM[k] && kfTableOf(k) >= 0));
+}
+function kfStep(q) {   // [話す人, 台詞] → ukDlg の一歩
+  const [w, t] = q, key = 'kf' + (KF.n++ % 400);
+  if (w === 'narr') return u7Line(key, { who: 'narr', narr: true, ja: t, dur: Math.max(3, t.length * 0.11) });
+  if (w === 'king') return u7Line(key, { who: 'king', ja: t, dur: Math.max(2, t.length * 0.12) });
+  const V = kfVoice(w, t); return u7Line(key, { who: 'kf_' + w, ja: t, file: V && V.file, dur: V && V.d ? V.d + 0.15 : Math.max(2.2, t.length * 0.14) });
+}
+function kfSteps(L) { return L.filter(q => q[0] === 'king' || q[0] === 'narr' || kfHere(q[0])).map(kfStep); }
+function kfLook(L, s) { for (const q of L) { const e = UK7.vip['kf_' + q[0]]; if (e) e.uk7Look = time + (s || 6); } }
+function kfTables() {   // 第1卓（上座：舞台の前・入口から最も遠い）・第2卓・第3卓、ほかの卓は名の無い侍女
+  const M = u7Mats();
+  const tab = (x, z, n, R) => {
+    const T = { x, z, seats: [], king: n === 7, dish: 0 };
+    const top = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.05, 24), M.cloth); top.position.set(x, 1.05, z); stageRoot.add(top);
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.02, R + 0.12, 1.02, 24, 1, true), M.cloth); skirt.position.set(x, 0.53, z); stageRoot.add(skirt);
+    const cand = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.24, 8), M.gold); cand.position.set(x, 1.2, z); stageRoot.add(cand);
+    colliders.push({ x, z, r: R + 0.12 });
+    for (let i = 0; i < n; i++) { const a = Math.PI - i / n * Math.PI * 2, rr = R + 0.55; T.seats.push({ x: x + Math.sin(a) * rr, z: z + Math.cos(a) * rr, face: a + Math.PI, taken: null }); }   // 席 0＝上座（北）、そこから序列の順に時計回り
+    UK7.tables.push(T); return T;
+  };
+  tab(0, -19, 7, 0.8); tab(-5, -13, 6, 0.68); tab(5, -8.5, 6, 0.68);
+  for (const z of [2, 12, 22]) for (const x of [-12, 0, 12]) u7Table(x, z, false);
+}
+function kfSpawn() {
+  UK7.girls = []; UK7.vip = {}; UK7.crew = []; for (const T of UK7.tables) for (const S of T.seats) S.taken = null;
+  const M = u7Mats();
+  for (let t = 0; t < 3; t++) { const T = UK7.tables[t];
+    KF_T[t].forEach((k, i) => { const S = T.seats[i]; if (k === 'king') return;
+      if (KF.fallen.has(k)) {   // 空けた立ち位置：卓の縁に杯をひとつ
+        S.empty = k; const a = Math.atan2(S.x - T.x, S.z - T.z), R = t ? 0.5 : 0.6, g = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.035, 0.18, 10), M.glass); g.position.set(T.x + Math.sin(a) * R, 1.17, T.z + Math.cos(a) * R); stageRoot.add(g); return; }
+      const [nm, pers, cm] = KS2_NM[k], gid = ks2Gid(k);
+      const e = u7Spawn(S.x, S.z, gid || undefined, { name: nm, pers, cm, vv: 1 }, { uk7Vip: 'kf_' + k }); if (!e) return;
+      e.kfK = k; e.kfT = t; e.ukTag = `第${t + 1}卓 ${nm}`; u7Seat(e, S, T); UK7.vip['kf_' + k] = e; });
+  }
+  const looks = jpMobLooks(); for (let i = looks.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [looks[i], looks[j]] = [looks[j], looks[i]]; }
+  let li = 0; const per = USD_MOB ? 3 : 5;
+  UK7.tables.slice(3).forEach(T => { for (let si = 0; si < per; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z, looks.length ? looks[li++ % looks.length] : undefined); if (!e) continue; e.kfMob = li; e.ukTag = '侍女 ' + e.prof.name; u7Seat(e, S, T); } });
+  UK7.kingSeat = UK7.tables[0].seats[0];
+}
+function kfPre() { if (!VoicePack.ok || !window.VOICE_KF) return; const M = window.VOICE_KF.byText, fs = []; const add = L => { for (const q of L) { const v = q[0] !== 'king' && q[0] !== 'narr' && kfVoice(q[0], q[1]); if (v) fs.push(v.file); } };
+  add(KF_D.open); add(KF_D.mix); KF_D.x.forEach(T => T.forEach(add)); for (const k of KF.fallen) add(KF_D.mourn[k] || []); fs.forEach((f, i) => VoicePack.load(f, i < 12)); }
+function kfStart() {
+  kfFallenLoad(); Object.assign(KF, { on: true, done: [new Set(), new Set(), new Set()], auto: [false, false, false], mourned: [false, false, false], asked: {}, mix: false, closed: false, cool: time + 4, ambT: 10, log: [] });
+  kfSpawn(); kfPre();
+  const S = UK7.kingSeat; player.pos.set(S.x, 0, S.z - 0.2); player.yaw = Math.PI; player.pitch = -0.06;
+  showBanner('白壁城祝勝会', '本丸御殿の大広間。卓は序列の順（第1卓が上座）、立食');
+  ukDlg([{ wait: 1.2 }, ...kfSteps(KF_D.open)], () => { UK7.phase = 'party'; UK7.pt = 0; KF.log.push('phase:party'); KF.cool = time + 3; });
+  KF.log.push('fallen:' + [...KF.fallen].join(','));
+}
+function kfNextX(t) { const L = KF_D.x[t]; for (let i = 0; i < L.length; i++) if (!KF.done[t].has(i) && kfOk(L[i])) return i; return -1; }
+function kfPlayX(t, i) { const L = KF_D.x[t][i]; KF.done[t].add(i); KF.auto[t] = true; KF.log.push('x:' + t + ':' + i); kfLook(L, 30); ukDlg(kfSteps(L), () => { KF.cool = time + 3; }); }
+function kfMourn(t) {   // その卓で倒れた娘の立ち位置に、皆が触れる
+  KF.mourned[t] = true; const ks = KF_T[t].filter(k => KF.fallen.has(k)); if (!ks.length) return false;
+  const st = [];
+  for (const k of ks) { const L = (KF_D.mourn[k] || []).filter(q => kfHere(q[0])).slice(0, 2); st.push(kfStep(['king', `……${k === 'sec2' ? 'ことね' : k === 'sanjo' ? '玲奈' : KF_NAME(k).split(' ')[0]}の場所は、空けてあるのか`]), ...L.map(kfStep)); }
+  st.push(kfStep(['king', '忘れない。今夜は、その分まで杯を上げよう'])); KF.log.push('mourn:' + t + ':' + ks.join(',')); ukDlg(st, () => { KF.cool = time + 3; }); return true;
+}
+function kfMix() { KF.mix = true; KF.log.push('mix'); kfLook(KF_D.mix, 40); ukDlg(kfSteps(KF_D.mix), () => { KF.cool = time + 3; }); }
+function kfCloser() { return ['sumi', 'ojou', 'omiya'].find(kfHere) || null; }
+function kfClose() {
+  const k = kfCloser(); if (!k || KF.closed) return; KF.closed = true; KF.log.push('close:' + k);
+  let L = KF_D.end[k].slice(); if (k === 'sumi') L = L.filter((_, i) => i !== (KF.fallen.size ? 3 : 2));
+  ukDlg([...kfSteps(L), { fn: () => u7Clap(160) }, kfStep(['narr', '一本締めの音が、大広間にそろって鳴った。']), kfStep(['king', '皆、ありがとう。……さあ、あと一杯だけ飲もう']), { wait: 1.0 }], () => { UK7.phase = 'end'; UK7.pt = 0; });
+}
+function kfAsk(e, i) { const k = e.kfK, Q = KF_D.talk[k][i]; KF.asked[k + i] = true; e.uk7Look = time + 10; KF.log.push('ask:' + k + ':' + i); ukDlg([kfStep(['king', Q[0]]), kfStep([k, Q[1]])], null); }
+function kfKey() {
+  if (UK.dlg && !UK.choice) { ukDlgSkip(); return true; }
+  if (UK.dlg || UK7.phase === 'end' || UK7.phase === 'open') return true;
+  const e = u7Near(); if (!e) { popup('近くに誰もいない'); return true; }
+  if (e.kfMob) { const t = KF_D.mob[(e.kfMob + (KF.ambN = (KF.ambN || 0) + 1)) % KF_D.mob.length], V = kfVoice('cs0' + (1 + e.kfMob % 8), t); e.uk7Look = time + 5; u7Say(e, { file: V && V.file, text: t, dur: V && V.d }, 14); return true; }
+  const k = e.kfK, t = e.kfT, Q = KF_D.talk[k] || [];
+  const opts = Q.map((q, i) => ({ label: '「' + q[0] + '」', sub: KF.asked[k + i] ? '聞いた' : '', then: [{ fn: () => kfAsk(e, i) }] }));
+  const nx = kfNextX(t); if (nx >= 0) opts.push({ label: '卓の話に加わる', sub: `第${t + 1}卓（${KF.done[t].size + 1}/${KF_D.x[t].length}）`, then: [{ fn: () => kfPlayX(t, nx) }] });
+  if (k === 'hirose' && !KF.mix && kfOk(KF_D.mix)) opts.unshift({ label: '広瀬を呼ぶ', sub: '……名前を間違えないように', then: [{ fn: kfMix }] });
+  if (k === kfCloser() && UK7.phase === 'party' && !KF.closed) opts.push({ label: '「そろそろ締めてくれ」', sub: '中締め（宴を終える）', then: [{ fn: kfClose }] });
+  e.uk7Look = time + 8; u7Menu(opts); return true;
+}
+function kfTick(dt) {
+  if (UK7.phase !== 'party' || UK.dlg) return;
+  if (time > KF.cool) for (let t = 0; t < 3; t++) { const T = UK7.tables[t]; if (Math.hypot(player.pos.x - T.x, player.pos.z - T.z) > 4.2) continue;
+    if (!KF.mourned[t] && kfMourn(t)) return;
+    if (!KF.auto[t]) { const i = kfNextX(t); KF.auto[t] = true; if (i >= 0) { kfPlayX(t, i); return; } } }
+  if ((KF.ambT -= dt) > 0) return; KF.ambT = rand(9, 15);
+  const near = UK7.girls.filter(e => e.kfMob && e.uk7At && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 13); if (!near.length) return;
+  const e = near[(Math.random() * near.length) | 0], tx = KF_D.mob[(Math.random() * KF_D.mob.length) | 0], V = kfVoice('cs0' + (1 + e.kfMob % 8), tx); u7Say(e, { file: V && V.file, text: tx, dur: V && V.d }, 12);
+}
+function kfMurPool() { const M = window.VOICE_KF && window.VOICE_KF.byText; if (!M) return []; const a = []; for (const t of KF_D.mob) for (const x of M[t] || []) a.push(x.file); return a; }
+function kfEnding() {
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = '白壁城祝勝会'; if (h2) h2.textContent = '決戦2「白壁城」のあと';
+  const f = [...KF.fallen].map(KF_NAME);
+  $('result').innerHTML = '本丸御殿の大広間で、殿と侍女たちは白壁城を取り戻した夜を祝った。' + (f.length ? `<br>空けた場所：${f.join('・')}。皆がその名を口にした。` : '<br>名のある者は、ひとりも欠けずに帰ってきた。') + `<br><span style="opacity:.8">聞いた卓の話 ${KF.done.reduce((a, s) => a + s.size, 0)} / ${KF_D.x.reduce((a, T) => a + T.length, 0)}</span>`;
+}
+if (TEST) window.__kf = { KF, KF_D, key: () => kfKey(), near: () => u7Near(), mix: () => kfMix(), close: () => kfClose(), playX: (t, i) => kfPlayX(t, i), ask: (k, i) => kfAsk(UK7.vip['kf_' + k], i), vip: () => UK7.vip, dlg: () => !!UK.dlg, skip: () => ukDlgSkip(), pick: i => ukPick(i) };
 
 function loadStage(name) {
   if (name !== 'beach') player.god = false; ISLAND.on = name === 'island';
@@ -28457,7 +28725,7 @@ function loadStage(name) {
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
   stageLook(name); if (typeof thLook === 'function') thLook(name); KS2.on = name === 'kessen2'; if (KS2.on) ks2Look(); TERR.fn = null; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'kessen2') buildKs2(); else if (name === 'tenhou') buildTenhou(); else if (/^ab\d/.test(name)) abBuild(name); else if (name === 'fubuki') buildFubuki(); else if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
+  if (name === 'kessen2') buildKs2(); else if (name === 'tenhou') buildTenhou(); else if (/^ab\d/.test(name)) abBuild(name); else if (name === 'fubuki') buildFubuki(); else if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty' || name === 'ks2Feast') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -28658,7 +28926,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261110k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261110l';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -33681,7 +33949,7 @@ function updateTargetInfo(dt) {
   if (targetShown && targetHold > 0) {
     const t = targetShown, dead = t.state === 'down';
     const disg = t.seated && PLANE.intro && !dead;   // 奇襲の前は誰が橙組か分からない
-    const tm = PAL.on ? '<u style="color:#e8c97a">宮殿の侍女</u>' : UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
+    const tm = PAL.on ? '<u style="color:#e8c97a">宮殿の侍女</u>' : UK7.on ? `<u style="color:#e8c97a">${t.uk7Crew && t.uk7Crew !== 'jp' ? '瑞鳳丸の給仕（英国）' : UK7.kf ? '白壁城の祝勝会' : '瑞鳳丸の祝勝会'}</u>` : disg ? '<u style="color:#e8e0cc">乗客</u>' : t.team === 'blue' ? '<u style="color:#7cc0ff">青組（味方）</u>' : '<u style="color:#ffa040">橙組</u>';
     const pic = portraitOf(t.spr);
     const html = KS2.on && t.ks2 ? (pic ? `<img src="${pic}" alt="">` : '') + `<u style="color:${t.team === 'blue' ? '#7cc0ff' : '#ffa040'}">${t.team === 'blue' ? '王国軍・' + ((t.ks2U && t.ks2U.name) || '') : '反乱軍・' + ks2TagPre(t)}</u><b>${t.ukTag || t.prof.name}</b><span>${t.P.desc}・${Math.round((t.figH || 1.6) * 100)}cm</span>` + (dead ? '<em>倒れた</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`) : PAL.on ? (pic ? `<img src="${pic}" alt="">` : '') + `${tm}<b>${t.ukTag || t.prof.name}</b><span>${t.P.desc}・${Math.round((t.figH || 1.6) * 100)}cm</span>` : t.ukInfo ? ukTargetHtml(t, pic) : (pic ? `<img src="${pic}" alt="">` : '') + `${tm}${t.sq && !disg ? `<small class="sq">${sqDisp(t.sq)}${t.sq.leader === t ? '・隊長' : ''}${t.sq.cmd ? '・侍大将の麾下' : ''}</small>` : t.runner || t.wasRunner || t.saiRunner ? '<small class="sq">伝令</small>' : t.medic ? '<small class="sq">医務班</small>' : ''}<b>${t.prof.name}</b><span>${t.P.desc}・${t.medic ? (t.role === 'surgeon' ? '外科医' : '看護師') : t.fluter ? '笛役' : t.runner || t.wasRunner || t.saiRunner ? '伝令' : t.ojou ? '秘書課・侍大将' : t.secretary || t.wasSecretary || t.sec2 || t.wasSec2 || t.aide || t.wasAide || t.wasOjou ? '秘書課' : t.kind === 'archer' ? '弓兵' : '近接兵'}　${t.prof.cm}cm</span>` +
       (dead ? '<em>戦死判定</em>' : `<i style="width:${Math.max(0, t.hp / t.hpMax * 100)}%;background:${t.team === 'blue' ? '#5ab0ff' : '#ffb040'}"></i>`);
@@ -34127,7 +34395,7 @@ function resetGame() {
   else if (builtStage === 'palace') palReset();   // 宮殿の日常：最上階・帝王の間
   else if (builtStage === 'usRaid') rkReset();   // 陸攻出撃：一番機の操縦席
   else if (builtStage === 'usDrop') udReset();   // 空挺降下：一番機の操縦席
-  else if (builtStage === 'ukParty') uk7Reset();   // 第七幕：殿の席   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
+  else if (builtStage === 'ukParty' || builtStage === 'ks2Feast') uk7Reset();   // 第七幕：殿の席   // 第四幕：侍女の陣（浜の北）   // 第三幕：殿の小早（闇の海）   // 英国淑女編 第二幕：町の通り
   else player.pos.set(0, 0, 0);
   PLANE.intro = false; PLANE.introT = 0; PLANE.alarm = 0; player.seated = false; setStripColor(false); hemiL.intensity = PLANE.on ? 1.25 : SNOW.on ? 1.35 : LOOK0.hemi[2];
   wave = { n: 0, toSpawn: 0, spawnT: 0, inter: 0, maxAlive: 8 };
@@ -34141,7 +34409,7 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
   if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
-  if (stageName === 'kessen2' || stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'fubuki' || stageName === 'palace' || stageName === 'tenhou' || /^ab\d/.test(stageName)) builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'kessen2' || stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'ks2Feast' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'fubuki' || stageName === 'palace' || stageName === 'tenhou' || /^ab\d/.test(stageName)) builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -34154,13 +34422,13 @@ function startGame() {
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (CAMP_OWN.includes(builtStage)) { /* 第二幕：段ごとに campStart が置く */ }
-  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kessen2' && builtStage !== 'usRaid' && builtStage !== 'usDrop') {
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kessen2' && builtStage !== 'usRaid' && builtStage !== 'usDrop') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && !/^ab\d/.test(builtStage) && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kessen2' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && !/^ab\d/.test(builtStage) && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kessen2' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none'; document.body.classList.remove('paused');
   $('hud').style.display = 'block';
@@ -34176,7 +34444,7 @@ function startGame() {
   else if (builtStage === 'palace') palStart();   // 宮殿の日常
   else if (builtStage === 'kessen2') ks2Start();   // 決戦2
   else if (builtStage === 'tenhou') thStart();   // 天鳳
-  else if (builtStage === 'ukParty') uk7Start();   // 第七幕：祝勝会
+  else if (builtStage === 'ukParty') uk7Start(); else if (builtStage === 'ks2Feast') kfStart();   // 白壁城祝勝会   // 第七幕：祝勝会
   else if (builtStage === 'ukLanding') uk5Start();   // 第五幕：上陸→港の防衛（援軍三波）
   else if (builtStage === 'ukPrincess') uk4Start();   // 第四幕：語り→二手の選択→前進→柵の攻防→本陣→王女との対話
   else if (builtStage === 'ukNight') uk3Start();   // 第三幕：語り→接近→乗り移り→甲板戦→退く英国の船   // 第二幕：語り→砲撃→上陸→斬り込み（波は使わない）
@@ -34251,9 +34519,11 @@ function gameOver(win) {
   if (document.exitPointerLock) document.exitPointerLock();
   $('result').innerHTML = CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで航海を終えた。乗艦は約 1,100 人。' : win ? `米軍の戦闘機と爆撃機 <b>${CV.killed}</b> を退けた。乗艦は約 1,100 人。` : `艦が航行不能になった。残る米軍機 <b>${Math.max(0, CV.total - CV.killed)}</b>。`) : `味方 <b>${battleCounts().ally}</b>　／　敵 <b>${battleCounts().foe}</b><br>撃破数（戦死判定） <b>${player.kills}</b>　／　味方撃破 <b>${player.allyKills}</b>　／　到達 第${waveName(wave.n)}波`;
   if (CAMP.on) campResult(win);   // 第二幕：段ごとの結果
+  if ($('kfBtn')) $('kfBtn').style.display = 'none';
   $('over').style.display = 'flex';
 }
 $('startBtn').onclick = startGame;
+if ($('kfBtn')) $('kfBtn').onclick = () => { $('kfBtn').style.display = 'none'; selectStage('ks2Feast'); startGame(); };   // 決戦2 に勝ったら、そのまま白壁城祝勝会へ
 $('bTrenchAttack').addEventListener('click', trenchCharge);
 $('bKs2Go').addEventListener('click', () => ks2Go());
 window.addEventListener('pointerdown', ev => { if (!KS2.on || KS2.ph !== 'deploy' || state !== 'play') return; const b = $('bKs2Go'), r = b.getBoundingClientRect(); if (b.style.display !== 'none' && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom) { ev.preventDefault(); ev.stopPropagation(); if (ev.stopImmediatePropagation) ev.stopImmediatePropagation(); ks2Go(); } }, true);
@@ -36916,7 +37186,7 @@ function frame(now) {
   } else if (state === 'title') {
     time += dt;
     if (builtStage === 'island') { camera.position.set(Math.sin(time*.035)*32,22,20+Math.cos(time*.035)*16);camera.lookAt(0,0,-35); }
-    else if (builtStage === 'ukParty') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
+    else if (builtStage === 'ukParty' || builtStage === 'ks2Feast') { camera.position.set(18, 5, 28); camera.lookAt(0, 1.5, -10); }
     else if (builtStage === 'usRaid') rkTitleCam();
     else if (builtStage === 'nanban') { camera.position.set(0, 7.5, 38); camera.lookAt(0, 1.2, -8); }
     else if (/^keiku/.test(builtStage)) { if (CV.sea && CV.sea.material.map) CV.sea.material.map.offset.y = time * 0.012; camera.position.set(Math.sin(time * 0.05) * 10 + 42, 24, 86); camera.lookAt(0, 8, -16); }
@@ -37078,5 +37348,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, scene, get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, scene, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

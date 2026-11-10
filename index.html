@@ -134,6 +134,11 @@
     font:inherit;font-size:18px;letter-spacing:.25em;padding:8px 18px;color:#e8d9a8;
     background:rgba(0,0,0,.55);border:1px solid rgba(232,217,168,.75);border-radius:4px;cursor:pointer}
   #bGod.on{background:rgba(232,217,168,.92);color:#1a1410}
+  #ks2Area{display:none;position:fixed;right:20px;top:178px;gap:4px;z-index:999998;pointer-events:auto!important}
+  #ks2Area button{pointer-events:auto;min-width:34px;height:30px;padding:0 6px;border:1px solid #d5b47b;border-radius:4px;background:rgba(40,28,18,.78);color:#fff0c5;font:600 14px serif}
+  #ks2Area button.on{background:#b8862e;color:#1b120a}
+  html.touch #ks2Area{right:calc(10px + var(--sar));top:114px;gap:3px}
+  html.touch #ks2Area button{min-width:30px;height:28px;font-size:13px;padding:0 4px}
   #bKs2Go{display:none;position:fixed;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto!important;z-index:999999;padding:10px 22px;border:2px solid #d5b47b;border-radius:5px;background:rgba(77,42,22,.94);color:#fff0c5;font:inherit;font-size:20px;letter-spacing:.15em;text-shadow:0 1px 3px #000;box-shadow:0 2px 12px rgba(0,0,0,.6);cursor:pointer}
   #bTrenchAttack{display:none;position:fixed;left:50%;top:76px;transform:translateX(-50%);pointer-events:auto!important;z-index:999999;
     min-width:150px;padding:11px 26px;border:2px solid #d5b47b;border-radius:5px;
@@ -445,6 +450,7 @@
 
 <button id="bTrenchAttack" class="serif" type="button">攻めろ！</button>
 <button id="bKs2Go" class="serif" type="button">総攻撃の合図（F）</button>
+<div id="ks2Area"><button data-a="S" type="button" title="南門（6）">南</button><button data-a="E" type="button" title="東門（7）">東</button><button data-a="W" type="button" title="西門（8）">西</button><button data-a="N" type="button" title="北門（9）">北</button><button data-a="H" type="button" title="本隊（0）">本隊</button></div>
 <script type="importmap">{"imports":{"three":"./lib/three_shim.mjs"}}</script>
 <script src="lib/three.min.js"></script>
 <script src="motion_sprite.js?v=20261110h"></script>

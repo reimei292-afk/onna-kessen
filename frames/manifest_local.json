@@ -69,6 +69,12 @@
     "down": "assets/jp_new/girl44_down.jpg"
   },
   "girl45": {
-    "front": "assets/jp_new/girl45_front.jpg"
+    "front": "assets/jp_new/girl45_front.jpg",
+    "side": "assets/jp_new/girl45_side.jpg",
+    "side_dir": -1,
+    "back": "assets/jp_new/girl45_back.jpg",
+    "front_diag": "assets/jp_new/girl45_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/jp_new/girl45_down.jpg"
   }
 }

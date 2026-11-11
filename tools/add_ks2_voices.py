@@ -8,7 +8,9 @@ L = json.load(open(sys.argv[1] if len(sys.argv) > 1 else '/tmp/ks2_lines.json'))
 def pc(n): return ('+' if n >= 0 else '') + str(n) + '%'
 def hz(n): return ('+' if n >= 0 else '') + str(n) + 'Hz'
 async def one(k, t, fn):
-    v, r, p = PROFILES.get(k, ('ja-JP-NanamiNeural', 0, 0))
+    base, _, mood = k.partition('~'); v, r, p = PROFILES.get(base, ('ja-JP-NanamiNeural', 0, 0))
+    if mood == 'h': r, p = r + 14, p + 8   # 息が上がって早口・声が上ずる
+    elif mood == 's': r, p = r - 6, p - 2   # ゆっくり、やわらかく
     for a in range(3):
         try: await edge_tts.Communicate(t, v, rate=pc(r), pitch=hz(p)).save(fn); return
         except Exception as e: await asyncio.sleep(2)

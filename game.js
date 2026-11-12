@@ -2998,7 +2998,7 @@ function ks2Pose(e, dt, dP) { const A = e.ks2Act;
 function ks2Stk() { if (KS2.stk && KS2.stk.a.parent) return KS2.stk; const N = LITE ? 500 : 1400, sg = new THREE.CylinderGeometry(0.011, 0.011, 0.8, 4), hg = new THREE.ConeGeometry(0.02, 0.11, 4); sg.translate(0, -0.4, 0); hg.translate(0, 0.05, 0);
   const a = new THREE.InstancedMesh(sg, new THREE.MeshLambertMaterial({ color: 0xc8a96a }), N), b = new THREE.InstancedMesh(hg, new THREE.MeshLambertMaterial({ color: 0x80878f }), N); a.count = b.count = 0; a.frustumCulled = b.frustumCulled = false; stageRoot.add(a); stageRoot.add(b); return KS2.stk = { a, b, N, i: 0, n: 0 }; }
 function ks2Stick(p, dir) { const S = ks2Stk(); { const h = Math.hypot(dir.x, dir.z) || 1, k = rand(0.7, 1.3); dir.set(dir.x / h, -k, dir.z / h).normalize(); if (p.y < 0.6) p.y = 0.02 - rand(0, 0.12); } KS2_Q.position.copy(p); KS2_Q.quaternion.setFromUnitVectors(KS2_UP, dir); KS2_Q.scale.set(1, 1, 1); KS2_Q.updateMatrix(); const i = S.i; S.a.setMatrixAt(i, KS2_Q.matrix); S.b.setMatrixAt(i, KS2_Q.matrix); S.i = (S.i + 1) % S.N; S.n = Math.min(S.N, S.n + 1); S.a.count = S.b.count = S.n; S.a.instanceMatrix.needsUpdate = S.b.instanceMatrix.needsUpdate = true; }
-const KS2_UP = new V3(0, 1, 0);
+const KS2_UP = new V3(0, 1, 0), KS2_Z = new V3(0, 0, 1);
 // ---- 分隊：弓（2〜3列で斉射）・竹束・白兵（竹束の後ろで待ち、城壁の射撃が弱まったら門・梯子へ） ----
 function ks2Squads() { KS2.sq = []; KS2.supp = {}; KS2.volN = { S: 0, E: 0, W: 0, N: 0 }; KS2.bun = []; for (const U of KS2.units) ks2SquadsU(U); }
 function ks2SquadsU(U) { if (!U.side || U.k === 'N' || !KS2.sq) return;
@@ -3139,7 +3139,7 @@ function ks2Walk(e, tx, tz, sp, dt) { const p = e.s.position, V = e.ks2V, dx = t
   return d < 0.6; }
 // ---- 撃つ：弓・マスケット・ライフル・連弩。見える範囲だけ矢と煙を描く ----
 const KS2_TRN = 120;
-function ks2TrIM() { if (KS2.trIM && KS2.trIM.parent) return KS2.trIM; const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 0.85, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), KS2_TRN); im.count = 0; im.frustumCulled = false; stageRoot.add(im); const hg = new THREE.ConeGeometry(0.024, 0.12, 4); hg.translate(0, 0.48, 0); im.head = new THREE.InstancedMesh(hg, new THREE.MeshBasicMaterial({ color: 0x6f767e }), KS2_TRN); im.head.count = 0; im.head.frustumCulled = false; stageRoot.add(im.head); return KS2.trIM = im; }   // 矢（尖った鉄の鏃）と弾の筋   // 矢と弾の筋はまとめて一つ
+function ks2TrIM() { if (KS2.trIM && KS2.trIM.parent) return KS2.trIM; const im = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.014, 0.014, 0.85, 4), new THREE.MeshBasicMaterial({ color: 0xffffff }), KS2_TRN); im.count = 0; im.frustumCulled = false; stageRoot.add(im); return KS2.trIM = im; }   // 弾の筋。矢・連弩は arrowWar（尖った鉄の鏃）をそのまま使う
 function ks2Tracer(a, b, col, T, stick) { if (KS2.tr.length >= (LITE ? 40 : KS2_TRN)) { if (stick) ks2Stick(b, b.clone().sub(a).setY(Math.min(-0.3, b.y - a.y)).normalize()); return; } KS2.tr.push({ a, b, t: 0, T, c: col, stick, h: col === 1 ? Math.min(7, 0.8 + a.distanceTo(b) * 0.1) : 0 }); }
 function ks2Shoot(e, t, kind, vol) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z), dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z);
   e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.lungeT = 0.2; e.ks2Act = { k: kind === 'musket' || kind === 'rifle' ? 'gun' : 'aim', t: 0, T: 1.1 };
@@ -3267,7 +3267,7 @@ function ks2BearTick() { const fr = KS2.bearers.filter(e => isUp(e) && !e.ks2Job
     const J = { b, ph: 'go', lead: L, mate, st, dst: [KS2.tent[0] - 10 + (n % 12) * 1.3, KS2.tent[1] - 6 - Math.floor(n / 12) * 2.4] }; L.ks2Job = J; mate.ks2Job = J; } }
 // ---- 進行 ----
 function ks2Reset() { ks2TacReset(); KS2.ph = 'off'; KS2.subLock = 0; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false;
-  KS2.tr.length = 0; KS2.trIM = null; KS2.pxSh = null; KS2.stk = null; KS2.stkB = 0; KS2.sq = null; KS2.supp = {}; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
+  if (KS2.tr) for (const T of KS2.tr) if (T.mesh) stageRoot.remove(T.mesh); KS2.tr.length = 0; if (KS2.trIM) { stageRoot.remove(KS2.trIM); if (KS2.trIM.head) stageRoot.remove(KS2.trIM.head); } KS2.trIM = null; KS2.pxSh = null; KS2.stk = null; KS2.stkB = 0; KS2.sq = null; KS2.supp = {}; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
   player.pos.set(4, 1.6 + 0, 232); player.yaw = 0; player.pitch = -0.04; CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
 function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; KS2.t = 0; KS2.bearers = [];
   { let b = 0; for (const e of KS2.U.R.mem) if (e.ks2Role === 'melee' && b < (LITE ? 6 : 12)) { e.ks2Bear = b++; KS2.bearers.push(e); } }
@@ -3378,7 +3378,10 @@ function ks2Chat(dt) { if ((KS2.chatT -= dt) > 0) return; KS2.chatT = rand(3, 6)
 function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; if (!KS2.vPre) ks2VoicePre(); KS2.fx = Math.min(LITE ? 3 : 8, KS2.fx + dt * (LITE ? 4 : 10));
   if ((KS2.gT = (KS2.gT || 0) - dt) <= 0) { KS2.gT = 0.2; ks2Grid(); }
   for (let i = KS2.later.length - 1; i >= 0; i--) if (KS2.later[i][0] <= KS2.t) { const f = KS2.later[i][1]; KS2.later.splice(i, 1); f(); }
-  { const im = ks2TrIM(), C1 = KS2_C1 || (KS2_C1 = new THREE.Color(0x5a4a32)), C2 = KS2_C2 || (KS2_C2 = new THREE.Color(0xffe2a0)); let n = 0, hn = 0; for (let i = KS2.tr.length - 1; i >= 0; i--) { const T = KS2.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { if (T.stick) ks2Stick(T.b, T.b.clone().sub(T.a).setY(Math.min(-0.3 * T.a.distanceTo(T.b), T.b.y - T.a.y)).normalize()); KS2.tr.splice(i, 1); continue; } KS2_Q.position.lerpVectors(T.a, T.b, k); KS2_Q.position.y += Math.sin(k * Math.PI) * T.h; KS2_Q.scale.set(T.c === 1 ? 1 : 1.6, T.c === 1 ? 1 : 1.3, T.c === 1 ? 1 : 1.6); { const k2 = Math.min(1, k + 0.03); KS2_V2.lerpVectors(T.a, T.b, k2); KS2_V2.y += Math.sin(k2 * Math.PI) * T.h; if (k2 - k < 0.01) KS2_V2.add(T.b).sub(T.a); KS2_Q.lookAt(KS2_V2); } KS2_Q.rotateX(Math.PI / 2); KS2_Q.updateMatrix(); im.setMatrixAt(n, KS2_Q.matrix); im.setColorAt(n, T.c === 1 ? C1 : C2); if (T.c === 1) im.head.setMatrixAt(hn++, KS2_Q.matrix); n++; } im.count = n; im.head.count = hn; im.head.instanceMatrix.needsUpdate = true; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
+  { const im = ks2TrIM(), C2 = KS2_C2 || (KS2_C2 = new THREE.Color(0xffe2a0)); let n = 0; for (let i = KS2.tr.length - 1; i >= 0; i--) { const T = KS2.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { if (T.stick) ks2Stick(T.b, T.b.clone().sub(T.a).setY(Math.min(-0.3 * T.a.distanceTo(T.b), T.b.y - T.a.y)).normalize()); if (T.mesh) { stageRoot.remove(T.mesh); T.mesh = null; } KS2.tr.splice(i, 1); continue; } KS2_Q.position.lerpVectors(T.a, T.b, k); KS2_Q.position.y += Math.sin(k * Math.PI) * T.h; const k2 = Math.min(1, k + 0.03); KS2_V2.lerpVectors(T.a, T.b, k2); KS2_V2.y += Math.sin(k2 * Math.PI) * T.h; if (k2 - k < 0.01) KS2_V2.add(T.b).sub(T.a);
+    if (T.c === 1) { KS2_V2.sub(KS2_Q.position); if (KS2_V2.lengthSq() < 1e-8) KS2_V2.subVectors(T.b, T.a); if (!T.mesh) { T.mesh = arrowWar.clone(); stageRoot.add(T.mesh); } T.mesh.position.copy(KS2_Q.position); T.mesh.quaternion.setFromUnitVectors(KS2_Z, KS2_V2.normalize()); }   // 連弩も弓も、既存の尖った鉄の鏃そのもの
+    else { if (T.mesh) { stageRoot.remove(T.mesh); T.mesh = null; } KS2_Q.scale.set(1.6, 1.3, 1.6); KS2_Q.lookAt(KS2_V2); KS2_Q.rotateX(Math.PI / 2); KS2_Q.updateMatrix(); im.setMatrixAt(n, KS2_Q.matrix); im.setColorAt(n, C2); n++; } }
+    im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
   ks2Equip(dt);
   for (const P of KS2.pots) if (P.t < P.T) { P.t += dt; const k = Math.min(1, P.t / P.T); P.m.position.y = P.y0 * (1 - k * k) + 0.2; P.m.rotation.x += dt * 6; if (k >= 1) ks2PotLand(P); }
   for (const U of KS2.units) ks2UnitMove(U, dt);
@@ -29261,7 +29264,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261112b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261112c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

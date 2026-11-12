@@ -29261,7 +29261,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261110n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261112a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -29403,6 +29403,11 @@ const EXTRA_GIRLS = {
   girl56: { type: 'mob', anyRole: true, prof: { name: '新人', pers: '陽気', cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は新人
   girl57: { type: 'mob', anyRole: true, prof: { name: '眼鏡', pers: '物静か', cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。呼び名はまだ無いので表示は眼鏡
   girl58: { type: 'mob', anyRole: true, prof: { name: '三条 玲奈', pers: '豪胆', cm: 158, vv: 2, pitch: 1.18 } },  // 普通の侍女。短い黒髪ボブ、眉の上の前髪、口元のほくろ。両目は出ている。銀のティアラは後ろ以外。呼び名はまだ無いので表示はボブ
+  girl59: { type: 'mob', anyRole: true, prof: { name: '茶髪', pers: '陽気', cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女。肩までの茶髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は茶髪
+  girl60: { type: 'mob', anyRole: true, prof: { name: '蝶', pers: '陽気', cm: 160, vv: 2, pitch: 1.22 } },  // 普通の侍女。長い黒髪、銀の蝶のピン。銀のティアラは後ろ以外。呼び名はまだ無いので表示は蝶
+  girl61: { type: 'mob', anyRole: true, prof: { name: '短髪', pers: '物静か', cm: 156, vv: 0, pitch: 0.94 } },  // 普通の侍女。短い黒髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は短髪
+  girl62: { type: 'mob', anyRole: true, prof: { name: 'ロング', pers: '慎重', cm: 165, vv: 1, pitch: 1.15 } },  // 普通の侍女。長いストレート、ぱっつん前髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示はロング
+  girl63: { type: 'mob', anyRole: true, prof: { name: '横髪', pers: '冷静', cm: 161, vv: 2, pitch: 1.0 } },  // 普通の侍女。横に流した前髪、真珠の耳飾り。銀のティアラは後ろ以外。呼び名はまだ無いので表示は横髪
 
   vn01: { type: 'vn', prof: { name: 'ハノイのアイン', pers: '冷静', cm: 162, vv: 1 } },
   vn02: { type: 'vn', prof: { name: 'ハノイのフォン', pers: '慎重', cm: 158, vv: 2 } },
@@ -30344,7 +30349,7 @@ function hpFlush() {
 }
 // 骨格診断のタイプ（S＝ストレート：上半身に厚み・腰の位置が高め、W＝ウェーブ：上半身が薄く柔らか・重心が低め、N＝ナチュラル：骨格がしっかり・肩幅広め・手足が長い）。
 // 今の写真の輪郭から中立に割り振ったもの（tools/make_kokkaku.py）。歩きの上下動・歩幅と足の運び・揺れ・姿勢にほんの少しだけ効かせる
-const KOKKAKU = {"arch01":"N","arch02":"N","arch03":"N","arch04":"N","arch05":"N","arch06":"N","archer01":"S","archer02":"S","archer03":"S","archer04":"N","archer05":"S","archer06":"S","archer07":"W","archer08":"N","archer09":"W","archer10":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl21":"S","girl22":"S","girl23":"S","girl24":"W","girl25":"W","girl26":"S","girl27":"W","girl28":"S","girl29":"S","girl30":"W","girl31":"S","girl32":"W","girl33":"N","girl34":"S","girl35":"W","girl36":"W","girl37":"S","girl38":"W","girl39":"W","girl40":"S","girl41":"W","girl42":"S","girl43":"S","girl44":"S","girl45":"S","girl46":"S","girl47":"S","girl48":"S","girl49":"S","girl50":"S","girl51":"S","girl52":"S","girl53":"S","girl54":"S","girl55":"S","girl56":"S","girl57":"S","girl58":"S","medic":"S","mob01":"W","mob02":"S","mob03":"S","mob04":"W","mob05":"S","mob06":"W","mob07":"W","mob08":"S","mob09":"S","mob10":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
+const KOKKAKU = {"arch01":"N","arch02":"N","arch03":"N","arch04":"N","arch05":"N","arch06":"N","archer01":"S","archer02":"S","archer03":"S","archer04":"N","archer05":"S","archer06":"S","archer07":"W","archer08":"N","archer09":"W","archer10":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl21":"S","girl22":"S","girl23":"S","girl24":"W","girl25":"W","girl26":"S","girl27":"W","girl28":"S","girl29":"S","girl30":"W","girl31":"S","girl32":"W","girl33":"N","girl34":"S","girl35":"W","girl36":"W","girl37":"S","girl38":"W","girl39":"W","girl40":"S","girl41":"W","girl42":"S","girl43":"S","girl44":"S","girl45":"S","girl46":"S","girl47":"S","girl48":"S","girl49":"S","girl50":"S","girl51":"S","girl52":"S","girl53":"S","girl54":"S","girl55":"S","girl56":"S","girl57":"S","girl58":"S","girl59":"S","girl60":"S","girl61":"S","girl62":"S","girl63":"S","medic":"S","mob01":"W","mob02":"S","mob03":"S","mob04":"W","mob05":"S","mob06":"W","mob07":"W","mob08":"S","mob09":"S","mob10":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
 const KK = { S: { bob: 0.9, rate: 1.0, sway: 0.8, lean: -0.01 }, W: { bob: 0.8, rate: 1.1, sway: 1.2, lean: 0.012 }, N: { bob: 1.12, rate: 0.9, sway: 1.0, lean: 0.004 } };
 const kkOf = e => KK[(e.girl && e.girl.kokkaku) || 'S'] || KK.S;
 // ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----

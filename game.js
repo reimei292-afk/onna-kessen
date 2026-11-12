@@ -29261,7 +29261,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261112a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261112b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -29400,14 +29400,14 @@ const EXTRA_GIRLS = {
   girl53: { type: 'mob', anyRole: true, prof: { name: '西安', pers: '慎重', cm: 166, vv: 1, pitch: 0.98 } },  // 普通の侍女。低いお団子。銀のティアラは後ろ以外。名前は土地のみ
   girl54: { type: 'mob', anyRole: true, prof: { name: '長沙', pers: '好戦的', cm: 163, vv: 2, pitch: 1.05 } },  // 普通の侍女。二つ編み。銀のティアラは後ろ以外。名前は土地のみ
   girl55: { type: 'mob', anyRole: true, prof: { name: '蘇州', pers: '臆病', cm: 160, vv: 0, pitch: 1.16 } },  // 普通の侍女。細い顔、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
-  girl56: { type: 'mob', anyRole: true, prof: { name: '新人', pers: '陽気', cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は新人
-  girl57: { type: 'mob', anyRole: true, prof: { name: '眼鏡', pers: '物静か', cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。呼び名はまだ無いので表示は眼鏡
+  girl56: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女（モブ）。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  girl57: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女（モブ）。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
   girl58: { type: 'mob', anyRole: true, prof: { name: '三条 玲奈', pers: '豪胆', cm: 158, vv: 2, pitch: 1.18 } },  // 普通の侍女。短い黒髪ボブ、眉の上の前髪、口元のほくろ。両目は出ている。銀のティアラは後ろ以外。呼び名はまだ無いので表示はボブ
-  girl59: { type: 'mob', anyRole: true, prof: { name: '茶髪', pers: '陽気', cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女。肩までの茶髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は茶髪
-  girl60: { type: 'mob', anyRole: true, prof: { name: '蝶', pers: '陽気', cm: 160, vv: 2, pitch: 1.22 } },  // 普通の侍女。長い黒髪、銀の蝶のピン。銀のティアラは後ろ以外。呼び名はまだ無いので表示は蝶
-  girl61: { type: 'mob', anyRole: true, prof: { name: '短髪', pers: '物静か', cm: 156, vv: 0, pitch: 0.94 } },  // 普通の侍女。短い黒髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示は短髪
-  girl62: { type: 'mob', anyRole: true, prof: { name: 'ロング', pers: '慎重', cm: 165, vv: 1, pitch: 1.15 } },  // 普通の侍女。長いストレート、ぱっつん前髪。銀のティアラは後ろ以外。呼び名はまだ無いので表示はロング
-  girl63: { type: 'mob', anyRole: true, prof: { name: '横髪', pers: '冷静', cm: 161, vv: 2, pitch: 1.0 } },  // 普通の侍女。横に流した前髪、真珠の耳飾り。銀のティアラは後ろ以外。呼び名はまだ無いので表示は横髪
+  girl59: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女（モブ）。肩までの茶色の髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  girl60: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 2, pitch: 1.22 } },  // 普通の侍女（モブ）。長い黒髪、銀の蝶のピン。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  girl61: { type: 'mob', anyRole: true, prof: { cm: 156, vv: 0, pitch: 0.94 } },  // 普通の侍女（モブ）。短い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  girl62: { type: 'mob', anyRole: true, prof: { cm: 165, vv: 1, pitch: 1.15 } },  // 普通の侍女（モブ）。長いストレート、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  girl63: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 2, pitch: 1.0 } },  // 普通の侍女（モブ）。横に流した前髪、真珠の耳飾り。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
 
   vn01: { type: 'vn', prof: { name: 'ハノイのアイン', pers: '冷静', cm: 162, vv: 1 } },
   vn02: { type: 'vn', prof: { name: 'ハノイのフォン', pers: '慎重', cm: 158, vv: 2 } },

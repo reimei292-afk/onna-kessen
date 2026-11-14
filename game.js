@@ -30423,7 +30423,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -35337,6 +35337,69 @@ function updateArrows(dt) {
   }
 }
 
+// ====================================================================
+//  介錯（全ステージ共通）：敵が近くにおらず、殿のそばに瀕死の名のある侍女がいるとき、小さな「介錯」ボタン
+//  一条・夏目・小日向（秘書の秘書）と英国の者は対象外。受けるか断るかは本人の性格で。血・傷の描写はしない
+// ====================================================================
+const KSK_NO = new Set(['chikage', 'akari', 'hiyori', 'uk06']);
+const KSK_ANS = {   // [受ける?, 返事]
+  reika: [0, '……冗談でしょ。まだ死なないわよ'], shizuka: [1, '……お願いします、殿'], sanjo: [0, 'やめてよ、殿にそれさせたら、私が一生恨まれる'],
+  ojou: [1, '……殿の御手でしたら、本望ですわ。どうぞ、お願いいたします'], omiya: [0, 'だめです、殿！ 私、まだ笑えますから……っ'],
+  sumi: [0, '殿に、そのようなことはさせられません。……九条さんを、呼んでください'], sec2: [0, 'い、いやです……澄お姉さまに、まだ、何も……'],
+  fumi: [0, '縁起でもない。……口うるさいのは、まだ続けますよ'], flute: [0, 'まだ……もう一曲だけ、吹かせてください……'],
+  sec3: [1, '……数字は、正直です。殿、お願いします'], sec4: [1, '……最後まで、殿のお役に立てるなら。お願いいたします'],
+  shinobu: [1, '……西園寺様を、お願いいたします。殿、どうぞ'], kujo: [0, '医者の見立てでは、まだです。担架を呼んでください'],
+  sysop: [0, '却下です、殿。まだ助かる見込みがあります'], hirose: [0, 'べ、別に……そこまで弱ってないし。勝手に決めないで'], midori: [0, '冗談はやめてください。まだ、戦えます'] };
+const KSK_MOURN = { sumi: '……殿、お一人で背負わないでください', sec2: 'う、うそ……さっきまで、話してたのに……', fumi: '……記録に残します。最後まで、立派でした',
+  ojou: '……安らかに。わたくしたちが、覚えておりますわ', omiya: '……っ。泣くのは、あとです！ 前を向いて！', reika: '……ばか。勝手に先に行かないでよ',
+  shizuka: '……静かに、眠ってください', kujo: '……私の手が、届きませんでした', sysop: '……殿のご判断は、間違っていません', flute: '……あとで、一曲だけ、送らせてください',
+  sec3: '……ご苦労さまでした。ゆっくり、休んでください', sec4: '……ご立派でした。忠義、確かに見届けました', shinobu: '……お見事な、ご最期でした',
+  hirose: '……な、泣いてないし。……泣いてないから', sanjo: '……殿。今の、私、一生忘れないから', midori: '……この先は、私が戦います' };
+const KSK_MOB = ['そんな……', '……どうか、安らかに', '南無……', '……っ、うう……'];
+const KSK = { st: 'idle', e: null, k: null, t: 0, no: {}, scanT: 0 };
+let KSK_KEYS = null;
+function kskKeyOf(e) { if (e.ks2Named) return e.ks2Named; if (!e._nmC) return null;
+  if (!KSK_KEYS) { KSK_KEYS = {}; const fl = nm => { const p = String(nm).trim().split(/\s+/); return p.slice(-2).join(''); }; for (const k in PAL_NAMED) KSK_KEYS[fl(PAL_NAMED[k].name)] = k; for (const k in KS2_NM) KSK_KEYS[fl(KS2_NM[k][0])] = k; }
+  return KSK_KEYS[e._nmC.flat] || null; }
+function kskDying(e) { return isUp(e) && !e.kosSick && (e.hp <= Math.max(1, (e.hpMax || 3) * 0.3) || e.wounded || e.ks2Wd); }
+function kskFoeNear(e) { const p = e.s.position; for (const o of enemies) { if (o.team === e.team || o.team === 'none' || !isUp(o)) continue; const q = o.s.position; if (Math.abs(q.x - p.x) < 16 && Math.abs(q.z - p.z) < 16 && Math.hypot(q.x - p.x, q.z - p.z) < 16) return true; } return false; }
+function kskFind() { let best = null, bd = 4.2; for (const e of enemies) { if (e.team !== 'blue' || !isUp(e)) continue; const p = e.s.position; if (Math.abs(p.x - player.pos.x) > bd || Math.abs(p.z - player.pos.z) > bd || Math.abs(p.y - player.pos.y) > 2.5) continue;
+    const k = kskKeyOf(e); if (!k || KSK_NO.has(k) || !KSK_ANS[k] || (KSK.no[k] || 0) > time || !kskDying(e)) continue; const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d < bd) { bd = d; best = e; } }
+  return best && !kskFoeNear(best) ? best : null; }
+function kskSay(e, k, t, prio) { const p = e ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); const f = ks2VoiceFile(t, KS2_VK[k] || k); if (f && VoicePack.ok) VoicePack.play(f, Math.min(d, 40), prio || 2, 1);
+  const nm = e ? (e.ks2Title || (e.prof && e.prof.name) || '') : ''; subtitle(t); const el = $('subtitle'); if (el) el.textContent = (nm ? nm + '「' : '「') + t + '」'; KS2.subLock = time + Math.max(2.5, t.length * 0.13 + 1.2); }
+function kskKing(t) { subtitle(t); const el = $('subtitle'); if (el) el.textContent = '殿「' + t + '」'; KS2.subLock = time + Math.max(2.5, t.length * 0.13 + 1.2); }
+const KSK_BS = 'z-index:41;padding:2px 8px;font:600 11px serif;line-height:1.3;background:rgba(40,20,14,.5);color:#f3e6c4;border:1px solid rgba(184,145,58,.65);border-radius:5px;opacity:.8;pointer-events:auto;touch-action:none;margin:0 4px';
+function kskUi() { let w = $('kskW'); if (w) return w; w = document.createElement('div'); w.id = 'kskW'; w.style.cssText = 'position:fixed;left:50%;top:calc(50% + 26px);transform:translateX(-50%);z-index:41;display:none;white-space:nowrap;pointer-events:none';
+  const mk = (id, tx, f) => { const b = document.createElement('button'); b.id = id; b.type = 'button'; b.textContent = tx; b.style.cssText = KSK_BS; kosKgBind(b, f); w.appendChild(b); return b; };
+  mk('kskB', '介錯', kskAsk); mk('kskY', '介錯する', kskDo); mk('kskN', 'やめる', kskCancel); document.body.appendChild(w); return w; }
+function kskShow(m) { const w = kskUi(); w.style.display = m ? 'block' : 'none'; $('kskB').style.display = m === 'ask' ? 'inline-block' : 'none'; $('kskY').style.display = $('kskN').style.display = m === 'conf' ? 'inline-block' : 'none'; KSK.ui = m || ''; }
+function kskAsk() { const e = KSK.e; if (KSK.st !== 'idle' || !e || !isUp(e)) return; const k = KSK.k; KSK.st = 'ans'; KSK.t = 0; kskShow(null); kskKing('介錯してやろうか'); e.faceWant = Math.atan2(player.pos.x - e.s.position.x, player.pos.z - e.s.position.z); }
+function kskCancel() { if (KSK.st !== 'conf') return; kskShow(null); kskKing('……いや。やめておこう'); KSK.no[KSK.k] = time + 40; KSK.st = 'idle'; KSK.e = null; }
+function kskFade(on) { let f = $('kskF'); if (!f) { f = document.createElement('div'); f.id = 'kskF'; f.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:39;transition:opacity .3s'; document.body.appendChild(f); } f.style.transition = on ? 'opacity .25s' : 'opacity 1.1s'; f.style.opacity = on ? '0.94' : '0'; }
+function kskDo() { const e = KSK.e; if (KSK.st !== 'conf' || !e || !isUp(e)) { kskShow(null); KSK.st = 'idle'; return; } kskShow(null); KSK.st = 'stab'; KSK.t = 0;
+  const p = e.s.position; player.yaw = Math.atan2(-(p.x - player.pos.x), -(p.z - player.pos.z)); if (player.weapon !== 1) setWeapon(1); kskKing('……すまぬ'); }
+function kskTick(dt) {
+  if (state !== 'play') { if (KSK.ui) kskShow(null); return; }
+  KSK.t += dt; const e = KSK.e;
+  if (KSK.st === 'idle') { if ((KSK.scanT -= dt) > 0) return; KSK.scanT = 0.4; const c = kskFind(); KSK.e = c; KSK.k = c ? kskKeyOf(c) : null; kskShow(c ? 'ask' : null); return; }
+  if (!e || (!isUp(e) && KSK.st !== 'after')) { kskShow(null); KSK.st = 'idle'; KSK.e = null; kskFade(false); return; }
+  if (KSK.st === 'ans' && KSK.t > 2.4) { const A = KSK_ANS[KSK.k]; kskSay(e, KSK.k, A[1], 2.1); if (A[0] && !kskFoeNear(e)) { KSK.st = 'conf'; KSK.t = 0; kskShow('conf'); } else { KSK.no[KSK.k] = time + 60; KSK.st = 'idle'; KSK.e = null; } return; }
+  if (KSK.st === 'conf' && (KSK.t > 9 || Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) > 5 || kskFoeNear(e))) { kskShow(null); KSK.no[KSK.k] = time + 40; KSK.st = 'idle'; KSK.e = null; return; }   // 選ばなければ、そのまま（衛生兵が助けることもある）
+  if (KSK.st === 'stab') { const p = e.s.position; player.yaw = Math.atan2(-(p.x - player.pos.x), -(p.z - player.pos.z));
+    if (KSK.t > 1.3 && !KSK.sw) { KSK.sw = true; swing(); player.swingHit = true; kskFade(true); }   // 懐刀の突き（左胸へ一突き）の瞬間に暗転。刃が人に当たる処理はしない
+    if (KSK.t > 1.75 && KSK.sw) { KSK.sw = false; KSK.st = 'after'; KSK.t = 0; kskKill(e); } return; }
+  if (KSK.st === 'after') { if (KSK.t > 1.4 && !KSK.lit) { KSK.lit = true; kskFade(false); }
+    if (KSK.t > 3 && !KSK.mo) { KSK.mo = true; kskMourn(e); }
+    if (KSK.t > 12) { KSK.st = 'idle'; KSK.e = null; KSK.lit = KSK.mo = false; } } }
+function kskKill(e) { e.kskDone = true; e.hp = 0; e.ks2Dn = e.sgkDn = e.sgkPron = true; if (KOS.on && !e.kosDn) { e.kosDn = true; KOS.deadN = (KOS.deadN || 0) + 1; } e.ks2Wd = null; e.wounded = false;
+  killEnemy(e, false, player.pos.clone()); KSK.n = (KSK.n || 0) + 1; popup((e.ks2Title || (e.prof && e.prof.name) || '') + '　戦死（介錯）'); popupTimer = 3; }
+function kskMourn(v) { const p = v.s.position, R = []; let mob = null, md = 22;
+  for (const o of enemies) { if (o === v || o.team !== 'blue' || !isUp(o)) continue; const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d > 30) continue; const k = kskKeyOf(o);
+    if (k && KSK_MOURN[k] && !KSK_NO.has(k)) R.push([d, o, k]); else if (!k && !o.special && d < md) { md = d; mob = o; } }
+  R.sort((a, b) => a[0] - b[0]); R.slice(0, 2).forEach(([, o, k], i) => setTimeout(() => { if (isUp(o) && state === 'play') kskSay(o, k, KSK_MOURN[k], 2); }, i * 4200));
+  if (mob) setTimeout(() => { const t = KSK_MOB[(Math.random() * KSK_MOB.length) | 0], f = ks2VoiceFile(t, null); if (f && VoicePack.ok && isUp(mob)) VoicePack.play(f, Math.min(md + 3, 40), 1.2, 1); }, R.length ? 2000 : 300); }   // 群れの侍女は声だけ（字幕なし）
+if (TEST) window.__ksk = { KSK, kskFind, kskAsk, kskDo, kskCancel, kskTick, kskKeyOf, kskDying };
 // ---- 懐刀（練習用・刃引き）：突きのみ。正面・短距離・単体 ----
 function swing() {
   if (player.swingCd > 0) return;
@@ -35464,7 +35527,7 @@ function updateHud(dt) {
   $('popup').style.transform = `translate(-50%,${-50 - (0.9 - Math.max(0, popupTimer)) * 40}%)`;
   hitTimer -= dt; $('hitmark').style.opacity = hitTimer > 0 ? 1 : 0;
   player.hurtT -= dt; $('hurt').style.opacity = Math.max(0, player.hurtT * 1.6) + (player.hp < 25 ? 0.25 + Math.sin(time * 5) * 0.1 : 0);
-  updateTargetInfo(dt); namedSweep(dt);
+  updateTargetInfo(dt); namedSweep(dt); kskTick(dt);
   // レーダー
   const R = 75, sc = R / 45;
   radar.clearRect(0, 0, 150, 150);

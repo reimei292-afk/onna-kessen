@@ -2794,7 +2794,7 @@ const KS2_RV2 = {
   press: ['はぁ……はぁ……行く、行くから……', '……怖い、けど……前へ……', '泣いてない……泣いてないから、進む……', '押さないで……っ、押さないで……！', '……名前、呼んで……誰か、私の名前……'],
 };
 const KS2_KING = ['……さっきまで、ここで笑ってたんだぞ', '名前……この子の名前、誰か分かるか', '……っ。……止まるな。止まったら、俺が止まる'];
-function ks2VoiceFile(t, vk) { const M = ((window.VOICE_KS2 || {}).byText || {})[t]; if (!M || !M.length) return null; const L = (vk && M.find(x => x.v === vk)) || M[(Math.random() * M.length) | 0]; return L.file; }
+function ks2VoiceFile(t, vk) { const M = ((window.VOICE_KS2 || {}).byText || {})[t] || ((window.VOICE_KOS || {}).byText || {})[t]; if (!M || !M.length) return null; const L = (vk && M.find(x => x.v === vk)) || M[(Math.random() * M.length) | 0]; return L.file; }
 function ks2Say(e, t, prio, vk) {   // 声と字幕。e が無ければ本隊のそばの声として
   const p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + Math.abs(p.y - player.pos.y + 1.6) * 0.5;
   if ((prio == null ? 1.4 : prio) < 2 && time < (KS2.subLock || 0) && d < 45) return;   // 殿が話しかけた相手の返事の間は、近くの雑談で字幕・声を上書きしない
@@ -4258,21 +4258,24 @@ function kingFFReact(e, hit) { if (!e || e.team !== 'blue' || e.isPlayer) return
   for (const o of near) { o.ffAway = now + (stab ? 8 : 5); if (SGK.on) { const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, L = Math.hypot(dx, dz) || 1; const s = 1000 - (o.s.position.z + dz / L * 3), c = sgkCx(s), w = sgkHW(s) - 1; o.sgkDg = { x: clamp(o.s.position.x + dx / L * 3, c - w, c + w), z: o.s.position.z + dz / L * 3, until: SGK.t + 2.5 }; } else if (KOS.on && o.kos && !o.kosOn) { const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, L = Math.hypot(dx, dz) || 1; o.kosDg = { x: o.s.position.x + dx / L * 3, z: o.s.position.z + dz / L * 3, until: KOS.t + 2.5 }; } else { o.knock && o.knock.set(dx0(o) * 1.5, 0, dz0(o) * 1.5); } }
   function dx0(o) { const dx = o.s.position.x - player.pos.x, L = Math.hypot(dx, o.s.position.z - player.pos.z) || 1; return dx / L; } function dz0(o) { const dz = o.s.position.z - player.pos.z, L = Math.hypot(o.s.position.x - player.pos.x, dz) || 1; return dz / L; } }
 // ===== 山岳の関所ここまで =====
-// ===== 妻娘返らずの湖（kosui）：山岳の関所の先。先鋒の白石隊（白石・久遠）は一日先を行き、本隊は会わない =====
+// ===== 南蛮行軍（kosui。湖の名は妻娘返らずの湖）：山岳の関所の先。先鋒の白石隊の跡 → 湖 → 向こう岸で白石隊と合流 → 祝融の藤甲兵（背水の陣） =====
 //   道（先鋒の戦いの跡・布に包まれた白石隊・衛生兵の手当ての跡・白石隊の立て札）→ 湖の岸 → 昼の筏渡り（毒気で倒れ、引き返す）
 //   → 岸で苔の下の古い石碑を読む → 日が落ちるのを待つ → 夜の筏渡り → 向こう岸で終わり。血・吐血は出さない。倒れた体は消えない
 const KOS = { on: false, ph: 'off', t: 0 };
 const KOS_LAKE = [800, 1200];   // 湖（s：道に沿った距離。z = 1000 − s）
 const KOS_SHORE = 797;   // 手前の岸の水際
 const KOS_FAR = 1203;    // 向こう岸の水際
-const KOS_UNITS = [   // 画面の兵＝人数そのまま（1体＝1人）
-  { k: 'S', name: '斥候隊', n: 20, chain: ['sec4', 'sysop'], secs: [], col: '#7fe07f' },
-  { k: 'F', name: '正面隊', n: 92, chain: ['ojou', 'omiya'], secs: ['shinobu', 'sanjo'], col: '#f0c060' },
-  { k: 'A', name: '弓隊', n: 50, chain: ['fumi'], secs: [], col: '#7fd8ff', arch: true },
-  { k: 'H', name: '本隊', n: 58, chain: ['sumi', 'sec2'], secs: ['hirose', 'flute'], col: '#ffffff' },
-  { k: 'R', name: '後方', n: 40, chain: ['kujo', 'sec3'], secs: [], col: '#ffa0c0' }];
-const KOS_TITLE = { sec4: '斥候隊長 宮下', sysop: '斥候隊 副官 霧島', ojou: '正面隊長 西園寺', omiya: '正面隊 副官 大宮', shinobu: '西園寺の秘書 氷室', sanjo: '正面隊 三条', fumi: '弓隊長 綾瀬',
-  sumi: '総大将 白瀬', sec2: '本隊の秘書 早瀬', hirose: '本隊 広瀬', flute: '笛役 小鳥遊', kujo: '医務班長 九条', sec3: '後方の秘書 桜井' };
+const KOS_TOTAL = 1000, KOS_FOES = 200;   // 本隊の兵は千（1体＝1人。画面に出ない分は「後続」として数え、戦いで前へ詰める）。南蛮の藤甲兵は二百
+const KOS_UNITS = [   // 道では前から：正面・左翼・右翼・弓・本隊・後方（隊長・名のある娘は各隊の後ろ）
+  { k: 'F', name: '正面隊', n: 250, chain: ['ojou', 'omiya'], secs: ['shinobu'], arch: 0.12, bat: [14, 1366] },
+  { k: 'L', name: '左翼', n: 150, chain: ['fumi'], secs: [], arch: 0.2, bat: [-50, 1356] },
+  { k: 'W', name: '右翼', n: 150, chain: ['sec4', 'sysop'], secs: [], arch: 0.2, bat: [50, 1356] },
+  { k: 'A', name: '弓隊', n: 150, chain: ['sec3'], secs: [], arch: 0.9, bat: [0, 1344] },
+  { k: 'H', name: '本隊', n: 200, chain: ['sumi', 'sec2'], secs: ['hirose', 'flute', 'sanjo', 'midori'], arch: 0.2, bat: [0, 1330] },
+  { k: 'R', name: '後方隊', n: 100, chain: ['kujo'], secs: [], arch: 0.1, bat: [0, 1316] }];   // 後方隊：医務 30・輜重 40・後衛 30（本隊のすぐ後ろ。湖岸沿いの回り込みを止める）
+const KOS_V = { k: 'V', name: '白石隊', n: 90, chain: ['reika', 'shizuka'], secs: [], arch: 0.2, bat: [-20, 1374] };   // 先鋒（もとは百五十）
+const KOS_TITLE = { sec4: '右翼隊長 宮下', sysop: '右翼 副官 霧島', ojou: '正面隊長 西園寺', omiya: '正面隊 副官 大宮', shinobu: '西園寺の秘書 氷室', midori: '側近付き秘書 村瀬', sanjo: '本隊 三条', fumi: '左翼隊長 綾瀬', reika: '先鋒 白石隊長 白石', shizuka: '白石隊 副官 久遠',
+  sumi: '総大将 白瀬', sec2: '本隊の秘書 早瀬', hirose: '本隊 広瀬', flute: '笛役 小鳥遊', kujo: '後方隊長・医務班長 九条', sec3: '弓隊長 桜井' };
 const KOS_SIGN_GEY = '　この先の谷、湯の噴き出す穴あり。\n　辰の刻と未の刻、およそ半刻ずつ噴く。\n　その刻を避け、谷は急ぎ抜けられたし。\n\n　　先鋒 白石隊　隊長 白石麗華\n　　　　　　　　　副官 久遠静香';
 const KOS_SIGN_OLD = '真夏の昼、この湖を渡るべからず。湖に沈む朽ち木より毒気立ちのぼり、息を奪い、女の身を蝕みて子を授からぬ体とす。ゆえに此处を妻娘返らずの湖と呼ぶ';
 const KOS_LN = {
@@ -4304,21 +4307,50 @@ const KOS_LN = {
   go2: [['sec3', '残り三百……二百……。順調です'], ['fumi', '月が出ています。……白石大佐たちも、この月を見たのでしょうか'], ['ojou', '静かですわね。昼のことが、嘘のよう'],
     ['sysop', '夜風が冷えます。殿、パスワードの件は、湖を渡ってからで結構です'], ['shinobu', '西園寺様、足元が濡れております。お気をつけて'], ['omiya', 'あと少し！ 岸が見えてきました！']],
   far: [['sec4', '焚き火の跡……まだ新しい。白石隊はここで夜を明かしたようです'], ['sumi', '一日先、ですね。……殿、全隊、渡り終えました'], ['kujo', '向こう岸の子たちは、布に包んで印を立ててきました。……帰りに、必ず']],
+  start: [['sec3', '山岳の関所では千五百。関所で失った子と、落とした関所と砦に残した守りの分を引いて……いまは千です'], ['sumi', '殿、数は減りましたが、皆、足は揃っています'], ['sumi', '宮廷のことは、一条さんたちに任せてきました。夏目さんも小日向さんも残っています。……留守は大丈夫です'],
+    ['sysop', '殿、立ち乗りの軽い車は、山のふもとに置いてきました。南蛮の道は土と泥ばかりで、車輪が沈んで、かえって足手まといですから'], ['omiya', 'ここからは全部、自分の足です！ 正面隊、遅れないで！']],
+  adv: [['sumi', '殿、全隊、前へ。湖を離れて、丘のあいだの草地を進みます'], ['sec4', '右翼、丘の上を見ながら進みます。……足跡が新しい']],
+  meet: [['sec4', '前方に人影！ ……味方です、白石隊の旗！'], ['reika', '殿！ ……ふふ、やっと追いついてきたのね。待ちくたびれたわよ'],
+    ['shizuka', '殿、白瀬様。先鋒白石隊、百五十のうち九十、ここにおります。……湖で、だいぶ失いました'], ['sumi', '白石大佐、久遠中佐。よく、ご無事で。岸の子たちは、布に包まれていました'],
+    ['reika', 'あの湖、昼に渡ったの。私の判断よ。……言い訳はしないわ'], ['kujo', '白石隊の衛生兵は？ 手が足りなければ、後方隊から出します'], ['shizuka', '九条先生、助かります。うちの衛生兵は、まだ三人立っています'],
+    ['hirose', '……白石大佐、無茶しすぎです。べ、別に心配してたわけじゃないですけど'], ['sanjo', '白石さん、生きててよかった。……あ、私のことは普通に三条でいいから。様とか、なしね'], ['reika', '……相変わらずね、三条。了解よ']],
+  quiet: [['shizuka', '……静かすぎます。鳥が鳴いていません'], ['sec4', '丘の上、藪が揺れました！']],
+  haisui: [['omiya', '後ろは湖です！ 下がる場所はありません、前へ！'], ['sumi', '殿、湖を背にしています。ここで崩れれば、皆、水に追い落とされます。……踏みとどまります'],
+    ['ojou', '背水の陣、ですわね。退く道がない分、迷わずに済みますわ'], ['reika', '上等じゃない。白石隊、前へ！ 先鋒の意地、見せるわよ'],
+    ['kujo', '後方隊、湖岸沿いを固めて。回り込ませないで。輜重の子は荷を盾に'], ['sec3', '弓隊、藤甲は矢を弾きます。顔と首元を狙って。数で押します'],
+    ['fumi', '左翼、前に出すぎないで。的は私が外しませんけど、皆さんも外さないでくださいね'], ['sec2', '澄お姉さま、殿のそばを離れないでくださいね……！'],
+    ['hirose', '後ろが湖とか……べ、別に怖くないし。澄さんの隣は譲らないから'], ['sanjo', '後ろは湖、前は藤甲。……いいじゃん、わかりやすくて。殿、私、ここ動かないから。誰か来たら私が止める'],
+    ['ojou', '玲奈さま……お下がりくださいまし、と申し上げても、お聞きにはなりませんわね'], ['flute', '笛、鳴らします！ 皆さんの足が揃うように']],
+  bat: [['sec4', '右翼、丘からの群れを止めます！ 記録は後で！'], ['sysop', '丘の上、まだ来ます。……数、二百前後'], ['omiya', '槍、揃えて！ 一人で突っ込まないで、三人で一人を！'],
+    ['shinobu', '西園寺様、お下がりを。あの女将の刃は、わたくしが受けます'], ['shizuka', '藤甲は固い……でも、顔と首元なら通ります。何度でも'], ['sanjo', 'なにあれ、矢が跳ね返ってるじゃない！ ……じゃあ顔を突くしかないね'], ['omiya', '玲奈さま、前に出すぎです！ ……もう、聞いてないし！'],
+    ['kujo', '倒れた子はこっちへ。動ける子は自分で下がって'], ['sec3', '弓隊、次。……数えて、揃えて、放って'], ['fumi', '左翼の子、ブーメランは戻ってきます。投げた後も目を離さないで'],
+    ['sumi', '殿、本隊はここを動きません。正面と両翼を信じます']],
+  shuEsc: [['shinobu', '……退きました。追いません。殿のおそばを離れるわけには参りません'], ['omiya', '追わないで！ 密林は向こうの庭です！'], ['reika', 'ちっ……逃げ足だけは速いのね']],
+  rout: [['sec4', '南蛮兵、崩れました！ 丘の向こうへ退いていきます！'], ['sumi', '殿……持ちこたえました。湖を背に、誰ひとり退かずに'], ['kujo', '戦いは終わり。ここからは私たちの番よ。衛生兵、全員こっちへ'],
+    ['reika', '……殿。白石隊、これより本隊に合流します。文句はないわね？'], ['sec2', '澄お姉さま……みんな、生きててよかった……']],
   mob: { march: ['暑い……', '水、まだある？', '前、詰まってる？', '足、痛くない？', '白石隊って、どのくらい先なんだろ'], trace: ['……ひどい', '見ないほうがいいよ', '白石隊の人たち……', '手、合わせとこう'],
-    sick: ['胸が……', 'お腹が……苦しい……', '息が、吸えない……', 'げほっ……', '頭が、くらくらする……'], help: ['しっかりして！', '布、口に当てて！', '顔、上げないで！', '漕いで、早く！'],
-    rest: ['……少し、楽になった', 'ありがとう……', 'まだ、胸が重い……'], night: ['静かだね……', '月、きれい', '昼のこと、思い出しちゃう……', 'もうすぐ向こう岸'] } };
+    sick: ['胸が……', 'お腹が……苦しい……', '息が、吸えない……', 'うっ……', '頭が、くらくらする……'], help: ['しっかりして！', '布、口に当てて！', '顔、上げないで！', '漕いで、早く！'],
+    rest: ['……少し、楽になった', 'ありがとう……', 'まだ、胸が重い……'], night: ['静かだね……', '月、きれい', '昼のこと、思い出しちゃう……', 'もうすぐ向こう岸'], bear: ['交代します！', '代わるよ、休んで', '担ぎます！', 'せーの……よし'], bat: ['来る！', '後ろは湖だよ、下がれない！', '刺さらない！ 顔を狙って！', '三人でかかって！', 'ブーメラン、伏せて！', '押し返せ！'] } };
+// 南蛮兵の言葉（中国語・普通話）。祝融は名のある大将なので字幕（日本語）と中国語の声。群れは声だけ（字幕なし）
+const KOS_ZH = { appear: ['我是南蛮大将祝融！这片土地，休想夺走！', '南蛮の大将、祝融だ！ この地は渡さないよ！'], die: ['你们就这么想死吗？', 'そんなに死にたいか'],
+  god: ['这一带的神明，对外乡人可不客气。你们死了，就下地狱去吧！', 'このあたりの神様は異国人に厳しい。お前ら死んだら地獄行きさ'],
+  taunt: [['背后就是湖，你们还能退到哪里去？', '後ろは湖だ。どこへ逃げる気だい？'], ['藤甲刀枪不入，省点力气吧！', '藤甲に刃は通らないよ。無駄な力は使うな'], ['慢吞吞的，像一群鸭子！', 'のろのろと、まるで鴨の群れだね'],
+    ['下一个是谁？', '次は誰だい？'], ['想过这片林子？先问问我的刀！', 'この森を抜けたきゃ、まずあたしの刃に聞きな！']],
+  reload: ['啧……等我把刀捡回来！', 'ちっ……刃を拾うまで、ちょいと待ちな！'], again: ['好，第二幕开始！', 'さあ、二幕目だよ！'], escape: ['哼……算你们有本事。今天就到这里！', '……やるじゃないか。今日はここまでだ。この首は預けておくよ！'],
+  mob: { go: ['杀！', '冲啊！', '赶她们下湖！', '别让她们跑了！'], bow: ['放箭！', '射！'], boom: ['回旋镖，去！', '看镖！'], hit: ['藤甲在身，不怕！', '哈，没用！'], rout: ['撤！快撤！', '大将走了，快跑！'] } };
+
 function kosCx(s) { const k = sgkSS(690, 780, s); return (1 - k) * (12 * Math.sin(s / 95) + 5 * Math.sin(s / 41)); }
 function kosHW(s) { if (s < 690) return 7; if (s < 1210) return 7 + 68 * sgkSS(690, 780, s); return 75; }
 function kosLW(s) { return 170 + 30 * Math.sin(s / 53); }   // 湖の幅（片側）
 function kosE(s) { if (s < 1000) { const t = 4 + 2.5 * Math.sin(s / 70) + 1.2 * Math.sin(s / 23), k = sgkSS(600, 785, s); let y = t * (1 - k) + 0.55 * k; if (s > 790) y = 0.55 - 3.1 * sgkSS(790, 818, s); return y; }
-  let y = -2.55 + 3.1 * sgkSS(1182, 1210, s); if (s > 1210) y = 0.55 + 1.5 * sgkSS(1210, 1300, s); return y; }
+  let y = -2.55 + 3.1 * sgkSS(1182, 1210, s); if (s > 1210) y = 0.55 + 1.5 * sgkSS(1210, 1300, s) + 0.5 * sgkSS(1300, 1360, s) * Math.sin(s / 37); return y; }
 function kosInLake(x, s) { return s > KOS_LAKE[0] + 2 && s < KOS_LAKE[1] - 2 && Math.abs(x) < kosLW(s); }
 function kosG(x, z) { const s = 1000 - z, c = kosCx(s), w = kosHW(s), a = Math.abs(x - c), b = kosE(s);
   if (s > KOS_LAKE[0] - 12 && s < KOS_LAKE[1] + 12) { const lw = kosLW(s); if (Math.abs(x) > lw) return Math.max(b, 0.6) + Math.min(16, (Math.abs(x) - lw) * 0.35); return b; }
   if (a <= w) return b; const q = a - w; return b + Math.min(14, q * q * 0.06 + q * 0.2) * (0.7 + 0.3 * Math.sin(x * 0.3 + z * 0.17)); }
 function kosRaftAt(x, z) { if (!KOS.rafts) return null; const s = 1000 - z; for (const R of KOS.rafts) if (Math.abs(x - R.x) < R.w / 2 && Math.abs(s - R.s) < R.l / 2) return R; return null; }
 function kosH(x, z) { const R = kosRaftAt(x, z); if (R) return R.y + 0.28; return kosG(x, z); }
-function kosWalk(x, z) { const s = 1000 - z; if (s < -6 || s > 1295) return false; if (kosRaftAt(x, z)) return true; if (kosInLake(x, s) && kosG(x, z) < 0.15) return false; const c = kosCx(s), w = kosHW(s); return Math.abs(x - c) <= w + (s < 690 ? 4 : 0); }
+function kosWalk(x, z) { const s = 1000 - z; if (s < -6 || s > 1462) return false; if (kosRaftAt(x, z)) return true; if (kosInLake(x, s) && kosG(x, z) < 0.15) return false; const c = kosCx(s), w = kosHW(s); return Math.abs(x - c) <= w + (s < 690 ? 4 : 0); }
 function kosMove(ox, oz, nx, nz) { return kosWalk(nx, nz) ? 1 : (kosWalk(ox, oz) ? 0 : 1); }
 const KOS_DAY = { bg: 0xc9d6d2, fog: 0xc9d3cc, fn: 80, ff: 460, hemi: 1.5, amb: 0.8, sun: 1.9 }, KOS_NIGHT = { bg: 0x0d1424, fog: 0x101a2a, fn: 26, ff: 170, hemi: 0.42, amb: 0.42, sun: 0.12 };
 function kosLook(k) { k = clamp(k || 0, 0, 1); const A = KOS_DAY, B = KOS_NIGHT, c1 = new THREE.Color(A.bg), c2 = new THREE.Color(A.fog); c1.lerp(new THREE.Color(B.bg), k); c2.lerp(new THREE.Color(B.fog), k);
@@ -4346,7 +4378,7 @@ function buildKos() {
   KOS.G = { wrap: new THREE.CylinderGeometry(0.24, 0.22, 1.62, 10), rope: new THREE.TorusGeometry(0.24, 0.025, 4, 10), roll: new THREE.CylinderGeometry(0.05, 0.05, 0.1, 8), box: new THREE.BoxGeometry(0.45, 0.28, 0.32), lid: new THREE.PlaneGeometry(0.3, 0.18),
     pole: new THREE.CylinderGeometry(0.025, 0.025, 2.1, 5), bamboo: new THREE.CylinderGeometry(0.33, 0.33, 7, 8), bar: new THREE.BoxGeometry(7.2, 0.12, 0.18), pole2: new THREE.CylinderGeometry(0.05, 0.06, 2.6, 5), flame: new THREE.SphereGeometry(0.16, 8, 6) };
   // 地面（道・草・浜・湖の底・向こう岸）
-  const NX = LITE ? 150 : 220, NZ = LITE ? 330 : 520, X0 = -230, X1 = 230, ZA = -320, ZB = 1012;
+  const NX = LITE ? 150 : 220, NZ = LITE ? 380 : 600, X0 = -230, X1 = 230, ZA = -500, ZB = 1012;
   const geo = new THREE.PlaneGeometry(X1 - X0, ZB - ZA, NX, NZ); geo.rotateX(-Math.PI / 2); const P = geo.attributes.position, C = new Float32Array(P.count * 3), col = new THREE.Color();
   for (let i = 0; i < P.count; i++) { const x = P.getX(i), z = P.getZ(i) + (ZA + ZB) / 2, s = 1000 - z, y = kosG(x, z), c = kosCx(s), a = Math.abs(x - c), w = kosHW(s), hn = 0.5 + 0.5 * Math.sin(x * 2.1 + z * 1.7) * Math.cos(z * 0.9); P.setX(i, x); P.setZ(i, z); P.setY(i, y);
     if (y < 0.1) col.setRGB(0.36, 0.34, 0.27); else if (s > 760 && s < 1240 && y < 1.2) col.setRGB(0.62 + 0.05 * hn, 0.57 + 0.05 * hn, 0.45); else if (a <= w - 1 && s < 700) col.setRGB(0.52 + 0.06 * hn, 0.44 + 0.05 * hn, 0.33); else col.setRGB(0.27 + 0.06 * hn, 0.42 + 0.08 * hn, 0.22);
@@ -4357,17 +4389,20 @@ function buildKos() {
     let sd = 5; const R = () => (sd = (sd * 9301 + 49297) % 233280) / 233280; for (let i = 0; i < (LITE ? 26 : 60); i++) { const s = 830 + R() * 340, x = (R() * 2 - 1) * 150, l = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 3 + R() * 5, 6), KOS.M.log); l.rotation.set(Math.PI / 2 - 0.35 + R() * 0.2, R() * 6, 0.2); l.position.set(x, -0.15 - R() * 0.4, 1000 - s); stageRoot.add(l); } }
   // 遠くの石灰岩の峰と密林
   { const pk = sgkMat(0x6f8577), pk2 = sgkMat(0x7d9184); let sd = 9; const R = () => (sd = (sd * 9301 + 49297) % 233280) / 233280;
-    for (let i = 0; i < (LITE ? 30 : 56); i++) { const side = i % 2 ? 1 : -1, s = -100 + R() * 1500, x = side * (230 + R() * 300), h = 120 + R() * 220, r = 26 + R() * 46; const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.35, r, h, 7), i % 3 ? pk : pk2); m.position.set(x, -30 + h / 2, 1000 - s); stageRoot.add(m); }
+    for (let i = 0; i < (LITE ? 30 : 56); i++) { const side = i % 2 ? 1 : -1, s = -100 + R() * 1700, x = side * (230 + R() * 300), h = 120 + R() * 220, r = 26 + R() * 46; const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.35, r, h, 7), i % 3 ? pk : pk2); m.position.set(x, -30 + h / 2, 1000 - s); stageRoot.add(m); }
     const dum = new THREE.Object3D(); const mk = (geo, mat, n, place) => { const im = new THREE.InstancedMesh(geo, mat, n); let k = 0; for (let i = 0; i < n * 3 && k < n; i++) { const q = place(); if (!q) continue; dum.position.set(q[0], q[1], q[2]); dum.rotation.set(0, R() * 6.28, 0); dum.scale.setScalar(q[3]); dum.updateMatrix(); im.setMatrixAt(k++, dum.matrix); } im.count = k; stageRoot.add(im); };
-    const off = near => { const s = R() * 1300, c = kosCx(s), w = kosHW(s), side = R() < 0.5 ? -1 : 1, x = c + side * (w + 1.5 + R() * near), z = 1000 - s; if (kosInLake(x, s) || (s > 740 && s < 1260 && Math.abs(x) < kosLW(s) + 4)) return null; return [x, kosG(x, z), z]; };
+    const off = near => { const s = R() * 1480, c = kosCx(s), w = kosHW(s), side = R() < 0.5 ? -1 : 1, x = c + side * (w + 1.5 + R() * near), z = 1000 - s; if (kosInLake(x, s) || (s > 740 && s < 1260 && Math.abs(x) < kosLW(s) + 4)) return null; return [x, kosG(x, z), z]; };
     mk(new THREE.IcosahedronGeometry(0.9, 0), sgkMat(0x3b5a2a), LITE ? 600 : 1600, () => { const q = off(40); return q && [q[0], q[1] + 0.3, q[2], 0.7 + R() * 1.6]; });
     mk(new THREE.CylinderGeometry(0.05, 0.07, 6, 4), sgkMat(0x6d8a3c), LITE ? 500 : 1600, () => { const q = off(16); return q && [q[0], q[1] + 2.8, q[2], 0.7 + R() * 0.8]; });
-    mk(new THREE.ConeGeometry(1.6, 7, 6), sgkMat(0x2f4f2a), LITE ? 120 : 320, () => { const q = off(60); return q && [q[0], q[1] + 3.2, q[2], 0.8 + R() * 1.2]; }); }
+    mk(new THREE.ConeGeometry(1.6, 7, 6), sgkMat(0x2f4f2a), LITE ? 120 : 320, () => { const q = off(60); return q && [q[0], q[1] + 3.2, q[2], 0.8 + R() * 1.2]; });
+    const front = () => { const s = 1464 + R() * 40, x = (R() * 2 - 1) * 95, z = 1000 - s; return [x, kosG(x, z), z]; };   // 向こう岸の草地の先：密林（南蛮兵が出てくる）
+    mk(new THREE.ConeGeometry(1.6, 7, 6), sgkMat(0x2f4f2a), LITE ? 70 : 160, () => { const q = front(); return [q[0], q[1] + 3.2, q[2], 0.9 + R() * 1.2]; });
+    mk(new THREE.IcosahedronGeometry(0.9, 0), sgkMat(0x3b5a2a), LITE ? 120 : 300, () => { const q = front(); return [q[0], q[1] + 0.3, q[2], 0.8 + R() * 1.6]; }); }
   // 先鋒の戦いの跡：白石隊の布に包まれた体・衛生兵の跡（包帯・薬箱・担架）。血は描かない
   const side = (s, d) => [kosCx(s) + d, 1000 - s];
-  for (let i = 0; i < (LITE ? 4 : 6); i++) { const [x, z] = side(238 + i * 1.2, 4.4); kosWrapped(x, z, Math.PI / 2); } { const [x, z] = side(240, 2.6); kosMedProps(x, z, 6); const [x2, z2] = side(244, 4.5); kosBoard(x2 + 1.2, z2, kosG(x2, z2), 0.5, 0.35, '白石隊', null, -Math.PI / 2, '#b9a27a'); }
-  for (let i = 0; i < (LITE ? 3 : 4); i++) { const [x, z] = side(602 + i * 1.3, -4.4); kosWrapped(x, z, Math.PI / 2); } { const [x, z] = side(598, -3); kosStretcher(x, z, 0.3); kosMedProps(x + 1, z - 2, 4); }
-  { const [x, z] = side(352, 5.6); KOS.signs.gey = kosBoard(x, z, kosG(x, z), 2.2, 1.5, KOS_SIGN_GEY, '白石隊より', -Math.PI / 2 + 0.25); KOS.signGey = [x, z]; }
+  for (let i = 0; i < (LITE ? 4 : 6); i++) { const [x, z] = side(378 + i * 1.2, 4.4); kosWrapped(x, z, Math.PI / 2); } { const [x, z] = side(380, 2.6); kosMedProps(x, z, 6); const [x2, z2] = side(384, 4.5); kosBoard(x2 + 1.2, z2, kosG(x2, z2), 0.5, 0.35, '白石隊', null, -Math.PI / 2, '#b9a27a'); }
+  for (let i = 0; i < (LITE ? 3 : 4); i++) { const [x, z] = side(662 + i * 1.3, -4.4); kosWrapped(x, z, Math.PI / 2); } { const [x, z] = side(658, -3); kosStretcher(x, z, 0.3); kosMedProps(x + 1, z - 2, 4); }
+  { const [x, z] = side(460, 5.6); KOS.signs.gey = kosBoard(x, z, kosG(x, z), 2.2, 1.5, KOS_SIGN_GEY, '白石隊より', -Math.PI / 2 + 0.25); KOS.signGey = [x, z]; }
   // 湖の岸：白石隊の布に包まれた体（並べてある）、苔むした石碑「毒湖」
   for (let i = 0; i < (LITE ? 7 : 12); i++) { const x = 42 + (i % 6) * 1.1, z = 1000 - (772 + Math.floor(i / 6) * 2.4); kosWrapped(x, z, 0); } { const x = 41, z = 1000 - 769; kosBoard(x, z, kosG(x, z), 0.5, 0.35, '白石隊', null, 0, '#b9a27a'); }
   { const x = -16, z = 1000 - 784, y = kosG(x, z); const st = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.9, 0.45), KOS.M.stone); st.position.set(x, y + 0.95, z); stageRoot.add(st);
@@ -4376,52 +4411,76 @@ function buildKos() {
     const face = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 1.8), new THREE.MeshLambertMaterial({ map: KOS.stoneTex[0] })); face.position.set(0, 0, 0.231); st.add(face); KOS.stoneFace = face; KOS.stone = [x, z]; }
   // 向こう岸：白石隊の焚き火の跡
   { const x = 6, z = 1000 - 1236, y = kosG(x, z); const a = new THREE.Mesh(new THREE.CircleGeometry(1.1, 14), KOS.M.ash); a.rotation.x = -Math.PI / 2; a.position.set(x, y + 0.03, z); stageRoot.add(a); for (let i = 0; i < 5; i++) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 1.1, 5), KOS.M.log); l.rotation.set(Math.PI / 2, 0, i * 1.25); l.position.set(x, y + 0.08, z); stageRoot.add(l); } }
+  // 白石隊の野営（草地の先。ここで本隊を待っていた）
+  { const x = -20, z = 1000 - 1384, y = kosG(x, z); const a = new THREE.Mesh(new THREE.CircleGeometry(1.2, 14), KOS.M.ash); a.rotation.x = -Math.PI / 2; a.position.set(x, y + 0.03, z); stageRoot.add(a); kosMedProps(x + 4, z + 2, 5); kosBoard(x - 3, z - 1, y, 0.6, 0.4, '白石隊', null, Math.PI, '#b9a27a'); }
   // 月（夜だけ）
   { const m = new THREE.Mesh(new THREE.SphereGeometry(14, 16, 12), new THREE.MeshBasicMaterial({ color: 0xf4efd8, fog: false })); m.position.set(-260, 260, 1000 - 1500); m.visible = false; stageRoot.add(m); KOS.moon = m; }
 }
 // ---- 兵 ----
 function kosMk(x, z, kind, team, gid, prof) { const y = kosH(x, z), e = ks2Mk(x, z, kind, team, gid, prof, y); if (!e) return null; e.kos = true; e.speed = rand(3.2, 3.8); e.baseY = y; e.s.position.y = y; KOS.all.push(e); return e; }
 const KOS_OFF = () => { const S = KS2_KINGDOM_OFF(); S.add('girl50'); return S; };
-function kosNamed(U, k, s) { const gid = ks2Gid(k), N = KS2_NM[k]; if (!N) return null; const e = kosMk(kosCx(s) + rand(-2, 2), 1000 - s, 'mob', 'blue', gid, Object.assign({ name: N[0], pers: N[1], vv: 1 }, N[2] ? { cm: N[2] } : {})); if (!e) return null;
+const KOS_NM_X = { midori: ['村瀬 碧', '好戦的', 164, 'girl37'] };   // 白壁城の名簿に無い娘（村瀬：側近付き秘書）
+function kosNamed(U, k, s) { const X = KOS_NM_X[k], gid = X ? (GIRLS[X[3]] ? X[3] : null) : ks2Gid(k), N = X || KS2_NM[k]; if (!N || (X && !gid)) return null; const e = kosMk(kosCx(s) + rand(-2, 2), 1000 - s, 'mob', 'blue', gid, Object.assign({ name: N[0], pers: N[1], vv: 1 }, N[2] ? { cm: N[2] } : {})); if (!e) return null;
   e.kosU = U; e.ks2Named = k; e.ks2Title = e.ukTag = KOS_TITLE[k] || N[0]; e.ks2Vk = KS2_VK[k]; e.hp = e.hpMax = 10; KOS.by[k] = e; return e; }
-function kosMob(U, arch, s) { const kind = arch ? 'archer' : 'mob', e = kosMk(kosCx(s) + rand(-3, 3), 1000 - s, kind, 'blue', jpDeal(kind, 'kos', KOS_OFF) || (arch ? 'archer01' : 'mob01'), null); if (!e) return null; e.kosU = U; e.kosArch = arch;
-  if (!arch && (U.k === 'R' ? U.mem.length % 3 === 0 : U.mem.length % 25 === 7)) { e.kosMed = true; e.ukTag = (U.k === 'R' ? '医務班' : U.name) + ' 衛生兵'; } else if (!arch && Math.random() < 0.3) { e.yari = true; makeYari(e); } return e; }
-function kosSpawn() { KOS.units = []; KOS.U = {}; KOS.by = {}; KOS.all = []; KOS.foes = []; const k = LITE ? 0.5 : 1; let s = 150;
-  for (const D of KOS_UNITS) { const U = Object.assign({}, D, { mem: [], s, st: 'go' }); KOS.units.push(U); KOS.U[D.k] = U; const n = Math.max(8, Math.round(D.n * k)), named = [];
-    for (const kk of D.chain.concat(D.secs)) { const e = kosNamed(U, kk, s - 10); if (e) named.push(e); }
-    for (let j = 0; U.mem.length < n - named.length; j++) { const e = kosMob(U, D.arch ? j % 5 !== 4 : D.k === 'H' || D.k === 'R' ? j % 4 === 0 : j % 10 < 2, s - (j / 4) * 1.5); if (e) U.mem.push(e); else break; }
-    U.mem.push(...named.reverse());   // 隊長・名のある娘は隊の後ろ（矢の届きにくい所）
-    U.mem.forEach((e, i) => { e.kosIdx = i; const [x, z] = kosSlot(e); e.s.position.set(x, kosH(x, z), z); e.baseY = e.s.position.y; e.face = e.faceWant = Math.PI; });
-    U.len = Math.ceil(U.mem.length / 4) * 1.5; s -= U.len + 7; }
+// 群れの兵。役：弓・衛生兵（各隊およそ4%、後方隊は医務30%）・輜重（後方隊40%、荷を背負う）・槍／刀
+function kosMob(U, role, s) { const arch = role === 'arch', kind = arch ? 'archer' : 'mob', e = kosMk(kosCx(s) + rand(-3, 3), 1000 - s, kind, 'blue', jpDeal(kind, 'kos', KOS_OFF) || (arch ? 'archer01' : 'mob01'), null); if (!e) return null; e.kosU = U; e.kosArch = arch; e.kosRole = role;
+  if (role === 'med') { e.kosMed = true; e.ukTag = (U.k === 'R' ? '後方隊 医務班' : U.name) + ' 衛生兵'; } else if (role === 'pack') { e.kosPack = true; e.ukTag = '後方隊 輜重兵'; kosPackMesh(e); } else if (role === 'guard') { e.ukTag = '後方隊 後衛'; e.yari = true; makeYari(e); } else if (role === 'shield') { e.ukTag = '弓隊 盾持ち'; e.kosShd = true; e.sgkShield = true; const m = ks2ShMesh(true); m.position.set(0, 0.66, 0.42); e.s.add(m); } else if (!arch && Math.random() < 0.35) { e.yari = true; makeYari(e); } return e; }
+function kosRole(U, j) { if (U.k === 'A' && j % 7 === 3) return 'shield'; if (U.k === 'R') { const m = j % 10; return m < 3 ? 'med' : m < 7 ? 'pack' : 'guard'; } if (j % 25 === 7) return 'med'; return ((j * 0.618) % 1) < U.arch ? 'arch' : 'mob'; }
+function kosPackMesh(e) { const M = KOS.M, g = new THREE.Group(), b = new THREE.Mesh(KOS.G.pack || (KOS.G.pack = new THREE.BoxGeometry(0.38, 0.42, 0.24)), M.cloth2); g.add(b); const t = new THREE.Mesh(KOS.G.packT || (KOS.G.packT = new THREE.BoxGeometry(0.4, 0.06, 0.26)), M.rope); t.position.y = 0.1; g.add(t); if (Math.random() < 0.5) { const bx = new THREE.Mesh(KOS.G.box, M.wood); bx.scale.setScalar(0.7); bx.position.y = 0.32; g.add(bx); } stageRoot.add(g); e.kosPk = g; }
+function kosPackTick(e) { const g = e.kosPk; if (!g) return; const p = e.s.position, f = e.face || 0; if (!isUp(e)) { if (!g.userData.dn) { g.userData.dn = true; const x = p.x + Math.sin(f + 2) * 0.6, z = p.z + Math.cos(f + 2) * 0.6; g.position.set(x, kosG(x, z) + 0.2, z); g.rotation.set(0, f, 0.2); } return; }
+  const h = (e.figH || 1.6); g.position.set(p.x - Math.sin(f) * 0.2, p.y + h * 0.62, p.z - Math.cos(f) * 0.2); g.rotation.set(0, f, 0); }
+// 1隊を出す：名のある娘＋群れ（画面に出すのは KOS_FIELD/全体 の割合。残りは「後続」として数え、戦いで前へ詰める）
+function kosUnit(D, s, bat) { const U = Object.assign({}, D, { mem: [], s, st: 'go', pool: 0, out: 0 }); if (bat) { U.bx = bat[0]; U.bs = bat[1]; } KOS.units.push(U); KOS.U[D.k] = U; const named = [];
+  for (const kk of D.chain.concat(D.secs)) { const e = kosNamed(U, kk, s - 10); if (e) named.push(e); }
+  const field = Math.max(named.length + 6, Math.round(D.n * KOS.fieldK)); U.field = field; U.pool = D.n - field;
+  for (let j = 0; U.mem.length < field - named.length; j++) { const e = kosMob(U, kosRole(U, j), s - (j / 6) * 1.5); if (e) U.mem.push(e); else { U.pool++; if (j > field * 2) break; } }
+  U.mem.push(...named.reverse());   // 隊長・名のある娘は隊の後ろ（矢の届きにくい所）
+  U.mem.forEach((e, i) => { e.kosIdx = i; const [x, z] = kosSlot(e); e.s.position.set(x, kosH(x, z), z); e.baseY = e.s.position.y; e.face = e.faceWant = Math.PI; });
+  U.len = Math.ceil(U.mem.length / 6) * 1.5; return U; }
+function kosSpawn() { KOS.units = []; KOS.U = {}; KOS.by = {}; KOS.all = []; KOS.foes = []; KOS.fieldK = (LITE ? 210 : 560) / (KOS_TOTAL + KOS_V.n); let s = 262;
+  for (const D of KOS_UNITS) { const U = kosUnit(D, s); s -= U.len + 7; }
   // 先鋒が倒した中国の兵（倒れたまま。消えない）
   const cn = KS2_CN_LOOKS.filter(g => g !== 'girl50' && GIRLS[g]); let ci = 0;
   const dead = (s0, n, spread) => { for (let i = 0; i < n; i++) { const s1 = s0 + rand(-spread, spread), c = kosCx(s1), x = c + (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 6.5), z = 1000 - s1; const e = kosMk(x, z, 'mob', 'orange', cn.length ? cn[(ci++) % cn.length] : 'girl46', { name: ks2Name('cn'), pers: '冷静', cm: 156 + (ci * 7) % 12 }); if (!e) continue; e.kosPre = true; e.ks2Cn = true; e.hp = 0; killEnemy(e, false, new V3(x + rand(-1, 1), 0, z - 1)); } };
-  dead(130, LITE ? 7 : 14, 10); dead(600, LITE ? 5 : 10, 9); }
-function kosSlot(e) { const U = e.kosU, i = e.kosIdx || 0, m = sgkSS(700, 780, U.s), cols = m > 0.5 ? 8 : 4, row = Math.floor(i / cols), lat = ((i % cols) - (cols - 1) / 2) * (m > 0.5 ? 1.4 : 1.55), s = U.s - row * 1.5, ui = KOS.units.indexOf(U); return [kosCx(s) + lat + (ui - 2) * 26 * m, 1000 - s]; }   // 道では4列、岸の草地では隊ごとに横に並ぶ
+  dead(300, LITE ? 7 : 14, 10); dead(660, LITE ? 5 : 10, 9); }
+function kosSlot(e) { const U = e.kosU, i = e.kosIdx || 0;
+  if (U.bx != null && KOS.ring && e.kosRi != null) return kosRing(e);
+  if (U.bx != null) { if (U.k === 'R' && e.kosRole === 'guard') { const g = U.mem.filter(o => o.kosRole === 'guard'), gi = Math.max(0, g.indexOf(e)), sd = gi % 2 ? 1 : -1, r = Math.floor(gi / 2); return [sd * (34 + (r % 6) * 1.6), 1000 - (U.bs - 4 - Math.floor(r / 6) * 1.5)]; }   // 後衛：本隊の後ろの両脇（湖岸沿いの回り込みを止める）
+    const cols = 12, row = Math.floor(i / cols), lat = ((i % cols) - (cols - 1) / 2) * 1.5; return [U.bx + lat, 1000 - (U.bs - row * 1.4)]; }   // 向こう岸：隊ごとの持ち場
+  const m = sgkSS(700, 780, U.s), cols = m > 0.5 ? 10 : 6, row = Math.floor(i / cols), lat = ((i % cols) - (cols - 1) / 2) * (m > 0.5 ? 1.35 : 1.3), s = U.s - row * 1.5, ui = KOS.units.indexOf(U); return [kosCx(s) + lat + (ui - 2.5) * 22 * m, 1000 - s]; }   // 道では6列、岸の草地では隊ごとに横に並ぶ
+// 方円の陣：湖を背に半円。外側に槍・刀の隊（左翼・白石隊・正面・右翼）、内側に弓隊（前に盾持ち）、真ん中に本隊、そのすぐ後ろに後方隊（医務・輜重）。後衛は半円の両端（湖岸沿い）
+const KOS_RC = 1318, KOS_RING = { L: [-95, -42, 44], V: [-42, -14, 44], F: [-14, 30, 44], W: [30, 95, 44], A: [-50, 50, 26], As: [-46, 46, 30], H: [-80, 80, 13], R: [125, 235, 8], Rg: [-100, 100, 44] };
+function kosRingKey(e) { const U = e.kosU; return U.k === 'A' && e.kosShd ? 'As' : U.k === 'R' && e.kosRole === 'guard' ? 'Rg' : U.k; }
+function kosRingAssign(e) { const k = kosRingKey(e), N = KOS.ringN || (KOS.ringN = {}); e.kosRi = N[k] = (N[k] || 0); N[k]++; }
+function kosRing(e) { const U = e.kosU, k = kosRingKey(e), A = KOS_RING[k], N = KOS.ringN[k] || 1; let i = e.kosRi;
+  if (k === 'Rg') { const sd = i % 2 ? 1 : -1, r = Math.floor(i / 2), ang = sd * (98 + (r % 4) * 3) * Math.PI / 180, rr = A[2] - Math.floor(r / 4) * 1.5; return [Math.sin(ang) * rr, 1000 - (KOS_RC + Math.cos(ang) * rr)]; }
+  const R0 = k === 'L' && KOS.feint && KOS.t < KOS.feint.until ? 30 : A[2], len = Math.abs(A[1] - A[0]) * Math.PI / 180 * R0, cols = Math.max(4, Math.floor(len / 1.45)), rows = Math.ceil(N / cols);
+  if (k === 'F' && U.rotK) i = (i + U.rotK * cols * 2) % (rows * cols);   // 車懸り：前の二列と後ろの列が入れ替わる
+  const col = i % cols, row = Math.floor(i / cols), ang = (A[0] + (col + 0.5) / cols * (A[1] - A[0])) * Math.PI / 180, r = Math.max(3, R0 - row * 1.4); return [Math.sin(ang) * r, 1000 - (KOS_RC + Math.cos(ang) * r)]; }
 function kosGo(e, tx, tz, sp, dt) { const p = e.s.position, V = e.ks2V, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
   if (e.ks2Go == null) e.ks2Go = false; if (d > (e.ks2Go ? 0.4 : 1.1)) e.ks2Go = true; else if (d < 0.4) e.ks2Go = false;
   const ws = e.ks2Go ? sp * (e.kosWeak ? 0.7 : 1) * Math.min(1, d / 2) : 0, wx = e.ks2Go ? dx / d * ws : 0, wz = e.ks2Go ? dz / d * ws : 0, ak = Math.min(1, dt * (e.ks2Go ? 2.5 : 4));
   V[0] += (wx - V[0]) * ak; V[1] += (wz - V[1]) * ak; const vv = Math.hypot(V[0], V[1]);
-  if (vv > 0.05) { let nx = p.x + V[0] * dt, nz = p.z + V[1] * dt; if (!kosWalk(nx, nz) && kosWalk(p.x, p.z)) { if (kosWalk(p.x, nz)) nx = p.x; else if (kosWalk(nx, p.z)) nz = p.z; else { nx = p.x; nz = p.z; } }
+  if (vv > 0.05) { let nx = p.x + V[0] * dt, nz = p.z + V[1] * dt; if (!e.kosFreeGo && !kosWalk(nx, nz) && kosWalk(p.x, p.z)) { if (kosWalk(p.x, nz)) nx = p.x; else if (kosWalk(nx, p.z)) nz = p.z; else { nx = p.x; nz = p.z; } }
     p.x = nx; p.z = nz; e.moving = vv > 0.3; e.faceWant = Math.atan2(V[0], V[1]); } else e.moving = false;
   e.state = 'idle'; return d < 0.6; }
-// 毒気で倒れる：胸・お腹を押さえて膝をつき、崩れ落ちて横たわる（血は出さない）。衛生兵の手当てで起き上がる
+// 毒気で倒れる：胸・お腹を押さえ、崩れ落ちて横たわる（血は出さない。膝をつく・座る姿は使わない）。倒れる絵の無い娘は立ったまま胸を押さえてこらえる。衛生兵の手当てで起き上がる
 function kosSickAnim(e, dt) { const S = e.kosSick; if (!S) return false; S.t += dt;
-  if (S.ph === 'clutch') { e.clutch = 0.85; e.kneel = S.t > 0.9; e.crouch = e.kneel ? 1 : 0; e.moving = false; if (S.t > S.T) { S.t = 0; if (e.girl && e.girl.down) { S.ph = 'fall'; S.seq = fallImages(e); } else S.ph = 'lie'; } return false; }
+  if (S.ph === 'clutch') { e.clutch = 0.85; e.kneel = false; e.crouch = 0; e.moving = false; if (S.t > S.T) { S.t = 0; if (e.girl && e.girl.down) { S.ph = 'fall'; S.seq = fallImages(e); } else { S.ph = 'rest'; S.T = rand(18, 30); e.kosWeak = true; } } return false; }
   if (S.ph === 'fall') { const sq = (S.seq || []).filter(f => f !== e.girl.down), k = Math.min(sq.length - 1, Math.floor(S.t / 1.5 * sq.length)); if (sq[k]) setFrame(e, sq[k], false);
     if (S.t > 1.5) { S.ph = 'lie'; S.t = 0; e.clutch = 0; e.kneel = false; e.crouch = 0; e.fallYaw = e.s.rotation.y + (Math.random() < 0.5 ? 1 : -1) * Math.PI / 2; startLying(e); if (!bodies.includes(e)) bodies.push(e); } return true; }
-  if (S.ph === 'lie') { if (!e.lying) { e.kneel = true; e.crouch = 1; return false; } return true; }
-  if (S.ph === 'rest') { e.kneel = true; e.crouch = 1; e.moving = false; if (S.t > S.T) { e.kosSick = null; e.kneel = false; e.crouch = 0; } return false; }
+  if (S.ph === 'lie') { if (!e.lying) { e.fallYaw = e.s.rotation.y + Math.PI / 2; startLying(e); if (!bodies.includes(e)) bodies.push(e); } return true; }
+  if (S.ph === 'rest') { e.kneel = false; e.crouch = 0; e.clutch = S.t < S.T * 0.6 ? 0.5 : 0; e.moving = false; if (S.t > S.T) { e.kosSick = null; e.clutch = 0; } return false; }
   return false; }
 function kosSicken(e, delay) { if (e.kosSick || e.kosDead || !isUp(e)) return; e.kosSick = { ph: 'wait', t: -delay, T: rand(1.4, 2.8) }; }
 function kosRecover(e) { const S = e.kosSick; if (!S) return; if (e.lying) { const i = bodies.indexOf(e); if (i >= 0) bodies.splice(i, 1); stopLying(e); } e.kosSick = { ph: 'rest', t: 0, T: rand(14, 26) }; e.kosWeak = true; e.hp = Math.max(1, e.hp); }
 function kosSickTick(dt) { for (const e of KOS.all) { const S = e.kosSick; if (S && S.ph === 'wait') { S.t += dt; if (S.t >= 0) { S.ph = 'clutch'; S.t = 0; KOS.sickN++; if (Math.random() < 0.35 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 35) kosMobSay1(e, 'sick'); } } } }
 // ---- 筏 ----
-function kosRafts() { const n = Math.ceil(KOS.all.filter(e => e.team === 'blue').length / 26), sp = 14; KOS.rafts = [];
-  for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * sp; const m = kosRaftMesh(); stageRoot.add(m); const R = { i, x, s: KOS_SHORE + 4.2, s0: KOS_SHORE + 4.2, w: 7.2, l: 7, y: 0.3, m, v: 0, row: 0, riders: [] }; KOS.rafts.push(R); m.position.set(x, R.y, 1000 - R.s); }
+function kosRafts() { const n = Math.ceil(KOS.all.filter(e => e.team === 'blue' && isUp(e)).length / 34), sp = Math.min(13, 170 / Math.max(1, n)); KOS.rafts = [];
+  for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * sp; const m = kosRaftMesh(); stageRoot.add(m); m.scale.z = 8 / 7; const R = { i, x, s: KOS_SHORE + 4.6, s0: KOS_SHORE + 4.6, w: 7.2, l: 8, y: 0.3, m, v: 0, row: 0, riders: [] }; KOS.rafts.push(R); m.position.set(x, R.y, 1000 - R.s); }
   // 乗る順：斥候・正面の兵 → 弓 → 本隊・後方の兵 → 名のある娘（隊長は後ろの筏）
-  const order = [], blue = KOS.units.flatMap(U => U.mem.filter(e => !e.kosDead && isUp(e))); for (const pass of [o => !o.ks2Named && (o.kosU.k === 'S' || o.kosU.k === 'F'), o => !o.ks2Named && o.kosU.k === 'A', o => !o.ks2Named, o => o.ks2Named]) for (const e of blue) if (!order.includes(e) && pass(e)) order.push(e);
-  const cap = Math.ceil(order.length / n); order.forEach((e, j) => { const R = KOS.rafts[Math.min(n - 1, Math.floor(j / cap))], k = R.riders.length, c = k % 6, r = Math.floor(k / 6); e.kosRaft = R; e.kosSl = [(c - 2.5) * 1.12, (r - 2) * 1.25 - 0.4]; R.riders.push(e); });
+  const order = [], blue = KOS.units.flatMap(U => U.mem.filter(e => !e.kosDead && isUp(e))); for (const pass of [o => !o.ks2Named && (o.kosU.k === 'F' || o.kosU.k === 'L' || o.kosU.k === 'W'), o => !o.ks2Named && o.kosU.k === 'A', o => !o.ks2Named, o => o.ks2Named]) for (const e of blue) if (!order.includes(e) && pass(e)) order.push(e);
+  const cap = Math.ceil(order.length / n); order.forEach((e, j) => { const R = KOS.rafts[Math.min(n - 1, Math.floor(j / cap))], k = R.riders.length, c = k % 6, r = Math.floor(k / 6); e.kosRaft = R; e.kosSl = [(c - 2.5) * 1.12, (r - 2.5) * 1.22]; R.riders.push(e); });
   // 出る順：前の筏から（名のある娘の筏は最後）
   KOS.rafts.forEach(R => { R.row = Math.min(2, Math.floor(R.riders.findIndex(e => !e.ks2Named) < 0 ? 2 : (R.i * 3) / n)); if (R.riders.some(e => e.ks2Named)) R.row = 2; });
   KOS.kingR = KOS.rafts.find(R => R.riders.includes(KOS.by.sumi)) || KOS.rafts[Math.floor(n / 2)]; }
@@ -4431,40 +4490,111 @@ function kosRaftTick(dt) { if (!KOS.rafts) return; const pr = kosRaftAt(player.p
     const y0 = R.y; R.y = 0.3 + 0.05 * Math.sin(KOS.t * 1.3 + R.i); R.m.position.set(R.x, R.y, 1000 - R.s); R.m.rotation.z = 0.015 * Math.sin(KOS.t * 0.9 + R.i * 2);
     if (pr === R && R.v !== 0) { player.pos.z -= ds; if (player.terrOk) player.terrOk[1] -= ds; } } }
 function kosRaftGoal(goal, vmax, delays) { for (const R of KOS.rafts) { R.goal = goal(R); R.vmax = vmax; R.go = KOS.t + (delays ? delays[R.row] : 0); } }
-function kosBoardPlayer() { const R = KOS.kingR; if (!R) return; if (kosRaftAt(player.pos.x, player.pos.z) === R) return; player.pos.set(R.x, R.y + 0.28, 1000 - (R.s + 2.2)); if (player.vel) player.vel.set(0, 0, 0); player.terrOk = [player.pos.x, player.pos.z]; player.yaw = 0; popup('殿は白瀬と同じ筏へ'); popupTimer = 2; }
+function kosBoardPlayer() { const R = KOS.kingR; if (!R) return; if (KOS.kg && KOS.kg.ride) { KOS.kg.ride = false; popup('殿は輿を降りて筏へ。輿は筏に載せて渡す'); popupTimer = 2.5; } if (kosRaftAt(player.pos.x, player.pos.z) === R) return; player.pos.set(R.x, R.y + 0.28, 1000 - (R.s + 2.2)); if (player.vel) player.vel.set(0, 0, 0); player.terrOk = [player.pos.x, player.pos.z]; player.yaw = 0; popup('殿は白瀬と同じ筏へ'); popupTimer = 2; }
+// ---- 殿の輿（御簾つき）：担ぎ手は本隊の侍女（立ったまま）。疲れたら交代、倒れたら近くの兵が代わる ----
+const KOS_KG_N = 6, KOS_KG_SL = [[-0.42, 1.95], [0.42, 1.95], [-0.42, -1.95], [0.42, -1.95], [-0.42, 1.25], [0.42, -1.25]];   // 担ぎ手の位置（輿の向きに対して x 横・z 前）
+function kosKgMesh() { const g = new THREE.Group(), M = KOS.M, lac = M.lac || (M.lac = sgkMat(0x3a1a14)), gold = M.gold || (M.gold = sgkMat(0xb8913a)), DS = THREE.DoubleSide;
+  const blindTex = kosTex(64, 128, (c, W, H) => { c.clearRect(0, 0, W, H); for (let y = 0; y < H; y += 4) { c.fillStyle = 'rgba(176,146,88,0.78)'; c.fillRect(0, y, W, 3); } c.fillStyle = 'rgba(90,60,30,0.9)'; for (const x of [W * 0.25, W * 0.75]) c.fillRect(x - 1, 0, 2, H); c.fillStyle = 'rgba(120,40,40,0.95)'; c.fillRect(0, 0, W, 8); });
+  const bm = new THREE.MeshLambertMaterial({ map: blindTex, transparent: true, side: DS, depthWrite: false }), pm = new THREE.MeshLambertMaterial({ color: 0x3a1a14, side: DS });
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.08, 1.5), lac); floor.position.y = 1.05; g.add(floor);
+  const roof = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.1, 1.75), lac); roof.position.y = 2.32; g.add(roof); const rf2 = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 1.4), gold); rf2.position.y = 2.42; g.add(rf2);
+  for (const x of [-0.53, 0.53]) for (const z of [-0.72, 0.72]) { const p = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.25, 0.06), lac); p.position.set(x, 1.68, z); g.add(p); }
+  const pan = (w, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.42), pm); m.position.set(x, 1.3, z); m.rotation.y = ry; g.add(m); };   // 腰の高さの板
+  pan(1.06, 0, 0.72, 0); pan(1.06, 0, -0.72, 0); pan(1.44, 0.53, 0, Math.PI / 2); pan(1.44, -0.53, 0, Math.PI / 2);
+  const bl = (w, h, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), bm); m.position.set(x, 2.27 - h / 2, z); m.rotation.y = ry; g.add(m); };   // 御簾：前は半ば巻き上げ、横と後ろは下ろす
+  bl(1.06, 0.3, 0, 0.73, 0); bl(1.06, 0.72, 0, -0.73, 0); bl(1.44, 0.55, 0.54, 0, Math.PI / 2); bl(1.44, 0.55, -0.54, 0, Math.PI / 2);
+  for (const x of [-0.42, 0.42]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 4.4, 6), M.wood); p.rotation.x = Math.PI / 2; p.position.set(x, 1.32, 0); g.add(p); }   // 担ぎ棒（立った担ぎ手の肩の高さ）
+  stageRoot.add(g); return g; }
+function kosKgInit() { const H = KOS.U.H, s = H.s + 4.5, x = kosCx(s); const K = KOS.kg = { m: kosKgMesh(), x, z: 1000 - s, yaw: Math.PI, ride: true, bear: [], v: 0, raft: null };
+  const pool = H.mem.filter(e => !e.ks2Named && !e.kosMed && !e.kosArch && !e.kosPack); for (let i = 0; i < KOS_KG_N && i < pool.length; i++) kosKgSet(i, pool[i]); kosKgPlace(); kosKgBtn(); }
+function kosKgSet(i, e) { const K = KOS.kg, o = K.bear[i]; if (o) { o.kosBear = null; o.kosTire = 0; } K.bear[i] = e; if (e) { e.kosBear = i + 1; e.kosTire = 0; e.medTgt = null; } }
+function kosKgSlot(i) { const K = KOS.kg, q = KOS_KG_SL[i], c = Math.cos(K.yaw), s = Math.sin(K.yaw); return [K.x + q[0] * c + q[1] * s, K.z - q[0] * s + q[1] * c]; }
+function kosKgPlace() { const K = KOS.kg; if (!K) return; const y = K.raft ? K.raft.y + 0.28 - 0.98 : kosG(K.x, K.z) + 0.02; K.m.position.set(K.x, y, K.z); K.m.rotation.y = K.yaw; K.y = y; }
+function kosKgOk(e) { return e && isUp(e) && !e.kosDead && e.hp >= 2 && !(e.kosSick && e.kosSick.ph !== 'rest' && e.kosSick.ph !== 'wait') && !e.kosOn; }
+function kosKgFill(r) { const K = KOS.kg; if (!K) return 0; let n = 0; for (let i = 0; i < KOS_KG_N; i++) { if (kosKgOk(K.bear[i])) { n++; continue; } const [sx, sz] = kosKgSlot(i); let b = null, bd = r || 25;   // 倒れた・深手の担ぎ手は近くの兵が代わる
+    for (const o of KOS.all) { if (o.team !== 'blue' || o.ks2Named || o.kosBear || o.kosMed || o.kosArch || o.kosPack || !kosKgOk(o) || o.kosHop) continue; const d = Math.hypot(o.s.position.x - sx, o.s.position.z - sz); if (d < bd) { bd = d; b = o; } }
+    if (b) { kosKgSet(i, b); n++; if (Math.random() < 0.5) kosMobSay1(b, 'bear'); } else kosKgSet(i, null); } return n; }
+function kosKgTarget() { const H = KOS.U.H; if (KOS.ring) return [0, 1000 - KOS_RC]; if (H.bx != null) return [H.bx, 1000 - (H.bs + 6)]; const s = Math.min(H.s + 4.5, 786); return [kosCx(s), 1000 - s]; }
+function kosKgTick(dt) { const K = KOS.kg; if (!K) return; const ph = KOS.ph, rafting = KOS.rafts && (ph === 'board' || ph === 'day' || ph === 'poison' || ph === 'back' || ph === 'night');
+  if (rafting && KOS.kingR) { const R = KOS.kingR; if (!K.raft) { K.raft = R; for (let i = 0; i < KOS_KG_N; i++) kosKgSet(i, null); } K.x = R.x; K.z = 1000 - (R.s - 2.6); K.yaw = R.v < 0 ? 0 : Math.PI; kosKgPlace(); return; }   // 筏の上に載せて渡す（担ぎ手は筏に分乗）
+  if (K.raft) { const R = K.raft; K.raft = null; const far = R.s > 1000; K.x = R.x * (far ? 0.7 : 1); K.z = 1000 - (far ? KOS_FAR + 9 : KOS_SHORE - 9); kosKgPlace(); }
+  if ((K.fT = (K.fT || 0) - dt) <= 0) { K.fT = 1.5; kosKgFill(25);
+    for (let i = 0; i < KOS_KG_N; i++) { const e = K.bear[i]; if (!e || e.kosTire < 80) continue;   // 疲れた担ぎ手は交代（群れの声だけ）
+      const p = e.s.position, f = KOS.all.find(o => o.team === 'blue' && o.kosU === KOS.U.H && !o.ks2Named && !o.kosBear && !o.kosMed && !o.kosArch && !o.kosPack && kosKgOk(o) && !o.tgt && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 25 && (o.kosRested || 0) < KOS.t);
+      if (f) { kosKgSet(i, f); e.kosRested = KOS.t + 60; if (Math.random() < 0.6) kosMobSay1(f, 'bear'); break; } } }
+  let inPl = 0, ok = 0; for (let i = 0; i < KOS_KG_N; i++) { const e = K.bear[i]; if (!kosKgOk(e)) continue; ok++; const [sx, sz] = kosKgSlot(i); if (Math.hypot(e.s.position.x - sx, e.s.position.z - sz) < 1.2) inPl++; } K.ok = ok;
+  const [tx, tz] = kosKgTarget(), dx = tx - K.x, dz = tz - K.z, d = Math.hypot(dx, dz), can = inPl >= 4 && d > 0.8 && !(K.stopT > KOS.t), vmax = 2.9; K.v += ((can ? Math.min(vmax, d * 0.6) : 0) - K.v) * Math.min(1, dt * 1.5);
+  if (K.v > 0.05 && d > 0.01) { const nx = K.x + dx / d * K.v * dt, nz = K.z + dz / d * K.v * dt; if (kosWalk(nx, nz)) { K.x = nx; K.z = nz; } const want = Math.atan2(dx, dz); let dy = want - K.yaw; while (dy > Math.PI) dy -= 2 * Math.PI; while (dy < -Math.PI) dy += 2 * Math.PI; K.yaw += dy * Math.min(1, dt * 1.2); for (const e of K.bear) if (e) e.kosTire += dt; }
+  if (K.stopT > KOS.t) K.v = 0;
+  if (K.ride && !KOS.ring && (K.smT == null || KOS.t - K.smT > 70) && (K.smC = (K.smC || 0) + dt) > 4) { K.smC = 0; let n = 0, med = 0; for (const o of KOS.all) { if (o.team !== 'blue' || !isUp(o)) continue; if (Math.abs(o.s.position.x - K.x) + Math.abs(o.s.position.z - K.z) < 9) { n++; if (o.kosMed || o.kosU === KOS.U.R) med++; } }
+    if (n >= 22 && KOS.t > 40 && !(KS2.subLock > time)) { K.smT = KOS.t; sgkKing(med >= 6 ? '薬草くさい' : ['土と汗のにおいだな', '意外といい匂いするな'][(K.smI = ((K.smI || 0) + 1) % 2)]); } }   // 殿のひとりごと（返事はなし）
+  kosKgPlace(); if (K.lurch > 0) { K.lurch = Math.max(0, K.lurch - dt * 1.4); K.m.rotation.z = Math.sin(KOS.t * 14) * 0.08 * K.lurch; K.m.position.y += Math.abs(Math.sin(KOS.t * 10)) * 0.1 * K.lurch; } else K.m.rotation.z = 0;
+  if (K.ride && ok < 3 && !KOS.ring) { K.ride = false; kosKgDrop(); popup('担ぎ手が足りません――輿を降ります'); popupTimer = 2.5; } }
+function kosBearer(e, dt) { const K = KOS.kg, i = e.kosBear - 1; let [sx, sz] = kosKgSlot(i); e.kneel = false; e.crouch = 0;   // 立ったまま担ぐ
+  if (e.kosStag > 0) { e.kosStag -= dt; sx += Math.sin(KOS.t * 11 + i) * 0.35; sz += Math.cos(KOS.t * 9 + i) * 0.25; }   // 輿が揺れて、立ったままよろける
+  if (K.stopT > KOS.t && K.stopT - KOS.t < 11) { const a = KOS.t * 0.7 + i * 1.3; kosGo(e, sx + Math.sin(a) * 1.6, sz + Math.cos(a) * 1.2, e.speed, dt); if (!e.moving) e.faceWant = a * 2; return; }   // あわてて場所を探す
+  kosGo(e, sx, sz, e.speed * 1.3, dt); if (!e.moving) e.faceWant = K.yaw; }
+// 殿が輿の中から話しかける（殿は字幕。担ぎ手の群れは声だけ、名のある娘が近ければ字幕つきで答える）
+const KOS_KG_TALK = [
+  { k: '重い？', mob: ['全然です！', 'だ、大丈夫です……！', '殿は軽いです！'], nm: [['sumi', '殿、お気遣いなく。皆、交代で担いでいますから'], ['sec2', '重くないです！ ……たぶん！'], ['hirose', 'べ、別に重くないし。殿くらい余裕です'], ['sanjo', '重いって言ったら降りてくれるの？ ……冗談。平気だよ']] },
+  { k: 'か弱い女の子たちにこんなことさせる、これが権力か', mob: ['……ふふっ', 'か弱くないですよー', '権力だー'], nm: [['sumi', '殿、それは今さらです。……皆、好きで担いでいますよ'], ['sanjo', '自覚あったんだ。……ま、降りて歩くって言わないとこが殿だよね'], ['hirose', 'か弱いって……ちょっと嬉しいかも。……な、なんでもないです！'], ['sec2', 'えへへ……殿、優しいんですね']] },
+  { k: '意外と力あるんだね、みんな', mob: ['えへへ', '鍛えてますから！', '毎日、荷物運んでますもん'], nm: [['hirose', '意外と、は余計です'], ['sec2', 'えへへ……毎日、帳面の箱を運んでますから'], ['sumi', '殿、皆、山を越えてきた兵です。……見直しましたか'], ['sanjo', '今さら？ 女の子なめすぎ']] },
+  { k: 'トイレしたいから止まれ', stop: true, mob: ['えっ、ここで!?', '止まって、止まって！', '茂み、茂み探して！', 'あっちの木の陰なら……'], nm: [['sec2', 'えっ、えっ、今ですか!? ……ど、どこか、陰になるところ……！'], ['sumi', '……ことね、落ち着いて。殿、あちらの木陰へ。周りは私たちが見張ります'], ['hirose', 'ちょ、ちょっと！ みんな後ろ向いて！'], ['sanjo', '……だから出発前に行っとけって言ったのに']] },
+  { k: '南無阿弥陀仏……お前らの事前供養だ', mob: ['縁起でもないです、殿！', '縁起でもないです、殿！', 'やめてくださいよぉ……'], nm: [['fumi', '殿。そういう冗談は、戦が終わってからにしてください'], ['sanjo', '事前供養って……ついでに自分の分もやっときなよ、殿'], ['sumi', '殿……皆の前でそれは、さすがにいけません'], ['sec2', 'ひっ……殿、縁起でもないです！']] }];
+function kosKgNm(cands) { const K = KOS.kg; for (const [k, t] of cands.slice().sort(() => Math.random() - 0.5)) { const e = KOS.by[k]; if (e && isUp(e) && !e.kosDead && Math.hypot(e.s.position.x - K.x, e.s.position.z - K.z) < 18) return [k, t]; } return null; }
+function kosKgMob(L) { const K = KOS.kg, b = K.bear.filter(o => o && isUp(o)); if (b.length && L) ks2Say(b[(Math.random() * b.length) | 0], L[(Math.random() * L.length) | 0], 1.2); }   // 群れの声（字幕なし）
+function kosKgTalk() { const K = KOS.kg; if (!K || !K.ride || state !== 'play' || (K.tkT || 0) > KOS.t) return; K.tkT = KOS.t + 3; const q = KOS_KG_TALK[K.ti = ((K.ti == null ? -1 : K.ti) + 1) % KOS_KG_TALK.length]; sgkKing(q.k);
+  KOS.later.push([KOS.t + 1.4, () => kosKgMob(q.mob)]); const nm = kosKgNm(q.nm); if (nm) KOS.later.push([KOS.t + 3.2, () => kosSayK(nm[0], nm[1], 2)]);
+  if (q.stop) { K.stopT = KOS.t + 16; K.tkT = KOS.t + 16; KOS.later.push([KOS.t + 4.5, () => kosKgMob(q.mob)]); KOS.later.push([KOS.t + 7, () => kosKgMob(q.mob)]);
+    KOS.later.push([KOS.t + 11, () => sgkKing('……やっぱり平気だ。進め')]); KOS.later.push([KOS.t + 13, () => { const n2 = kosKgNm([['sumi', '……殿'], ['sec2', 'え、ええーっ……'], ['sanjo', 'はあ？ ……もう、行くよ']]); if (n2) kosSayK(n2[0], n2[1], 2); else kosKgMob(['ええーっ……', 'もう……']); }]); } }
+// 輿の中で跳ねる：輿が揺れ、担ぎ手はよろける（立ったまま）。続けると担ぎ手が早く疲れる
+function kosKgJump() { const K = KOS.kg; if (!K || !K.ride) return; K.hop = 0.45; K.lurch = 1; for (const e of K.bear) if (e && isUp(e)) { e.kosStag = 0.9; e.kosTire = (e.kosTire || 0) + 14; }
+  if (KOS.t - (K.jsT || -9) > 3) { K.jsT = KOS.t; const nm = kosKgNm([['sumi', '殿、おやめください！'], ['sec2', '殿、おやめください！ 落ちちゃいます！'], ['hirose', '殿、おやめください！ ……ほんとに落としますよ！']]); if (nm && Math.random() < 0.6) kosSayK(nm[0], nm[1], 2); else kosKgMob(['殿、おやめください！', 'わっ、わっ！', '揺らさないでー！']); } }
+function kosKgSeat(dt) { const K = KOS.kg; if (keys.Space && !K.jH) { K.jH = true; kosKgJump(); } else if (!keys.Space) K.jH = false; if (K.hop > 0) K.hop = Math.max(0, K.hop - dt); const eye = K.y + 1.72 + (K.hop > 0 ? Math.sin(K.hop / 0.45 * Math.PI) * 0.22 : 0); player.pos.set(K.x, eye - CFG.eyeH, K.z); player.vy = 0; player.onGround = true; player.drawing = false; player.charge = 0;
+  camera.position.set(K.x, eye + (K.v > 0.3 ? Math.sin(time * 6) * 0.025 : 0), K.z); camera.rotation.set(player.pitch, player.yaw, 0); player.shake = 0; }
+function kosKgDrop() { const K = KOS.kg, c = Math.cos(K.yaw), s = Math.sin(K.yaw); let x = K.x + 1.3 * c, z = K.z - 1.3 * s; if (!kosWalk(x, z)) { x = K.x - 1.3 * c; z = K.z + 1.3 * s; } player.pos.set(x, kosH(x, z), z); player.terrOk = null; if (player.vel) player.vel.set(0, 0, 0); }
+function kosKgNear() { const K = KOS.kg; return K && !K.ride && !K.raft && Math.hypot(player.pos.x - K.x, player.pos.z - K.z) < 3.2; }
+function kosKgUse() { const K = KOS.kg; if (!K || state !== 'play') return false; if (K.ride) { K.ride = false; kosKgDrop(); popup('輿を降りた'); popupTimer = 1.5; return true; }
+  if (!kosKgNear()) return false; const n = kosKgFill(30); if (n < 4) { popup('担ぎ手が足りません'); popupTimer = 2; return true; } K.ride = true; popup('輿に乗った'); popupTimer = 1.5; return true; }
+function kosKgBtn() { let b = $('kosKgB'); if (!b) { b = document.createElement('button'); b.id = 'kosKgB'; b.type = 'button'; b.style.cssText = 'position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 108px);z-index:40;padding:2px 7px;font:600 11px serif;line-height:1.3;background:rgba(40,20,14,.55);color:#f3e6c4;border:1px solid rgba(184,145,58,.7);border-radius:5px;opacity:.85;display:none;pointer-events:auto';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); kosKgUse(); }; b.addEventListener('pointerdown', go); b.addEventListener('touchstart', go, { passive: false }); ($('hud') || document.body).appendChild(b); } return b; }
+function kosKgTBtn() { let b = $('kosKgT'); if (!b) { b = document.createElement('button'); b.id = 'kosKgT'; b.type = 'button'; b.textContent = '話しかける'; b.style.cssText = 'position:fixed;right:8px;top:calc(env(safe-area-inset-top,0px) + 122px);z-index:40;padding:2px 7px;font:600 11px serif;line-height:1.3;background:rgba(40,20,14,.55);color:#f3e6c4;border:1px solid rgba(184,145,58,.7);border-radius:5px;opacity:.85;display:none;pointer-events:auto';
+    const go = ev => { ev.preventDefault(); ev.stopPropagation(); kosKgTalk(); }; b.addEventListener('pointerdown', go); b.addEventListener('touchstart', go, { passive: false }); ($('hud') || document.body).appendChild(b); } return b; }
+function kosKgUi() { if (!KOS.on && !$('kosKgT')) return; const t = kosKgTBtn(), K0 = KOS.kg; t.style.display = KOS.on && state === 'play' && K0 && K0.ride ? 'block' : 'none'; const b = $('kosKgB'); if (!b) return; const K = KOS.kg, show = KOS.on && state === 'play' && K && (K.ride || kosKgNear()); b.style.display = show ? 'block' : 'none'; if (show) b.textContent = K.ride ? '降りる' + (MOBILE ? '' : '（E）') : '乗る' + (MOBILE ? '' : '（E）'); }
 // ---- 頭脳 ----
 function kosBrain(e, dt) { if (!KOS.on || !e.kos) return false; const p = e.s.position; e.passive = true; if (e.knock) e.knock.set(0, 0, 0); e.t += dt; if (e.cd > 0) e.cd -= dt;
   if (e.kosSick && e.kosSick.ph !== 'wait' && e.kosSick.ph !== 'rest') { if (e.kosRaft && e.kosOn) kosRide(e); p.y = e.baseY = kosH(p.x, p.z); return true; }
   if (e.kosDead) { p.y = e.baseY = kosH(p.x, p.z); return true; }
-  e.kneel = false; e.crouch = 0; if (e.kosSick && e.kosSick.ph === 'rest') { e.kneel = true; e.crouch = 1; }
+  if (e.kosBoss) { kosBossBrain(e, dt); p.y = e.baseY = kosH(p.x, p.z); return true; }
+  e.kneel = false; e.crouch = 0;
   if (e.sgkAct) sgkPose(e, dt);
   else if (e.kosHop) kosHopTick(e, dt);
   else if (e.kosRaft && e.kosOn) { kosRide(e); e.moving = false; e.state = 'idle'; e.faceWant = KOS.rafts && e.kosRaft.v < 0 ? 0 : Math.PI; }
   else if (e.kosDg && KOS.t < e.kosDg.until) kosGo(e, e.kosDg.x, e.kosDg.z, e.speed * 1.4, dt);
   else if (e.team === 'orange') kosFoeBrain(e, dt); else kosAtk(e, dt);
   if (!e.kosHop) p.y = e.baseY = kosH(p.x, p.z);
-  const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.shadow.visible = dP < (LITE ? 11 : 22); return true; }
+  if (e.kosPk) kosPackTick(e); const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.shadow.visible = dP < (LITE ? 11 : 22); return true; }
 function kosRide(e) { const R = e.kosRaft, p = e.s.position; e.sgkFree = true; p.x = R.x + e.kosSl[0]; p.z = 1000 - (R.s + e.kosSl[1]); }
 function kosHop(e, x, z, on) { e.sgkFree = true; e.kosHop = { a: [e.s.position.x, e.s.position.z, e.s.position.y], b: [x, z], t: 0, T: Math.max(0.6, Math.hypot(x - e.s.position.x, z - e.s.position.z) / 4), on }; }
 function kosHopTick(e, dt) { const H = e.kosHop, p = e.s.position; H.t += dt; const k = Math.min(1, H.t / H.T); p.x = H.a[0] + (H.b[0] - H.a[0]) * k; p.z = H.a[1] + (H.b[1] - H.a[1]) * k; const y1 = kosH(p.x, p.z); p.y = e.baseY = Math.max(y1, H.a[2] + (y1 - H.a[2]) * k) + Math.sin(k * Math.PI) * 0.5;
   e.moving = true; e.faceWant = Math.atan2(H.b[0] - H.a[0], H.b[1] - H.a[1]); if (k >= 1) { e.kosHop = null; e.sgkFree = !!H.on; e.kosOn = !!H.on; e.moving = false; } }
-function kosAtk(e, dt) { if (e.kosMed && kosMedic(e, dt)) return; const p = e.s.position, U = e.kosU;
+function kosAtk(e, dt) { if (e.kosBear && KOS.kg && !KOS.kg.raft) { kosBearer(e, dt); return; } if (e.kosMed && kosMedic(e, dt)) return; const p = e.s.position, U = e.kosU;
   if (e.ffAway > time && Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 3.5) { const dx = p.x - player.pos.x, dz = p.z - player.pos.z, L = Math.hypot(dx, dz) || 1; kosGo(e, p.x + dx / L * 2, p.z + dz / L * 2, e.speed, dt); return; }
-  if (KOS.foes.length) { if ((e.ks2T -= dt) <= 0) { e.ks2T = rand(0.35, 0.7); let b = null, bd = e.ks2Named ? 2.6 : e.kosArch ? 40 : 20; for (const o of KOS.foes) { if (!isUp(o) || o.kosFlee) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; b = o; } } e.tgt = b; }
-    const t = e.tgt; if (t && isUp(t) && !t.kosFlee) { const tp = t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z);
-      if (e.kosArch) { e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.moving = false; if ((e.ks2Cd -= dt) <= 0 && d > 3) { e.ks2Cd = rand(2.4, 4); kosShoot(e, t); } return; }
+  if (KOS.foes.length) { if ((e.ks2T -= dt) <= 0) { e.ks2T = rand(0.35, 0.7); const bat = KOS.ph === 'battle', feint = U.k === 'L' && KOS.feint && KOS.t < KOS.feint.until, chg = (U.k === 'W' || U.k === 'V') && KOS.feint && KOS.t > KOS.feint.until && KOS.t < KOS.feint.until + 18; let b = null, bd = e.ks2Named ? 2.6 : e.kosPack || e.kosShd || feint ? 3.5 : e.kosArch ? (bat ? 46 : 40) : chg ? 55 : bat ? 30 : 20; for (const o of KOS.foes) { if (!isUp(o) || o.kosFlee || (o.kosBoss && o.kosBoss.esc)) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; b = o; } } const S = KOS.shu; if (e.kosArch && S && isUp(S) && !S.kosBoss.esc && Math.random() < (KOS.focus ? 0.85 : 0.2) && Math.hypot(S.s.position.x - p.x, S.s.position.z - p.z) < 44) b = S; e.tgt = b; }
+    const t = e.tgt; if (t && isUp(t) && !t.kosFlee && !(t.kosBoss && t.kosBoss.esc)) { const tp = t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z);
+      if (e.kosArch) { e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.moving = false; if ((e.ks2Cd -= dt) <= 0 && d > 3) { e.ks2Cd = KOS.focus && t.kosBoss ? rand(1.6, 2.4) : rand(2.4, 4); kosShoot(e, t); } return; }
       if (d > 1.15) { kosGo(e, tp.x, tp.z, e.speed * 1.1, dt); return; } sgkHit(e, t); return; } }
   if (KOS.ph === 'board' && e.kosBd && !e.kosOn) { kosGo(e, e.kosBd[0], e.kosBd[1], e.speed, dt); return; }
-  if ((KOS.ph === 'rest' || KOS.ph === 'far' || KOS.ph === 'won') && e.kosRest) { kosGo(e, e.kosRest[0], e.kosRest[1], e.speed, dt); if (!e.moving) e.faceWant = Math.PI; return; }
-  const [sx, sz] = kosSlot(e), d = Math.hypot(sx - p.x, sz - p.z); kosGo(e, sx, sz, e.speed * (d > 8 ? 1.3 : 1), dt); if (!e.moving) e.faceWant = Math.PI; }
+  if ((KOS.ph === 'rest' || KOS.ph === 'far') && e.kosRest && U.bx == null) { kosGo(e, e.kosRest[0], e.kosRest[1], e.speed, dt); if (!e.moving) e.faceWant = Math.PI; return; }
+  const [sx, sz] = kosSlot(e), d = Math.hypot(sx - p.x, sz - p.z); kosGo(e, sx, sz, e.speed * (d > 8 ? 1.3 : 1), dt); if (!e.moving) e.faceWant = U.bx != null && U.k === 'V' && !KOS.ev.meet ? 0 : Math.PI; }
 function kosShoot(e, t) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z); e.sgkAct = { k: 'aim', t: 0, T: 1.1 };
-  const a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.4, 0.4), (t.isPlayer ? tp.y + 1.2 : tp.y + 1.1), tp.z + rand(-0.4, 0.4)), hit = Math.random() < 0.3 * (d > 30 ? 0.6 : 1);
+  const a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.4, 0.4), (t.isPlayer ? tp.y + 1.2 : tp.y + 1.1), tp.z + rand(-0.4, 0.4)), hit = Math.random() < 0.3 * (d > 30 ? 0.6 : 1) * (e.team === 'orange' ? 0.5 : 1);
   if (!hit) { b.x += rand(-2, 2); b.z += rand(-2, 2); b.y = kosG(b.x, b.z) + 0.1; } if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 35 && sfxGate(p, 35)) Sfx.twangAt(p);
   KOS.tr.push({ a, b, t: 0, T: Math.min(1.3, 0.25 + d / 45), h: Math.min(6, 0.8 + d * 0.1), mesh: arrowWar.clone(), onEnd: () => { if (hit) { if (t.isPlayer) { if (!player.god) { hurtPlayer(5); popup('矢がかすめた！'); } } else if (isUp(t)) damageEnemy(t, 1, p, false, { arrow: true, pt: b.clone(), dir: b.clone().sub(a).normalize() }, null); } } }); stageRoot.add(KOS.tr[KOS.tr.length - 1].mesh); }
 function kosTrTick(dt) { const Q = new V3(), Z = new V3(0, 0, 1); for (let i = KOS.tr.length - 1; i >= 0; i--) { const T = KOS.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { stageRoot.remove(T.mesh); KOS.tr.splice(i, 1); T.onEnd && T.onEnd(); continue; }
     Q.lerpVectors(T.a, T.b, k); Q.y += Math.sin(k * Math.PI) * T.h; const prev = T.mesh.position.clone(); T.mesh.position.copy(Q); const dv = Q.clone().sub(prev); if (dv.lengthSq() > 1e-6) T.mesh.quaternion.setFromUnitVectors(Z, dv.normalize()); } }
-function kosFoeBrain(e, dt) { const p = e.s.position;
-  if (e.kosFlee) { kosGo(e, e.kosFlee[0], e.kosFlee[1], e.speed * 1.3, dt); const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > 55 && !sgkOnScreen(p)) { e.ks2Gone = true; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = KOS.all.indexOf(e); if (j >= 0) KOS.all.splice(j, 1); KOS.foes.splice(KOS.foes.indexOf(e), 1); e.state = 'down'; try { disposeNpc(e); } catch (_) {} } return; }
+function kosFoeBrain(e, dt) { const p = e.s.position; if (e.kosTou && !e.kosFlee) { kosTouBrain(e, dt); return; }
+  if (e.kosFlee) { e.kosFreeGo = true; kosGo(e, e.kosFlee[0], e.kosFlee[1], e.speed * 1.3, dt); const d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > 55 && !sgkOnScreen(p)) { e.ks2Gone = true; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = KOS.all.indexOf(e); if (j >= 0) KOS.all.splice(j, 1); KOS.foes.splice(KOS.foes.indexOf(e), 1); e.state = 'down'; try { disposeNpc(e); } catch (_) {} } return; }
   if ((e.ks2T -= dt) <= 0) { e.ks2T = rand(0.4, 0.8); let b = null, bd = 26; for (const o of KOS.all) { if (o.team !== 'blue' || !isUp(o) || o.kosSick) continue; const d = Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z); if (d < bd) { bd = d; b = o; } } const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (dP < Math.min(bd, 14)) b = PLAYER_T; e.tgt = b; }
   const t = e.tgt; if (t && (t.isPlayer || isUp(t))) { const tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z); if (d > 1.15) { kosGo(e, tp.x, tp.z, e.speed, dt); return; } sgkHit(e, t); return; }
   e.moving = false; e.state = 'idle'; }
@@ -4473,10 +4603,15 @@ function kosMedic(e, dt) { const p = e.s.position; if (e.kosOn || e.kosHop) retu
   if (!e.medTgt) { e.medT = 1.2; let best = null, bd = e.kosU.k === 'R' ? 40 : 18; for (const o of KOS.all) { if (o === e || o.team !== 'blue' || o.kosOn || o.kosHop || o.medBy && o.medBy !== e) continue; const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d >= bd) continue;
       if ((o.kosSick && o.kosSick.ph === 'lie') || (!o.kosDead && isUp(o) && o.hp < o.hpMax) || (!isUp(o) && !o.sgkPron && !o.kosCn)) { bd = d; best = o; } } e.medTgt = best; if (!best) return false; best.medBy = e; }
   const o = e.medTgt, q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d > 1.3) { if (d > 45 || o.kosOn) { o.medBy = null; e.medTgt = null; return false; } kosGo(e, q.x, q.z, e.speed * 1.2, dt); return true; }
-  e.moving = false; e.kneel = true; e.crouch = 1; e.faceWant = Math.atan2(q.x - p.x, q.z - p.z); e.medW = (e.medW || 0) + dt; if (e.medW < 2.4) return true; e.medW = 0; e.medTgt = null; o.medBy = null; const near = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 32;
-  if (o.kosSick && o.kosSick.ph === 'lie') { if (Math.random() < 0.07 && !o.ks2Named) { o.kosDead = true; o.kosSick.ph = 'lie'; o.sgkPron = true; KOS.deadN++; if (near) ks2Say(e, '御臨終です', 1.3); KOS.later.push([KOS.t + 6, () => kosShroud(o)]); } else { kosRecover(o); KOS.healed++; if (near && Math.random() < 0.3) ks2Say(e, ['大丈夫、息は戻ってきてます', 'ゆっくり吸って。そう、ゆっくり', '水を少しずつ。急がないで'][(Math.random() * 3) | 0], 1.1); } }
+  e.moving = false; e.kneel = false; e.crouch = 0; e.faceWant = Math.atan2(q.x - p.x, q.z - p.z); e.medW = (e.medW || 0) + dt; if (e.medW < 2.4) return true; e.medW = 0; e.medTgt = null; o.medBy = null; const near = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 32;
+  if (o.kosSick && o.kosSick.ph === 'lie') { if (Math.random() < 0.07 && !o.ks2Named) { kosPoisonDeath(o); if (near) ks2Say(e, '御臨終です', 1.3); } else { kosRecover(o); KOS.healed++; if (near && Math.random() < 0.3) ks2Say(e, ['大丈夫、息は戻ってきてます', 'ゆっくり吸って。そう、ゆっくり', '水を少しずつ。急がないで'][(Math.random() * 3) | 0], 1.1); } }
   else if (isUp(o) && !o.kosDead) { o.hp = Math.min(o.hpMax, o.hp + 1); KOS.healed++; }
   else { o.sgkPron = true; if (near) ks2Say(e, '御臨終です', 1.3); } return true; }
+// 毒気で亡くなった娘：ほかの戦死と同じ倒れ方（横たわる体として残す。消えない）にしてから布をかける
+function kosPoisonDeath(o) { if (o.kosDead) return; o.kosDead = true; o.sgkPron = true; o.kosDn = true; KOS.deadN++; o.kosOn = false; o.kosHop = null; o.clutch = 0; o.kneel = false; o.crouch = 0;
+  if (o.lying) { o.kosSick = null; o.state = 'down'; o.hp = 0; const i = enemies.indexOf(o); if (i >= 0) enemies.splice(i, 1); if (!bodies.includes(o)) bodies.push(o); }
+  else { o.kosSick = null; o.hp = 0; const p = o.s.position; killEnemy(o, false, new V3(p.x + rand(-1, 1), p.y, p.z + 1)); }
+  KOS.later.push([KOS.t + 6, () => kosShroud(o)]); }
 function kosShroud(o) { if (o.kosShr) return; o.kosShr = true; const p = o.s.position, m = new THREE.Mesh(new THREE.PlaneGeometry(0.75, 1.75), KOS.M.cloth); m.rotation.x = -Math.PI / 2; m.rotation.z = -(o.fallYaw || 0); m.position.set(p.x, kosG(p.x, p.z) + 0.2, p.z); stageRoot.add(m); (KOS.shr || (KOS.shr = [])).push(m); }
 // ---- 台詞 ----
 function kosSayK(k, t, prio) { const e = KOS.by && KOS.by[k]; if (e && (!isUp(e) || e.kosDead)) return; ks2Say(e || null, t, prio, KS2_VK[k]); }
@@ -4491,33 +4626,37 @@ function kosFallenTick() { for (const e of KOS.all) { if (e.team !== 'blue' || i
   for (const U of KOS.units) { if (!U.cmd || !isUp(U.cmd)) { const nx = U.chain.map(k => KOS.by[k]).find(e => e && isUp(e)) || U.mem.find(o => isUp(o) && !o.kosDead); if (nx && nx !== U.cmd) { const had = !!U.cmd; U.cmd = nx; if (had) { popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); popupTimer = 2.5; const ln = KS2_L.succ && nx.ks2Named && KS2_L.succ[nx.ks2Named] ? sgkMapT(KS2_L.succ[nx.ks2Named]) : null; if (ln && !/門|城|関所/.test(ln)) kosSayK(nx.ks2Named, ln, 1.9); } } } } }
 // ---- 進行 ----
 function kosPS() { return 1000 - player.pos.z; }
-function kosReset() { KOS.ph = 'off'; KOS.t = 0; KOS.later = []; if (KOS.tr) for (const T of KOS.tr) stageRoot.remove(T.mesh); KOS.tr = []; KOS.ev = {}; KOS.sickN = 0; KOS.deadN = 0; KOS.healed = 0; KOS.ffPen = 0; KOS.dark = 0; KOS.chT = 8; KOS.signT = 0; KOS.waitT = 0; KOS.foes = [];
+function kosReset() { KOS.ph = 'off'; KOS.t = 0; KOS.later = []; if (KOS.tr) for (const T of KOS.tr) stageRoot.remove(T.mesh); KOS.tr = []; KOS.ev = {}; KOS.sickN = 0; KOS.deadN = 0; KOS.healed = 0; KOS.ffPen = 0; KOS.dark = 0; KOS.chT = 8; KOS.signT = 0; KOS.waitT = 0; KOS.foes = []; if (KOS.kg) { stageRoot.remove(KOS.kg.m); KOS.kg = null; } for (const id of ['kosKgB', 'kosKgT']) { const b = $(id); if (b) b.style.display = 'none'; } KOS.ring = false; KOS.ringN = {}; KOS.feint = null; KOS.focus = false; KOS.shBlk = 0; KOS.fSp = 0; KOS.fDead = 0; KOS.shu = null; KOS.bm = KOS.bm || []; for (const B of KOS.bm) stageRoot.remove(B.m); KOS.bm = []; for (const m of KOS.lie || []) stageRoot.remove(m); KOS.lie = [];
   if (KOS.rafts) for (const R of KOS.rafts) stageRoot.remove(R.m); KOS.rafts = null; KOS.torch = (KOS.torch || []).filter(m => false); for (const h of KOS.haze || []) stageRoot.remove(h); KOS.haze = []; for (const m of KOS.shr || []) stageRoot.remove(m); KOS.shr = []; const el = $('kosSign'); if (el) el.style.display = 'none'; if (KOS.stoneFace && KOS.stoneTex) KOS.stoneFace.material.map = KOS.stoneTex[0]; }
 function kosStart() { KOS.on = true; kosReset(); kosSpawn(); KOS.ph = 'trail'; KOS.t = 0; kosLook(0); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000);
   const s = KOS.U.H.s - 4, c = kosCx(s); player.pos.set(c + 3, kosG(c + 3, 1000 - s), 1000 - s); player.yaw = 0; player.pitch = 0.02; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
-  showBanner('妻娘返らずの湖', '山岳の関所の先――先鋒の白石隊は一日先を行く。その跡を追い、湖を越えよ'); bannerTimer = 4.5;
-  KOS.later.push([5, () => kosSayK('sumi', '殿、白石隊の通った跡を辿ります。先鋒とは一日の差です', 1.9)]);
-  if (TEST) window.__kos = { KOS, updateKos, kosJump, kosCounts, kosRaftAt, kosG, kosH, kosLook }; }
-function kosCounts() { let a = 0, sick = 0, dead = 0, all = 0; for (const e of KOS.all) { if (e.team !== 'blue') continue; all++; if (e.kosDead || !isUp(e)) { dead++; continue; } a++; if (e.kosSick && e.kosSick.ph !== 'wait' && e.kosSick.ph !== 'rest') sick++; } return { a, sick, dead, all, foes: KOS.foes.filter(isUp).length }; }
-function kosLabel() { const c = kosCounts(), P = { trail: '先鋒の跡を辿る', amb: '伏兵', shore: '湖の岸', build: '筏を組む', day: '昼の渡河', poison: '引き返せ', back: '岸へ戻る', rest: '日が落ちるのを待つ', night: '夜の渡河', far: '向こう岸', won: '湖を越えた' }[KOS.ph] || '';
-  return `妻娘返らずの湖　${P}　兵 ${c.a}${c.sick ? `（倒れている ${c.sick}）` : ''}${c.dead ? `　戦死 ${c.dead}` : ''}　${KOS.dark > 0.5 ? '夜' : KOS.dark > 0.1 ? '夕方' : '昼'}`; }
-function kosRemain() { return KOS.units.map(U => `${U.name.replace('隊', '')}${U.mem.filter(e => isUp(e) && !e.kosDead).length}`).join(' '); }
+  showBanner('南蛮行軍', '山岳の関所の先――先鋒の白石隊は一日先を行く。その跡を追い、妻娘返らずの湖を越えよ'); bannerTimer = 4.5;
+  KOS.later.push([5, () => kosSayK('sumi', '殿、白石隊の通った跡を辿ります。先鋒とは一日の差です', 1.9)]); kosSeq(KOS_LN.start, 11, 6); kosKgInit(); KOS.later.push([3, () => { popup(MOBILE ? '殿は輿の中。左上の「降りる」で歩ける' : '殿は輿の中。E（または左上の「降りる」）で歩ける'); popupTimer = 4; }]);
+  if (TEST) window.__kos = { KOS, updateKos, kosJump, kosCounts, kosRaftAt, kosG, kosH, kosLook, kosPoisonDeath, kosAmbush2, kosBossEscape, kosLand, kosKgUse, kosKgTick, kosKgTalk, kosKgJump }; }
+function kosCounts() { let a = 0, sick = 0, dead = 0, all = 0, pool = 0; for (const U of KOS.units) pool += U.pool; for (const e of KOS.all) { if (e.team !== 'blue') continue; all++; if (e.kosDead || !isUp(e)) { dead++; continue; } a++; if (e.kosSick && e.kosSick.ph !== 'wait' && e.kosSick.ph !== 'rest') sick++; }
+  return { a: a + pool, f: a, pool, sick, dead, all: all + pool, foes: KOS.foes.filter(o => isUp(o) && !o.kosFlee && !o.kosBoss).length, fSp: KOS.fSp || 0, fDead: KOS.fDead || 0 }; }
+function kosLabel() { const c = kosCounts(), P = { trail: '先鋒の跡を辿る', amb: '伏兵', shore: '湖の岸', build: '筏を組む', day: '昼の渡河', poison: '引き返せ', back: '岸へ戻る', rest: '日が落ちるのを待つ', night: '夜の渡河', far: '向こう岸', adv: '草地を進む', meet: '白石隊と合流', battle: '背水の陣', won: '南蛮兵を退けた' }[KOS.ph] || '';
+  const tod = KOS.ev.dawn != null ? (KOS.dark > 0.4 ? '夜明け前' : '朝') : KOS.dark > 0.5 ? '夜' : KOS.dark > 0.1 ? '夕方' : '昼', foe = KOS.ev.shu ? `　南蛮兵 ${c.foes}${KOS.shu && !KOS.shu.kosBoss.esc && isUp(KOS.shu) ? '・祝融' : ''}` : '';
+  return `南蛮行軍　${P}　兵 ${c.a}（画面 ${c.f}${c.pool ? `・後続 ${c.pool}` : ''}）${c.sick ? `（倒れている ${c.sick}）` : ''}${c.dead ? `　戦死 ${c.dead}` : ''}${foe}　${tod}`; }
+function kosRemain() { return KOS.units.map(U => `${U.name.replace('隊', '')}${U.mem.filter(e => isUp(e) && !e.kosDead).length + U.pool}`).join(' '); }
 function kosJump(ph) { const at = s0 => { let s = s0; for (const U of KOS.units) { U.s = s; for (const e of U.mem) { if (!isUp(e)) continue; const [x, z] = kosSlot(e); e.s.position.set(x, kosH(x, z), z); } s -= U.len + 7; } const c = kosCx(KOS.U.H.s); player.pos.set(c + 3, kosG(c + 3, 1000 - KOS.U.H.s), 1000 - KOS.U.H.s); player.terrOk = null; };
   for (const k of ['tr1', 'tr2', 'sign', 'amb', 'ambEnd', 'tr3']) KOS.ev[k] = true; KOS.later = [];
   if (ph === 'shore' || ph === 'day' || ph === 'night') { at(785); KOS.ph = 'trail'; }
   if (ph === 'day' || ph === 'night') { kosShore(true); kosBuild(true); kosDepart(true); }
+  if (ph === 'far' || ph === 'battle') { kosJump('night'); for (const R of KOS.rafts) { R.s = KOS_FAR - 4.6; R.v = 0; R.goal = R.s; } KOS.ph = 'night'; kosLand(); KOS.later = []; kosLook(0.3);
+    if (ph === 'battle') { for (const U of KOS.units) { U.bx = U.bat[0]; U.bs = U.bat[1]; for (const e of U.mem) { if (!isUp(e) || e.kosDead) continue; e.kosHop = null; e.kosRest = null; e.kosOn = false; e.sgkFree = false; const [x, z] = kosSlot(e); e.s.position.set(x, kosH(x, z), z); } } const H = KOS.U.H; player.pos.set(H.bx + 3, kosG(H.bx + 3, 1000 - (H.bs - 6)), 1000 - (H.bs - 6)); player.terrOk = null; KOS.ev.meet = KOS.t; KOS.ph = 'meet'; kosAmbush2(); } if (KOS.kg) { const [tx, tz] = kosKgTarget(); KOS.kg.raft = null; KOS.kg.x = tx; KOS.kg.z = tz; kosKgPlace(); kosKgFill(80); } return; }
   if (ph === 'night') { for (const R of KOS.rafts) { R.s = R.s0; R.v = 0; } kosRaftGoal(R => R.s0, 2, [0, 0, 0]); kosPoison(true); kosBack(true); KOS.ph = 'rest'; KOS.ev.wait = true; KOS.waitT = 60; } }
 function kosShore(quiet) { if (KOS.ev.shore) return; KOS.ev.shore = true; KOS.ph = 'shore'; if (!quiet) { const T = kosSeq(KOS_LN.shore, 1, 4.4); KOS.later.push([KOS.t + T + 0.5, () => sgkKing('渡るぞ。筏を組め')]); KOS.later.push([KOS.t + T + 3, () => kosBuild()]); }
   for (const U of KOS.units) { U.s = Math.min(U.s, 790); } }
 function kosBuild(quiet) { if (KOS.rafts) return; KOS.ph = 'build'; kosRafts(); showBanner('筏を組む', '竹を縛り、筏を並べる'); bannerTimer = 3; for (const R of KOS.rafts) { R.m.scale.setScalar(quiet ? 1 : 0.05); R.grow = quiet ? 1 : 0; }
   if (!quiet) { kosSeq(KOS_LN.build, 1, 3.5); KOS.later.push([KOS.t + 13, () => kosEmbark()]); } else kosEmbark(true); }
-function kosEmbark(quiet) { KOS.ph = 'board'; for (const R of KOS.rafts) for (const e of R.riders) { if (!isUp(e) || e.kosDead) continue; const x = R.x + e.kosSl[0], z = 1000 - (R.s + e.kosSl[1]); if (quiet) { e.kosOn = true; e.kosHop = null; kosRide(e); } else { e.kosBd = [R.x + e.kosSl[0] * 0.8, 1000 - (KOS_SHORE - 4 - rand(0, 6))]; } }
+function kosEmbark(quiet) { KOS.ph = 'board'; if (KOS.kg && KOS.kg.ride) { KOS.kg.ride = false; kosKgDrop(); popup('殿は輿を降りて筏へ。輿は筏に載せて渡す'); popupTimer = 2.5; } for (const R of KOS.rafts) for (const e of R.riders) { if (!isUp(e) || e.kosDead) continue; const x = R.x + e.kosSl[0], z = 1000 - (R.s + e.kosSl[1]); if (quiet) { e.kosOn = true; e.kosHop = null; kosRide(e); } else { e.kosBd = [R.x + e.kosSl[0] * 0.8, 1000 - (KOS_SHORE - 4 - rand(0, 6))]; } }
   if (!quiet) { KOS.ev.boardT = KOS.t; KOS.later.push([KOS.t + 2, () => kosSayK('sumi', KOS_LN.go1[0][1], 1.9)]); } }
 function kosBoardTick() { if (KOS.ph !== 'board') return; let left = 0; for (const R of KOS.rafts) for (const e of R.riders) { if (!isUp(e) || e.kosDead || e.kosOn || e.kosHop) continue; left++; const p = e.s.position; const lying = e.kosSick && (e.kosSick.ph === 'lie' || e.kosSick.ph === 'fall');
     if (lying || !e.kosBd || Math.hypot(p.x - e.kosBd[0], p.z - e.kosBd[1]) < 2.5 || KOS.t - KOS.ev.boardT > 26) { if (lying) { kosRide(e); e.kosOn = true; } else kosHop(e, R.x + e.kosSl[0], 1000 - (R.s + e.kosSl[1]), true); } }
   if (!left && KOS.t - KOS.ev.boardT > 4) kosDepart(); }
 function kosDepart(quiet) { KOS.ph = KOS.dark > 0.5 ? 'night' : 'day'; kosBoardPlayer(); const night = KOS.ph === 'night'; for (const R of KOS.rafts) for (const e of R.riders) if (isUp(e) && !e.kosDead && !e.kosOn) { e.kosHop = null; e.kosOn = true; kosRide(e); }
-  kosRaftGoal(R => night ? KOS_FAR - 4.2 : KOS_LAKE[1] - 20, night ? 3.0 : 1.6, night ? [0, 4, 8] : [0, 5, 10]); KOS.ev.depT = KOS.t;
+  kosRaftGoal(R => night ? KOS_FAR - 4.6 : KOS_LAKE[1] - 20, night ? 3.0 : 1.6, night ? [0, 4, 8] : [0, 5, 10]); KOS.ev.depT = KOS.t;
   if (!quiet) { if (night) { showBanner('夜の渡河', '水は冷え、霧は立たない'); bannerTimer = 3; KOS.later.push([KOS.t + 1, () => sgkKing('渡るぞ。静かにな')]); kosSeq(KOS_LN.go2, 10, 17); } else { showBanner('昼の渡河', '筏で向こう岸へ'); bannerTimer = 3; kosSeq(KOS_LN.go1.slice(1), 4, 6); } } }
 function kosPoison(quiet) { if (KOS.ev.poison) return; KOS.ev.poison = true; KOS.ph = 'poison'; KOS.ev.poT = KOS.t;
   for (const R of KOS.rafts) { const lead = Math.max(0, (R.s - KOS_SHORE) / 70), pr = R.row === 0 ? 0.6 : R.row === 1 ? 0.36 : 0.18; for (const e of R.riders) if (!e.ks2Named && isUp(e) && Math.random() < pr * Math.min(1.2, 0.5 + lead)) kosSicken(e, quiet ? 0 : (R.row * 2.5 + rand(0, 7))); }
@@ -4535,10 +4674,10 @@ function kosRead() { const e = KOS.by.sec4 || KOS.by.sec3, st = KOS.stone; kosSa
   KOS.later.push([KOS.t + 6, () => { if (KOS.stoneFace) { KOS.stoneFace.material.map = KOS.stoneTex[1]; KOS.stoneFace.material.needsUpdate = true; } kosSayK(e && e.ks2Named || 'sec4', '……読みます', 1.9); }]);
   KOS.later.push([KOS.t + 8.5, () => { kosSign('苔の下の古い石碑', KOS_SIGN_OLD, 16); KOS.ev.read = true; }]);
   const T = kosSeq(KOS_LN.read, 18, 4.6); KOS.later.push([KOS.t + 18 + T, () => { sgkKing('日が落ちるまで待つ。手当てを急げ'); KOS.ev.wait = true; KOS.waitT = 0; showBanner('日が落ちるのを待つ', '朽ち木の毒気は、真昼の熱で立ちのぼる'); bannerTimer = 3.5; kosSeq(KOS_LN.wait, 6, 7); }]); }
-function updateKos(dt) { if (!KOS.on || state !== 'play') return; KOS.t += dt;
+function updateKos(dt) { kosKgUi(); if (!KOS.on || state !== 'play') return; KOS.t += dt;
   for (let i = KOS.later.length - 1; i >= 0; i--) if (KOS.t >= KOS.later[i][0]) { const f = KOS.later[i][1]; KOS.later.splice(i, 1); try { f(); } catch (_) {} }
   if (KOS.signT > 0 && (KOS.signT -= dt) <= 0) { const el = $('kosSign'); if (el) el.style.display = 'none'; }
-  kosRaftTick(dt); kosSickTick(dt); kosTrTick(dt); if (KOS.rafts) for (const R of KOS.rafts) if (R.grow < 1) { R.grow = Math.min(1, R.grow + dt / (6 + R.i * 0.6)); R.m.scale.setScalar(Math.max(0.05, R.grow)); }
+  kosRaftTick(dt); kosSickTick(dt); kosTrTick(dt); kosBmTick(dt); kosKgTick(dt); kosKgUi(); if (KOS.rafts) for (const R of KOS.rafts) if (R.grow < 1) { R.grow = Math.min(1, R.grow + dt / (6 + R.i * 0.6)); R.m.scale.setScalar(Math.max(0.05, R.grow)); }
   if (KOS.haze.length) { const on = KOS.ph === 'poison' || KOS.ph === 'back'; KOS.hazeM.opacity = Math.max(0, Math.min(0.3, KOS.hazeM.opacity + dt * (on ? 0.03 : -0.05))); for (const h of KOS.haze) { h.position.y += h.userData.v * dt; if (h.position.y > 4) h.position.y = 0.3; } }
   if (player.pos.y < -0.5 && !kosRaftAt(player.pos.x, player.pos.z)) { const s = Math.min(KOS_SHORE - 3, kosPS()); player.pos.set(kosCx(s), kosG(kosCx(s), 1000 - s), 1000 - s); }
   if ((KOS.tk = (KOS.tk || 0) - dt) <= 0) { KOS.tk = 0.5; kosTick(); } }
@@ -4546,12 +4685,12 @@ function kosTick() { const ps = kosPS(), H = KOS.U.H, F = KOS.U.F; kosFallenTick
   if (KOS.ph === 'trail' || KOS.ph === 'amb') { const stop = KOS.foes.some(o => isUp(o) && !o.kosFlee) || H.s - ps > 45, sp = stop ? 0 : 2.6; for (const U of KOS.units) U.s = Math.min(U.s + sp * 0.5 * (1 - (KOS.ffPen || 0) * 0.5), 792); 
     if (H.s - ps > 45 && KOS.t - (KOS.waitSay || -99) > 40) { KOS.waitSay = KOS.t; kosSayK('sumi', '殿、こちらです。列はお待ちしています', 1.6); }
     const at = (k, s, L, f) => { if (!KOS.ev[k] && (ps > s - 14 || H.s > s + 8)) { KOS.ev[k] = true; if (L) kosSeq(L, 0.5, 4.4); if (f) f(); return true; } };
-    at('tr1', 130, KOS_LN.tr1, () => KOS.later.push([KOS.t + 2, () => kosMobSay('trace', 30)])); at('tr2', 238, KOS_LN.tr2, () => KOS.later.push([KOS.t + 3, () => kosMobSay('trace', 30)]));
-    at('sign', 352, null, () => { kosSign('白石隊より', KOS_SIGN_GEY, 12); kosSeq(KOS_LN.sign, 2, 4.6); });
-    if (!KOS.ev.amb && F.s > 455) { KOS.ev.amb = true; kosAmbush(); }
+    at('tr1', 300, KOS_LN.tr1, () => KOS.later.push([KOS.t + 2, () => kosMobSay('trace', 30)])); at('tr2', 380, KOS_LN.tr2, () => KOS.later.push([KOS.t + 3, () => kosMobSay('trace', 30)]));
+    at('sign', 460, null, () => { kosSign('白石隊より', KOS_SIGN_GEY, 12); kosSeq(KOS_LN.sign, 2, 4.6); });
+    if (!KOS.ev.amb && F.s > 560) { KOS.ev.amb = true; kosAmbush(); }
     if (KOS.ev.amb && !KOS.ev.ambEnd) { const up = KOS.foes.filter(o => isUp(o)), act = up.filter(o => !o.kosFlee); if (KOS.foes.length && up.length <= KOS.foes.length * 0.5) for (const o of act) { const p = o.s.position, c = kosCx(1000 - p.z), side = p.x < c ? -1 : 1; o.kosFlee = [c + side * 60, p.z - 30]; o.tgt = null; }
       if (!act.length || KOS.t - KOS.ev.ambT > 70) { KOS.ev.ambEnd = true; KOS.ph = 'trail'; for (const o of act) if (!o.kosFlee) { const p = o.s.position; o.kosFlee = [p.x + 60, p.z - 30]; } kosSeq(KOS_LN.ambEnd, 1.5, 4.2); } }
-    at('tr3', 600, KOS_LN.tr3);
+    at('tr3', 660, KOS_LN.tr3);
     if (H.s > 760 || (ps > 770 && F.s > 780)) kosShore();
     if (KOS.ph === 'trail' && KOS.t - (KOS.chL || 0) > rand(9, 13) && !KOS.later.length) { KOS.chL = KOS.t; const L = KOS_LN.march.filter(q => KOS.by[q[0]] && isUp(KOS.by[q[0]]) && Math.hypot(KOS.by[q[0]].s.position.x - player.pos.x, KOS.by[q[0]].s.position.z - player.pos.z) < 45); if (L.length && Math.random() < 0.7) { const q = L[(KOS.chI = ((KOS.chI || 0) + 1 + ((Math.random() * 3) | 0)) % L.length)]; kosSayK(q[0], q[1], 1.6); } else kosMobSay('march', 30); } }
   if (KOS.ph === 'day' && !KOS.ev.poison && KOS.rafts.some(R => R.s > KOS_SHORE + 62)) kosPoison();
@@ -4561,15 +4700,120 @@ function kosTick() { const ps = kosPS(), H = KOS.U.H, F = KOS.U.F; kosFallenTick
     if (KOS.waitT > 44 && !KOS.ev.nightGo) { KOS.ev.nightGo = true; for (const e of KOS.all) if (e.kosSick && e.kosSick.ph === 'rest') e.kosSick.T = 0; const T = kosSeq(KOS_LN.night, 0.5, 4.4); KOS.later.push([KOS.t + T + 0.5, () => kosEmbark()]); } }
   if (KOS.ph === 'night' && KOS.t - (KOS.mnT || 0) > 9) { KOS.mnT = KOS.t; kosMobSay('night', 25); }
   if (KOS.ph === 'night' && KOS.rafts.every(R => Math.abs(R.s - R.goal) < 0.3)) kosLand();
-  if (KOS.ph === 'far' && !KOS.ev.win && KOS.t - KOS.ev.farT > 16) kosWin(); }
+  kosFarTick(); }
 function kosAmbush() { KOS.ph = 'amb'; KOS.ev.ambT = KOS.t; const cn = KS2_CN_LOOKS.filter(g => g !== 'girl50' && GIRLS[g]), n = LITE ? 8 : 14, F = KOS.U.F;
   for (let i = 0; i < n; i++) { const s = F.s + rand(4, 30), c = kosCx(s), side = i % 2 ? 1 : -1, x = c + side * rand(8, 12), z = 1000 - s; const e = kosMk(x, z, 'mob', 'orange', cn[i % cn.length] || 'girl46', { name: ks2Name('cn'), pers: ['慎重', '冷静', '好戦的'][i % 3], cm: 156 + (i * 5) % 12 }); if (!e) continue; e.ks2Cn = true; e.kosCn = true; if (Math.random() < 0.5) { e.yari = true; makeYari(e); } KOS.foes.push(e); }
   kosSeq(KOS_LN.amb, 0.3, 3.4); }
 function kosLand() { if (KOS.ph === 'far') return; KOS.ph = 'far'; KOS.ev.farT = KOS.t; for (const R of KOS.rafts) R.riders.forEach((e, j) => { if (!isUp(e) || e.kosDead) return; e.kosOn = false; e.sgkFree = false; const x = R.x + e.kosSl[0] * 1.4, z = 1000 - (KOS_FAR + 3 + (j % 6) * 1.6);
     if (e.kosSick && e.kosSick.ph !== 'rest') { e.s.position.set(x, kosG(x, z), z); } else { kosHop(e, R.x + e.kosSl[0], 1000 - (KOS_FAR + 1.5), false); e.kosRest = [x * 0.7 + rand(-2, 2), z - rand(6, 22)]; } }); KOS.ph = 'far';
-  showBanner('向こう岸', '妻娘返らずの湖を、夜のうちに越えた'); bannerTimer = 3.5; kosSeq(KOS_LN.far, 2, 4.6); }
-function kosWin() { KOS.ev.win = true; KOS.ph = 'won'; const c = kosCounts(); setTimeout(() => { if (!KOS.on || state !== 'play') return; gameOver(true);
-  $('result').innerHTML = `妻娘返らずの湖を越えた。渡り終えた兵 <b>${c.a}</b> / ${c.all}（画面の兵＝人数そのまま）・昼の毒気で倒れた者 ${KOS.sickN}・手当て ${KOS.healed}・戦死 ${c.dead}。先鋒の白石隊とは、一日の差のまま。`; }, 6000); }
+  showBanner('向こう岸', '妻娘返らずの湖を、夜のうちに越えた――夜が明ける'); bannerTimer = 3.5; const T = kosSeq(KOS_LN.far, 2, 4.6); KOS.ev.dawn = KOS.t;
+  for (const U of KOS.units) { U.bx = U.bat[0]; U.bs = 1222 + (U.bat[1] - 1316) * 0.5; } kosShiraishi(); KOS.later.push([KOS.t + T + 2, () => kosAdvance()]); }
+function kosWin() { if (KOS.ev.win) return; KOS.ev.win = true; KOS.ph = 'won'; setTimeout(() => { if (!KOS.on || state !== 'play') return; const c = kosCounts(); gameOver(true);
+  $('result').innerHTML = `南蛮行軍：妻娘返らずの湖を越え、湖を背に祝融の藤甲兵を退けた。残った兵 <b>${c.a}</b>（本隊${KOS_TOTAL}＋白石隊${KOS_V.n}。1体＝1人）・戦死 ${c.dead}・昼の毒気で倒れた者 ${KOS.sickN}・手当て ${KOS.healed}・南蛮兵 ${KOS_FOES} のうち倒れた者 ${KOS.foes.filter(o => !isUp(o) && !o.kosBoss).length}・祝融は密林へ退いた。`; }, 6000); }
+// ---- 向こう岸：夜明け → 草地を進む → 白石隊と合流 → 祝融の伏兵（背水の陣） ----
+function kosShiraishi() { if (KOS.U.V) return; const U = kosUnit(KOS_V, KOS_V.bat[1], KOS_V.bat); for (const e of U.mem) { const [x, z] = kosSlot(e); e.s.position.set(x, kosH(x, z), z); e.baseY = e.s.position.y; e.face = e.faceWant = 0; } }
+function kosAdvance() { if (KOS.ph !== 'far') return; KOS.ph = 'adv'; kosSeq(KOS_LN.adv, 0.5, 4.4); popup('全隊、前へ――殿は本隊（白瀬）と一緒に'); popupTimer = 3; for (const U of KOS.units) for (const e of U.mem) e.kosRest = null; }
+function kosMeet() { if (KOS.ev.meet) return; KOS.ev.meet = KOS.t; KOS.ph = 'meet'; showBanner('白石隊', '先鋒と合流――百五十のうち、残るは九十'); bannerTimer = 3.5; const T = kosSeq(KOS_LN.meet, 1.5, 4.4);
+  KOS.later.push([KOS.t + T + 1, () => sgkKing('よく持ちこたえた。ここからは一緒だ')]); const T2 = kosSeq(KOS_LN.quiet, T + 6, 4); KOS.later.push([KOS.t + T + 6 + T2 + 1, () => kosAmbush2()]); }
+const KOS_TOU_LOOKS = () => { const L = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'].filter(g => GIRLS[g]).concat(KS2_CN_LOOKS.filter(g => g !== 'girl50' && GIRLS[g])); return L.length ? L : ['girl46']; };
+function kosTouMk(x, z, type) { const L = KOS.touL || (KOS.touL = KOS_TOU_LOOKS()), gid = L[(KOS.fSp * 7 + 3) % L.length]; const e = kosMk(x, z, type === 'bow' ? 'archer' : 'mob', 'orange', gid, { name: ks2Name('cn'), pers: ['好戦的', '冷静', '慎重'][KOS.fSp % 3], cm: 154 + (KOS.fSp * 5) % 14 }); if (!e) return null;
+  e.ks2Cn = true; e.kosCn = true; e.kosTou = type; e.hp = e.hpMax = 8; e.speed = rand(3.3, 4.1); e.kosBmN = type === 'boom' ? 3 : 0; e.ks2Cd = rand(0.5, 3); e.ukTag = '南蛮 藤甲兵（' + { dao: '大刀', bow: '弓', boom: 'ブーメラン' }[type] + '）'; KOS.foes.push(e); KOS.fSp++; return e; }
+function kosAmbush2() { if (KOS.ev.shu) return; KOS.ev.shu = KOS.t; KOS.ph = 'battle'; KOS.wave = { left: KOS_FOES, next: KOS.t + 1 }; for (const U of KOS.units) { U.bx = U.bat[0]; U.bs = Math.max(U.bs, U.bat[1] - 2); }
+  showBanner('伏兵――南蛮の藤甲兵', '大将 祝融。後ろは妻娘返らずの湖――背水の陣'); bannerTimer = 4;
+  const x = rand(-12, 12), z = 1000 - 1452, e = kosMk(x, z, 'mob', 'orange', GIRLS.girl50 ? 'girl50' : 'girl46', { name: '祝融', pers: '好戦的', cm: 170 });
+  if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: 36, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e);
+    KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 9, () => kosZh(e, KOS_ZH.die, 2.1)]); KOS.later.push([KOS.t + 22, () => kosZh(e, KOS_ZH.god, 2.1)]); }
+  KOS.later.push([KOS.t + 5, () => sgkKing('退くな！ 後ろは湖だ、ここで止めるぞ！')]); KOS.ring = true; KOS.ringN = {}; for (const U of KOS.units) for (const e of U.mem) if (isUp(e) && !e.kosDead) kosRingAssign(e);
+  KOS.later.push([KOS.t + 8, () => { kosSayK('sumi', '方円の陣！ 湖を背に半円に。弓と医務は内側、槍と刀は外側へ', 2.1); showBanner('方円の陣', '湖を背に半円。外に槍と刀、内に弓と医務'); bannerTimer = 3; }]);
+  const T = 13 + kosSeq(KOS_LN.haisui, 13, 4.3); kosTactics(KOS.t + T); }
+function kosTactics(t0) { const L = KOS.later, ok = k => KOS.by[k] && isUp(KOS.by[k]) && !KOS.by[k].kosDead, say = (k, t) => { if (ok(k)) kosSayK(k, t, 2); };
+  L.push([t0 + 4, () => { sgkKing('弓隊、祝融を狙え！ 一斉にだ！'); KOS.focus = true; }]); L.push([t0 + 7, () => say('sec3', '弓隊、目標、祝融。……数えて、揃えて、放って！')]);
+  L.push([t0 + 20, () => { const F = KOS.U.F; F.rotK = 1; say('ojou', '正面隊、入れ替わりますわ。前の二列は下がって息を整えて、後ろの皆さま、前へ。……車懸りですわ'); kosRotRest(F); }]);
+  L.push([t0 + 24, () => say('omiya', '前列、下がって！ 二列目、前へ！ 藤甲は固いから、疲れる前に替わって！')]);
+  for (let j = 2; j < 12; j++) L.push([t0 + 20 + j * 22, () => { const F = KOS.U.F; F.rotK = j % 4; kosRotRest(F); if (j % 3 === 0 && ok('omiya')) kosSayK('omiya', '入れ替わり！ 前、下がって！ 後ろ、前へ！', 1.8); }]);
+  L.push([t0 + 12, () => say('sec3', '盾を上げて！ 盾持ちは弓の前へ。ブーメランは盾で受けて、弓は手を止めないで')]);
+  L.push([t0 + 46, () => { KOS.feint = { until: KOS.t + 14 }; say('fumi', '左翼、下がります。……ゆっくり、背中を見せすぎないで。誘いますよ'); }]);
+  L.push([t0 + 51, () => say('sec4', '左翼が引いた……群れがついていきます。右翼、構えて。合図で行きます')]);
+  L.push([t0 + 60, () => { say('sec4', '今です！ 右翼、横からかかれっ！'); KOS.later.push([KOS.t + 2.5, () => say('reika', '白石隊、反対側から叩くわよ！ 釣り野伏せ、仕上げなさい！')]); KOS.later.push([KOS.t + 6, () => say('fumi', '左翼、向き直って。……的は外しませんよ')]); showBanner('釣り野伏せ', '左翼が引いて誘い、右翼と白石隊が両脇から'); bannerTimer = 3; }]); }
+function kosRotRest(U) { for (const e of U.mem) if (isUp(e) && !e.kosDead && e.hp < e.hpMax && Math.random() < 0.5) e.hp = Math.min(e.hpMax, e.hp + 1); }   // 下がった列は息を整える
+function kosZh(e, q, prio) { if (!e || !q) return; const [zh, ja] = q, p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > 80 && (prio || 0) < 2) return;
+  const f = ks2VoiceFile(zh, 'zhu'); if (f && VoicePack.ok) Talk.as(e, () => VoicePack.play(f, Math.min(d, 55), prio || 1.8, 1)); if ((prio || 0) >= 2) KS2.subLock = time + Math.max(2.5, ja.length * 0.13 + 1.6);
+  subtitle(ja); const el = $('subtitle'); if (el) el.textContent = `${e.ks2Title}「${ja}」（${zh}）`; }
+function kosZhMob(e, L) { if (!e || !L) return; const zh = L[(Math.random() * L.length) | 0], p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > 45) return; const f = ks2VoiceFile(zh); if (f && VoicePack.ok) Talk.as(e, () => VoicePack.play(f, Math.min(d, 50), 1.1, 1)); }   // 群れ：声だけ（字幕なし）
+function kosBlueNear(p, r, f) { let b = null, bd = r; for (const o of KOS.all) { if (o.team !== 'blue' || !isUp(o) || o.kosDead || o.kosOn) continue; const q = o.s.position, d = Math.abs(q.x - p.x) + Math.abs(q.z - p.z); if (d >= bd * 1.42) continue; const dd = Math.hypot(q.x - p.x, q.z - p.z); if (dd < bd && (!f || f(o))) { bd = dd; b = o; } } return b; }
+// 藤甲兵：陣形なし。丘と密林から群れで寄せる。大刀は突きだけ、弓、ブーメラン（外れれば投げ手に戻る、当たれば落ちる）
+function kosTouBrain(e, dt) { const p = e.s.position;
+  if ((e.ks2T -= dt) <= 0) { e.ks2T = rand(0.45, 0.85); e.tgt = kosBlueNear(p, 60); const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (dP < 22 && (!e.tgt || Math.random() < 0.3)) e.tgt = KOS.kg && KOS.kg.ride ? (KOS.kg.bear.find(o => o && isUp(o)) || e.tgt) : PLAYER_T; }
+  const t = e.tgt; if (!t || (!t.isPlayer && (!isUp(t) || t.kosDead))) { const H = KOS.U.H; kosGo(e, H.bx + rand(-20, 20), 1000 - H.bs, e.speed, dt); return; }
+  const tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z), face = () => { e.moving = false; e.state = 'idle'; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); };
+  if (e.sgkAct) { sgkPose(e, dt); return; }
+  if (e.kosTou === 'bow') { if (d > 30) { kosGo(e, tp.x, tp.z, e.speed, dt); return; } if (d < 12) { kosGo(e, p.x - (tp.x - p.x) / d * 4, p.z - (tp.z - p.z) / d * 4, e.speed, dt); return; } face(); if ((e.ks2Cd -= dt) <= 0) { e.ks2Cd = rand(2.6, 4.2); kosShoot(e, t); if (Math.random() < 0.08) kosZhMob(e, KOS_ZH.mob.bow); } return; }
+  if (e.kosTou === 'boom' && e.kosBmN > 0 && !e.kosBmOut) { if (d > 20) { kosGo(e, tp.x, tp.z, e.speed, dt); return; } if (d < 8) { kosGo(e, p.x - (tp.x - p.x) / d * 3, p.z - (tp.z - p.z) / d * 3, e.speed, dt); return; } face(); if ((e.ks2Cd -= dt) <= 0) { e.ks2Cd = rand(3, 4.5); kosBoom(e, t); if (Math.random() < 0.1) kosZhMob(e, KOS_ZH.mob.boom); } return; }
+  if (e.kosTou === 'boom' && e.kosBmOut) { face(); return; }   // 戻ってくるのを待つ
+  if (d > 1.2) { kosGo(e, tp.x, tp.z, e.speed * 1.05, dt); return; } face(); kosTouHit(e, t); }
+function kosTouHit(e, t) { if (e.cd > 0) return; e.cd = rand(1.3, 2.0); e.lungeT = 0.25; e.sgkAct = { k: 'stab', t: 0 }; const p = e.s.position;   // 大刀：突きだけ（斬らない）
+  if (t.isPlayer) { if (!player.god && state === 'play') meleeHurtPlayer(e, 4); return; }
+  if (Math.random() < 0.22) damageEnemy(t, 1, p, false, { thrust: true, pt: new V3(t.s.position.x, t.baseY + (t.figH || 1.6) * 0.55, t.s.position.z) }, e); else if (isUp(t) && Math.random() < 0.5) parryFx(t, p.x, p.z, parryKind(t, e), e); }
+// 藤甲：矢・刃の多くを弾く（鎧は描かない。強さだけ）。何度も当てれば、顔や首元の隙に通る
+function kosTough(e, hit) { if (Math.random() < (hit && hit.arrow ? 0.5 : 0.3)) { const p = e.s.position; if (sfxGate(p, 30)) { puff(p.clone().setY(e.baseY + 1.2), 0xf2efe2, 2, 0.04, 1.6, 0.1); if (Math.random() < 0.3) Sfx.thunkAt(p, true); } if (Math.random() < 0.03) kosZhMob(e, KOS_ZH.mob.hit); return true; } return false; }
+// ブーメラン
+function kosBmMesh() { const g = new THREE.Group(), M = KOS.M.bm || (KOS.M.bm = sgkMat(0x8a5a2c)), G = KOS.G.bm || (KOS.G.bm = new THREE.BoxGeometry(0.3, 0.03, 0.06)); for (const a of [0.55, -0.55]) { const b = new THREE.Mesh(G, M); b.rotation.y = a; b.position.x = Math.sin(a) * 0.1; b.position.z = 0.12 * Math.cos(a) - 0.1; g.add(b); } return g; }
+function kosBoom(e, t) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z); e.sgkAct = { k: 'aim', t: 0, T: 0.6 }; e.kosBmOut = true;
+  const a = new V3(p.x, p.y + 1.3, p.z), b = new V3(tp.x, t.isPlayer ? tp.y - 0.4 : tp.y + 1.2, tp.z), m = kosBmMesh(); let hit = Math.random() < (t.ks2Named ? 0.15 : 0.22); m.position.copy(a); stageRoot.add(m);
+  let blk = null; if (!t.isPlayer && t.kosArch) for (const o of KOS.all) { if (!o.kosShd || !isUp(o)) continue; const q = o.s.position; if (Math.hypot(q.x - tp.x, q.z - tp.z) < 5 && Math.hypot(q.x - p.x, q.z - p.z) < d) { blk = o; break; } }   // 盾持ちが弓兵の前で受ける
+  if (blk && Math.random() < 0.7) { hit = false; b.set(blk.s.position.x, blk.s.position.y + 0.9, blk.s.position.z); KOS.shBlk = (KOS.shBlk || 0) + 1; } else if (!hit) { b.x += rand(-1.5, 1.5); b.z += rand(-1.5, 1.5); }
+  if (!KOS.ev.shOrder && t.kosArch) { KOS.ev.shOrder = KOS.t; kosSayK('sec3', '盾を上げて！ ブーメランは盾で受けて。弓は手を止めないで', 2); } KOS.bm.push({ m, a, b, e, tg: t, t: 0, T: Math.max(0.5, d / 13), ph: 'out', hit, side: Math.random() < 0.5 ? -1 : 1 }); }
+function kosBmTick(dt) { for (let i = KOS.bm.length - 1; i >= 0; i--) { const B = KOS.bm[i]; if (B.ph === 'lie') continue; B.t += dt; const k = Math.min(1, B.t / B.T), dx = B.b.x - B.a.x, dz = B.b.z - B.a.z, L = Math.hypot(dx, dz) || 1, w = Math.sin(k * Math.PI) * B.side * Math.min(3, L * 0.2);
+    B.m.position.set(B.a.x + dx * k - dz / L * w, B.a.y + (B.b.y - B.a.y) * k + Math.sin(k * Math.PI) * 0.8, B.a.z + dz * k + dx / L * w); B.m.rotation.y += dt * 22; if (k < 1) continue;
+    if (B.ph === 'out') { const t = B.tg; if (B.hit && (t.isPlayer || (isUp(t) && !t.kosOn))) { if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(8); popup('ブーメランが当たった！'); } } else damageEnemy(t, 1, B.e.s.position, false, { pt: B.b.clone() }, B.e); kosBmDrop(B, i); if (B.e.kosBmN) B.e.kosBmN--; B.e.kosBmOut = false; continue; }
+      if (!isUp(B.e)) { kosBmDrop(B, i); continue; } B.ph = 'back'; B.t = 0; B.a = B.m.position.clone(); B.b = B.e.s.position.clone().setY(B.e.s.position.y + 1.2); B.T = Math.max(0.5, B.a.distanceTo(B.b) / 13); B.side = -B.side; continue; }
+    if (B.ph === 'back') { if (isUp(B.e) && B.e.s.position.distanceTo(B.m.position) < 3) { stageRoot.remove(B.m); KOS.bm.splice(i, 1); B.e.kosBmOut = false; } else { kosBmDrop(B, i); B.e.kosBmOut = false; if (B.e.kosBmN) B.e.kosBmN--; } } } }
+function kosBmDrop(B, i) { const q = B.m.position, x = q.x + rand(-0.6, 0.6), z = q.z + rand(-0.6, 0.6); B.m.position.set(x, kosH(x, z) + 0.03, z); B.m.rotation.set(0, rand(0, 6.28), 0); B.ph = 'lie'; if (KOS.bm.filter(o => o.ph === 'lie').length > (LITE ? 50 : 140)) { const j = KOS.bm.findIndex(o => o.ph === 'lie'); if (j >= 0) { stageRoot.remove(KOS.bm[j].m); KOS.bm.splice(j, 1); } } }
+// 祝融（大将）：投げ小刀は体に残る。弱ると密林へ退き、討ち取れない
+function kosBossBrain(e, dt) { const B = e.kosBoss, p = e.s.position; if (e.cd > 0) e.cd -= dt;
+  if (B.esc) { e.kosFreeGo = true; kosGo(e, B.ex, B.ez, 6.5, dt); const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), fog = scene.fog ? scene.fog.far : 400;
+    if ((!sgkOnScreen(p) || dP > fog + 10) && (B.escT = (B.escT || 0) + dt) > 1.2 && dP > 30) { e.ks2Gone = true; e.state = 'down'; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = KOS.all.indexOf(e); if (j >= 0) KOS.all.splice(j, 1); try { disposeNpc(e); } catch (_) {} KOS.ev.shuGone = KOS.t; } return; }
+  if (e.sgkAct) { sgkPose(e, dt); return; }
+  if (B.retT > 0) { B.retT -= dt; kosGo(e, clamp(p.x, -40, 40), 1000 - 1445, 4.5, dt); if (B.retT <= 0) { B.kn = 36; kosZh(e, KOS_ZH.again, 1.9); } return; }
+  if ((e.ks2T -= dt) <= 0) { e.ks2T = 0.5; e.tgt = kosBlueNear(p, 30); const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (dP < 26 && (!e.tgt || Math.random() < 0.25)) e.tgt = KOS.kg && KOS.kg.ride ? (KOS.kg.bear.find(o => o && isUp(o)) || e.tgt) : PLAYER_T; }
+  const t = e.tgt; if (!t || (!t.isPlayer && !isUp(t))) { const F = KOS.U.F; kosGo(e, clamp(F.bx, -40, 40), 1000 - Math.min(1450, F.bs + 16), 3.5, dt); return; }
+  const tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z) || 1;
+  if (d < 2.2) { const o = kosBlueNear(p, 1.6); if (o && Math.random() < dt * 0.6) kosKnife(e, o, true); }
+  if (d < 9 || d > 16) { const k = d < 9 ? -1 : 1; kosGo(e, clamp(p.x + (tp.x - p.x) / d * 4 * k, -70, 70), clamp(p.z + (tp.z - p.z) / d * 4 * k, 1000 - 1456, 1000 - 1290), 5, dt); } else { e.moving = false; e.state = 'idle'; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); }
+  if (B.kn <= 0) { B.retT = 12; kosZh(e, KOS_ZH.reload, 1.9); KOS.later.push([KOS.t + 1.5, () => kosSayK('omiya', '刃が尽きました！ 今です、槍で囲んで！', 1.9)]); return; }
+  B.bT -= dt; if (B.bT > 0) return;
+  if (B.burst <= 0) { B.burst = 5 + ((Math.random() * 3) | 0); if (KOS.t - B.lastT > 16) { B.lastT = KOS.t; kosZh(e, KOS_ZH.taunt[(B.ti = ((B.ti || 0) + 1) % KOS_ZH.taunt.length)], 1.8); } }
+  if (d < 26) { kosKnife(e, t, false); B.kn--; B.burst--; B.bT = B.burst > 0 ? rand(0.32, 0.45) : rand(3.4, 5); } else B.bT = 0.3; }
+function kosKnife(e, t, close) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, a = new V3(p.x, p.y + 1.3, p.z), b = new V3(tp.x, t.isPlayer ? tp.y - 0.3 : tp.y + 1.35, tp.z), d = a.distanceTo(b);
+  e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.sgkAct = { k: 'stab', t: 0.3 }; const hit = Math.random() < (close ? 0.6 : t.ks2Named ? 0.5 : 0.85), near = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 80;
+  if (near && sfxGate(p, 40)) { const o = Sfx.at(p, 40, 0.8); if (o) Sfx.noiseBurst(0.08, 'highpass', 3000, 6000, 0.4, 1, 0, o); }
+  const m = sgkKnifeMesh(); m.position.copy(a); stageRoot.add(m);
+  KOS.tr.push({ a, b, t: 0, T: Math.max(0.08, d / 38), h: 0.15, mesh: m, onEnd: () => {
+    if (!hit || (!t.isPlayer && !isUp(t))) { const x = b.x + rand(-1.2, 1.2), z = b.z + rand(-1.2, 1.2), k = sgkKnifeMesh(); k.position.set(x, kosH(x, z) + 0.03, z); k.rotation.set(0, rand(0, 6.28), 0); stageRoot.add(k); KOS.lie.push(k); return; }
+    if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(30); popup('小刀がかすめた！'); } return; }
+    puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); const hp2 = new V3(t.s.position.x, t.baseY + (t.figH || 1.6) * 0.83, t.s.position.z); stickArrow(t, hp2, hp2.clone().sub(a), sgkKnifeMesh(), 0.02); t.hp = 0; killEnemy(t, false, p); } }); }
+function kosBossHurt(e, dmg, from, by) { const B = e.kosBoss; if (!B || B.inv || B.esc) { if (B && sfxGate(e.s.position, 40)) puff(e.s.position.clone().setY(e.baseY + 1.2), 0xf0f0e8, 2, 0.05, 2, 0.12); return; }
+  if (by !== 'player' && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす
+  e.hp -= dmg; e.flash = 0.12; e.recoil = 0.3; if (e.hp <= e.hpMax * 0.2) kosBossEscape(e); }
+function kosBossEscape(e) { e = e || KOS.shu; if (!e) return; const B = e.kosBoss; if (B.esc) return; B.esc = true; B.inv = true; e.hp = Math.max(e.hp, 1); const p = e.s.position, sd = p.x < 0 ? -1 : 1; B.ex = sd * 95; B.ez = p.z - 25; KOS.ev.shuEsc = KOS.t;
+  kosZh(e, KOS_ZH.escape, 2.3); popup('祝融、密林へ退く――南蛮兵の足が乱れた'); popupTimer = 3.5; for (const o of KOS.foes) if (o !== e && isUp(o) && !o.kosFlee && Math.random() < 0.6) kosFoeFlee(o); kosSeq(KOS_LN.shuEsc, 4, 4.2); }
+function kosFoeFlee(o) { const p = o.s.position, sd = p.x < 0 ? -1 : 1, s = 1000 - p.z; o.kosFlee = s > 1430 ? [p.x, 1000 - 1500] : [sd * 95, p.z - 20]; o.tgt = null; o.sgkAct = null; }
+function kosFarTick() { const ph = KOS.ph;
+  if (KOS.ev.dawn != null && !KOS.ev.win) kosLook(Math.max(0.12, 1 - (KOS.t - KOS.ev.dawn) / 50));
+  if (ph === 'adv') { let all = true; for (const U of KOS.units) { if (U.k === 'V') continue; U.bs = Math.min(U.bat[1], U.bs + 1.3); if (U.bs < U.bat[1]) all = false; } if (all && KOS.t - (KOS.ev.advEnd || (KOS.ev.advEnd = KOS.t)) > 6) kosMeet(); }
+  if (ph !== 'battle') return; const W = KOS.wave, act = KOS.foes.filter(o => isUp(o) && !o.kosFlee && !o.kosBoss);
+  if (W.left > 0 && KOS.t >= W.next && act.length < (LITE ? 110 : 200)) { const n = Math.min(W.left, 6 + ((Math.random() * 7) | 0)), r = Math.random(), cx = r < 0.36 ? -71 : r < 0.72 ? 71 : rand(-50, 50), cs = r < 0.72 ? rand(1335, 1440) : 1455;
+    for (let i = 0; i < n; i++) { const x = clamp(cx + rand(-5, 5), -73, 73), sv = Math.min(1458, cs + rand(-6, 6)), q = KOS.fSp % 10; kosTouMk(x, 1000 - sv, q < 4 ? 'dao' : q < 7 ? 'bow' : 'boom'); W.left--; } W.next = KOS.t + rand(2.5, 4.5);
+    if (Math.random() < 0.5) kosZhMob(act[(Math.random() * act.length) | 0], KOS_ZH.mob.go); }
+  // 後続：画面に出ていない兵（数には入っている）が、隊の後ろから前へ詰める
+  if ((KOS.rfT = (KOS.rfT || 0) - 0.5) <= 0) { KOS.rfT = 1; for (const U of KOS.units) { if (U.pool <= 0) continue; const up = U.mem.filter(o => isUp(o) && !o.kosDead).length; for (let k = 0; k < 3 && U.pool > 0 && up + k < U.field * 0.85; k++) { const fr = U.mem.find(o => !o.ks2Named && (!isUp(o) || o.kosDead) && !o.kosIdxUsed); const s0 = U.bs - 22, x = clamp(U.bx + rand(-8, 8), -70, 70);
+      const e = kosMob(U, kosRole(U, U.mem.length), s0); if (!e) break; e.s.position.set(x, kosH(x, 1000 - s0), 1000 - s0); if (fr) { fr.kosIdxUsed = true; e.kosIdx = fr.kosIdx; } else e.kosIdx = U.mem.length; if (KOS.ring) { if (fr && fr.kosRi != null && kosRingKey(fr) === kosRingKey(e)) e.kosRi = fr.kosRi; else kosRingAssign(e); } U.mem.push(e); U.pool--; } } }
+  if (KOS.t - (KOS.btT || 0) > 8 && KOS.t - KOS.ev.shu > 60) { KOS.btT = KOS.t; const L = KOS_LN.bat.filter(q => KOS.by[q[0]] && isUp(KOS.by[q[0]]) && !KOS.by[q[0]].kosDead); if (L.length) { const q = L[(KOS.btI = ((KOS.btI || 0) + 1) % L.length)]; kosSayK(q[0], q[1], 1.7); } }
+  if (KOS.t - (KOS.bmT || 0) > 3) { KOS.bmT = KOS.t; kosMobSay('bat', 35); }
+  if (KOS.shu && !KOS.ev.shuEsc && KOS.t - KOS.ev.shu > 480) kosBossEscape(KOS.shu);   // 長引けば女将は見切って退く
+  if (!KOS.ev.rout && W.left <= 0) { if (!KOS.ev.shuEsc && !act.length) kosBossEscape(KOS.shu);
+    if (KOS.ev.shuEsc && act.length <= KOS_FOES * 0.3) { KOS.ev.rout = KOS.t; for (const o of act) kosFoeFlee(o); if (act.length) kosZhMob(act[0], KOS_ZH.mob.rout); showBanner('南蛮兵、崩れる', '祝融は密林へ。湖を背に、持ちこたえた'); bannerTimer = 4; const T = kosSeq(KOS_LN.rout, 2, 4.4); KOS.later.push([KOS.t + T + 2, () => kosWin()]); } }
+  const c = kosCounts(); if (c.a <= 0 && state === 'play') { gameOver(false); $('result').innerHTML = '南蛮行軍：湖を背に、全隊が倒れた。'; } }
 // ===== 妻娘返らずの湖ここまで =====
 
 // ---- 音が消えないように：AudioContext が止まっていたら（タブ切替・スマホの割り込み・自動再生の制限）入力や画面の復帰のたびに再開。
@@ -4810,7 +5054,7 @@ const SITU = {
     let ok = false;
     Talk.as(e, () => {
       ok = VoicePack.play(it.files[0], d, force ? 2 : 0, VV_RATE[e.prof.vv] || 1);
-      if (ok && d < 14 && !menuOpen && state === 'play') { subtitle(it.text); const el = $('subtitle'); if (el) el.textContent = e.prof.name.replace(/^組頭 /, '') + '「' + it.text + '」'; }
+      if (ok && d < 14 && !menuOpen && state === 'play' && !e.ks2) { subtitle(it.text); const el = $('subtitle'); if (el) el.textContent = e.prof.name.replace(/^組頭 /, '') + '「' + it.text + '」'; }   // 白壁城・山岳・南蛮行軍の群れは声だけ（字幕なし）
     });
     if (!ok) return false;
     this.last = time; this.catAt[cat] = time; e.situAt = time; this.said++;
@@ -20879,7 +21123,7 @@ const STAGES = {
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
   sangaku: { name: '山岳の関所', desc: '決戦2のあと、中国南部の山中。麓（標高約200m）から山頂の砦（約800m）まで約2kmの谷道を、日本の侍女 約1500で登る。守り手は中国の兵 約1000。関所は三つ（標高 約350・500・650m）。上から転がる岩と丸太、崖の小石、霧の伏兵、そして第二の関所には祝融。坂では息が上がる――握り飯で取り戻す。6〜0 で正面・崖道・弓・本隊・後方へ視点を移す。' },
-  kosui: { name: '妻娘返らずの湖', desc: '山岳の関所の先、中国南部の密林。先鋒の白石隊（白石・久遠）は一日先を行き、本隊は会わない。道には先鋒の戦いの跡、布に包まれた白石隊、衛生兵の手当ての跡、白石隊の立て札。湖の岸で筏を組み、昼に渡る――。画面の兵＝人数そのまま（約260、スマホは約130）。' },
+  kosui: { name: '南蛮行軍', desc: '山岳の関所の先、中国南部の密林。先鋒の白石隊（白石・久遠）は一日先を行く。道には先鋒の戦いの跡、布に包まれた白石隊、衛生兵の手当ての跡。妻娘返らずの湖を筏で渡り、向こう岸で白石隊と合流――そこへ祝融の藤甲兵が現れる。湖を背に、背水の陣。兵は千（1体＝1人。画面に出ない分は後続として数える）、南蛮の藤甲兵は二百。' },
   kessen2: { name: '決戦2「白壁城」', desc: '天鳳のあと。英国が中国で反乱を起こし、平野の白壁城（高い城壁・東西南北の四門）を奪った。攻め手 約1500・守り手 約1000。南は破城槌と攻城塔、東は梯子、西はエレノアの呼びかけ、北は陽動。門が破れても中庭・第二の門・本丸と戦いは続く。司令官が降伏すれば勝ち。' },
   ks2Feast: { name: '白壁城祝勝会', desc: '決戦2「白壁城」に勝った夜。本丸御殿の大広間で祝勝会（立食）。卓は序列の順——第1卓 殿・三条・西園寺・大宮・白瀬・綾瀬・早瀬／第2卓 広瀬・九条・宮下・桜井・白石・久遠／第3卓 小鳥遊・霧島・氷室・一条・夏目・小日向。卓を回って話し（E）、卓の話に加わろう。決戦2 で倒れた者の場所は空けてある。白瀬に中締めを頼むとお開き。' },
   tenhou: { name: '新武装客船「天鳳」', desc: '桜鳳の後を継ぐ新しい武装客船。全長 350m・幅 40m・16 甲板・乗員 2,600。両舷の「主砲への道」を航空作業甲板から前部主砲まで歩ける。第三主砲塔の中にも入れる。大階段とエレベーターで船内を行き来する。戦いは無い。' },
@@ -30163,7 +30407,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -32543,6 +32787,8 @@ function meleeHurtPlayer(att, dmg) { const p = att && att.s ? att.s.position : n
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (TH.on && by === 'player' && e.thR === 'orange' && e.state !== 'down' && TH.raid && TH.raid.on && TH.raid.ph !== 'after') { thHurt(e, player.pos.clone()); if (crit || dmg >= 3) thHurt(e, player.pos.clone()); return; }   // 天鳳：王の弓・懐刀は乗り込んできた米兵にだけ効く（血は出さず、負傷の段階で）
   if (CAMP.on && CAMP.frozen) return;
+  if (KOS.on && e.kosBoss) { kosBossHurt(e, dmg, from, by); return; }   // 南蛮行軍：祝融はかわし、弱ると退く（討ち取れない）
+  if (KOS.on && e.kosTou && e.state !== 'down' && dmg < 99 && kosTough(e, hit)) return;   // 藤甲：矢・刃の多くを弾く
   if (KS2.on && (e === KS2.cmd || e.ks2Gave)) return;   // 決戦2：王女（司令官）・銃を置いた兵は傷つかない
   if (e.state === 'down' || UK.on || UK7.on || PAL.on || TH.on || (UK3.on && (e.uk3Safe || e.uk3Sumi)) || (UK4.on && (e.uk4Safe || e.uk4Sumi || (u4Calm() && e.team === 'orange'))) || (USD.on && (USD.phase === 'open' || USD.phase === 'parley' || USD.phase === 'duel') && dmg < 99)) return;   // 荒野の決闘：会見と決闘の間は撃っても当たらない   // 英国淑女編の会見：戦いは無い／第三幕：エレノアは逃れる
   const byPlayer = by === 'player';
@@ -35536,6 +35782,7 @@ addEventListener('keydown', e => {
   if (FRS.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && frsKey()) return;
   if (USD.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && usdKey()) return;
   if (CAMP.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter')) && campKey()) return;
+  if (KOS.on && e.code === 'KeyE' && kosKgUse()) return;   // 南蛮行軍：輿を降りる・乗る
   if (UK2.on && UK.dlg && (e.code === 'KeyE' || e.code === 'Enter')) { ukDlgSkip(); return; }
   if (UK3.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk3Key(); return; }
   if (UK4.on && (e.code === 'KeyE' || (UK.dlg && e.code === 'Enter'))) { uk4Key(); return; }
@@ -35920,6 +36167,7 @@ function updatePlayer(dt) {
   if (player.kei) { keiSeatPlayer(); keiCam(dt); return; }   // 浜の軽自動車
   if (CAR.riding && carOn()) { carSeatPlayer(); carCamera(dt); return; }   // 平原の助手席
   if (TH.on && TH.ev && TH.ev.kingB && thKingInBoat(dt)) return;   // 天鳳：殿は救命艇の上
+  if (KOS.on && KOS.kg && KOS.kg.ride) { kosKgSeat(dt); return; }   // 南蛮行軍：殿は輿の中
   // 移動
   const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
   let mx = 0, mz = 0;

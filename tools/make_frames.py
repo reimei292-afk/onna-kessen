@@ -9,7 +9,7 @@
 必要: pip install "rembg[cpu]" pillow
 """
 import sys, os, io, json, base64
-import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir, maid_name
 from PIL import Image, ImageFilter
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 A = os.path.join(ROOT, 'assets'); OUT = os.path.join(A, 'frames')
@@ -71,13 +71,13 @@ def main():
         if os.path.exists(os.path.join(A, gid + '.png')): ref = front_ref(gid)
         elif fr.get('front') and os.path.exists(fr['front']):
             # 元の写真が無い娘（医療係など）：正面も manifest から作り、その頭頂〜足元を基準にする
-            png = os.path.join(ROOT, maid_dir(gid), f'{gid}_front.png')
+            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_front.png')
             if FORCE or not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(fr['front']) or 'front' not in meta[gid]:
                 im = cut(fr['front']); a = im.split()[3]; top = head_top(a)
                 f = min(1.0, 640 / im.height); im = im.resize((max(1, round(im.width * f)), max(1, round(im.height * f))), Image.LANCZOS)
                 im.save(png, optimize=True); a = im.split()[3]
                 top = head_top(a); body = im.height - top
-                meta[gid]['front'] = {'hk': round(im.height / body, 4), 'aspect': round(im.width / im.height, 4), 'ax': round(mean_x(a, int(im.height * 0.88), im.height) / im.width, 4), 'dir': 0, 'file': f'{maid_dir(gid)}/{gid}_front.png', 'ref': body}
+                meta[gid]['front'] = {'hk': round(im.height / body, 4), 'aspect': round(im.width / im.height, 4), 'ax': round(mean_x(a, int(im.height * 0.88), im.height) / im.width, 4), 'dir': 0, 'file': f'{maid_dir(gid)}/{maid_name(gid)}_front.png', 'ref': body}
                 print(gid, 'front', im.size, meta[gid]['front'])
             ref = meta[gid]['front']['ref']
         else: print('skip (正面写真なし)', gid); continue
@@ -87,7 +87,7 @@ def main():
             if k == 'front' or k not in KINDS or not src or not isinstance(src, str): continue
             if k == 'side' and k0 == 'side' and fr.get('side_left') and fr.get('side_right') is None: pass
             if not os.path.exists(src): print('missing', gid, k, src); continue
-            png = os.path.join(ROOT, maid_dir(gid), f'{gid}_{k}.png')
+            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_{k}.png')
             if not FORCE and os.path.exists(png) and os.path.getmtime(png) >= os.path.getmtime(src) and k in meta[gid]: continue
             im = cut(src); a = im.split()[3]
             top = head_top(a); body = im.height - top
@@ -114,7 +114,7 @@ def main():
                 else:
                     t2 = head_top(a); hx = mean_x(a, t2, t2 + int(h * 0.1)); bb = a.getbbox() or (0, 0, w, h)
                     d = 1 if (bb[2] - hx) > (hx - bb[0]) else -1
-            meta[gid][k] = {'hk': round(h / (ref * f), 4), 'aspect': round(w / h, 4), 'ax': round(ax, 4), 'dir': int(d), 'file': f'{maid_dir(gid)}/{gid}_{k}.png'}
+            meta[gid][k] = {'hk': round(h / (ref * f), 4), 'aspect': round(w / h, 4), 'ax': round(ax, 4), 'dir': int(d), 'file': f'{maid_dir(gid)}/{maid_name(gid)}_{k}.png'}
             if k == 'slump':   # 手すりの上端の位置（写真の下からの高さ比 ry・左からの位置比 rx）。manifest の slump_ry / slump_rx で上書き
                 meta[gid][k]['ry'] = float(fr.get('slump_ry', 0.55)); meta[gid][k]['rx'] = float(fr.get('slump_rx', 0.45))
             print(gid, k, (w, h), 'dir', d, 'ax', round(ax, 3), 'hk', meta[gid][k]['hk'])

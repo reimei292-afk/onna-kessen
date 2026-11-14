@@ -3,7 +3,7 @@
 を rembg で切り抜いて assets/maids/archerNN_u_<view>.png に分け、倒れた写真（archerNN_down.png）からは弓を外す
 （いちばん大きいまとまりだけ残す）。メタは /tmp/arch_meta.json（make_frames_props.py が frames_props.js へ書く）。"""
 import json, os
-import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir, maid_name
 import numpy as np
 from PIL import Image
 from rembg import remove, new_session
@@ -22,7 +22,7 @@ def facing(a):   # 横顔：つま先の出ている方（下端 4% の重心が
     return 1 if cx(0.965, 1.0) > cx(0.80, 0.86) else -1
 meta = {}
 for n in range(1, 11):
-    gid = f'archer{n:02d}'; im = Image.open(os.path.join(SH, f'{gid}_sheet.jpg')).convert('RGB')
+    gid = f'archer{n:02d}'; im = Image.open(os.path.join(SH, f'{maid_name(gid)}_sheet.jpg')).convert('RGB')
     W = im.width; out = np.array(remove(im, session=sess).convert('RGBA')); a = out[:, :, 3]
     a[a < 24] = 0
     lab, k = ndimage.label(a > 60); sizes = ndimage.sum(np.ones_like(lab), lab, range(1, k + 1))
@@ -45,7 +45,7 @@ for n in range(1, 11):
         m[v] = {'hk': 1.02, 'aspect': round(w / h, 4), 'ax': round(feet_ax(sub[:, :, 3]), 4), 'dir': d, 'file': fn}
     if m['front_diag']['dir'] != m['side']['dir']: m['front_diag']['dir'] = m['side']['dir']
     # 倒れた写真から弓を外す
-    dn = np.array(Image.open(os.path.join(FR, f'{gid}_down.png')).convert('RGBA')); da = dn[:, :, 3]
+    dn = np.array(Image.open(os.path.join(FR, f'{maid_name(gid)}_down.png')).convert('RGBA')); da = dn[:, :, 3]
     lab2, k2 = ndimage.label(da > 70)
     if k2:
         # 弓は細い：太い所だけ残す開きで体を取り出し、少し戻す（手に触れている弓も外れる）

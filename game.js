@@ -2202,6 +2202,9 @@ window.__th = { thSpiralAt, thRaidChat, thVoice, thGirlCull, get updatePlayer() 
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
+// 名のある侍女の絵のファイル名は日本語のフルネーム（assets/maids/白瀬澄_front.png など）。中のキー（mob06・sec2 など）はそのまま
+const MAID_REN = { mob06: '白瀬澄', mob07: '早瀬ことね', mob03: '小鳥遊ひびき', fumi: '綾瀬文乃', ojou: '西園寺すみれ', omiya: '大宮ひなた', sysop: '霧島怜', sec3: '桜井ゆかり', sec4: '宮下千尋', sec5: '小日向ひより', sec6: '氷室しのぶ', sec7: '夏目あかり', girl26: '白石麗華', girl31: '久遠静香', girl34: '一条千景', girl37: '村瀬碧', girl45: '広瀬千夏', girl58: '三条玲奈', surgeon: '九条紗英' };
+const maidFile = f => f.replace(/^(assets\/maids\/)([a-z]+\d*)(?=[_.])/, (m, a, b) => MAID_REN[b] ? a + MAID_REN[b] : m);
 const PASSIVE = /[?&]passive=1/.test(location.search);  // テスト用：自動プレイが何もしない
 // スマホ・タブレット（指で操作する端末）。?mobile=1 で強制。画質や敵の数は PC と同じ
 const MOBILE = /[?&]mobile=1/.test(location.search) || (!!window.matchMedia && matchMedia('(pointer: coarse)').matches) ||
@@ -15527,7 +15530,7 @@ function cvThDraw(k) {
   g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, Hh * 0.72, W, Hh * 0.28);
   const nP = sl[2], rows = nP > 8 ? 2 : 1, per = Math.ceil(nP / rows);
   for (let r = rows - 1; r >= 0; r--) for (let i = 0; i < per; i++) { const id = r * per + i; if (id >= nP) break;
-    const arch = sl[4] || (id + k) % 3 === 0, num = ((id * 3 + k * 5) % 10) + 1, src = 'assets/maids/' + (arch ? 'archer' : 'mob') + String(num).padStart(2, '0') + '.png';
+    const arch = sl[4] || (id + k) % 3 === 0, num = ((id * 3 + k * 5) % 10) + 1, src = maidFile('assets/maids/' + (arch ? 'archer' : 'mob') + String(num).padStart(2, '0') + '.png');
     const im = cvThImg(src); if (!im.complete || !im.naturalWidth) continue;
     const h = rows === 2 ? (r ? 300 : 340) : 420, w = h * im.naturalWidth / im.naturalHeight, span = W * (rows === 2 ? 0.86 : 0.7);
     const x = W / 2 - span / 2 + (per === 1 ? span / 2 : span * i / (per - 1)) + (r ? 30 : 0), y = Hh - 40 - (r ? 70 : 0);
@@ -29575,7 +29578,7 @@ function loadSprites(done) {
   const loader = new THREE.TextureLoader();
   const fin = () => { if (--remaining === 0) { SPR.mob = SPR.mob.filter(Boolean); SPR.archer = SPR.archer.filter(Boolean); done(); } };
   for (const [kind, emb, tops] of sets) emb.forEach((data, i) => {
-    const file = `assets/maids/${kind}${String(i + 1).padStart(2, '0')}.png`;
+    const file = maidFile(`assets/maids/${kind}${String(i + 1).padStart(2, '0')}.png`);
     const ok = t => {
       t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       SPR[kind][i] = { id: kind + String(i + 1).padStart(2, '0'), tex: t, img: t.image, aspect: t.image.width / t.image.height, top: tops[i] || 0 };
@@ -29754,7 +29757,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

@@ -39,9 +39,16 @@ def head_top(img):
             else: run = 0
         if best >= need: return round(y / h, 3)
     return 0.0
+import sys as _s; _s.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def process(prefix):
     ext = 'png' if NO_CUT else 'jpg'
-    files = sorted(f for f in glob.glob(os.path.join(D, prefix + '*.' + ext)) if re.search(prefix + r'\d+\.' + ext + '$', f))
+    # 番号順（mobNN）。名のある娘（mob03・06・07）は日本語のフルネームのファイル（maid_dir.MAID_REN）
+    from maid_dir import maid_name
+    files = []
+    for n in range(1, 100):
+        f = os.path.join(D, maid_name(f'{prefix}{n:02d}') + '.' + ext)
+        if not os.path.exists(f): break
+        files.append(f)
     data = []
     for f in files:
         if NO_CUT:

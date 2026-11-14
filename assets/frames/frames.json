@@ -211,42 +211,42 @@
    "aspect": 0.1859,
    "ax": 0.5374,
    "dir": 1,
-   "file": "assets/maids/mob03_side.png"
+   "file": "assets/maids/小鳥遊ひびき_side.png"
   },
   "back": {
    "hk": 1.0079,
    "aspect": 0.2551,
    "ax": 0.4753,
    "dir": 0,
-   "file": "assets/maids/mob03_back.png"
+   "file": "assets/maids/小鳥遊ひびき_back.png"
   },
   "walk": {
    "hk": 0.9937,
    "aspect": 0.3254,
    "ax": 0.4898,
    "dir": 0,
-   "file": "assets/maids/mob03_walk.png"
+   "file": "assets/maids/小鳥遊ひびき_walk.png"
   },
   "stab": {
    "hk": 0.9369,
    "aspect": 0.564,
    "ax": 0.3979,
    "dir": -1,
-   "file": "assets/maids/mob03_stab.png"
+   "file": "assets/maids/小鳥遊ひびき_stab.png"
   },
   "bow": {
    "hk": 1.1183,
    "aspect": 0.4965,
    "ax": 0.7067,
    "dir": -1,
-   "file": "assets/maids/mob03_bow.png"
+   "file": "assets/maids/小鳥遊ひびき_bow.png"
   },
   "down": {
    "hk": 0.2681,
    "aspect": 3.7294,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/mob03_down.png"
+   "file": "assets/maids/小鳥遊ひびき_down.png"
   }
  },
  "mob04": {
@@ -361,42 +361,42 @@
    "aspect": 0.1803,
    "ax": 0.4601,
    "dir": -1,
-   "file": "assets/maids/mob06_side.png"
+   "file": "assets/maids/白瀬澄_side.png"
   },
   "back": {
    "hk": 1.011,
    "aspect": 0.2543,
    "ax": 0.4844,
    "dir": 0,
-   "file": "assets/maids/mob06_back.png"
+   "file": "assets/maids/白瀬澄_back.png"
   },
   "walk": {
    "hk": 0.9905,
    "aspect": 0.3201,
    "ax": 0.4496,
    "dir": 0,
-   "file": "assets/maids/mob06_walk.png"
+   "file": "assets/maids/白瀬澄_walk.png"
   },
   "stab": {
    "hk": 0.9338,
    "aspect": 0.8277,
    "ax": 0.5709,
    "dir": 1,
-   "file": "assets/maids/mob06_stab.png"
+   "file": "assets/maids/白瀬澄_stab.png"
   },
   "bow": {
    "hk": 1.1167,
    "aspect": 0.459,
    "ax": 0.6866,
    "dir": -1,
-   "file": "assets/maids/mob06_bow.png"
+   "file": "assets/maids/白瀬澄_bow.png"
   },
   "down": {
    "hk": 0.2492,
    "aspect": 4.0127,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/mob06_down.png"
+   "file": "assets/maids/白瀬澄_down.png"
   }
  },
  "mob07": {
@@ -405,49 +405,49 @@
    "aspect": 0.1565,
    "ax": 0.5373,
    "dir": -1,
-   "file": "assets/maids/mob07_side.png"
+   "file": "assets/maids/早瀬ことね_side.png"
   },
   "back": {
    "hk": 1.0157,
    "aspect": 0.2543,
    "ax": 0.4829,
    "dir": 0,
-   "file": "assets/maids/mob07_back.png"
+   "file": "assets/maids/早瀬ことね_back.png"
   },
   "walk": {
    "hk": 0.9921,
    "aspect": 0.3286,
    "ax": 0.4502,
    "dir": 0,
-   "file": "assets/maids/mob07_walk.png"
+   "file": "assets/maids/早瀬ことね_walk.png"
   },
   "stab": {
    "hk": 0.9354,
    "aspect": 0.8013,
    "ax": 0.4744,
    "dir": -1,
-   "file": "assets/maids/mob07_stab.png"
+   "file": "assets/maids/早瀬ことね_stab.png"
   },
   "bow": {
    "hk": 1.1055,
    "aspect": 0.5256,
    "ax": 0.6521,
    "dir": -1,
-   "file": "assets/maids/mob07_bow.png"
+   "file": "assets/maids/早瀬ことね_bow.png"
   },
   "kneel": {
    "hk": 0.7039,
    "aspect": 0.9597,
    "ax": 0.3823,
    "dir": 1,
-   "file": "assets/maids/mob07_kneel.png"
+   "file": "assets/maids/早瀬ことね_kneel.png"
   },
   "down": {
    "hk": 0.2709,
    "aspect": 3.6919,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/mob07_down.png"
+   "file": "assets/maids/早瀬ことね_down.png"
   }
  },
  "mob08": {
@@ -598,7 +598,7 @@
    "aspect": 0.2687,
    "ax": 0.5045,
    "dir": 0,
-   "file": "assets/maids/sec3_front.png",
+   "file": "assets/maids/桜井ゆかり_front.png",
    "ref": 633
   },
   "side": {
@@ -606,28 +606,28 @@
    "aspect": 0.1947,
    "ax": 0.4755,
    "dir": 1,
-   "file": "assets/maids/sec3_side.png"
+   "file": "assets/maids/桜井ゆかり_side.png"
   },
   "back": {
    "hk": 1.0126,
    "aspect": 0.2683,
    "ax": 0.4888,
    "dir": 0,
-   "file": "assets/maids/sec3_back.png"
+   "file": "assets/maids/桜井ゆかり_back.png"
   },
   "walk": {
    "hk": 0.9953,
    "aspect": 0.4333,
    "ax": 0.4585,
    "dir": 0,
-   "file": "assets/maids/sec3_walk.png"
+   "file": "assets/maids/桜井ゆかり_walk.png"
   },
   "down": {
    "hk": 0.2322,
    "aspect": 4.3061,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/sec3_down.png"
+   "file": "assets/maids/桜井ゆかり_down.png"
   }
  },
  "sec4": {
@@ -636,7 +636,7 @@
    "aspect": 0.3375,
    "ax": 0.4643,
    "dir": 0,
-   "file": "assets/maids/sec4_front.png",
+   "file": "assets/maids/宮下千尋_front.png",
    "ref": 635
   },
   "side": {
@@ -644,28 +644,28 @@
    "aspect": 0.2426,
    "ax": 0.3709,
    "dir": 1,
-   "file": "assets/maids/sec4_side.png"
+   "file": "assets/maids/宮下千尋_side.png"
   },
   "back": {
    "hk": 1.0079,
    "aspect": 0.3125,
    "ax": 0.5444,
    "dir": 0,
-   "file": "assets/maids/sec4_back.png"
+   "file": "assets/maids/宮下千尋_back.png"
   },
   "walk": {
    "hk": 0.9937,
    "aspect": 0.3978,
    "ax": 0.4435,
    "dir": 0,
-   "file": "assets/maids/sec4_walk.png"
+   "file": "assets/maids/宮下千尋_walk.png"
   },
   "down": {
    "hk": 0.2472,
    "aspect": 4.0446,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/sec4_down.png"
+   "file": "assets/maids/宮下千尋_down.png"
   }
  },
  "sec5": {
@@ -674,7 +674,7 @@
    "aspect": 0.2891,
    "ax": 0.4851,
    "dir": 0,
-   "file": "assets/maids/sec5_front.png",
+   "file": "assets/maids/小日向ひより_front.png",
    "ref": 635
   },
   "down": {
@@ -682,28 +682,28 @@
    "aspect": 3.3598,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/sec5_down.png"
+   "file": "assets/maids/小日向ひより_down.png"
   },
   "side": {
    "hk": 1.0079,
    "aspect": 0.1828,
    "ax": 0.4708,
    "dir": 1,
-   "file": "assets/maids/sec5_side.png"
+   "file": "assets/maids/小日向ひより_side.png"
   },
   "back": {
    "hk": 1.0094,
    "aspect": 0.2777,
    "ax": 0.4858,
    "dir": 0,
-   "file": "assets/maids/sec5_back.png"
+   "file": "assets/maids/小日向ひより_back.png"
   },
   "walk": {
    "hk": 0.9921,
    "aspect": 0.3476,
    "ax": 0.5078,
    "dir": 0,
-   "file": "assets/maids/sec5_walk.png"
+   "file": "assets/maids/小日向ひより_walk.png"
   }
  },
  "sec6": {
@@ -712,7 +712,7 @@
    "aspect": 0.2562,
    "ax": 0.4969,
    "dir": 0,
-   "file": "assets/maids/sec6_front.png",
+   "file": "assets/maids/氷室しのぶ_front.png",
    "ref": 635
   },
   "down": {
@@ -720,28 +720,28 @@
    "aspect": 3.5876,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/sec6_down.png"
+   "file": "assets/maids/氷室しのぶ_down.png"
   },
   "side": {
    "hk": 1.0094,
    "aspect": 0.17,
    "ax": 0.4813,
    "dir": 1,
-   "file": "assets/maids/sec6_side.png"
+   "file": "assets/maids/氷室しのぶ_side.png"
   },
   "back": {
    "hk": 1.011,
    "aspect": 0.2586,
    "ax": 0.4868,
    "dir": 0,
-   "file": "assets/maids/sec6_back.png"
+   "file": "assets/maids/氷室しのぶ_back.png"
   },
   "walk": {
    "hk": 0.9937,
    "aspect": 0.3471,
    "ax": 0.4447,
    "dir": 0,
-   "file": "assets/maids/sec6_walk.png"
+   "file": "assets/maids/氷室しのぶ_walk.png"
   }
  },
  "sec7": {
@@ -750,7 +750,7 @@
    "aspect": 0.3094,
    "ax": 0.5074,
    "dir": 0,
-   "file": "assets/maids/sec7_front.png",
+   "file": "assets/maids/夏目あかり_front.png",
    "ref": 633
   },
   "down": {
@@ -758,28 +758,28 @@
    "aspect": 3.2462,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/sec7_down.png"
+   "file": "assets/maids/夏目あかり_down.png"
   },
   "side": {
    "hk": 1.0158,
    "aspect": 0.1913,
    "ax": 0.4338,
    "dir": 1,
-   "file": "assets/maids/sec7_side.png"
+   "file": "assets/maids/夏目あかり_side.png"
   },
   "back": {
    "hk": 1.0111,
    "aspect": 0.2719,
    "ax": 0.4777,
    "dir": 0,
-   "file": "assets/maids/sec7_back.png"
+   "file": "assets/maids/夏目あかり_back.png"
   },
   "walk": {
    "hk": 0.9953,
    "aspect": 0.4667,
    "ax": 0.4604,
    "dir": 0,
-   "file": "assets/maids/sec7_walk.png"
+   "file": "assets/maids/夏目あかり_walk.png"
   }
  },
  "arch01": {
@@ -932,7 +932,7 @@
    "aspect": 0.3406,
    "ax": 0.449,
    "dir": 0,
-   "file": "assets/maids/surgeon_front.png",
+   "file": "assets/maids/九条紗英_front.png",
    "ref": 632
   },
   "kneel": {
@@ -940,21 +940,21 @@
    "aspect": 0.9011,
    "ax": 0.5705,
    "dir": 1,
-   "file": "assets/maids/surgeon_kneel.png"
+   "file": "assets/maids/九条紗英_kneel.png"
   },
   "down": {
    "hk": 0.3497,
    "aspect": 2.8597,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/surgeon_down.png"
+   "file": "assets/maids/九条紗英_down.png"
   },
   "walk": {
    "hk": 0.9953,
    "aspect": 0.6057,
    "ax": 0.6415,
    "dir": 0,
-   "file": "assets/maids/surgeon_walk.png"
+   "file": "assets/maids/九条紗英_walk.png"
   }
  },
  "ojou": {
@@ -963,7 +963,7 @@
    "aspect": 0.3016,
    "ax": 0.6285,
    "dir": 0,
-   "file": "assets/maids/ojou_front.png",
+   "file": "assets/maids/西園寺すみれ_front.png",
    "ref": 634
   },
   "side": {
@@ -971,56 +971,56 @@
    "aspect": 0.2081,
    "ax": 0.4751,
    "dir": 1,
-   "file": "assets/maids/ojou_side.png"
+   "file": "assets/maids/西園寺すみれ_side.png"
   },
   "back": {
    "hk": 1.0126,
    "aspect": 0.2804,
    "ax": 0.3981,
    "dir": 0,
-   "file": "assets/maids/ojou_back.png"
+   "file": "assets/maids/西園寺すみれ_back.png"
   },
   "walk": {
    "hk": 0.9921,
    "aspect": 0.4404,
    "ax": 0.5087,
    "dir": 0,
-   "file": "assets/maids/ojou_walk.png"
+   "file": "assets/maids/西園寺すみれ_walk.png"
   },
   "down": {
    "hk": 0.2587,
    "aspect": 3.8659,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/ojou_down.png"
+   "file": "assets/maids/西園寺すみれ_down.png"
   },
   "top": {
    "hk": 1.0063,
    "aspect": 0.3135,
    "ax": 0.5,
    "dir": 0,
-   "file": "assets/maids/ojou_top.png"
+   "file": "assets/maids/西園寺すみれ_top.png"
   },
   "low": {
    "hk": 1.011,
    "aspect": 0.3229,
    "ax": 0.6035,
    "dir": 0,
-   "file": "assets/maids/ojou_low.png"
+   "file": "assets/maids/西園寺すみれ_low.png"
   },
   "front_diag": {
    "hk": 1.0079,
    "aspect": 0.2754,
    "ax": 0.6416,
    "dir": 1,
-   "file": "assets/maids/ojou_front_diag.png"
+   "file": "assets/maids/西園寺すみれ_front_diag.png"
   },
   "back_diag": {
    "hk": 1.011,
    "aspect": 0.2668,
    "ax": 0.4135,
    "dir": 1,
-   "file": "assets/maids/ojou_back_diag.png"
+   "file": "assets/maids/西園寺すみれ_back_diag.png"
   }
  },
  "girl21": {
@@ -1300,7 +1300,7 @@
    "aspect": 0.3094,
    "ax": 0.4209,
    "dir": 0,
-   "file": "assets/maids/girl26_front.png",
+   "file": "assets/maids/白石麗華_front.png",
    "ref": 631
   },
   "side": {
@@ -1308,21 +1308,21 @@
    "aspect": 0.168,
    "ax": 0.4667,
    "dir": 1,
-   "file": "assets/maids/girl26_side.png"
+   "file": "assets/maids/白石麗華_side.png"
   },
   "front_diag": {
    "hk": 1.0111,
    "aspect": 0.2586,
    "ax": 0.4957,
    "dir": -1,
-   "file": "assets/maids/girl26_front_diag.png"
+   "file": "assets/maids/白石麗華_front_diag.png"
   },
   "back": {
    "hk": 1.0111,
    "aspect": 0.2602,
    "ax": 0.4816,
    "dir": 0,
-   "file": "assets/maids/girl26_back.png"
+   "file": "assets/maids/白石麗華_back.png"
   },
   "seatdown": {
    "hk": 0.7028,
@@ -1331,7 +1331,7 @@
    "dir": 0,
    "sy": 0.3837,
    "sx": 0.6581,
-   "file": "assets/maids/girl26_seatdown.png"
+   "file": "assets/maids/白石麗華_seatdown.png"
   }
  },
  "girl27": {
@@ -1500,7 +1500,7 @@
    "aspect": 0.3,
    "ax": 0.5204,
    "dir": 0,
-   "file": "assets/maids/girl31_front.png",
+   "file": "assets/maids/久遠静香_front.png",
    "ref": 636
   },
   "side": {
@@ -1508,21 +1508,21 @@
    "aspect": 0.1963,
    "ax": 0.5391,
    "dir": 1,
-   "file": "assets/maids/girl31_side.png"
+   "file": "assets/maids/久遠静香_side.png"
   },
   "front_diag": {
    "hk": 1.0079,
    "aspect": 0.248,
    "ax": 0.4683,
    "dir": -1,
-   "file": "assets/maids/girl31_front_diag.png"
+   "file": "assets/maids/久遠静香_front_diag.png"
   },
   "back": {
    "hk": 1.0142,
    "aspect": 0.2574,
    "ax": 0.48,
    "dir": 0,
-   "file": "assets/maids/girl31_back.png"
+   "file": "assets/maids/久遠静香_back.png"
   },
   "seatdown": {
    "hk": 0.7181,
@@ -1531,7 +1531,7 @@
    "dir": 0,
    "sy": 0.3968,
    "sx": 0.7045,
-   "file": "assets/maids/girl31_seatdown.png"
+   "file": "assets/maids/久遠静香_seatdown.png"
   }
  },
  "girl32": {
@@ -1571,7 +1571,7 @@
    "aspect": 0.2453,
    "ax": 0.5081,
    "dir": 0,
-   "file": "assets/maids/fumi_front.png",
+   "file": "assets/maids/綾瀬文乃_front.png",
    "ref": 633
   },
   "side": {
@@ -1579,21 +1579,21 @@
    "aspect": 0.2003,
    "ax": 0.4554,
    "dir": 1,
-   "file": "assets/maids/fumi_side.png"
+   "file": "assets/maids/綾瀬文乃_side.png"
   },
   "front_diag": {
    "hk": 1.0126,
    "aspect": 0.2278,
    "ax": 0.4883,
    "dir": -1,
-   "file": "assets/maids/fumi_front_diag.png"
+   "file": "assets/maids/綾瀬文乃_front_diag.png"
   },
   "back": {
    "hk": 1.0126,
    "aspect": 0.2574,
    "ax": 0.4791,
    "dir": 0,
-   "file": "assets/maids/fumi_back.png"
+   "file": "assets/maids/綾瀬文乃_back.png"
   }
  },
  "girl33": {
@@ -1633,7 +1633,7 @@
    "aspect": 0.2609,
    "ax": 0.4985,
    "dir": 0,
-   "file": "assets/maids/sysop_front.png",
+   "file": "assets/maids/霧島怜_front.png",
    "ref": 635
   },
   "side": {
@@ -1641,21 +1641,21 @@
    "aspect": 0.1594,
    "ax": 0.4379,
    "dir": 1,
-   "file": "assets/maids/sysop_side.png"
+   "file": "assets/maids/霧島怜_side.png"
   },
   "front_diag": {
    "hk": 1.0094,
    "aspect": 0.2309,
    "ax": 0.489,
    "dir": -1,
-   "file": "assets/maids/sysop_front_diag.png"
+   "file": "assets/maids/霧島怜_front_diag.png"
   },
   "back": {
    "hk": 1.0079,
    "aspect": 0.2625,
    "ax": 0.4865,
    "dir": 0,
-   "file": "assets/maids/sysop_back.png"
+   "file": "assets/maids/霧島怜_back.png"
   }
  },
  "girl34": {
@@ -1664,7 +1664,7 @@
    "aspect": 0.2781,
    "ax": 0.4968,
    "dir": 0,
-   "file": "assets/maids/girl34_front.png",
+   "file": "assets/maids/一条千景_front.png",
    "ref": 635
   },
   "side": {
@@ -1672,21 +1672,21 @@
    "aspect": 0.1734,
    "ax": 0.4941,
    "dir": 1,
-   "file": "assets/maids/girl34_side.png"
+   "file": "assets/maids/一条千景_side.png"
   },
   "front_diag": {
    "hk": 1.0079,
    "aspect": 0.2672,
    "ax": 0.4747,
    "dir": -1,
-   "file": "assets/maids/girl34_front_diag.png"
+   "file": "assets/maids/一条千景_front_diag.png"
   },
   "back": {
    "hk": 1.0094,
    "aspect": 0.2652,
    "ax": 0.4872,
    "dir": 0,
-   "file": "assets/maids/girl34_back.png"
+   "file": "assets/maids/一条千景_back.png"
   }
  },
  "nurse2": {
@@ -2205,7 +2205,7 @@
    "aspect": 0.25,
    "ax": 0.503,
    "dir": 0,
-   "file": "assets/maids/girl37_front.png",
+   "file": "assets/maids/村瀬碧_front.png",
    "ref": 636
   },
   "side": {
@@ -2213,28 +2213,28 @@
    "aspect": 0.1537,
    "ax": 0.4514,
    "dir": 1,
-   "file": "assets/maids/girl37_side.png"
+   "file": "assets/maids/村瀬碧_side.png"
   },
   "back": {
    "hk": 1.0189,
    "aspect": 0.2423,
    "ax": 0.4878,
    "dir": 0,
-   "file": "assets/maids/girl37_back.png"
+   "file": "assets/maids/村瀬碧_back.png"
   },
   "front_diag": {
    "hk": 1.0079,
    "aspect": 0.2168,
    "ax": 0.5197,
    "dir": -1,
-   "file": "assets/maids/girl37_front_diag.png"
+   "file": "assets/maids/村瀬碧_front_diag.png"
   },
   "down": {
    "hk": 0.2028,
    "aspect": 4.9302,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/girl37_down.png"
+   "file": "assets/maids/村瀬碧_down.png"
   }
  },
  "girl38": {
@@ -2494,7 +2494,7 @@
    "aspect": 0.2516,
    "ax": 0.4927,
    "dir": 0,
-   "file": "assets/maids/girl45_front.png",
+   "file": "assets/maids/広瀬千夏_front.png",
    "ref": 628
   },
   "side": {
@@ -2502,28 +2502,28 @@
    "aspect": 0.1677,
    "ax": 0.4844,
    "dir": -1,
-   "file": "assets/maids/girl45_side.png"
+   "file": "assets/maids/広瀬千夏_side.png"
   },
   "front_diag": {
    "hk": 1.0096,
    "aspect": 0.2208,
    "ax": 0.4885,
    "dir": -1,
-   "file": "assets/maids/girl45_front_diag.png"
+   "file": "assets/maids/広瀬千夏_front_diag.png"
   },
   "back": {
    "hk": 1.0096,
    "aspect": 0.2476,
    "ax": 0.4873,
    "dir": 0,
-   "file": "assets/maids/girl45_back.png"
+   "file": "assets/maids/広瀬千夏_back.png"
   },
   "down": {
    "hk": 0.3073,
    "aspect": 3.2539,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/girl45_down.png"
+   "file": "assets/maids/広瀬千夏_down.png"
   }
  },
  "girl46": {
@@ -2988,7 +2988,7 @@
    "aspect": 0.2625,
    "ax": 0.5039,
    "dir": 0,
-   "file": "assets/maids/girl58_front.png",
+   "file": "assets/maids/三条玲奈_front.png",
    "ref": 632
   },
   "side": {
@@ -2996,28 +2996,28 @@
    "aspect": 0.1572,
    "ax": 0.537,
    "dir": -1,
-   "file": "assets/maids/girl58_side.png"
+   "file": "assets/maids/三条玲奈_side.png"
   },
   "front_diag": {
    "hk": 1.0111,
    "aspect": 0.2269,
    "ax": 0.4652,
    "dir": -1,
-   "file": "assets/maids/girl58_front_diag.png"
+   "file": "assets/maids/三条玲奈_front_diag.png"
   },
   "back": {
    "hk": 1.0063,
    "aspect": 0.2594,
    "ax": 0.4874,
    "dir": 0,
-   "file": "assets/maids/girl58_back.png"
+   "file": "assets/maids/三条玲奈_back.png"
   },
   "down": {
    "hk": 0.2579,
    "aspect": 3.8773,
    "ax": 0.5,
    "dir": -1,
-   "file": "assets/maids/girl58_down.png"
+   "file": "assets/maids/三条玲奈_down.png"
   }
  },
  "girl59": {

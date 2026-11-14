@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """大淀での再会の台詞（西園寺・大宮・綾瀬・早瀬）。声は voice_profiles.py の各人の声。assets/voices/cv/oyreu_<id>.mp3"""
 import asyncio, os, sys, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'voices', 'cv')
 L = {'ojou': '陛下！ ご無事で……大淀へようこそ。艦はわたしが預かります', 'omiya': '陛下……よかった、本当によかった',

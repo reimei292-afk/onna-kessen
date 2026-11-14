@@ -2,6 +2,7 @@
 """アメリカ西部編 第三幕「陸攻出撃」（usRaid）の声（edge-tts）。assets/voices/rk/ と voices_rk.js。
 搭乗員は名の無い侍女（ja-JP）。アメリカの戦闘機・地上の対空班は en-US（日本語字幕つき）。殿は字幕のみ（ここには入れない）。"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'rk')
 N = 'ja-JP-NanamiNeural'
 ST = {'rp1': (N, -6, -8), 'rp2': (N, 0, 4), 'rr': (N, -2, -2), 'rb': (N, 2, 6), 'rg1': (N, 6, 8), 'rg2': (N, -4, 0), 'rg3': (N, 8, 12), 'rw': (N, -8, -10), 'fumi': (N, -2, 4), 'sec3': (N, -4, 2), 'sh': (N, 6, 10), 'ga': ('en-US-AriaNeural', 2, -2), 'gb': ('en-US-EmmaMultilingualNeural', 4, 0), 'gc': ('en-US-AvaMultilingualNeural', 6, 4),

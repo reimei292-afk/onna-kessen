@@ -2,6 +2,7 @@
 """フランス人形編 第一幕「海戦」と大宮の声（edge-tts）。assets/voices/frs/ と voices_frs.js。
 殿は字幕のみ（声なし）。大宮は Nanami を速め・高めにして他の娘と区別する。"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'frs')
 N = 'ja-JP-NanamiNeural'
 ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'maid': (N, 6, 6), 'crew': (N, 0, 0), 'nurse': (N, 2, 8),

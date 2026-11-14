@@ -8,6 +8,7 @@
 """
 import asyncio, json, os, subprocess, sys
 import edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 D = os.path.join(ROOT, 'assets', 'voices', 'uk')
 FORCE = '--force' in sys.argv

@@ -7,6 +7,7 @@ lines.json の形: {"性格": {"spot": [...], "attack": [...], "hit": [...], "de
 """
 import asyncio, json, os, sys
 import edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'voices')
 VOICE = 'ja-JP-NanamiNeural'
 PERS_STYLE = {   # 性格: (ローマ字, 話速%, 声の高さHz)。不自然にならないよう控えめに

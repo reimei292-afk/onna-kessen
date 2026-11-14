@@ -4,6 +4,7 @@
 入力 /tmp/kos_lines.json（[[声の目録のキー, 台詞], ...]。キーが zhu＝祝融、zhm＝南蛮の群れ、kmob＝群れの侍女）。
 出力 assets/voices/kos/ と voices_kos.js（台詞 → ファイル）。"""
 import asyncio, json, os, sys, hashlib, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'kos'); os.makedirs(D, exist_ok=True)
 L = json.load(open(sys.argv[1] if len(sys.argv) > 1 else '/tmp/kos_lines.json'))

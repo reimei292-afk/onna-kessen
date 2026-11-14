@@ -3,6 +3,7 @@
 殿は Keita（第三幕・第四幕と同じ）、白瀬は秘書の声（SEC_STYLE）、早瀬は二人目の秘書の声（SEC2_STYLE）。血・傷の言葉は使わない。
 r：本物の戦（英国淑女編）／m：模擬戦（戦死判定）"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'saidown')
 NANAMI, KEITA = 'ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'
 ST = {'king': (KEITA, -6, -2), 'sumi': (NANAMI, -6, -8), 'sec2': (NANAMI, 4, 14)}

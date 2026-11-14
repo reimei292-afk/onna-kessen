@@ -2,6 +2,7 @@
 """天鳳の台詞の声（edge-tts）。持ち場の台詞・状況の台詞・人柄の言い回し・空襲と沈没の掛け声・残る人の言葉。
 入力は game.js から抜き出した /tmp/th_lines.json（[[声の目録のキー, 台詞], ...]）。出力 assets/voices/th/ と voices_th.js（台詞 → ファイル）。"""
 import asyncio, json, os, sys, hashlib, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'th'); os.makedirs(D, exist_ok=True)
 L = json.load(open(sys.argv[1] if len(sys.argv) > 1 else '/tmp/th_lines.json'))

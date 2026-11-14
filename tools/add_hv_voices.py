@@ -2,6 +2,7 @@
 """被弾・倒れる時の短い声（全ステージ共通）。ユーザーが選んだ言葉だけを使う。名のある娘は自分の声、名の無い兵は cs01〜cs08。
 息の上がった言い方（少し早く・高め）で作り、前後の無音を切る。出力 assets/voices/hv/ と voices_hv.js（声 → 言葉 → ファイル）。"""
 import asyncio, json, os, sys, hashlib, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'hv'); os.makedirs(D, exist_ok=True)
 T = ['はうっ', 'う！', 'ああっ', 'ぐっ', 'うっ', 'う', 'いやあああぁ！', 'はっ…', 'ぐ…', 'い、いや…', 'あああああ…', 'あ…', 'いやっ', 'ああ…', 'いたい…', 'ぐぇっ！', 'っぐ…', 'きゃっ', 'けほっ', '……っ', 'ううーうぅ…', 'ううっ', 'ひっ…！', 'うう…', '……ぅ…', 'きゃあっ！']

@@ -2,6 +2,7 @@
 前歴・学校・特技・血縁（妹か姪。夫・恋人・子どもは無し）・出身（話し方は標準語）・年齢（十八以上）。
 声は edge-tts（ja-JP-NanamiNeural）で、高さと速さを一人ずつ変える。目録は assets/voices/voices_cvbgf.js。"""
 import os, json, random, asyncio, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'cvbg')
 V = 'ja-JP-NanamiNeural'
 SN = ['浅野', '有村', '五十嵐', '石田', '今井', '岩崎', '上野', '内田', '大塚', '大野', '尾崎', '片山', '金子', '川口', '菊地', '北村', '工藤', '久保', '栗原', '小島', '小松', '酒井', '桜田', '佐野', '柴田', '島田', '菅原', '杉山', '関口', '高木', '高田', '武田', '田村', '千葉', '辻', '土屋', '寺田', '永井', '中野', '新田', '西田', '野口', '野村', '服部', '浜田', '平野', '広瀬', '福島', '古川', '堀', '前川', '増田', '松井', '丸山', '三浦', '水野', '宮本', '村田', '望月', '森田', '安田', '矢野', '横山', '吉川', '若林', '和田']

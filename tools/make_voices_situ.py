@@ -4,6 +4,7 @@ edge-tts の ja-JP ニューラル音声で mp3 にし、assets/voices/voices_si
 voices.js（make_voices.py の出力）は触らない。使い方: python3 tools/make_voices_situ.py [--force]"""
 import asyncio, json, os, sys, hashlib
 import edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 T = os.path.dirname(os.path.abspath(__file__)); D = os.path.join(T, '..', 'assets', 'voices')
 NANAMI, KEITA = 'ja-JP-NanamiNeural', 'ja-JP-KeitaNeural'
 PERS = {'aggr': (8, 2), 'caut': (-4, -3), 'timid': (6, 8), 'calm': (-6, -7), 'cheer': (6, 6)}   # 性格ごとの話速%・高さHz（make_voices.py と揃える）

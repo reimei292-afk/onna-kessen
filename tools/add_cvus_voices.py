@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """幕三「輸送機強襲」米兵の班長（女性・英語）と兵の短い声。edge-tts。assets/voices/cv/us3_*.mp3 と voices_cvus.js"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'cv')
 LEAD = [('en-US-AriaNeural', 0, 2), ('en-GB-SoniaNeural', -3, 4), ('en-US-MichelleNeural', -6, 6)]
 LL = {'move': 'Move up!', 'cover': 'Cover me!', 'clear': 'Clear!', 'stairs': 'Stairs, go!', 'boiler': 'Boiler room this way!', 'contact': 'Contact!', 'hold': 'Hold!'}

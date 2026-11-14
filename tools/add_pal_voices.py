@@ -2,6 +2,7 @@
 """宮殿の日常（palace）の声（edge-tts ja-JP）。assets/voices/pal/ と voices_pal.js。
 殿は字幕のみ（ここには入れない）。娘たちは 20 代前半〜半ばの話し方。殿には丁寧語・敬語。"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'pal')
 N = 'ja-JP-NanamiNeural'
 ST = {'sumi': (N, -6, -8), 'ojou': (N, -14, -2), 'sec2': (N, 4, 14), 'sec3': (N, -4, 2), 'sec4': (N, -8, -4), 'fumi': (N, -2, 4),

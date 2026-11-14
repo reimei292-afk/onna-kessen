@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ウォーキングレッスンの講師（白鷺 れいか）と、新しい艦内放送（髪のまとめ方・姿勢と歩き方）の声。edge-tts。録音そのものは使わない"""
 import asyncio, os, re, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'cv'); G = open(os.path.join(ROOT, 'game.js'), encoding='utf8').read()
 W = dict(re.findall(r"(\w): '([^']+)'", re.search(r"const WALK_V = \{(.*?)\};", G).group(1)))
 PA = {m[1]: m[0] for m in re.findall(r"\['[^']+', '([^']+)', '(pa_\w+)'\]", G)}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """第七幕「祝勝会」の声（edge-tts）。assets/voices/uk7/ と voices_uk7.js。血・性的な言葉は使わない。"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'uk7')
 N = 'ja-JP-NanamiNeural'
 ST = {'sumi': (N, -6, -8), 'ojou': (N, -14, -2), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'sec3': (N, -4, 2), 'sec4': (N, -8, -4), 'reika': (N, 4, 6), 'shizuka': (N, -8, -6), 'kujo': (N, -10, -10), 'sysop': (N, -2, -2),

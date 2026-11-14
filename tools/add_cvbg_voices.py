@@ -2,6 +2,7 @@
 ukParty の「前職は？」「通ってた大学は？」と同じ短い答え方。実在の学校・会社は経歴としてだけ使い、悪いことは書かない。
 名の無い者は番号で決まる（推薦六・志願三・その他一）。名のある人は voice_profiles の自分の声。"""
 import os, sys, json, random, asyncio, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'cvbg')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 N = 'ja-JP-NanamiNeural'

@@ -2,6 +2,7 @@
 """幕五 航空基地（?stage=ab1..）の声。台詞は game.js の /*ABLN*/〜/*ABLN_END*/。
 名のある人は voice_profiles、名の無い侍女は台詞ごとに話速と高さを散らした Nanami（全員女性）。王は字幕だけ。"""
 import asyncio, json, os, subprocess, hashlib, sys, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'ab')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 N = 'ja-JP-NanamiNeural'

@@ -3,6 +3,7 @@
 台詞は game.js の /*CVLN*/〜/*CVLN_END*/ から node で取り出す（部署ごとの台詞・出来事・王の一行）。
 部署の侍女は部署ごとの話速と高さ。名のある人は voice_profiles。米軍機は en-US（日本語字幕つき）。王は字幕だけ。"""
 import asyncio, json, os, subprocess, hashlib, sys, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'cv')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 N = 'ja-JP-NanamiNeural'

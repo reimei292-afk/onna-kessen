@@ -2,6 +2,7 @@
 """吹雪の山岳行軍（fubuki）の声。台詞は game.js の FB_TXT から読む（node で抜き出す）。
 殿（king）と語り（narr）は字幕のみ。出力：assets/voices/fb/*.mp3 と assets/voices/voices_fb.js"""
 import asyncio, json, os, re, subprocess, edge_tts, sys
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'fb')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 N = 'ja-JP-NanamiNeural'

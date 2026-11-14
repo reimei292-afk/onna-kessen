@@ -2,6 +2,7 @@
 """アメリカ西部編 第一幕「荒野の決闘」の声（edge-tts）。assets/voices/usd/ と voices_usd.js。
 殿は字幕のみ（声なし・ここには入れない）。アメリカの娘は en-US、日本側は ja-JP（日本語字幕つき）。"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'usd')
 N = 'ja-JP-NanamiNeural'
 ST = {'omiya': (N, 18, 26), 'sumi': (N, -6, -8), 'sec2': (N, 4, 14), 'fumi': (N, -2, 4), 'maid': (N, 6, 6), 'shizuka': (N, -8, -10), 'reika': (N, 2, 2),

@@ -2,6 +2,7 @@
 """白壁城祝勝会の声（edge-tts、声の目録 voice_profiles.py のとおり）。台詞は game.js の /*KF_DATA_BEGIN*/〜/*KF_DATA_END*/ から node で抜き出す。
 出力 assets/voices/kf/*.mp3 と voices_kf.js（台詞 → [{file, v, d}]、d は秒）。殿の台詞は字幕だけ。名の無い侍女は cs01〜cs08 の声。"""
 import asyncio, json, os, sys, hashlib, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__))); from voice_profiles import PROFILES
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'kf'); os.makedirs(D, exist_ok=True)
 JS = r'''const fs=require('fs');const s=fs.readFileSync(process.argv[1],'utf8');const a=s.indexOf('/*KF_DATA_BEGIN*/'),b=s.indexOf('/*KF_DATA_END*/');eval(s.slice(a,b).replace('const KF_D','var KF_D'));

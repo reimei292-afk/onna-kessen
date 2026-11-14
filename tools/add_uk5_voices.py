@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """第五幕：徴兵の娘の返事（性格ごとの話速・高さ、Nanami）。assets/voices/uk5/ と voices_uk5.js"""
 import asyncio, json, os, subprocess, edge_tts
+import sys as _ys, os as _yo; _ys.path.insert(0, _yo.path.dirname(_yo.path.abspath(__file__))); import tts_reading  # 読み違いの辞書（漢字の字幕のまま、声には仮名を渡す）
 ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'assets', 'voices', 'uk5')
 PERS = {'aggr': (8, 2), 'caut': (-4, -3), 'timid': (6, 8), 'calm': (-6, -7), 'cheer': (6, 6)}
 CON = ['……はい。今はこの羽織だけです。でも、帰ったらまた着ます。だから、ちゃんと帰ります。', '正直、まだ慣れません。……でも、着た以上は、皆と同じように戦います。',

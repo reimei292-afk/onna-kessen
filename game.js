@@ -3190,7 +3190,7 @@ function ks2Atk(e, dt, dP) { const U = e.ks2U, p = e.s.position, far = dP > 45;
     ks2Walk(e, tx, tz, e.speed * (Math.hypot(tx - p.x, tz - p.z) > 8 ? (U.k === 'N' ? 1.85 : 1.35) : (U.k === 'N' && !KS2.peeled ? 1 : U.k === 'N' ? 1.6 : 1)), dt); return; }
   ks2Siege(e, dt, t, U); }
 function ks2NearMate(e) { const p = e.s.position, a = KS2.grid.get((Math.floor(p.x / 4) + 500) * 2000 + Math.floor(p.z / 4) + 500); if (!a) return null; for (const o of a) if (o !== e && o.team === e.team && Math.abs(o.s.position.y - p.y) < 1 && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 0.6) return o; return null; }
-function ks2Hit(e, t) { e.state = 'idle'; e.moving = false; e.faceWant = Math.atan2(t.s.position.x - e.s.position.x, t.s.position.z - e.s.position.z); if (e.ks2Sp > 0 || e.cd > 0) return; e.cd = rand(1.2, 2.1); e.lungeT = 0.25; e.ks2Act = { k: 'stab', t: 0 }; const hit0 = Math.random() < 0.32 * ks2TacHit(e, t); if (!hit0 && Math.random() < 0.55 && sfxGate(e.s.position, 26)) Sfx.clashAt(e.s.position); if (hit0) damageEnemy(t, 1, e.s.position, false, null, null);
+function ks2Hit(e, t) { e.state = 'idle'; e.moving = false; e.faceWant = Math.atan2(t.s.position.x - e.s.position.x, t.s.position.z - e.s.position.z); if (e.ks2Sp > 0 || e.cd > 0) return; e.cd = rand(1.2, 2.1); e.lungeT = 0.25; e.ks2Act = { k: 'stab', t: 0 }; const hit0 = Math.random() < 0.32 * ks2TacHit(e, t); if (!hit0 && isUp(t) && Math.random() < 0.6) { const q = e.s.position; PARRY_LOG.n++; parryFx(t, q.x, q.z, parryKind(t, e), e); e.cd = Math.max(e.cd, 0.6); } else if (hit0) PARRY_LOG.n++; if (hit0) damageEnemy(t, 1, e.s.position, false, null, null);
   if (Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 25 && (KS2.clank -= 1) <= 0) { KS2.clank = 2; const o = Sfx.at(e.s.position, 40, 1); if (o) Sfx.noiseBurst(0.06, 'bandpass', 3800, 2600, 0.25, 5, 0, o); } }
 // 攻城：側ごとの動き（南＝破城槌と攻城塔、東＝梯子、西＝呼びかけとマスケット、北＝陽動）。門が開けば中へ
 function ks2Unrot(s, x, z) { return s === 'S' ? [x, z] : s === 'N' ? [-x, -z] : s === 'E' ? [-z, x] : [z, -x]; }
@@ -3247,7 +3247,7 @@ function ks2Def(e, dt, dP) { const p = e.s.position, r = e.ks2Role, far = dP > 4
   // 援軍：ほかの門から城内を走って
   if (e.ks2Go2) { const Q = e.ks2Go2; if (ks2Walk(e, Q[0][0], Q[0][1], e.speed * 1.35, dt)) { Q.shift(); if (!Q.length) { e.ks2Go2 = null; e.ks2Home = [p.x, p.z, 0]; } } return; }
   if (t && !t.isPlayer) { const d = Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z); if (d > 1.1) ks2Walk(e, t.s.position.x, t.s.position.z, e.speed * 1.1, dt); else ks2Hit(e, t); return; }
-  if (t && t.isPlayer && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 1.4) { if (e.cd <= 0) { e.cd = rand(1.4, 2.2); if (!player.god) hurtPlayer(4); } e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); return; }
+  if (t && t.isPlayer && Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 1.4) { if (e.cd <= 0) { e.cd = rand(1.4, 2.2); if (!player.god) meleeHurtPlayer(e, 4); } e.faceWant = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); return; }
   ks2Walk(e, H[0], H[1], e.speed, dt); }
 function ks2Brain(e, dt) { if (!KS2.on || !e.ks2) return false; const p = e.s.position; e.passive = true; e.kneel = false; e.crouch = 0; if (e.knock) e.knock.set(0, 0, 0); e.t += dt;
   if (e.ks2Sp > 0) e.ks2Sp -= dt;
@@ -7987,7 +7987,7 @@ function yariCharge(e, dt) {
   }
   const run = Math.hypot(p.x - C.sx, p.z - C.sz);
   if (hit) {
-    if (hit.isPlayer) hurtPlayer(clean ? 55 : 14);
+    if (hit.isPlayer) meleeHurtPlayer(e, clean ? 55 : 14);
     else {
       const o = hit, op = o.s.position, dmg = clean ? Math.max(1, Math.round(o.hpMax * 0.9)) : 1;
       damageEnemy(o, dmg, p, false, { pt: new V3(op.x - C.ux * 0.15, o.baseY + o.figH * rand(0.5, 0.66), op.z - C.uz * 0.15), thrust: true, push: clean ? 1.6 : 0.6 }, e);
@@ -10898,7 +10898,7 @@ function mtnDefenderBrain(e, dt) {
   }
   if (dist < 2.1 && Math.abs(ty - e.baseY) < 1.3 && e.cd <= 0) {
     e.cd = 0.8;
-    if (e.tgt.isPlayer) hurtPlayer(e.dmg || 8);
+    if (e.tgt.isPlayer) meleeHurtPlayer(e, e.dmg || 8);
     else damageEnemy(e.tgt, 1, p, false, { pt: new V3(tp.x, ty + 0.8, tp.z), thrust: true }, e);
   }
   e.state = 'approach';
@@ -11846,7 +11846,7 @@ function dualReliefFight(e, dt) {
   if (e.state !== 'windup') { if ((e.cd || 0) <= 0) { e.state = 'windup'; e.t = 0; } else { e.cd -= dt; e.state = 'approach'; } return; }
   if (e.t >= 0.45) {
     e.state = 'recover'; e.t = 0; e.cd = 0.75; npcTint(e, 0);
-    if (foe.isPlayer) hurtPlayer(e.dmg || 8);
+    if (foe.isPlayer) meleeHurtPlayer(e, e.dmg || 8);
     else if (isUp(foe)) damageEnemy(foe, 1, p, false, { pt: new V3(tp.x, (foe.baseY || 0) + 1, tp.z), thrust: true }, e);
   } else npcTint(e, Math.min(1, e.t / 0.45));
 }
@@ -29281,7 +29281,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -31629,6 +31629,35 @@ function waveUpdate(dt) {
 
 // ---- 命中・戦死判定 ----
 // by: 'player' | 攻撃した NPC。hit: { u, y, arrow, thrust }
+// ---- 近接の受け（全ステージ）：刃・槍の一撃は、受け手の懐刀で受け止める／槍の柄で払う／盾で防ぐ／身をかわすことがある ----
+//   基本 36%。盾（盾隊・置き盾の陰）+22%、隊列の中（そばに味方が二人以上）+6%、槍・薙刀を持つ受け手 +4%。
+//   横から ×0.5、背後から ×0.15、弱っている（体力 35% 以下・負傷）×0.6、自分が打ち込んでいる最中 ×0.6、非戦闘員・座っている ×0.3。5〜70% に収める。
+//   受けた一撃は外れ扱い（傷なし）。打ち手はすぐに次を打てる（次の構えまで半分）ので、戦の長さはあまり変わらない
+const PARRY = { base: 0.36, shield: 0.22, rank: 0.06, pole: 0.04, side: 0.5, back: 0.15, weak: 0.6, busy: 0.6, civ: 0.3, min: 0.05, max: 0.7 }, PARRY_LOG = { n: 0, p: 0, k: {} };
+function parryChance(d, ax, az) { let c = PARRY.base; const p = d.s.position;
+  if (d.ks2Gear === 'shield' || d.shield || (d.ks2Cv && Math.hypot(d.ks2Cv.x - p.x, d.ks2Cv.z - p.z) < 1.2) || d.ks2Gear === 'heavy') c += PARRY.shield;
+  if (d.yari || d.nagi || d.bayo) c += PARRY.pole;
+  { let m = 0; for (const o of enemies) { if (o === d || o.team !== d.team || o.state === 'down') continue; const q = o.s.position; if (Math.abs(q.x - p.x) < 1.8 && Math.abs(q.z - p.z) < 1.8 && ++m >= 2) break; } if (m >= 2) c += PARRY.rank; }
+  const f = d.face != null ? d.face : d.s.rotation.y, a = Math.atan2(ax - p.x, az - p.z), off = Math.abs(Math.atan2(Math.sin(a - f), Math.cos(a - f)));
+  if (off > 2.2) c *= PARRY.back; else if (off > 1.3) c *= PARRY.side;
+  if ((d.hpMax && d.hp / d.hpMax <= 0.35) || d.wounded) c *= PARRY.weak;
+  if (d.state === 'windup' || d.state === 'recover' || d.state === 'charge') c *= PARRY.busy;
+  if (d.special || d.medic || d.seated || d.passive && !d.ks2) c *= PARRY.civ;
+  return Math.max(PARRY.min, Math.min(PARRY.max, c)); }
+function parryKind(d, att) { const p = d.s.position; if (d.ks2Gear === 'shield' || d.shield || (d.ks2Cv && Math.hypot(d.ks2Cv.x - p.x, d.ks2Cv.z - p.z) < 1.2)) return 'shield'; if (d.yari || d.nagi || d.bayo) return 'shaft'; if (att && (att.yari || att.nagi) && Math.random() < 0.45) return 'dodge'; return Math.random() < 0.72 ? 'catch' : 'dodge'; }
+// 受けの見せ方：一瞬の構え（打ち手は弾かれて半歩下がる・受け手は押されて下がる）、白い小さな閃光、金属の短い音。火花・血は出さない
+function parryFx(d, ax, az, kind, att) { const p = d.s.position, dx = p.x - ax, dz = p.z - az, L = Math.hypot(dx, dz) || 1, ux = dx / L, uz = dz / L;
+  if (kind !== 'dodge') { const q = new V3(p.x - ux * 0.32, (d.baseY || 0) + (d.figH || 1.6) * 0.62, p.z - uz * 0.32); puff(q, 0xffffff, 2, 0.045, 1.2, 0.1); if (sfxGate(q, 30)) (Sfx.clashAt ? Sfx.clashAt(q) : Sfx.clash && Sfx.clash()); }
+  if (d.knock && !d.ks2) d.knock.set(ux * (kind === 'dodge' ? 2.4 : 1.4), 0, uz * (kind === 'dodge' ? 2.4 : 1.4)); else { p.x += ux * (kind === 'dodge' ? 0.3 : 0.16); p.z += uz * (kind === 'dodge' ? 0.3 : 0.16); }
+  d.faceWant = Math.atan2(ax - p.x, az - p.z); d.lungeT = Math.max(d.lungeT || 0, 0.18); d.parryT = 0.3;
+  if (att && att.s && att !== 'player') { const ap = att.s.position; ap.x -= ux * 0.14; ap.z -= uz * 0.14; att.cd = (att.cd || 0) * 0.5; }
+  PARRY_LOG.p++; PARRY_LOG.k[kind] = (PARRY_LOG.k[kind] || 0) + 1; }
+function meleeParried(d, att, ax, az) { if (!d || !d.s || d.state === 'down') return false; PARRY_LOG.n++; if (Math.random() >= parryChance(d, ax, az)) return false; parryFx(d, ax, az, parryKind(d, att === 'player' ? null : att), att); return true; }
+// 殿が受け手：懐刀を持って正面なら受け止めやすい
+function meleeHurtPlayer(att, dmg) { const p = att && att.s ? att.s.position : null; if (p && state === 'play' && !inHQ()) { const a = Math.atan2(p.x - player.pos.x, p.z - player.pos.z), f = Math.atan2(-Math.sin(player.yaw), -Math.cos(player.yaw)), off = Math.abs(Math.atan2(Math.sin(a - f), Math.cos(a - f)));
+    let c = player.weapon === 1 ? 0.38 : 0.24; if (off > 2.2) c *= PARRY.back; else if (off > 1.3) c *= PARRY.side; if (player.hp < 30) c *= PARRY.weak; PARRY_LOG.n++;
+    if (Math.random() < c) { const kind = player.weapon === 1 ? (Math.random() < 0.75 ? 'catch' : 'dodge') : 'dodge'; const ux = (player.pos.x - p.x), uz = (player.pos.z - p.z), L = Math.hypot(ux, uz) || 1; if (kind !== 'dodge') { const q = new V3(player.pos.x - ux / L * 0.4, (player.pos.y || 1.6) - 0.35, player.pos.z - uz / L * 0.4); puff(q, 0xffffff, 2, 0.04, 1.2, 0.1); Sfx.clash && Sfx.clash(); } player.shake = Math.max(player.shake || 0, 0.1); att.cd = (att.cd || 0) * 0.5; PARRY_LOG.p++; PARRY_LOG.k['king_' + kind] = (PARRY_LOG.k['king_' + kind] || 0) + 1; if (!meleeHurtPlayer.said || time - meleeHurtPlayer.said > 6) { meleeHurtPlayer.said = time; popup(kind === 'dodge' ? '身をかわした！' : '懐刀で受け止めた！'); popupTimer = 0.9; } return; } }
+  hurtPlayer(dmg); }
 function damageEnemy(e, dmg, from, crit, hit, by = null) {
   if (TH.on && by === 'player' && e.thR === 'orange' && e.state !== 'down' && TH.raid && TH.raid.on && TH.raid.ph !== 'after') { thHurt(e, player.pos.clone()); if (crit || dmg >= 3) thHurt(e, player.pos.clone()); return; }   // 天鳳：王の弓・懐刀は乗り込んできた米兵にだけ効く（血は出さず、負傷の段階で）
   if (CAMP.on && CAMP.frozen) return;
@@ -31645,6 +31674,10 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
       if (byPlayer || Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 10) Sfx.clash();
       return; }
   }
+  { const ranged = (hit && (hit.arrow || hit.shot || hit.gun || hit.bullet || hit.blast)) || (by && by.mg);   // 近接の一撃だけ受けの判定（矢・弾・爆発はそのまま）
+    const ap = byPlayer ? player.pos : by && by.s ? by.s.position : null, near = ap && Math.hypot(ap.x - e.s.position.x, ap.z - e.s.position.z) < 3.6;
+    const melee = !ranged && near && ((hit && hit.thrust) || (by && by !== 'player' && by.s && (by.melee || by.yari || by.nagi || by.bayo)));
+    if (melee && !e.ks2 && !(hit && hit.noParry) && meleeParried(e, by, ap.x, ap.z)) return; }
   if (PLANE.intro) planeAmbush();   // 静かな機内で攻撃すれば、その場で奇襲が始まる
   if (e.hiddenAmb) castleSpring(e.hiddenAmb, by && by !== 'player' ? by : null);   // 伏兵が見つかった
   if (TEST) { const D = window.__dmgT || (window.__dmgT = {}); D[e.team] = (D[e.team] || 0) + dmg; }
@@ -33472,7 +33505,7 @@ function archerMelee(e, dt, dist, nx, nz, tx, tz) {
     const d2 = Math.hypot(tx - p.x, tz - p.z);
     if (d2 < reach + 0.35) {
       campAud(e, 'melee');
-      if (e.tgt && e.tgt.isPlayer) hurtPlayer(icy ? 14 : (e.dmg || 8));
+      if (e.tgt && e.tgt.isPlayer) meleeHurtPlayer(e, icy ? 14 : (e.dmg || 8));
       else if (e.tgt && e.tgt.state !== 'down') {
         const tp2 = e.tgt.s.position;
         damageEnemy(e.tgt, icy ? 2 : 1, p, false, { pt: new V3(tp2.x, e.tgt.baseY + e.tgt.figH * 0.55, tp2.z), thrust: true }, e);
@@ -33867,7 +33900,7 @@ function updateEnemies(dt) {
             if (!miss && d2 < (e.yari ? YARI.reach + 0.45 : e.bayo ? BAYO.reach + 0.4 : MELEE_RANGE) && elevD(e) < 1.2) {
               if (e.bayo) e.bayoHits = (e.bayoHits || 0) + 1;
               campAud(e, e.yari ? 'spear' : e.bayo ? 'bayoGeneric' : 'sword');
-              if (e.tgt.isPlayer) hurtPlayer(e.dmg);
+              if (e.tgt.isPlayer) meleeHurtPlayer(e, e.dmg);
               else {
                 const tp2 = e.tgt.s.position;
                 damageEnemy(e.tgt, 1, p, false, { pt: new V3(tp2.x - nx * 0.15, e.tgt.baseY + e.tgt.figH * rand(0.5, 0.68), tp2.z - nz * 0.15), thrust: true }, e);
@@ -37739,5 +37772,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, scene, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, scene, get PARRY_LOG() { return PARRY_LOG; }, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

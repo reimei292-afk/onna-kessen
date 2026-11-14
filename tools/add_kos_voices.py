@@ -9,7 +9,8 @@ ROOT = os.path.join(os.path.dirname(__file__), '..'); D = os.path.join(ROOT, 'as
 L = json.load(open(sys.argv[1] if len(sys.argv) > 1 else '/tmp/kos_lines.json'))
 N = 'ja-JP-NanamiNeural'
 SPECIAL = {'zhu': [('zh-CN-XiaoxiaoNeural', 4, -6)], 'zhm': [('zh-CN-XiaoyiNeural', 6, 0), ('zh-CN-liaoning-XiaobeiNeural', 4, 0), ('zh-CN-shaanxi-XiaoniNeural', 2, 0)],
-           'kmob': [(N, 0, 0), (N, 5, 6), (N, -3, -4)]}
+           'kmob': [(N, 0, 0), (N, 5, 6), (N, -3, -4)],
+           'mnc': [('mn-MN-YesuiNeural', -2, -6)], 'mnm': [('mn-MN-YesuiNeural', 4, 2), ('mn-MN-YesuiNeural', -4, -8), ('mn-MN-YesuiNeural', 8, 6)]}
 def pc(n): return ('+' if n >= 0 else '') + str(n) + '%'
 def hz(n): return ('+' if n >= 0 else '') + str(n) + 'Hz'
 async def one(v, r, p, t, fn):

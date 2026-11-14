@@ -3916,6 +3916,7 @@ function sgkPose(e, dt) { const A = e.sgkAct; A.t += dt; e.moving = false;
   if (!e.sgkAct) { e.state = 'idle'; e.melee = false; } }
 // ---- 頭脳 ----
 function sgkBrain(e, dt) { if (!SGK.on || !e.sgk) return false; const p = e.s.position; e.passive = true; e.kneel = false; e.crouch = 0; if (e.knock) e.knock.set(0, 0, 0); e.t += dt; if (e.cd > 0) e.cd -= dt;
+  if (e.shuFl && isUp(e) && shuFlTick(e, dt, sgkGo)) return true;
   if (e.sgkBoss) { sgkBossBrain(e, dt); p.y = e.baseY = sgkH(p.x, p.z); return true; }
   if (e.sgkAct) sgkPose(e, dt);
   else if (e.sgkDg) { const D = e.sgkDg; if (SGK.t > D.until) e.sgkDg = null; else sgkGo(e, D.x, D.z, e.speed * 1.6, dt); }   // 岩をよける
@@ -4002,7 +4003,7 @@ function sgkKing(t) { subtitle(t); const el = $('subtitle'); if (el) el.textCont
 // ---- 祝融（討たれない。弱ると霧の中へ逃げ、画面の外で姿を消す。次の幕で再登場） ----
 function sgkBossSpawn() { if (SGK.boss || SGK.shukuyu) return; const G = SGK.gates[1], B = SGK_SHUKUYU, x = G.x + 3, z = G.z + 9;
   const e = sgkMk(x, z, 'mob', 'orange', GIRLS[B.gid] ? B.gid : 'girl50', { name: B.name, pers: '好戦的', cm: B.cm }); if (!e) return; e.ks2Cn = true; e.ks2Title = e.ukTag = B.title; e.hp = e.hpMax = B.hp; e.speed = 5.2;
-  e.sgkBoss = { kn: B.knives, burst: 0, bT: 2.5, out: 0, retT: 0, esc: false, inv: false, lastTaunt: 0 }; e.sgkRole = 'boss'; e.sgkG = G; SGK.boss = e; SGK.shukuyu = 'fighting';
+  e.sgkBoss = { kn: SHU_KN, burst: 0, bT: 2.5, out: 0, retT: 0, esc: false, inv: false, lastTaunt: 0 }; e.sgkRole = 'boss'; e.sgkG = G; SGK.boss = e; SGK.shukuyu = 'fighting';
   SGK.fogK = 1; SGK.fogT = 60; showBanner('霧の中から', B.title + ' 現る'); bannerTimer = 3.5; ks2Say(e, B.appear, 2.2);
   SGK.later.push([SGK.t + 2.6, () => sgkKing('近寄るな、盾の後ろへ！')]);
   SGK.later.push([SGK.t + 5.2, () => sgkSayK('shinobu', '殿、お下がりを。あの刃は……わたくしが受けます', 1.9)]);
@@ -4010,7 +4011,7 @@ function sgkBossSpawn() { if (SGK.boss || SGK.shukuyu) return; const G = SGK.gat
   SGK_LN.boss.forEach((q, j) => SGK.later.push([SGK.t + 16 + j * 7, () => { if (SGK.boss && !SGK.boss.sgkBoss.esc) sgkSayK(q[0], q[1], 1.6); }]));
   SGK.later.push([SGK.t + 11.8, () => sgkSayK('omiya', '盾は前へ！ 刃は盾で受けて！ 弓隊、あの人を狙ってください！', 1.8)]); }
 function sgkBossHurt(e, dmg, from, by) { const B = e.sgkBoss; if (!B || B.inv || B.esc) { if (B && sfxGate(e.s.position, 40)) puff(e.s.position.clone().setY(e.baseY + 1.2), 0xf0f0e8, 2, 0.05, 2, 0.12); return; }
-  const duel = by && by.sgkDuel; if (!duel && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす（氷室・久遠は別）
+  const duel = by && by.sgkDuel; if (!duel && !B.pull && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす（氷室・久遠は別）
   e.hp -= dmg; e.flash = 0.12; npcGlow(e, 0.9, 0.9, 0.9); e.recoil = 0.3; hitVoiceDmg(e, from);
   if (e.hp <= e.hpMax * 0.2) sgkBossEscape(e); }
 function sgkBossEscape(e) { const B = e.sgkBoss; if (B.esc) return; B.esc = true; B.inv = true; e.hp = Math.max(e.hp, 1); e.sgkFree = true; SGK.shukuyu = 'escaped'; SGK.fogK = 1; SGK.fogT = Math.max(SGK.fogT, 25);
@@ -4022,23 +4023,61 @@ function sgkBossEscape(e) { const B = e.sgkBoss; if (B.esc) return; B.esc = true
 function sgkOnScreen(p) { const F = SGK.fru || (SGK.fru = new THREE.Frustum()), M = SGK.fM || (SGK.fM = new THREE.Matrix4()); camera.updateMatrixWorld(); M.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse); F.setFromProjectionMatrix(M);
   const q = SGK.fV || (SGK.fV = new V3()); for (const h of [0.2, 1.0, 1.7]) { q.set(p.x, p.y + h, p.z); if (F.containsPoint(q)) return true; } return false; }
 function sgkBossGone(e) { e.sgkGone = true; e.ks2Gone = true; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = SGK.all.indexOf(e); if (j >= 0) SGK.all.splice(j, 1); e.state = 'down'; try { disposeNpc(e); } catch (_) {} SGK.boss = null; }
+// ---- 祝融の小刀：数に限りがある（8 本）。投げた刃は遺体に刺さったまま、外れれば地面に。尽きたら近くの遺体・地面から引き抜いて回収（その間は隙だらけ）----
+const SHU_KN = 8;
+function shuLost(B, o) { if (B && o && o.m) (B.lost = B.lost || []).push(o); }   // o: { e: 遺体, m: 刺さった刃 } / { m: 地面の刃 }
+function shuLostPos(o) { if (!o.m || !o.m.parent) return null; if (o.e) return o.e.s && o.e.s.parent ? o.e.s.position : null; return o.m.position; }
+const SHU_ZH = { pry: ['放手吧，你已经用不着了。', '離しな、もうアンタには要らないだろ'], brush: ['哼，真麻烦。', 'ふん、手間をかけさせるね'], wipe: ['还不够啊。', 'まだ足りないね'], ready: ['来吧，下一个是谁？', 'さあ、次は誰だい？'],
+  tn: [['日本的大小姐们，就用你们的身子给这片土地的草当肥料吧。', '日本のお嬢様ども、その身でこの大地の草の肥やしになるんだね'], ['长得这么可爱，却要死在荒野里吗？', '可愛い顔して野垂れ死にかい？']] };
+const SHU_MOB = ['ひっ…', '近寄らないで…', 'いや…'];   // 群れの侍女：声だけ（字幕なし）
+const SHU_NAMED = [['reika', '怯むんじゃありませんわよ！今が好機ですわ！'], ['sec2', 'あの人、遺体から…っ'], ['fumi', '趣味が悪いわね…'], ['kujo', '下がって。無理に近づかないで']];
+function shuSay(e, B, q, key, cd) { const C = B.cdv || (B.cdv = {}); if (time - (C[key] ?? -99) < cd || time - (B.vT ?? -99) < 4.5) return false; C[key] = B.vT = time; kosZh(e, q, 1.8); return true; }
+function shuTaunt(e, B) { const q = SHU_ZH.tn[(B.tq = ((B.tq || 0) + 1) % 2)]; if (shuSay(e, B, q, 'tn', 18)) shuFlinch(e, B); }
+// 祝融が刃を引き抜く・挑発するとき：8m 以内の群れの侍女は一瞬ひるんで後ずさる（立ったまま 1.5〜2 秒）。名のある娘はひとこと
+function shuFlinch(e, B) { if (time - (B.flT ?? -99) < 7) return; B.flT = time; const p = e.s.position, L = SGK.on ? SGK.live.blue : (KOS.all || []).filter(o => o.team === 'blue'); let nv = 0, nf = 0;
+  for (const o of L) { if (nf >= 14) break; if (!o || !isUp(o) || o.ks2Named || o.kosDead) continue; const q = o.s.position, dx = q.x - p.x, dz = q.z - p.z, d = Math.hypot(dx, dz); if (d > 8 || d < 0.01) continue;
+    nf++; o.shuFl = { t: rand(1.5, 2), x: q.x + dx / d * 2.2, z: q.z + dz / d * 2.2 };
+    if (nv < 2 && Math.random() < 0.5) { nv++; const t = SHU_MOB[(Math.random() * SHU_MOB.length) | 0], f = ks2VoiceFile(t, 'kmob'), dP = Math.hypot(q.x - player.pos.x, q.z - player.pos.z); if (f && VoicePack.ok && dP < 45) { const oo = o; setTimeout(() => Talk.as(oo, () => VoicePack.play(f, Math.min(dP, 50), 1.1, 1)), 300 + nv * 450); } } }
+  if (time - (KS2.shuNmT ?? -99) > 25) { const by = SGK.on ? SGK.by : KOS.by, C = SHU_NAMED.filter(([k]) => { const o = by && by[k]; return o && isUp(o) && !o.kosDead && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 30; });
+    if (C.length) { KS2.shuNmT = time; const [k, t] = C[(Math.random() * C.length) | 0]; const say = () => SGK.on ? sgkSayK(k, t, 1.7) : kosSayK(k, t, 1.7); if (SGK.on) SGK.later.push([SGK.t + 3.2, say]); else KOS.later.push([KOS.t + 3.2, say]); } } }
+function shuFlTick(e, dt, go) { const F = e.shuFl; F.t -= dt; if (F.t <= 0) { e.shuFl = null; return false; } e.crouch = 0; e.kneel = false; if (Math.hypot(F.x - e.s.position.x, F.z - e.s.position.z) > 0.3) { const f = e.face; go(e, F.x, F.z, 1.6, dt); e.faceWant = e.face = f; } else { e.moving = false; e.state = 'idle'; } return true; }   // 前を向いたまま後ずさる
+function shuPullTick(e, B, dt, go) {   // true = 回収中（攻撃しない）
+  if (!B.pull) return false; const p = e.s.position;
+  if (B.pQ && B.pQ.length) {   // 腰をかがめて手を伸ばす動き（立ったまま。膝はつかない）
+    const S = B.pQ[0]; S.t = (S.t || 0) + dt; e.moving = false; const u = S.t / S.T;
+    if (S.k === 'pull' || S.k === 'pry') { e.melee = true; e.state = u < 0.5 ? 'windup' : 'recover'; e.t = (u < 0.5 ? u : u - 0.5) * 0.6; if (S.k === 'pry' && !S.said) { S.said = 1; shuSay(e, B, SHU_ZH.pry, 'pry', 16); } }
+    else if (S.k === 'brush') { e.melee = false; e.state = 'idle'; if (!S.said) { S.said = 1; shuSay(e, B, SHU_ZH.brush, 'brush', 22); } }   // 手をはたく
+    else if (S.k === 'wipe') { e.melee = true; e.state = 'recover'; e.t = 0.1 + 0.15 * Math.abs(Math.sin(S.t * 9)); if (!S.said) { S.said = 1; shuSay(e, B, SHU_ZH.wipe, 'wipe', 24); } }   // 布で刃をぬぐう（汚れはない）
+    if (S.t >= S.T) { B.pQ.shift(); e.melee = false; e.state = 'idle';
+      if (S.take) { const o = B.pT; B.pT = null; if (o && o.m.parent) { o.m.parent.remove(o.m); if (o.e && o.e.stuck) { const i = o.e.stuck.indexOf(o.m); if (i >= 0) o.e.stuck.splice(i, 1); } B.kn++; B.pulled = (B.pulled || 0) + 1; } const i = B.lost.indexOf(o); if (i >= 0) B.lost.splice(i, 1);
+        if (Math.random() < 0.3 && time - (B.cdv && B.cdv.wipe || -99) > 24) B.pQ.push({ k: 'wipe', T: 0.8 }); } }
+    return true; }
+  B.lost = (B.lost || []).filter(o => shuLostPos(o)); let best = null, bd = 1e9; for (const o of B.lost) { const q = shuLostPos(o), d = Math.hypot(q.x - p.x, q.z - p.z); if (d < bd) { bd = d; best = o; } }
+  if (!best || bd > 45 || B.kn >= 5 || (B.kn >= 3 && bd > 15)) { B.pull = false; if (B.kn <= 0) { B.retT = 15; return true; } if (!shuSay(e, B, SHU_ZH.ready, 'ready', 20)) shuTaunt(e, B); return false; }   // 拾える刃が無ければ、退いて替えの刃を取ってくる
+  const q = shuLostPos(best); if (bd > 0.9) { go(q.x, q.z); if (bd < 6 && !B.flA) { B.flA = 1; shuFlinch(e, B); } return true; }
+  B.flA = 0; B.pT = best; e.faceWant = Math.atan2(q.x - p.x, q.z - p.z); B.pQ = best.grip ? [{ k: 'pry', T: 0.8, take: 1 }, { k: 'brush', T: 0.6 }] : [{ k: 'pull', T: 0.6, take: 1 }];
+  if (!best.grip && Math.random() < 0.25) shuTaunt(e, B); return true; }
+// 刃で倒れた侍女（名のない子）の三人に一人は、刃を手に握ったまま倒れている（刺さった所は見せない）。他は体に刺さったまま
+function shuHit(B, t, a, hp2, ground) { if (!t.ks2Named && (TEST && window.__shuGrip || Math.random() < 1 / 3)) { const p = t.s.position, f = rand(0, 6.28), x = p.x + Math.sin(f) * 0.38, z = p.z + Math.cos(f) * 0.38, k = sgkKnifeMesh(); k.position.set(x, ground(x, z) + 0.05, z); k.rotation.set(0, f + 1.3, 0); stageRoot.add(k); if (t.extra) t.extra.push(k); shuLost(B, { e: t, m: k, grip: true }); return; }
+  stickArrow(t, hp2, hp2.clone().sub(a), sgkKnifeMesh(), 0.02); shuLost(B, { e: t, m: t.stuck[t.stuck.length - 1] }); }
 function sgkBossBrain(e, dt) { const B = e.sgkBoss, p = e.s.position, G = SGK.gates[1];
   if (B.esc) {   // 東の斜面を駆け上がって霧の中へ。見えている間は消えない
     const s = 1000 - p.z, ex = sgkCx(s) + sgkHW(s); let tx, tz; if (p.x < ex + 5) { tx = ex + 8; tz = Math.max(p.z, G.z + 6) - 2; } else { tx = p.x + 6; tz = p.z - 14; } sgkGo(e, tx, tz, 6.5, dt);   // まず東の斜面へ、それから霧の中を上へ e.sgkBr = 1;
     const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), fog = scene.fog ? scene.fog.far : 400;
     if ((!sgkOnScreen(p) || dP > fog + 10) && (B.escT = (B.escT || 0) + dt) > 1.2) sgkBossGone(e); return; }
   if (e.sgkAct) { sgkPose(e, dt); return; }
-  if (B.retT > 0) { B.retT -= dt; const kx = G.x + 5, kz = G.z - 4; sgkGo(e, kx, kz, 4.5, dt); if (B.retT <= 0) { B.kn = SGK_SHUKUYU.knives; B.out = 0; ks2Say(e, 'さあ、二幕目だよ！', 1.6); } return; }
+  if (shuPullTick(e, B, dt, (x, z) => sgkGo(e, x, z, 4.5, dt))) return;
+  if (B.retT > 0) { B.retT -= dt; const kx = G.x + 5, kz = G.z - 4; sgkGo(e, kx, kz, 4.5, dt); if (B.retT <= 0) { B.kn = SHU_KN; B.out = 0; ks2Say(e, 'さあ、二幕目だよ！', 1.6); } return; }
   if ((e.ks2T -= dt) <= 0) { e.ks2T = 0.5; e.tgt = sgkNear(e, 30, 8, o => o.team === 'blue'); const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (dP < 26 && (!e.tgt || Math.random() < 0.25)) e.tgt = player; }
   const t = e.tgt; if (!t || (!t.isPlayer && !isUp(t))) { sgkGo(e, G.x + 2, G.z + 10, 3, dt); return; }
   const tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z);
-  if (d < 2.2) { for (const o of SGK.live.blue) if (isUp(o) && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 1.6 && Math.random() < dt * 0.6) sgkKnife(e, o, true); }   // 寄られたら至近で刺し返す
+  if (d < 2.2) { for (const o of SGK.live.blue) if (B.kn > 0 && isUp(o) && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 1.6 && Math.random() < dt * 0.6) { sgkKnife(e, o, true); B.kn--; break; } }   // 寄られたら至近で刺し返す
   // 9〜16m の間合いを保つ
   if (d < 9 || d > 16) { const k = d < 9 ? -1 : 1, s = 1000 - p.z, c = sgkCx(s), w = sgkHW(s) - 1.5; sgkGo(e, clamp(p.x + (tp.x - p.x) / d * 4 * k, c - w, c + w), clamp(p.z + (tp.z - p.z) / d * 4 * k, G.z + 3, G.z + 60), 5, dt); }
   else { e.moving = false; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); }
-  if (B.kn <= 0) { B.retT = 12; B.out = 0; ks2Say(e, SGK_SHUKUYU.reload, 1.8); SGK.later.push([SGK.t + 1.5, () => sgkSayK('omiya', '刃が尽きました！ 今です、槍で囲んで！', 1.9)]); return; }
+  if (B.kn <= 0) { B.pull = true; B.out = 0; ks2Say(e, SGK_SHUKUYU.reload, 1.8); SGK.later.push([SGK.t + 1.5, () => sgkSayK('omiya', '刃が尽きました！ 今です、槍で囲んで！', 1.9)]); return; }
   B.bT -= dt; if (B.bT > 0) return;
-  if (B.burst <= 0) { B.burst = 5 + ((Math.random() * 3) | 0); if (SGK.t - B.lastTaunt > 14) { B.lastTaunt = SGK.t; ks2Say(e, SGK_SHUKUYU.taunt[(Math.random() * 3) | 0], 1.5); } }
+  if (B.burst <= 0) { B.burst = 5 + ((Math.random() * 3) | 0); if (SGK.t - B.lastTaunt > 14) { B.lastTaunt = SGK.t; if (Math.random() < 0.35) shuTaunt(e, B); else ks2Say(e, SGK_SHUKUYU.taunt[(Math.random() * 3) | 0], 1.5); } }
   if (d < 26) { sgkKnife(e, t, false); B.kn--; B.burst--; B.bT = B.burst > 0 ? rand(0.32, 0.45) : rand(3.4, 5); if (B.burst <= 0) B.out = 1; } else B.bT = 0.3; }
 // 小刀：盾や竹束の線上なら止まる。当たれば（約9割）その場で倒れる（白い閃光と土埃だけ）
 function sgkKnifeMesh() { const g = new THREE.Group(), M = SGK.knM || (SGK.knM = { b: new THREE.MeshLambertMaterial({ color: 0xd8dde2 }), h: sgkMat(0x2a2a2a), bg: new THREE.BoxGeometry(0.02, 0.006, 0.16), hg: new THREE.BoxGeometry(0.02, 0.016, 0.08) });
@@ -4053,13 +4092,14 @@ function sgkKnife(e, t, close) { const p = e.s.position, tp = t.isPlayer ? playe
   if (block) { const q = block.s ? block.s.position : new V3(block.x, block.y, block.z); b.set(q.x, (block.s ? q.y : block.y) + 1.0, q.z); }
   const near = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 80; if (near && sfxGate(p, 40)) { const o = Sfx.at(p, 40, 0.8); if (o) Sfx.noiseBurst(0.08, 'highpass', 3000, 6000, 0.4, 1, 0, o); }
   sgkTr(a, b, Math.max(0.08, d / 38), 0.15, () => {
-    if (block) { if (sfxGate(b, 40)) Sfx.thunkAt(b, true); puff(b.clone(), 0xf2f2ea, 3, 0.05, 2.2, 0.12); sgkKnifeStay(b, a, true); SGK.knBlk++; return; }
-    if (duel) { if (isUp(t)) parryFx(t, p.x, p.z, 'catch', e); sgkKnifeStay(b, a, false); return; }
-    if (!hit) { const g = b.clone(); g.x += rand(-1.2, 1.2); g.z += rand(-1.2, 1.2); g.y = sgkG(g.x, g.z) + 0.03; sgkKnifeStay(g, a, false); return; }
-    if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(45); popup('小刀がかすめた！'); } return; }
-    if (!isUp(t)) return; puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); puff(t.s.position.clone().setY(t.baseY + 0.3), 0xc8b48a, 4, 0.6, 1.2, 0.7);   // 白い閃光と土埃
-    SGK.knK++; { const tp2 = t.s.position, hp2 = new V3(tp2.x, t.baseY + (t.figH || 1.6) * 0.83, tp2.z); stickArrow(t, hp2, hp2.clone().sub(a), sgkKnifeMesh(), 0.02); } t.hp = 0; killEnemy(t, false, p); }, near ? sgkKnifeMesh() : null); }
-function sgkKnifeStay(pt, from, stuck) { if (SGK.knv.length > (LITE ? 60 : 160)) return; const m = sgkKnifeMesh(); m.position.copy(pt); if (stuck) m.lookAt(from); else { m.rotation.set(0, rand(0, 6.28), 0); } stageRoot.add(m); SGK.knv.push(m); }
+    const SB = e.sgkBoss;
+    if (block) { if (sfxGate(b, 40)) Sfx.thunkAt(b, true); puff(b.clone(), 0xf2f2ea, 3, 0.05, 2.2, 0.12); shuLost(SB, { m: sgkKnifeStay(b, a, true) }); SGK.knBlk++; return; }
+    if (duel) { if (isUp(t)) parryFx(t, p.x, p.z, 'catch', e); shuLost(SB, { m: sgkKnifeStay(b, a, false) }); return; }
+    if (!hit || (!t.isPlayer && !isUp(t))) { const g = b.clone(); g.x += rand(-1.2, 1.2); g.z += rand(-1.2, 1.2); g.y = sgkG(g.x, g.z) + 0.03; shuLost(SB, { m: sgkKnifeStay(g, a, false) }); return; }
+    if (t.isPlayer) { const g = b.clone(); g.x += rand(-1.5, 1.5); g.z += rand(-1.5, 1.5); g.y = sgkG(g.x, g.z) + 0.03; shuLost(SB, { m: sgkKnifeStay(g, a, false) }); if (!player.god && state === 'play') { hurtPlayer(45); popup('小刀がかすめた！'); } return; }
+    puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); puff(t.s.position.clone().setY(t.baseY + 0.3), 0xc8b48a, 4, 0.6, 1.2, 0.7);   // 白い閃光と土埃
+    SGK.knK++; { const tp2 = t.s.position, hp2 = new V3(tp2.x, t.baseY + (t.figH || 1.6) * 0.83, tp2.z); shuHit(SB, t, a, hp2, sgkG); } t.hp = 0; killEnemy(t, false, p); }, near ? sgkKnifeMesh() : null); }
+function sgkKnifeStay(pt, from, stuck) { if (SGK.knv.length > (LITE ? 60 : 160)) return null; const m = sgkKnifeMesh(); m.position.copy(pt); if (stuck) m.lookAt(from); else { m.rotation.set(0, rand(0, 6.28), 0); } stageRoot.add(m); SGK.knv.push(m); return m; }
 // ---- 霧と伏兵の弓 ----
 function sgkFogTick(dt) { if (!scene.fog) return; SGK.fogT -= dt; if (SGK.fogT <= 0) { if (SGK.fogK > 0.5) { SGK.fogK = 0; SGK.fogT = rand(160, 240); } else if (SGK.ph === 'go' && SGK.t > 90) { SGK.fogK = 1; SGK.fogT = rand(35, 55); sgkAmbush(); { const q = sgkPickN(SGK_LN.fog, 90); if (q) SGK.later.push([SGK.t + 0.8, () => sgkSayK(q[0], q[1], 1.6)]); } } else SGK.fogT = 20; }
   const k = SGK.fogV = (SGK.fogV || 0) + ((SGK.fogK || 0) - (SGK.fogV || 0)) * Math.min(1, dt * 0.35);
@@ -4080,7 +4120,7 @@ function sgkStart() { SGK.on = true; sgkReset(); sgkSpawn(); SGK.ph = 'go'; SGK.
   SGK.later.push([SGK.t + 12.5, () => sgkSayK('sec4', '崖道隊、左の崖道から回ります。関所の上を取ります', 1.6)]);
   SGK.later.push([SGK.t + 17, () => sgkSayK('fumi', '弓隊、正面隊の後ろにつきます。的は私が外しませんけど', 1.6)]);
   SGK.later.push([SGK.t + 22, () => sgkSayK('sec3', '後方、握り飯は一人二つずつ。坂がきつくなったら配ります', 1.5)]);
-  if (TEST) window.__sgk = { SGK, sgkJump, sgkCounts, sgkView, sgkBossSpawn, sgkBossHurt, sgkBossEscape, sgkOnScreen, sgkRock, updateSgk, gH: sgkH, ks2Say }; }
+  if (TEST) window.__sgk = { SGK, shuHit, sgkJump, sgkCounts, sgkView, sgkBossSpawn, sgkBossHurt, sgkBossEscape, sgkOnScreen, sgkRock, updateSgk, gH: sgkH, ks2Say }; }
 function sgkCounts() { let a = 0, d = 0; for (const U of SGK.units) { let n = 0; for (const e of U.mem) if (isUp(e)) n++; U.up = n; a += n + U.pool; } for (const G of SGK.gates) { let n = 0; for (const e of G.def) if (isUp(e) && !e.sgkGave) n++; G.up = n; d += n + G.pool; }
   for (const e of SGK.def) if (!e.sgkG && isUp(e)) d++;
   let oa = 0, od = 0; for (const U of SGK.units) oa += U.up; for (const G of SGK.gates) od += G.up; for (const e of SGK.def) if (!e.sgkG && isUp(e)) od++;
@@ -4339,6 +4379,7 @@ const KOS_ZH = { appear: ['我是南蛮大将祝融！这片土地，休想夺�
   reload: ['啧……等我把刀捡回来！', 'ちっ……刃を拾うまで、ちょいと待ちな！'], again: ['好，第二幕开始！', 'さあ、二幕目だよ！'], escape: ['哼……算你们有本事。今天就到这里！', '……やるじゃないか。今日はここまでだ。この首は預けておくよ！'],
   mob: { go: ['杀！', '冲啊！', '赶她们下湖！', '别让她们跑了！'], bow: ['放箭！', '射！'], boom: ['回旋镖，去！', '看镖！'], hit: ['藤甲在身，不怕！', '哈，没用！'], rout: ['撤！快撤！', '大将走了，快跑！'] } };
 
+KOS_ZH.taunt.push(...SHU_ZH.tn);
 function kosCx(s) { const k = sgkSS(690, 780, s); return (1 - k) * (12 * Math.sin(s / 95) + 5 * Math.sin(s / 41)); }
 function kosHW(s) { if (s < 690) return 7; if (s < 1210) return 7 + 68 * sgkSS(690, 780, s); return 75; }
 function kosLW(s) { return 170 + 30 * Math.sin(s / 53); }   // 湖の幅（片側）
@@ -4575,6 +4616,7 @@ function kosKgTBtn() { let b = $('kosKgT'); if (!b) { b = document.createElement
 function kosKgUi() { if (!KOS.on && !$('kosKgT')) return; const t = kosKgTBtn(), w = kosKgWBtn(), K0 = KOS.kg; t.style.display = w.style.display = KOS.on && state === 'play' && K0 && K0.ride ? 'block' : 'none'; const b = $('kosKgB'); if (!b) return; const K = KOS.kg, show = KOS.on && state === 'play' && K && (K.ride || kosKgNear()); b.style.display = show ? 'block' : 'none'; if (show) b.textContent = K.ride ? '降りる' + (MOBILE ? '' : '（E）') : '乗る' + (MOBILE ? '' : '（E）'); }
 // ---- 頭脳 ----
 function kosBrain(e, dt) { if (!KOS.on || !e.kos) return false; const p = e.s.position; e.passive = true; if (e.knock) e.knock.set(0, 0, 0); e.t += dt; if (e.cd > 0) e.cd -= dt;
+  if (e.shuFl && isUp(e) && shuFlTick(e, dt, kosGo)) return true;
   if (e.kosSick && e.kosSick.ph !== 'wait' && e.kosSick.ph !== 'rest') { if (e.kosRaft && e.kosOn) kosRide(e); p.y = e.baseY = kosH(p.x, p.z); return true; }
   if (e.kosDead) { p.y = e.baseY = kosH(p.x, p.z); return true; }
   if (e.kosBoss) { kosBossBrain(e, dt); p.y = e.baseY = kosH(p.x, p.z); return true; }
@@ -4601,7 +4643,7 @@ function kosAtk(e, dt) { if (e.kosBear && KOS.kg && !KOS.kg.raft) { kosBearer(e,
   if ((KOS.ph === 'rest' || KOS.ph === 'far') && e.kosRest && U.bx == null) { kosGo(e, e.kosRest[0], e.kosRest[1], e.speed, dt); if (!e.moving) e.faceWant = Math.PI; return; }
   const [sx, sz] = kosSlot(e), d = Math.hypot(sx - p.x, sz - p.z); kosGo(e, sx, sz, e.speed * (d > 8 ? 1.3 : 1), dt); if (!e.moving) e.faceWant = KOS.ts ? tsFace(e) : U.bx != null && U.k === 'V' && !KOS.ev.meet ? 0 : Math.PI; }
 function kosShoot(e, t) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z); e.sgkAct = { k: 'aim', t: 0, T: 1.1 };
-  const a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.4, 0.4), (t.isPlayer ? tp.y + 1.2 : tp.y + 1.1), tp.z + rand(-0.4, 0.4)), hit = Math.random() < 0.3 * (d > 30 ? 0.6 : 1) * (e.team === 'orange' ? 0.5 : 1);
+  const a = new V3(p.x, p.y + 1.35, p.z), b = new V3(tp.x + rand(-0.4, 0.4), (t.isPlayer ? tp.y + 1.2 : tp.y + 1.1), tp.z + rand(-0.4, 0.4)), hit = Math.random() < 0.3 * (d > 30 ? 0.6 : 1) * (e.team === 'orange' ? 0.5 : 1) * (t.tsCart ? 1 - Math.min(1, Math.max(0, t.tsCart.v) / 9) * 2 / 3 : 1);   // 鉄車：全速（9）で 1/3、半分の速さで 2/3、止まれば元どおり
   if (!hit) { b.x += rand(-2, 2); b.z += rand(-2, 2); b.y = kosG(b.x, b.z) + 0.1; } if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < 35 && sfxGate(p, 35)) Sfx.twangAt(p);
   KOS.tr.push({ a, b, t: 0, T: Math.min(1.3, 0.25 + d / 45), h: Math.min(6, 0.8 + d * 0.1), mesh: arrowWar.clone(), onEnd: () => { if (hit) { if (t.isPlayer) { if (!player.god) { hurtPlayer(5); popup('矢がかすめた！'); } } else if (isUp(t)) damageEnemy(t, 1, p, false, { arrow: true, pt: b.clone(), dir: b.clone().sub(a).normalize() }, null); } } }); stageRoot.add(KOS.tr[KOS.tr.length - 1].mesh); }
 function kosTrTick(dt) { const Q = new V3(), Z = new V3(0, 0, 1); for (let i = KOS.tr.length - 1; i >= 0; i--) { const T = KOS.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { stageRoot.remove(T.mesh); KOS.tr.splice(i, 1); T.onEnd && T.onEnd(); continue; }
@@ -4739,7 +4781,7 @@ function kosTouMk(x, z, type) { const L = KOS.touL || (KOS.touL = KOS_TOU_LOOKS(
 function kosAmbush2() { if (KOS.ev.shu) return; KOS.ev.shu = KOS.t; KOS.ph = 'battle'; KOS.wave = { left: KOS_FOES, next: KOS.t + 1 }; for (const U of KOS.units) { U.bx = U.bat[0]; U.bs = Math.max(U.bs, U.bat[1] - 2); }
   showBanner('伏兵――南蛮の藤甲兵', '大将 祝融。後ろは妻娘返らずの湖――背水の陣'); bannerTimer = 4;
   const x = rand(-12, 12), z = 1000 - 1452, e = kosMk(x, z, 'mob', 'orange', GIRLS.girl50 ? 'girl50' : 'girl46', { name: '祝融', pers: '好戦的', cm: 170 });
-  if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: 36, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e);
+  if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: SHU_KN, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e);
     KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 9, () => kosZh(e, KOS_ZH.die, 2.1)]); KOS.later.push([KOS.t + 22, () => kosZh(e, KOS_ZH.god, 2.1)]); }
   KOS.later.push([KOS.t + 5, () => sgkKing('退くな！ 後ろは湖だ、ここで止めるぞ！')]); KOS.ring = true; KOS.ringN = {}; for (const U of KOS.units) for (const e of U.mem) if (isUp(e) && !e.kosDead) kosRingAssign(e);
   KOS.later.push([KOS.t + 8, () => { kosSayK('sumi', '方円の陣！ 湖を背に半円に。弓と医務は内側、槍と刀は外側へ', 2.1); showBanner('方円の陣', '湖を背に半円。外に槍と刀、内に弓と医務'); bannerTimer = 3; }]);
@@ -4792,26 +4834,28 @@ function kosBossBrain(e, dt) { const B = e.kosBoss, p = e.s.position; if (e.cd >
   if (B.esc) { e.kosFreeGo = true; kosGo(e, B.ex, B.ez, 6.5, dt); const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z), fog = scene.fog ? scene.fog.far : 400;
     if ((!sgkOnScreen(p) || dP > fog + 10) && (B.escT = (B.escT || 0) + dt) > 1.2 && dP > 30) { e.ks2Gone = true; e.state = 'down'; const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); const j = KOS.all.indexOf(e); if (j >= 0) KOS.all.splice(j, 1); try { disposeNpc(e); } catch (_) {} KOS.ev.shuGone = KOS.t; } return; }
   if (e.sgkAct) { sgkPose(e, dt); return; }
-  if (B.retT > 0) { B.retT -= dt; kosGo(e, clamp(p.x, -40, 40), KOS.ts ? -70 : 1000 - 1445, 4.5, dt); if (B.retT <= 0) { B.kn = 36; kosZh(e, KOS_ZH.again, 1.9); } return; }
+  if (shuPullTick(e, B, dt, (x, z) => kosGo(e, x, z, 4.5, dt))) return;
+  if (B.retT > 0) { B.retT -= dt; kosGo(e, clamp(p.x, -40, 40), KOS.ts ? -70 : 1000 - 1445, 4.5, dt); if (B.retT <= 0) { B.kn = SHU_KN; kosZh(e, KOS_ZH.again, 1.9); } return; }
   if ((e.ks2T -= dt) <= 0) { e.ks2T = 0.5; e.tgt = kosBlueNear(p, 30); const dP = Math.hypot(player.pos.x - p.x, player.pos.z - p.z); if (dP < 26 && (!e.tgt || Math.random() < 0.25)) e.tgt = KOS.kg && KOS.kg.ride ? (KOS.kg.bear.find(o => o && isUp(o)) || e.tgt) : PLAYER_T; }
   const t = e.tgt; if (!t || (!t.isPlayer && !isUp(t))) { const F = KOS.U.F; kosGo(e, clamp(F.bx, -40, 40), 1000 - Math.min(1450, F.bs + 16), 3.5, dt); return; }
   const tp = t.isPlayer ? player.pos : t.s.position, d = Math.hypot(tp.x - p.x, tp.z - p.z) || 1;
-  if (d < 2.2) { const o = kosBlueNear(p, 1.6); if (o && Math.random() < dt * 0.6) kosKnife(e, o, true); }
+  if (d < 2.2 && B.kn > 0) { const o = kosBlueNear(p, 1.6); if (o && Math.random() < dt * 0.6) { kosKnife(e, o, true); B.kn--; } }
   if (d < 9 || d > 16) { const k = d < 9 ? -1 : 1; kosGo(e, clamp(p.x + (tp.x - p.x) / d * 4 * k, -70, 70), clamp(p.z + (tp.z - p.z) / d * 4 * k, KOS.ts ? -130 : 1000 - 1456, KOS.ts ? 60 : 1000 - 1290), 5, dt); } else { e.moving = false; e.state = 'idle'; e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); }
-  if (B.kn <= 0) { B.retT = 12; kosZh(e, KOS_ZH.reload, 1.9); KOS.later.push([KOS.t + 1.5, () => kosSayK('omiya', '刃が尽きました！ 今です、槍で囲んで！', 1.9)]); return; }
+  if (B.kn <= 0) { B.pull = true; kosZh(e, KOS_ZH.reload, 1.9); KOS.later.push([KOS.t + 1.5, () => kosSayK('omiya', '刃が尽きました！ 今です、槍で囲んで！', 1.9)]); return; }
   B.bT -= dt; if (B.bT > 0) return;
-  if (B.burst <= 0) { B.burst = 5 + ((Math.random() * 3) | 0); if (KOS.t - B.lastT > 16) { B.lastT = KOS.t; kosZh(e, KOS_ZH.taunt[(B.ti = ((B.ti || 0) + 1) % KOS_ZH.taunt.length)], 1.8); } }
+  if (B.burst <= 0) { B.burst = 5 + ((Math.random() * 3) | 0); if (KOS.t - B.lastT > 16) { B.lastT = KOS.t; const q = KOS_ZH.taunt[(B.ti = ((B.ti || 0) + 1) % KOS_ZH.taunt.length)]; if (SHU_ZH.tn.includes(q)) shuTaunt(e, B); else kosZh(e, q, 1.8); } }
   if (d < 26) { kosKnife(e, t, false); B.kn--; B.burst--; B.bT = B.burst > 0 ? rand(0.32, 0.45) : rand(3.4, 5); } else B.bT = 0.3; }
 function kosKnife(e, t, close) { const p = e.s.position, tp = t.isPlayer ? player.pos : t.s.position, a = new V3(p.x, p.y + 1.3, p.z), b = new V3(tp.x, t.isPlayer ? tp.y - 0.3 : tp.y + 1.35, tp.z), d = a.distanceTo(b);
   e.faceWant = Math.atan2(tp.x - p.x, tp.z - p.z); e.sgkAct = { k: 'stab', t: 0.3 }; const hit = Math.random() < (close ? 0.6 : t.ks2Named ? 0.5 : 0.85), near = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 80;
   if (near && sfxGate(p, 40)) { const o = Sfx.at(p, 40, 0.8); if (o) Sfx.noiseBurst(0.08, 'highpass', 3000, 6000, 0.4, 1, 0, o); }
   const m = sgkKnifeMesh(); m.position.copy(a); stageRoot.add(m);
   KOS.tr.push({ a, b, t: 0, T: Math.max(0.08, d / 38), h: 0.15, mesh: m, onEnd: () => {
-    if (!hit || (!t.isPlayer && !isUp(t))) { const x = b.x + rand(-1.2, 1.2), z = b.z + rand(-1.2, 1.2), k = sgkKnifeMesh(); k.position.set(x, kosH(x, z) + 0.03, z); k.rotation.set(0, rand(0, 6.28), 0); stageRoot.add(k); KOS.lie.push(k); return; }
+    if (!hit || t.isPlayer || !isUp(t)) { const r = t.isPlayer ? 1.5 : 1.2, x = b.x + rand(-r, r), z = b.z + rand(-r, r), k = sgkKnifeMesh(); k.position.set(x, kosH(x, z) + 0.03, z); k.rotation.set(0, rand(0, 6.28), 0); stageRoot.add(k); KOS.lie.push(k); shuLost(e.kosBoss, { m: k }); }
+    if (!hit || (!t.isPlayer && !isUp(t))) return;
     if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(30); popup('小刀がかすめた！'); } return; }
-    puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); const hp2 = new V3(t.s.position.x, t.baseY + (t.figH || 1.6) * 0.83, t.s.position.z); stickArrow(t, hp2, hp2.clone().sub(a), sgkKnifeMesh(), 0.02); t.hp = 0; if (isUp(t)) KOS.shuK = (KOS.shuK || 0) + 1; killEnemy(t, false, p); } }); }
+    puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); const hp2 = new V3(t.s.position.x, t.baseY + (t.figH || 1.6) * 0.83, t.s.position.z); shuHit(e.kosBoss, t, a, hp2, kosH); t.hp = 0; if (isUp(t)) KOS.shuK = (KOS.shuK || 0) + 1; killEnemy(t, false, p); } }); }
 function kosBossHurt(e, dmg, from, by) { const B = e.kosBoss; if (!B || B.inv || B.esc) { if (B && sfxGate(e.s.position, 40)) puff(e.s.position.clone().setY(e.baseY + 1.2), 0xf0f0e8, 2, 0.05, 2, 0.12); return; }
-  if (by !== 'player' && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす
+  if (by !== 'player' && !B.pull && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす（刃を引き抜いている間は隙だらけ）
   e.hp -= dmg; e.flash = 0.12; e.recoil = 0.3; if (e.hp <= e.hpMax * 0.2) kosBossEscape(e); }
 function kosBossEscape(e) { e = e || KOS.shu; if (!e) return; const B = e.kosBoss; if (B.esc) return; B.esc = true; B.inv = true; e.hp = Math.max(e.hp, 1); const p = e.s.position, sd = p.x < 0 ? -1 : 1; B.ex = sd * 95; B.ez = p.z - 25; KOS.ev.shuEsc = KOS.t;
   kosZh(e, KOS_ZH.escape, 2.3); popup('祝融、密林へ退く――南蛮兵の足が乱れた'); popupTimer = 3.5; for (const o of KOS.foes) if (o !== e && isUp(o) && !o.kosFlee && Math.random() < 0.6) kosFoeFlee(o); kosSeq(KOS_LN.shuEsc, 4, 4.2); }
@@ -4998,7 +5042,7 @@ function tsChoose(m) { if (TS.mode || !KOS.ts) return; TS.mode = m; tsChoiceUi(f
   else { KOS.ph = 'bow'; sgkKing('弓隊、丘の縁へ！ 鉄車を射よ。下には下りるな'); tsSeq(TS_LN.bow, 3.5, 4.4); showBanner('丘から弓で援護', '狙いは御者――御者が倒れれば鉄車は止まる'); bannerTimer = 3; } }
 // ---- 進行 ----
 function tsReset() { if (TS.carts) for (const C of TS.carts) if (C.m) stageRoot.remove(C.m); Object.assign(TS, { mode: null, carts: [], cartK: 0, runN: 0, xnI: 0, ev: {}, boss: null, vC: null, downT: null, wave: 0, nextW: 0, nextC: 0, pHitT: 0 }); tsChoiceUi(false); }
-function tsStart() { KOS.on = true; KOS.ts = true; kosReset(); tsReset(); tsSpawn(); KOS.ph = 'camp'; KOS.t = 0; kosLook(0); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000);
+function tsStart() { player.god = true; KOS.on = true; KOS.ts = true; kosReset(); tsReset(); tsSpawn(); KOS.ph = 'camp'; KOS.t = 0; kosLook(0); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000);
   const H = KOS.U.H; player.pos.set(H.c[0] + 3, tsG(H.c[0] + 3, H.c[1] - 4), H.c[1] - 4); player.yaw = Math.PI; player.pitch = -0.05; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
   showBanner('丘陵の鉄車', '湖の先の小さな丘。野営陣を張りはじめたところ――白石隊は下の川べりで水汲み'); bannerTimer = 4.5;
   kosKgInit(); const K = KOS.kg; K.ride = false; K.x = H.c[0] - 4; K.z = H.c[1] - 6; K.yaw = 0; kosKgPlace();
@@ -5014,7 +5058,7 @@ function tsCartsCome() { if (TS.ev.carts) return; TS.ev.carts = KOS.t; KOS.ph = 
 function tsFlank() { TS.wave++; const n = LITE ? 8 : 12; for (let i = 0; i < n; i++) { const x = rand(-50, 50), z = rand(-120, -95); kosTouMk(x, z, i % 6 === 2 ? 'bow' : i % 6 === 5 ? 'boom' : 'dao'); }
   if (TS.wave === 1) { showBanner('後ろの森から', '祝融の藤甲兵が回り込んできた'); bannerTimer = 3; tsSeq(TS_LN.flank, 1, 4.2); }
   if (TS.wave === 3 && !KOS.shu) { const x = rand(-10, 10), z = -110, e = kosMk(x, z, 'mob', 'orange', GIRLS.girl50 ? 'girl50' : 'girl46', { name: '祝融', pers: '好戦的', cm: 170 });
-    if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: 36, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e); KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 5, () => sgkKing('祝融……！ 後ろの森から来たか')]); } } }
+    if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: SHU_KN, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e); KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 5, () => sgkKing('祝融……！ 後ろの森から来たか')]); } } }
 function tsCounts() { const c = kosCounts(), V = KOS.U.V; return Object.assign(c, { v: V ? V.mem.filter(e => isUp(e)).length : 0, carts: TS.carts.filter(C => !C.gone && C.st !== 'dead' && C.st !== 'flee').length, tou: KOS.foes.filter(o => o.kosTou && isUp(o) && !o.kosFlee).length }); }
 function tsLabel() { const c = tsCounts(), P = { camp: '野営陣を張る', carts: '鉄車', choice: '下りるか、射るか', rescue: '丘を下りて白石隊へ', bow: '丘から弓で援護', rep: '鉄車を退けた', won: '丘を守りきった', lost: '野営陣が落ちた' }[KOS.ph] || '';
   return `丘陵の鉄車　${P}　兵 ${c.a}${c.dead ? `　戦死 ${c.dead}` : ''}　白石隊 ${c.v}${TS.ev.carts ? `　鉄車 ${c.carts}台（止めた ${TS.cartK}）` : ''}${TS.wave ? `　藤甲兵 ${c.tou}${KOS.shu && !KOS.shu.kosBoss.esc && isUp(KOS.shu) ? '・祝融' : ''}` : ''}`; }
@@ -31015,7 +31059,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

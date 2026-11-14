@@ -2685,6 +2685,21 @@ const KS2_X = {
     talk: [['Your Majesty. Thank you for this chance to bring my people home.', '陛下。仲間を連れ帰る機会をくださって、感謝しています。'], ['Arabella is proud, not wicked. Please remember that.', 'アラベラは誇り高いだけで、悪い人ではありません。覚えておいてください。']] },
 };
 // 名のある者が倒れた時、その人をよく知る者の声
+const KS2_LAST = {   // 名のある娘の最期の一言（倒れる本人。傷の言葉は使わない）
+  ojou: '殿……わたくし、少し……先に休ませていただきますわ', omiya: 'すみれさま……殿を、お願い……しますね', sumi: 'ことね……殿を……頼みましたよ', sec2: '澄お姉さま……ごめんなさい……',
+  fumi: '的は……外さなかった、のに……。ことね、澄さんを……', hirose: '澄さんには……負けたくなかった、のに……', sanjo: 'あーあ……殿、私の分まで、ちゃんと勝ってね', reika: '……見に来なかったら、怒るわよ……？',
+  shizuka: '……内緒の席、誰かに……譲ってあげてください', sec4: '記録は……ここまで、です。殿……忠義、尽くせましたか……', sysop: '殿……パスワード……ちゃんと、変えて……くださいね', kujo: '手を……止めるな。次の者を、診なさい',
+  sec3: '計算……合わなく、なりました……。あとを……', flute: '笛……誰か、吹いて……ください……', shinobu: '西園寺様……お守り、できましたか……' };
+const KS2_FFN = {   // 殿の誤射・懐刀が名のある娘に当たった時の本人の一言
+  ojou: '……殿。わたくし、そちらにおりましてよ', omiya: 'いったぁ……殿！ 規定に決めたの、殿ですよね！？', sumi: '殿……。今のは、見なかったことにはできません', sec2: 'ひゃっ！？ と、殿……わ、私です、ことねです……！',
+  fumi: '殿、的はあちらです。……私じゃなくて', hirose: 'ちょっと殿！？ ……べ、別に痛くないですけど！', sanjo: 'は？ 殿、今の私狙った？', reika: 'ちょっと！ どこ狙ってるのよ！',
+  shizuka: '……殿。今のは、受けきれませんでした。次は気をつけてください', sec4: '……殿。この件は、記録に残させていただきます', sysop: '殿、照準の設定、見直してください。パスワードと一緒に', kujo: '殿。手当ての仕事を増やさないでいただけますか',
+  sec3: '殿、角度が十五度ずれています', flute: 'えっ、陛下!? ……笛、落とすところでした……', shinobu: '……殿。背中から来るとは、思いませんでした' };
+const KS2_WND = {   // 名のある娘が深手を負った時の一言（傷の言葉は使わない）
+  ojou: 'まだ……指揮は、執れますわ……', omiya: '平気です、これくらい……！', sumi: '大丈夫です。ことね、殿から離れないで', sec2: 'だ、大丈夫です……澄お姉さまには、言わないでください……',
+  fumi: '……まだ引けます。的は、外しませんけど', hirose: 'こんなの、なんでもない……！ 澄さんには負けないんだから', sanjo: 'ちょっと休めば平気。……心配しないでよ、殿', reika: 'この程度で下がると思ってるの？ 続けなさい！',
+  shizuka: '……問題ありません。まだ、動けます', sec4: '状況は……正確に、報告します。私は、まだ大丈夫です', sysop: '少し、処理が遅れます。……すぐ戻ります', kujo: '私のことはいいから、他の子を先に',
+  sec3: '持ちこたえられる確率は……十分です。続けます', flute: 'まだ……吹けます。息は、残ってます', shinobu: 'お気になさらず。……西園寺様のおそばは、離れません' };
 const KS2_XF = {
   ojou: [['omiya', 'すみれさま！？ ……っ、すみれさま！ ……南門隊、私が預かる！'], ['shinobu', '西園寺様……！'], ['sanjo', 'すみれさん……。……何やってんの、私が先に行けばよかった']],
   omiya: [['ojou', 'ひなた……？ ……ひなた。……いいえ、続けますわ'], ['sanjo', 'ひなたさん……嘘でしょ'], ['sec2', '大宮さんが……！']],
@@ -2785,7 +2800,8 @@ function ks2Say(e, t, prio, vk) {   // 声と字幕。e が無ければ本隊の
   if ((prio == null ? 1.4 : prio) < 2 && time < (KS2.subLock || 0) && d < 45) return;   // 殿が話しかけた相手の返事の間は、近くの雑談で字幕・声を上書きしない
   if ((prio || 0) >= 2) KS2.subLock = time + Math.max(2.5, String(t).length * 0.13 + 1.2);
   const f = ks2VoiceFile(t, vk || (e && e.ks2Vk)); if (f && VoicePack.ok) Talk.as(e || null, () => VoicePack.play(f, Math.min(d, 55), prio == null ? 1.4 : prio, 1));
-  if (d < 45 || (prio || 0) >= 1.8) { const nm = e ? (e.ks2Title || (e.prof && e.prof.name) || '') : ''; subtitle(t); const el = $('subtitle'); if (el) el.textContent = (nm ? nm + '「' : '「') + t + '」'; }
+  const named = !e || e.ks2Named || e.sgkBoss || e === KS2.cmd || e === SGK.cmd || e.ukId;   // 字幕は名のある者（と殿）だけ。群れの侍女・分隊長は声だけ
+  if (named && (d < 45 || (prio || 0) >= 1.8)) { const nm = e ? (e.ks2Title || (e.prof && e.prof.name) || '') : ''; subtitle(t); const el = $('subtitle'); if (el) el.textContent = (nm ? nm + '「' : '「') + t + '」'; }
 }
 function ks2LnOk(k, cd) { return !KS2.lnK || KS2.lnK[k] == null || KS2.t - KS2.lnK[k] > cd; }
 function ks2EnT(e, en, ja, prio, dmax) { const f = ks2VoiceFile(en, 'uk06'), p = e && e.s ? e.s.position : player.pos, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > (dmax || 50) && (prio || 0) < 1.8) return; if (f && VoicePack.ok) VoicePack.play(f, Math.min(d, dmax || 50), prio || 1.6, 1); popup((e ? (e.ks2Title || e.prof.name) + '：' : '') + en + ' ／ ' + ja); popupTimer = Math.max(popupTimer, 4); }
@@ -3280,7 +3296,7 @@ function ks2BearTick() { const fr = KS2.bearers.filter(e => isUp(e) && !e.ks2Job
     const n = KS2.cotN++, st = new THREE.Mesh(KS2.stG || (KS2.stG = new THREE.BoxGeometry(0.7, 0.08, 2.1)), ks2Mats().cloth); st.visible = false; stageRoot.add(st);
     const J = { b, ph: 'go', lead: L, mate, st, dst: [KS2.tent[0] - 10 + (n % 12) * 1.3, KS2.tent[1] - 6 - Math.floor(n / 12) * 2.4] }; L.ks2Job = J; mate.ks2Job = J; } }
 // ---- 進行 ----
-function ks2Reset() { ks2TacReset(); KS2.ph = 'off'; KS2.subLock = 0; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false; KS2.keepT = 0; KS2.lost = null; KS2.lcT = 2;
+function ks2Reset() { ks2TacReset(); KS2.ffPen = 0; KS2.ph = 'off'; KS2.subLock = 0; KS2.t = 0; KS2.peeled = false; KS2.later = []; KS2.tr = KS2.tr || []; KS2.fx = 0; KS2.clank = 0; KS2.wallS = 0; KS2.wallE = 0; KS2.inS = { S: 0, E: 0, W: 0, N: 0 }; KS2.wCall = null; KS2.wFire = false; KS2.pots = KS2.pots || []; KS2.said = {}; KS2.wq = []; KS2.carried = 0; KS2.cotN = 0; KS2.chatT = 4; KS2.log = []; KS2.sur = null; KS2.vPre = false; KS2.keepT = 0; KS2.lost = null; KS2.lcT = 2;
   if (KS2.tr) for (const T of KS2.tr) if (T.mesh) stageRoot.remove(T.mesh); KS2.tr.length = 0; if (KS2.trIM) { stageRoot.remove(KS2.trIM); if (KS2.trIM.head) stageRoot.remove(KS2.trIM.head); } KS2.trIM = null; KS2.pxSh = null; KS2.stk = null; KS2.stkB = 0; KS2.sq = null; KS2.supp = {}; for (const P of KS2.pots) stageRoot.remove(P.m); KS2.pots.length = 0;
   player.pos.set(4, 1.6 + 0, 232); player.yaw = 0; player.pitch = -0.04; CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
 function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; KS2.t = 0; KS2.bearers = [];
@@ -3417,6 +3433,7 @@ function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; i
     for (const U of KS2.units) { if (U.cmd && isUp(U.cmd)) continue; const nx = U.chain.map(k => KS2.by[k]).find(e => e && isUp(e)) || U.mem.find(e => isUp(e) && e.ks2Role === 'guard') || U.mem.find(isUp); if (!nx || nx === U.cmd) continue; const old = U.cmd; U.cmd = nx; nx.ks2Lead = true; if (old) old.ks2Lead = false; const ln = KS2_L.succ[nx.ks2Named]; if (ln) ks2SayK(nx.ks2Named, ln, 1.9); popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); KS2.log.push(['succ', U.k, nx.prof.name, Math.round(KS2.t)]); }
     // 倒れた攻め手：城の外なら負傷者として担架で後方へ（一部）
     let mateSaid = false; for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { const p0 = e.s.position;
+      if (e.ks2Named && KS2_LAST[e.ks2Named]) ks2Say(e, KS2_LAST[e.ks2Named], 2, KS2_VK[e.ks2Named]);   // 最期の一言
       if (e.ks2Named) { const v = e.ks2Named, R0 = (KS2_XF[v] || []).filter(q => KS2.by[q[0]] && isUp(KS2.by[q[0]])).slice(0, 2); if (R0.length) R0.forEach((q, i) => KS2.later.push([KS2.t + 1.5 + i * 4.5, () => { const r = KS2.by[q[0]]; if (r && isUp(r)) { (KS2.lnK || (KS2.lnK = {}))[q[0]] = KS2.t; ks2SayK(q[0], q[1], 1.8); } }])); else { const k = ks2Pick(ks2Named((o, k) => o.ks2U === U && KS2_X[k] && KS2_X[k].fall)); if (k) KS2.later.push([KS2.t + 1.5, () => ks2Ln(k, 'fall', 1.7)]); } }
       else if (!mateSaid) { const k = ks2Pick(ks2Named((o, k) => o.ks2U === U && KS2_X[k] && KS2_X[k].mate && ks2LnOk(k, 40) && Math.hypot(o.s.position.x - p0.x, o.s.position.z - p0.z) < 14)); if (k && ks2Ln(k, 'mate', 1.4, 45)) mateSaid = true; } }
     for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { e.ks2Dn = true; const p = e.s.position; if (Math.max(Math.abs(p.x), Math.abs(p.z)) > KS2_W + KS2_T + 1 && Math.random() < 0.4) KS2.wq.push(e); }
@@ -3529,7 +3546,7 @@ function ks2FmSet(U, k) { if (U.fm === k) return; const old = U.fm; U.fm = k; if
   const who = U.k === 'S' ? 'omiya' : ck; if (who && KS2_X[who] && KS2_X[who]['fm_' + k]) ks2Ln(who, 'fm_' + k, 1.6, 70); if (U.k === 'S' && KS2.by.ojou && isUp(KS2.by.ojou) && KS2_X.ojou['fm_' + k] && Math.random() < 0.5) KS2.later.push([KS2.t + 3.5, () => ks2Ln('ojou', 'fm_' + k, 1.4, 50)]);
   const T = ks2Tac(); if (U.k === 'S' && T.saihai2) T.saihai2.t = 1.2; }
 function ks2MorTick(U) { if (!U.side) { U.mor = 1; return; } const T = ks2Tac(), G = KS2.gates[U.side], n = ks2Alive(U); if (U.base == null) U.base = n; const fr = n / Math.max(1, U.base);
-  U.mor = clamp(0.35 + 0.65 * fr + (KS2_FM[U.fm] ? KS2_FM[U.fm].mor : 0) + (U.boost && KS2.t < U.boost ? 0.25 : 0), 0, 1);
+  U.mor = clamp(0.35 + 0.65 * fr + (KS2_FM[U.fm] ? KS2_FM[U.fm].mor : 0) + (U.boost && KS2.t < U.boost ? 0.25 : 0) - (KS2.ffPen || 0), 0, 1);
   if (KS2.ph !== 'siege' && KS2.ph !== 'keep') return;
   if (U.st === 'atk' && KS2.t - (KS2.goT || 0) > 30 && (G.open ? fr < 0.4 : (fr < 0.55 || U.mor < 0.45)) && n > 12 && KS2.ph !== 'keep') { U.st = 'ret'; U.stT = KS2.t; U.nRet = (U.nRet || 0) + 1; KS2.log.push(['ret', U.k, n, U.base, Math.round(KS2.t)]);
     const ck = U.chain.find(k => KS2.by[k] && isUp(KS2.by[k])); if (ck) ks2Ln(U.k === 'S' ? (KS2.by.omiya && isUp(KS2.by.omiya) ? 'omiya' : ck) : ck, 'ret', 1.9, 120); if (U.k === 'S' && KS2.by.ojou && isUp(KS2.by.ojou)) KS2.later.push([KS2.t + 4, () => ks2Ln('ojou', 'ret', 1.5, 60)]);
@@ -3705,19 +3722,19 @@ function ks2TacReset() { const T = KS2.tac; if (T) { for (const P of T.traps) { 
 const SGK = { on: false, ph: 'off', t: 0 };
 const SGK_B = [560, 1060, 1500], SGK_FORT = [1880, 1960];
 const SGK_PROF = [[0, 200], [60, 203], [525, 345], [600, 352], [1025, 495], [1100, 502], [1465, 645], [1540, 652], [1860, 795], [2000, 800]];
-const SGK_REAL = (() => { const q = parseInt(new URLSearchParams(location.search).get('sgkn'), 10); if (q > 0) return { a: Math.min(400, q), d: Math.round(q * 0.72), ra: q, rd: Math.round(q * 0.72) }; return LITE ? { a: 104, d: 76, ra: 96, rd: 64 } : { a: 270, d: 196, ra: 300, rd: 200 }; })();
+const SGK_REAL = (() => { const q = parseInt(new URLSearchParams(location.search).get('sgkn'), 10); if (q > 0) return { a: Math.min(400, q), d: Math.round(q * 0.72), ra: q, rd: Math.round(q * 0.72) }; const a = LITE ? 200 : 560, d = LITE ? 140 : 380; return { a, d, ra: 1500 - a, rd: 1000 - d }; })();   // 数える一人＝絵の一人（後詰は見えない所から一人ずつ上がってくる）
 const SGK_DIPS = [40, 579, 1079, 1519, 1825];   // 崖道と谷道がつながる所
-const SGK_LIMIT = 45 * 60;   // 時間切れ（ゲーム内の秒）
+const SGK_LIMIT = 30 * 60;   // 時間切れ（ゲーム内の秒）
 // 祝融：次の幕でも使う（名前・背丈・絵・台詞はここだけ）
 const SGK_SHUKUYU = { name: '祝融', title: '南蛮の女将 祝融', cm: 170, gid: 'girl50', hp: 40, knives: 36,
   appear: '死にたければかかってきな！', taunt: ['遅い遅い！ その盾ごと縫い止めてやるよ！', 'ほら、次は誰だい！', '喉元、がら空きだよ！'],
   reload: 'ちっ……刃を拾うまで、ちょいと待ちな！', escape: '……やるじゃないか。今日はここまでだ。この首は、次の山まで預けておくよ！' };
 const SGK_UNITS = [
-  { k: 'F', name: '正面隊', n: 600, chain: ['ojou', 'omiya'], secs: ['shinobu', 'chikage', 'shizuka'], col: '#f0c060', lane: 'road', s0: 150 },
-  { k: 'C', name: '崖道隊', n: 200, chain: ['sec4', 'sysop'], secs: [], col: '#7fe07f', lane: 'ledge', s0: 150 },
-  { k: 'A', name: '弓隊', n: 300, chain: ['fumi', 'reika'], secs: [], col: '#7fd8ff', lane: 'road', s0: 100, arch: true },
-  { k: 'H', name: '本隊', n: 300, chain: ['sumi', 'sec2'], secs: ['akari', 'hiyori'], col: '#ffffff', lane: 'road', s0: 60 },
-  { k: 'R', name: '後方', n: 100, chain: ['sec3', 'kujo'], secs: [], col: '#ffa0c0', lane: 'road', s0: 24 },
+  { k: 'F', name: '正面隊', n: 600, chain: ['ojou', 'omiya'], secs: ['shinobu', 'chikage', 'shizuka'], col: '#f0c060', lane: 'road', s0: 470 },
+  { k: 'C', name: '崖道隊', n: 200, chain: ['sec4', 'sysop'], secs: [], col: '#7fe07f', lane: 'ledge', s0: 470 },
+  { k: 'A', name: '弓隊', n: 300, chain: ['fumi', 'reika'], secs: [], col: '#7fd8ff', lane: 'road', s0: 440, arch: true },
+  { k: 'H', name: '本隊', n: 300, chain: ['sumi', 'sec2'], secs: ['akari', 'hiyori'], col: '#ffffff', lane: 'road', s0: 410 },
+  { k: 'R', name: '後方', n: 100, chain: ['sec3', 'kujo'], secs: [], col: '#ffa0c0', lane: 'road', s0: 400 },
 ];
 const SGK_TITLE = { ojou: '正面隊長 西園寺', omiya: '正面隊 副官 大宮', shinobu: '西園寺の秘書 氷室', chikage: '西園寺の秘書 一条', shizuka: '正面隊 久遠中佐', sec4: '崖道隊長 宮下大佐', sysop: '崖道隊 副官 霧島中佐',
   fumi: '弓隊長 綾瀬', reika: '弓隊 副官 白石大佐', sumi: '総大将 白瀬', sec2: '本隊 早瀬', akari: '本隊の秘書 夏目', hiyori: '本隊の秘書 小日向', sec3: '後方 桜井大佐', kujo: '軍医中将 九条' };
@@ -3817,6 +3834,7 @@ function sgkNamed(U, k, role) { const gid = ks2Gid(k), N = KS2_NM[k]; if (!N) re
   e.sgkU = U; e.sgkRole = role; e.ks2Named = k; e.ks2Title = SGK_TITLE[k]; e.ukTag = SGK_TITLE[k]; e.ks2Vk = KS2_VK[k]; e.hp = e.hpMax = 10; SGK.by[k] = e; U.mem.push(e); if (k === 'shinobu' || k === 'shizuka') e.sgkDuel = true; return e; }
 function sgkMob(U, arch, x, z) { const kind = arch ? 'archer' : 'mob', e = sgkMk(x, z, kind, 'blue', jpDeal(kind, 'sgk', SGK_OFF) || (arch ? 'archer01' : 'mob01'), null); if (!e) return null; e.sgkU = U; e.sgkRole = arch ? 'archer' : 'melee';
   if (!arch) { const g = (U.mem.length * 37 + U.k.charCodeAt(0) * 11) % 100; if (U.k === 'F' && g < 16) { e.ks2Gear = 'shield'; e.sgkShield = true; const m = ks2ShMesh(true); m.position.set(0, 0.66, 0.42); e.s.add(m); e.ks2Shd = m; } else if (Math.random() < 0.3) { e.yari = true; makeYari(e); } }
+  if (!arch && !e.sgkShield && (U.k === 'R' ? U.mem.length % 3 === 0 : U.mem.length % 25 === 7)) { e.sgkMed = true; e.medic = false; e.ukTag = (U.k === 'R' ? '医務班' : U.name) + ' 衛生兵'; if (e.yari) { e.yari = false; } }   // 各隊に衛生兵（約4%）、医務班は多め
   U.mem.push(e); return e; }
 function sgkCnId() { const L = KS2_CN_LOOKS.filter(g => g !== SGK_SHUKUYU.gid && GIRLS[g]); return L.length ? L[(SGK.cnI++) % L.length] : 'girl46'; }
 function sgkDef(G, role, x, z, extra) { const gid = sgkCnId(), e = sgkMk(x, z, role === 'wall' || role === 'amb' ? 'archer' : 'mob', 'orange', gid, { name: ks2Name('cn'), pers: ['慎重', '冷静', '臆病', '好戦的'][SGK.cnI % 4], cm: 154 + (SGK.cnI * 7) % 14 }); if (!e) return null;
@@ -3844,7 +3862,7 @@ function sgkSlope(z) { const s = 1000 - z; return (sgkE(s + 2) - sgkE(s - 2)) / 
 function sgkGo(e, tx, tz, sp, dt) { const p = e.s.position, V = e.ks2V, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
   if (e.ks2Go == null) e.ks2Go = false; if (d > (e.ks2Go ? 0.4 : 1.1)) e.ks2Go = true; else if (d < 0.4) e.ks2Go = false;
   const up = dz < 0 ? Math.max(0, sgkSlope(p.z)) : 0, k = (1 - Math.min(0.35, up * 0.8)) * (0.65 + 0.35 * (e.sgkBr == null ? 1 : e.sgkBr));   // 坂を登ると遅く、息が上がるとさらに遅く
-  const ws = e.ks2Go ? sp * k * Math.min(1, d / 2) : 0, wx = e.ks2Go ? dx / d * ws : 0, wz = e.ks2Go ? dz / d * ws : 0, ak = Math.min(1, dt * (e.ks2Go ? 2.5 : 4));
+  const ws = e.ks2Go ? sp * k * (e.team === 'blue' ? (SGK.fastK || 1) : 1) * Math.min(1, d / 2) : 0, wx = e.ks2Go ? dx / d * ws : 0, wz = e.ks2Go ? dz / d * ws : 0, ak = Math.min(1, dt * (e.ks2Go ? 2.5 : 4));
   V[0] += (wx - V[0]) * ak; V[1] += (wz - V[1]) * ak; const vv = Math.hypot(V[0], V[1]);
   if (vv > 0.05) { let nx = p.x + V[0] * dt, nz = p.z + V[1] * dt;
     if (!e.sgkFree && !sgkWalk(nx, nz) && sgkWalk(p.x, p.z)) { if (sgkWalk(p.x, nz)) nx = p.x; else if (sgkWalk(nx, p.z)) nz = p.z; else { nx = p.x; nz = p.z; } }
@@ -3905,7 +3923,8 @@ function sgkBrain(e, dt) { if (!SGK.on || !e.sgk) return false; const p = e.s.po
   else if (e.team === 'blue') sgkAtk(e, dt); else sgkDefBrain(e, dt);
   p.y = e.baseY = sgkH(p.x, p.z);
   const dP = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.shadow.visible = dP < (LITE ? 11 : 22); return true; }
-function sgkAtk(e, dt) { const U = e.sgkU, p = e.s.position, far = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) > 60, rng = e.sgkRole === 'archer', BS = SGK.boss;
+function sgkAtk(e, dt) { if (e.sgkMed && sgkMedic(e, dt)) return; if (e.ffAway > time && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 3.5) { const p0 = e.s.position, dx = p0.x - player.pos.x, dz = p0.z - player.pos.z, L = Math.hypot(dx, dz) || 1; sgkGo(e, p0.x + dx / L * 2, p0.z + dz / L * 2, e.speed, dt); return; }
+  const U = e.sgkU, p = e.s.position, far = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) > 60, rng = e.sgkRole === 'archer', BS = SGK.boss;
   if ((e.ks2T -= dt) <= 0) { e.ks2T = far ? rand(0.9, 1.5) : rand(0.35, 0.7); e.tgt = sgkNear(e, rng ? 62 : 9, rng ? 22 : 2.2, o => o !== SGK.cmd && !o.sgkBoss);
     if (BS && isUp(BS) && !BS.sgkBoss.esc) { const d = Math.hypot(BS.s.position.x - p.x, BS.s.position.z - p.z), B = BS.sgkBoss; if (rng ? (d < 55 && (!e.tgt || Math.random() < 0.6)) : (e.sgkDuel ? d < 45 : (d < 26 && B.out > 0 && !e.sgkShield))) e.tgt = BS; } }
   const t = e.tgt;
@@ -3950,7 +3969,7 @@ function sgkRock(G) { const log = Math.random() < 0.25, w = G.w - 1.5, x = G.x +
 function sgkRockTick(dt) { for (const R of SGK.rocks) { if (R.stop) continue; R.t += dt; const g = sgkG(R.x, R.z);
     if (!R.landed && R.y > g + R.r + 0.05) { R.vy -= 9.8 * dt; R.y += R.vy * dt; if (R.y <= g + R.r) { R.y = g + R.r; R.vy = 0; R.landed = true; puff(new V3(R.x, g + 0.2, R.z), 0xa8987a, 5, 0.9, 1.6, 1.0); } }
     else { R.y = g + R.r; const sl = sgkSlope(R.z); R.v += (9.8 * sl * 0.6 - (R.z - R.z0 > 130 ? 4.5 : 0.35)) * dt;   // 長く転がると勢いが落ちる R.v = Math.min(R.v, 13); R.bp = (R.bp || 0) + R.v * dt;
-      if (R.v <= 0.15 && R.t > 3) { R.v = 0; R.stop = true; puff(new V3(R.x, g + 0.3, R.z), 0xa8987a, 6, 1, 1.2, 1.2); R.sh.visible = false; continue; } }
+      if (R.v <= 0.15 && R.t > 3) { if (Math.hypot(R.x - player.pos.x, R.z - player.pos.z) < 50) SGK.later.push([SGK.t + 1, () => { if (Math.random() < 0.4) { const q = sgkPickN(SGK_LN.rockR, 60); if (q) { sgkSayK(q[0], q[1], 1.4); return; } } sgkMobSay('rock', 40); }]); R.v = 0; R.stop = true; puff(new V3(R.x, g + 0.3, R.z), 0xa8987a, 6, 1, 1.2, 1.2); R.sh.visible = false; continue; } }
     R.z += R.v * dt; { const s = 1000 - R.z, c = sgkCx(s), w = Math.max(0, sgkHW(s) - R.half - 0.3); R.x += (c - R.x) * 0.15 * dt; R.x = clamp(R.x, c - w, c + w); }
     if (!R.log) { R.r = Math.min(2.2, R.r + R.v * dt * 0.0035); R.m.scale.setScalar(R.r); R.half = R.r; R.piv.rotation.x += R.v / R.r * dt; } else R.piv.rotation.x += R.v / 0.45 * dt;   // 土と草を巻き込んで少しずつ大きく
     R.piv.position.set(R.x, R.y + Math.abs(Math.sin((R.bp || 0) * 0.9)) * Math.min(0.5, R.v * 0.04), R.z); R.sh.position.set(R.x, sgkG(R.x, R.z + 2.5) + 0.05, R.z + 2.5 + R.v * 0.25); R.sh.scale.set(R.half * 1.2, R.r * 1.2, 1);
@@ -3964,7 +3983,8 @@ function sgkRockTick(dt) { for (const R of SGK.rocks) { if (R.stop) continue; R.
     if (R.v > 2.5) for (const o of SGK.live.blue.concat(SGK.live.orange)) { if (!isUp(o) || o.sgkBoss) continue; const q = o.s.position, dz = q.z - R.z, dx = Math.abs(q.x - R.x);
       if (o.team === 'blue' && dz > 0 && dz < 16 + R.v && dx < R.half + 1.8 && !o.sgkDg && (o.sgkDgT || 0) < SGK.t) { o.sgkDgT = SGK.t + 3; if (o.ks2Named || Math.random() < (o.sgkShield ? 0.8 : 0.92)) { const s = 1000 - q.z, c = sgkCx(s), w = sgkHW(s) - 1, side = q.x > R.x ? 1 : -1; let tx = clamp(R.x + side * (R.half + 2.4), c - w, c + w); if (Math.abs(tx - R.x) < R.half + 1) tx = clamp(R.x - side * (R.half + 2.4), c - w, c + w); o.sgkDg = { x: tx, z: q.z, until: SGK.t + 2.2 }; } }   // よける
       if (Math.abs(dz) < R.r * 0.8 + 0.3 && dx < R.half + 0.3 && Math.abs(q.y - (R.y - R.r)) < 2.5) { if ((o.ks2Named && Math.random() < 0.85) || (o.sgkRk === R) || Math.random() < 0.84) { o.sgkRk = R; if (!o.sgkDg) { const s0 = 1000 - o.s.position.z, c0 = sgkCx(s0), w0 = sgkHW(s0) - 1; o.s.position.x = clamp(o.s.position.x + (o.s.position.x > R.x ? 1 : -1) * 1.2, c0 - w0, c0 + w0); } continue; } o.sgkRk = R; damageEnemy(o, 99, new V3(R.x, R.y, R.z - 1), false, { blast: true, noParry: true }, null); SGK.rockK++; } }
-    if (dP < R.half + 0.6 && Math.abs(player.pos.y - 1.6 - (R.y - R.r)) < 2.5 && R.v > 2.5 && !R.hitP) { R.hitP = 1; if (!player.god) { hurtPlayer(30); popup('岩に弾かれた！'); } }
+    if (!R.log && R.r > 1.2 && dP < 18 && SGK.t > (SGK.shkT || 0)) { SGK.shkT = SGK.t + 1.5; player.shake = Math.max(player.shake, 0.1); }   // 大きな岩がすぐそばを通る時だけ、少し揺れる（足さない・間をあける）
+    if (dP < R.half + 0.6 && Math.abs(player.pos.y - (R.y - R.r)) < 2.5 && R.v > 2.5 && !R.hitP) { R.hitP = 1; if (!player.god) { hurtPlayer(30); popup('岩に弾かれた！'); } }
     if (R.z > 1000 || R.t > 90) { R.stop = true; R.sh.visible = false; } } }
 function sgkFall(x, z) { const g = sgkG(x, z); for (let i = 0; i < (LITE ? 3 : 5); i++) { const m = new THREE.Mesh(SGK_RG, SGK.rockM || (SGK.rockM = sgkMat(0x8a857b))), r = rand(0.12, 0.3); m.scale.setScalar(r); const sx = x + rand(-1.5, 1.5), sz = z + rand(-2, 2); m.position.set(sx + (sx > sgkCx(1000 - z) ? 4 : -4), g + rand(16, 26), sz); stageRoot.add(m); SGK.falls.push({ m, tx: sx, r, vy: 0 }); } }
 function sgkFallTick(dt) { for (const F of SGK.falls) { if (F.done) continue; F.vy -= 9.8 * dt; const p = F.m.position; p.y += F.vy * dt; p.x += (F.tx - p.x) * Math.min(1, dt * 1.5); const g = sgkG(p.x, p.z);
@@ -3987,6 +4007,7 @@ function sgkBossSpawn() { if (SGK.boss || SGK.shukuyu) return; const G = SGK.gat
   SGK.later.push([SGK.t + 2.6, () => sgkKing('近寄るな、盾の後ろへ！')]);
   SGK.later.push([SGK.t + 5.2, () => sgkSayK('shinobu', '殿、お下がりを。あの刃は……わたくしが受けます', 1.9)]);
   SGK.later.push([SGK.t + 8.6, () => sgkSayK('shizuka', '正面は氷室さんに。私は脇から回ります', 1.8)]);
+  SGK_LN.boss.forEach((q, j) => SGK.later.push([SGK.t + 16 + j * 7, () => { if (SGK.boss && !SGK.boss.sgkBoss.esc) sgkSayK(q[0], q[1], 1.6); }]));
   SGK.later.push([SGK.t + 11.8, () => sgkSayK('omiya', '盾は前へ！ 刃は盾で受けて！ 弓隊、あの人を狙ってください！', 1.8)]); }
 function sgkBossHurt(e, dmg, from, by) { const B = e.sgkBoss; if (!B || B.inv || B.esc) { if (B && sfxGate(e.s.position, 40)) puff(e.s.position.clone().setY(e.baseY + 1.2), 0xf0f0e8, 2, 0.05, 2, 0.12); return; }
   const duel = by && by.sgkDuel; if (!duel && Math.random() < 0.55) { if (by && by.s) parryFx(e, by.s.position.x, by.s.position.z, 'dodge', by); return; }   // ひらりとかわす（氷室・久遠は別）
@@ -4037,10 +4058,10 @@ function sgkKnife(e, t, close) { const p = e.s.position, tp = t.isPlayer ? playe
     if (!hit) { const g = b.clone(); g.x += rand(-1.2, 1.2); g.z += rand(-1.2, 1.2); g.y = sgkG(g.x, g.z) + 0.03; sgkKnifeStay(g, a, false); return; }
     if (t.isPlayer) { if (!player.god && state === 'play') { hurtPlayer(45); popup('小刀がかすめた！'); } return; }
     if (!isUp(t)) return; puff(b.clone(), 0xffffff, 6, 0.06, 2.6, 0.18); puff(t.s.position.clone().setY(t.baseY + 0.3), 0xc8b48a, 4, 0.6, 1.2, 0.7);   // 白い閃光と土埃
-    SGK.knK++; t.hp = 0; killEnemy(t, false, p); const g = t.s.position.clone(); g.y = sgkG(g.x, g.z) + 0.03; g.x += rand(-0.4, 0.4); sgkKnifeStay(g, a, false); }, near ? sgkKnifeMesh() : null); }
+    SGK.knK++; { const tp2 = t.s.position, hp2 = new V3(tp2.x, t.baseY + (t.figH || 1.6) * 0.83, tp2.z); stickArrow(t, hp2, hp2.clone().sub(a), sgkKnifeMesh(), 0.02); } t.hp = 0; killEnemy(t, false, p); }, near ? sgkKnifeMesh() : null); }
 function sgkKnifeStay(pt, from, stuck) { if (SGK.knv.length > (LITE ? 60 : 160)) return; const m = sgkKnifeMesh(); m.position.copy(pt); if (stuck) m.lookAt(from); else { m.rotation.set(0, rand(0, 6.28), 0); } stageRoot.add(m); SGK.knv.push(m); }
 // ---- 霧と伏兵の弓 ----
-function sgkFogTick(dt) { if (!scene.fog) return; SGK.fogT -= dt; if (SGK.fogT <= 0) { if (SGK.fogK > 0.5) { SGK.fogK = 0; SGK.fogT = rand(160, 240); } else if (SGK.ph === 'go' && SGK.t > 90) { SGK.fogK = 1; SGK.fogT = rand(35, 55); sgkAmbush(); } else SGK.fogT = 20; }
+function sgkFogTick(dt) { if (!scene.fog) return; SGK.fogT -= dt; if (SGK.fogT <= 0) { if (SGK.fogK > 0.5) { SGK.fogK = 0; SGK.fogT = rand(160, 240); } else if (SGK.ph === 'go' && SGK.t > 90) { SGK.fogK = 1; SGK.fogT = rand(35, 55); sgkAmbush(); { const q = sgkPickN(SGK_LN.fog, 90); if (q) SGK.later.push([SGK.t + 0.8, () => sgkSayK(q[0], q[1], 1.6)]); } } else SGK.fogT = 20; }
   const k = SGK.fogV = (SGK.fogV || 0) + ((SGK.fogK || 0) - (SGK.fogV || 0)) * Math.min(1, dt * 0.35);
   scene.fog.near = 70 + (6 - 70) * k; scene.fog.far = 420 + (62 - 420) * k; }
 function sgkAmbush() { const U = SGK.U.F, s = U.s + rand(10, 40), c = sgkCx(s), n = LITE ? 5 : 9; let k = 0;
@@ -4048,9 +4069,9 @@ function sgkAmbush() { const U = SGK.U.F, s = U.s + rand(10, 40), c = sgkCx(s), 
   if (!k) return; SGK.later.push([SGK.t + 2, () => { const w = SGK.U.F.mem.find(o => isUp(o) && !o.ks2Named); if (w) ks2Say(w, '霧の中から矢が！ 右の斜面です！', 1.7); }]);
   SGK.later.push([SGK.t + 5, () => sgkSayK('reika', '右の斜面、伏兵！ 弓隊、霧ごと射抜くわよ！', 1.7)]); }
 // ---- 進行 ----
-function sgkReset() { SGK.ph = 'off'; SGK.t = 0; SGK.later = []; if (SGK.tr) for (const T of SGK.tr) if (T.mesh) stageRoot.remove(T.mesh); SGK.tr = []; SGK.stk = 0; SGK.bi = 0; SGK.boss = null; SGK.shukuyu = null; SGK.snow = false; SGK.falls = []; SGK.fogK = 0; SGK.fogV = 0; SGK.fogT = rand(150, 200);
+function sgkReset() { SGK.ffPen = 0; SGK.healed = 0; SGK.ph = 'off'; SGK.t = 0; SGK.later = []; if (SGK.tr) for (const T of SGK.tr) if (T.mesh) stageRoot.remove(T.mesh); SGK.tr = []; SGK.stk = 0; SGK.bi = 0; SGK.boss = null; SGK.shukuyu = null; SGK.snow = false; SGK.falls = []; SGK.fogK = 0; SGK.fogV = 0; SGK.fogT = rand(150, 200);
   SGK.rockK = 0; SGK.knK = 0; SGK.knBlk = 0; SGK.restT = 0; SGK.said = {}; SGK.brT = 30; SGK.fallT = 20; SGK.inT = 0; SGK.cmd = null; SGK.view = 'H'; SGK.grid = null; SGK.live = { blue: [], orange: [] }; SGK.onig = 0; SGK.lost = 0;
-  const s = 52, c = sgkCx(s); player.pos.set(c + 3, sgkG(c + 3, 1000 - s) + 1.6, 1000 - s); player.yaw = 0; player.pitch = 0.05; if (player.vel) player.vel.set(0, 0, 0); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
+  const s = 400, c = sgkCx(s); player.pos.set(c + 3, sgkG(c + 3, 1000 - s), 1000 - s); player.yaw = 0; player.pitch = 0.05; if (player.vel) player.vel.set(0, 0, 0); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 3000); }
 function sgkStart() { SGK.on = true; sgkReset(); sgkSpawn(); SGK.ph = 'go'; SGK.t = 0;
   for (const U of SGK.units) { sgkReorder(U); U.fm = sgkFmPick(U); for (const e of U.mem) { const [x, z] = sgkSlotOf(e); e.s.position.x = x; e.s.position.z = z; e.s.position.y = e.baseY = sgkH(x, z); e.face = e.faceWant = Math.PI; } }
   sgkGrid(); showBanner('山岳の関所', '麓から山頂の砦まで約2km――三つの関所を越えよ'); bannerTimer = 4.5; sgkUI();
@@ -4059,12 +4080,13 @@ function sgkStart() { SGK.on = true; sgkReset(); sgkSpawn(); SGK.ph = 'go'; SGK.
   SGK.later.push([SGK.t + 12.5, () => sgkSayK('sec4', '崖道隊、左の崖道から回ります。関所の上を取ります', 1.6)]);
   SGK.later.push([SGK.t + 17, () => sgkSayK('fumi', '弓隊、正面隊の後ろにつきます。的は私が外しませんけど', 1.6)]);
   SGK.later.push([SGK.t + 22, () => sgkSayK('sec3', '後方、握り飯は一人二つずつ。坂がきつくなったら配ります', 1.5)]);
-  if (TEST) window.__sgk = { SGK, sgkJump, sgkCounts, sgkView, sgkBossSpawn, sgkBossHurt, sgkBossEscape, sgkOnScreen, sgkRock, updateSgk }; }
+  if (TEST) window.__sgk = { SGK, sgkJump, sgkCounts, sgkView, sgkBossSpawn, sgkBossHurt, sgkBossEscape, sgkOnScreen, sgkRock, updateSgk, gH: sgkH, ks2Say }; }
 function sgkCounts() { let a = 0, d = 0; for (const U of SGK.units) { let n = 0; for (const e of U.mem) if (isUp(e)) n++; U.up = n; a += n + U.pool; } for (const G of SGK.gates) { let n = 0; for (const e of G.def) if (isUp(e) && !e.sgkGave) n++; G.up = n; d += n + G.pool; }
   for (const e of SGK.def) if (!e.sgkG && isUp(e)) d++;
-  return { a: Math.round(a * SGK.kA), d: Math.round(d * SGK.kD) }; }
+  let oa = 0, od = 0; for (const U of SGK.units) oa += U.up; for (const G of SGK.gates) od += G.up; for (const e of SGK.def) if (!e.sgkG && isUp(e)) od++;
+  return { a: Math.round(a * SGK.kA), d: Math.round(d * SGK.kD), oa, od }; }
 function sgkLabel() { const c = sgkCounts(), G = SGK.gates[SGK.bi], F = SGK.U.F, el = Math.round(sgkE(Math.max(0, F.s))), left = Math.max(0, SGK_LIMIT - SGK.t);
-  const where = !G ? '砦' : G.fort ? '山頂の砦' : `第${G.i + 1}の関所（標高${Math.round(sgkE(G.s))}m）`; return `山岳の関所　${where} 門${G ? Math.max(0, Math.round(G.hp / G.hp0 * 100)) : 0}%　標高${el}m　攻 ${c.a}　守 ${c.d}　残り${Math.floor(left / 60)}分`; }
+  const where = !G ? '砦' : G.fort ? '山頂の砦' : `第${G.i + 1}の関所（標高${Math.round(sgkE(G.s))}m）`; return `山岳の関所　${where} 門${G ? Math.max(0, Math.round(G.hp / G.hp0 * 100)) : 0}%　標高${el}m　攻 ${c.a}（戦場${c.oa}）　守 ${c.d}（戦場${c.od}）　残り${Math.floor(left / 60)}分`; }
 function sgkRemain() { const L = []; for (const U of SGK.units) L.push(`${SGK_AN[U.k]}${Math.round(((U.up != null ? U.up : U.mem.length) + U.pool) * SGK.kA)}`); return L.join(' '); }
 function sgkUnitMove(U, dt) { const F = SGK.U.F, G = SGK.gates[SGK.bi]; let goal;
   if (SGK.ph === 'won') goal = U.s;
@@ -4072,28 +4094,29 @@ function sgkUnitMove(U, dt) { const F = SGK.U.F, G = SGK.gates[SGK.bi]; let goal
   else if (U.k === 'F') goal = G ? (G.open ? (G.fort ? G.s + 34 : Math.min(G.s + 12, SGK.gates[SGK.bi + 1].s - 30)) : G.s - 4) : U.s;
   else if (U.k === 'C') { if (!G || G.fort) { U.lane = 'road'; goal = F.s - 8; } else if (U.st === 'down') goal = G.s + 8; else goal = G.open ? F.s : Math.min(G.s + 6, F.s + 60); }
   else if (U.k === 'A') goal = F.s - (G && !G.open && G.s - F.s < 40 ? 22 : 30);
-  else if (U.k === 'H') goal = F.s - 62; else goal = F.s - 88;
-  goal = clamp(goal, U.s0 - 200, 1990); const br = U.br == null ? 1 : U.br, sl = Math.max(0, (sgkE(U.s + 3) - sgkE(U.s - 3)) / 6), sp = 3.3 * (1 - Math.min(0.35, sl * 0.8)) * (0.65 + 0.35 * br);
+  else if (U.k === 'H') goal = F.s - 62; else goal = F.s - 72;   // 医務班（九条）は本隊のすぐ後ろ
+  goal = clamp(goal, U.s0 - 200, 1990); const br = U.br == null ? 1 : U.br, sl = Math.max(0, (sgkE(U.s + 3) - sgkE(U.s - 3)) / 6), sp = 3.3 * (SGK.fastK || 1) * (1 - Math.min(0.35, sl * 0.8)) * (0.65 + 0.35 * br);
   // 隊の先頭が兵を置き去りにしない（坂で遅れた兵を待つ）
   let lag = 0, n = 0; for (const e of U.mem) if (isUp(e) && !e.ks2Named) { const ds = (1000 - e.s.position.z) - (U.s - sgkSlotDep(e)); lag += ds; n++; } lag = n ? lag / n : 0;
   if (goal > U.s) { if (lag > -6) U.s = Math.min(goal, U.s + sp * dt); } else if (goal < U.s - 4) U.s = Math.max(goal, U.s - sp * dt); U.at = Math.abs(goal - U.s) < 2; }
 function sgkSlotDep(e) { const U = e.sgkU; return (U.fm === 'hou') ? 0 : sgkFmLD(U, e.sgkIdx || 0)[1]; }
 function sgkJump(bi) { bi = clamp(bi | 0, 0, 3); const G = SGK.gates[bi]; for (let i = 0; i < bi; i++) { const H = SGK.gates[i]; H.hp = 0; if (!H.open) sgkGateOpen(H, true); H.fell = true; for (const e of H.def) if (isUp(e)) { killEnemy(e, false, null); } } SGK.bi = bi;
   const off = { F: 70, C: 64, A: 96, H: 130, R: 156 }; for (const U of SGK.units) { U.s = G.s - off[U.k]; if (U.k === 'C') U.st = 'go'; U.fm = sgkFmPick(U); for (const e of U.mem) if (isUp(e)) { const [x, z] = sgkSlotOf(e); e.s.position.set(x, sgkH(x, z), z); e.baseY = e.s.position.y; } }
-  const H = SGK.U.H, s = H.s, c = sgkCx(s); player.pos.set(c + 3, sgkG(c + 3, 1000 - s) + 1.6, 1000 - s); if (player.vel) player.vel.set(0, 0, 0); sgkGrid(); }
+  const H = SGK.U.H, s = H.s, c = sgkCx(s); player.pos.set(c + 3, sgkG(c + 3, 1000 - s), 1000 - s); if (player.vel) player.vel.set(0, 0, 0); sgkGrid(); }
 function sgkGateOpen(G, quiet) { if (G.open) return; G.open = true; G.leaf.visible = false; for (const b of G.bands) b.visible = false; const bx = G.leaf.userData.box, i = boxes.indexOf(bx); if (i >= 0) boxes.splice(i, 1);
   if (quiet) return; const q = new V3(G.x, G.y + 1.5, G.z); puff(q, 0xb0a080, 12, 1.2, 2, 1.4); if (Math.hypot(G.x - player.pos.x, G.z - player.pos.z) < 260) { const o = Sfx.at(q, 260, 1.2); if (o) Sfx.noiseBurst(0.9, 'lowpass', 400, 80, 0.9, 1, 0, o); }
   showBanner(G.fort ? '砦の門が破れた！' : `第${G.i + 1}の関所、門が破れた！`, G.fort ? '本殿へ――守将に降伏を迫れ' : '突入！'); bannerTimer = 3; SGK.later.push([SGK.t + 1.2, () => sgkSayK('omiya', '門が開きました！ 正面隊、続いて！', 1.9)]); }
 function sgkBarrierFall(G) { if (G.fell) return; G.fell = true; if (!G.open) sgkGateOpen(G, false); const N = SGK.gates[G.i + 1];
   for (const e of G.def) if (isUp(e) && !e.sgkGave) { if (N && Math.random() < 0.7) { const tx = N.x + rand(-5, 5), tz = N.fort ? N.zc + rand(-10, 10) : N.z - rand(5, 14); e.sgkFlee = [tx, tz]; e.sgkFree = false; e.sgkRole = 'gate'; e.kind = 'mob'; e.sgkG = N; N.def.push(e); e.sgkHome = [tx, tz]; }
     else { e.sgkGave = true; e.state = 'idle'; } }   // 残りは武器を置く（その場に立ったまま）
-  G.def = G.def.filter(e => e.sgkG === G); SGK.bi = G.i + 1; SGK.restT = 26; showBanner(`第${G.i + 1}の関所、突破`, `標高${Math.round(sgkE(G.s))}m――少し息を整えて、次へ`); bannerTimer = 3.5; Sfx.fanfare && Sfx.fanfare();
+  G.def = G.def.filter(e => e.sgkG === G); if (N) { N.pool += G.pool; G.pool = 0; } SGK.bi = G.i + 1; SGK.restT = 26; showBanner(`第${G.i + 1}の関所、突破`, `標高${Math.round(sgkE(G.s))}m――少し息を整えて、次へ`); bannerTimer = 3.5; Sfx.fanfare && Sfx.fanfare();
   for (const U of SGK.units) { for (const e of U.mem) if (isUp(e)) e.sgkBr = Math.min(1, (e.sgkBr || 0) + 0.5); if (U.k === 'C') U.st = 'go'; }
-  SGK.later.push([SGK.t + 2.5, () => sgkSayK('akari', 'はーい、握り飯ですよー！ 一人一つずつ、塩も効いてます！', 1.7)]);
-  SGK.later.push([SGK.t + 6.5, () => sgkSayK('hiyori', 'お水もあります……ゆっくり飲んでくださいね', 1.5)]);
-  SGK.later.push([SGK.t + 11, () => sgkSayK('kujo', '動けない者は後方へ。私が診る。歩ける者は、息を整えてから登れ', 1.6)]);
-  SGK.later.push([SGK.t + 16, () => sgkSayK('sumi', N && N.fort ? '次は山頂の砦です。殿、もう少しの辛抱です' : '次の関所へ。ことね、殿の水筒を', 1.6)]); }
+  SGK.later.push([SGK.t + 0.8, () => sgkMobSay('taken', 50)]); SGK.later.push([SGK.t + 1.6, () => sgkSayK('omiya', `第${G.i + 1}の関所、取りました！ 殿、ご無事ですか！`, 1.8)]); SGK.later.push([SGK.t + 2.5, () => sgkSayK('akari', 'はーい、握り飯ですよー！ 一人一つずつ、塩も効いてます！', 1.7)]);
+  SGK.later.push([SGK.t + 5, () => sgkSayK('hiyori', 'お水もあります……ゆっくり飲んでくださいね', 1.5)]);
+  SGK.later.push([SGK.t + 7.5, () => sgkSayK('kujo', '動けない者は後方へ。私が診る。歩ける者は、息を整えてから登れ', 1.6)]);
+  SGK.later.push([SGK.t + 10.5, () => sgkSayK('sumi', N && N.fort ? '次は山頂の砦です。殿、もう少しの辛抱です' : '次の関所へ。ことね、殿の水筒を', 1.6)]); }
 function updateSgk(dt) { if (!SGK.on || state !== 'play') return; SGK.t += dt;
+  { const G = SGK.gates[SGK.bi], F = SGK.U && SGK.U.F; SGK.fastK = G && F && G.s - F.s > 110 ? 2.2 : 1; }   // 関所と関所の間の空いた道は早足で
   if ((SGK.gT = (SGK.gT || 0) - dt) <= 0) { SGK.gT = 0.2; sgkGrid(); }
   for (let i = SGK.later.length - 1; i >= 0; i--) if (SGK.later[i][0] <= SGK.t) { const f = SGK.later[i][1]; SGK.later.splice(i, 1); if (state === 'play') f(); }
   { const Q = SGK.trQ || (SGK.trQ = new V3()), W = SGK.trW || (SGK.trW = new V3()), Z = SGK.trZ || (SGK.trZ = new V3(0, 0, 1));
@@ -4102,15 +4125,18 @@ function updateSgk(dt) { if (!SGK.on || state !== 'play') return; SGK.t += dt;
   if (SGK.restT > 0) SGK.restT -= dt;
   for (const U of SGK.units) sgkUnitMove(U, dt);
   sgkRockTick(dt); sgkFallTick(dt); sgkFogTick(dt);
-  { const p = player.pos; const g = sgkH(p.x, p.z); if (p.y < g + 1.0) p.y = g + 1.6; }   // 殿が地面に埋まらない
+  { const p = player.pos, g = sgkH(p.x, p.z); if (p.y < g - 0.05) { p.y = g; player.vy = 0; player.onGround = true; } if (player.shake > 0.1) player.shake = 0.1; }   // 殿の足は地面（pos.y＝足の高さ）。揺れは小さく
   if ((SGK.sT = (SGK.sT || 0) - dt) <= 0) { SGK.sT = 0.5; sgkTick(); }
   if ((SGK.mT = (SGK.mT || 0) - dt) <= 0) { SGK.mT = 0.25; sgkMapDraw(); } }
 function sgkTick() { if (SGK.ph !== 'go') return; const G = SGK.gates[SGK.bi], F = SGK.U.F, C = SGK.U.C;
-  for (const U of SGK.units) { sgkReorder(U); let n = 0, br = 0; for (const e of U.mem) if (isUp(e)) { n++; br += e.sgkBr == null ? 1 : e.sgkBr; } U.br = n ? br / n : 1; U.mor = clamp(0.45 + 0.65 * (n + U.pool) / (U.real0 + U.pool0 || 1), 0.3, 1);
+  if ((SGK.chT = (SGK.chT == null ? 6 : SGK.chT) - 0.5) <= 0) { SGK.chT = rand(4, 7); sgkChat(); }
+  sgkFallenTick();
+  if (G && F.st !== 'atk' && !G.open && F.s > G.s - 26 && SGK.asB !== G.i) { SGK.asB = G.i; SGK_LN.assault.forEach((q, j) => SGK.later.push([SGK.t + 0.5 + j * 3.6, () => sgkSayK(q[0], q[1], 1.6)])); }
+  for (const U of SGK.units) { sgkReorder(U); let n = 0, br = 0; for (const e of U.mem) if (isUp(e)) { n++; br += e.sgkBr == null ? 1 : e.sgkBr; } U.br = n ? br / n : 1; U.mor = clamp(0.45 + 0.65 * (n + U.pool) / (U.real0 + U.pool0 || 1) - (SGK.ffPen || 0), 0.2, 1);
     sgkFmSet(U, sgkFmPick(U));
-    if (!U.cmd || !isUp(U.cmd)) { const nx = U.chain.map(k => SGK.by[k]).find(e => e && isUp(e)) || U.mem.find(isUp); if (nx && nx !== U.cmd) { const had = !!U.cmd; U.cmd = nx; if (had) { popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); popupTimer = 2.5; } } }
+    if (!U.cmd || !isUp(U.cmd)) { const nx = U.chain.map(k => SGK.by[k]).find(e => e && isUp(e)) || U.mem.find(isUp); if (nx && nx !== U.cmd) { const had = !!U.cmd; U.cmd = nx; if (had) { popup(U.name + '：' + (nx.ks2Title || nx.prof.name) + 'が指揮を引き継いだ'); popupTimer = 2.5; const ln = sgkMapT(KS2_L.succ[nx.ks2Named]); if (ln) SGK.later.push([SGK.t + 6, () => sgkSayK(nx.ks2Named, ln, 1.9)]); } } }
     // 控え：一人ずつの兵が減ったら、見えない所（隊の後ろ）から上がってくる
-    if (U.pool > 0 && n < U.real0 * 0.75) { const k = Math.min(U.pool, LITE ? 3 : 6); for (let j = 0; j < k; j++) { const s = U.s - U.dep - rand(25, 45), c = sgkCx(s), x = U.lane === 'ledge' && U.st !== 'down' && sgkL(s) > 0.99 ? c - 29 : c + rand(-6, 6), z = 1000 - s; if (Math.abs(z - player.pos.z) < 30 && sgkOnScreen(new V3(x, sgkG(x, z), z))) continue; const e = sgkMob(U, U.arch ? j % 5 !== 4 : j % 10 < 3, x, z); if (e) U.pool--; } } }
+    if (U.pool > 0 && n < U.real0 * 0.85) { const k = Math.min(U.pool, LITE ? 4 : 8); for (let j = 0; j < k; j++) { const s = U.s - U.dep - rand(25, 45), c = sgkCx(s), x = U.lane === 'ledge' && U.st !== 'down' && sgkL(s) > 0.99 ? c - 29 : c + rand(-6, 6), z = 1000 - s; if (Math.abs(z - player.pos.z) < 30 && sgkOnScreen(new V3(x, sgkG(x, z), z))) continue; const e = sgkMob(U, U.arch ? j % 5 !== 4 : j % 10 < 3, x, z); if (e) U.pool--; } } }
   if (!G) return;
   sgkCounts(); const up = G.up, alive = up / Math.max(1, G.n0);
   G.mor = Math.min(G.mor, clamp(0.25 + alive, 0.1, 1));
@@ -4125,17 +4151,17 @@ function sgkTick() { if (SGK.ph !== 'go') return; const G = SGK.gates[SGK.bi], F
   // 崖からの小石
   if ((SGK.fallT -= 0.5) <= 0) { SGK.fallT = rand(14, 26); const U = SGK.units[(Math.random() * 3) | 0], s = U.s - rand(0, 20), c = sgkCx(s), side = Math.random() < 0.5 ? -1 : 1; sgkFall(c + side * (sgkHW(s) - rand(0.5, 3)), 1000 - s); }
   // 守り手の控え
-  if (!G.open && G.pool > 0 && up < G.n0 * 0.6) { const k = Math.min(G.pool, LITE ? 2 : 4); for (let j = 0; j < k; j++) { const x = G.x + rand(-6, 6), z = G.fort ? G.zc - rand(8, 18) : G.z - rand(20, 34); const e = sgkDef(G, 'gate', x, z); if (e) G.pool--; } }
+  if (!G.open && G.pool > 0 && up < G.n0 * 0.7) { const k = Math.min(G.pool, LITE ? 3 : 6); for (let j = 0; j < k; j++) { const x = G.x + rand(-6, 6), z = G.fort ? G.zc - rand(8, 18) : G.z - rand(20, 34); const e = sgkDef(G, 'gate', x, z); if (e) G.pool--; } }
   // 門が開く／関所が落ちる
   if (!G.open && (G.hp <= 0 || (alive < 0.18 && G.mor < 0.4))) sgkGateOpen(G);
   if (!G.fort && (alive < 0.22 || (G.open && alive < 0.4 && F.s > G.s + 6))) sgkBarrierFall(G);
   // 祝融：第二の関所の前、霧の中で
-  if (SGK.bi === 1 && !SGK.shukuyu && F.s > G.s - 110) sgkBossSpawn();
+  if (SGK.bi === 1 && !SGK.shukuyu && F.s > SGK.gates[1].s - 110) sgkBossSpawn();
   if (SGK.boss && !SGK.boss.sgkBoss.esc && !isUp(SGK.boss)) SGK.boss = null;
   // 坂で息が上がる
   if ((SGK.brT -= 0.5) <= 0) { SGK.brT = rand(16, 28); const U = SGK.units[(Math.random() * 4) | 0]; if (U.br < 0.75) { const w = U.mem.find(o => isUp(o) && !o.ks2Named && Math.hypot(o.s.position.x - player.pos.x, o.s.position.z - player.pos.z) < 40); if (w) ks2Say(w, SGK_BR[(Math.random() * SGK_BR.length) | 0], 1.1); } }
   // 本隊の秘書の握り飯：息の上がった隊に配る
-  for (const U of SGK.units) if (U.br < 0.4 && SGK.t - (U.onT || -99) > 50) { U.onT = SGK.t; for (const e of U.mem) if (isUp(e)) e.sgkBr = Math.min(1, (e.sgkBr || 0) + 0.6); SGK.onig++; const who = SGK.onig % 2 ? 'akari' : 'hiyori'; sgkSayK(who, who === 'akari' ? `${U.name}のみなさーん、握り飯です！ 食べたらまた登れますよ！` : `${U.name}の方……握り飯、どうぞ。少し休んでから……`, 1.5); popup(`${U.name}に握り飯（息が戻った）`); popupTimer = 2; }
+  for (const U of SGK.units) if (U.br < 0.4 && SGK.t - (U.onT || -99) > 50) { U.onT = SGK.t; for (const e of U.mem) if (isUp(e)) e.sgkBr = Math.min(1, (e.sgkBr || 0) + 0.6); SGK.onig++; const who = SGK.onig % 2 ? 'akari' : 'hiyori'; sgkSayK(who, who === 'akari' ? `${U.name}のみなさーん、握り飯です！ 食べたらまた登れますよ！` : `${U.name}の方……握り飯、どうぞ。少し休んでから……`, 1.5); popup(`${U.name}に握り飯（息が戻った）`); SGK.later.push([SGK.t + 2.2, () => sgkMobSay('onig', 50, o => o.sgkU === U)]); popupTimer = 2; }
   // 砦：門が開き、守り手が尽きるか、こちらが長く中に居座れば守将が降る
   if (G.fort && G.open) { let inn = 0; const [x0, x1, z0, z1] = G.inner; for (const e of SGK.live.blue) { const q = e.s.position; if (q.x > x0 && q.x < x1 && q.z > z0 && q.z < z1) inn++; } SGK.inT = inn >= 20 ? SGK.inT + 0.5 : Math.max(0, SGK.inT - 0.5); if (alive < 0.15 || SGK.inT >= 60) sgkWin(); }
   // 負け
@@ -4143,13 +4169,13 @@ function sgkTick() { if (SGK.ph !== 'go') return; const G = SGK.gates[SGK.bi], F
 function sgkWin() { if (SGK.ph === 'won') return; SGK.ph = 'won'; for (const e of SGK.def) if (isUp(e)) { e.sgkGave = true; e.state = 'idle'; e.tgt = null; }
   showBanner('山頂の砦、開城', '守将 林 秀英が降伏した'); bannerTimer = 6; Sfx.fanfare && Sfx.fanfare(); if (SGK.cmd) ks2Say(SGK.cmd, '……もう十分だ。砦を明け渡す。兵の命だけは助けてほしい', 2.2);
   SGK.later.push([SGK.t + 4, () => sgkSayK('sumi', '殿。山頂の砦、落ちました。皆、よく登りました', 2)]); SGK.later.push([SGK.t + 7, () => sgkSayK('ojou', 'ようやく頂ですわね。……祝融の姿は、どこにもございませんけれど', 1.8)]);
-  setTimeout(() => { if (!SGK.on || state !== 'play') return; gameOver(true); const c = sgkCounts(); $('result').innerHTML = `山岳の関所を越え、山頂の砦が降伏した。攻め手の残り <b>${c.a}</b> / 1500・守り手の残り <b>${c.d}</b> / 1000。落石で倒れた者 ${SGK.rockK}・小刀で倒れた者 ${SGK.knK}（盾と竹束が止めた刃 ${SGK.knBlk}）。祝融は${SGK.shukuyu === 'escaped' ? '霧の中へ逃げた――次の山で、また会うことになる' : '姿を見せなかった'}。`; }, 9000); }
+  setTimeout(() => { if (!SGK.on || state !== 'play') return; gameOver(true); const c = sgkCounts(); $('result').innerHTML = `山岳の関所を越え、山頂の砦が降伏した。攻め手の残り <b>${c.a}</b> / 1500・守り手の残り <b>${c.d}</b> / 1000。落石で倒れた者 ${SGK.rockK}・小刀で倒れた者 ${SGK.knK}（盾と竹束が止めた刃 ${SGK.knBlk}）。祝融は${SGK.shukuyu === 'escaped' ? '霧の中へ逃げた――次の山で、また会うことになる' : '姿を見せなかった'}。治療して戦列に戻った者 ${SGK.healed || 0}。`; }, 9000); }
 function sgkLose(why) { if (SGK.ph !== 'go') return; SGK.ph = 'lost'; showBanner('撤退', why); bannerTimer = 4; setTimeout(() => { if (!SGK.on || state !== 'play') return; gameOver(false); const r = $('result'); if (r) r.innerHTML = `山岳の関所：${why}。`; }, 3500); }
 // ---- 視点の切り替え（今いる場所へ）・小さな地図 ----
 function sgkView(a) { if (!SGK.on || !SGK.U || !SGK.U[a]) return; const U = SGK.U[a], L = U.mem.filter(isUp).map(e => e.s.position); let x, z;
   if (L.length) { const zs = L.map(q => q.z).sort((p, q) => p - q), zm = zs[Math.floor(zs.length * 0.5)]; const near = L.filter(q => Math.abs(q.z - zm) < 10); x = near.reduce((s, q) => s + q.x, 0) / near.length; z = zm + 12; } else { const s = U.s; x = sgkCx(s); z = 1000 - s + 12; }
   if (!sgkWalk(x, z)) { const s = 1000 - z, c = sgkCx(s); x = U.lane === 'ledge' && sgkL(s) > 0.99 && x < c - 20 ? c - 29 : clamp(x, c - sgkHW(s) + 1, c + sgkHW(s) - 1); }
-  player.pos.set(x, sgkH(x, z) + 1.6, z); player.yaw = 0; player.pitch = -0.05; if (player.vel) player.vel.set(0, 0, 0); SGK.view = a; popup(U.name + 'へ'); popupTimer = 1.6; sgkUI(); }
+  player.pos.set(x, sgkH(x, z), z); player.yaw = 0; player.pitch = -0.05; if (player.vel) player.vel.set(0, 0, 0); SGK.view = a; popup(U.name + 'へ'); popupTimer = 1.6; sgkUI(); }
 function sgkUI() { let el = $('sgkArea'); if (!el) { el = document.createElement('div'); el.id = 'sgkArea'; for (const [a, k] of [['F', '6'], ['C', '7'], ['A', '8'], ['H', '9'], ['R', '0']]) { const b = document.createElement('button'); b.type = 'button'; b.dataset.a = a; b.title = SGK.U && SGK.U[a] ? SGK.U[a].name + '（' + k + '）' : a; b.textContent = SGK_AN[a]; b.addEventListener('click', ev => { ev.stopPropagation(); sgkView(a); }); el.appendChild(b); } document.body.appendChild(el);
     const cv = document.createElement('canvas'); cv.id = 'sgkMap'; cv.width = 132; cv.height = 210; document.body.appendChild(cv); }
   const on = SGK.on && state === 'play'; el.style.display = on ? 'flex' : 'none'; const cv = $('sgkMap'); if (cv) cv.style.display = on ? 'block' : 'none'; for (const b of el.children) b.classList.toggle('on', b.dataset.a === SGK.view); }
@@ -4165,6 +4191,72 @@ function sgkMapDraw() { const cv = $('sgkMap'); if (!cv || cv.style.display === 
   g.font = '9px sans-serif'; g.fillStyle = '#fff'; let y = 10; for (const U of SGK.units) { g.fillStyle = U.col; g.fillText(`${SGK_AN[U.k]} ${U.fm ? SGK_FM[U.fm].n.slice(0, 2) : ''} 士気${Math.round(U.mor * 100)}`, 3, y); y += 10; }
   const G = SGK.gates[SGK.bi]; if (G) { g.fillStyle = '#ffb0a0'; g.fillText(`敵の士気${Math.round(G.mor * 100)}`, 3, y); } }
 addEventListener('keydown', ev => { if (!SGK.on || state !== 'play' || ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) return; const a = { Digit6: 'F', Digit7: 'C', Digit8: 'A', Digit9: 'H', Digit0: 'R' }[ev.code]; if (a) { sgkView(a); ev.preventDefault(); } });
+// ---- 台詞の山（名のある娘は人物表どおりの口調・呼び方。群れの娘は名前つき） ----
+const SGK_LN = {
+  march: { omiya: ['列、詰めて！ 前の人の踵を見て歩いてください！', '殿、お足元に気をつけて。石が浮いてます！', 'はいっ、正面隊は順調です。……たぶん！'], ojou: ['山の空気は澄んでおりますわね。戦でなければ、よい散策ですのに', '大宮、声が大きゅうございますわ。……でも、助かります'],
+    shinobu: ['左の茂み、気配はありません。進めます', '殿の歩幅に合わせます。急がれませんよう'], chikage: ['関所までの距離、地図ではあと少しです', '西園寺様、隊列の報告はまとめておきます'], shizuka: ['……静かな山ですね。こういう所ほど、上に気をつけます'],
+    sec4: ['崖道、幅一尺。一人ずつ、焦らずに', '霧島中佐、後ろの組の足元をお願いします'], sysop: ['宮下大佐、崖の上に人影はありません', '足場の記録、取っておきます。帰り道にも使えますから'],
+    fumi: ['弓隊、弦は袋の中に。濡らしたら私が怒りますよ', 'ことねは本隊で大丈夫かしら。……まあ、澄さんがいるから平気ね'], reika: ['退屈な登りね。早く関所に着きたいわ', '弓隊、背筋を伸ばして。見られてるわよ'],
+    sumi: ['殿、水筒をどうぞ。少しずつお飲みください', 'ことね、殿のおそばを離れないで', '文乃の隊は先に行きました。追いつけますよ'], sec2: ['澄お姉さま、この坂、どこまで続くんでしょう……', 'と、殿、お荷物お持ちしますっ！'],
+    akari: ['足の速さなら任せてください！ 大宮さまの次ですけど！', '握り飯、まだたくさんありますよー！'], hiyori: ['皆さんのお名前、ちゃんと覚えてますから……はぐれないでくださいね', '白瀬さま、隊列の後ろも揃っています'],
+    sec3: ['ここまでで約%E%メートル。予定どおりです', '後方、担架と薬箱の数、確かめました'], kujo: ['足をくじいた者は言いなさい。我慢は治りを遅くする', '水はこまめに。倒れてから飲んでも遅い'] },
+  mob: { march: ['この坂、まだ続くの……？', '標高どのくらいだろう。耳がツンとする', '前の人の背中、見失わないようにしなきゃ', '関所って、どんな所なんだろう', '殿、ずっと歩いてらっしゃる……すごいな', '帰ったらお風呂入りたい……', '霧が出てきたら、声をかけ合おうね', 'あの山、尖ってて筆みたい'],
+    breath: ['はぁ……はぁ……もう少し……', '足が棒みたい……', '息が……ちょっと待って……', '登っても登っても、まだ上がある……', '肩、借りてもいい？', '休憩、まだかな……'],
+    rock: ['岩だ！ よけて！', '上から来る！ 竹束の陰に！', '丸太！ 道の端へ！', '今の、すごい音……', '危なかった……あと一歩で……', '竹束、持ってかれた！'],
+    fog: ['霧……前が見えない', '声、出して！ はぐれないで！', '何か、動いた気がする……', '右の斜面、気をつけて！'],
+    assault: ['門だ！ 打て、打て！', '上の弓に気をつけて！', '盾の後ろから離れないで！', 'もう少し……門が軋んでる！', '押せ！ 押せ！'],
+    taken: ['関所、取った！', 'やった……！ 一つ目……じゃなくて、次も！', '敵が逃げていく！', '少し休める……？'],
+    boss: ['あの人、刃を投げてくる……！', '盾から顔を出しちゃだめ！', '氷室さんが前に出た……！', '刃が尽きたら、囲むんだって！'],
+    fallen: ['……動かない。衛生兵を！', 'さっきまで、隣で話してたのに……', '名前、覚えておくからね……', '目を閉じてあげて……', '衛生兵、こっちです！'],
+    onig: ['握り飯！ 塩が効いてる……生き返る……', 'あかりさん、ありがとうございます！', 'おいしい……もう少し登れる'] },
+  assault: [['omiya', '正面隊、門を打ちます！ 盾は上、弓に気をつけて！'], ['ojou', '大宮、焦らずに。門は逃げませんわ'], ['shinobu', '殿は弓の届かぬところへ。……わたくしが見ております'], ['reika', '弓隊、狭間を狙いなさい！ 一本も無駄にしないで！'], ['fumi', '的は私が外しませんけど。……皆も外さないでね']],
+  boss: [['shinobu', '間合いは見えました。次の一投、受けます'], ['shizuka', '……刃の数を数えています。尽きた時が、勝負です'], ['chikage', '西園寺様、お下がりください。あの方は普通ではありません'], ['omiya', '盾の陰から出ないで！ 一人で行かない！'], ['reika', '女将ひとりに、なに手間取ってるのよ！ 弓、集めて！'], ['sumi', '殿、本当に前へは出ないでください。……お願いします']],
+  fog: [['sysop', '霧が濃くなります。この先、伏兵に注意'], ['sec4', '崖道隊、声をかけ合って。足を踏み外さないで'], ['omiya', '霧です！ 前の人の肩に手を！'], ['sumi', 'ことね、殿の袖をつかんでいて']],
+  rockR: [['omiya', '今の岩、見ました？ 竹束がなかったら……'], ['ojou', '……上から転がすとは、古風な手ですわね'], ['sec3', '岩の速さ、毎秒十メートル近く。道の端なら避けられます']],
+  fallenN: [['omiya', '……止まらないで！ 悲しむのは、後です！'], ['ojou', '……その名、わたくしが覚えておきますわ'], ['sumi', '殿、前を見ていてください。……後で、必ず弔います'], ['kujo', '御臨終です。……次へ行きます']],
+  king: ['皆、無理はするな。息が切れたら言え', '山頂で飯にしよう。それまで頑張れ', '関所の上の弓、厄介だな……', 'この景色、戦でなければなあ'],
+};
+function sgkPickN(L, near) { const ok = L.filter(q => { const e = SGK.by[q[0]]; return e && isUp(e) && (!near || Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < near); }); return ok.length ? ok[(Math.random() * ok.length) | 0] : null; }
+function sgkMobSay(sit, near, pred) { const L = SGK_LN.mob[sit]; if (!L) return false; const c = []; for (const o of SGK.live.blue) { if (o.ks2Named || !isUp(o) || o.sgkMed && sit !== 'fallen' && Math.random() < 0.5) continue; const d = Math.hypot(o.s.position.x - player.pos.x, o.s.position.z - player.pos.z); if (d < (near || 30) && (!pred || pred(o))) c.push(o); if (c.length > 20) break; }
+  if (!c.length) return false; const e = c[(Math.random() * c.length) | 0]; ks2Say(e, L[(Math.random() * L.length) | 0], 1.2); return true; }
+function sgkNamedSay(sit, near) { const M = SGK_LN.march, ks = Object.keys(M).filter(k => { const e = SGK.by[k]; return e && isUp(e) && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < (near || 45); }); if (!ks.length) return false;
+  const k = ks[(Math.random() * ks.length) | 0], L = M[k]; let t = L[(Math.random() * L.length) | 0]; t = t.replace('%E%', Math.round(sgkE(Math.max(0, SGK.U.F.s)))); sgkSayK(k, t, 1.3); return true; }
+function sgkChat() {   // よくしゃべる：数秒ごとに、その場にあった声
+  const G = SGK.gates[SGK.bi], F = SGK.U.F, B = SGK.boss; let sit = 'march';
+  if (B && isUp(B) && !B.sgkBoss.esc && Math.hypot(B.s.position.x - player.pos.x, B.s.position.z - player.pos.z) < 70) sit = 'boss';
+  else if (SGK.fogV > 0.5) sit = 'fog'; else if (F.st === 'atk') sit = 'assault'; else if (SGK.restT > 0) sit = 'taken';
+  else { let lo = 1; for (const U of SGK.units) lo = Math.min(lo, U.br); if (lo < 0.7 && Math.random() < 0.5) sit = 'breath'; }
+  const r = Math.random();
+  if (sit === 'march') { if (r < 0.45) sgkNamedSay() || sgkMobSay('march'); else if (r < 0.92) sgkMobSay('march'); else sgkKing(SGK_LN.king[(Math.random() * SGK_LN.king.length) | 0]); return; }
+  if (r < 0.35) { const q = sgkPickN(SGK_LN[sit] || [], 60); if (q) { sgkSayK(q[0], q[1], 1.4); return; } }
+  sgkMobSay(sit, 40) || sgkNamedSay(); }
+function sgkMapT(t) { if (!t || /エレノア|英国/.test(t)) return null; return t.replace(/南門隊/g, '正面隊').replace(/東門隊/g, '弓隊').replace(/北門隊/g, '崖道隊').replace(/西門隊/g, '正面隊').replace(/東門/g, '弓隊').replace(/南門/g, '正面').replace(/西門/g, '正面').replace(/北門/g, '崖道'); }
+function sgkFallenTick() {   // 倒れた仲間への声（傷の描写はしない）
+  for (const U of SGK.units) for (const e of U.mem) if (!isUp(e) && !e.sgkDn) { e.sgkDn = true; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z); if (d > 40) continue;
+    if (e.ks2Named) { const v = e.ks2Named; if (KS2_LAST[v]) ks2Say(e, KS2_LAST[v], 2, KS2_VK[v]);   // 最期の一言、まわりの名のある娘の声（決戦2と同じもの）
+      const XF = (KS2_XF[v] || []).map(q => [q[0], sgkMapT(q[1])]).filter(q => q[1] && SGK.by[q[0]] && isUp(SGK.by[q[0]])).slice(0, 2);
+      if (XF.length) XF.forEach((q, i) => SGK.later.push([SGK.t + 3 + i * 4.5, () => sgkSayK(q[0], q[1], 1.8)])); else if (SGK.t - (SGK.fnT || -99) > 4) { SGK.fnT = SGK.t; const q = sgkPickN(SGK_LN.fallenN, 80); if (q) SGK.later.push([SGK.t + 3, () => sgkSayK(q[0], q[1], 1.8)]); } continue; }
+    if (SGK.t - (SGK.fmT || -99) > 5) { SGK.fmT = SGK.t; const p0 = e.s.position.clone(); SGK.later.push([SGK.t + rand(0.8, 1.8), () => sgkMobSay('fallen', 60, o => Math.hypot(o.s.position.x - p0.x, o.s.position.z - p0.z) < 12)]); } } }
+// 衛生兵（各隊に数人）：生きている者を手当てし、倒れた者には「御臨終です」
+function sgkMedic(e, dt) { const p = e.s.position; if ((e.medT = (e.medT || 0) - dt) > 0 && !e.medTgt) return false;
+  if (!e.medTgt) { e.medT = 1.2; let best = null, bd = 14; for (const o of e.sgkU.mem) { if (o === e) continue; const q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d >= bd) continue; if (isUp(o) ? o.hp < o.hpMax : !o.sgkPron) { bd = d; best = o; } } e.medTgt = best; if (!best) return false; }
+  const o = e.medTgt, q = o.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d > 1.3) { if (d > 18) { e.medTgt = null; return false; } sgkGo(e, q.x, q.z, e.speed * 1.2, dt); return true; }
+  e.moving = false; e.faceWant = Math.atan2(q.x - p.x, q.z - p.z); e.medW = (e.medW || 0) + dt; if (e.medW < 2.2) return true; e.medW = 0; e.medTgt = null;
+  if (isUp(o)) { o.hp = Math.min(o.hpMax, o.hp + 1); SGK.healed = (SGK.healed || 0) + 1; if (Math.random() < 0.25 && Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 30) ks2Say(e, ['大丈夫、まだ歩けます。息を整えて', 'じっとして。すぐ済みます', '包帯、巻き直しました。無理はしないで'][(Math.random() * 3) | 0], 1.1); }
+  else { o.sgkPron = true; if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 35) ks2Say(e, '御臨終です', 1.3); } return true; }
+// 殿の誤射・懐刀：まわりの娘の反応（決戦2・山岳の関所・この先の幕で共通）
+function kingFFReact(e, hit) { if (!e || e.team !== 'blue' || e.isPlayer) return; const BY = SGK.on ? SGK.by : KS2.on ? KS2.by : null; if (!BY && !e.ks2) return;
+  const stab = !(hit && (hit.arrow || hit.shot || hit.gun || hit.bullet)) && player.weapon === 1; const now = time, F = window.__ffS || (window.__ffS = { n: 0, t: -99 }); if (now - F.t < 2.5) return; F.t = now; F.n++;
+  const p = e.s.position, near = enemies.filter(o => o !== e && o.team === 'blue' && o.state !== 'down' && !o.ks2Named && Math.hypot(o.s.position.x - p.x, o.s.position.z - p.z) < 10).slice(0, 8);
+  const say = (o, t, pr, d) => setTimeout(() => { if (o && o.state !== 'down' && state === 'play') ks2Say(o, t, pr || 1.6); }, (d || 0) * 1000);
+  const nm = BY ? k => { const o = BY[k]; return o && o.state !== 'down' && (SGK.on ? isUp(o) : true) && Math.hypot(o.s.position.x - player.pos.x, o.s.position.z - player.pos.z) < 30 ? o : null; } : () => null;
+  if (e.ks2Named && KS2_FFN[e.ks2Named]) { ks2Say(e, KS2_FFN[e.ks2Named], 2.1, KS2_VK[e.ks2Named]); e.ffSaid = time; }
+  if (!stab) { if (near[0]) say(near[0], Math.random() < 0.5 ? 'えっ、陛下!?' : '今の、殿の矢……？', 1.7, 0.6); if (near[1]) say(near[1], (e.prof && e.prof.name ? e.prof.name.split(' ')[0] : '') + 'さん！ しっかりして！', 1.5, 1.8); if (near[2]) say(near[2], '衛生兵、こっちです！', 1.4, 3);
+    const o = nm('omiya'), s = nm('sumi'); if (o) say(o, '殿、射線をよく見てください！', 1.9, 4.2); else if (s) say(s, '殿、お下がりください。味方が前にいます', 1.9, 4.2); }
+  else { const L = ['……え？', 'どうして……', 'わ、私たち、何かしましたか……？']; near.slice(0, 3).forEach((o, i) => say(o, L[i], 1.7, 0.4 + i * 1.3)); const s = nm('sumi'), k = nm('kujo'); if (s) say(s, '殿！ お気を確かに！', 2, 4.2); if (k) say(k, '手当てします、どいてください', 1.8, 6);
+    if (SGK.on) SGK.ffPen = Math.min(0.4, (SGK.ffPen || 0) + 0.06); if (KS2.on) KS2.ffPen = Math.min(0.4, (KS2.ffPen || 0) + 0.06); }
+  for (const o of near) { o.ffAway = now + (stab ? 8 : 5); if (SGK.on) { const dx = o.s.position.x - player.pos.x, dz = o.s.position.z - player.pos.z, L = Math.hypot(dx, dz) || 1; const s = 1000 - (o.s.position.z + dz / L * 3), c = sgkCx(s), w = sgkHW(s) - 1; o.sgkDg = { x: clamp(o.s.position.x + dx / L * 3, c - w, c + w), z: o.s.position.z + dz / L * 3, until: SGK.t + 2.5 }; } else { o.knock && o.knock.set(dx0(o) * 1.5, 0, dz0(o) * 1.5); } }
+  function dx0(o) { const dx = o.s.position.x - player.pos.x, L = Math.hypot(dx, o.s.position.z - player.pos.z) || 1; return dx / L; } function dz0(o) { const dz = o.s.position.z - player.pos.z, L = Math.hypot(o.s.position.x - player.pos.x, dz) || 1; return dz / L; } }
 // ===== 山岳の関所ここまで =====
 
 // ---- 音が消えないように：AudioContext が止まっていたら（タブ切替・スマホの割り込み・自動再生の制限）入力や画面の復帰のたびに再開。
@@ -29757,7 +29849,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -30013,13 +30105,13 @@ function hitSurface(e, pt, from) {
   return new V3(p.x + n.x * 0.14, clamp(pt.y, e.baseY + 0.1, e.baseY + e.figH), p.z + n.z * 0.14);
 }
 // 刺さった練習矢：体に取り付ける（倒れると一緒に伏せる）
-function stickArrow(e, pt, dir) {
+function stickArrow(e, pt, dir, tpl, back) {
   const d = dir.clone().normalize(), p = e.s.position;
   const hz = new V3(-d.x, 0, -d.z); if (hz.lengthSq() < 1e-6) hz.set(0, 0, 1); hz.normalize();
-  const m = (KS2.on || SGK.on ? arrowWar : arrowTpl.player).clone();
+  const m = tpl || (KS2.on || SGK.on ? arrowWar : arrowTpl.player).clone();
   const surf = new V3(p.x + hz.x * 0.1, clamp(pt.y, e.baseY + 0.2, e.baseY + e.figH * 0.92), p.z + hz.z * 0.1);
   m.quaternion.setFromUnitVectors(Z, d);
-  m.position.copy(surf).addScaledVector(d, -0.36); m.updateMatrixWorld(true);
+  m.position.copy(surf).addScaledVector(d, back != null ? -back : -0.36); m.updateMatrixWorld(true);
   e.s.attach(m);
   e.stuck.push(m); if (e.stuck.length > 10) { const o = e.stuck.shift(); o.parent && o.parent.remove(o); }
 }
@@ -30555,7 +30647,7 @@ function warSay(e, kind, prio, sub) {
   const n = WAR_N[kind]; if (!n) return;
   const rom = WAR_ROM[e.prof && e.prof.pers] || 'calm', vv = e.prof && e.prof.vv != null ? e.prof.vv : 1;
   const L = W[`w_${rom}${vv}_${kind}_${(Math.random() * n) | 0}`], rt = TH.on && e.th && e.prof ? 0.9 + (thHash(e.prof.name || '') % 21) / 100 : 1;   // 天鳳：一人ずつ声の高さ・速さを少し変える
-  if (L && L.file && VoicePack.play(L.file, d, prio, rt) && sub && d < 14 && state === 'play') { subtitle(L.ja); const el = $('subtitle'); if (el) el.textContent = (e.prof.name || '').replace(/^組頭 /, '') + '「' + L.ja + '」'; }
+  if (L && L.file) VoicePack.play(L.file, d, prio, rt);   // 群れの侍女の声には字幕を出さない
 }
 function warChat(S, dt) {
   if ((S.wT = (S.wT || 3) - dt) > 0) return; S.wT = rand(7, 12);
@@ -32164,7 +32256,8 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
   e.hurtAt = time;   // 撃たれた娘はしばらく状況台詞を言わない
   e.wasTalking = partner || Talk.speaking(e);
   if (e.wasTalking) { if (partner) closeSecMenu(false); Talk.hush(e); }
-  e.hp -= dmg; if (e.campProt && CAMP.on && e.hp > 0 && e.hp <= e.hpMax * 0.4) campProtFall(e);   // 大将：弱れば声をかけて殿の後ろへ下がる（討たれることもある）
+  e.hp -= dmg; if ((KS2.on || SGK.on) && e.ks2Named && !e.wndSaid && e.hp > 0 && e.hp <= e.hpMax * 0.4 && KS2_WND[e.ks2Named]) { e.wndSaid = true; const w = e; setTimeout(() => { if (state === 'play' && w.state !== 'down' && !(w.ffSaid && time - w.ffSaid < 3)) ks2Say(w, KS2_WND[w.ks2Named], 1.9, KS2_VK[w.ks2Named]); }, 900); }   // 深手の一言
+  if (e.campProt && CAMP.on && e.hp > 0 && e.hp <= e.hpMax * 0.4) campProtFall(e);   // 大将：弱れば声をかけて殿の後ろへ下がる（討たれることもある）
   e.flash = TRENCH.on ? 0 : 0.12; if (TRENCH.on) npcGlow(e,0,0,0); else npcGlow(e,0.9,0.9,0.9); // 塹壕戦では被弾時の白い発光を完全に消す
   let hitPos = null;
   if (hit && hit.pt) {
@@ -32185,7 +32278,7 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
     e.clutch = 0.85; e.clutchArm = Math.random() < 0.5 ? 'l' : 'r';
   }
   if (e.state === 'windup' || e.state === 'aim' || e.state === 'zanshin') { e.state = 'stagger'; e.t = 0; }
-  if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); }
+  if (byPlayer) { hitMarker(); Sfx.hit(); if (crit) popup('急所！'); else if (e.team === 'blue') popup('味方に命中！'); if (e.team === 'blue' && (SGK.on || KS2.on || (typeof SGK2 !== 'undefined' && SGK2.on))) try { kingFFReact(e, hit); } catch (_) {} }
   else if (!(hit && hit.arrow) && sfxGate(hitPos, 45)) { Sfx.impactBody(hitPos); if (by && by !== 'player' && (by.yari || by.melee) && Math.random() < 0.3) Sfx.clashAt(hitPos); }   // 矢は updateArrows で「ズブッ」
   if (by && by !== 'player' && by.state !== 'down' && enemies.includes(by)) { e.tgt = by; e.tgtT = 2; }   // 撃ってきた相手に向き直る
   if (e.perch && e.perch.tower && e.team === DEF()) { const t = e.perch.x < 0 ? towers.west : towers.east; t.press += 1.5; }

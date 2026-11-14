@@ -4474,7 +4474,12 @@ function kosSickAnim(e, dt) { const S = e.kosSick; if (!S) return false; S.t += 
   return false; }
 function kosSicken(e, delay) { if (e.kosSick || e.kosDead || !isUp(e)) return; e.kosSick = { ph: 'wait', t: -delay, T: rand(1.4, 2.8) }; }
 function kosRecover(e) { const S = e.kosSick; if (!S) return; if (e.lying) { const i = bodies.indexOf(e); if (i >= 0) bodies.splice(i, 1); stopLying(e); } e.kosSick = { ph: 'rest', t: 0, T: rand(14, 26) }; e.kosWeak = true; e.hp = Math.max(1, e.hp); }
-function kosSickTick(dt) { for (const e of KOS.all) { const S = e.kosSick; if (S && S.ph === 'wait') { S.t += dt; if (S.t >= 0) { S.ph = 'clutch'; S.t = 0; KOS.sickN++; if (Math.random() < 0.35 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 35) kosMobSay1(e, 'sick'); } } } }
+// 毒気：名のある娘も倒れる（胸・お腹を押さえる。傷の描写・吐血なし）。ただし毒気では亡くならない（衛生兵の手当てで起き上がる）。号令役（白瀬・九条・綾瀬）は倒れない
+const KOS_SICK_NO = new Set(['sumi', 'kujo', 'fumi']);
+const KOS_SICK_LN = { sec2: '澄お姉さま……胸が、苦しい……', ojou: '……失礼、いたしますわ。少し、息が……', omiya: 'だ、大丈夫……私、副官ですから……っ', shinobu: '西園寺様……お先に、お下がりを……',
+  sec3: '数が……数えられない……息が、浅い……', sec4: '記録……しなきゃ……手が、震えて……', sysop: '殿……すみません、少し……横に……', hirose: 'へ、平気だし……ちょっと、お腹が……',
+  flute: '笛が……吹けない……息が、続かない……', sanjo: '……やば、これ……ちょっと、無理かも', midori: 'くっ……こんな靄くらいで……' };
+function kosSickTick(dt) { for (const e of KOS.all) { const S = e.kosSick; if (S && S.ph === 'wait') { S.t += dt; if (S.t >= 0) { S.ph = 'clutch'; S.t = 0; KOS.sickN++; if (e.ks2Named && KOS_SICK_LN[e.ks2Named]) { kosSayK(e.ks2Named, KOS_SICK_LN[e.ks2Named], 1.95); continue; } if (Math.random() < 0.35 && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 35) kosMobSay1(e, 'sick'); } } } }
 // ---- 筏 ----
 function kosRafts() { const n = Math.ceil(KOS.all.filter(e => e.team === 'blue' && isUp(e)).length / 34), sp = Math.min(13, 170 / Math.max(1, n)); KOS.rafts = [];
   for (let i = 0; i < n; i++) { const x = (i - (n - 1) / 2) * sp; const m = kosRaftMesh(); stageRoot.add(m); m.scale.z = 8 / 7; const R = { i, x, s: KOS_SHORE + 4.6, s0: KOS_SHORE + 4.6, w: 7.2, l: 8, y: 0.3, m, v: 0, row: 0, riders: [] }; KOS.rafts.push(R); m.position.set(x, R.y, 1000 - R.s); }
@@ -4615,7 +4620,8 @@ function kosMedic(e, dt) { const p = e.s.position; if (e.kosOn || e.kosHop) retu
   else if (isUp(o) && !o.kosDead) { o.hp = Math.min(o.hpMax, o.hp + 1); KOS.healed++; }
   else { o.sgkPron = true; if (near) ks2Say(e, '御臨終です', 1.3); } return true; }
 // 毒気で亡くなった娘：ほかの戦死と同じ倒れ方（横たわる体として残す。消えない）にしてから布をかける
-function kosPoisonDeath(o) { if (o.kosDead) return; o.kosDead = true; o.sgkPron = true; o.kosDn = true; KOS.deadN++; o.kosOn = false; o.kosHop = null; o.clutch = 0; o.kneel = false; o.crouch = 0;
+function kosPoisonDeath(o) { if (o.kosDead || o.ks2Named) return;   // 名のある娘は毒気では亡くならない
+  o.kosDead = true; o.sgkPron = true; o.kosDn = true; KOS.deadN++; o.kosOn = false; o.kosHop = null; o.clutch = 0; o.kneel = false; o.crouch = 0;
   if (o.lying) { o.kosSick = null; o.state = 'down'; o.hp = 0; const i = enemies.indexOf(o); if (i >= 0) enemies.splice(i, 1); if (!bodies.includes(o)) bodies.push(o); }
   else { o.kosSick = null; o.hp = 0; const p = o.s.position; killEnemy(o, false, new V3(p.x + rand(-1, 1), p.y, p.z + 1)); }
   KOS.later.push([KOS.t + 6, () => kosShroud(o)]); }
@@ -4639,7 +4645,7 @@ function kosStart() { KOS.on = true; kosReset(); kosSpawn(); KOS.ph = 'trail'; K
   const s = KOS.U.H.s - 4, c = kosCx(s); player.pos.set(c + 3, kosG(c + 3, 1000 - s), 1000 - s); player.yaw = 0; player.pitch = 0.02; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
   showBanner('南蛮行軍', '山岳の関所の先――先鋒の白石隊は一日先を行く。その跡を追い、妻娘返らずの湖を越えよ'); bannerTimer = 4.5;
   KOS.later.push([5, () => kosSayK('sumi', '殿、白石隊の通った跡を辿ります。先鋒とは一日の差です', 1.9)]); kosSeq(KOS_LN.start, 11, 6); kosKgInit(); KOS.later.push([3, () => { popup(MOBILE ? '殿は輿の中。左上の「降りる」で歩ける' : '殿は輿の中。E（または左上の「降りる」）で歩ける'); popupTimer = 4; }]);
-  if (TEST) window.__kos = { KOS, updateKos, kosJump, kosCounts, kosRaftAt, kosG, kosH, kosLook, kosPoisonDeath, kosAmbush2, kosBossEscape, kosLand, kosKgUse, kosKgTick, kosKgTalk, kosKgJump, kosKgToilet }; }
+  if (TEST) window.__kos = { KOS, updateKos, kosJump, kosCounts, kosRaftAt, kosG, kosH, kosLook, kosPoisonDeath, kosAmbush2, kosBossEscape, kosLand, kosKgUse, kosKgTick, kosKgTalk, kosKgJump, kosKgToilet, zhVoice, hitVoice, npcSay, get VP() { return VoicePack; } }; }
 function kosCounts() { let a = 0, sick = 0, dead = 0, all = 0, pool = 0; for (const U of KOS.units) pool += U.pool; for (const e of KOS.all) { if (e.team !== 'blue') continue; all++; if (e.kosDead || !isUp(e)) { dead++; continue; } a++; if (e.kosSick && e.kosSick.ph !== 'wait' && e.kosSick.ph !== 'rest') sick++; }
   return { a: a + pool, f: a, pool, sick, dead, all: all + pool, foes: KOS.foes.filter(o => isUp(o) && !o.kosFlee && !o.kosBoss).length, fSp: KOS.fSp || 0, fDead: KOS.fDead || 0 }; }
 function kosLabel() { const c = kosCounts(), P = { trail: '先鋒の跡を辿る', amb: '伏兵', shore: '湖の岸', build: '筏を組む', day: '昼の渡河', poison: '引き返せ', back: '岸へ戻る', rest: '日が落ちるのを待つ', night: '夜の渡河', far: '向こう岸', adv: '草地を進む', meet: '白石隊と合流', battle: '背水の陣', won: '南蛮兵を退けた' }[KOS.ph] || '';
@@ -4666,20 +4672,23 @@ function kosDepart(quiet) { KOS.ph = KOS.dark > 0.5 ? 'night' : 'day'; kosBoardP
   kosRaftGoal(R => night ? KOS_FAR - 4.6 : KOS_LAKE[1] - 20, night ? 3.0 : 1.6, night ? [0, 4, 8] : [0, 5, 10]); KOS.ev.depT = KOS.t;
   if (!quiet) { if (night) { showBanner('夜の渡河', '水は冷え、霧は立たない'); bannerTimer = 3; KOS.later.push([KOS.t + 1, () => sgkKing('渡るぞ。静かにな')]); kosSeq(KOS_LN.go2, 10, 17); } else { showBanner('昼の渡河', '筏で向こう岸へ'); bannerTimer = 3; kosSeq(KOS_LN.go1.slice(1), 4, 6); } } }
 function kosPoison(quiet) { if (KOS.ev.poison) return; KOS.ev.poison = true; KOS.ph = 'poison'; KOS.ev.poT = KOS.t;
-  for (const R of KOS.rafts) { const lead = Math.max(0, (R.s - KOS_SHORE) / 70), pr = R.row === 0 ? 0.6 : R.row === 1 ? 0.36 : 0.18; for (const e of R.riders) if (!e.ks2Named && isUp(e) && Math.random() < pr * Math.min(1.2, 0.5 + lead)) kosSicken(e, quiet ? 0 : (R.row * 2.5 + rand(0, 7))); }
+  for (const R of KOS.rafts) { const lead = Math.max(0, (R.s - KOS_SHORE) / 70), pr = R.row === 0 ? 0.6 : R.row === 1 ? 0.36 : 0.18; for (const e of R.riders) if (isUp(e) && !e.ks2Named && Math.random() < pr * Math.min(1.2, 0.5 + lead)) kosSicken(e, quiet ? 0 : (R.row * 2.5 + rand(0, 7))); }
+  // 名のある娘も３〜４人は倒れる（殿の筏。台詞が重ならないよう間をあける）
+  const NMS = KOS.all.filter(e => e.ks2Named && isUp(e) && !e.kosSick && !KOS_SICK_NO.has(e.ks2Named) && KOS_SICK_LN[e.ks2Named] && KOS.rafts.some(R => R.riders.includes(e))).sort(() => Math.random() - 0.5).slice(0, 3 + ((Math.random() * 2) | 0));
+  NMS.forEach((e, i) => kosSicken(e, quiet ? 0 : [4, 8.3, 11.6, 15.6][i] + rand(0, 0.6)));
   if (quiet) { for (const e of KOS.all) if (e.kosSick && e.kosSick.ph === 'wait') { e.kosSick.ph = 'clutch'; e.kosSick.t = 0; KOS.sickN++; } return; }
   // 毒気：湖面から立ちのぼる薄い靄（色は淡く、血のような色は使わない）
   const mat = new THREE.SpriteMaterial({ map: puffTex, color: 0xe6e3c4, transparent: true, opacity: 0, depthWrite: false }); KOS.hazeM = mat;
   for (let i = 0; i < (LITE ? 18 : 40); i++) { const R = KOS.rafts[i % KOS.rafts.length], sp = new THREE.Sprite(mat); sp.position.set(R.x + rand(-14, 14), rand(0.3, 2), 1000 - (R.s + rand(-10, 30))); const k = rand(6, 14); sp.scale.set(k, k * 0.45, 1); sp.userData.v = rand(0.05, 0.18); stageRoot.add(sp); KOS.haze.push(sp); }
   kosSeq(KOS_LN.poison.slice(0, 2), 2.5, 3.6); KOS.later.push([KOS.t + 9.5, () => kosSayK('kujo', KOS_LN.poison[2][1], 2.2)]); KOS.later.push([KOS.t + 13.5, () => { sgkKing('戻れ！全員引き返せ！'); kosRaftGoal(R => R.s0, 1.9, [2, 1, 0]); KOS.ph = 'back'; }]);
-  kosSeq(KOS_LN.poison2, 17, 3.8); popup('胸が……苦しい'); popupTimer = 2.5; }
+  kosSeq(KOS_LN.poison2, 17, 3.8); KOS.later.push([KOS.t + 7.5, () => sgkKing('……俺は何ともない。なのに、なぜみんな倒れる？')]); }
 function kosBack(quiet) { if (KOS.ev.back) return; KOS.ev.back = true; KOS.ph = 'rest'; KOS.ev.restT = KOS.t; let k = 0;
   for (const R of KOS.rafts) R.riders.forEach((e, j) => { if (!isUp(e) || e.kosDead) return; e.kosOn = false; e.sgkFree = false; const lying = e.kosSick && e.kosSick.ph !== 'rest';
     const x = R.x + e.kosSl[0] * 1.3 + rand(-0.5, 0.5), z = 1000 - (KOS_SHORE - 6 - (j % 5) * 2.2 - rand(0, 1)); if (lying) { e.s.position.set(x, kosG(x, z), z); if (e.kosSick.ph === 'wait') { e.kosSick.ph = 'clutch'; e.kosSick.t = 0; KOS.sickN++; } } else { kosHop(e, R.x + e.kosSl[0], 1000 - (KOS_SHORE - 2.5), false); e.kosRest = [x + rand(-3, 3), z - rand(4, 12)]; } k++; });
   if (!quiet) { KOS.later.push([KOS.t + 1, () => kosSayK('kujo', KOS_LN.back[0][1], 2)]); KOS.later.push([KOS.t + 5, () => kosSayK('sumi', KOS_LN.back[1][1], 1.9)]); KOS.later.push([KOS.t + 10, () => kosRead()]); } }
 function kosRead() { const e = KOS.by.sec4 || KOS.by.sec3, st = KOS.stone; kosSayK(e && e.ks2Named || 'sec4', KOS_LN.back[2][1], 1.9); if (e && isUp(e)) { e.kosRest = [st[0] + 1.2, st[1] + 1.6]; }
   KOS.later.push([KOS.t + 6, () => { if (KOS.stoneFace) { KOS.stoneFace.material.map = KOS.stoneTex[1]; KOS.stoneFace.material.needsUpdate = true; } kosSayK(e && e.ks2Named || 'sec4', '……読みます', 1.9); }]);
-  KOS.later.push([KOS.t + 8.5, () => { kosSign('苔の下の古い石碑', KOS_SIGN_OLD, 16); KOS.ev.read = true; }]);
+  KOS.later.push([KOS.t + 8.5, () => { kosSign('苔の下の古い石碑', KOS_SIGN_OLD, 16); KOS.ev.read = true; }]); KOS.later.push([KOS.t + 15, () => sgkKing('女の身を……。だから俺だけ、何ともなかったのか')]);
   const T = kosSeq(KOS_LN.read, 18, 4.6); KOS.later.push([KOS.t + 18 + T, () => { sgkKing('日が落ちるまで待つ。手当てを急げ'); KOS.ev.wait = true; KOS.waitT = 0; showBanner('日が落ちるのを待つ', '朽ち木の毒気は、真昼の熱で立ちのぼる'); bannerTimer = 3.5; kosSeq(KOS_LN.wait, 6, 7); }]); }
 function updateKos(dt) { kosKgUi(); if (!KOS.on || state !== 'play') return; KOS.t += dt;
   for (let i = KOS.later.length - 1; i >= 0; i--) if (KOS.t >= KOS.later[i][0]) { const f = KOS.later[i][1]; KOS.later.splice(i, 1); try { f(); } catch (_) {} }
@@ -4701,7 +4710,7 @@ function kosTick() { const ps = kosPS(), H = KOS.U.H, F = KOS.U.F; kosFallenTick
     if (H.s > 760 || (ps > 770 && F.s > 780)) kosShore();
     if (KOS.ph === 'trail' && KOS.t - (KOS.chL || 0) > rand(9, 13) && !KOS.later.length) { KOS.chL = KOS.t; const L = KOS_LN.march.filter(q => KOS.by[q[0]] && isUp(KOS.by[q[0]]) && Math.hypot(KOS.by[q[0]].s.position.x - player.pos.x, KOS.by[q[0]].s.position.z - player.pos.z) < 45); if (L.length && Math.random() < 0.7) { const q = L[(KOS.chI = ((KOS.chI || 0) + 1 + ((Math.random() * 3) | 0)) % L.length)]; kosSayK(q[0], q[1], 1.6); } else kosMobSay('march', 30); } }
   if (KOS.ph === 'day' && !KOS.ev.poison && KOS.rafts.some(R => R.s > KOS_SHORE + 62)) kosPoison();
-  if (KOS.ph === 'poison' || KOS.ph === 'back') { if (KOS.t - (KOS.mhT || 0) > 2.5) { KOS.mhT = KOS.t; kosMobSay(Math.random() < 0.5 ? 'sick' : 'help', 25); } if (!player.god && player.hp > 55) hurtPlayer(1); }
+  if (KOS.ph === 'poison' || KOS.ph === 'back') { if (KOS.t - (KOS.mhT || 0) > 2.5) { KOS.mhT = KOS.t; kosMobSay(Math.random() < 0.5 ? 'sick' : 'help', 25); } }   // 殿（男）は毒気を受けない（石碑：女の身を蝕む）
   if (KOS.ph === 'back' && KOS.rafts.every(R => Math.abs(R.s - R.s0) < 0.3)) kosBack();
   if (KOS.ph === 'rest' && KOS.ev.wait) { KOS.waitT += 0.5; kosLook(sgkSS(4, 40, KOS.waitT)); if (KOS.waitT > 18 && KOS.t - (KOS.mrT || 0) > 6) { KOS.mrT = KOS.t; kosMobSay('rest', 30); }
     if (KOS.waitT > 44 && !KOS.ev.nightGo) { KOS.ev.nightGo = true; for (const e of KOS.all) if (e.kosSick && e.kosSick.ph === 'rest') e.kosSick.T = 0; const T = kosSeq(KOS_LN.night, 0.5, 4.4); KOS.later.push([KOS.t + T + 0.5, () => kosEmbark()]); } }
@@ -30414,7 +30423,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -31174,7 +31183,14 @@ const HV = { t: 0, n: 0, w: 0 };
 function hvVk(e) { const M = window.VOICE_HV; let k = e.ks2Vk && M[e.ks2Vk] ? e.ks2Vk : e.campKey && M[e.campKey] ? e.campKey : null;
   if (!k) { const n = (e.prof && e.prof.name) || ''; for (const a in HV_NM) if (n.indexOf(a) >= 0) { k = HV_NM[a]; break; } if (!k && /看護/.test(n)) k = 'nurse'; }
   return k || 'cs0' + (1 + ((e.id || 0) * 7 + 3) % 8); }
-function hitVoice(e, sev, surp) { const M = window.VOICE_HV; if (!e || e.isPlayer || !e.s || !M || !VoicePack.ok || (e.state === 'down' && sev !== 'fall')) return false;
+// 中国の兵（白壁城・山岳の関所・南蛮行軍）の声は中国語（普通話）。被弾・倒れる・攻め・見つけた・討ち取った
+const ZH_V = { hurt: ['啊！', '呃……', '唔！', '好痛！', '可恶……'], death: ['啊……', '不……不行了……', '呃啊……', '撑不住了……', '娘……'], attack: ['杀！', '喝！', '看刀！', '冲啊！', '上！'], spot: ['敌人来了！', '在那边！', '有人！'], kill: ['倒了一个！', '下一个！', '哼！'] };
+function zhVoice(e, cat, prio) { if (!e || !e.s || !VoicePack.ok) return false; const L = ZH_V[cat]; if (!L) return false; const p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); if (d > (cat === 'death' ? 40 : 32)) return false;
+  if (time > HV.w) { HV.w = time + 2; HV.n = 0; } if (HV.n >= (LITE ? 2 : 4) || time < HV.t) return false; if (cat !== 'death' && Math.random() < 0.3) return false;
+  const M = ((window.VOICE_KOS || {}).byText || {})[L[(Math.random() * L.length) | 0]]; if (!M || !M.length) return false; const f = M[((e.id || 0) * 7) % M.length].file; if (TEST) (window.__zh = window.__zh || []).push(cat + ':' + f);
+  if (VoicePack.play(f, Math.min(d, 55), prio || (cat === 'death' ? 1.3 : 0.9), 0.95 + (((e.id || 0) * 13) % 10) / 100)) { HV.n++; HV.t = time + (LITE ? 0.45 : 0.25); return true; } return false; }
+const zhOn = e => e && e.ks2Cn && (KS2.on || SGK.on || KOS.on);
+function hitVoice(e, sev, surp) { if (zhOn(e)) return e.state === 'down' && sev !== 'fall' ? false : zhVoice(e, sev === 'fall' ? 'death' : 'hurt'); const M = window.VOICE_HV; if (!e || e.isPlayer || !e.s || !M || !VoicePack.ok || (e.state === 'down' && sev !== 'fall')) return false;
   const p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z) + Math.abs((p.y || 0) - player.pos.y) * 0.3; if (d > (sev === 'fall' || sev === 'wd' ? 40 : 32)) return false;
   if (time > HV.w) { HV.w = time + 2; HV.n = 0; } if (HV.n >= (LITE ? 2 : 4) || time < HV.t) return false;
   if (sev !== 'fall' && sev !== 'wd' && Math.random() < 0.25) return false;   // 声にならず、息だけ
@@ -31225,6 +31241,7 @@ const THB_KIND = { spot: 'spot', attack: 'attack', hit: 'hit', defeat: 'defeat',
 function thBoardSay(e, kind, prio) { const k = THB_KIND[kind]; if (!k || !e || !e.prof) return false; const W = (window.VOICE_THB || {}).lines || {}; const rom = (typeof WAR_ROM !== 'undefined' && WAR_ROM[e.prof.pers]) || 'calm'; const L = W[k === 'callR' || k === 'callL' ? k : rom + '_' + k]; if (!L || !L.file) return false; const quiet = kind === 'hit' || kind === 'defeat'; if (!quiet && e.thBk && time - e.thBk < 5.5) return true; const R = TH.raid; if (R && R[quiet ? 'bkH' : 'bk'] && time - R[quiet ? 'bkH' : 'bk'] < (quiet ? 0.4 : 1.15)) return true; e.thBk = time; if (R) R[quiet ? 'bkH' : 'bk'] = time; const d = Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z), vv = e.prof.vv, rt = (0.94 + (vv === 0 ? -0.05 : vv === 2 ? 0.06 : 0)) * (TH.on ? 0.98 + (thHash(e.prof.name || '') % 8) / 100 : 1); Talk.as(e, () => VoicePack.play(L.file, d, prio || 0, rt)); if (d < 16 && state === 'play') { subtitle(L.ja); const el = $('subtitle'); if (el) el.textContent = (e.prof.name || '').replace(/^組頭 /, '') + '「' + L.ja + '」'; } if (TH.log && TH.log.length < 120) TH.log.push('thb:' + L.ja); return true; }
 function npcSay0(e, kind, prio) {
   if (e.nbVn) { nbVnSay(e, kind); return; }
+  if (zhOn(e) && !e.ukId) { const c = { hit: 'hurt', defeat: 'death', attack: 'attack', spot: 'spot', kill: 'kill' }[kind]; if (c) zhVoice(e, c, prio > 1 ? 1.3 : 0); return; }   // 中国の兵は中国語の声だけ
   if (KS2.on && e.ks2 && !e.ukId && e.team === 'orange') { warSay(e, kind, prio); return; }   // 決戦2：中国の現地兵
   if (TH.on && TH.raid && TH.raid.on && e.team === 'orange') { if (kind === 'hit' || kind === 'defeat') thUsdSay(e, 't_cry' + ((Math.random() * 9) | 0), 0); return; }   // 米兵は西部編の英語のまま
   if (TH.on && TH.raid && TH.raid.on && TH.raid.kind === 'board' && e.team === 'blue' && !e.medic) { thBoardSay(e, kind, prio); return; }   // 乗り込み：模擬戦の言い回しは使わない
@@ -31402,7 +31419,8 @@ function hpInit() {
 // 誰が何を持つか（一度決めたら覚える）
 function hpKindOf(e) {
   if (PAL.on || TH.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || FRS.on || AIRPORT.on || TRENCH.on) return '';
-  if (KS2.on && e.ks2) return e.ks2Wk || '';   // 決戦2：役ごとに（弓・懐刀・マスケット）
+  if (KS2.on && e.ks2) return e.ks2Wk || (e.kind === 'archer' ? 'yumi' : '');   // 決戦2：役ごとに（弓・懐刀・マスケット）。弓兵は必ず弓
+  if ((SGK.on || KOS.on) && e.ks2) return e.kind === 'archer' ? 'yumi' : !e.ks2Named && !e.yari && !e.kosMed && !e.sgkMed && !e.kosPack && !e.kosShd && !e.sgkShield && !e.kosBoss && !e.sgkBoss && e.kosTou !== 'boom' ? 'kaiken' : '';   // 山岳・南蛮行軍：弓兵は弓と箙、刀の兵は刃
   if (e.usdW) return e.usdW === 'colt' ? 'colt' : e.usdW === 'spr' ? 'musket' : 'rifle';
   if (e.nagi) return 'naginata';
   if (e.armed || e.special || e.yari || e.bayo || e.ramCrew || e.uk2Gun || e.team === 'none') return '';
@@ -31421,7 +31439,7 @@ function hpHands(e, fr) {
 // アニメーションごとに：持ち物の板の位置（tilt の座標）を e.hpL に入れる。描くのは hpFlush（描画の直前）
 function hpPose(e, fr, mirror, sgn) {
   if (!HP.ok) return;
-  if (KS2.on && e.ks2 && (e.s.position.x - camera.position.x) ** 2 + (e.s.position.z - camera.position.z) ** 2 > 2500) return;   // 決戦2：遠い者の持ち物は描かない
+  if ((KS2.on || SGK.on || KOS.on) && e.ks2 && (e.s.position.x - camera.position.x) ** 2 + (e.s.position.z - camera.position.z) ** 2 > 2500) return;   // 決戦2：遠い者の持ち物は描かない
   if (e.hpk === undefined) e.hpk = hpKindOf(e);
   const k = e.hpk; if (!k || !fr) return;
   const g = e.girl;

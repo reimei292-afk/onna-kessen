@@ -5630,11 +5630,11 @@ function mechClimb(e, dt) {
   if (!MECH.on || e.team !== 'blue' || e.seated || e.special || e.perch || e.guard || e.baseY > 2) return false;
   if (e.secretary || e.medic || e.aide || e.runner || e.fluter || e.ojou || e.sec2 || e.fumi || e.sysop || e.driver) return false;
   const F = mechFort();
-  if (!F || (F.gate && F.gate.open) || e.s.position.z < F.z + 1) return false;
-  const C = MECH.trucks.find(t => t.docked && t.ladBase);
+  if (!F || (F.gate && F.gate.open) || mechInside(F, e.s.position.x, e.s.position.z)) return false;   // 壁に張り付いた兵も（砦の外なら）はしごへ
+  let C = null, d = 1e9; for (const t of MECH.trucks) if (t.docked && t.ladBase) { const dd = Math.hypot(e.s.position.x - t.ladBase[0], e.s.position.z - t.ladBase[1]); if (dd < d) { d = dd; C = t; } }   // 近いほうのはしご
   if (!C) return false;
-  const b = C.ladBase, d = Math.hypot(e.s.position.x - b[0], e.s.position.z - b[1]);
-  if (d > 16) return false;
+  const b = C.ladBase;
+  if (d > (F.gate && !F.gate.open && Math.abs(e.s.position.z - F.z) < 12 ? 40 : 16)) return false;   // 門前で詰まった兵は遠くのはしごにも回る
   if (mechShy(e) && d > 7) return false;
   e.tgt = null;
   if (d > 0.9) { steer(e, b[0], b[1], e.speed * 1.25, dt); return true; }
@@ -9322,7 +9322,7 @@ function keiHasBody(C) {
   if (enemies.some(e => e.keiDead === C)) return true;
   return bodies.some(b => b.keiDead === C);
 }
-const KEI_BLOOD = ['血だらけじゃん…', 'うわぁ…', '血の匂いがする…', 'ちょ、この車、血だらけなんだけど', 'う、臭い。血の匂い…', 'えっ、遺体のまま乗ってるの…'];
+const KEI_BLOOD = ['うわぁ…', 'えっ、遺体のまま乗ってるの…', '…ごめんね、降ろしてあげる。', 'この席、空けてあげよう。'];   // 血の話はしない（遺体が乗ったままの車への反応だけ）
 function keiBloodSay(e) {
   if (!e || !isUp(e) || e.bloodSaid) return;
   e.bloodSaid = true;
@@ -29281,7 +29281,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261114b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261114c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

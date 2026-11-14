@@ -11,6 +11,7 @@
         （rembg は /workspace/.venv_rembg の python で動かすか pip install "rembg[cpu]" scipy pillow）
 """
 import sys, os, io, json, base64, glob
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -88,7 +89,7 @@ def main():
         gid = os.path.splitext(os.path.basename(src))[0]
         if ONLY and gid not in ONLY: continue
         if gid not in meta or 'front' not in meta[gid]: print('skip (frames.json に無い娘)', gid); continue
-        png = os.path.join(OUT, f'{gid}_seatdown.png')
+        png = os.path.join(ROOT, maid_dir(gid), f'{gid}_seatdown.png')
         if not FORCE and os.path.exists(png) and os.path.getmtime(png) >= os.path.getmtime(src) and 'seatdown' in meta[gid]: print('up to date', gid); continue
         cfg = CFG.get(gid, {})
         img = cutout(src, cfg)
@@ -102,7 +103,7 @@ def main():
         if f < 1: im = im.resize((round(w * f), round(h * f)), Image.LANCZOS)
         im.save(png, optimize=True)
         sx = (hx - x0) / w; sy = (y1 - hy) / h
-        meta[gid]['seatdown'] = {'hk': round(float(hk), 4), 'aspect': round(w / h, 4), 'ax': round(float(sx), 4), 'dir': 0, 'sy': round(float(sy), 4), 'sx': round(float(sx), 4), 'file': f'assets/frames/{gid}_seatdown.png'}
+        meta[gid]['seatdown'] = {'hk': round(float(hk), 4), 'aspect': round(w / h, 4), 'ax': round(float(sx), 4), 'dir': 0, 'sy': round(float(sy), 4), 'sx': round(float(sx), 4), 'file': f'{maid_dir(gid)}/{gid}_seatdown.png'}
         print(gid, 'seatdown', im.size, meta[gid]['seatdown'], flush=True)
         done.append((f'{gid}_seatdown', png))
     if done:

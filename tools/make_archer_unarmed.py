@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""弓を持たない archer01〜10（同じ顔・髪・体・標準の装い）。assets/archer_un/archerNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
-を rembg で切り抜いて assets/frames/archerNN_u_<view>.png に分け、倒れた写真（archerNN_down.png）からは弓を外す
+"""弓を持たない archer01〜10（同じ顔・髪・体・標準の装い）。assets/maids/archerNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
+を rembg で切り抜いて assets/maids/archerNN_u_<view>.png に分け、倒れた写真（archerNN_down.png）からは弓を外す
 （いちばん大きいまとまりだけ残す）。メタは /tmp/arch_meta.json（make_frames_props.py が frames_props.js へ書く）。"""
 import json, os
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir
 import numpy as np
 from PIL import Image
 from rembg import remove, new_session
 from scipy import ndimage
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FR = os.path.join(ROOT, 'assets/frames'); SH = os.path.join(ROOT, 'assets/archer_un')
+FR = os.path.join(ROOT, 'assets/frames'); SH = os.path.join(ROOT, 'assets/maids')
 sess = new_session('u2net')
 VIEWS = ['front', 'front_diag', 'side', 'back', 'walk']
 def feet_ax(a):
@@ -37,7 +38,7 @@ for n in range(1, 11):
         sub = out[sy, sx].copy(); sub[:, :, 3] = np.where(keep[sy, sx], sub[:, :, 3], 0)
         al = sub[:, :, 3]; ys = np.nonzero((al > 40).any(1))[0]; xs = np.nonzero((al > 40).any(0))[0]
         sub = sub[ys.min():ys.max() + 1, max(0, xs.min() - 2):xs.max() + 3]
-        fn = f'assets/frames/{gid}_u_{v}.png'; Image.fromarray(sub).save(os.path.join(ROOT, fn), optimize=True)
+        fn = f'assets/maids/{gid}_u_{v}.png'; Image.fromarray(sub).save(os.path.join(ROOT, fn), optimize=True)
         h, w = sub.shape[:2]; d = 0
         if v in ('side', 'front_diag', 'walk'): d = facing(sub[:, :, 3])
         if v == 'walk': d = 0
@@ -57,7 +58,7 @@ for n in range(1, 11):
         dn[:, :, 3] = np.where(body, da, 0)
     al = dn[:, :, 3]; ys = np.nonzero((al > 40).any(1))[0]; xs = np.nonzero((al > 40).any(0))[0]
     dn = dn[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h, w = dn.shape[:2]
-    fn = f'assets/frames/{gid}_u_down.png'; Image.fromarray(dn).save(os.path.join(ROOT, fn), optimize=True)
+    fn = f'assets/maids/{gid}_u_down.png'; Image.fromarray(dn).save(os.path.join(ROOT, fn), optimize=True)
     m['down'] = {'hk': round((h / w) * 1.05, 4), 'aspect': round(w / h, 4), 'ax': 0.5, 'dir': -1, 'file': fn}
     meta[gid] = m; print(gid, {v: (m[v]['dir'], m[v]['aspect']) for v in m})
 json.dump(meta, open('/tmp/arch_meta.json', 'w'), indent=0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""assets/mobNN.jpg と assets/archerNN.jpg から背景を除去し、切り抜いた透過 PNG (mobNN.png / archerNN.png) と
+"""assets/maids/mobNN.jpg と assets/maids/archerNN.jpg から背景を除去し、切り抜いた透過 PNG (mobNN.png / archerNN.png) と
 埋め込み版 assets/sprites.js を再生成する。番号は 01 から連番で、存在するものすべてを処理する。
 必要: pip install "rembg[cpu]" pillow   (rembg が無い場合は明るい無地背景向けの色キーで代用)
 使い方: python3 tools/make_sprites.py            （背景除去＋sprites.js 再生成）
@@ -9,7 +9,8 @@ import sys
 NO_CUT = '--no-cut' in sys.argv
 import io, base64, os, glob, re
 from PIL import Image, ImageFilter
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'maids')   # 侍女の絵は assets/maids/ にまとめた
+A = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
 H = 640
 S = None
 if not NO_CUT:
@@ -66,7 +67,7 @@ def process(prefix):
         print(os.path.basename(png), out.size, 'rembg' if S else 'colorkey', 'top', data[-1][1])
     return data
 mobs, archers = process('mob'), process('archer')
-with open(os.path.join(D, 'sprites.js'), 'w') as f:
+with open(os.path.join(A, 'sprites.js'), 'w') as f:
     f.write('// 自動生成 (tools/make_sprites.py)。file:// で開いた時に使う埋め込み画像。枚数もここから決まる。\n')
     for name, arr in (('MOB', mobs), ('ARCHER', archers)):
         f.write('window.%s_SPRITES = [\n' % name + ',\n'.join('"%s"' % d for d, _ in arr) + '\n];\n')

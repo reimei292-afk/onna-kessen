@@ -10,6 +10,7 @@
 使い方: python3 tools/make_walkcycle.py
 """
 import os, json, hashlib, base64, io, statistics
+import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir
 from PIL import Image
 import numpy as np
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
@@ -45,7 +46,7 @@ def main():
             files = []
             for i, im in enumerate(ims):
                 out = im.crop((x0, y0, x1, y1)).resize((W, H), Image.LANCZOS)
-                fn = f'assets/frames/{gid}_{key}_{i:02d}.webp'
+                fn = f'{maid_dir(gid)}/{gid}_{key}_{i:02d}.webp'
                 b = io.BytesIO(); out.save(b, 'WEBP', quality=90, method=6, exact=False); raw = b.getvalue()
                 open(os.path.join(ROOT, fn), 'wb').write(raw); files.append(fn)
                 data[f'{gid}_{key}_{i:02d}'] = 'data:image/webp;base64,' + base64.b64encode(raw).decode()

@@ -3276,5 +3276,190 @@
    "dir": -1,
    "file": "assets/maids/girl64_down.png"
   }
+ },
+ "girl65": {
+  "front": {
+   "hk": 1.1146,
+   "aspect": 0.4633,
+   "ax": 0.6572,
+   "dir": 0,
+   "file": "assets/maids/girl65_front.png"
+  },
+  "side": {
+   "hk": 1.0,
+   "aspect": 0.6744,
+   "ax": 0.3357,
+   "dir": -1,
+   "file": "assets/maids/girl65_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0,
+   "aspect": 0.4556,
+   "ax": 0.5348,
+   "dir": -1,
+   "file": "assets/maids/girl65_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0,
+   "aspect": 0.4667,
+   "ax": 0.4707,
+   "dir": 0,
+   "file": "assets/maids/girl65_back.png"
+  },
+  "down": {
+   "hk": 0.4084,
+   "aspect": 2.4488,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl65_down.png"
+  }
+ },
+ "girl66": {
+  "front": {
+   "hk": 1.0,
+   "aspect": 0.6878,
+   "ax": 0.3585,
+   "dir": 0,
+   "file": "assets/maids/girl66_front.png"
+  },
+  "side": {
+   "hk": 1.0,
+   "aspect": 0.6778,
+   "ax": 0.347,
+   "dir": -1,
+   "file": "assets/maids/girl66_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0,
+   "aspect": 0.6667,
+   "ax": 0.3537,
+   "dir": -1,
+   "file": "assets/maids/girl66_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0,
+   "aspect": 0.6944,
+   "ax": 0.3184,
+   "dir": 0,
+   "file": "assets/maids/girl66_back.png"
+  },
+  "down": {
+   "hk": 0.4265,
+   "aspect": 2.3445,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl66_down.png"
+  }
+ },
+ "girl67": {
+  "front": {
+   "hk": 1.0155,
+   "aspect": 0.4856,
+   "ax": 0.6349,
+   "dir": 0,
+   "file": "assets/maids/girl67_front.png"
+  },
+  "side": {
+   "hk": 1.0799,
+   "aspect": 0.4233,
+   "ax": 0.5437,
+   "dir": -1,
+   "file": "assets/maids/girl67_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0683,
+   "aspect": 0.46,
+   "ax": 0.4882,
+   "dir": -1,
+   "file": "assets/maids/girl67_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0638,
+   "aspect": 0.4644,
+   "ax": 0.4451,
+   "dir": 0,
+   "file": "assets/maids/girl67_back.png"
+  },
+  "down": {
+   "hk": 0.4262,
+   "aspect": 2.3464,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl67_down.png"
+  }
+ },
+ "girl68": {
+  "front": {
+   "hk": 1.0743,
+   "aspect": 0.65,
+   "ax": 0.3632,
+   "dir": 0,
+   "file": "assets/maids/girl68_front.png"
+  },
+  "side": {
+   "hk": 1.0,
+   "aspect": 0.7078,
+   "ax": 0.312,
+   "dir": -1,
+   "file": "assets/maids/girl68_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0,
+   "aspect": 0.6967,
+   "ax": 0.3367,
+   "dir": -1,
+   "file": "assets/maids/girl68_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0,
+   "aspect": 0.7022,
+   "ax": 0.3182,
+   "dir": 0,
+   "file": "assets/maids/girl68_back.png"
+  },
+  "down": {
+   "hk": 0.4319,
+   "aspect": 2.3152,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl68_down.png"
+  }
+ },
+ "girl69": {
+  "front": {
+   "hk": 1.1053,
+   "aspect": 0.4778,
+   "ax": 0.667,
+   "dir": 0,
+   "file": "assets/maids/girl69_front.png"
+  },
+  "side": {
+   "hk": 1.0,
+   "aspect": 0.6733,
+   "ax": 0.2839,
+   "dir": -1,
+   "file": "assets/maids/girl69_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0,
+   "aspect": 0.6956,
+   "ax": 0.2977,
+   "dir": -1,
+   "file": "assets/maids/girl69_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0,
+   "aspect": 0.6322,
+   "ax": 0.3051,
+   "dir": 0,
+   "file": "assets/maids/girl69_back.png"
+  },
+  "down": {
+   "hk": 0.4245,
+   "aspect": 2.3559,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl69_down.png"
+  }
  }
 }

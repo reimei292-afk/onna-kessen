@@ -5475,115 +5475,241 @@ function kgUpdate(dt) {
 }
 
 // ================= 仙台 御視察（sendai）：殿の一泊二日の地方視察。戦いは無い =================
-// 白瀬の行程表どおり：宮殿の車寄せ → 東京駅 → 新幹線 → 仙台駅ホーム（知事の出迎えは一分以内）→ ホテル玄関 → 懇談会（立食）→ 港湾視察 → 夕食会 → 廊下の交差点 → 二日目 学院 → 帰路。最後に綾瀬が採点。
-// 台詞：名のある娘と殿・県の要人は字幕（名のある娘は声も）。群れ（報道・県警・侍女・生徒・沿道）は声だけ。誰も座らない（宴は立食）。
+// 白瀬の行程表どおり：宮殿の車寄せ → 東京駅 → 新幹線 → 仙台駅ホーム（知事の出迎えは一分以内）→ 県庁（表敬訪問）→ ホテル玄関 → 懇談会（立食）→ 港湾視察 → 夕食会 → 廊下の交差点 → 二日目 学院 → 帰路。最後に綾瀬が採点。
+// 台詞：名のある娘と殿・県の要人は字幕（名のある娘は声も）。群れ（報道・県警・侍女・生徒・沿道・県の職員）は声だけ。誰も座らない（宴は立食）。
+// 人は板絵：いつもカメラの方へ縦軸だけ回し（真横から薄くならない）、本人の向きとカメラの角度で 正面／横／後ろ の写真を替える
 const SD = { on: false };
 const SD_NM = { sumi: '白瀬', fumi: '綾瀬', chikage: '一条', hiyori: '小日向', sec3: '桜井', shinobu: '氷室', kujo: '九条' };
-const SD_VIP = { gov: '宮城県知事 相馬', mayor: '仙台市長 片倉', bank: '杜の都銀行 頭取 若林', port: '仙台港運 社長 高砂', maker: '青葉ものづくり会 会長 泉', police: '宮城県警 警備課長', head: '仙台女子学院 学院長', rep: '生徒代表', pc: '宮城県 土木部 港湾課長', ec: '経済商工観光部長' };
-const SD_SETX = { porch: 0, train: 200, station: 400, hotel: 600, hall: 800, port: 1000, dinner: 1200, corridor: 1400, school: 1600 };
+const SD_VIP = { gov: '宮城県知事 相馬', mayor: '仙台市長 片倉', bank: '杜の都銀行 頭取 若林', port: '仙台港運 社長 高砂', maker: '青葉ものづくり会 会長 泉', police: '宮城県警 警備課長', head: '仙台女子学院 学院長', rep: '生徒代表', pc: '宮城県 土木部 港湾課長', ec: '経済商工観光部長', staff: '県の職員' };
+const SD_SETX = { porch: 0, train: 200, station: 400, kencho: 1800, hotel: 600, hall: 800, port: 1000, dinner: 1200, corridor: 1400, school: 1600 };
 const SD_MOB = { press: ['殿、一言お願いします！', '殿、こちら目線お願いします！', '殿、仙台の印象は！', '殿、こちらにも一言！'], mur: ['……え', 'い、いまの……', '……失礼、しました'], taste: ['お、お待ちください！ 毒見がまだです！'],
-  stu: ['ありがとうございます！'], pol: ['下がってください、ロープの内側へ！'], laugh: ['ふふっ', 'まあ……'], kanpai: ['乾杯！'], phone: ['は、はい！ 厨房に電話してまいります！'], freeze: ['……えっ', '……強制、って'] };
+  stu: ['ありがとうございます！'], pol: ['下がってください、ロープの内側へ！'], laugh: ['ふふっ', 'まあ……'], kanpai: ['乾杯！'], phone: ['は、はい！ 厨房に電話してまいります！'], freeze: ['……えっ', '……強制、って'],
+  staff: ['秘書課、配置につきました', '広報、撮影に入ります', '車寄せ、確認お願いします', '名簿、もう一度確認して', '港湾課、先に現地へ向かいます', 'ご案内は、こちらです', '次の動線、三十秒後です', '知事、まもなくお見えです'] };
+// 県の職員の係（名札の紐の色と小物）
+const SD_DEPT = { hisho: ['秘書課', 0x2f5fb0, 'radio'], koho: ['広報課', 0x2e9a56, 'cam'], gitan: ['儀典', 0xb0303a, 'board'], somu: ['総務課', 0x7a7f86, 'board'], kowan: ['港湾課', 0x1f8a8a, 'board'], keizai: ['経済商工観光部', 0xd0802a, 'none'], hotel: ['ホテル', 0, 'badge'] };
 function sdMat(c) { const M = SD.mat || (SD.mat = {}); return M[c] || (M[c] = new THREE.MeshLambertMaterial({ color: c })); }
 function sdBox(G, w, h, d, c, x, y, z, ry) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), typeof c === 'number' ? sdMat(c) : c); m.position.set(x, y, z); if (ry) m.rotation.y = ry; G.add(m); return m; }
 function sdCyl(G, r0, r1, h, c, x, y, z, seg) { const m = new THREE.Mesh(new THREE.CylinderGeometry(r0, r1, h, seg || 12), typeof c === 'number' ? sdMat(c) : c); m.position.set(x, y, z); G.add(m); return m; }
-function sdSprG(G, gid, cm, x, z) { const g = GIRLS[gid], f = g && g.front; if (!f) return null; const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: f.tex, transparent: true, alphaTest: 0.5 }));
-  const h = cm / 100 * (f.hk || 1); s.scale.set(h * f.aspect, h, 1); s.center.set(f.ax == null ? 0.5 : f.ax, 0); s.position.set(x, 0, z); s.userData = { bx: x, bz: z, cm, ph: Math.random() * 6 }; G.add(s); return s; }
-function sdMob(G, x, z, i) { const P = SD.pool; if (!P.length) return null; return sdSprG(G, P[(i * 7 + 3) % P.length], 154 + (i * 5) % 14, x, z); }
-function sdNamed(G, k, x, z) { const gid = kgGid(k), cm = (KS2_NM[k] || [0, 0, 160])[2] || 160; const s = gid && sdSprG(G, gid, cm, x, z); if (s) s.userData.k = k; return s; }
-// 沿道・駅の一般の人：小田原の時の私服の娘の絵（正面）をそのまま
-function sdCiv(G, x, z, i) { const n = (i % 8) + 1, T = SD.csT || (SD.csT = {}); if (!T[n]) { const t = new THREE.TextureLoader().load(`assets/conscripts/conscript_0${n}_front.webp?v=${ASSET_V}`); t.colorSpace = THREE.SRGBColorSpace; T[n] = t; }
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: T[n], transparent: true, alphaTest: 0.4 })), h = 1.58 + (n % 3) * 0.03; s.scale.set(h * 156 / 512, h, 1); s.center.set(0.5, 0); s.position.set(x, 0, z); s.userData = { bx: x, bz: z, ph: i }; G.add(s); return s; }
-// ---- 共有の小物（3D）：県警の制帽と「宮城県警」の腕章、報道のテレビカメラ・マイク・カメラ、県の秘書課の名札 ----
-function sdProps() { if (SD.P) return SD.P; const cv = document.createElement('canvas'); cv.width = 128; cv.height = 48; const x = cv.getContext('2d'); x.fillStyle = '#1d2a55'; x.fillRect(0, 0, 128, 48); x.fillStyle = '#fff'; x.font = 'bold 26px sans-serif'; x.textAlign = 'center'; x.fillText('宮城県警', 64, 34);
-  const bt = new THREE.CanvasTexture(cv); bt.colorSpace = THREE.SRGBColorSpace; const fc = document.createElement('canvas'); fc.width = fc.height = 64; const f = fc.getContext('2d'), gr = f.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,240,.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); f.fillStyle = gr; f.fillRect(0, 0, 64, 64);
-  const ft = new THREE.CanvasTexture(fc); SD.P = { cap: new THREE.CylinderGeometry(0.1, 0.115, 0.09, 12), visor: new THREE.BoxGeometry(0.2, 0.015, 0.09), navy: sdMat(0x1b2440), blk: sdMat(0x111111), band: new THREE.BoxGeometry(0.1, 0.06, 0.1), bandM: new THREE.MeshLambertMaterial({ map: bt }),
-    tv: new THREE.BoxGeometry(0.22, 0.24, 0.5), lens: new THREE.CylinderGeometry(0.06, 0.07, 0.16, 10), grey: sdMat(0x3a3d42), mic: new THREE.CylinderGeometry(0.012, 0.012, 0.32, 6), micH: new THREE.SphereGeometry(0.04, 8, 6), cam: new THREE.BoxGeometry(0.15, 0.1, 0.09),
-    card: new THREE.BoxGeometry(0.075, 0.1, 0.01), cardM: sdMat(0xf4f6fa), strap: new THREE.BoxGeometry(0.012, 0.3, 0.008), blue: sdMat(0x2f5fb0), flashM: new THREE.SpriteMaterial({ map: ft, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }) }; return SD.P; }
-function sdPolice(G, x, z, i, fx) { const s = sdMob(G, x, z, i + 40); if (!s) return null; const P = sdProps(), top = s.userData.cm / 100; const c = new THREE.Mesh(P.cap, P.navy); c.position.set(x, top - 0.03, z); G.add(c); const v = new THREE.Mesh(P.visor, P.blk); v.position.set(x, top - 0.07, z + (fx || 1) * 0.08); G.add(v);
-  const b = new THREE.Mesh(P.band, P.bandM); b.position.set(x + 0.17, top * 0.72, z + (fx || 1) * 0.02); G.add(b); s.userData.pol = true; return s; }   // 県警：侍女の絵そのまま＋制帽と腕章
-function sdPress(G, x, z, i, fx) { const pg = new THREE.Group(); pg.position.set(x, 0, z); G.add(pg); const s = sdMob(pg, 0, 0, i + 80); if (!s) return null; const P = sdProps(), top = s.userData.cm / 100, k = i % 3, d = fx || 1; let fp = null;   // 報道：絵と小物をひとまとめ（退出の時に一緒に動く）
-  if (k === 0) { const m = new THREE.Mesh(P.tv, P.grey); m.position.set(0.2, top - 0.12, d * 0.1); pg.add(m); const l = new THREE.Mesh(P.lens, P.blk); l.rotation.x = Math.PI / 2; l.position.set(0.2, top - 0.12, d * 0.42); pg.add(l); }   // テレビカメラ（肩）
-  else if (k === 1) { const m = new THREE.Mesh(P.mic, P.blk); m.rotation.x = d * 0.9; m.position.set(0.1, top * 0.8, d * 0.2); pg.add(m); const h = new THREE.Mesh(P.micH, P.grey); h.position.set(0.1, top * 0.8 + 0.1, d * 0.33); pg.add(h); }   // マイク
-  else { const m = new THREE.Mesh(P.cam, P.blk); m.position.set(0, top - 0.1, d * 0.12); pg.add(m); fp = new V3(0, top - 0.08, d * 0.22); }   // カメラ（フラッシュ）
-  pg.userData = { fp, bx: x, bz: z }; (SD.press[SD.curB] || (SD.press[SD.curB] = [])).push(pg); return pg; }
-function sdLany(G, x, z, i, fx) { const s = sdMob(G, x, z, i + 120); if (!s) return null; const P = sdProps(), top = s.userData.cm / 100, d = fx || 1; const c = new THREE.Mesh(P.card, P.cardM); c.position.set(x, top * 0.62, z + d * 0.12); G.add(c); const t = new THREE.Mesh(P.strap, P.blue); t.position.set(x, top * 0.7, z + d * 0.11); G.add(t); return s; }   // 県の秘書課：首から名札
+function sdPlane(G, w, h, mat, x, y, z, rx, ry) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; if (ry) m.rotation.y = ry; G.add(m); return m; }
+function sdFloor(G, w, d, mat, x, z, y) { return sdPlane(G, w, d, mat, x, y || 0, z, -Math.PI / 2); }
+// ---- 絵（canvas で作る質感） ----
+function sdRnd(a, b) { return a + Math.random() * (b - a); }
+function sdCT(key, w, h, draw) { const T = SD.tex || (SD.tex = {}); if (T[key]) return T[key]; const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); draw(x, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; T[key] = t; return t; }
+function sdTM(key, rx, ry, o) { const M = SD.tm || (SD.tm = {}), k = key + '|' + rx + '|' + ry + '|' + (o ? JSON.stringify(o) : ''); if (M[k]) return M[k]; const t = SD_TX[key]().clone(); t.needsUpdate = true; t.repeat.set(rx, ry);
+  const m = o && o.basic ? new THREE.MeshBasicMaterial({ map: t, side: o.ds ? THREE.DoubleSide : THREE.FrontSide }) : new THREE.MeshLambertMaterial(Object.assign({ map: t }, o && o.em ? { emissive: o.em, emissiveMap: t } : {}, o && o.ds ? { side: THREE.DoubleSide } : {})); M[k] = m; return m; }
+function sdNoise(x, w, h, n, cols, a, s) { for (let i = 0; i < n; i++) { x.fillStyle = cols[(Math.random() * cols.length) | 0]; x.globalAlpha = a * Math.random(); const r = sdRnd(0.5, s || 2); x.fillRect(Math.random() * w, Math.random() * h, r, r); } x.globalAlpha = 1; }
+const SD_TX = {
+  conc: () => sdCT('conc', 256, 256, (x, w, h) => { x.fillStyle = '#bdbab2'; x.fillRect(0, 0, w, h); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = `rgb(${180 + sdRnd(-8, 8) | 0},${178 + sdRnd(-8, 8) | 0},${170 + sdRnd(-8, 8) | 0})`; x.fillRect(i * 64 + 1, j * 64 + 1, 62, 62); }
+    sdNoise(x, w, h, 5000, ['#8d8a83', '#e2dfd7', '#a9a59c'], 0.5, 2); x.strokeStyle = 'rgba(90,88,82,.55)'; x.lineWidth = 1.5; for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(i * 64, 0); x.lineTo(i * 64, h); x.moveTo(0, i * 64); x.lineTo(w, i * 64); x.stroke(); } }),
+  tactile: () => sdCT('tactile', 64, 64, (x, w, h) => { x.fillStyle = '#e3bd2c'; x.fillRect(0, 0, w, h); x.fillStyle = '#f2cf45'; for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.beginPath(); x.arc(8 + i * 16, 8 + j * 16, 5, 0, 7); x.fill(); } x.strokeStyle = 'rgba(120,90,10,.5)'; x.strokeRect(0, 0, w, h); }),
+  ceil: () => sdCT('ceil', 256, 256, (x, w, h) => { x.fillStyle = '#d9dadb'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 1500, ['#c4c6c8', '#eeeeee'], 0.4, 2); x.strokeStyle = 'rgba(120,124,128,.6)'; x.lineWidth = 2; for (let i = 0; i <= 4; i++) { x.beginPath(); x.moveTo(i * 64, 0); x.lineTo(i * 64, h); x.stroke(); } x.fillStyle = '#fffef6'; x.fillRect(118, 0, 20, h); }),
+  wallP: () => sdCT('wallP', 256, 256, (x, w, h) => { x.fillStyle = '#d6d2c8'; x.fillRect(0, 0, w, h); for (let i = 0; i < 2; i++) { const g = x.createLinearGradient(i * 128, 0, i * 128 + 128, 0); g.addColorStop(0, '#cfcac0'); g.addColorStop(0.5, '#dcd8ce'); g.addColorStop(1, '#c9c4ba'); x.fillStyle = g; x.fillRect(i * 128 + 2, 0, 124, h); }
+    sdNoise(x, w, h, 1200, ['#b8b3a8', '#ebe7de'], 0.35, 2); x.fillStyle = '#9e998e'; x.fillRect(0, 0, 3, h); x.fillRect(127, 0, 3, h); x.fillStyle = '#8f8a80'; x.fillRect(0, 210, w, 46); }),
+  shin: () => sdCT('shin', 512, 128, (x, w, h) => { x.fillStyle = '#f4f5f3'; x.fillRect(0, 0, w, h); x.fillStyle = '#0d7a52'; x.fillRect(0, 0, w, 52); x.fillStyle = '#e57aa4'; x.fillRect(0, 52, w, 6); x.fillStyle = '#1c2026'; x.fillRect(0, 34, w, 16);
+    for (let i = 0; i < 12; i++) { x.fillStyle = '#2c3a4a'; x.fillRect(10 + i * 42, 36, 30, 12); x.fillStyle = 'rgba(160,200,230,.35)'; x.fillRect(12 + i * 42, 37, 12, 4); } x.fillStyle = '#c7c9c6'; x.fillRect(0, 108, w, 20); x.strokeStyle = '#9aa0a3'; x.strokeRect(300, 58, 34, 50); }),
+  moq: () => sdCT('moq', 128, 128, (x, w, h) => { x.fillStyle = '#4a3a8a'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 4200, ['#b0307a', '#2a4ab0', '#7a3ab0', '#e05aa0', '#203070', '#9a6ad0'], 0.9, 2.2); }),
+  trFloor: () => sdCT('trFloor', 128, 128, (x, w, h) => { x.fillStyle = '#7c7f82'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 2500, ['#6a6d70', '#8e9194', '#5c5f62'], 0.6, 1.5); }),
+  trWall: () => sdCT('trWall', 256, 128, (x, w, h) => { x.fillStyle = '#e4dccb'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 800, ['#d6cdb9', '#efe8da'], 0.4, 2); x.fillStyle = '#c9bfa9'; x.fillRect(0, 0, 2, h); x.fillRect(0, h - 18, w, 18); }),
+  scen: () => sdCT('scen', 1024, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#8fbce6'); g.addColorStop(0.55, '#d8e8f2'); g.addColorStop(0.6, '#7d9a6a'); g.addColorStop(1, '#5d7a45'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#7f95a8'; x.beginPath(); x.moveTo(0, 150); for (let i = 0; i <= 32; i++) x.lineTo(i * 32, 120 + Math.sin(i * 0.9) * 14 + Math.sin(i * 2.3) * 6); x.lineTo(w, 150); x.fill();
+    for (let i = 0; i < 40; i++) { x.fillStyle = ['#6d8a4f', '#8aa25a', '#a7b06a', '#5b7a42'][i % 4]; x.fillRect(i * 26, 158 + (i % 3) * 8, 26, 100); } for (let i = 0; i < 18; i++) { x.fillStyle = '#d9d4c8'; x.fillRect(sdRnd(0, w), sdRnd(150, 175), 10, 7); x.fillStyle = '#5a4a3a'; x.fillRect(i * 57, 110, 2, 70); } }),
+  carpetA: () => sdCT('carpetA', 512, 512, (x, w, h) => { x.fillStyle = '#2b2d33'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 6000, ['#202228', '#3a3c44'], 0.7, 2); x.strokeStyle = 'rgba(230,230,228,.85)'; x.lineWidth = 7;
+    for (const [cx, cy, r] of [[0, 0, 300], [w, h, 300], [w, 0, 180], [0, h, 180], [256, 256, 120]]) { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.stroke(); } x.lineWidth = 3; x.beginPath(); x.arc(256, 256, 150, 0, 7); x.stroke(); }),
+  carpetB: () => sdCT('carpetB', 256, 256, (x, w, h) => { x.fillStyle = '#6a4a32'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 4000, ['#5a3c28', '#7a5a40'], 0.6, 2); x.strokeStyle = '#c9ad84'; x.lineWidth = 4;
+    for (const [cx, cy] of [[64, 64], [192, 192], [192, 64], [64, 192]]) { x.beginPath(); for (let a = 0; a < 12; a += 0.1) { const r = 6 + a * 4.2; x.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } x.stroke(); } x.strokeStyle = 'rgba(220,200,160,.5)'; x.lineWidth = 2; x.strokeRect(4, 4, w - 8, h - 8); }),
+  woodP: () => sdCT('woodP', 256, 512, (x, w, h) => { x.fillStyle = '#7a4e2c'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { x.strokeStyle = `rgba(${60 + sdRnd(0, 40) | 0},${34 + sdRnd(0, 20) | 0},18,${sdRnd(0.15, 0.5)})`; x.lineWidth = sdRnd(0.5, 2); const xx = sdRnd(0, w); x.beginPath(); x.moveTo(xx, 0); x.bezierCurveTo(xx + sdRnd(-8, 8), h / 3, xx + sdRnd(-8, 8), h * 2 / 3, xx + sdRnd(-6, 6), h); x.stroke(); }
+    x.fillStyle = '#3e2614'; x.fillRect(0, 0, 3, h); x.fillRect(127, 0, 3, h); }),
+  woodF: () => sdCT('woodF', 256, 256, (x, w, h) => { for (let i = 0; i < 8; i++) { x.fillStyle = `rgb(${170 + sdRnd(-14, 14) | 0},${128 + sdRnd(-12, 12) | 0},${84 + sdRnd(-10, 10) | 0})`; x.fillRect(0, i * 32, w, 31); } sdNoise(x, w, h, 2000, ['#8a6040', '#c8a070'], 0.35, 3); x.fillStyle = '#6a4a2e'; for (let i = 0; i < 8; i++) { x.fillRect(0, i * 32 + 31, w, 1); x.fillRect((i * 97) % w, i * 32, 1, 31); } }),
+  city: () => sdCT('city', 1024, 384, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#0c1a3a'); g.addColorStop(0.5, '#2a4a80'); g.addColorStop(0.72, '#7a8ab0'); g.addColorStop(1, '#1a1e2a'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    for (let i = 0; i < 70; i++) { const bw = sdRnd(18, 60), bh = sdRnd(40, 200), bx = sdRnd(0, w), by = h - bh * (i < 30 ? 0.6 : 1); x.fillStyle = i < 30 ? '#2a3350' : '#141a2a'; x.fillRect(bx, by, bw, h); x.fillStyle = 'rgba(255,220,150,.85)'; for (let k = 0; k < bw * bh / 160; k++) if (Math.random() < 0.5) x.fillRect(bx + sdRnd(2, bw - 4), by + sdRnd(2, bh), 2.5, 2); } }),
+  drape: () => sdCT('drape', 128, 64, (x, w, h) => { for (let i = 0; i < w; i++) { const v = 58 + Math.sin(i / 128 * Math.PI * 12) * 18; x.fillStyle = `rgb(${v},${v + 2},${v + 6})`; x.fillRect(i, 0, 1, h); } }),
+  hotelF: () => sdCT('hotelF', 256, 256, (x, w, h) => { x.fillStyle = '#d8d0c0'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 1500, ['#c8bfae', '#e6dfd2'], 0.4, 2); for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { x.fillStyle = '#3c4a5a'; x.fillRect(i * 64 + 10, j * 64 + 12, 44, 40); x.fillStyle = 'rgba(180,210,235,.35)'; x.fillRect(i * 64 + 12, j * 64 + 14, 18, 14); x.fillStyle = '#b9b09e'; x.fillRect(i * 64 + 8, j * 64 + 52, 48, 4); } }),
+  paving: () => sdCT('paving', 256, 256, (x, w, h) => { x.fillStyle = '#8f8a82'; x.fillRect(0, 0, w, h); for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) { const v = 150 + sdRnd(-16, 16) | 0; x.fillStyle = `rgb(${v},${v - 4},${v - 10})`; x.fillRect(i * 32 + (j % 2) * 16, j * 32, 31, 31); if (j % 2 && i === 7) x.fillRect(-16, j * 32, 31, 31); } sdNoise(x, w, h, 3000, ['#7f7a72', '#c9c4ba'], 0.45, 2); }),
+  brick: () => sdCT('brick', 256, 256, (x, w, h) => { x.fillStyle = '#7a6448'; x.fillRect(0, 0, w, h); for (let j = 0; j < 32; j++) for (let i = 0; i < 9; i++) { const v = sdRnd(-14, 14); x.fillStyle = `rgb(${176 + v | 0},${144 + v | 0},${104 + v | 0})`; x.fillRect(i * 32 - (j % 2) * 16 + 1, j * 8 + 1, 30, 6); } }),
+  tower: () => sdCT('tower', 256, 256, (x, w, h) => { x.fillStyle = '#cfcbc2'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 1000, ['#bdb9b0', '#e0ddd6'], 0.4, 2); for (let i = 0; i < 8; i++) for (let j = 0; j < 4; j++) { x.fillStyle = '#26303c'; x.fillRect(i * 32 + 6, j * 64 + 14, 20, 38); x.fillStyle = 'rgba(150,180,210,.25)'; x.fillRect(i * 32 + 7, j * 64 + 15, 8, 14); } }),
+  asph: () => sdCT('asph', 256, 256, (x, w, h) => { x.fillStyle = '#8e8d88'; x.fillRect(0, 0, w, h); sdNoise(x, w, h, 7000, ['#6e6d68', '#a9a8a2', '#7d7c77'], 0.6, 2); x.fillStyle = 'rgba(240,240,230,.7)'; x.fillRect(0, 124, w, 8); }),
+  corr: () => sdCT('corr', 64, 64, (x, w, h) => { for (let i = 0; i < w; i++) { const v = 200 + Math.sin(i / w * Math.PI * 8) * 45; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i, 0, 1, h); } }),
+  wallH: () => sdCT('wallH', 256, 256, (x, w, h) => { x.fillStyle = '#e6dcc8'; x.fillRect(0, 0, w, h); for (let i = 0; i < 64; i++) { x.fillStyle = `rgba(200,184,150,${sdRnd(0.05, 0.2)})`; x.fillRect(0, i * 4, w, 2); } x.fillStyle = '#8a6a44'; x.fillRect(0, 218, w, 38); x.fillStyle = '#c9b48a'; x.fillRect(0, 214, w, 4); }),
+  sky: () => sdCT('sky', 16, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5b8ccc'); g.addColorStop(0.6, '#a9c8e6'); g.addColorStop(1, '#e6eef2'); x.fillStyle = g; x.fillRect(0, 0, w, h); }),
+};
+// ---- 人（板絵）：Group（位置・縦軸の向き）＋板（写真）＋小物（正面のときだけ見える） ----
+function sdPerson(G, gid, cm, x, z, f) { const g = GIRLS[gid], fr = g && g.front; if (!fr) return null; const pg = new THREE.Group(); pg.position.set(x, 0, z); G.add(pg);
+  const m = new THREE.Mesh(SD.pGeo || (SD.pGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)), new THREE.MeshBasicMaterial({ map: fr.tex, alphaTest: 0.5, side: THREE.DoubleSide })); pg.add(m);
+  pg.userData = { g, cm, m, fy: f == null ? (SD.faceFn ? SD.faceFn(x, z) : 0) : f, bx: x, bz: z, props: [], view: '' }; sdView(pg, true); (SD.ppl[SD.curB] || (SD.ppl[SD.curB] = [])).push(pg); return pg; }
+function sdView(pg, force) { const U = pg.userData, g = U.g, cx = camera.position.x - (pg.parent ? pg.parent.position.x : 0) - pg.position.x, cz = camera.position.z - pg.position.z, toCam = Math.atan2(cx, cz);
+  pg.rotation.y = toCam; let d = U.fy - toCam; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; const c = Math.cos(d), m = 0.08;
+  const v = c > 0.5 + (U.view === 'front' ? -m : m) ? 'front' : c < -0.5 - (U.view === 'back' ? -m : m) ? 'back' : 'side'; const fr = (v === 'side' ? g.side : v === 'back' ? g.back : null) || g.front;
+  const sgn = Math.sin(U.fy) * Math.cos(player.yaw) - Math.cos(U.fy) * Math.sin(player.yaw) > 0 ? 1 : -1, mir = fr !== g.front && fr.dir ? fr.dir !== sgn : false;
+  if (!force && U.view === v && U.fr === fr && U.mir === mir) return; U.view = v; U.fr = fr; U.mir = mir; const M = U.m; if (M.material.map !== fr.tex) M.material.map = fr.tex;
+  const h = U.cm / 100 * (fr.hk || 1), w = h * fr.aspect, sg = mir ? -1 : 1; M.scale.set(w * sg, h, 1); M.position.x = (0.5 - (fr.ax == null ? 0.5 : fr.ax)) * w * sg; for (const p of U.props) p.visible = v === 'front'; }
+function sdSprG(G, gid, cm, x, z, f) { return sdPerson(G, gid, cm, x, z, f); }
+function sdMob(G, x, z, i, f) { const P = SD.pool; if (!P.length) return null; return sdPerson(G, P[(i * 7 + 3) % P.length], 154 + (i * 5) % 14, x, z, f); }
+function sdNamed(G, k, x, z) { const gid = kgGid(k), cm = (KS2_NM[k] || [0, 0, 160])[2] || 160; const s = gid && sdPerson(G, gid, cm, x, z); if (s) { s.userData.k = k; s.userData.named = true; } return s; }
+// 沿道・駅の一般の人：小田原の時の私服の娘の絵（front/side/back/diag）をそのまま
+function sdCiv(G, x, z, i, f) { const n = (i % 8) + 1, T = SD.csG || (SD.csG = {}); if (!T[n]) { const L = new THREE.TextureLoader(), o = { type: 'civ' }; for (const v of ['front', 'side', 'back']) { const t = L.load(`assets/conscripts/conscript_0${n}_${v}.webp?v=${ASSET_V}`); t.colorSpace = THREE.SRGBColorSpace; o[v] = { tex: t, aspect: ODW_AR[v], ax: 0.5, hk: 1, dir: v === 'side' ? -1 : 0 }; } T[n] = o; }
+  const id = '_sdciv' + n; if (!GIRLS[id]) GIRLS[id] = T[n]; return sdPerson(G, id, 158 + (n % 3) * 3, x, z, f); }
+function sdProps() { if (SD.P) return SD.P; const fc = document.createElement('canvas'); fc.width = fc.height = 64; const f = fc.getContext('2d'), gr = f.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.35, 'rgba(255,255,240,.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); f.fillStyle = gr; f.fillRect(0, 0, 64, 64);
+  const ft = new THREE.CanvasTexture(fc); SD.P = { grey: sdMat(0x3a3d42), blk: sdMat(0x111111), tv: new THREE.BoxGeometry(0.22, 0.24, 0.5), lens: new THREE.CylinderGeometry(0.06, 0.07, 0.16, 10), mic: new THREE.CylinderGeometry(0.012, 0.012, 0.32, 6), micH: new THREE.SphereGeometry(0.04, 8, 6), cam: new THREE.BoxGeometry(0.15, 0.1, 0.09),
+    card: new THREE.BoxGeometry(0.075, 0.1, 0.008), cardM: sdMat(0xf4f6fa), strap: new THREE.BoxGeometry(0.01, 0.26, 0.006), radio: new THREE.BoxGeometry(0.05, 0.11, 0.03), board: new THREE.BoxGeometry(0.2, 0.27, 0.012), boardM: sdMat(0xe8e2d0), badge: new THREE.BoxGeometry(0.06, 0.018, 0.006), gold: sdMat(0xc9a144),
+    flashM: new THREE.SpriteMaterial({ map: ft, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }) }; return SD.P; }
+function sdPropAdd(pg, geo, mat, x, y, z, rx) { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); if (rx) m.rotation.x = rx; pg.add(m); pg.userData.props.push(m); m.visible = pg.userData.view === 'front'; return m; }
+// 報道：テレビカメラ・マイク・カメラ（板と一緒にカメラの方へ回る）
+function sdPress(G, x, z, i, f) { const pg = sdMob(G, x, z, i + 80, f); if (!pg) return null; const P = sdProps(), top = pg.userData.cm / 100, k = i % 3; let fp = null;
+  if (k === 0) { sdPropAdd(pg, P.tv, P.grey, 0.2, top - 0.12, 0.12); sdPropAdd(pg, P.lens, P.blk, 0.2, top - 0.12, 0.42, Math.PI / 2); }
+  else if (k === 1) { sdPropAdd(pg, P.mic, P.blk, 0.12, top * 0.8, 0.2, 0.9); sdPropAdd(pg, P.micH, P.grey, 0.12, top * 0.8 + 0.1, 0.33); }
+  else { sdPropAdd(pg, P.cam, P.blk, 0, top - 0.1, 0.12); fp = top - 0.08; }
+  pg.userData.fp = fp; pg.userData.press = true; (SD.press[SD.curB] || (SD.press[SD.curB] = [])).push(pg); return pg; }
+// 県の職員：名札（紐の色で係）＋係の小物。帽子は無し
+function sdStaff(G, x, z, i, dept, f) { const pg = sdMob(G, x, z, i + 150, f); if (!pg) return null; const P = sdProps(), top = pg.userData.cm / 100, D = SD_DEPT[dept];
+  if (dept === 'hotel') sdPropAdd(pg, P.badge, P.gold, 0.07, top * 0.7, 0.07); else { sdPropAdd(pg, P.card, P.cardM, 0, top * 0.6, 0.08); sdPropAdd(pg, P.strap, sdMat(D[1]), 0, top * 0.68, 0.075); }
+  if (D[2] === 'radio') sdPropAdd(pg, P.radio, P.blk, 0.15, top * 0.52, 0.05); else if (D[2] === 'board') sdPropAdd(pg, P.board, P.boardM, -0.1, top * 0.55, 0.1, -0.5); else if (D[2] === 'cam') { sdPropAdd(pg, P.cam, P.blk, 0, top - 0.1, 0.12); pg.userData.fp = top - 0.08; (SD.press[SD.curB] || (SD.press[SD.curB] = [])).push(pg); }
+  pg.userData.staff = dept; pg.userData.title = dept === 'hotel' ? 'ホテルの係' : '宮城県 ' + D[0] + ' 職員'; return pg; }
+function sdWalker(pg, pts, sp) { if (pg) SD.walk.push({ o: pg, pts, i: 0, sp: sp || 1.1, wait: Math.random() * 3 }); return pg; }   // 用事で歩き回る職員（点から点へ、着いたら少し止まる）
 function sdRope(G, x0, z0, x1, z1) { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, z1 - z0) / 2.2)); for (let i = 0; i <= n; i++) sdCyl(G, 0.04, 0.05, 0.95, 0xc9a144, x0 + (x1 - x0) * i / n, 0.47, z0 + (z1 - z0) * i / n, 8);
-  const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz); sdBox(G, 0.03, 0.03, L, 0x9c1f2a, (x0 + x1) / 2, 0.85, (z0 + z1) / 2, Math.atan2(dx, dz)); }   // 報道の綱（金の柱と赤い綱）
-// ---- 舞台（九つの場面を離して並べ、今の場面だけ見せる） ----
-function sdSet(name, fn) { const G = new THREE.Group(), ox = SD_SETX[name]; G.position.x = ox; G.visible = false; stageRoot.add(G); SD.curB = name; const S = { name, G, ox, rects: [], spawn: [0, 0, 0], at: {} }; fn(G, S); SD.sets[name] = S; return S; }
+  const dx = x1 - x0, dz = z1 - z0, L = Math.hypot(dx, dz); sdBox(G, 0.03, 0.03, L, 0x9c1f2a, (x0 + x1) / 2, 0.85, (z0 + z1) / 2, Math.atan2(dx, dz)); }
+// ---- 舞台（場面を離して並べ、今の場面だけ見せる） ----
+const sdLook = (tx, tz) => { SD.faceFn = (x, z) => Math.atan2(tx - x, tz - z); };
+function sdSet(name, fn) { const G = new THREE.Group(), ox = SD_SETX[name]; G.position.x = ox; G.visible = false; stageRoot.add(G); SD.curB = name; SD.faceFn = null; const S = { name, G, ox, rects: [], spawn: [0, 0, 0], at: {}, focus: [0, -10], light: [1.2, 0.85, 0.8] }; fn(G, S); SD.sets[name] = S; return S; }
+function sdLight(G, x, y, z, c, i, d) { if (LITE) return; const l = new THREE.PointLight(c, i, d || 14, 1.6); l.position.set(x, y, z); G.add(l); }
+function sdEmis(c) { const M = SD.em || (SD.em = {}); return M[c] || (M[c] = new THREE.MeshBasicMaterial({ color: c })); }
+function sdTree(G, x, z, s, kind) { s = s || 1; if (kind === 'palm') { sdCyl(G, 0.12 * s, 0.18 * s, 4 * s, 0x7a6248, x, 2 * s, z, 7); for (let i = 0; i < 7; i++) { const l = sdBox(G, 0.25 * s, 0.04, 1.8 * s, 0x3f7a3a, x + Math.sin(i * 0.9) * 0.7 * s, 4 * s - 0.15, z + Math.cos(i * 0.9) * 0.7 * s, i * 0.9); l.rotation.x = 0.35; } return; }
+  if (kind === 'cone') { sdCyl(G, 0, 1.0 * s, 3.4 * s, 0x2f5a34, x, 1.9 * s, z, 9); sdCyl(G, 0.1, 0.12, 0.5, 0x5a4532, x, 0.25, z, 6); return; }
+  if (kind === 'ball') { const m = new THREE.Mesh(new THREE.SphereGeometry(0.7 * s, 10, 8), sdMat(0x4a7a3a)); m.position.set(x, 0.6 * s, z); m.scale.y = 0.8; G.add(m); return; }
+  sdCyl(G, 0.14 * s, 0.2 * s, 2.6 * s, 0x6a5040, x, 1.3 * s, z, 7); const m = new THREE.Mesh(new THREE.SphereGeometry(1.6 * s, 10, 8), sdMat(0x4d7a3e)); m.position.set(x, 3.4 * s, z); G.add(m); }
+function sdFlag(G, x, y, z, kind) { sdCyl(G, 0.04, 0.05, 6, 0xd8d8d8, x, y + 3, z, 6); const t = sdCT('flag' + kind, 96, 64, (c, w, h) => { c.fillStyle = kind === 0 ? '#fff' : kind === 1 ? '#5a3a8a' : '#1f6a4a'; c.fillRect(0, 0, w, h); c.fillStyle = kind === 0 ? '#c8102e' : '#fff'; c.beginPath(); c.arc(48, 32, kind === 0 ? 18 : 12, 0, 7); c.fill(); });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.0), new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })); m.position.set(x + 0.78, y + 5.4, z); G.add(m); (SD.flags || (SD.flags = [])).push(m); }
+function sdSeats(G, rows, z0, pitch) {   // 新幹線の座席（2＋3、通路は中央寄り）：座面・背もたれはモケット、白い枕カバー、灰色の肘掛け。InstancedMesh でまとめる
+  const X = [-1.28, -0.86, 0.52, 0.94, 1.36], n = rows * X.length, I = (geo, mat) => { const m = new THREE.InstancedMesh(geo, mat, n); G.add(m); return m; };
+  const cu = I(new THREE.BoxGeometry(0.42, 0.14, 0.48), sdTM('moq', 1, 0.4)), bk = I(new THREE.BoxGeometry(0.42, 0.82, 0.12), sdTM('moq', 1, 1)), hr = I(new THREE.BoxGeometry(0.34, 0.2, 0.02), sdMat(0xf6f6f2)), ar = I(new THREE.BoxGeometry(0.05, 0.08, 0.42), sdMat(0x8a8d90)), bs = I(new THREE.BoxGeometry(0.4, 0.38, 0.4), sdMat(0x55585c));
+  const o = new THREE.Object3D(); let k = 0; for (let r = 0; r < rows; r++) for (const x of X) { const z = z0 - r * pitch, put = (M, px, py, pz, rx) => { o.position.set(px, py, pz); o.rotation.set(rx || 0, 0, 0); o.updateMatrix(); M.setMatrixAt(k, o.matrix); };
+    put(bs, x, 0.2, z); put(cu, x, 0.46, z); put(bk, x, 0.92, z - 0.26, -0.16); put(hr, x, 1.2, z - 0.2, -0.16); put(ar, x + 0.23, 0.6, z); k++; } }
 function buildSendai() {
   ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false; TERR.fn = () => 0; TERR.move = (ox, oz, nx, nz) => sdIn(nx, nz) ? 1 : 0;
-  SD.sets = {}; SD.press = {}; SD.pool = jpMobLooks(); const N = (G, k, x, z, S) => { const s = sdNamed(G, k, x, z); if (s) S.at[k] = s; return s; };
+  SD.sets = {}; SD.press = {}; SD.ppl = {}; SD.walk = []; SD.flags = []; SD.pool = jpMobLooks(); const N = (G, k, x, z, S) => { const s = sdNamed(G, k, x, z); if (s) S.at[k] = s; return s; };
   // 1 宮殿の車寄せ
-  sdSet('porch', (G, S) => { sdBox(G, 40, 0.2, 40, 0x8d8a84, 0, -0.1, -5); sdBox(G, 34, 11, 1, 0xf1ece0, 0, 5.5, -23); sdBox(G, 36, 1.2, 3, 0x2f4a3c, 0, 11.4, -22.5); sdBox(G, 10, 0.4, 7, 0xe9e2d2, 0, 4.2, -19);
-    for (const px of [-4.5, 4.5]) sdCyl(G, 0.35, 0.4, 4, 0xf4efe4, px, 2, -16, 12);
-    [-8, -2, 4].forEach((x, i) => { sdBox(G, 4.6, 1.0, 1.85, 0x15161a, x, 0.7, -8); sdBox(G, 2.6, 0.62, 1.65, 0x22252b, x - 0.2, 1.5, -8); for (const wx of [-1.5, 1.5]) for (const wz of [-0.95, 0.95]) sdCyl(G, 0.34, 0.34, 0.2, 0x0b0b0b, x + wx, 0.34, -8 + wz, 10).rotation.x = Math.PI / 2; });
-    for (const x of [-15, -12.6]) { sdBox(G, 1.9, 0.55, 0.42, 0xf3f4f6, x, 0.75, -8); sdCyl(G, 0.3, 0.3, 0.1, 0x111111, x - 0.75, 0.3, -8, 10).rotation.x = Math.PI / 2; sdCyl(G, 0.3, 0.3, 0.1, 0x111111, x + 0.75, 0.3, -8, 10).rotation.x = Math.PI / 2; sdMob(G, x, -6.6, x | 0); }   // 白バイ（隣に立つ）
-    N(G, 'sumi', 1.6, 1.5, S); N(G, 'fumi', -1.8, 1.2, S); N(G, 'chikage', -3.4, 2.4, S); N(G, 'hiyori', 2.9, 2.8, S); N(G, 'shinobu', 6.4, -5.6, S); N(G, 'kujo', -5, 3.2, S); N(G, 'sec3', 4.4, 3.6, S);
-    for (let i = 0; i < 9; i++) sdMob(G, -10 + i * 2.6, -11.5 + (i % 2) * 0.8, i);   // 運転・荷物・先遣の侍女
-    S.rects.push([-18, -14, 18, 10]); S.spawn = [0, 6, 0]; S.ring = [5.4, -6.4]; S.bg = 0xbfd3e6; });
-  // 2 新幹線（貸切の車両。座席はあるが誰も座らない：皆は通路とデッキに立つ）
-  sdSet('train', (G, S) => { sdBox(G, 3.6, 0.2, 28, 0x55585e, 0, -0.1, -8); sdBox(G, 3.6, 0.2, 28, 0xe9ecef, 0, 2.6, -8); for (const s of [-1, 1]) { sdBox(G, 0.15, 2.7, 28, 0xe6e8ea, s * 1.8, 1.3, -8); sdBox(G, 0.05, 0.7, 26, 0x9cc4e8, s * 1.72, 1.45, -8); }
-    for (let z = 2; z > -20; z -= 1.05) for (const s of [-1, 1]) { sdBox(G, 0.95, 0.45, 0.5, 0x3d5a8a, s * 1.15, 0.45, z); sdBox(G, 0.95, 0.75, 0.12, 0x3d5a8a, s * 1.15, 0.95, z + 0.28); }
-    sdBox(G, 3.6, 2.6, 0.15, 0xd8dade, 0, 1.3, -21.5); sdBox(G, 1.0, 2.1, 0.17, 0x8a8f96, 0, 1.05, -21.45);
-    N(G, 'sumi', 0.2, 0.3, S); N(G, 'hiyori', -0.25, -2.2, S); N(G, 'fumi', 0.2, -4, S); N(G, 'chikage', -0.2, -5.8, S); N(G, 'kujo', 0.2, -7.6, S); N(G, 'sec3', -0.2, -9.4, S); N(G, 'shinobu', 0, -18.5, S); for (let i = 0; i < 4; i++) sdMob(G, (i % 2 ? 0.25 : -0.25), -11.5 - i * 1.6, i + 10);
-    S.rects.push([-0.45, -20, 0.45, 4]); S.spawn = [0, 3, 0]; S.bg = 0x9aa3ad; });
-  // 3 仙台駅のホーム（県警が並び、報道は綱の内側、一般の人は柵の向こう）
-  sdSet('station', (G, S) => { sdBox(G, 10, 1.1, 72, 0xb9b6ae, 0, -0.55, -26); sdBox(G, 0.3, 0.02, 72, 0xe8c43a, -3.9, 0.01, -26); sdBox(G, 3.4, 3.9, 72, 0xf3f4f2, -6.2, 1.2, -26); sdBox(G, 0.05, 0.3, 72, 0x2fa36b, -4.48, 1.6, -26); sdBox(G, 0.05, 0.08, 72, 0xe58fb0, -4.48, 1.35, -26); sdBox(G, 0.06, 0.6, 72, 0x2b3440, -4.48, 2.3, -26);
-    sdBox(G, 10, 0.3, 72, 0x5d6168, 0, 4.6, -26); for (let z = 6; z > -60; z -= 8) sdCyl(G, 0.18, 0.18, 4.6, 0x7a7f86, 3.2, 2.3, z, 8);
-    sdBox(G, 0.2, 2.6, 0.8, 0x2b3440, 0, 3.4, -38).position.y = 3.6; { const sg = sdBox(G, 3.2, 0.7, 0.1, 0x1f6b44, 0, 3.6, -38); }
-    for (let i = 0; i < 12; i++) sdPolice(G, 4.1, 4 - i * 4.4, i, -1);   // 県警がホームに並ぶ
-    sdRope(G, 1.4, -30, 1.4, -21); sdRope(G, 1.4, -21, 4.6, -21); for (let i = 0; i < 16; i++) sdPress(G, 1.9 + (i % 4) * 0.75, -22 - Math.floor(i / 4) * 2.0, i, -1);   // 報道
-    sdBox(G, 10, 1.2, 0.15, 0x9ba1a8, 0, 0.6, -53); for (let i = 0; i < 12; i++) sdCiv(G, -3.6 + (i % 6) * 1.4, -54.2 - Math.floor(i / 6) * 1.2, i);   // 柵の向こうの一般の人
-    S.at.gov = sdMob(G, 0, -44.5, 61); for (let i = 0; i < 3; i++) sdMob(G, -1.6 + i * 1.6, -46.2, 62 + i);
-    N(G, 'sumi', -1.4, 2.4, S); N(G, 'shinobu', 0.8, 0.5, S); N(G, 'chikage', -2.6, 3.4, S); N(G, 'hiyori', 0.4, 3.8, S); N(G, 'fumi', -1.2, 5.2, S); N(G, 'kujo', 1.4, 5.6, S); N(G, 'sec3', -2.8, 6, S);
-    S.rects.push([-3.7, -50, 3.5, 8]); S.spawn = [-2.2, 6, 0]; S.ring = [0, -42.8]; S.bg = 0xc8d4de; });
-  // 4 ホテルの玄関（県の秘書課十人が並んで出迎え。報道の綱、県警、道の向こうの一般の人）
-  sdSet('hotel', (G, S) => { sdBox(G, 50, 0.2, 50, 0x8f8c86, 0, -0.1, -10); sdBox(G, 30, 14, 1, 0xd9d2c4, 0, 7, -31); sdBox(G, 4, 3.2, 0.3, 0x7fb0cf, 0, 1.6, -30.4); sdBox(G, 8, 0.4, 5, 0xe0dad0, 0, 4, -28.5); sdBox(G, 2.4, 0.03, 30, 0x8c1d22, 0, 0.02, -14);
-    for (const x of [-3.6, 3.6]) sdCyl(G, 0.15, 0.15, 3.8, 0xc9c4b8, x, 1.9, -26.4, 8);
-    const sec = []; for (let i = 0; i < 10; i++) sec.push(sdLany(G, 2.1, -26 + i * 2.0, i, 1)); S.at.sec = sec.filter(Boolean);   // 県の秘書課
-    sdRope(G, -2.8, -21, -2.8, -9); for (let i = 0; i < 10; i++) sdPress(G, -3.5 - (i % 3) * 0.8, -20 + Math.floor(i / 3) * 2.8, i, 1);
-    for (let i = 0; i < 4; i++) sdPolice(G, -6 + i * 4, 3, i + 20, -1); sdBox(G, 22, 1.1, 0.2, 0x9ba1a8, 0, 0.55, 6.5); for (let i = 0; i < 8; i++) sdCiv(G, -7 + i * 2, 7.6 + (i % 2) * 0.8, i + 3);
-    S.at.pol = sdPolice(G, -1.6, -27.5, 33, 1);
-    N(G, 'sumi', 1.0, 1.4, S); N(G, 'hiyori', 0.2, 2.6, S); N(G, 'shinobu', -0.8, -1.0, S); N(G, 'fumi', -1.2, 2.4, S); N(G, 'chikage', -2, 3.4, S); N(G, 'kujo', 1.6, 3.6, S); N(G, 'sec3', -1.8, 4.6, S);
-    S.rects.push([-2.3, -28.5, 1.7, 3]); S.spawn = [0, 1, 0]; S.ring = [0, -27.6]; S.bg = 0xc5d6e6; });
-  // 5 懇談会（宴会場・立食）
-  sdSet('hall', (G, S) => { sdBox(G, 26, 0.2, 22, 0x7a2a2a, 0, -0.1, -2); sdBox(G, 26, 0.2, 22, 0xf1ebdf, 0, 5.2, -2); for (const [w, d, x, z] of [[26, 0.3, 0, -13], [26, 0.3, 0, 9], [0.3, 22, -13, -2], [0.3, 22, 13, -2]]) sdBox(G, w, 5.2, d, 0xeee6d6, x, 2.6, z);
-    for (const [x, z] of [[-5, -4], [5, -4], [0, 2]]) { const c = sdCyl(G, 0.55, 0.55, 0.25, 0xfff3c8, x, 4.7, z, 12); }
-    for (const [x, z] of [[-3, -5], [0, -5.2], [3.6, -4.8], [-6, -1.5], [6, -1.5], [0, -1]]) { sdCyl(G, 0.06, 0.12, 1.05, 0x6b5a48, x, 0.52, z, 8); sdCyl(G, 0.48, 0.48, 0.05, 0xfafafa, x, 1.07, z, 16); }   // 立食の卓
-    S.at.gov = sdMob(G, 0, -6.4, 64); S.at.mayor = sdMob(G, -3, -6.3, 65); S.at.bank = sdMob(G, 3.2, -6, 66); S.at.port = sdMob(G, 4.6, -6.6, 67); S.at.maker = sdMob(G, 6, -5.8, 68);
-    sdRope(G, -9, -8.5, -5.2, -8.5); sdRope(G, -5.2, -8.5, -5.2, -12.5); const pr = []; for (let i = 0; i < 8; i++) pr.push(sdPress(G, -8.4 + (i % 4) * 0.9, -9.6 - Math.floor(i / 4) * 1.6, i + 30, 1)); S.at.press = pr.filter(Boolean);
-    for (let i = 0; i < 4; i++) sdMob(G, 11 - i * 0.2, -9 + i * 3.6, i + 70);
-    N(G, 'sumi', 1.2, 1.4, S); N(G, 'fumi', -1.6, 1.8, S); N(G, 'chikage', -2.8, 0.6, S); N(G, 'hiyori', 0.6, 2.6, S); N(G, 'sec3', 2.6, 2.4, S); N(G, 'shinobu', -11, 3, S); N(G, 'kujo', 3.8, 3.4, S);
-    S.rects.push([-9, -8, 10, 6]); S.spawn = [0, 3.5, 0]; S.door = [-12.5, -2]; S.bg = 0x3a2c22; });
-  // 6 港湾視察
-  sdSet('port', (G, S) => { sdBox(G, 70, 1, 44, 0xa9a9a4, 0, -0.5, -2); sdBox(G, 200, 0.1, 100, 0x2f5f86, 0, -0.9, -74); const C = [0xb5452f, 0x2f6fb5, 0x3f8f4f, 0xd9a23a, 0x8a8f96];
-    for (let i = 0; i < 18; i++) { const x = -22 + (i % 6) * 2.7, z = 2 + Math.floor(i / 6) * 2.8; for (let h = 0; h < 1 + (i % 3); h++) sdBox(G, 2.4, 2.5, 6, C[(i + h) % 5], x, 1.25 + h * 2.55, z); }
-    for (const x of [-12, 0, 12]) { for (const lx of [-3, 3]) for (const lz of [-21, -15]) sdBox(G, 0.6, 16, 0.6, 0x3a6ea8, x + lx, 8, lz); sdBox(G, 7, 1, 1, 0x3a6ea8, x, 16, -18).scale.set(1, 1, 1); sdBox(G, 1.2, 1, 34, 0x3a6ea8, x, 16.5, -26); }   // ガントリークレーン
-    sdBox(G, 16, 9, 22, 0xd3cfc4, 26, 4.5, 4); S.at.pc = sdMob(G, 1.2, -16.2, 140); S.at.ec = sdMob(G, -1.4, -16.4, 141); S.at.food = sdMob(G, 3.4, 4.6, 142); S.at.sec3 = sdNamed(G, 'sec3', 1.4, -1, S) ; for (const k of ['sumi', 'hiyori', 'fumi', 'shinobu']) N(G, k, -2 + Math.random() * 4, 6 + Math.random() * 2, S); for (let i = 0; i < 4; i++) sdMob(G, 8 + i * 1.2, 6, i + 90);
-    S.rects.push([-24, -19.5, 24, 9]); S.spawn = [0, 7, 0]; S.pts = [[0, -14], [-10, -16], [12, -9]]; S.bg = 0xbcd6ea; });
-  // 7 夕食会（立食。宮城の牛タン・ずんだ餅・笹かまぼこ・牡蠣）
-  sdSet('dinner', (G, S) => { sdBox(G, 20, 0.2, 16, 0x5a3b2a, 0, -0.1, -2); for (const [w, d, x, z] of [[20, 0.3, 0, -10], [20, 0.3, 0, 6], [0.3, 16, -10, -2], [0.3, 16, 10, -2]]) sdBox(G, w, 4.6, d, 0xe9dcc6, x, 2.3, z);
-    for (const [x, z] of [[-3, -3.5], [0, -4], [3, -3.5], [0, -0.6]]) { sdCyl(G, 0.06, 0.12, 1.05, 0x6b5a48, x, 0.52, z, 8); sdCyl(G, 0.5, 0.5, 0.05, 0xfafafa, x, 1.07, z, 16);
-      for (let j = 0; j < 3; j++) sdBox(G, 0.16, 0.03, 0.08, 0x7a3e26, x - 0.2 + j * 0.05, 1.12 + j * 0.02, z - 0.15); for (let j = 0; j < 3; j++) sdCyl(G, 0.05, 0.05, 0.05, 0x7fc35a, x + 0.2 + j * 0.1, 1.13, z + 0.1, 8); sdBox(G, 0.18, 0.02, 0.06, 0xf6f1e6, x - 0.15, 1.12, z + 0.2); sdCyl(G, 0.07, 0.05, 0.03, 0x9aa0a6, x + 0.2, 1.12, z - 0.2, 8); }
+  sdSet('porch', (G, S) => { sdFloor(G, 40, 40, sdTM('paving', 10, 10), 0, -5); sdBox(G, 34, 11, 1, sdTM('wallH', 8, 3), 0, 5.5, -23); sdBox(G, 36, 1.2, 3, 0x2f4a3c, 0, 11.4, -22.5); sdBox(G, 10, 0.4, 7, 0xe9e2d2, 0, 4.2, -19);
+    for (const px of [-4.5, 4.5]) sdCyl(G, 0.35, 0.4, 4, 0xf4efe4, px, 2, -16, 12); for (const x of [-14, -9, 9, 14]) sdTree(G, x, -19, 1, 'ball');
+    [-8, -2, 4].forEach(x => { sdBox(G, 4.6, 1.0, 1.85, 0x15161a, x, 0.7, -8); sdBox(G, 2.6, 0.62, 1.65, 0x22252b, x - 0.2, 1.5, -8); for (const wx of [-1.5, 1.5]) for (const wz of [-0.95, 0.95]) sdCyl(G, 0.34, 0.34, 0.2, 0x0b0b0b, x + wx, 0.34, -8 + wz, 10).rotation.x = Math.PI / 2; });
+    for (const x of [-15, -12.6]) { sdBox(G, 1.9, 0.55, 0.42, 0xf3f4f6, x, 0.75, -8); sdCyl(G, 0.3, 0.3, 0.1, 0x111111, x - 0.75, 0.3, -8, 10).rotation.x = Math.PI / 2; sdCyl(G, 0.3, 0.3, 0.1, 0x111111, x + 0.75, 0.3, -8, 10).rotation.x = Math.PI / 2; sdMob(G, x, -6.6, x | 0, Math.PI / 2); }   // 白バイ（隣に立つ）
+    sdLook(0, 6); N(G, 'sumi', 1.6, 1.5, S); N(G, 'fumi', -1.8, 1.2, S); N(G, 'chikage', -3.4, 2.4, S); N(G, 'hiyori', 2.9, 2.8, S); N(G, 'shinobu', 6.4, -5.6, S); N(G, 'kujo', -5, 3.2, S); N(G, 'sec3', 4.4, 3.6, S);
+    sdLook(0, -8); for (let i = 0; i < 9; i++) sdMob(G, -10 + i * 2.6, -11.5 + (i % 2) * 0.8, i);
+    S.rects.push([-18, -14, 18, 10]); S.spawn = [0, 6, 0]; S.focus = [0, 6]; S.bg = 'sky'; });
+  // 2 新幹線（E5 系の車内：2＋3 の高い背もたれの座席、白い枕カバー、荷物棚、二筋の照明、大きな窓、奥に扉と表示器。誰も座らない）
+  sdSet('train', (G, S) => { const L = 26, zc = -8; sdFloor(G, 3.5, L, sdTM('trFloor', 3, 20), 0, zc); sdFloor(G, 0.7, L, sdMat(0x5e6266), -0.1, zc, 0.005);
+    for (const s of [-1, 1]) { sdBox(G, 0.1, 0.75, L, sdTM('trWall', 12, 1), s * 1.75, 0.38, zc); sdBox(G, 0.1, 0.55, L, sdTM('trWall', 12, 1), s * 1.75, 2.0, zc);
+      for (let i = 0; i < 13; i++) { const z = 4 - i * 2; SD.scenM = sdPlane(G, 1.6, 0.95, sdTM('scen', 0.35, 1, { basic: true }), s * 1.69, 1.25, z - 1, 0, -s * Math.PI / 2).material; sdBox(G, 0.12, 1.0, 0.36, sdTM('trWall', 1, 1), s * 1.74, 1.25, z); }
+      sdBox(G, 0.42, 0.04, L, sdMat(0xb9bcc0), s * 1.48, 1.9, zc); sdBox(G, 0.02, 0.1, L, sdMat(0x9a9da0), s * 1.27, 1.86, zc); }   // 荷物棚
+    const ce = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 1.8, L, 20, 1, true, Math.PI / 2 + 0.25, Math.PI - 0.5), sdMat(0xeee6d4)); ce.material.side = THREE.DoubleSide; ce.rotation.x = Math.PI / 2; ce.position.set(0, 1.75, zc); ce.scale.set(1, 1, 0.35); G.add(ce);
+    for (const x of [-0.55, 0.55]) sdBox(G, 0.16, 0.03, L, sdEmis(0xfffdf2), x, 2.26, zc);   // 照明
+    sdSeats(G, 21, 2.2, 1.02); sdBox(G, 3.5, 2.6, 0.12, sdTM('trWall', 2, 1), 0, 1.3, -21.3); sdBox(G, 0.95, 2.0, 0.14, sdMat(0x9aa0a6), -0.1, 1.0, -21.25);
+    const dt = sdCT('lcd', 256, 32, (x, w, h) => { x.fillStyle = '#111'; x.fillRect(0, 0, w, h); x.fillStyle = '#ff9a2a'; x.font = 'bold 22px sans-serif'; x.fillText('次は 仙台  SENDAI', 8, 24); }); sdPlane(G, 1.1, 0.14, new THREE.MeshBasicMaterial({ map: dt }), -0.1, 2.15, -21.2);
+    sdLook(0, 6); N(G, 'sumi', 0.15, 0.6, S); N(G, 'hiyori', -0.3, -1.6, S); N(G, 'fumi', 0.05, -3.4, S); N(G, 'chikage', -0.3, -5.2, S); N(G, 'kujo', 0.05, -7, S); N(G, 'sec3', -0.3, -8.8, S); N(G, 'shinobu', -0.1, -19.6, S); for (let i = 0; i < 4; i++) sdMob(G, (i % 2 ? 0.05 : -0.3), -11 - i * 1.8, i + 10);
+    S.rects.push([-0.42, -20.4, 0.22, 4.5]); S.spawn = [-0.1, 3.6, 0]; S.focus = [0, 6]; S.bg = 0xb8c4cc; S.light = [1.25, 0.95, 0.4]; sdLight(G, 0, 2.1, -4, 0xfff6e0, 1.0, 16); });
+  // 3 仙台駅のホーム（県警が並び、報道は綱の内側、一般の人は柵の向こう、県の職員）
+  sdSet('station', (G, S) => { sdBox(G, 10, 1.1, 72, sdMat(0x9e9b94), 0, -0.56, -26); sdFloor(G, 10, 72, sdTM('conc', 4, 28), 0, -26); sdFloor(G, 0.5, 72, sdTM('tactile', 1, 140), -3.5, -26, 0.006); sdBox(G, 0.08, 0.02, 72, sdMat(0xf4f4f0), -4.85, 0.01, -26);
+    const tr = sdBox(G, 3.4, 3.9, 72, sdTM('shin', 12, 1), -6.8, 1.2, -26); sdBox(G, 3.6, 0.2, 72, 0x3a3d42, -6.8, 3.2, -26);
+    sdBox(G, 13, 0.25, 72, sdTM('ceil', 3, 18), -1.5, 4.8, -26); for (let z = 6; z > -60; z -= 4) sdBox(G, 0.3, 0.05, 2.2, sdEmis(0xfffbe8), 1.2, 4.66, z);
+    for (let z = 6; z > -60; z -= 8) { sdBox(G, 0.45, 4.6, 0.45, sdTM('wallP', 1, 2), 3.2, 2.3, z); }
+    sdBox(G, 0.3, 4.6, 72, sdTM('wallP', 28, 1), 5.2, 2.3, -26); for (let z = 0; z > -56; z -= 14) { const ad = sdCT('ad' + (z & 3), 128, 64, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, h); g.addColorStop(0, ['#2a6ab0', '#c8402a', '#2e8a5a', '#d09a2a'][(-z / 14) | 0]); g.addColorStop(1, '#f2eee4'); x.fillStyle = g; x.fillRect(0, 0, w, h); x.fillStyle = '#fff'; x.font = 'bold 16px sans-serif'; x.fillText(['杜の都 仙台', '牛たん', '松島へ', '秋保温泉'][(-z / 14) | 0], 10, 38); }); sdPlane(G, 2.4, 1.2, new THREE.MeshBasicMaterial({ map: ad }), 5.04, 2.2, z, 0, -Math.PI / 2); }
+    const sg = sdCT('ekimei', 256, 96, (x, w, h) => { x.fillStyle = '#fafafa'; x.fillRect(0, 0, w, h); x.fillStyle = '#1f7a4a'; x.fillRect(0, 70, w, 10); x.fillStyle = '#111'; x.font = 'bold 40px sans-serif'; x.textAlign = 'center'; x.fillText('仙 台', w / 2, 50); x.font = '14px sans-serif'; x.fillText('Sendai', w / 2, 94); });
+    for (const z of [-14, -38]) { sdBox(G, 2.6, 1.0, 0.1, 0x2b3440, 0, 3.6, z); sdPlane(G, 2.5, 0.92, new THREE.MeshBasicMaterial({ map: sg }), 0, 3.6, z + 0.06); }
+    sdLook(-1, -20); for (let i = 0; i < 12; i++) sdMob(G, 4.1, 4 - i * 4.4, i + 40, -Math.PI / 2);   // 県警がホームに並ぶ（帽子・腕章は無し）
+    sdRope(G, 1.4, -30, 1.4, -21); sdRope(G, 1.4, -21, 4.6, -21); for (let i = 0; i < 16; i++) sdPress(G, 1.9 + (i % 4) * 0.75, -22 - Math.floor(i / 4) * 2.0, i, -Math.PI / 2 + sdRnd(-0.5, 0.5));
+    sdBox(G, 10, 1.2, 0.15, 0x9ba1a8, 0, 0.6, -53); for (let i = 0; i < 12; i++) sdCiv(G, -3.6 + (i % 6) * 1.4, -54.2 - Math.floor(i / 6) * 1.2, i, sdRnd(-0.6, 0.6));
+    S.at.gov = sdMob(G, 0, -44.5, 61, 0); for (let i = 0; i < 3; i++) sdStaff(G, -1.6 + i * 1.6, -46.2, i, 'hisho', 0);
+    sdStaff(G, -2.6, -40, 3, 'gitan', Math.PI / 2); sdStaff(G, 2.4, -36, 4, 'koho', -Math.PI / 2 - 0.4); sdStaff(G, 2.6, -40, 5, 'koho', -Math.PI / 2 - 0.2);
+    sdWalker(sdStaff(G, -2.8, -30, 6, 'hisho'), [[-2.8, -30], [-2.8, -46], [1.0, -46]], 1.3); sdWalker(sdStaff(G, 0.6, -20, 7, 'gitan'), [[0.6, -20], [0.6, -42], [-1.5, -42]], 1.0);
+    sdLook(0, 6); N(G, 'sumi', -1.4, 2.4, S); N(G, 'shinobu', 0.8, 0.5, S); N(G, 'chikage', -2.6, 3.4, S); N(G, 'hiyori', 0.4, 3.8, S); N(G, 'fumi', -1.2, 5.2, S); N(G, 'kujo', 1.4, 5.6, S); N(G, 'sec3', -2.8, 6, S);
+    S.rects.push([-3.4, -50, 3.0, 8]); S.spawn = [-2.2, 6, 0]; S.ring = [0, -42.8]; S.focus = [0, -44]; S.bg = 'sky'; S.light = [1.1, 0.8, 0.6]; });
+  // 4 宮城県庁：旧庁舎（アールデコの石とタイル）と本庁舎（十八階の高層）。職員が並び、忙しく動く
+  sdSet('kencho', (G, S) => { sdFloor(G, 110, 110, sdTM('paving', 26, 26), 0, -20); sdFloor(G, 12, 40, sdTM('asph', 3, 10), 18, 8, 0.004);
+    // 旧庁舎（左）
+    const ox = -24, oz = -34, W = 30; sdBox(G, W, 15, 14, sdTM('brick', 8, 6), ox, 7.5, oz); for (let i = 0; i < 11; i++) { const x = ox - W / 2 + 1.4 + i * (W - 2.8) / 10; sdBox(G, 0.9, 18.5, 0.7, sdTM('brick', 0.3, 6), x, 9.25, oz + 7.1); const cap = sdCyl(G, 0.45, 0.45, 0.7, sdTM('brick', 0.3, 0.3), x, 18.5, oz + 7.1, 12); cap.rotation.x = Math.PI / 2;
+      if (i < 10) for (let f = 0; f < 4; f++) sdBox(G, 1.4, 2.2, 0.3, 0x2a2f36, x + (W - 2.8) / 20, 2.2 + f * 3.4, oz + 6.95); }
+    sdBox(G, W + 0.6, 0.6, 14.6, 0x8a7458, ox, 15.2, oz); for (let i = 0; i < 3; i++) sdFlag(G, ox - 4 + i * 4, 15.5, oz + 2, i);
+    for (const [px, pz] of [[-4.2, 9], [4.2, 9], [-4.2, 13], [4.2, 13]]) sdBox(G, 1.3, 5, 1.3, sdMat(0x9a9890), ox + px, 2.5, oz + pz); sdBox(G, 11, 0.9, 6.5, sdMat(0x8e8c84), ox, 5.4, oz + 11);   // 車寄せ（石の四角い柱と平らな庇）
+    for (let i = 0; i < 6; i++) sdTree(G, ox - 14 + i * 5.6, oz + 16, 1, 'ball'); sdTree(G, ox - 16, oz + 20, 1.1, 'palm'); sdTree(G, ox + 14, oz + 20, 1.1, 'palm'); sdTree(G, ox - 20, oz + 8, 1.2);
+    // 本庁舎（右奥）：十八階、窓の格子、屋上の設備、低い玄関棟、前のロータリー
+    const tx = 22, tz = -52; sdBox(G, 26, 64, 20, sdTM('tower', 6, 16), tx, 32, tz); sdBox(G, 26.4, 0.6, 20.4, 0x9a968e, tx, 64.3, tz); for (const [a, b, c] of [[-6, 3, 4], [4, 2, 6], [8, 4, 3]]) sdBox(G, b * 1.4, b, c, 0x8a8d90, tx + a, 64.6 + b / 2, tz);
+    sdBox(G, 32, 6, 10, sdMat(0x6f7c88), tx, 3, tz + 14); sdBox(G, 32.6, 0.5, 10.6, 0xd0ccc4, tx, 6.2, tz + 14); for (let i = 0; i < 9; i++) sdBox(G, 3, 4.8, 0.1, sdMat(0x2c3a4a), tx - 14 + i * 3.5, 2.6, tz + 19.05);
+    const ro = new THREE.Mesh(new THREE.TorusGeometry(7, 0.55, 6, 32), sdMat(0x3f6a34)); ro.rotation.x = Math.PI / 2; ro.position.set(37, 0.45, -16); G.add(ro); sdFloor(G, 13, 13, sdMat(0x5a7a44), 37, -16, 0.01);
+    for (let i = 0; i < 7; i++) sdTree(G, 37 + Math.sin(i * 0.9) * 3.6, -16 + Math.cos(i * 0.9) * 3.6, 0.9 + (i % 3) * 0.15, 'cone'); sdTree(G, 37, -16, 1.3, 'cone');
+    // 人：本庁舎の玄関へ続く道の両側に職員が並ぶ。ほかは忙しく動く
+    const line = ['hisho', 'hisho', 'somu', 'gitan', 'hisho', 'koho', 'somu', 'keizai', 'hisho', 'kowan'];
+    for (let i = 0; i < 10; i++) { sdStaff(G, 13.6, 10 - i * 2.6, i, line[i], Math.PI / 2); sdStaff(G, 21.6, 9 - i * 2.6, i + 10, line[(i + 3) % 10], -Math.PI / 2); }
+    sdWalker(sdStaff(G, 10, -10, 30, 'hisho'), [[10, -10], [10, 6], [4, 6]], 1.4); sdWalker(sdStaff(G, 25, -8, 31, 'gitan'), [[25, -8], [25, 8], [28, 8]], 1.0); sdWalker(sdStaff(G, 5, -18, 32, 'koho'), [[5, -18], [12, -24], [2, -26]], 0.9);
+    sdWalker(sdStaff(G, 28, -20, 33, 'somu'), [[28, -20], [30, -4], [26, -2]], 1.2); sdWalker(sdStaff(G, -8, -16, 34, 'hisho'), [[-8, -16], [6, -16]], 1.5); sdWalker(sdStaff(G, -14, -14, 35, 'keizai'), [[-14, -14], [-20, -10], [-12, -6]], 1.0);
+    S.at.gov = sdMob(G, 17.6, -33.4, 61, 0); sdStaff(G, 15.6, -34, 36, 'hisho', 0); sdStaff(G, 19.6, -34, 37, 'gitan', 0); sdStaff(G, 14, -32, 38, 'koho', Math.PI / 2 + 0.6);
+    sdLook(17.6, 16); N(G, 'sumi', 18.8, 14.4, S); N(G, 'shinobu', 16.4, 12.4, S); N(G, 'hiyori', 16.8, 15.6, S); N(G, 'fumi', 19.4, 16.2, S); N(G, 'chikage', 16.0, 17.0, S);
+    S.rects.push([14.4, -32.4, 20.8, 17], [-30, -26, 28, -18]); S.spawn = [17.6, 15, 0]; S.ring = [17.6, -31.2]; S.focus = [17.6, -33]; S.bg = 'sky'; S.light = [1.2, 0.8, 0.95]; });
+  // 5 ホテルの玄関とロビー（県の秘書課十人が並んで出迎え。報道の綱、県警、道の向こうの一般の人）
+  sdSet('hotel', (G, S) => { sdFloor(G, 50, 50, sdTM('paving', 12, 12), 0, -10); sdFloor(G, 2.4, 30, sdMat(0x8c1d22), 0, -14, 0.006);
+    sdBox(G, 34, 24, 1, sdTM('hotelF', 3.5, 2.5), 0, 12, -31); sdBox(G, 12, 5, 1.1, sdMat(0x2c3a4a), 0, 2.5, -30.9); for (let i = 0; i < 5; i++) sdBox(G, 0.12, 5, 0.2, 0xb8b2a6, -6 + i * 3, 2.5, -30.3);
+    const lg = sdCT('hlogo', 256, 48, (x, w, h) => { x.fillStyle = '#1a1a1a'; x.fillRect(0, 0, w, h); x.fillStyle = '#d8c08a'; x.font = '26px serif'; x.textAlign = 'center'; x.fillText('HOTEL  MORI-NO-MIYAKO', w / 2, 33); }); sdPlane(G, 7, 1.3, new THREE.MeshBasicMaterial({ map: lg }), 0, 6.1, -26.2);
+    sdBox(G, 9, 0.5, 6, sdMat(0x3a3d42), 0, 5.4, -28.5); for (let i = 0; i < 10; i++) sdBox(G, 0.3, 0.04, 0.3, sdEmis(0xfff2cc), -4 + (i % 5) * 2, 5.12, -30 + Math.floor(i / 5) * 3);
+    for (const x of [-3.8, 3.8]) { sdBox(G, 0.45, 5.2, 0.45, sdMat(0x4a4d52), x, 2.6, -26.2); sdCyl(G, 0.55, 0.4, 0.9, 0x2c2c2c, x * 1.6, 0.45, -27, 12); sdTree(G, x * 1.6, -27, 0.6, 'ball'); }
+    sdLook(0, -14); const sec = []; for (let i = 0; i < 10; i++) sec.push(sdStaff(G, 2.1, -26 + i * 2.0, i, 'hisho', -Math.PI / 2)); S.at.sec = sec.filter(Boolean);
+    for (let i = 0; i < 4; i++) sdStaff(G, -1.9 + (i % 2) * 0.5, -29 + i * 0.5, i + 20, 'hotel', 0.3);
+    sdWalker(sdStaff(G, 4.5, -24, 24, 'gitan'), [[4.5, -24], [4.5, -6], [3.0, -6]], 1.2); sdWalker(sdStaff(G, 5.5, -10, 25, 'koho'), [[5.5, -10], [5.5, -27]], 0.8);
+    sdRope(G, -2.8, -21, -2.8, -9); for (let i = 0; i < 10; i++) sdPress(G, -3.5 - (i % 3) * 0.8, -20 + Math.floor(i / 3) * 2.8, i, Math.PI / 2 + sdRnd(-0.5, 0.5));
+    for (let i = 0; i < 4; i++) sdMob(G, -6 + i * 4, 3, i + 20, Math.PI); sdBox(G, 22, 1.1, 0.2, 0x9ba1a8, 0, 0.55, 6.5); for (let i = 0; i < 8; i++) sdCiv(G, -7 + i * 2, 7.6 + (i % 2) * 0.8, i + 3, Math.PI + sdRnd(-0.5, 0.5));
+    S.at.pol = sdMob(G, -1.6, -27.5, 33, 0.4);
+    sdLook(0, 6); N(G, 'sumi', 1.0, 1.4, S); N(G, 'hiyori', 0.2, 2.6, S); N(G, 'shinobu', -0.8, -1.0, S); N(G, 'fumi', -1.2, 2.4, S); N(G, 'chikage', -2, 3.4, S); N(G, 'kujo', 1.6, 3.6, S); N(G, 'sec3', -1.8, 4.6, S);
+    S.rects.push([-2.3, -28.5, 1.7, 3]); S.spawn = [0, 1, 0]; S.ring = [0, -27.6]; S.focus = [0, -27]; S.bg = 'sky'; S.light = [1.2, 0.8, 0.9]; });
+  // 6 懇談会（宴会場：木の壁と横長の光の筋、渦の模様の絨毯、丸卓は焦げ茶のクロス・白いナプキン・グラス・紫の花。椅子は卓に押し込み、中央は立食。前に演台とマイク）
+  sdSet('hall', (G, S) => { sdFloor(G, 26, 22, sdTM('carpetB', 8, 7), 0, -2); sdBox(G, 26, 0.2, 22, sdMat(0x3a2a20), 0, 6.1, -2); for (let i = 0; i < 12; i++) sdCyl(G, 0.18, 0.18, 0.05, sdEmis(0xfff0c8), -9 + (i % 4) * 6, 5.98, -9 + Math.floor(i / 4) * 6, 10);
+    for (const [w, d, x, z, ry] of [[26, 0.3, 0, -13, 0], [26, 0.3, 0, 9, 0], [22, 0.3, -13, -2, Math.PI / 2], [22, 0.3, 13, -2, Math.PI / 2]]) { sdBox(G, w, 6, d, sdTM('woodP', w / 2, 1), x, 3, z, ry); for (const y of [1.4, 3.2, 5.0]) sdBox(G, w * 0.96, 0.06, d + 0.04, sdEmis(0xffe2a8), x, y, z, ry); }
+    sdBox(G, 7, 0.5, 3, 0x4a3020, 0, 0.25, -11.4); sdBox(G, 0.8, 1.2, 0.5, 0x5a3a24, -2.2, 1.1, -11); sdCyl(G, 0.012, 0.012, 1.4, 0x222222, 1.2, 1.2, -10.8, 6); sdCyl(G, 0.02, 0.03, 0.12, 0x111111, 1.2, 1.95, -10.8, 6);
+    const ban = sdCT('hban', 512, 64, (x, w, h) => { x.fillStyle = '#f4efe2'; x.fillRect(0, 0, w, h); x.fillStyle = '#2a1a10'; x.font = 'bold 34px serif'; x.textAlign = 'center'; x.fillText('殿 御来県 歓迎懇談会', w / 2, 44); }); sdPlane(G, 7, 0.9, new THREE.MeshBasicMaterial({ map: ban }), 0, 4.6, -12.8);
+    const R = (x, z) => { sdCyl(G, 0.85, 0.85, 0.76, 0x3e2818, x, 0.38, z, 16); sdCyl(G, 0.86, 0.86, 0.02, 0x4a3020, x, 0.77, z, 16); sdCyl(G, 0.1, 0.1, 0.12, 0x8a5ac8, x, 0.84, z, 8);
+      for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3, cx = x + Math.sin(a) * 1.0, cz = z + Math.cos(a) * 1.0; sdBox(G, 0.42, 0.05, 0.4, 0x1f3a2c, cx, 0.46, cz, a); sdBox(G, 0.42, 0.5, 0.05, 0x1f3a2c, x + Math.sin(a) * 1.2, 0.72, z + Math.cos(a) * 1.2, a);
+        sdBox(G, 0.12, 0.02, 0.12, 0xfafafa, x + Math.sin(a) * 0.62, 0.79, z + Math.cos(a) * 0.62, a); sdCyl(G, 0.03, 0.025, 0.12, sdGlass(), x + Math.sin(a + 0.3) * 0.6, 0.84, z + Math.cos(a + 0.3) * 0.6, 8); } };
+    for (const [x, z] of [[-9.5, -7], [9.5, -7], [-9.5, 4], [9.5, 4]]) R(x, z);
+    for (const [x, z] of [[-3, -5], [0, -5.2], [3.6, -4.8], [-6, -1.5], [6, -1.5], [0, -1]]) { sdCyl(G, 0.06, 0.12, 1.05, 0x2a1a10, x, 0.52, z, 8); sdCyl(G, 0.48, 0.48, 0.05, 0xf6f2ea, x, 1.07, z, 16); sdCyl(G, 0.05, 0.05, 0.1, 0x8a5ac8, x, 1.15, z, 8); }   // 立食の卓
+    sdLook(0, 3); S.at.gov = sdMob(G, 0, -6.4, 64); S.at.mayor = sdMob(G, -3, -6.3, 65); S.at.bank = sdMob(G, 3.2, -6, 66); S.at.port = sdMob(G, 4.6, -6.6, 67); S.at.maker = sdMob(G, 6, -5.8, 68);
+    sdRope(G, -9, -8.5, -5.2, -8.5); sdRope(G, -5.2, -8.5, -5.2, -12.5); const pr = []; for (let i = 0; i < 8; i++) pr.push(sdPress(G, -8.4 + (i % 4) * 0.9, -9.6 - Math.floor(i / 4) * 1.6, i + 30, Math.atan2(7, 8) + sdRnd(-0.3, 0.3))); S.at.press = pr.filter(Boolean);
+    sdStaff(G, 11.4, -9, 40, 'hisho', -Math.PI / 2); sdStaff(G, 11.4, -5, 41, 'gitan', -Math.PI / 2); sdStaff(G, -11.2, 1, 42, 'koho', Math.PI / 2 - 0.3); sdWalker(sdStaff(G, 8, 2, 43, 'hotel'), [[8, 2], [8, -10], [10, -10]], 0.9); sdWalker(sdStaff(G, -7, 6, 44, 'hisho'), [[-7, 6], [7, 6]], 1.1);
+    sdLook(0, -6); N(G, 'sumi', 1.2, 1.4, S); N(G, 'fumi', -1.6, 1.8, S); N(G, 'chikage', -2.8, 0.6, S); N(G, 'hiyori', 0.6, 2.6, S); N(G, 'sec3', 2.6, 2.4, S); N(G, 'shinobu', -11, 3, S); N(G, 'kujo', 3.8, 3.4, S);
+    S.rects.push([-8.4, -8, 8.4, 6]); S.spawn = [0, 3.5, 0]; S.door = [-12.5, -2]; S.focus = [0, -6]; S.bg = 0x2a1e16; S.light = [0.95, 0.7, 0.35]; sdLight(G, 0, 4.5, -4, 0xffd9a0, 1.2, 22); });
+  // 7 港湾視察
+  sdSet('port', (G, S) => { sdBox(G, 70, 1, 44, sdMat(0x8e8d88), 0, -0.51, -2); sdFloor(G, 70, 44, sdTM('asph', 14, 9), 0, -2); sdBox(G, 200, 0.1, 100, 0x2f5f86, 0, -0.9, -74); sdBox(G, 70, 0.4, 0.6, 0xd8c838, 0, 0.2, -23.8); const C = [0xb5452f, 0x2f6fb5, 0x3f8f4f, 0xd9a23a, 0x8a8f96];
+    for (let i = 0; i < 18; i++) { const x = -22 + (i % 6) * 2.7, z = 2 + Math.floor(i / 6) * 2.8; for (let h = 0; h < 1 + (i % 3); h++) { const m = sdTM('corr', 1, 6); const mm = SD.cm && SD.cm[(i + h) % 5] || ((SD.cm = SD.cm || [])[(i + h) % 5] = Object.assign(m.clone(), { color: new THREE.Color(C[(i + h) % 5]) })); sdBox(G, 2.4, 2.5, 6, mm, x, 1.25 + h * 2.55, z); } }
+    for (const x of [-12, 0, 12]) { for (const lx of [-3, 3]) for (const lz of [-21, -15]) sdBox(G, 0.6, 16, 0.6, 0x3a6ea8, x + lx, 8, lz); sdBox(G, 7, 1, 1, 0x3a6ea8, x, 16, -18); sdBox(G, 1.2, 1, 34, 0x3a6ea8, x, 16.5, -26); }   // ガントリークレーン
+    sdBox(G, 16, 9, 22, sdTM('corr', 6, 1), 26, 4.5, 4); sdLook(0, 0); S.at.pc = sdStaff(G, 1.2, -16.2, 140, 'kowan', 0); S.at.ec = sdStaff(G, -1.4, -16.4, 141, 'keizai', 0); S.at.food = sdMob(G, 3.4, 4.6, 142); S.at.sec3 = sdNamed(G, 'sec3', 1.4, -1);
+    for (const k of ['sumi', 'hiyori', 'fumi', 'shinobu']) N(G, k, -2 + Math.random() * 4, 6 + Math.random() * 2, S); for (let i = 0; i < 4; i++) sdMob(G, 8 + i * 1.2, 6, i + 90);
+    sdStaff(G, -3, -15, 45, 'kowan', 0.4); sdStaff(G, 3.4, -14.6, 46, 'koho', -0.6); sdWalker(sdStaff(G, -6, -10, 47, 'kowan'), [[-6, -10], [-10, -14], [6, -12]], 1.0); sdWalker(sdStaff(G, 8, -4, 48, 'keizai'), [[8, -4], [12, -8], [4, -6]], 1.0);
+    S.rects.push([-24, -19.5, 24, 9]); S.spawn = [0, 7, 0]; S.focus = [0, -14]; S.bg = 'sky'; S.light = [1.2, 0.8, 0.95]; });
+  // 8 夕食会（高層階の立食の間：床から天井までの窓と夕暮れの街、濃い灰色のカーテン、黒い床までのクロスの丸い立食卓と小さな蝋燭、銀の保温器の並ぶビュッフェ、橙のユリの大きな花瓶、白い曲線の模様の濃い絨毯、黒い天井と埋め込み灯）
+  sdSet('dinner', (G, S) => { sdFloor(G, 20, 16, sdTM('carpetA', 3, 2.4), 0, -2); sdBox(G, 20, 0.2, 16, sdMat(0x101012), 0, 4.2, -2); for (let i = 0; i < 15; i++) sdCyl(G, 0.1, 0.1, 0.04, sdEmis(0xfff2d0), -7 + (i % 5) * 3.5, 4.08, -8 + Math.floor(i / 5) * 4, 8);
+    sdPlane(G, 20, 4.2, sdTM('city', 1, 1, { basic: true }), 0, 2.1, -9.9); sdPlane(G, 16, 4.2, sdTM('city', 0.8, 1, { basic: true }), -9.9, 2.1, -2, 0, Math.PI / 2); for (let i = 0; i < 9; i++) sdBox(G, 0.08, 4.2, 0.1, 0x1a1a1c, -9 + i * 2.25, 2.1, -9.85);
+    for (const x of [-9.2, -4.6, 4.6, 9.2]) sdBox(G, 1.1, 4.2, 0.3, sdTM('drape', 2, 1), x, 2.1, -9.6); sdBox(G, 0.3, 4.2, 1.1, sdTM('drape', 2, 1), -9.6, 2.1, 2);
+    sdBox(G, 0.3, 4.2, 16, sdTM('wallH', 4, 1), 10, 2.1, -2); sdBox(G, 20, 4.2, 0.3, sdTM('wallH', 5, 1), 0, 2.1, 6);
+    for (const [x, z] of [[-3, -3.5], [0, -4], [3, -3.5], [0, -0.6], [-5.5, 0.5], [5.5, -1]]) { sdCyl(G, 0.46, 0.5, 1.08, 0x0e0e10, x, 0.54, z, 16); sdCyl(G, 0.5, 0.5, 0.02, 0x161618, x, 1.09, z, 16); sdCyl(G, 0.025, 0.025, 0.06, 0xf2ead8, x + 0.15, 1.13, z, 6); sdCyl(G, 0.006, 0.006, 0.02, sdEmis(0xffc860), x + 0.15, 1.17, z, 4);
+      for (let j = 0; j < 3; j++) sdBox(G, 0.16, 0.03, 0.08, 0x7a3e26, x - 0.2 + j * 0.05, 1.12 + j * 0.02, z - 0.15); for (let j = 0; j < 3; j++) sdCyl(G, 0.05, 0.05, 0.05, 0x7fc35a, x + 0.2 + j * 0.1, 1.13, z + 0.1, 8); sdBox(G, 0.18, 0.02, 0.06, 0xf6f1e6, x - 0.15, 1.12, z + 0.2); }
+    sdBox(G, 6, 0.9, 0.9, sdMat(0xf2f0ea), 4, 0.45, 4.6); for (let i = 0; i < 4; i++) { const x = 1.8 + i * 1.4; sdBox(G, 0.62, 0.05, 0.42, 0xb8bcc0, x, 0.93, 4.6); sdBox(G, 0.56, 0.16, 0.36, 0xd4d8dc, x, 1.03, 4.6); const c = sdCyl(G, 0.18, 0.18, 0.54, sdMat(0xe2e6ea), x, 1.11, 4.6, 14, ); c.rotation.z = Math.PI / 2; c.scale.set(1, 1, 1); sdCyl(G, 0.03, 0.03, 0.04, 0x9a9ea2, x, 1.31, 4.6, 6); } sdBox(G, 1.0, 0.03, 0.5, 0xdcdcdc, 7.2, 0.92, 4.5);
+    sdCyl(G, 0.25, 0.18, 0.9, 0x1a1a1a, -7, 1.35, 4.6, 12); sdBox(G, 1.2, 0.9, 0.9, sdMat(0x2a2a2a), -7, 0.45, 4.6); for (let i = 0; i < 14; i++) { const a = i * 2.4, r = 0.2 + (i % 4) * 0.12; const f = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.2, 6), sdMat(i % 3 ? 0xe85a2a : 0xf08a2a)); f.position.set(-7 + Math.sin(a) * r, 2.0 + (i % 5) * 0.12, 4.6 + Math.cos(a) * r); f.rotation.x = Math.PI; G.add(f); }
     S.sushi = new THREE.Group(); S.sushi.visible = false; G.add(S.sushi); for (const [x, z] of [[-3, -3.5], [0, -4], [3, -3.5], [0, -0.6]]) { sdBox(S.sushi, 0.5, 0.04, 0.22, 0x2b2b2b, x, 1.11, z + 0.05); for (let j = 0; j < 5; j++) { sdBox(S.sushi, 0.06, 0.04, 0.1, 0xf7f3ea, x - 0.18 + j * 0.09, 1.15, z + 0.05); sdBox(S.sushi, 0.065, 0.015, 0.11, [0xe0604a, 0xf29a5c, 0xf4f0e8, 0xc23a3a, 0xf0b040][j], x - 0.18 + j * 0.09, 1.18, z + 0.05); } }   // 寿司（献立替え）
-    S.at.gov = sdMob(G, 0, -5.4, 64); S.at.taste = sdMob(G, -7, -7, 95); for (let i = 0; i < 4; i++) sdMob(G, -6 + i * 4, -8.6, i + 96);
-    N(G, 'sumi', 1.2, 1.6, S); N(G, 'kujo', -1.6, 1.6, S); N(G, 'fumi', 2.6, 2.4, S); N(G, 'chikage', -2.8, 2.6, S); N(G, 'hiyori', 0.4, 2.8, S); N(G, 'shinobu', 8, 3, S); N(G, 'sec3', -4, 3, S);
-    S.rects.push([-8, -8, 8, 4.5]); S.spawn = [0, 3.4, 0]; S.exit = [7, 2.5]; S.bg = 0x2c2018; });
-  // 8 ホテルの廊下（交差点）
-  sdSet('corridor', (G, S) => { sdBox(G, 3, 0.2, 22, 0x6e5a4a, 0, -0.1, -8); sdBox(G, 30, 0.2, 3, 0x6e5a4a, 0, -0.1, -14); sdBox(G, 30, 0.2, 22, 0xefe9dd, 0, 3.0, -8);
-    for (const s of [-1, 1]) { sdBox(G, 0.2, 3, 12.5, 0xe5dccb, s * 1.6, 1.5, -6.1); sdBox(G, 13.5, 3, 0.2, 0xe5dccb, s * 8.25, 1.5, -12.4); sdBox(G, 13.5, 3, 0.2, 0xe5dccb, s * 8.25, 1.5, -15.6); sdBox(G, 0.2, 3, 4.5, 0xe5dccb, s * 1.6, 1.5, -18); }
-    sdBox(G, 3, 3, 0.2, 0xe5dccb, 0, 1.5, -20.2); sdBox(G, 1.1, 2.2, 0.12, 0x6b4a2e, -14.9, 1.1, -14).rotation.y = Math.PI / 2;
-    S.at.shinobu = sdNamed(G, 'shinobu', 0, -2.4); S.at.gov = sdMob(G, -9, -14, 64); if (S.at.gov) S.at.gov.visible = false; N(G, 'sumi', 0.5, 1.6, S); N(G, 'hiyori', -0.5, 2.4, S);
-    S.rects.push([-1.4, -15.4, 1.4, 2.5], [-14.5, -15.4, 14.5, -12.6]); S.spawn = [0, 1, 0]; S.cross = -14; S.ring = [-13.6, -14]; S.bg = 0x241c16; });
-  // 9 二日目：学院（専攻科。生徒は全員十八歳以上）
-  sdSet('school', (G, S) => { sdBox(G, 24, 0.2, 26, 0xb08a5a, 0, -0.1, -4); sdBox(G, 24, 1, 6, 0x7a5a3a, 0, 0.5, -15); for (const [w, d, x, z] of [[24, 0.3, 0, -18], [24, 0.3, 0, 9], [0.3, 26, -12, -4], [0.3, 26, 12, -4]]) sdBox(G, w, 7, d, 0xf0ebe0, x, 3.5, z);
-    sdBox(G, 8, 1.6, 0.1, 0x8c1d22, 0, 4.5, -17.8); for (let i = 0; i < 24; i++) sdMob(G, -5 + (i % 6) * 2, -6.5 - Math.floor(i / 6) * 1.5, i + 100);
-    S.at.head = sdMob(G, -1.5, -3.4, 130); S.at.rep = sdMob(G, 1.6, -3.6, 131); N(G, 'sumi', 1.4, 2.6, S); N(G, 'fumi', -1.6, 2.6, S); N(G, 'chikage', -2.8, 3.6, S); N(G, 'hiyori', 0.4, 3.8, S); N(G, 'sec3', 2.8, 3.8, S); N(G, 'shinobu', -6, 4, S); N(G, 'kujo', 4.2, 4, S);
-    S.rects.push([-8, -2.5, 8, 6]); S.spawn = [0, 4.5, 0]; S.bg = 0xd8d0c0; });
+    sdLook(0, 3); S.at.gov = sdMob(G, 0, -5.4, 64); S.at.taste = sdMob(G, -7, -7, 95, 0.6); for (let i = 0; i < 3; i++) sdStaff(G, 1.6 + i * 1.4, 3.8, i + 50, 'hotel', 0); sdStaff(G, 8.6, -6, 53, 'hisho', -Math.PI / 2); sdWalker(sdStaff(G, -8, -2, 54, 'hotel'), [[-8, -2], [-8, 3], [8, 3]], 0.9);
+    sdLook(0, -4); N(G, 'sumi', 1.2, 1.6, S); N(G, 'kujo', -1.6, 1.6, S); N(G, 'fumi', 2.6, 2.4, S); N(G, 'chikage', -2.8, 2.6, S); N(G, 'hiyori', 0.4, 2.8, S); N(G, 'shinobu', 8, 3, S); N(G, 'sec3', -4, 3, S);
+    S.rects.push([-8, -8, 8, 4.2]); S.spawn = [0, 3.4, 0]; S.exit = [7, 2.5]; S.focus = [0, -4]; S.bg = 0x0c0c10; S.light = [0.75, 0.55, 0.2]; sdLight(G, 0, 3.6, -2, 0xffd6a0, 1.3, 18); });
+  // 9 ホテルの廊下（交差点）
+  sdSet('corridor', (G, S) => { sdFloor(G, 3, 22, sdTM('carpetB', 1, 8), 0, -8); sdFloor(G, 30, 3, sdTM('carpetB', 10, 1), 0, -14, 0.003); sdBox(G, 30, 0.2, 22, sdMat(0xefe9dd), 0, 3.0, -8);
+    for (const s of [-1, 1]) { sdBox(G, 0.2, 3, 12.5, sdTM('wallH', 4, 1), s * 1.6, 1.5, -6.1); sdBox(G, 13.5, 3, 0.2, sdTM('wallH', 4, 1), s * 8.25, 1.5, -12.4); sdBox(G, 13.5, 3, 0.2, sdTM('wallH', 4, 1), s * 8.25, 1.5, -15.6); sdBox(G, 0.2, 3, 4.5, sdTM('wallH', 1.5, 1), s * 1.6, 1.5, -18); }
+    for (let z = 0; z > -20; z -= 3) sdCyl(G, 0.15, 0.15, 0.04, sdEmis(0xfff0cc), 0, 2.88, z, 8); sdBox(G, 3, 3, 0.2, sdTM('wallH', 1, 1), 0, 1.5, -20.2); sdBox(G, 1.1, 2.2, 0.12, 0x6b4a2e, -14.9, 1.1, -14).rotation.y = Math.PI / 2;
+    S.at.shinobu = sdNamed(G, 'shinobu', 0, -2.4); S.at.gov = sdMob(G, -9, -14, 64, Math.PI / 2); if (S.at.gov) S.at.gov.visible = false; sdLook(0, -14); N(G, 'sumi', 0.5, 1.6, S); N(G, 'hiyori', -0.5, 2.4, S);
+    S.rects.push([-1.4, -15.4, 1.4, 2.5], [-14.5, -15.4, 14.5, -12.6]); S.spawn = [0, 1, 0]; S.cross = -14; S.ring = [-13.6, -14]; S.focus = [0, -14]; S.bg = 0x241c16; S.light = [0.9, 0.7, 0.4]; sdLight(G, 0, 2.6, -8, 0xffe0b0, 1.0, 16); });
+  // 10 二日目：学院（専攻科。生徒は全員十八歳以上）
+  sdSet('school', (G, S) => { sdFloor(G, 24, 26, sdTM('woodF', 6, 6), 0, -4); sdBox(G, 24, 1, 6, sdTM('woodF', 6, 2), 0, 0.5, -15); for (const [w, d, x, z] of [[24, 0.3, 0, -18], [24, 0.3, 0, 9], [0.3, 26, -12, -4], [0.3, 26, 12, -4]]) sdBox(G, w, 7, d, sdTM('wallH', w / 4 + d / 4, 1.5), x, 3.5, z);
+    sdBox(G, 8, 1.6, 0.1, 0x8c1d22, 0, 4.5, -17.8); for (const s of [-1, 1]) for (let i = 0; i < 4; i++) sdPlane(G, 2.2, 3, sdTM('sky', 1, 1, { basic: true }), s * 11.8, 3.6, 2 - i * 5.5, 0, -s * Math.PI / 2);
+    sdLook(0, -14); for (let i = 0; i < 24; i++) sdMob(G, -5 + (i % 6) * 2, -6.5 - Math.floor(i / 6) * 1.5, i + 100, i < 6 ? Math.atan2(-(-5 + (i % 6) * 2), 10) : undefined);
+    sdLook(0, 4); S.at.head = sdMob(G, -1.5, -3.4, 130); S.at.rep = sdMob(G, 1.6, -3.6, 131); sdStaff(G, -9, -2, 55, 'hisho', Math.PI / 2); sdStaff(G, 9, -1, 56, 'koho', -Math.PI / 2 - 0.4); sdWalker(sdStaff(G, -9, 4, 57, 'gitan'), [[-9, 4], [-9, -10]], 0.8);
+    sdLook(0, -4); N(G, 'sumi', 1.4, 2.6, S); N(G, 'fumi', -1.6, 2.6, S); N(G, 'chikage', -2.8, 3.6, S); N(G, 'hiyori', 0.4, 3.8, S); N(G, 'sec3', 2.8, 3.8, S); N(G, 'shinobu', -6, 4, S); N(G, 'kujo', 4.2, 4, S);
+    S.rects.push([-8, -2.5, 8, 6]); S.spawn = [0, 4.5, 0]; S.focus = [0, -4]; S.bg = 0xd8d0c0; S.light = [1.2, 0.9, 0.6]; });
   const r = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.66, 32), new THREE.MeshBasicMaterial({ color: 0xe8c45a, transparent: true, opacity: 0.8, side: THREE.DoubleSide })); r.rotation.x = -Math.PI / 2; r.position.y = 0.04; r.visible = false; stageRoot.add(r); SD.ring = r;
   SD.fl = []; for (let i = 0; i < 4; i++) { const f = new THREE.Sprite(sdProps().flashM); f.scale.set(0.9, 0.9, 1); f.visible = false; stageRoot.add(f); SD.fl.push({ s: f, t: 0 }); }
 }
+function sdGlass() { return SD.glass || (SD.glass = new THREE.MeshLambertMaterial({ color: 0xdfeaf2, transparent: true, opacity: 0.45 })); }
 function sdIn(x, z) { const S = SD.sets && SD.sets[SD.set]; if (!S) return true; for (const r of S.rects) if (x > S.ox + r[0] && x < S.ox + r[2] && z > r[1] && z < r[3]) return true; return false; }
 // ---- 台詞の流れ（会議と同じしくみ：声が鳴り終わるのを待ってから次へ） ----
 function sdEst(t) { return Math.max(1.6, t.length * 0.15 + 0.6); }
@@ -5595,10 +5721,11 @@ function sdVoiceTick() { const V = SD.vw; if (!V) return;
     if (V.endAt == null && time - V.t0 > 25) V.endAt = time; return; }
   if (time - V.endAt >= V.gap) { SD.vw = null; SD.cd = 0; if (VoicePack.onAdd) VoicePack.onAdd = null; } }
 function sdSub(t) { subtitle(t); const el = $('subtitle'); if (el) el.textContent = t; KS2.subLock = time + Math.max(2.5, t.length * 0.12 + 1); }
-function sdSpeak(s) { const k = s.k;
+function sdSpeak(s) { const k = s.k, S0 = SD.sets[SD.set]; SD.spkO = s.o || (S0 && (S0.at[k] || (s.v && S0.at[s.v]))) || null;
   if (k === 'king') { sgkKing(s.t); sdVw(null, Math.max(2.0, s.t.length * 0.13 + 1.0)); return; }   // 殿：字幕だけ
   if (k === 'nar') { sdSub('（' + s.t + '）'); sdVw(null, Math.max(2.2, s.t.length * 0.11 + 1.0)); return; }
   if (k === 'mob') { const f = ks2VoiceFile(s.t, 'kmob'), V = sdVw(f, Math.min(2.2, sdEst(s.t))); sdPlay(V, f, 6, 1.5); return; }   // 群れ：声だけ（字幕なし）
+  if (k === 'stf') { const f = ks2VoiceFile(s.t, 'kmob'), V = sdVw(f, sdEst(s.t)); sdPlay(V, f, 3, 2.2); sdSub(s.ti + '「' + s.t + '」'); return; }   // 県の職員（殿との会話）：字幕＋声
   if (k === 'vip') { const f = ks2VoiceFile(s.t, 'kmob'), V = sdVw(f, sdEst(s.t)); sdPlay(V, f, 4, 2.2); sdSub(SD_VIP[s.v] + '「' + s.t + '」'); return; }   // 県の要人：字幕＋声
   const f = ks2VoiceFile(s.t, KS2_VK[k] || k), V = sdVw(f, sdEst(s.t)); sdPlay(V, f, 4, 2.2); sdSub(SD_NM[k] + '「' + s.t + '」'); }
 function sdNext() { SD.vw = null; const s = SD.q.shift(); SD.cur = s || null; SD.ct = 0; SD.cd = 0; SD.walkT = 0; if (!s) return;
@@ -5617,7 +5744,8 @@ function sdChoiceShow(s) { let p = $('sdCh'); if (p) p.remove(); p = document.cr
 function sdGo(name, ban, sub) { let f = $('sdFade'); if (!f) { f = document.createElement('div'); f.id = 'sdFade'; f.style.cssText = 'position:fixed;inset:0;background:#000;opacity:0;transition:opacity .45s;pointer-events:none;z-index:39'; document.body.appendChild(f); }
   f.style.opacity = 1; setTimeout(() => { if (!SD.on) return; sdSetNow(name); if (ban) showBanner(ban, sub || ''); f.style.opacity = 0; }, 480); }
 function sdSetNow(name) { SD.set = name; for (const k in SD.sets) SD.sets[k].G.visible = k === name; const S = SD.sets[name]; player.pos.set(S.ox + S.spawn[0], 0, S.spawn[1]); player.yaw = S.spawn[2]; player.pitch = 0; player.vy = 0;
-  scene.background = new THREE.Color(S.bg); if (scene.fog) { scene.fog.color.set(S.bg); scene.fog.near = 60; scene.fog.far = 260; } }
+  const sk = S.bg === 'sky'; scene.background = sk ? SD_TX.sky() : new THREE.Color(S.bg); if (scene.fog) { scene.fog.color.set(sk ? 0xc8dcea : S.bg); scene.fog.near = sk ? 120 : 60; scene.fog.far = sk ? 420 : 260; }
+  hemiL.intensity = S.light[0]; ambL.intensity = S.light[1]; sun.intensity = S.light[2]; for (const pg of SD.ppl[name] || []) sdView(pg, true); }
 function sdAt(k) { const S = SD.sets[SD.set]; return S && S.at[k]; }
 function sdMoveTo(o, x, z, T) { if (o) SD.mv.push({ o, x0: o.position.x, z0: o.position.z, x, z, t: 0, T }); }   // 場面の中の座標で、ゆっくり歩かせる
 function sdWalkTo(lx, lz, hint, r) { return { walk: [lx, lz], hint, r: r || 1.3 }; }
@@ -5655,6 +5783,30 @@ const SD_CH = {
     : v === 'rank' ? [S_('king', '俺が誰だか分かるな？'), S_('chikage', '殿、お名前は学院長がもうご紹介しています'), F_(() => sdPen(0.5, '学院で「俺が誰だか分かるな」'))]
     : [S_('king', '今日は休校にしてやろう'), S_('fumi', '殿、授業は止めません'), F_(() => sdPen(1, '休校を言い出した'))],
 };
+
+// ---- 県の職員に「スカウト」「声をかける」（歩いている間だけ。近くで、こちらを見ている相手） ----
+const SD_ACT = { praise: ['お、君きれいな顔してるな', 'いい声だな、君', '君、目元が涼しいな', '名札の字まできれいだな、君'], reply: ['え、あ、ありがとうございます…！', 'そ、そんな……恐れ入ります', 'わ、私ですか……？ ありがとうございます'],
+  scR: ['え……わ、私が、ですか……！？', 'ス、スカウト……ですか……？'] };
+function sdHover() { const c = SD.cur; if (!c || !c.walk || SD.done) return null; const S = SD.sets[SD.set], fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw); let best = null, bd = 3.0;
+  for (const pg of SD.ppl[SD.set] || []) { const U = pg.userData; if (!U.staff || U.staff === 'hotel' || !pg.visible) continue; const dx = S.ox + pg.position.x - player.pos.x, dz = pg.position.z - player.pos.z, d = Math.hypot(dx, dz); if (d > bd || d < 0.2) continue; if ((dx * fx + dz * fz) / d < 0.8) continue; best = pg; bd = d; }
+  return best; }
+function sdAct(kind) { const o = SD.hov, c = SD.cur; if (!o || !c || !c.walk) return; const U = o.userData, S = SD.sets[SD.set], pk = a => a[(Math.random() * a.length) | 0], st = t => ({ k: 'stf', t, ti: U.title, o });
+  U.fy = Math.atan2(player.pos.x - S.ox - o.position.x, player.pos.z - o.position.z); SD.scouted = (SD.scouted || 0) + 1;
+  const L = kind === 'scout' ? [S_('king', '君、いいな。スカウトだ。宮殿の軍に来い'), st(pk(SD_ACT.scR)), S_('sumi', '殿、県の職員の方です。……人事は、後ほど県と調整いたします')]
+    : [S_('king', pk(SD_ACT.praise)), st(pk(SD_ACT.reply)), S_('king', 'うーん、そうだなぁ。君は弓矢で左胸射抜かれて倒れるのが似合いそう。白石隊に配属させるよ'), M_(SD_MOB.mur[0]), S_('sumi', '殿……'),
+      F_(() => { if ((SD.actPen || 0) < 2) { SD.actPen = (SD.actPen || 0) + 0.5; sdPen(0.5, '県の職員に「白石隊に配属」'); SD.q.unshift(S_('fumi', '……今の、減点です')); } })];
+  SD.q.unshift(...L, Object.assign({}, c)); SD.cd = 0; SD.vw = null; SD.hov = null; }
+function sdGovScout() { if (!SD.scouted || SD.govSaid) return; SD.govSaid = true;   // スカウト／声かけのあと、次に知事と話す場面で
+  SD.q.unshift(S_('king', 'ということでたくさんスカウトするから、この世に帰らぬ人が増える。残念だが宮城県の優秀な人口が減るから'), V_('gov', '……え。……あ、あの、殿、それは……'), S_('sumi', '知事、今のはお聞き流しください。……殿'), S_('fumi', '……減点一です'), F_(() => sdPen(1, '知事に「この世に帰らぬ人が増える」'))); }
+// 人の向き・写真の選び・歩き回る職員・ひそひそ声・フラッシュ
+function sdPeopleTick(dt, S) { const P = SD.ppl[SD.set] || [], fo = S.focus || [0, 0];
+  for (const w of SD.walk) { if (!w.o.visible || w.o.parent !== S.G) continue; if (w.wait > 0) { w.wait -= dt; continue; } const t = w.pts[w.i], p = w.o.position, dx = t[0] - p.x, dz = t[1] - p.z, d = Math.hypot(dx, dz);
+    if (d < 0.1) { w.i = (w.i + 1) % w.pts.length; w.wait = 1 + Math.random() * 2.5; continue; } p.x += dx / d * Math.min(d, w.sp * dt); p.z += dz / d * Math.min(d, w.sp * dt); w.o.userData.fy = Math.atan2(dx, dz); }
+  for (const pg of P) { const U = pg.userData; if (U.named || pg === SD.spkO) { const tx = pg === SD.spkO ? player.pos.x - S.ox : fo[0], tz = pg === SD.spkO ? player.pos.z : fo[1], dx = tx - pg.position.x, dz = tz - pg.position.z; if (Math.hypot(dx, dz) > 0.5) { const want = Math.atan2(dx, dz); let d = want - U.fy; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; U.fy += d * Math.min(1, dt * 4); } }
+    sdView(pg, false); }
+  if (!SD.vw && (SD.murT = (SD.murT || 6) - dt) <= 0 && VoicePack.ok) { SD.murT = 9 + Math.random() * 8; const st = P.filter(pg => pg.userData.staff && pg.userData.staff !== 'hotel' && pg.visible); if (st.length) { const o = st[(Math.random() * st.length) | 0], d = Math.hypot(S.ox + o.position.x - player.pos.x, o.position.z - player.pos.z);
+    if (d < 14) { const f = ks2VoiceFile(SD_MOB.staff[(Math.random() * SD_MOB.staff.length) | 0], 'kmob'); if (f) VoicePack.play(f, Math.max(3, d), 0.6, 1); } } }
+  if (SD.set === 'train' && SD.scenM) SD.scenM.map.offset.x -= dt * 0.35; for (let i = 0; i < SD.flags.length; i++) SD.flags[i].rotation.y = Math.sin(time * 2.2 + i) * 0.25; }
 // ---- 行程（台本） ----
 function sdScript() { const W = sdWalkTo, G = (go, ban, sub) => ({ go, ban, sub });
   return [
@@ -5674,7 +5826,13 @@ function sdScript() { const W = sdWalkTo, G = (go, ban, sub) => ({ go, ban, sub 
     sdPressCh('st'), F_(() => { SD.flR = 0.8; }),
     W(0, -42.8, '知事の前の金の輪へ'), F_(() => { SD.gT0 = time; }), V_('gov', '殿、ようこそ宮城へ。県民を代表して、心より歓迎申し上げます'),
     { choice: 'greet', q: '知事への挨拶（一分以内）', opts: [['短く礼を言う', 'short'], ['宮城の歴史を語る', 'long'], ['ここで一曲歌ってくれ', 'odd']] },
-    F_(() => { if (time - SD.gT0 > 60) sdPen(1, '駅の挨拶が一分を超えた'); SD.gT0 = 0; }), V_('gov', 'お車へご案内いたします'),
+    F_(() => { if (time - SD.gT0 > 60) sdPen(1, '駅の挨拶が一分を超えた'); SD.gT0 = 0; }), V_('gov', 'お車へご案内いたします。まず県庁へ'),
+    G('kencho', '宮城県庁', '表敬訪問。旧庁舎と十八階の本庁舎'),
+    // 県庁
+    S_('shinobu', '県庁です。本庁舎の玄関まで、職員の方々が並んでいます'), S_('hiyori', '首の名札の紐の色で、係が分かります。青が秘書課、緑が広報課、赤が儀典です'),
+    { walk: [17.6, -31.2], hint: '本庁舎の玄関へ（職員に近づくと「スカウト」「声をかける」）', r: 1.3 },
+    V_('gov', '殿、県庁へようこそ。短い時間ですが、表敬をお受けいたします'), S_('king', 'ああ。立派な庁舎だな'), V_('gov', 'ありがとうございます。旧庁舎は昭和の初めの建物、本庁舎は十八階建てです'),
+    F_(() => sdGovScout()), S_('chikage', 'では、ホテルへ向かいます'),
     G('hotel', 'ホテル', '玄関に県の秘書課の十人が並ぶ'),
     // ホテル玄関
     F_(() => { SD.flR = 2.5; }), M_(SD_MOB.press[1]), M_(SD_MOB.press[3]), sdPressCh('ht'), F_(() => { SD.flR = 0.6; }),
@@ -5689,7 +5847,7 @@ function sdScript() { const W = sdWalkTo, G = (go, ban, sub) => ({ go, ban, sub 
     // 懇談会
     S_('chikage', '代表撮影を、一分だけ行います'), F_(() => { SD.flR = 8; }, 2.5), M_(SD_MOB.press[1]), sdPressCh('hl'),
     F_(() => { SD.flR = 0; }), S_('chikage', '代表撮影は、ここまでです。報道の皆さま、ご退出を'), F_(() => { SD.pressOut = time; }, 2.5),
-    V_('gov', '本日は、ようこそお越しくださいました'),
+    V_('gov', '本日は、ようこそお越しくださいました'), F_(() => sdGovScout()),
     { choice: 'r1', q: '知事と', opts: [['困りごとを聞く', 'ask'], ['冗談を言う', 'joke'], ['県庁を宮殿の隣に', 'odd']] },
     V_('mayor', '仙台市長の片倉です。お目にかかれて光栄です'),
     { choice: 'r2', q: '市長と', opts: [['街をほめる', 'praise'], ['冗談を言う', 'joke'], ['牛タン百人前', 'odd']] },
@@ -5712,7 +5870,7 @@ function sdScript() { const W = sdWalkTo, G = (go, ban, sub) => ({ go, ban, sub 
     F_(() => { const o = SD.sets.port.at.food; if (o) sdMoveTo(o, 22, 6, 2.5); }), M_(SD_MOB.phone[0]),
     G('dinner', '夕食会', '宮城の味。立食'),
     // 夕食会
-    S_('kujo', '殿、料理はすべて、毒見の者が先にいただいてからです'), V_('gov', 'それでは、殿の御来県を祝しまして、乾杯！'), M_(SD_MOB.kanpai[0]),
+    S_('kujo', '殿、料理はすべて、毒見の者が先にいただいてからです'), V_('gov', 'それでは、殿の御来県を祝しまして、乾杯！'), M_(SD_MOB.kanpai[0]), F_(() => sdGovScout()),
     S_('king', '……さて、帰るか'), W(7, 2.5, '出口へ（乾杯だけで帰るつもり）'),
     S_('sumi', '殿、まだ寿司が出ておりません'), S_('king', '……寿司か。なら、いる'),
     F_(() => { const S = SD.sets.dinner; S.sushi.visible = true; player.pos.set(S.ox, 0, 1.2); player.yaw = 0; }, 0.6), N_('寿司が運ばれてきた'),
@@ -5742,24 +5900,26 @@ function sdFinish() { SD.done = true; setTimeout(() => { if (!SD.on || state !==
   $('result').innerHTML = `仙台 御視察（一泊二日）　綾瀬の採点：<b>${SD.grade}</b>（減点 ${SD.pen}）<br>${SD.log.map(l => (l[0] ? '−' + l[0] + ' ' : '・') + l[1]).join('<br>') || '減点なし'}<br><small>白瀬が、県の秘書課へ御礼を送りました</small>`; }, 1500);
   try { localStorage.setItem('onnaSendai', JSON.stringify({ at: Date.now(), grade: SD.grade, pen: SD.pen, res: SD.res })); } catch (_) {} }
 // ---- 段取り ----
-function sdReset() { Object.assign(SD, { q: [], cur: null, ct: 0, cd: 0, vw: null, skip: false, pen: 0, log: [], res: {}, jokes: 0, flR: 0.4, pressOut: 0, gT0: 0, escT: -1, bump: false, mv: [], done: false, grade: '', walkT: 0 });
+function sdReset() { Object.assign(SD, { q: [], cur: null, ct: 0, cd: 0, vw: null, skip: false, pen: 0, log: [], res: {}, jokes: 0, flR: 0.4, pressOut: 0, gT0: 0, escT: -1, bump: false, mv: [], done: false, grade: '', walkT: 0, scouted: 0, govSaid: false, actPen: 0, hov: null, spkO: null, murT: 6 });
   if (SD.sets && SD.sets.porch) sdSetNow('porch'); }
 function sdStart() { SD.on = true; sdReset(); player.god = true; document.documentElement.classList.add('sendai'); hemiL.intensity = 1.25; ambL.intensity = 0.9; sun.intensity = 0.9;
   if (VoicePack.ok) for (const l of sdAllLines()) { const f = ks2VoiceFile(l[1], l[0]); if (f && VoicePack.buf[f] === undefined) VoicePack.load(f); }
   SD.q = sdScript(); SD.cd = 1.2; showBanner('仙台 御視察', '一泊二日。宮殿 → 東京駅 → 新幹線 → 仙台'); sdUi();
   if (TEST) window.__sd = { SD, sdAllLines, sdNext, sdGo, sdSetNow, sdScript, sdReset }; }
-function sdAllLines() { const L = [], seen = {}; const add = s => { if (!s || !s.t || s.k === 'king' || s.k === 'nar') return; const v = s.k === 'mob' || s.k === 'vip' ? 'kmob' : (KS2_VK[s.k] || s.k), key = v + '|' + s.t; if (!seen[key]) { seen[key] = 1; L.push([v, s.t]); } };
+function sdAllLines() { const L = [], seen = {}; const add = s => { if (!s || !s.t || s.k === 'king' || s.k === 'nar') return; const v = s.k === 'mob' || s.k === 'vip' || s.k === 'stf' ? 'kmob' : (KS2_VK[s.k] || s.k), key = v + '|' + s.t; if (!seen[key]) { seen[key] = 1; L.push([v, s.t]); } };
   sdScript().forEach(add); for (const c in SD_CH) for (const v of ['omiya', 'go', 'doze', 'read', 'ans', 'nod', 'short', 'long', 'odd', 'ask', 'joke', 'praise', 'listen', 90, 180, 8, 10, 'eat', 'more', 'good', 'rank', 'off']) (SD_CH[c](v) || []).forEach(add);
   SD.jokes = 1; for (const c of ['r1', 'r2', 'r3']) SD_CH[c]('joke').forEach(add); SD.jokes = 0;
   [S_('fumi', '合格です。……正直、少し驚きました'), S_('fumi', 'ぎりぎり合格です。……次は、もう少し黙っていてください'), S_('fumi', 'やり直しです。……来月、もう一度どこかへ行きましょう'), S_('sumi', 'お疲れさまでした、殿'), S_('shinobu', '……殿。私より先に曲がらないでくださいと、申し上げました'), V_('gov', 'きゃっ……！ し、失礼いたしました'), S_('sumi', '殿。……二回目は、なしです')].forEach(add);
-  for (const k in SD_MOB) for (const t of SD_MOB[k]) add(M_(t)); return L; }
+  for (const k in SD_MOB) for (const t of SD_MOB[k]) add(M_(t)); for (const t of SD_ACT.reply.concat(SD_ACT.scR)) add(M_(t));
+  [S_('sumi', '殿、県の職員の方です。……人事は、後ほど県と調整いたします'), S_('sumi', '殿……'), S_('fumi', '……今の、減点です'), V_('gov', '……え。……あ、あの、殿、それは……'), S_('sumi', '知事、今のはお聞き流しください。……殿'), S_('fumi', '……減点一です')].forEach(add); return L; }
 function sdUi() { if (!SD.on && !$('sdUi')) return; document.documentElement.classList.toggle('sendai', SD.on && state === 'play');
   let u = $('sdUi'); if (!u) { u = document.createElement('div'); u.id = 'sdUi'; u.style.cssText = 'position:fixed;left:50%;top:6px;transform:translateX(-50%);z-index:41;display:none;white-space:nowrap'; document.body.appendChild(u);
     const b = document.createElement('button'); b.textContent = '次▶'; b.title = '台詞を送る'; b.style.cssText = KSK_BS + ';margin:0 2px;padding:1px 6px;font-size:10px'; kosKgBind(b, () => { if (SD.vw) SD.skip = true; }); u.appendChild(b);
+    for (const [id, t, k] of [['sdA1', 'スカウト', 'scout'], ['sdA2', '声をかける', 'talk']]) { const a = document.createElement('button'); a.id = id; a.textContent = t; a.style.cssText = KSK_BS + ';margin:0 2px;padding:1px 6px;font-size:10px;display:none'; kosKgBind(a, () => sdAct(k)); u.appendChild(a); }
     const h = document.createElement('div'); h.id = 'sdHint'; h.style.cssText = 'position:fixed;left:50%;top:30px;transform:translateX(-50%);z-index:40;font:600 11px serif;color:#f3e6c4;background:rgba(40,20,14,.45);padding:1px 8px;border-radius:5px;pointer-events:none;display:none;white-space:nowrap'; document.body.appendChild(h); }
-  const show = SD.on && state === 'play'; u.style.display = show ? 'block' : 'none'; if (!show) { $('sdHint').style.display = 'none'; const c = $('sdCh'); if (c) c.remove(); const f = $('sdFade'); if (f) f.style.opacity = 0; } }
+  const show = SD.on && state === 'play'; u.style.display = show ? 'block' : 'none'; for (const id of ['sdA1', 'sdA2']) $(id).style.display = show && SD.hov ? '' : 'none'; if (!show) { $('sdHint').style.display = 'none'; const c = $('sdCh'); if (c) c.remove(); const f = $('sdFade'); if (f) f.style.opacity = 0; } }
 setInterval(() => { try { sdUi(); } catch (_) {} }, 400);
-function sdLabel() { const N = { porch: '宮殿の車寄せ', train: '新幹線', station: '仙台駅', hotel: 'ホテル玄関', hall: '懇談会', port: '港湾視察', dinner: '夕食会', corridor: 'ホテルの廊下', school: '学院（二日目）' }; return '御視察：' + (N[SD.set] || '') + (SD.pen ? `　減点 ${SD.pen}` : ''); }
+function sdLabel() { const N = { porch: '宮殿の車寄せ', train: '新幹線', station: '仙台駅', hotel: 'ホテル玄関', hall: '懇談会', port: '港湾視察', dinner: '夕食会', corridor: 'ホテルの廊下', school: '学院（二日目）', kencho: '宮城県庁' }; return '御視察：' + (N[SD.set] || '') + (SD.pen ? `　減点 ${SD.pen}` : ''); }
 function sdUpdate(dt) { if (!SD.on || state !== 'play') return; const S = SD.sets[SD.set]; if (!S) return; const h = $('sdHint'), c = SD.cur;
   // 歩く段：金の輪へ
   if (c && c.walk) { const wx = S.ox + c.walk[0], wz = c.walk[1]; SD.ring.visible = true; SD.ring.position.set(wx, 0.04, wz); SD.ring.material.opacity = 0.5 + 0.3 * Math.sin(time * 3); h.style.display = 'block'; h.textContent = c.hint + (SD.gT0 ? '' : '');
@@ -5773,9 +5933,10 @@ function sdUpdate(dt) { if (!SD.on || state !== 'play') return; const S = SD.set
   const P = SD.press[SD.set] || []; if (SD.pressOut && SD.set === 'hall') { const k = Math.min(1, (time - SD.pressOut) / 3); for (const g of P) { g.position.x = g.userData.bx + (S.door[0] - g.userData.bx) * k; g.position.z = g.userData.bz + (S.door[1] - g.userData.bz) * k; if (k >= 1) g.visible = false; } }
   for (const F of SD.fl) { if (F.t > 0) { F.t -= dt; if (F.t <= 0) F.s.visible = false; } }
   if (SD.flR > 0 && P.length && !(SD.pressOut && SD.set === 'hall') && Math.random() < SD.flR * dt) { const g = P[(Math.random() * P.length) | 0], fp = g.userData.fp, F = SD.fl.find(x => x.t <= 0);
-    if (fp && F && g.visible) { F.s.position.set(S.ox + g.position.x + fp.x, fp.y, g.position.z + fp.z); F.s.visible = true; F.t = 0.08; const o = Sfx.at(F.s.position, 40, 0.5); if (o) Sfx.noiseBurst(0.04, 'highpass', 4000, 1500, 0.25, 0.25, 0, o); } }
+    if (fp && F && g.visible) { const cx = camera.position.x - S.ox - g.position.x, cz = camera.position.z - g.position.z, cd = Math.hypot(cx, cz) || 1; F.s.position.set(S.ox + g.position.x + cx / cd * 0.25, fp, g.position.z + cz / cd * 0.25); F.s.visible = true; F.t = 0.08; const o = Sfx.at(F.s.position, 40, 0.5); if (o) Sfx.noiseBurst(0.04, 'highpass', 4000, 1500, 0.25, 0.25, 0, o); } }
   // ゆっくり歩く者
   for (let i = SD.mv.length - 1; i >= 0; i--) { const m = SD.mv[i]; m.t += dt; const k = Math.min(1, m.t / m.T); m.o.position.x = m.x0 + (m.x - m.x0) * k; m.o.position.z = m.z0 + (m.z - m.z0) * k; if (k >= 1) SD.mv.splice(i, 1); }
+  sdPeopleTick(dt, S); const hv = sdHover(); if (hv !== SD.hov) { SD.hov = hv; sdUi(); }
   SD.ct += dt; sdVoiceTick(); if (c && c.wait && c.wait()) SD.cd = 0; if (SD.ct >= SD.cd) sdNext(); }
 
 // ===== 平原の大会戦（heigen）：見渡すかぎりの平原。味方 九隊 約1500・中国軍 約1650 が隊ごとの塊（旗のまわり）で並び、本当に戦う =====
@@ -31997,7 +32158,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261121f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261121g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -37927,7 +38088,7 @@ function updatePlayer(dt) {
     if (keys.Space && player.onGround) { player.vy = PLANE.on ? 2.6 : 5.2; player.onGround = false; player.seated = false; }   // 機内は天井が低い
     player.vy -= 14 * dt; player.yPre = player.pos.y; player.pos.y += player.vy * dt;
   }
-  { const L = MECH.on ? MECH.lim : (CV.on || TH.on ? 420 : FB.on ? 280 : (SGK.on || KOS.on) ? 1100 : KS2.on ? 300 : HG.on ? 300 : AB.on ? 900 : SD.on ? 1800 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
+  { const L = MECH.on ? MECH.lim : (CV.on || TH.on ? 420 : FB.on ? 280 : (SGK.on || KOS.on) ? 1100 : KS2.on ? 300 : HG.on ? 300 : AB.on ? 900 : SD.on ? 2100 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
   for (const c of colliders) {
     if (player.pos.y > 2) continue;
     const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.35;

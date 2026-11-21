@@ -5483,7 +5483,7 @@ const HG_TITLE = { ojou: '西園寺隊 隊長 西園寺', omiya: '大宮隊 隊�
   sec4: '宮下隊 隊長 宮下大佐', sec3: '桜井隊 隊長 桜井大佐', sumi: '本隊 白瀬', sanjo: '本隊 三条', sysop: '本隊 霧島中佐', kujo: '本隊 軍医中将 九条' };
 //  布陣（味方は +z を向く。右翼＝-x、左翼＝+x）：本隊は中央の後ろ／前列に綾瀬・白石・久遠／右翼に西園寺・宮下（増強して先に出る＝斜行陣）／左翼に大宮・桜井／早瀬隊（副官 広瀬）は左後ろの遊撃
 //      隊の名, 隊長, 他の名のある者, x, z, 人数, 弓の割合, 前へ出る時刻(秒)
-const HG_UNITS = [['本隊', 'sumi', ['sanjo', 'sysop', 'kujo'], 0, -95, 132, 0.45, 9999], ['綾瀬隊', 'fumi', [], -40, -56, 145, 0.6, 45], ['白石隊', 'reika', [], 0, -52, 145, 0.2, 45], ['久遠隊', 'shizuka', [], 40, -56, 145, 0.3, 45],
+const HG_UNITS = [['本隊', 'sumi', ['sanjo', 'kujo'], 0, -95, 132, 0.45, 9999], ['綾瀬隊', 'fumi', [], -40, -56, 145, 0.6, 45], ['白石隊', 'reika', [], 0, -52, 145, 0.2, 45], ['久遠隊', 'shizuka', [], 40, -56, 145, 0.3, 45],
   ['西園寺隊', 'ojou', [], -88, -50, 176, 0.25, 18], ['宮下隊', 'sec4', [], -132, -54, 172, 0.3, 22], ['大宮隊', 'omiya', [], 88, -62, 132, 0.25, 80], ['桜井隊', 'sec3', [], 130, -64, 132, 0.35, 85], ['早瀬隊', 'sec2', ['hirose'], 162, -95, 114, 0.2, 9999]];
 const HG_RIDE = { ojou: 1, omiya: 1, fumi: 1, sec2: 1, hirose: 1, reika: 1, shizuka: 1, sec4: 1, sec3: 1, sumi: 1 }, HG_RY = 0.8;   // 隊長クラスは馬に乗る（鞍の上に腰）
 //  陣形（決戦2の KS2_FM・山岳の SGK_FM と同じ考え方）：atk＝こちらの打ち込み、def＝受ける打ち込み（小さいほど固い）、arr＝受ける矢・投げ物、sp＝動く速さ
@@ -5494,8 +5494,14 @@ const HG_FM = { yoko: { n: '横陣', d: '横に厚く並ぶ', atk: 1, def: 1, ar
 const HG_CALM = { ojou: 1, fumi: 1, shizuka: 1, sec3: 1, sumi: 1, sysop: 1, kujo: 1 };   // 冷静な隊長の隊は立ち直りが早い
 const HG_CHASE = { reika: 1, omiya: 1, sec2: 1 };   // 追いかけたがる隊長（偽りの退却に乗りやすい）
 const HG_ACCEPT = { reika: 1, fumi: 1, sec2: 1, omiya: 0.5 };
-const HG_ZHM = { reg: ['举盾！', '弩，放！', '前进！', '稳住阵型！'], hun: ['Урагшаа!', 'Хурай!', 'Дайраад өнгөр!', 'Сум тавь!', 'Харва!'], go: ['杀！', '冲啊！', '别让她们跑了！', '冲上去！', '一起上！', '别停！', '包围她们！', '往前冲！', '砍倒她们！', '人多，压过去！'], throw: ['看镖！', '飞刀！', '接着！', '回旋镖，去！'], rout: ['撤！快撤！', '顶不住了！', '快跑！'] };
+const HG_ZHM = { ldDown: ['队长倒下了！'], hunLd: ['Ахлагч унлаа!'], tank: ['铁车！小心铁车！'], reg: ['举盾！', '弩，放！', '前进！', '稳住阵型！'], hun: ['Урагшаа!', 'Хурай!', 'Дайраад өнгөр!', 'Сум тавь!', 'Харва!'], go: ['杀！', '冲啊！', '别让她们跑了！', '冲上去！', '一起上！', '别停！', '包围她们！', '往前冲！', '砍倒她们！', '人多，压过去！'], throw: ['看镖！', '飞刀！', '接着！', '回旋镖，去！'], rout: ['撤！快撤！', '顶不住了！', '快跑！'] };
 const HG_LN = {
+  fall: { ojou: '西園寺隊、いったん下がりますわ。隊列を崩さずに、本隊のほうへ', omiya: '大宮隊、下がるよ！ 走らないで、揃って下がって！', fumi: '綾瀬隊、後退します。慌てず、ゆっくり', reika: '……っ、白石隊、一度下がる！ 背中は見せないで！',
+    shizuka: '久遠隊、後退。間合いを保ったまま下がります', sec4: '宮下隊、後退！ 隊列を保て、本隊の脇で立て直す！', sec3: '損耗三割。桜井隊、後退して再編します', sec2: 'み、みんな、下がって……！ 本隊のところまで！' },
+  back: { ojou: '整いましたわ。西園寺隊、もう一度参りましょう', omiya: 'よし、元気出た！ 大宮隊、戻るよ！', fumi: '矢を揃えました。綾瀬隊、戻ります', reika: '立て直したわ。白石隊、もう一度前へ！',
+    shizuka: '再編完了。久遠隊、前へ戻ります', sec4: '宮下隊、再編完了！ 前線に戻る！', sec3: '再編完了。桜井隊、復帰します', sec2: 'も、もう一回……！ 早瀬隊、戻ります！' },
+  tkStart: '殿、霧島戦車隊、五両そろいました。騎馬はこちらで引き受けます', tkCav: '騎馬を確認。各車、機銃で弾幕を。近づけさせないで', tkSup: '押されている隊の横につきます。各車、続いて', tkDown: '一両、走行不能。乗員は降りて、本隊へ下がって',
+  tkMob: ['撃て、撃て！', '騎馬、右から来ます！', '弾、込めました！', '前進します！'], tkBail: ['動けない……降りて！'],
   reg: '敵の正規軍、前進！ 盾と槍の方陣、後ろに弩です！', raidS: '左右の外に小さな群れ……奇襲の隊です！ 横と後ろに気をつけて！', raid: '横から奇襲！ 打ったらすぐ散っていきます！',
   feint: '騎馬が振り向きました！ 偽りの退却です、追った隊が囲まれます！', chaseEnd: '追撃の隊、戻ってきます', det: '右翼の外に祝融の隊！', ldDown: '隊長が倒れました！ 隊を立て直して！',
   chase: { reika: '逃げる気？ 白石隊、追うわよ！', omiya: '逃げてく！ 大宮隊、追いかけるよ！', sec2: 'に、逃げてく……！ 早瀬隊、追います！' },
@@ -5549,6 +5555,8 @@ const HG_LN = {
   help: { ojou: 'そこまでですわ。二人がかりでも、卑怯とは申しませんわね', omiya: '加勢します！ 一人で抱えないで！', shizuka: '加勢します', sec4: '宮下隊、加勢します！', sec3: '加勢します。囲んで！', reika: '待ちなさい、私が相手よ！', fumi: '加勢します。下がって！', sec2: '加勢します……っ！' },
   mob: ['来る！', '押し返せ！', '三人でかかって！', '槍、揃えて！', '隊長についていって！', '下がらないで！', '間を詰めて！', '旗はまだ立ってる！', '負けないで！', '大丈夫、まだいける！'],
   mobF: ['押して、押して！', '盾を上げて！', 'ブーメラン来るよ！', 'ナイフ、飛んでくる！', '横、気をつけて！', '右から来る！', '左、空いてる！', '一緒に突いて！', '前、交代するよ！', 'あと少し！', '馬が来る！', '隊長、無事？'] };
+const HG_CNL = { fall: [['后退！别乱了阵脚！', '下がれ！ 足並みを乱すな！'], ['撤到后面，重新整队！', '後ろへ下がって、組み直す！']], back: [['整队完毕，再冲一次！', '組み直した。もう一度行くぞ！'], ['都跟上！再上！', 'ついて来い！ もう一度だ！']],
+  mnFall: [['Ухар! Эгнээгээ бүү алд!', '退け！ 列を崩すな！']], mnBack: [['Дахиад довтол!', 'もう一度、駆けるぞ！']] };   // 中国側の隊長の声（字幕つき）
 const HG_ZH = { taunt: ['我要让你们成为我刀上的锈！', 'あたしのナイフの錆にしてやるよ！'], seek: ['让开！指挥官在哪里？', 'どきな！指揮官はどこだ！'], coward: ['胆小鬼！', '腰抜けめ！'],
   two: ['哼，二对一吗……今天先放过你！', 'ふん、二対一かい……今日は見逃してやるよ！'], lose: ['算你厉害……我们走着瞧！', 'やるじゃないか……覚えておきな！'], next: ['下一个指挥官在哪里？', '次の指揮官はどこだい？'],
   cAppear: ['我军人数是你们的两倍，你们撑不了多久！', 'こちらの数はそちらの倍。長くはもたないよ！'], cGo: ['全军前进！今天在这里分出胜负！', '全軍、前へ！ 今日ここで決着をつける！'], cFall: ['……撤退……全军撤退……', '……退け……全軍、退け……'],
@@ -5638,35 +5646,37 @@ function hgSeq(L, t0, gap) { L.forEach(([k, t], j) => HG.later.push([HG.t + t0 +
 function hgZh(e, q, prio) { if (e && isUp(e)) kosZh(e, q, prio || 1.9); }
 // ---- 開始 ----
 function hgReset() { if (HG.px) for (const k in HG.pg) { const G = HG.pg[k]; if (G) { stageRoot.remove(G.im); if (G.dn) stageRoot.remove(G.dn); } }
-  if (HG.W) for (const k in HG.W) if (HG.W[k] && HG.W[k].isObject3D) stageRoot.remove(HG.W[k]); for (const U of [...(HG.UB || []), ...(HG.UO || [])]) if (U.flag) stageRoot.remove(U.flag); for (const m of HG.stuck || []) stageRoot.remove(m); for (const T of HG.tr || []) if (T.m) stageRoot.remove(T.m);
+  if (HG.W) for (const k in HG.W) if (HG.W[k] && HG.W[k].isObject3D) stageRoot.remove(HG.W[k]); for (const U of [...(HG.UB || []), ...(HG.UO || [])]) if (U.flag) stageRoot.remove(U.flag); for (const m of HG.stuck || []) stageRoot.remove(m); for (const T of HG.tr || []) if (T.m) stageRoot.remove(T.m); for (const T of HG.veh || []) stageRoot.remove(T.m);
   Object.assign(HG, { t: 0, px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], lkI: 0, wave: 0, allyW: 0, sim: 0, grid: new Map(), lostB: 0, lostO: 0, pK: 0, tr: [], shu: null, shuDead: false, cmd: null, duel: null, said: {}, done: false, drawT: 0, mobT: 4, enT: 0,
     total: { blue: 0, orange: 0 }, pend: { blue: 0, orange: 0 }, cavN: 0, cap: 3400, joinW: 0, UC: null, UD: null, UG: null, shuFocus: null, ringL: null, given: 0, pulled: 0, shuK: 0, evLog: [], stuck: [], W: null, lodT: 0, hqGo: 0, surr: null, surrT: 0, ev: {},
-    aidT: 0, fmT: 0, bnT: 0, wn: { bow: 0, xb: 0, dao: 0, boom: 0, kai: 0, sh: 0 }, nm: [], dg: new Map(), UC2: null, fmSeen: {}, chatT: 20, thrown: { boom: 0, knife: 0 } }); }
+    aidT: 0, fmT: 0, bnT: 0, wn: { bow: 0, xb: 0, dao: 0, boom: 0, kai: 0, sh: 0 }, nm: [], dg: new Map(), UC2: null, veh: [], TU: null, fmSeen: {}, chatT: 20, thrown: { boom: 0, knife: 0 } }); }
 function hgStart() { HG.on = true; hgReset(); hgLook(); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 4000);
   HG.lkB = hgLooks('blue'); HG.lkO = hgLooks('orange'); HG.W = hgWeapons(HG.cap, 160);
   for (const [nm, lead, others, x, z, n, af, go] of HG_UNITS) { const U = hgUnit(nm, 'blue', x, z, n, af, { goT: go, calm: !!HG_CALM[lead] }); U.lk = lead; U.lead = hgMk(lead, U, 0, -12); U.names = others.map((k, j) => hgMk(k, U, (j - 1) * 3, -14 - j)).filter(Boolean); if (af >= 0.4) U.vol = true; }
+  hgTankStart();   // 霧島戦車隊（本隊の後ろから）
   //  中国軍は三つの戦い方が混ざる：漢の正規軍（盾と槍の方陣＋弩の一斉射、銅鑼と太鼓）、南蛮の奇襲隊（隊列なし、小さな群れで横・後ろを襲っては散る）、匈奴の騎馬弓兵（輪を描いて射る、近づけば退く、偽りの退却）
-  const X = [-120, -60, 0, 60, 120]; for (let i = 0; i < 5; i++) { const U = hgUnit('漢軍 第' + '一二三四五'[i] + '隊', 'orange', X[i] + rand(-4, 4), 40 + (i % 2) * 8, 136, 0.2, { goT: 99999, reg: true, fm: 'yoko' }); U.vol = true; U.wave = 1; }
+  const X = [-120, -60, 0, 60, 120]; for (let i = 0; i < 5; i++) { const U = hgUnit('漢軍 第' + '一二三四五'[i] + '隊', 'orange', X[i] + rand(-4, 4), 40 + (i % 2) * 8, 136, 0.2, { goT: 99999, reg: true, fm: 'yoko' }); U.vol = true; U.wave = 1; hgMkCn(U, HG_CN_LEAD.reg[i], true, i); }
   for (let i = 0; i < 3; i++) { const sx = [-1, 1, 0][i], U = hgUnit('南蛮 奇襲隊 ' + '一二三'[i], 'orange', sx * 175, i === 2 ? 110 : 75, 130, 0, { kind: 'raid', goT: 99999 }); U.wave = 2; U.bands = [];
-    U.mem.forEach((o, j) => { const b = Math.floor(j / 13); if (!U.bands[b]) U.bands[b] = { m: [], st: 'wait', t: rand(0, 14) + b * 2, ox: rand(-25, 25), oz: rand(-20, 20) }; U.bands[b].m.push(o); o.bd = b; }); }
+    U.mem.forEach((o, j) => { const b = Math.floor(j / 13); if (!U.bands[b]) U.bands[b] = { m: [], st: 'wait', t: rand(0, 14) + b * 2, ox: rand(-25, 25), oz: rand(-20, 20) }; U.bands[b].m.push(o); o.bd = b; }); hgMkCn(U, HG_CN_LEAD.raid[i], false, 5 + i); }
   { const U = hgUnit('中国軍 本陣', 'orange', 0, 150, 100, 0.25, { kind: 'hq', goT: 99999 }); HG.UG = U; const gid = GIRLS.girl46 ? 'girl46' : HG.lkO[0]; const e = ks2Mk(0, 162, 'mob', 'orange', gid, { name: '韓 麗華', pers: '冷静', cm: 168 }); if (e) { e.hg = true; e.hgCmd = true; e.hgU = U; e.hgOff = [0, 10]; e.ks2Title = e.ukTag = '中国軍の総大将 韓'; e.ks2Cn = true; e.hp = e.hpMax = 24; HG.cmd = e; HG.real.push(e); } }
-  { const C = hgUnit('匈奴 騎馬弓兵 一', 'orange', 200, 70, 80, 1, { kind: 'cav', goT: 99999 }); C.fx = -0.3; C.fz = -0.95; HG.UC = C; const C2 = hgUnit('匈奴 騎馬弓兵 二', 'orange', -150, 165, 80, 1, { kind: 'cav', goT: 99999 }); C2.fx = 0.3; C2.fz = -0.95; HG.UC2 = C2; }
+  { const C = hgUnit('匈奴 騎馬弓兵 一', 'orange', 200, 70, 80, 1, { kind: 'cav', goT: 99999 }); C.fx = -0.3; C.fz = -0.95; HG.UC = C; const C2 = hgUnit('匈奴 騎馬弓兵 二', 'orange', -150, 165, 80, 1, { kind: 'cav', goT: 99999 }); C2.fx = 0.3; C2.fz = -0.95; HG.UC2 = C2; hgMkCn(C, HG_CN_LEAD.cav[0], true, 8); hgMkCn(C2, HG_CN_LEAD.cav[1], true, 9); }
   hgShuDetach();   // 祝融の別働隊ははじめから敵の左の外に控える（後から湧く兵はいない）
   { const W = HG.W, N = HG.wn; W.yumi.count = Math.max(1, N.bow); W.xbow.count = Math.max(1, N.xb); W.nagi.count = Math.max(1, N.dao); W.boom.count = Math.max(1, N.boom); W.kai.count = Math.max(1, N.kai); W.shield.count = Math.max(1, N.sh); }
   const H = HG.UB[0]; player.pos.set(H.x + 4, 0, H.z - 22); player.yaw = Math.PI; player.pitch = -0.04; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
   showBanner('平原の大会戦', '味方 九隊 約千三百、中国軍 約千四百。漢の正規軍・南蛮の奇襲隊・匈奴の騎馬弓兵が混ざって来る'); bannerTimer = 5;
-  HG.later.push([3, () => { hgSetFm(HG.UB[0], 'hou'); }]); HG.later.push([5.5, () => sgkKing('全隊、構え。右翼から出るぞ')]); hgSeq(HG_LN.start, 9, 4.6); HG.later.push([33, () => hgSeq(HG_LN.houS, 0, 3)]); HG.later.push([28, () => hgZh(HG.cmd, HG_ZH.cAppear, 2.2)]);
+  HG.later.push([3, () => { hgSetFm(HG.UB[0], 'hou'); }]); HG.later.push([5.5, () => sgkKing('全隊、構え。右翼から出るぞ')]); hgSeq(HG_LN.start, 9, 4.6); HG.later.push([33, () => hgSeq(HG_LN.houS, 0, 3)]); HG.later.push([38, () => hgSay('sysop', HG_LN.tkStart, 1.8)]); HG.later.push([28, () => hgZh(HG.cmd, HG_ZH.cAppear, 2.2)]);
   if (TEST) window.__hg = { HG, hgUpdate, hgCounts, hgLod, hgSetFm, hgHurtT: o => hgHurt(o, 99, false), step: (n, dt) => { const d = dt || 0.1; for (let i = 0; i < n; i++) { hgUpdate(d); updateEnemies(d); updateArrows(d); } return hgCounts(); }, hgSeek: (k) => hgSeek(HG.UB.find(U => U.lk === k)), shoot: (far) => { const pp = player.pos, o = hgNear(pp.x, pp.z, 'orange', far || 60); if (!o) return null; const tx = o.real ? o.real.s.position.x : o.x, tz = o.real ? o.real.s.position.z : o.z, from = new V3(pp.x, pp.y + 1.5, pp.z), d = Math.hypot(tx - pp.x, tz - pp.z), T = Math.max(0.15, d / 45), vel = new V3((tx - pp.x) / T, (1.1 - 1.5) / T + 4.9 * T, (tz - pp.z) / T); addArrow('player', from, vel, { charge: 1 }); return { d: +d.toFixed(1), real: !!o.real }; } }; }
 // ---- 格子（近くの敵を探す） ----
 function hgGridBuild() { const M = HG.grid; M.clear(); const add = o => { const k = ((Math.floor(o.x / 8) + 500) * 1000 + Math.floor(o.z / 8) + 500) * 2 + (o.team === 'blue' ? 0 : 1); let L = M.get(k); if (!L) M.set(k, L = []); L.push(o); }; for (const o of HG.px) { if (o.alive) add(o); }
-  for (const q of HG.nm) { const e = q.real, up = isUp(e); if (!up) { if (q.alive) { q.alive = false; hgNamedDown(q); } continue; } const p = e.s.position; q.x = p.x; q.z = p.z; q.hx = Math.sin(e.face || 0); q.hz = Math.cos(e.face || 0); add(q); } }   // 名のある侍女も敵の槍・矢・ナイフの的になる
+  for (const q of HG.nm) { const e = q.real, up = isUp(e); if (!up) { if (q.alive) { q.alive = false; hgNamedDown(q); } continue; } if (e.hgIn || e.hgTk) continue; const p = e.s.position; q.x = p.x; q.z = p.z; q.hx = Math.sin(e.face || 0); q.hz = Math.cos(e.face || 0); add(q); } for (const T of HG.veh) if (T.alive) { const q = T.px; q.x = T.x; q.z = T.z; q.hx = T.fx; q.hz = T.fz; add(q); } }   // 名のある侍女も敵の槍・矢・ナイフの的になる
 function hgNamedDown(q) { const U = q.U, e = q.real; if (!U || U.st === 'gone') return; const lead = U.lead === e; U.mor = Math.max(0, U.mor - (lead ? 30 : 12)); U.dis = Math.max(U.dis, lead ? 12 : 5); HG.evLog.push([Math.round(HG.t), U.name, (lead ? '隊長' : '') + '倒れる', e.prof && e.prof.name]);
-  if (lead && HG.t > (HG.said.ldDown || 0)) { HG.said.ldDown = HG.t + 25; showBanner(U.name, '隊長が倒れた'); bannerTimer = 3; hgSay('sysop', HG_LN.ldDown, 1.9); } }
+  if (U.team === 'orange') { if (lead) hgMobZh(U.x, U.z, U.kind === 'cav' ? HG_ZHM.hunLd : HG_ZHM.ldDown); }
+  else if (lead && HG.t > (HG.said.ldDown || 0)) { HG.said.ldDown = HG.t + 25; showBanner(U.name, '隊長が倒れた'); bannerTimer = 3; hgSay('sysop', HG_LN.ldDown, 1.9); } }
 function hgNear(x, z, team, r, nn) { const M = HG.grid, cx = Math.floor(x / 8), cz = Math.floor(z / 8), t = team === 'blue' ? 0 : 1, n = Math.ceil(r / 8); let best = null, bd = r * r;
   for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) { const L = M.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + t); if (!L) continue; for (const o of L) { if (!o.alive || o.hold > 0 || (nn && o.named)) continue; const d = (o.x - x) ** 2 + (o.z - z) ** 2; if (d < bd) { bd = d; best = o; } } } return best; }
 function hgNearCn(x, z, r) { const out = []; const M = HG.grid, cx = Math.floor(x / 8), cz = Math.floor(z / 8), n = Math.ceil(r / 8); for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) { const L = M.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + 1); if (L) for (const o of L) if (o.alive && Math.hypot(o.x - x, o.z - z) < r) out.push(o); } return out; }
 // ---- 打たれる・倒れる（本物の NPC になっている者は本物の当たり） ----
-function hgHurt(o, dmg, byPlayer, from) { if (!o.alive) return; if (o.real) { if (isUp(o.real)) damageEnemy(o.real, dmg, from || new V3(o.x, 0, o.z), false, null, byPlayer ? 'player' : null); return; }
+function hgHurt(o, dmg, byPlayer, from) { if (!o.alive) return; if (o.tank) { hgTankHit(o.tank, dmg); return; } if (o.real) { if (isUp(o.real)) damageEnemy(o.real, dmg, from || new V3(o.x, 0, o.z), false, null, byPlayer ? 'player' : null); return; }
   o.kn = 0.25; if (o.hp - dmg > 0) { o.hp -= dmg; return; } if (byPlayer) { HG.pK++; if (o.team === 'orange') player.kills++; } hgDie(o); if (byPlayer && sfxGate({ x: o.x, z: o.z }, 60)) Sfx.arrowFlesh(new V3(o.x, 1.2, o.z)); }
 function hgDie(o, realBody) { o.alive = false; o.hp = 0; o.ry = rand(0, 6.28); o.dI = realBody ? -2 : -1; if (!realBody && HG.dg) { const k = (Math.floor(o.x / 4) + 1000) * 2000 + Math.floor(o.z / 4) + 1000; let L = HG.dg.get(k); if (!L) HG.dg.set(k, L = []); L.push(o); } if (o.team === 'blue') HG.lostB++; else HG.lostO++; const U = o.U; U.mor = Math.max(0, U.mor - 70 / U.n); U.dead = (U.dead || 0) + 1; }
 // ---- 群れの一人ずつ（毎フレーム一部だけ） ----
@@ -5683,10 +5693,10 @@ function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts 
     const FM = HG_FM[U.fm] || HG_FM.yoko; let tx, tz, sp, engR = -1;
     if (U.kind === 'raid') { const r = hgRaidPos(o, U); tx = r[0]; tz = r[1]; sp = r[2]; engR = r[3]; }
     else if (U.horde) { tx = U.x + o.ox + Math.sin(HG.t * 0.6 + o.k) * 1.8; tz = U.z + o.oz + Math.cos(HG.t * 0.5 + o.k * 1.3) * 1.8; sp = U.st === 'rout' ? 2.8 : (U.st === 'adv' || U.st === 'fight') ? 2.7 : 1.6; }
-    else { [tx, tz] = hgSlot(U, o.slot); sp = U.st === 'rout' ? 2.8 : (U.st === 'march' ? (U.kind === 'det' ? 4.4 : 2.6 * FM.sp) : 1.8); }
+    else { [tx, tz] = hgSlot(U, o.slot); sp = U.st === 'rout' ? 2.8 : U.st === 'fall' ? 2.6 : (U.st === 'march' ? (U.kind === 'det' ? 4.4 : 2.6 * FM.sp) : 1.8); }
     if (U.dis > 0 && U.kind !== 'raid' && !U.horde) { tx += Math.sin(o.k * 3.1 + HG.t) * 2.2; tz += Math.cos(o.k * 1.7 + HG.t) * 2.2; }   // 横・後ろを突かれて乱れている
     if (o.flee > 0) { o.flee -= sdt; tx = o.x - U.fx * 20; tz = o.z - U.fz * 20; sp = 2.8; }   // 何人かは崩れて逃げる（しばらくして戻る）
-    else if (U.st !== 'rout' && U.st !== 'march' && engR !== 0) {
+    else if (U.st !== 'rout' && U.st !== 'march' && U.st !== 'fall' && engR !== 0) {
       if (!o.arch) { const eng = engR > 0 || U.st === 'fight' || (U.horde && U.st === 'adv'), e = hgNear(o.x, o.z, foe, engR > 0 ? engR : eng ? (U.horde ? 14 : 10) : 3.5), ed = e ? Math.hypot(e.x - o.x, e.z - o.z) : 1e9;
         if ((o.w === 'knife' || o.w === 'boom') && o.cd <= 0 && ed > 4 && U.st !== 'hold') { const t = hgNear(o.x, o.z, foe, 22); if (t) { o.cd = rand(3.4, 5.4); o.atk = 0.45; const dx = t.x - o.x, dz = t.z - o.z, d = Math.hypot(dx, dz) || 1; o.hx = dx / d; o.hz = dz / d; hgThrow(o.x, o.z, t, o.w, o); } }   // 投げナイフ・ブーメラン
         if (e) { const dx = e.x - o.x, dz = e.z - o.z, d = ed || 1; o.hx = dx / d; o.hz = dz / d; const reach = o.w === 'dao' ? 1.7 : o.w === 'knife' || o.w === 'shield' ? 1.3 : 2.4;   // 槍は二歩半、大刀・刀は短く、ナイフはさらに短い
@@ -5700,7 +5710,7 @@ function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts 
     const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d > 0.08) { const s = Math.min(d, sp * sdt); o.x += dx / d * s; o.z += dz / d * s; o.mv = d > 0.3; if (o.mv && !o.atk && d > 2) { o.hx = dx / d; o.hz = dz / d; } } else o.mv = false; } }
 //  南蛮の小隊（十数人ずつ）：隊列を組まず、味方の隊の横か後ろへ回って襲い、しばらく打ち合ったら散り、別の方向から戻ってくる
 function hgBandC(B) { let x = 0, z = 0, n = 0; for (const o of B.m) if (o.alive) { x += o.x; z += o.z; n++; } return n ? [x / n, z / n, n] : null; }
-function hgRaidTick(U, dt) { for (const B of U.bands) { const c = hgBandC(B); if (!c) continue; B.t -= dt; B.cx = c[0]; B.cz = c[1];
+function hgRaidTick(U, dt) { if (U.st === 'fall' || U.st === 'regroup') return; for (const B of U.bands) { const c = hgBandC(B); if (!c) continue; B.t -= dt; B.cx = c[0]; B.cz = c[1];
     if (U.st === 'rout') continue;
     if (B.st === 'wait') { if (HG.t >= U.goT && B.t <= 0) { const L = HG.UB.filter(V => hgCapable(V) && V.lk !== 'sumi'); if (!L.length) continue; L.sort((a, b) => Math.hypot(a.x - c[0], a.z - c[1]) - Math.hypot(b.x - c[0], b.z - c[1])); const T = Math.random() < 0.6 ? L[0] : L[(Math.random() * Math.min(4, L.length)) | 0];
         const sideA = Math.random() < 0.65 ? (Math.random() < 0.5 ? 1 : -1) * Math.PI / 2 : Math.PI; B.a = Math.atan2(T.fx, T.fz) + sideA + rand(-0.35, 0.35); B.tgt = T; B.st = 'go'; B.t = 60; } }
@@ -5709,7 +5719,7 @@ function hgRaidTick(U, dt) { for (const B of U.bands) { const c = hgBandC(B); if
         if (!HG.said.raid) { HG.said.raid = 1; hgSay('sysop', HG_LN.raid, 1.9); } hgMobZh(c[0], c[1], HG_ZHM.go); } }
     else if (B.st === 'hit') { if (B.t <= 0 || c[2] < B.n0 * 0.65 || !hgCapable(B.tgt)) { B.st = 'scatter'; B.t = rand(7, 11); const T = B.tgt || { x: c[0] - 1, z: c[1] }; for (const o of B.m) { const a = Math.atan2(c[0] - T.x, c[1] - T.z) + rand(-1.3, 1.3), r = rand(35, 55); o.sx = c[0] + Math.sin(a) * r; o.sz = c[1] + Math.cos(a) * r; } hgMobZh(c[0], c[1], HG_ZHM.rout); } }   // 打って散る
     else if (B.st === 'scatter') { if (B.t <= 0) { B.st = 'wait'; B.t = rand(3, 8); B.rx = c[0]; B.rz = c[1]; } } } }
-function hgRaidPos(o, U) { const B = U.bands[o.bd], j = o.k * 2.39;
+function hgRaidPos(o, U) { const B = U.bands[o.bd], j = o.k * 2.39; if (U.st === 'fall' || U.st === 'regroup') return [U.fbx + Math.sin(j) * 7, U.fbz + Math.cos(j) * 7, U.st === 'fall' ? 3.4 : 1.5, 0];
   if (U.st === 'rout') { const H = HG.UB[0], dx = o.x - H.x, dz = o.z - H.z, d = Math.hypot(dx, dz) || 1; return [o.x + dx / d * 20, o.z + dz / d * 20, 3.2, 0]; }
   if (!B || B.st === 'wait') { const rx = B && B.rx != null ? B.rx : U.hx0 + (B ? B.ox : 0), rz = B && B.rz != null ? B.rz : U.hz0 + (B ? B.oz : 0); return [rx + Math.sin(j) * 4, rz + Math.cos(j) * 4, 2.2, 3]; }
   if (B.st === 'go') return [B.px + Math.sin(j) * 4, B.pz + Math.cos(j) * 4, 3.4, 3];
@@ -5717,7 +5727,7 @@ function hgRaidPos(o, U) { const B = U.bands[o.bd], j = o.k * 2.39;
   return [o.sx != null ? o.sx : o.x, o.sz != null ? o.sz : o.z, 4.2, 0]; }
 //  匈奴の騎馬弓兵：狙った隊のまわりを輪を描いて駆けながら射る。近づかれたら離れる。ときどき偽りの退却で追っ手を誘い、振り向いて囲む
 function hgCavTarget(o, U, any) { const L = HG.UB.filter(V => hgCapable(V) && Math.hypot(V.x - o.x, V.z - o.z) < 170); if (!L.length) return null; if (any) return L[(Math.random() * L.length) | 0]; if (U.tgtU && L.includes(U.tgtU) && Math.random() < 0.7) return U.tgtU; L.sort((a, b) => Math.hypot(a.x - o.x, a.z - o.z) - Math.hypot(b.x - o.x, b.z - o.z)); return L[0]; }
-function hgCavTick(U, dt) { if (!U.go || U.st === 'rout') return; U.cT = (U.cT == null ? rand(45, 70) : U.cT) - dt;
+function hgCavTick(U, dt) { if (!U.go || U.st === 'rout' || U.st === 'fall' || U.st === 'regroup') return; U.cT = (U.cT == null ? rand(45, 70) : U.cT) - dt;
   if (U.cm === 'harass' && U.cT <= 0) { const W = U.tgtU && hgCapable(U.tgtU) ? U.tgtU : HG.UB.find(hgCapable); if (!W) return; const a = Math.atan2(U.x - W.x, U.z - W.z); U.fdx = Math.sin(a); U.fdz = Math.cos(a); U.cm = 'feign'; U.cT = 14;   // 偽りの退却
     const C = HG.UB.filter(V => hgCapable(V) && HG_CHASE[V.lk] && V.mor > 55 && !V.chase && !V.aid && V.st !== 'fight' && V.fm !== 'hou' && Math.hypot(V.x - U.x, V.z - U.z) < 110).sort((a, b) => Math.hypot(a.x - U.x, a.z - U.z) - Math.hypot(b.x - U.x, b.z - U.z))[0];
     if (C && Math.random() < 0.8) { C.chase = U; C.chaseEnd = HG.t + 40; U.lure = C; hgSay(C.lk, HG_LN.chase[C.lk], 1.9); HG.evLog.push([Math.round(HG.t), C.name, '追撃', U.name]); } else U.lure = null; }
@@ -5725,6 +5735,7 @@ function hgCavTick(U, dt) { if (!U.go || U.st === 'rout') return; U.cT = (U.cT =
   else if (U.cm === 'turn' && U.cT <= 0) { U.cm = 'harass'; U.cT = rand(50, 80); if (U.lure) { U.lure.chase = null; U.lure = null; } } }
 function hgCavSim(o, U, sdt) { let tx, tz, sp = 7;
   if (U.st === 'rout') { const B = HG.UB[0]; const dx = o.x - B.x, dz = o.z - B.z, d = Math.hypot(dx, dz) || 1; tx = o.x + dx / d * 20; tz = o.z + dz / d * 20; sp = 6; }
+  else if (U.st === 'fall' || U.st === 'regroup') { tx = U.fbx + o.ox * 0.6; tz = U.fbz + o.oz * 0.6; sp = U.st === 'fall' ? 7 : 2; }   // 後退：後ろでまとまる
   else if (!U.go) { tx = U.hx0 + o.ox + Math.sin(HG.t * 0.13 + o.k * 0.7) * 10; tz = U.hz0 + o.oz + Math.cos(HG.t * 0.11 + o.k * 1.1) * 8; sp = 2.5; }   // 控え：ばらばらに歩かせている
   else if (U.cm === 'feign') { tx = U.x + U.fdx * 60 + Math.sin(o.k) * 8; tz = U.z + U.fdz * 60 + Math.cos(o.k) * 8; sp = 6.5; }   // 逃げるふり（追っ手より少し速いだけ）
   else { if (!o.cs) { o.cs = 'circle'; o.ca = rand(0, 6.28); o.cr = rand(30, 44); o.cdir = Math.random() < 0.5 ? 1 : -1; o.ct = rand(2, 8); }
@@ -5765,9 +5776,10 @@ function hgTrTick(dt) { const Q = new V3(); for (let i = HG.tr.length - 1; i >= 
   if (T.spin) { T.m.position.copy(Q); T.m.rotation.y += dt * 24; continue; }
   const pv = T.m.position.clone(); T.m.position.copy(Q); const dv = Q.clone().sub(pv); if (dv.lengthSq() > 1e-6) T.m.quaternion.setFromUnitVectors(Z, dv.normalize()); } }
 // ---- 隊の采配（布陣・斜行・側面／背面・後続） ----
-function hgCapable(U) { return U.st !== 'gone' && U.st !== 'surr' && U.st !== 'rout' && (U.up || 0) >= 12; }
+function hgInLine(U) { return hgCapable(U) || U.st === 'fall' || U.st === 'regroup'; }   // 後退・立て直し中の隊も数に入れる（降伏の判定・表示）
+function hgCapable(U) { return U.st !== 'gone' && U.st !== 'surr' && U.st !== 'rout' && U.st !== 'fall' && U.st !== 'regroup' && (U.up || 0) >= 12; }
 //  騎馬と奇襲の群れは近くに来たときだけ相手にする（追撃中はその騎馬）
-function hgFoeU(U) { const foes = U.team === 'blue' ? HG.UO : HG.UB; if (U.chase && U.chase.st !== 'gone') return U.chase; if (U.tgtU && U.tgtU.st !== 'gone' && U.tgtU.up > 0) return U.tgtU; let F = null, fd = 1e9; for (const V of foes) { if (V.st === 'gone' || !V.up || (V.kind === 'hq' && !HG.hqGo) || V.st === 'march') continue; const d = Math.hypot(V.x - U.x, V.z - U.z) + Math.abs(V.x - U.x) * 0.7; if ((V.kind === 'cav' || V.kind === 'raid') && Math.hypot(V.x - U.x, V.z - U.z) > 35) continue; if (d < fd) { fd = d; F = V; } } return F; }
+function hgFoeU(U) { const foes = U.team === 'blue' ? HG.UO : HG.UB; if (U.chase && U.chase.st !== 'gone') return U.chase; if (U.tgtU && U.tgtU.st !== 'gone' && U.tgtU.up > 0) return U.tgtU; let F = null, fd = 1e9; for (const V of foes) { if (V.st === 'gone' || !V.up || (V.kind === 'hq' && !HG.hqGo) || V.st === 'march') continue; const d = Math.hypot(V.x - U.x, V.z - U.z) + Math.abs(V.x - U.x) * 0.7; if ((V.kind === 'cav' || V.kind === 'raid') && Math.hypot(V.x - U.x, V.z - U.z) > 35) continue; if ((V.st === 'fall' || V.st === 'regroup') && Math.hypot(V.x - U.x, V.z - U.z) > 25) continue; if (d < fd) { fd = d; F = V; } } return F; }
 function hgReact(U, kind) { if (!U || U.team !== 'blue') return; const L = (HG_LN[kind] || {})[U.lk]; if (!L) return; const key = kind + U.lk; if (HG.t < (HG.said[key] || 0)) return; HG.said[key] = HG.t + 70; hgSay(U.lk, L, 1.8); }   // 隊長の声（字幕つき）
 function hgSupPick(U) { let S = null, sd = 150; for (const V of HG.UB) { if (V === U || !hgCapable(V) || V.st !== 'fight' || V.af >= 0.5) continue; const d = Math.hypot(V.x - U.x, V.z - U.z); if (d < sd) { sd = d; S = V; } } return S; }   // 弓の多い隊：戦っている味方の後ろ・横につく
 function hgUnits(dt) { const all = [...HG.UB, ...HG.UO];
@@ -5776,16 +5788,17 @@ function hgUnits(dt) { const all = [...HG.UB, ...HG.UO];
     if ((U.lT = (U.lT || 0) - dt) <= 0) { U.lT = 10; U.lossR = (U.lp0 || up) - up; U.lp0 = up; }
     if (U.team === 'blue' && !U.lossSaid && up < U.n * 0.6) { U.lossSaid = 1; hgReact(U, 'loss'); }
     if (U.dis > 0) U.dis -= dt * (U.calm ? 2 : 1);
+    const fl = hgFallTick(U, up, dt);
     if (U.st === 'rout') { U.rT -= dt * (U.calm ? 1.6 : 1); if (U.rT <= 0) { U.st = 'hold'; U.mor = 50; hgSlotAll(U); hgReact(U, 'rally'); } }
-    else if (U.mor < 22 && U.kind !== 'hq') { U.st = 'rout'; U.rT = 30; U.tx = U.x - U.fx * 50; U.tz = U.z - U.fz * 50; U.aid = null; U.sup = null; U.path = null;
+    else if (U.mor < 22 && U.kind !== 'hq' && !fl) { U.st = 'rout'; U.rT = 30; U.tx = U.x - U.fx * 50; U.tz = U.z - U.fz * 50; U.aid = null; U.sup = null; U.path = null;
       if (U.team === 'blue') { if (HG.t > (HG.said.routS || 0)) { HG.said.routS = HG.t + 40; hgSay('sysop', HG_LN.routS, 1.8); } }
       else { const B = HG.UB.filter(V => V.F === U && hgCapable(V)).sort((a, b) => Math.hypot(a.x - U.x, a.z - U.z) - Math.hypot(b.x - U.x, b.z - U.z))[0]; if (B) hgReact(B, 'foeRout'); hgMobZh(U.x, U.z, HG_ZHM.rout); if (!HG.said.kRout) { HG.said.kRout = 1; HG.later.push([HG.t + 3, () => sgkKing('崩れたぞ。押せ')]); } } }
     else { const cap = 100 * Math.min(1, 0.2 + 0.95 * (U.up || 0) / U.n); U.mor = U.mor > cap ? Math.max(cap, U.mor - 3 * dt) : Math.min(cap, U.mor + dt * (U.st === 'fight' ? 0.06 : 0.25) * (U.calm ? 2 : 1)); }   // 減った隊は士気も下がる。冷静な指揮官の隊は立ち直りが早い
-    if (U.kind === 'cav' || U.kind === 'raid') { let sx = 0, sz = 0; for (const o of U.mem) if (o.alive) { sx += o.x; sz += o.z; } U.x = sx / up; U.z = sz / up; if (U.flag) U.flag.position.set(U.x, 0, U.z); if (U.kind === 'cav') hgCavTick(U, dt); else { if (U.st !== 'rout') U.st = HG.t >= U.goT ? 'adv' : 'hold'; hgRaidTick(U, dt); } continue; }   // 騎馬・南蛮は一人ずつ（隊の位置は真ん中）
+    if (U.kind === 'cav' || U.kind === 'raid') { let sx = 0, sz = 0; for (const o of U.mem) if (o.alive) { sx += o.x; sz += o.z; } U.x = sx / up; U.z = sz / up; if (U.flag) U.flag.position.set(U.x, 0, U.z); if (U.kind === 'cav') hgCavTick(U, dt); else { if (U.st !== 'rout' && U.st !== 'fall' && U.st !== 'regroup') U.st = HG.t >= U.goT ? 'adv' : 'hold'; hgRaidTick(U, dt); } continue; }   // 騎馬・南蛮は一人ずつ（隊の位置は真ん中）
     if (U.chase && (HG.t > U.chaseEnd || !hgCapable(U.chase) || U.st === 'rout')) { U.chase = null; if (U.st !== 'rout') hgSay('sysop', HG_LN.chaseEnd, 1.6); }   // 騎馬は一騎ずつ（隊の位置は乗り手の真ん中）
     const F = hgFoeU(U); U.F = F; const FM = HG_FM[U.fm] || HG_FM.yoko; U.aim = null;
     let S = null; if (U.team === 'blue' && U.st !== 'rout' && !(U.path && U.path.length) && (U.af >= 0.5 || U.sup) && HG.t >= Math.min(U.goT, U.sup ? 0 : 1e9) && !(F && Math.hypot(F.x - U.x, F.z - U.z) < 18)) { S = U.sup && hgCapable(U.sup) && U.sup.st === 'fight' ? U.sup : hgSupPick(U); U.sup = S; }
-    if (U.st === 'rout') { }
+    if (U.st === 'rout' || U.st === 'fall' || U.st === 'regroup') { }
     else if (U.path && U.path.length) { U.st = 'march'; const [px, pz] = U.path[0]; U.tx = px; U.tz = pz; if (Math.hypot(px - U.x, pz - U.z) < 6) { U.path.shift(); if (!U.path.length) { U.st = 'adv'; U.arrT = HG.t; if (U.onArr) U.onArr(U); } } }
     else if (U.kind === 'hq' && !HG.hqGo) { U.tx = U.hx0; U.tz = U.hz0; U.st = 'hold'; }
     else if (S) { const sF = S.F, lx = S.fz, lz = -S.fx, sd = Math.sign((U.x - S.x) * lx + (U.z - S.z) * lz) || 1; U.tx = S.x - S.fx * 24 + lx * sd * 12; U.tz = S.z - S.fz * 24 + lz * sd * 12; U.st = 'support'; if (sF) U.aim = { x: sF.x, z: sF.z };
@@ -5796,7 +5809,7 @@ function hgUnits(dt) { const all = [...HG.UB, ...HG.UO];
       else { const push = ((U.mor - (F.mor || 50)) / 100) * 0.7 * dt, close = Math.max(0, d - 3); U.fd = d; U.tx = U.x + (F.x - U.x) / d * (push * 20 + close); U.tz = U.z + (F.z - U.z) / d * (push * 20 + close); } }   // 前列どうしが槍の届く距離まで詰め、士気の差でじわじわ押す
     { const tF = U.st === 'support' && U.aim ? U.aim : F; if (tF && U.st !== 'rout' && U.st !== 'march') { const d = Math.hypot(tF.x - U.x, tF.z - U.z) || 1, wx = (tF.x - U.x) / d, wz = (tF.z - U.z) / d, cr = U.fx * wz - U.fz * wx, dot = U.fx * wx + U.fz * wz, ang = Math.atan2(cr, dot), mx = (U.horde ? 1.2 : 0.18) * dt * (U.calm ? 1.5 : 1), r = clamp(ang, -mx, mx), c = Math.cos(r), s = Math.sin(r); const nfx = U.fx * c - U.fz * s, nfz = U.fx * s + U.fz * c; U.fx = nfx; U.fz = nfz; } }   // 向きを敵へ（横・後ろから突かれたら向き直る）
     if (U.st === 'march' || U.st === 'rout' || (U.st === 'adv' && !U.tgtU)) { const dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz); if (d > 1 && U.st !== 'rout') { const k = Math.min(1, dt * 0.4); U.fx += (dx / d - U.fx) * k; U.fz += (dz / d - U.fz) * k; const l = Math.hypot(U.fx, U.fz) || 1; U.fx /= l; U.fz /= l; } }
-    { const dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz), sp = U.st === 'rout' ? 2.0 : U.st === 'march' ? (U.kind === 'det' ? 4 : 2.2 * FM.sp) : U.st === 'fight' ? ((U.fd || 0) > 4 ? 1.0 : 0.25) : U.st === 'support' ? 1.6 : U.horde ? 2.2 : 1.1 * FM.sp; if (d > 0.3) { const s = Math.min(d, sp * dt); U.x = clamp(U.x + dx / d * s, -285, 285); U.z = clamp(U.z + dz / d * s, -265, 265); } }
+    { const dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz), sp = U.st === 'rout' ? 2.0 : U.st === 'fall' ? 2.4 : U.st === 'regroup' ? 0 : U.st === 'march' ? (U.kind === 'det' ? 4 : 2.2 * FM.sp) : U.st === 'fight' ? ((U.fd || 0) > 4 ? 1.0 : 0.25) : U.st === 'support' ? 1.6 : U.horde ? 2.2 : 1.1 * FM.sp; if (d > 0.3) { const s = Math.min(d, sp * dt); U.x = clamp(U.x + dx / d * s, -285, 285); U.z = clamp(U.z + dz / d * s, -265, 265); } }
     // 横・後ろから当たられたか（一度だけ）：士気が落ち、隊が乱れる。方円は横も後ろもない
     if (F && U.st === 'fight' && U.fm !== 'hou') { for (const V of (U.team === 'blue' ? HG.UO : HG.UB)) { if (V.F !== U || V.st !== 'fight' || U.hitBy.has(V)) continue; const d = Math.hypot(V.x - U.x, V.z - U.z) || 1; if (d > 30) continue; U.hitBy.add(V);
       const dot = U.fx * (V.x - U.x) / d + U.fz * (V.z - U.z) / d; if (dot > 0.45) continue; const rear = dot < -0.45, k = U.horde ? 0.6 : 1; U.mor = Math.max(0, U.mor - (rear ? 40 : 25) * k); U.dis = rear ? 25 : 18; let nb = 0; for (const o of U.mem) if (o.alive && !o.real && Math.random() < (rear ? 0.22 : 0.14) * k) { o.flee = rand(5, 10); nb++; }
@@ -5859,6 +5872,7 @@ function hgScript() { const T = HG.t, E = HG.ev;
 function hgGo(e, tx, tz, sp, dt) { const p = e.s.position, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz); if (d < 0.3) { e.moving = false; return true; } const s = Math.min(d, sp * dt); p.x += dx / d * s; p.z += dz / d * s; e.moving = d > 0.5; e.faceWant = Math.atan2(dx, dz); return false; }
 function hgBrain(e, dt) { if (!HG.on || !e.hg) return false; const p = e.s.position; e.passive = true; e.kneel = false; e.crouch = 0; e.seated = false; if (e.knock) e.knock.set(0, 0, 0); e.t += dt; p.y = e.baseY = e.hgRide ? HG_RY : 0;
   if (e.hgO) { hgRealBrain(e, dt); return true; }
+  if (e.hgTk && hgCrewBrain(e, dt)) return true;
   if (e.sgkAct) { sgkPose(e, dt); return true; }
   if (e.state !== 'down') e.state = 'idle';
   if (e === HG.shu) { hgShuBrain(e, dt); return true; }
@@ -5867,7 +5881,8 @@ function hgBrain(e, dt) { if (!HG.on || !e.hg) return false; const p = e.s.posit
   if (e.hgK === 'sumi' || e.hgK === 'sysop') e.hp = Math.max(e.hp, e.hpMax * 0.3);   // 話の要の澄と伝令役の司令室だけは倒れない。ほかの名のある侍女は敵の的になる
   if (D && (D.L === e || D.help === e)) { hgGo(e, D.x + (D.help === e ? 1.8 : -1.1), D.z + (D.help === e ? 1.6 : 0), 3.5, dt); if (HG.shu) e.faceWant = Math.atan2(HG.shu.s.position.x - p.x, HG.shu.s.position.z - p.z); return true; }
   if (e.hgWall) { const k = e.hgWall; hgGo(e, k[0], k[1], 3, dt); if (HG.shu && isUp(HG.shu)) e.faceWant = Math.atan2(HG.shu.s.position.x - p.x, HG.shu.s.position.z - p.z); return true; }
-  const [ox, oz] = e.hgOff, rx = U.fz, rz = -U.fx; hgGo(e, U.x + rx * ox + U.fx * oz, U.z + rz * ox + U.fz * oz, e.hgRide ? 3.4 : 2.6, dt); if (!e.moving) e.faceWant = Math.atan2(U.fx, U.fz); return true; }
+  if (U.st === 'fall' && U.lead === e) { hgGo(e, U.fbx, U.fbz, e.hgRide ? 6.5 : 3, dt); return true; }   // 後退は隊長が先に立って導く（馬は速い）
+  const [ox, oz] = e.hgOff, rx = U.fz, rz = -U.fx; hgGo(e, U.x + rx * ox + U.fx * oz, U.z + rz * ox + U.fz * oz, e.hgRide ? (U.kind === 'cav' ? 8.5 : 6.5) : 2.6, dt); if (!e.moving) e.faceWant = Math.atan2(U.fx, U.fz); return true; }
 // ---- 近くの者：本物の NPC（絵と同じ娘・同じ場所で入れ替わる） ----
 function hgPromote(o) { const U = o.U, e = ks2Mk(o.x, o.z, o.arch ? 'archer' : 'mob', o.team, o.gid, undefined); if (!e) return null;
   e.hg = true; e.hgO = o; e.hgU = U; e.hp = e.hpMax = Math.max(1, o.hp); e.hgCd = rand(0.3, 1.5); e.figH = e.figH || 1.6; e.s.rotation.y = e.face = e.faceWant = Math.atan2(o.hx || U.fx, o.hz || U.fz);
@@ -5880,7 +5895,7 @@ function hgLod(dt) { if ((HG.lodT -= dt) > 0) return; HG.lodT = 0.25; const pp =
   for (let i = HG.rl.length - 1; i >= 0; i--) { const e = HG.rl[i], o = e.hgO; if (!isUp(e)) { if (o.alive) hgDie(o, true); HG.rl.splice(i, 1); continue; }   // 倒れた本物の体はそのまま残す
     const p = e.s.position; o.x = p.x; o.z = p.z; if (Math.hypot(p.x - pp.x, p.z - pp.z) > Rout) { hgDemote(e); HG.rl.splice(i, 1); } }
   const C = []; const M = HG.grid, cx = Math.floor(pp.x / 8), cz = Math.floor(pp.z / 8), n = Math.ceil(Rin / 8);
-  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) for (const t of [0, 1]) { const L = M.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + t); if (L) for (const o of L) { if (!o.alive || o.real || o.U.kind === 'cav') continue; const d = Math.hypot(o.x - pp.x, o.z - pp.z); if (d < Rin) C.push([d, o]); } }
+  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) for (const t of [0, 1]) { const L = M.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + t); if (L) for (const o of L) { if (!o.alive || o.real || o.tank || o.U.kind === 'cav') continue; const d = Math.hypot(o.x - pp.x, o.z - pp.z); if (d < Rin) C.push([d, o]); } }
   C.sort((a, b) => a[0] - b[0]); for (const [, o] of C) { if (HG.rl.length >= cap) break; hgPromote(o); } }
 function hgRealBrain(e, dt) { const o = e.hgO, U = o.U, p = e.s.position, foe = e.team === 'blue' ? 'orange' : 'blue'; o.x = p.x; o.z = p.z; o.hp = e.hp;
   if (e.hgHit) { e.hgHit.t -= dt; if (e.hgHit.t <= 0) { const h = e.hgHit; e.hgHit = null; const t = h.t2; if (t === player) { if (Math.hypot(player.pos.x - p.x, player.pos.z - p.z) < h.r + 0.4 && !player.god && state === 'play' && Math.random() < 0.35) { hurtPlayer(e.hgW === 'dao' ? 5 : 4); popup(e.hgW === 'dao' ? '大刀で斬られた！' : e.hgW === 'knife' ? 'ナイフで突かれた！' : '槍に突かれた！'); } }
@@ -5888,6 +5903,7 @@ function hgRealBrain(e, dt) { const o = e.hgO, U = o.U, p = e.s.position, foe = 
   if (e.sgkAct) { sgkPose(e, dt); return; } e.state = 'idle'; if ((e.hgCd -= dt) < -5) e.hgCd = 0;
   if (o.hold > 0) { o.hold -= dt; e.moving = false; return; }
   if (U.st === 'surr' || HG.surr) { e.moving = false; return; }
+  if (U.st === 'fall') { const [sx, sz] = U.kind === 'raid' ? hgRaidPos(o, U) : hgSlot(U, o.slot); hgGo(e, sx, sz, 2.8, dt); return; }   // 後退中は戦わずに下がる
   if (U.st === 'rout' || o.flee > 0) { if (o.flee > 0) o.flee -= dt; hgGo(e, p.x - U.fx * 10, p.z - U.fz * 10, 3, dt); return; }
   // 相手：近くの敵（群れ・本物）、敵側なら王も
   const rng = e.hgW === 'knife' || e.hgW === 'boom';
@@ -5957,7 +5973,7 @@ function hgDuelEnd(why) { const D = HG.duel, e = HG.shu; if (!D) return; HG.duel
 // ---- 王（プレイヤー）の矢が群れに当たる／敵の矢が王に ----
 function hgArrowHit(p0, sx, sz, sl, sy) { let best = null, bt = 2; const cx = Math.floor(p0.x / 8), cz = Math.floor(p0.z / 8);
   for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const tm of [1, 0]) { const L = HG.grid.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + tm); if (!L) continue;
-    for (const o of L) { if (!o.alive || o.real) continue; const t = clamp(((o.x - p0.x) * sx + (o.z - p0.z) * sz) / sl, 0, 1), d = Math.hypot(p0.x + sx * t - o.x, p0.z + sz * t - o.z), y = p0.y + sy * t - (o.U.kind === 'cav' ? HG_RY : 0); if (d < 0.34 && y > 0 && y < 1.62 && t < bt) { bt = t; best = o; } } }
+    for (const o of L) { if (!o.alive || o.real || o.tank) continue; const t = clamp(((o.x - p0.x) * sx + (o.z - p0.z) * sz) / sl, 0, 1), d = Math.hypot(p0.x + sx * t - o.x, p0.z + sz * t - o.z), y = p0.y + sy * t - (o.U.kind === 'cav' ? HG_RY : 0); if (d < 0.34 && y > 0 && y < 1.62 && t < bt) { bt = t; best = o; } } }
   return best ? { o: best, t: bt } : null; }
 function hgThreat(dt) { if ((HG.enT -= dt) > 0) return; HG.enT = 1.1; const pp = player.pos, o = hgNear(pp.x, pp.z, 'orange', 80); if (!o || o.real) return; const d = Math.hypot(o.x - pp.x, o.z - pp.z);
   if (o.arch && d > 30 && Math.random() < 0.3) { const from = new V3(o.x, 1.4, o.z), T = Math.max(0.6, d / 32), vel = new V3((pp.x - o.x) / T + rand(-1.5, 1.5), (pp.y + 1.2 - 1.4) / T + 4.9 * T, (pp.z - o.z) / T + rand(-1.5, 1.5)); addArrow('orange', from, vel, { dmg: 5 }); o.atk = 0.5; } }
@@ -5995,8 +6011,70 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
       G.dnN = dn; G.dn.count = dn; G.dn.instanceMatrix.needsUpdate = true; }
     G.im.instanceMatrix.needsUpdate = true; }
   for (const m of [W.spear, W.yumi, W.xbow, W.nagi, W.kai, W.shield, W.boom, W.horse]) m.instanceMatrix.needsUpdate = true; }
+// ---- 後退と立て直し（両軍とも）：隊がおよそ三割やられたら、隊列を保って後ろへ下がり（接触を切る）、立て直して士気が戻ればまた前へ ----
+function hgFallTick(U, up, dt) { if (U.kind === 'hq' || U.kind === 'det' || U.lk === 'sumi' || (U.kind === 'cav' && !U.go)) return false;
+  if (U.st === 'fall') { U.tx = U.fbx; U.tz = U.fbz; if (Math.hypot(U.fbx - U.x, U.fbz - U.z) < 9 || HG.t > U.fallEnd) { U.st = 'regroup'; U.rgT = HG.t + 22; U.dis = 0; if (U.kind === 'inf') hgSlotAll(U); } return true; }
+  if (U.st === 'regroup') { U.tx = U.x; U.tz = U.z; U.mor = Math.min(100, U.mor + 3 * dt); if (HG.t > U.rgT && U.mor >= 55) hgBack(U, up); return true; }
+  if (U.st === 'rout' || U.st === 'march' || U.st === 'gone' || U.st === 'surr' || (U.st === 'hold' && HG.t < U.goT) || (U.retN || 0) >= 3 || up > (U.base || U.n) * 0.7) return false;
+  hgFall(U); return true; }
+function hgFall(U) { const blue = U.team === 'blue', H = blue ? HG.UB[0] : (HG.UG || { x: 0, z: 150 }); U.retN = (U.retN || 0) + 1; U.st = 'fall'; U.path = null; U.chase = null; U.aid = null; U.sup = null; U.tgtU = null; U.dis = 0; U.fallEnd = HG.t + 50;
+  U.fbx = clamp(U.x * 0.6, -160, 160); U.fbz = blue ? H.z + 14 : 122; if (Math.abs(U.fbx - H.x) < 18) U.fbx = H.x + (U.x < H.x ? -24 : 24); U.tx = U.fbx; U.tz = U.fbz;
+  for (const o of U.mem) { o.flee = 0; if (!o.ringX) o.hold = 0; } if (U.lure) { U.lure.chase = null; U.lure = null; }
+  HG.evLog.push([Math.round(HG.t), U.name, '後退', U.up]);
+  if (blue) { const q = HG_LN.fall[U.lk]; if (q) hgSay(U.lk, q, 1.85); } else { const L = U.kind === 'cav' ? HG_CNL.mnFall : HG_CNL.fall; if (U.lead && isUp(U.lead)) hgZh(U.lead, L[(Math.random() * L.length) | 0], 1.85); else hgMobZh(U.x, U.z, HG_ZHM.rout); } }
+function hgBack(U, up) { U.st = U.kind === 'raid' ? 'adv' : 'hold'; U.base = up; U.goT = 0; U.mor = Math.max(U.mor, 60); if (U.kind === 'inf') hgSlotAll(U);
+  if (U.kind === 'raid') for (const B of U.bands) { B.st = 'wait'; B.t = rand(0, 8); B.rx = U.x + B.ox * 0.6; B.rz = U.z + B.oz * 0.6; }
+  if (U.kind === 'cav') { U.cm = 'harass'; U.cT = rand(35, 60); for (const o of U.mem) { o.cs = null; o.tw = null; } }
+  HG.evLog.push([Math.round(HG.t), U.name, '復帰', up]);
+  if (U.team === 'blue') { const q = HG_LN.back[U.lk]; if (q) hgSay(U.lk, q, 1.85); } else if (U.lead && isUp(U.lead)) { const L = U.kind === 'cav' ? HG_CNL.mnBack : HG_CNL.back; hgZh(U.lead, L[(Math.random() * L.length) | 0], 1.85); } }
+// ---- 中国側の各隊の隊長（本物の NPC。漢と匈奴は馬上、南蛮は徒歩）。倒れれば隊の士気が落ちて乱れる ----
+const HG_CN_LEAD = { reg: ['李 秀蘭', '王 婉清', '趙 雪梅', '孫 芳華', '周 玉蓮'], raid: ['孟 優蘭', '木 鹿花', '朶 思雲'], cav: ['呼延 蘭', '須卜 雲'] };
+function hgMkCn(U, nm, ride, j) { const L = HG.lkO, gid = L[(j * 5 + 2) % L.length]; const e = ks2Mk(U.x, U.z + 12, 'mob', 'orange', gid, { name: nm, pers: ride ? '冷静' : '好戦的', cm: 158 + (j * 3) % 12 }); if (!e) return null;
+  e.hg = true; e.hgU = U; e.hgOff = [0, -12]; e.ks2Cn = true; e.ks2Title = e.ukTag = U.name + ' 隊長 ' + nm; e.hp = e.hpMax = 10; HG.real.push(e); if (ride && HG.W) hgMount(e); U.lead = e;
+  HG.nm.push({ team: 'orange', U, x: U.x, z: U.z + 12, hp: 10, alive: true, arch: false, w: 'dao', real: e, named: true, hx: 0, hz: -1, hold: 0 }); return e; }
+// ---- 霧島戦車隊：丸っこい軽戦車五両（一両三人：車長・操縦手・射手。隊長は霧島中佐）。機銃の短い連射で騎馬を追い払い、押されている隊の横につく。動けなくなったら乗員は降りて歩いて本隊へ（火も煙も出さない） ----
+const HG_TK = { n: 5, hp: 36, sp: 5.5, rng: 62 };
+function hgTankMesh() { const g = new THREE.Group(), M = c => new THREE.MeshLambertMaterial({ color: c }), add = (geo, m, x, y, z, sx, sy, sz, rx, rz, par) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.scale.set(sx, sy, sz); o.rotation.set(rx, 0, rz); o.castShadow = true; (par || g).add(o); return o; };
+  const body = M(0xa9c9a4), cream = M(0xf3e6c8), trk = M(0x5a5550), wh = M(0x3a3634), pink = M(0xf2a7b5), eye = M(0xfffdf4), sph = new THREE.SphereGeometry(0.5, 14, 10), cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
+  add(sph, body, 0, 0.9, 0, 2.0, 0.95, 3.6, 0, 0);   // 丸い車体（淡い若草色）
+  for (const sx of [-0.95, 0.95]) { add(new THREE.CapsuleGeometry(0.36, 2.6, 4, 10), trk, sx, 0.42, 0, 1, 1, 1, Math.PI / 2, 0); for (const wz of [-1.1, -0.37, 0.37, 1.1]) add(cyl, wh, sx * 1.04, 0.38, wz, 0.5, 0.12, 0.5, 0, Math.PI / 2); }   // 履帯と転輪
+  const tur = new THREE.Group(); tur.position.set(0, 1.35, -0.25); g.add(tur);
+  add(sph, cream, 0, 0.2, 0, 1.05, 0.7, 1.15, 0, 0, tur); add(cyl, wh, 0, 0.22, 0.85, 0.07, 0.75, 0.07, Math.PI / 2, 0, tur);   // 小さな砲塔（クリーム色）と機銃
+  add(new THREE.TorusGeometry(0.62, 0.05, 6, 20), pink, 0, 0.12, 0, 1, 1, 1, Math.PI / 2, 0, tur);   // 桃色の帯
+  for (const ex of [-0.42, 0.42]) add(sph, eye, ex, 1.0, 1.72, 0.26, 0.26, 0.12, 0, 0);   // 前のまるい灯
+  g.userData.tur = tur; return g; }
+function hgTankStart() { const TU = { name: '霧島戦車隊', team: 'blue', kind: 'tank', x: 0, z: -112, fx: 0, fz: 1, n: 15, up: 15, mem: [], mor: 100, st: 'hold', dis: 0, shUp: 0, fm: 'yoko', lk: 'sysop', hitBy: new Set(), names: [] }; HG.TU = TU;
+  const X = [-56, -28, 28, 56, 84], roles = ['車長', '操縦手', '射手'];
+  for (let k = 0; k < HG_TK.n; k++) { const T = { k, x: X[k], z: -114, ry: 0, fx: 0, fz: 1, tr: 0, hp: HG_TK.hp, alive: true, gx: X[k], gz: -114, thk: rand(0, 1), gunT: 2, burst: 0, bT: 0, tgt: null, crew: [], m: hgTankMesh() };
+    T.px = { team: 'blue', U: TU, tank: T, named: true, w: 'shield', alive: true, x: T.x, z: T.z, hx: 0, hz: 1, hold: 0, real: null, arch: false, hp: 99 }; T.m.position.set(T.x, 0, T.z); stageRoot.add(T.m); HG.veh.push(T);
+    for (let j = 0; j < 3; j++) { let e = null;
+      if (k === 0 && j === 0) { e = hgMk('sysop', TU, 0, -10); if (e) { e.ks2Title = e.ukTag = '霧島戦車隊 隊長 霧島中佐'; TU.lead = e; } }
+      else { const gid = HG.lkB[(k * 3 + j * 7 + 1) % HG.lkB.length]; e = ks2Mk(T.x, T.z, 'mob', 'blue', gid, undefined); if (e) { e.hg = true; e.hgU = TU; e.hgOff = [rand(-3, 3), -10 - rand(0, 4)]; e.hp = e.hpMax = 6; e.ks2Title = e.ukTag = '霧島戦車隊 ' + (k + 1) + '号車 ' + roles[j] + ' ' + e.prof.name; HG.real.push(e); HG.nm.push({ team: 'blue', U: TU, x: T.x, z: T.z, hp: 6, alive: true, arch: false, w: 'spear', real: e, named: true, hx: 0, hz: 1, hold: 0 }); } }
+      if (!e) continue; e.hgTk = T; T.crew.push(e); if (j === 0) T.cm = e; else { e.hgIn = true; ks2Hide(e, true); } } } }
+function hgCrewBrain(e, dt) { const T = e.hgTk, p = e.s.position; if (T.alive) { const c = e === T.cm; p.x = T.x - T.fx * 0.25; p.z = T.z - T.fz * 0.25; p.y = e.baseY = c ? 1.0 : 0.3; e.face = e.faceWant = T.ry + (c ? T.tr : 0); e.moving = false; e.hp = e.hpMax; e.state = 'idle'; return true; }   // 車長は砲塔の上に立って指揮（座らない）
+  e.hgTk = null; if (e.hgIn) { e.hgIn = false; ks2Hide(e, false); } p.y = e.baseY = 0; const a = rand(0, 6.28); p.x = T.x + Math.sin(a) * 2.6; p.z = T.z + Math.cos(a) * 2.6; e.hgU = HG.UB[0]; e.hgOff = [rand(-9, 9), -16 - rand(0, 6)]; return false; }   // 降りて、歩いて本隊の後ろへ
+function hgTankTick(dt) { const TU = HG.TU; if (!TU) return; let sx = 0, sz = 0, n = 0; for (const T of HG.veh) { if (!T.alive) continue; n++; sx += T.x; sz += T.z; hgTankAI(T, dt); } if (n) { TU.x = sx / n; TU.z = sz / n; } TU.up = n * 3; }
+function hgTankThink(T) { let best = null, bd = 1e9; for (const o of hgNearCn(T.x, T.z, HG_TK.rng)) { const d = Math.hypot(o.x - T.x, o.z - T.z) * (o.U.kind === 'cav' ? 0.45 : 1); if (d < bd) { bd = d; best = o; } } T.tgt = best;   // 騎馬を優先して撃つ
+  let G = null, gd = 200; for (const U of [HG.UC, HG.UC2]) { if (!U || !U.go || U.st === 'gone' || U.st === 'rout' || U.st === 'fall' || U.st === 'regroup' || (U.up || 0) < 6) continue; const d = Math.hypot(U.x - T.x, U.z - T.z); if (d < gd) { gd = d; G = U; } }
+  if (G) { const dx = T.x - G.x, dz = T.z - G.z, d = Math.hypot(dx, dz) || 1; T.gx = G.x + dx / d * 30 + (T.k - 2) * 4; T.gz = G.z + dz / d * 30; if (!HG.said.tkCav) { HG.said.tkCav = 1; hgSay('sysop', HG_LN.tkCav, 1.9); } return; }   // 騎馬へ向かう（30m で止まって撃つ）
+  let S = null, sv = 1e9; for (const U of HG.UB) { if (!hgCapable(U) || U.st !== 'fight') continue; const v = U.up / U.n + U.mor / 300; if (v < sv) { sv = v; S = U; } }
+  if (S) { const sd = T.k % 2 ? 1 : -1; T.gx = S.x + S.fz * 22 * sd - S.fx * 6; T.gz = S.z - S.fx * 22 * sd - S.fz * 6; if (!HG.said.tkSup && HG.t > 40) { HG.said.tkSup = 1; hgSay('sysop', HG_LN.tkSup, 1.8); } return; }   // 押されている隊の横へ
+  const H = HG.UB[0]; T.gx = H.x + (T.k - 2) * 14; T.gz = H.z + 26; }
+function hgTankAI(T, dt) { if ((T.thk -= dt) <= 0) { T.thk = 1; hgTankThink(T); }
+  const dx = T.gx - T.x, dz = T.gz - T.z, d = Math.hypot(dx, dz); if (d > 2.5) { let da = Math.atan2(dx, dz) - T.ry; da = Math.atan2(Math.sin(da), Math.cos(da)); T.ry += clamp(da, -1.4 * dt, 1.4 * dt); const v = Math.abs(da) < 0.8 ? Math.min(HG_TK.sp, d) : 1.2; T.x = clamp(T.x + Math.sin(T.ry) * v * dt, -285, 285); T.z = clamp(T.z + Math.cos(T.ry) * v * dt, -265, 265); T.mv = 1; } else T.mv = 0;
+  T.fx = Math.sin(T.ry); T.fz = Math.cos(T.ry); const t = T.tgt; let ta = 0; if (t && t.alive) { ta = Math.atan2(t.x - T.x, t.z - T.z) - T.ry; ta = Math.atan2(Math.sin(ta), Math.cos(ta)); } T.tr += clamp(ta - T.tr, -2.5 * dt, 2.5 * dt);
+  T.m.position.set(T.x, T.mv ? Math.abs(Math.sin(HG.t * 14 + T.k)) * 0.03 : 0, T.z); T.m.rotation.y = T.ry; T.m.userData.tur.rotation.y = T.tr;
+  if (T.burst > 0) { if ((T.bT -= dt) <= 0) { T.burst--; T.bT = 0.11; hgTankShot(T); } }
+  else if ((T.gunT -= dt) <= 0 && t && t.alive && Math.abs(ta - T.tr) < 0.2 && Math.hypot(t.x - T.x, t.z - T.z) < HG_TK.rng) { T.burst = 6; T.bT = 0; T.gunT = rand(1.4, 2.2); if (Math.random() < 0.12) hgTankShout(T, HG_LN.tkMob); } }   // 短い連射
+function hgTankShot(T) { const t = T.tgt; if (!t || !t.alive) { T.burst = 0; return; } const a = T.ry + T.tr, mx = T.x + Math.sin(a) * 1.6, mz = T.z + Math.cos(a) * 1.6, cav = t.U && t.U.kind === 'cav', hit = Math.random() < (cav ? 0.16 : 0.09), pp = player.pos;
+  if (HG.tr.length < (LITE ? 60 : 140) && (T.x - pp.x) ** 2 + (T.z - pp.z) ** 2 < 200 * 200) { const m = new THREE.Mesh(HG.tcG || (HG.tcG = new THREE.BoxGeometry(0.05, 0.05, 0.9)), HG.tcM || (HG.tcM = new THREE.MeshBasicMaterial({ color: 0xffe6a0 }))); stageRoot.add(m); const b = new V3(t.x + (hit ? 0 : rand(-1.5, 1.5)), 1.0, t.z + (hit ? 0 : rand(-1.5, 1.5))); HG.tr.push({ a: new V3(mx, 1.75, mz), b, t: 0, T: Math.max(0.05, Math.hypot(b.x - mx, b.z - mz) / 160), h: 0, m }); }   // 曳光弾の細い線だけ（火は出さない）
+  if (Math.random() < 0.02) hgMobZh(t.x, t.z, HG_ZHM.tank); if (hit) { hgHurt(t, 1, false, new V3(T.x, 0, T.z)); if (cav && t.U) t.U.mor = Math.max(0, t.U.mor - 0.4); }
+  const q = new V3(T.x, 1.8, T.z); if (sfxGate(q, 120)) { const o = Sfx.at(q, 120, 1); if (o) Sfx.noiseBurst(0.05, 'bandpass', 1600, 700, 0.5, 1.2, 0, o); } }
+function hgTankHit(T, dmg) { if (!T.alive) return; T.hp -= dmg >= 3 ? dmg * 0.5 : (Math.random() < 0.35 ? 1 : 0); if (T.hp > 0) return; T.alive = false; T.px.alive = false; T.burst = 0; T.mv = 0; T.m.rotation.z = 0.06;   // 動けなくなる（止まるだけ。火も煙も出さない）
+  showBanner('霧島戦車隊', (T.k + 1) + '号車 走行不能。乗員は降りて本隊へ'); bannerTimer = 3; HG.evLog.push([Math.round(HG.t), '霧島戦車隊', (T.k + 1) + '号車 走行不能']); hgTankShout(T, HG_LN.tkBail); if (HG.t > (HG.said.tkDown || 0)) { HG.said.tkDown = HG.t + 30; HG.later.push([HG.t + 2, () => hgSay('sysop', HG_LN.tkDown, 1.9)]); } }
+function hgTankShout(T, L) { const t = L[(Math.random() * L.length) | 0], d = Math.hypot(T.x - player.pos.x, T.z - player.pos.z); if (d > 55) return; const f = ks2VoiceFile(t, 'kmob'); if (f && VoicePack.ok) Talk.as(null, () => VoicePack.play(f, Math.min(50, d), 1.0, 1)); }   // 乗員の声：声だけ（字幕なし）
 // ---- 降伏と決着 ----
-function hgCounts() { const b = HG.B.filter(o => o.alive).length, o = HG.O.filter(o => o.alive).length; return { b, o, total: b + o, real: HG.rl.length, lostB: HG.lostB, lostO: HG.lostO, pK: HG.pK, t: Math.round(HG.t), capB: HG.UB.filter(hgCapable).length, capO: HG.UO.filter(hgCapable).length }; }
+function hgCounts() { const b = HG.B.filter(o => o.alive).length, o = HG.O.filter(o => o.alive).length; return { b, o, total: b + o, real: HG.rl.length, lostB: HG.lostB, lostO: HG.lostO, pK: HG.pK, t: Math.round(HG.t), capB: HG.UB.filter(hgInLine).length, capO: HG.UO.filter(hgInLine).length }; }
 function hgLabel() { const c = HG.cnt || hgCounts(), m = Math.floor(HG.t / 60), s = Math.floor(HG.t % 60); return `${m}:${String(s).padStart(2, '0')} 味方${c.b}(${c.capB}隊) 敵${c.o}(${c.capO}隊)`; }
 function hgSurrCheck(dt) { if (HG.surr || HG.t < 60) return; const c = HG.cnt || hgCounts(), fB = HG.lostB / Math.max(1, HG.total.blue + HG.pend.blue), fO = HG.lostO / Math.max(1, HG.total.orange + HG.pend.orange), cmdDown = HG.cmd && !isUp(HG.cmd);
   const sO = c.capO <= 1 || fO >= 0.9, sB = c.capB <= 1 || fB >= 0.9; if (sO || sB) HG.surrT += dt; else HG.surrT = 0; if (HG.surrT < 6) return;
@@ -6013,7 +6091,7 @@ function hgJoin() { const e = HG.shu; HG.joinW = 0; if (!e || !isUp(e)) { HG.lat
 // ---- 毎フレーム ----
 function hgUpdate(dt) { if (!HG.on || state !== 'play') return; dt = Math.min(dt, 0.1); HG.t += dt;
   for (let i = HG.later.length - 1; i >= 0; i--) if (HG.t >= HG.later[i][0]) { const f = HG.later[i][1]; HG.later.splice(i, 1); try { f(); } catch (_) {} }
-  if (!HG.done) { hgScript(); hgUnits(dt); } hgSim(dt); hgLod(dt); hgTrTick(dt); if (!HG.done) hgThreat(dt); hgDraw();
+  if (!HG.done) { hgScript(); hgUnits(dt); hgTankTick(dt); } hgSim(dt); hgLod(dt); hgTrTick(dt); if (!HG.done) hgThreat(dt); hgDraw();
   if ((HG.cT = (HG.cT || 0) - dt) <= 0) { HG.cT = 1; HG.cnt = hgCounts(); hgSurrCheck(1); }
   if (HG.joinW) { const e = HG.shu; if (!e || !isUp(e)) hgJoin(); else { const p = e.s.position, d = Math.hypot(p.x - player.pos.x, p.z - player.pos.z); e.hgShu.go = [player.pos.x + 2.5, player.pos.z + 4]; if (d < 6) hgJoin(); else if (HG.t - HG.joinW > 50) { p.set(player.pos.x + 3, 0, player.pos.z + 10); hgJoin(); } } }   // 祝融が王のそばまで歩いてくる
   if (HG.shu && !isUp(HG.shu)) { HG.shuDead = true; HG.shu = null; if (HG.duel) HG.duel = null; showBanner('祝融、倒れる', ''); bannerTimer = 2.5; }   // 祝融も討たれうる（体は残る）
@@ -31614,7 +31692,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261121d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261121e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -36771,7 +36849,7 @@ function pickTarget() {
   let best = null, bt = 80;
   const hl2 = rayDir.x * rayDir.x + rayDir.z * rayDir.z || 1e-6;
   for (const e of enemies) {
-    if (e.state === 'down') continue;
+    if (e.state === 'down' || e.hgIn) continue;
     const ex = e.s.position.x - o.x, ez = e.s.position.z - o.z;
     const t = (ex * rayDir.x + ez * rayDir.z) / hl2;
     if (t <= 0 || t > bt) continue;

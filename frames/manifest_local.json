@@ -360,5 +360,14 @@
     "front_diag": "assets/maids/girl76_front_diag.jpg",
     "front_diag_dir": -1,
     "down": "assets/maids/girl76_down.jpg"
+  },
+  "girl77": {
+    "front": "assets/maids/girl77_front.jpg",
+    "side": "assets/maids/girl77_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl77_back.jpg",
+    "front_diag": "assets/maids/girl77_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl77_down.jpg"
   }
 }

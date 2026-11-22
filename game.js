@@ -2854,7 +2854,7 @@ function buildKs2() {
     // 中庭の建物（屋根の上から射る）。門から内の門への道はあける
     for (const [u0, u1] of [[-34, -16], [16, 34]]) { ks2BoxR(s, u0, u1, 50, 60, 0, 5, M.wall, true); ks2BoxR(s, u0 - 0.6, u1 + 0.6, 49.4, 60.6, 5, 5.35, M.roof, false); }
     // 門の前の土塁と柵（番所）。中央は門への道
-    for (const sg of [-1, 1]) { ks2BoxR(s, sg > 0 ? 5 : -17, sg > 0 ? 17 : -5, 88, 90.5, 0, 1.3, M.earth, true); for (let u = 4.5; u < 17; u += 1.6) { const [x, z] = ks2Rot(s, sg * u, 91); ks2Box(x - 0.08, x + 0.08, 0, 2.1, z - 0.08, z + 0.08, M.woodD, false); } }
+    for (const sg of [-1, 1]) { ks2BoxR(s, sg > 0 ? 5 : -17, sg > 0 ? 17 : -5, 88, 90.5, 0, 1.3, M.earth, false); for (let u = 4.5; u < 17; u += 1.6) { const [x, z] = ks2Rot(s, sg * u, 91); ks2Box(x - 0.08, x + 0.08, 0, 2.1, z - 0.08, z + 0.08, M.woodD, false); } }   // 土塁は見えるが衝突しない（攻城塔が城壁へ着くと土塁の奥になり、固体だと近づけない）
     KS2.posts.push({ s, kind: 'earth', u: 0, v: 89.2 });
     // 連弩台：門の左右の城壁の上
     for (const u of [-14, 14]) { const [x, z] = ks2Rot(s, u, KS2_W + 1.2); const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, 1.0), M.wood); b.position.y = 0.9; g.add(b); const a = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.12), M.woodD); a.position.set(0, 1.25, 0.3); g.add(a);
@@ -2966,13 +2966,13 @@ const KS2_Q = new THREE.Object3D(), KS2_V2 = new THREE.Vector3(); let KS2_C1 = n
 function ks2PxDraw() { const cam = camera.position; KS2.pxT = (KS2.pxT || 0) + 1; const every = LITE ? 2 : 1; if (KS2.pxT % every) return; const redo = KS2.pxT % (every * 3) === 0;
   const SH = ks2PxShadow(); let sn = 0;
   for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (!G) continue; const w = G.h * G.asp * 1.0; let dn = 0;
-    for (const o of G.list) { { const ar = ks2PxArea(o), hide = o.real || o.body || !ks2AreaVis(ar, KS2.view); if (hide) { if (o.hz0 !== 1) { o.hz0 = 1; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, 0, 0); KS2_Q.scale.set(0, 0, 0); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); } continue; } o.hz0 = 0; }
+    for (const o of G.list) { { const ar = ks2PxArea(o), hide = o.real || o.body || !ks2AreaVis(ar, KS2.view, o.team); if (hide) { if (o.hz0 !== 1) { o.hz0 = 1; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, 0, 0); KS2_Q.scale.set(0, 0, 0); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); } continue; } o.hz0 = 0; }
       if (!o.alive) { KS2_Q.scale.set(0, 0, 0); KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.updateMatrix(); if (!o.laid) { o.laid = true; if (!G.dn) { KS2_Q.position.set(o.x, o.y + 0.04, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotateZ(o.ry || 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); } G.im.setMatrixAt(o.i, KS2_Q.matrix); } if (!G.dn) continue;
         // 倒れた絵：横たわった写真を体の軸に沿って置き、軸のまわりでこちらへ向ける（厚みが見える）。下に接地影
         if (redo || o.dj == null) { const ax = Math.cos(o.ry), az = -Math.sin(o.ry), vx = cam.x - o.x, vy = cam.y - o.y, vz = cam.z - o.z, px = vx - (vx * ax + vz * az) * ax, pz = vz - (vx * ax + vz * az) * az, tilt = Math.atan2(Math.hypot(px, pz), vy); KS2_Q.position.set(o.x, o.y + 0.03, o.z); KS2_Q.rotation.set(0, o.ry, 0); KS2_Q.rotateX(-Math.min(1.35, tilt) * (px * -Math.sin(o.ry) + pz * -Math.cos(o.ry) > 0 ? 1 : -1)); KS2_Q.scale.set(G.dw, G.dh, 1); KS2_Q.updateMatrix(); o.dm = (o.dm || new THREE.Matrix4()).copy(KS2_Q.matrix); }
         G.dn.setMatrixAt(dn++, o.dm); o.dj = 1;
         if (SH && sn < SH.count0) { KS2_Q.position.set(o.x, o.y + 0.02, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotation.set(0, o.ry, 0); KS2_Q.rotateX(-Math.PI / 2); KS2_Q.scale.set(G.h * 1.15, 0.62, 1); KS2_Q.updateMatrix(); SH.setMatrixAt(sn++, KS2_Q.matrix); } continue; }
-      const dx = cam.x - o.x, dz = cam.z - o.z, a = Math.atan2(dx, dz), close = dx * dx + dz * dz < 81; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, a, 0); if (close) KS2_Q.scale.set(0, 0, 0); else KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); }   // カメラのすぐ前の絵は描かない（近い人は本物の兵）
+      const dx = cam.x - o.x, dz = cam.z - o.z, a = Math.atan2(dx, dz); KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, a, 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); }   // 近い者は AreaSync で本物に置き、o.real で絵を消す。距離だけで消すと同期待ちや人数上限で人が消えて見える
     G.im.instanceMatrix.needsUpdate = true; if (G.dn) { G.dn.count = dn; G.dn.instanceMatrix.needsUpdate = true; } }
   if (SH) { SH.count = sn; SH.instanceMatrix.needsUpdate = true; } }
 function ks2PxShadow() { if (KS2.pxSh && KS2.pxSh.parent) return KS2.pxSh; const geo = new THREE.PlaneGeometry(1, 1); const m = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.85, polygonOffset: true, polygonOffsetFactor: -2 }), 2600); m.count0 = 2600; m.count = 0; m.frustumCulled = false; stageRoot.add(m); return KS2.pxSh = m; }
@@ -3033,7 +3033,7 @@ function ks2SquadsU(U) { if (!U.side || U.k === 'N' || !KS2.sq) return;
   bun.forEach(Q => { Q.u = 0; Q.d = 110; Q.mem.forEach((e, i) => { const cv = bamboobundle(e.s.position.x, e.s.position.z, 0, { noCol: true, hp: 99 }); ks2Merge(cv.mesh.children.slice(), cv.mesh); e.ks2Cv = cv; KS2.bun.push(cv); }); }); }
 // ---- 画面の切り替え：南門・東門・西門・北門・本隊。見ている所の兵は全員を本物の人として描き、ほかの所は人数と出来事だけ進める ----
 const KS2_AREAS = ['S', 'E', 'W', 'N', 'H'], KS2_AN = { S: '南門', E: '東門', W: '西門', N: '北門', H: '本隊' };
-function ks2AreaVis(a, V) { return !a || a === '*' || a === V || (V === 'H' && a === 'S'); }   // 本隊は南門の正面から進む。南の攻め手・守り手も同じ画面に出す（出さないと開幕の城壁が無人に見える）
+function ks2AreaVis(a, V, team) { return !a || a === '*' || a === V || (team === 'orange' && V === 'H' && a === 'S'); }   // 味方は視点の門だけ（南門なら南門隊だけを全員細かく出す）。敵の守り手は本隊視点でも南門側を出す（本隊は南門正面。出さないと城壁が空に見える）
 function ks2AreaOf(e) { if (e.ks2Ar && !isUp(e)) return e.ks2Ar; if (e.team === 'blue') { const U = e.ks2U; if (!U) return 'H'; if (U.k === 'H' && e.ks2Role === 'guard') return KS2.view; return U.k === 'R' ? 'H' : U.k; } if (e === KS2.cmd || e.ks2Role === 'keep') return '*'; return e.ks2Side || 'S'; }
 function ks2PxArea(o) { return o.team === 'blue' ? (o.U.k === 'R' ? 'H' : o.U.k) : (o.role === 'keep' ? '*' : o.side); }
 function ks2Hide(e, hid) { if (!!e.ks2Hid === hid) return; e.ks2Hid = hid; e.s.visible = !hid; if (e.tag) e.tag.visible = false; if (e.ks2Cv) e.ks2Cv.mesh.visible = !hid;
@@ -3052,13 +3052,13 @@ function ks2MatBody(o) { const e = ks2Mk(o.x, o.z, 'mob', o.team, o.gid, null, o
   if (MOTION && e.mo && Mo.C.death) { const c = Mo.C.death; e.mo.pose.set(c.f.subarray((c.n - 1) * Mo.N3, c.n * Mo.N3)); }   // 倒れ終わりの姿勢（厚みの影もこの形）
   toBodies(e); KS2.all.push(e); return e; }
 function ks2AreaSync(force) { if (!KS2.view) return; if (!force && (KS2.arT = (KS2.arT || 0) - 1) > 0) return; KS2.arT = 15; ks2AreaUI(); ks2BarPick(); const V = KS2.view, mU = new Set();
-  for (let i = KS2.all.length - 1; i >= 0; i--) { const e = KS2.all[i]; if (!e) continue; if (!isUp(e) && !e.ks2Ar) e.ks2Ar = ks2AreaOf(e); const a = ks2AreaOf(e), hid = !ks2AreaVis(a, V);
+  for (let i = KS2.all.length - 1; i >= 0; i--) { const e = KS2.all[i]; if (!e) continue; if (!isUp(e) && !e.ks2Ar) e.ks2Ar = ks2AreaOf(e); const a = ks2AreaOf(e), hid = !ks2AreaVis(a, V, e.team);
     if (hid && e.ks2Mat) { const o = e.ks2Mat; if (isUp(e)) { const p = e.s.position; o.x = p.x; o.z = p.z; o.y = e.ks2Y || 0; o.pi = e.ks2Pi; o.inn = e.ks2In; o.wall = e.ks2Wall; if (o.team === 'orange') { o.side = e.ks2Side; if (e.ks2Home) { o.hx = e.ks2Home[0]; o.hz = e.ks2Home[1]; o.hy = e.ks2Home[2]; } } o.real = null; if (e.ks2U) mU.add(e.ks2U); ks2Drop(e); continue; }
       if (o.alive) { o.alive = false; o.ry = e.fallYaw || 0; if (o.team === 'blue') KS2.pxLostA++; else KS2.pxLostD++; } o.body = e; o.real = null; e.ks2Mat = null; }   // 倒れていた者は体を残し、群れの倒れた数に入れる
     ks2Hide(e, hid); }
   let made = 0; const sqU = new Set();
   const cnt = { blue: 0, orange: 0 }; for (const e of KS2.all) if (isUp(e) && !e.ks2Hid) cnt[e.team]++;   // 見ている側の、一人ずつ動く人数（上限まで。残りは群れの絵で、倒れた分を順に埋める）
-  for (const o of KS2.px) { if (o.real || o.body) continue; const a = ks2PxArea(o); if (!ks2AreaVis(a, V)) continue; if (o.alive && cnt[o.team] >= KS2_RCAP[o.team]) continue; const e = o.alive ? ks2MatOne(o) : ks2MatBody(o); if (e) { made++; if (o.alive) cnt[o.team]++; if (o.alive && o.team === 'blue') sqU.add(o.U); } }
+  for (const o of KS2.px) { if (o.real || o.body) continue; const a = ks2PxArea(o); if (!ks2AreaVis(a, V, o.team)) continue; const viewedAlly = o.team === 'blue' && (a === V || (V === 'H' && a === 'H')); if (!viewedAlly && o.alive && cnt[o.team] >= KS2_RCAP[o.team]) continue; const e = o.alive ? ks2MatOne(o) : ks2MatBody(o); if (e) { made++; if (o.alive) cnt[o.team]++; if (o.alive && o.team === 'blue') sqU.add(o.U); } }
   if (KS2.sq) { for (const U of mU) ks2SquadsU(U); KS2.sq = KS2.sq.filter(Q => Q.mem.length); }
   for (const U of mU) { U.mem0 = U.mem.filter(e => isUp(e) && !e.ks2Mat).length; U.px0 = U.px.filter(o => o.alive && !o.real).length; }   // 群れの減り方の基準を取り直す
   if (mU.size || force) for (const k in KS2.zone) { const Z = KS2.zone[k]; Z.r0 = Z.real.filter(isUp).length; Z.px0 = Z.px.filter(o => o.alive && !o.real).length; }
@@ -3441,8 +3441,8 @@ function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; i
     for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { e.ks2Dn = true; const p = e.s.position; if (Math.max(Math.abs(p.x), Math.abs(p.z)) > KS2_W + KS2_T + 1 && Math.random() < 0.4) KS2.wq.push(e); }
     if (KS2.bearers) ks2BearTick();
     // 群れの人数：実体の生き残りの割合に合わせて減らす
-    for (const U of KS2.units) { if (ks2AreaVis(U.k === 'R' ? 'H' : U.k, KS2.view)) continue; const al = U.mem.filter(e => isUp(e) && !e.ks2Mat).length, want = Math.round(U.px0 * al / Math.max(1, U.mem0)); let live = U.px.filter(o => o.alive && !o.real); while (live.length > want) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
-    for (const k in KS2.zone) { const Z = KS2.zone[k]; if (!Z.px.length || !Z.real.length || ks2AreaVis(k[0], KS2.view)) continue; if (Z.r0 == null) { Z.r0 = Z.real.length; Z.px0 = Z.px.length; } const al = Z.real.filter(e => isUp(e)).length, want = Math.round(Z.px0 * al / Math.max(1, Z.r0)); let live = Z.px.filter(o => o.alive && !o.gave && !o.real); const gv = Z.px.filter(o => o.alive && o.gave && !o.real).length; while (live.length + gv > want && live.length) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
+    for (const U of KS2.units) { if (ks2AreaVis(U.k === 'R' ? 'H' : U.k, KS2.view, 'blue')) continue; const al = U.mem.filter(e => isUp(e) && !e.ks2Mat).length, want = Math.round(U.px0 * al / Math.max(1, U.mem0)); let live = U.px.filter(o => o.alive && !o.real); while (live.length > want) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
+    for (const k in KS2.zone) { const Z = KS2.zone[k]; if (!Z.px.length || !Z.real.length || ks2AreaVis(k[0], KS2.view, 'orange')) continue; if (Z.r0 == null) { Z.r0 = Z.real.length; Z.px0 = Z.px.length; } const al = Z.real.filter(e => isUp(e)).length, want = Math.round(Z.px0 * al / Math.max(1, Z.r0)); let live = Z.px.filter(o => o.alive && !o.gave && !o.real); const gv = Z.px.filter(o => o.alive && o.gave && !o.real).length; while (live.length + gv > want && live.length) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
     for (const U of KS2.units) ks2PxPlace(U, false);
     for (const o of KS2.px) if (o.team === 'orange' && o.alive && !o.real && o.hx != null && (o.x !== o.hx || o.z !== o.hz)) { const dx = o.hx - o.x, dz = o.hz - o.z, d = Math.hypot(dx, dz), st = Math.min(d, 1.0); o.x += dx / (d || 1) * st; o.z += dz / (d || 1) * st; }
     // 殿が先へ出すぎた：近衛だけが追い、たしなめる
@@ -32580,7 +32580,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261122n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

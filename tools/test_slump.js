@@ -12,7 +12,7 @@ const { chromium } = require('playwright');
       for (const k in window.__GIRLS) { const g = window.__GIRLS[k]; const s = g.side || g.front; g.slump = Object.assign({}, s, { ry: 0.55, rx: 0.45 }); }
     }
     const want = fake.want; const cand = G.enemies.filter(e => e.state !== 'down' && e.perch && want.some(k => e.perch[k])).sort((a, b) => (want.indexOf(Object.keys(a.perch).find(k => want.includes(k) && a.perch[k]))) - (want.indexOf(Object.keys(b.perch).find(k => want.includes(k) && b.perch[k]))));
-    const ids = ['girl17', 'girl18', 'girl19', 'girl20']; cand.forEach((e, i) => { e.girl = window.__GIRLS[ids[i % 4]]; });
+    const ids = ['jp17', 'jp18', 'jp19', 'jp20']; cand.forEach((e, i) => { e.girl = window.__GIRLS[ids[i % 4]]; });
     const out = [];
     for (const e of cand.slice(0, 6)) { G.damageEnemy(e, 999, null, false, null, null); out.push({ id: e.girl.id, perch: Object.keys(e.perch).filter(k => e.perch[k] && ['gt','gh','seiran','slit'].includes(k)).join('+'), lean: e.lean && e.lean.kind, x: e.s.position.x, y: e.baseY, z: e.s.position.z }); }
     return out;

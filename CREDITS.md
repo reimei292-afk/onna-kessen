@@ -4,7 +4,7 @@
   - ambientCG（CC0）の写真の質感
   - 小田原城の写真から作った石垣・土塁の質感（Wikimedia Commons、CC BY-SA 4.0：Ymblanter／柴馬アワー）
 - 侍女の写真のビルボード・three.js・モーションデータ：`README.md` の「侍女の見た目（写真のビルボード）とクレジット」「動きのデータ」
-- 総構えの徴募の場面の私服の娘（`assets/conscripts/conscript_01〜08_*.webp`）：既にいる侍女（girl17・girl18・girl19・girl21・girl22・girl35・girl36・girl38）の写真を手がかりに画像生成で作り、rembg で切り抜いたもの。着替えた後は各自のいつもの写真に戻る。
+- 総構えの徴募の場面の私服の娘（`assets/conscripts/conscript_01〜08_*.webp`）：既にいる侍女（jp17・jp18・jp19・jp21・jp22・jp35・jp36・jp38）の写真を手がかりに画像生成で作り、rembg で切り抜いたもの。着替えた後は各自のいつもの写真に戻る。
 - 声：edge-tts で生成（`tools/voice_profiles.py` の声の目録）
 
 ## 新武装客船「天鳳」（2026-11-07）

@@ -1,454 +1,454 @@
 {
-  "girl35": {
-    "front": "assets/maids/girl35_front.jpg",
-    "side": "assets/maids/girl35_side.jpg",
-    "back": "assets/maids/girl35_back.jpg",
-    "front_diag": "assets/maids/girl35_front_diag.jpg",
+  "jp35": {
+    "front": "assets/jp_jijo/jp35_1front.jpg",
+    "side": "assets/jp_jijo/jp35_2side.jpg",
+    "back": "assets/jp_jijo/jp35_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp35_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl35_down.jpg"
+    "down": "assets/jp_jijo/jp35_5body.jpg"
   },
   "murase": {
-    "front": "assets/maids/村瀬碧_front.jpg",
-    "side": "assets/maids/村瀬碧_side.jpg",
-    "back": "assets/maids/村瀬碧_back.jpg",
-    "front_diag": "assets/maids/村瀬碧_front_diag.jpg",
+    "front": "assets/jp_jijo/村瀬碧_1front.jpg",
+    "side": "assets/jp_jijo/村瀬碧_2side.jpg",
+    "back": "assets/jp_jijo/村瀬碧_4back.jpg",
+    "front_diag": "assets/jp_jijo/村瀬碧_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/村瀬碧_down.jpg"
+    "down": "assets/jp_jijo/村瀬碧_5body.jpg"
   },
-  "girl36": {
-    "front": "assets/maids/girl36_front.jpg",
-    "side": "assets/maids/girl36_side.jpg",
-    "back": "assets/maids/girl36_back.jpg",
-    "front_diag": "assets/maids/girl36_front_diag.jpg",
+  "jp36": {
+    "front": "assets/jp_jijo/jp36_1front.jpg",
+    "side": "assets/jp_jijo/jp36_2side.jpg",
+    "back": "assets/jp_jijo/jp36_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp36_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl36_down.jpg"
+    "down": "assets/jp_jijo/jp36_5body.jpg"
   },
-  "girl37": {
-    "front": "assets/maids/girl37_front.jpg",
-    "side": "assets/maids/girl37_side.jpg",
+  "jp37": {
+    "front": "assets/jp_jijo/jp37_1front.jpg",
+    "side": "assets/jp_jijo/jp37_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl37_back.jpg",
-    "front_diag": "assets/maids/girl37_front_diag.jpg",
+    "back": "assets/jp_jijo/jp37_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp37_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl37_down.jpg"
+    "down": "assets/jp_jijo/jp37_5body.jpg"
   },
-  "girl38": {
-    "front": "assets/maids/girl38_front.jpg",
-    "side": "assets/maids/girl38_side.jpg",
+  "jp38": {
+    "front": "assets/jp_jijo/jp38_1front.jpg",
+    "side": "assets/jp_jijo/jp38_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl38_back.jpg",
-    "front_diag": "assets/maids/girl38_front_diag.jpg",
+    "back": "assets/jp_jijo/jp38_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp38_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl38_down.jpg"
+    "down": "assets/jp_jijo/jp38_5body.jpg"
   },
-  "girl39": {
-    "front": "assets/maids/girl39_front.jpg",
-    "side": "assets/maids/girl39_side.jpg",
+  "jp39": {
+    "front": "assets/jp_jijo/jp39_1front.jpg",
+    "side": "assets/jp_jijo/jp39_2side.jpg",
     "side_dir": 1,
-    "back": "assets/maids/girl39_back.jpg",
-    "front_diag": "assets/maids/girl39_front_diag.jpg",
+    "back": "assets/jp_jijo/jp39_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp39_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl39_down.jpg"
+    "down": "assets/jp_jijo/jp39_5body.jpg"
   },
-  "girl40": {
-    "front": "assets/maids/girl40_front.jpg",
-    "side": "assets/maids/girl40_side.jpg",
+  "jp40": {
+    "front": "assets/jp_jijo/jp40_1front.jpg",
+    "side": "assets/jp_jijo/jp40_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl40_back.jpg",
-    "front_diag": "assets/maids/girl40_front_diag.jpg",
+    "back": "assets/jp_jijo/jp40_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp40_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl40_down.jpg"
+    "down": "assets/jp_jijo/jp40_5body.jpg"
   },
-  "girl41": {
-    "front": "assets/maids/girl41_front.jpg",
-    "side": "assets/maids/girl41_side.jpg",
+  "jp41": {
+    "front": "assets/jp_jijo/jp41_1front.jpg",
+    "side": "assets/jp_jijo/jp41_2side.jpg",
     "side_dir": 1,
-    "back": "assets/maids/girl41_back.jpg",
-    "front_diag": "assets/maids/girl41_front_diag.jpg",
+    "back": "assets/jp_jijo/jp41_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp41_3diag.jpg",
     "front_diag_dir": 1,
-    "down": "assets/maids/girl41_down.jpg"
+    "down": "assets/jp_jijo/jp41_5body.jpg"
   },
   "hirose": {
-    "front": "assets/maids/広瀬千夏_front.jpg",
-    "side": "assets/maids/広瀬千夏_side.jpg",
+    "front": "assets/jp_jijo/広瀬千夏_1front.jpg",
+    "side": "assets/jp_jijo/広瀬千夏_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/広瀬千夏_back.jpg",
-    "front_diag": "assets/maids/広瀬千夏_front_diag.jpg",
+    "back": "assets/jp_jijo/広瀬千夏_4back.jpg",
+    "front_diag": "assets/jp_jijo/広瀬千夏_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/広瀬千夏_down.jpg"
+    "down": "assets/jp_jijo/広瀬千夏_5body.jpg"
   },
-  "girl42": {
-    "front": "assets/maids/girl42_front.jpg",
-    "side": "assets/maids/girl42_side.jpg",
+  "cn01": {
+    "front": "assets/cn/cn01_1front.jpg",
+    "side": "assets/cn/cn01_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl42_back.jpg",
-    "front_diag": "assets/maids/girl42_front_diag.jpg",
+    "back": "assets/cn/cn01_4back.jpg",
+    "front_diag": "assets/cn/cn01_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl42_down.jpg"
+    "down": "assets/cn/cn01_5body.jpg"
   },
-  "girl43": {
-    "front": "assets/maids/girl43_front.jpg",
-    "side": "assets/maids/girl43_side.jpg",
+  "cn02": {
+    "front": "assets/cn/cn02_1front.jpg",
+    "side": "assets/cn/cn02_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl43_back.jpg",
-    "front_diag": "assets/maids/girl43_front_diag.jpg",
+    "back": "assets/cn/cn02_4back.jpg",
+    "front_diag": "assets/cn/cn02_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl43_down.jpg"
+    "down": "assets/cn/cn02_5body.jpg"
   },
-  "girl44": {
-    "front": "assets/maids/girl44_front.jpg",
-    "side": "assets/maids/girl44_side.jpg",
+  "cn03": {
+    "front": "assets/cn/cn03_1front.jpg",
+    "side": "assets/cn/cn03_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl44_back.jpg",
-    "front_diag": "assets/maids/girl44_front_diag.jpg",
+    "back": "assets/cn/cn03_4back.jpg",
+    "front_diag": "assets/cn/cn03_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl44_down.jpg"
+    "down": "assets/cn/cn03_5body.jpg"
   },
-  "girl45": {
-    "front": "assets/maids/girl45_front.jpg",
-    "side": "assets/maids/girl45_side.jpg",
+  "cn04": {
+    "front": "assets/cn/cn04_1front.jpg",
+    "side": "assets/cn/cn04_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl45_back.jpg",
-    "front_diag": "assets/maids/girl45_front_diag.jpg",
+    "back": "assets/cn/cn04_4back.jpg",
+    "front_diag": "assets/cn/cn04_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl45_down.jpg"
+    "down": "assets/cn/cn04_5body.jpg"
   },
-  "girl46": {
-    "front": "assets/maids/girl46_front.jpg",
-    "side": "assets/maids/girl46_side.jpg",
+  "cn05": {
+    "front": "assets/cn/cn05_1front.jpg",
+    "side": "assets/cn/cn05_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl46_back.jpg",
-    "front_diag": "assets/maids/girl46_front_diag.jpg",
+    "back": "assets/cn/cn05_4back.jpg",
+    "front_diag": "assets/cn/cn05_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl46_down.jpg"
+    "down": "assets/cn/cn05_5body.jpg"
   },
-  "girl47": {
-    "front": "assets/maids/girl47_front.jpg",
-    "side": "assets/maids/girl47_side.jpg",
+  "cn06": {
+    "front": "assets/cn/cn06_1front.jpg",
+    "side": "assets/cn/cn06_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl47_back.jpg",
-    "front_diag": "assets/maids/girl47_front_diag.jpg",
+    "back": "assets/cn/cn06_4back.jpg",
+    "front_diag": "assets/cn/cn06_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl47_down.jpg"
+    "down": "assets/cn/cn06_5body.jpg"
   },
-  "girl48": {
-    "front": "assets/maids/girl48_front.jpg",
-    "side": "assets/maids/girl48_side.jpg",
+  "cn07": {
+    "front": "assets/cn/cn07_1front.jpg",
+    "side": "assets/cn/cn07_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl48_back.jpg",
-    "front_diag": "assets/maids/girl48_front_diag.jpg",
+    "back": "assets/cn/cn07_4back.jpg",
+    "front_diag": "assets/cn/cn07_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl48_down.jpg"
+    "down": "assets/cn/cn07_5body.jpg"
   },
-  "girl49": {
-    "front": "assets/maids/girl49_front.jpg",
-    "side": "assets/maids/girl49_side.jpg",
+  "cn08": {
+    "front": "assets/cn/cn08_1front.jpg",
+    "side": "assets/cn/cn08_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl49_back.jpg",
-    "front_diag": "assets/maids/girl49_front_diag.jpg",
+    "back": "assets/cn/cn08_4back.jpg",
+    "front_diag": "assets/cn/cn08_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl49_down.jpg"
+    "down": "assets/cn/cn08_5body.jpg"
   },
-  "girl50": {
-    "front": "assets/maids/girl50_front.jpg",
-    "side": "assets/maids/girl50_side.jpg",
+  "cn09": {
+    "front": "assets/cn/cn09_1front.jpg",
+    "side": "assets/cn/cn09_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl50_back.jpg",
-    "front_diag": "assets/maids/girl50_front_diag.jpg",
+    "back": "assets/cn/cn09_4back.jpg",
+    "front_diag": "assets/cn/cn09_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl50_down.jpg"
+    "down": "assets/cn/cn09_5body.jpg"
   },
-  "girl51": {
-    "front": "assets/maids/girl51_front.jpg",
-    "side": "assets/maids/girl51_side.jpg",
+  "cn10": {
+    "front": "assets/cn/cn10_1front.jpg",
+    "side": "assets/cn/cn10_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl51_back.jpg",
-    "front_diag": "assets/maids/girl51_front_diag.jpg",
+    "back": "assets/cn/cn10_4back.jpg",
+    "front_diag": "assets/cn/cn10_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl51_down.jpg"
+    "down": "assets/cn/cn10_5body.jpg"
   },
-  "girl52": {
-    "front": "assets/maids/girl52_front.jpg",
-    "side": "assets/maids/girl52_side.jpg",
+  "jp42": {
+    "front": "assets/jp_jijo/jp42_1front.jpg",
+    "side": "assets/jp_jijo/jp42_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl52_back.jpg",
-    "front_diag": "assets/maids/girl52_front_diag.jpg",
+    "back": "assets/jp_jijo/jp42_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp42_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl52_down.jpg"
+    "down": "assets/jp_jijo/jp42_5body.jpg"
   },
-  "girl53": {
-    "front": "assets/maids/girl53_front.jpg",
-    "side": "assets/maids/girl53_side.jpg",
+  "jp43": {
+    "front": "assets/jp_jijo/jp43_1front.jpg",
+    "side": "assets/jp_jijo/jp43_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl53_back.jpg",
-    "front_diag": "assets/maids/girl53_front_diag.jpg",
+    "back": "assets/jp_jijo/jp43_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp43_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl53_down.jpg"
+    "down": "assets/jp_jijo/jp43_5body.jpg"
   },
   "sanjo": {
-    "front": "assets/maids/三条玲奈_front.jpg",
-    "side": "assets/maids/三条玲奈_side.jpg",
+    "front": "assets/jp_jijo/三条玲奈_1front.jpg",
+    "side": "assets/jp_jijo/三条玲奈_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/三条玲奈_back.jpg",
-    "front_diag": "assets/maids/三条玲奈_front_diag.jpg",
+    "back": "assets/jp_jijo/三条玲奈_4back.jpg",
+    "front_diag": "assets/jp_jijo/三条玲奈_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/三条玲奈_down.jpg"
+    "down": "assets/jp_jijo/三条玲奈_5body.jpg"
   },
-  "girl54": {
-    "front": "assets/maids/girl54_front.jpg",
-    "side": "assets/maids/girl54_side.jpg",
+  "jp44": {
+    "front": "assets/jp_jijo/jp44_1front.jpg",
+    "side": "assets/jp_jijo/jp44_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl54_back.jpg",
-    "front_diag": "assets/maids/girl54_front_diag.jpg",
+    "back": "assets/jp_jijo/jp44_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp44_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl54_down.jpg",
-    "sit": "assets/maids/girl54_sit.jpg"
+    "down": "assets/jp_jijo/jp44_5body.jpg",
+    "sit": "assets/jp_jijo/jp44_sit.jpg"
   },
-  "girl55": {
-    "front": "assets/maids/girl55_front.jpg",
-    "side": "assets/maids/girl55_side.jpg",
+  "jp45": {
+    "front": "assets/jp_jijo/jp45_1front.jpg",
+    "side": "assets/jp_jijo/jp45_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl55_back.jpg",
-    "front_diag": "assets/maids/girl55_front_diag.jpg",
+    "back": "assets/jp_jijo/jp45_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp45_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl55_down.jpg",
-    "sit": "assets/maids/girl55_sit.jpg"
+    "down": "assets/jp_jijo/jp45_5body.jpg",
+    "sit": "assets/jp_jijo/jp45_sit.jpg"
   },
-  "girl56": {
-    "front": "assets/maids/girl56_front.jpg",
-    "side": "assets/maids/girl56_side.jpg",
+  "jp46": {
+    "front": "assets/jp_jijo/jp46_1front.jpg",
+    "side": "assets/jp_jijo/jp46_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl56_back.jpg",
-    "front_diag": "assets/maids/girl56_front_diag.jpg",
+    "back": "assets/jp_jijo/jp46_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp46_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl56_down.jpg",
-    "sit": "assets/maids/girl56_sit.jpg"
+    "down": "assets/jp_jijo/jp46_5body.jpg",
+    "sit": "assets/jp_jijo/jp46_sit.jpg"
   },
-  "girl57": {
-    "front": "assets/maids/girl57_front.jpg",
-    "side": "assets/maids/girl57_side.jpg",
+  "jp47": {
+    "front": "assets/jp_jijo/jp47_1front.jpg",
+    "side": "assets/jp_jijo/jp47_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl57_back.jpg",
-    "front_diag": "assets/maids/girl57_front_diag.jpg",
+    "back": "assets/jp_jijo/jp47_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp47_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl57_down.jpg",
-    "sit": "assets/maids/girl57_sit.jpg"
+    "down": "assets/jp_jijo/jp47_5body.jpg",
+    "sit": "assets/jp_jijo/jp47_sit.jpg"
   },
-  "girl58": {
-    "front": "assets/maids/girl58_front.jpg",
-    "side": "assets/maids/girl58_side.jpg",
+  "jp48": {
+    "front": "assets/jp_jijo/jp48_1front.jpg",
+    "side": "assets/jp_jijo/jp48_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl58_back.jpg",
-    "front_diag": "assets/maids/girl58_front_diag.jpg",
+    "back": "assets/jp_jijo/jp48_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp48_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl58_down.jpg",
-    "sit": "assets/maids/girl58_sit.jpg"
+    "down": "assets/jp_jijo/jp48_5body.jpg",
+    "sit": "assets/jp_jijo/jp48_sit.jpg"
   },
-  "girl59": {
-    "front": "assets/maids/girl59_front.jpg",
-    "side": "assets/maids/girl59_side.jpg",
+  "jp49": {
+    "front": "assets/jp_jijo/jp49_1front.jpg",
+    "side": "assets/jp_jijo/jp49_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl59_back.jpg",
-    "front_diag": "assets/maids/girl59_front_diag.jpg",
+    "back": "assets/jp_jijo/jp49_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp49_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl59_down.jpg"
+    "down": "assets/jp_jijo/jp49_5body.jpg"
   },
-  "girl60": {
-    "front": "assets/maids/girl60_front.jpg",
-    "side": "assets/maids/girl60_side.jpg",
+  "jp50": {
+    "front": "assets/jp_jijo/jp50_1front.jpg",
+    "side": "assets/jp_jijo/jp50_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl60_back.jpg",
-    "front_diag": "assets/maids/girl60_front_diag.jpg",
+    "back": "assets/jp_jijo/jp50_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp50_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl60_down.jpg"
+    "down": "assets/jp_jijo/jp50_5body.jpg"
   },
-  "girl61": {
-    "front": "assets/maids/girl61_front.jpg",
-    "side": "assets/maids/girl61_side.jpg",
+  "jp51": {
+    "front": "assets/jp_jijo/jp51_1front.jpg",
+    "side": "assets/jp_jijo/jp51_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl61_back.jpg",
-    "front_diag": "assets/maids/girl61_front_diag.jpg",
+    "back": "assets/jp_jijo/jp51_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp51_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl61_down.jpg"
+    "down": "assets/jp_jijo/jp51_5body.jpg"
   },
-  "girl62": {
-    "front": "assets/maids/girl62_front.jpg",
-    "side": "assets/maids/girl62_side.jpg",
+  "jp52": {
+    "front": "assets/jp_jijo/jp52_1front.jpg",
+    "side": "assets/jp_jijo/jp52_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl62_back.jpg",
-    "front_diag": "assets/maids/girl62_front_diag.jpg",
+    "back": "assets/jp_jijo/jp52_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp52_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl62_down.jpg"
+    "down": "assets/jp_jijo/jp52_5body.jpg"
   },
-  "girl63": {
-    "front": "assets/maids/girl63_front.jpg",
-    "side": "assets/maids/girl63_side.jpg",
+  "jp53": {
+    "front": "assets/jp_jijo/jp53_1front.jpg",
+    "side": "assets/jp_jijo/jp53_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl63_back.jpg",
-    "front_diag": "assets/maids/girl63_front_diag.jpg",
+    "back": "assets/jp_jijo/jp53_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp53_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl63_down.jpg"
+    "down": "assets/jp_jijo/jp53_5body.jpg"
   },
-  "girl64": {
-    "front": "assets/maids/girl64_front.jpg",
-    "side": "assets/maids/girl64_side.jpg",
+  "jp54": {
+    "front": "assets/jp_jijo/jp54_1front.jpg",
+    "side": "assets/jp_jijo/jp54_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl64_back.jpg",
-    "front_diag": "assets/maids/girl64_front_diag.jpg",
+    "back": "assets/jp_jijo/jp54_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp54_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl64_down.jpg"
+    "down": "assets/jp_jijo/jp54_5body.jpg"
   },
-  "girl65": {
-    "front": "assets/maids/girl65_front.jpg",
-    "side": "assets/maids/girl65_side.jpg",
+  "jp55": {
+    "front": "assets/jp_jijo/jp55_1front.jpg",
+    "side": "assets/jp_jijo/jp55_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl65_back.jpg",
-    "front_diag": "assets/maids/girl65_front_diag.jpg",
+    "back": "assets/jp_jijo/jp55_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp55_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl65_down.jpg"
+    "down": "assets/jp_jijo/jp55_5body.jpg"
   },
-  "girl66": {
-    "front": "assets/maids/girl66_front.jpg",
-    "side": "assets/maids/girl66_side.jpg",
+  "jp56": {
+    "front": "assets/jp_jijo/jp56_1front.jpg",
+    "side": "assets/jp_jijo/jp56_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl66_back.jpg",
-    "front_diag": "assets/maids/girl66_front_diag.jpg",
+    "back": "assets/jp_jijo/jp56_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp56_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl66_down.jpg"
+    "down": "assets/jp_jijo/jp56_5body.jpg"
   },
-  "girl67": {
-    "front": "assets/maids/girl67_front.jpg",
-    "side": "assets/maids/girl67_side.jpg",
+  "jp57": {
+    "front": "assets/jp_jijo/jp57_1front.jpg",
+    "side": "assets/jp_jijo/jp57_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl67_back.jpg",
-    "front_diag": "assets/maids/girl67_front_diag.jpg",
+    "back": "assets/jp_jijo/jp57_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp57_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl67_down.jpg"
+    "down": "assets/jp_jijo/jp57_5body.jpg"
   },
-  "girl68": {
-    "front": "assets/maids/girl68_front.jpg",
-    "side": "assets/maids/girl68_side.jpg",
+  "jp58": {
+    "front": "assets/jp_jijo/jp58_1front.jpg",
+    "side": "assets/jp_jijo/jp58_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl68_back.jpg",
-    "front_diag": "assets/maids/girl68_front_diag.jpg",
+    "back": "assets/jp_jijo/jp58_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp58_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl68_down.jpg"
+    "down": "assets/jp_jijo/jp58_5body.jpg"
   },
-  "girl69": {
-    "front": "assets/maids/girl69_front.jpg",
-    "side": "assets/maids/girl69_side.jpg",
+  "jp59": {
+    "front": "assets/jp_jijo/jp59_1front.jpg",
+    "side": "assets/jp_jijo/jp59_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl69_back.jpg",
-    "front_diag": "assets/maids/girl69_front_diag.jpg",
+    "back": "assets/jp_jijo/jp59_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp59_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl69_down.jpg"
+    "down": "assets/jp_jijo/jp59_5body.jpg"
   },
-  "girl70": {
-    "front": "assets/maids/girl70_front.jpg",
-    "side": "assets/maids/girl70_side.jpg",
+  "jp60": {
+    "front": "assets/jp_jijo/jp60_1front.jpg",
+    "side": "assets/jp_jijo/jp60_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl70_back.jpg",
-    "front_diag": "assets/maids/girl70_front_diag.jpg",
+    "back": "assets/jp_jijo/jp60_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp60_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl70_down.jpg"
+    "down": "assets/jp_jijo/jp60_5body.jpg"
   },
-  "girl71": {
-    "front": "assets/maids/girl71_front.jpg",
-    "side": "assets/maids/girl71_side.jpg",
+  "jp61": {
+    "front": "assets/jp_jijo/jp61_1front.jpg",
+    "side": "assets/jp_jijo/jp61_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl71_back.jpg",
-    "front_diag": "assets/maids/girl71_front_diag.jpg",
+    "back": "assets/jp_jijo/jp61_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp61_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl71_down.jpg"
+    "down": "assets/jp_jijo/jp61_5body.jpg"
   },
-  "girl72": {
-    "front": "assets/maids/girl72_front.jpg",
-    "side": "assets/maids/girl72_side.jpg",
+  "jp62": {
+    "front": "assets/jp_jijo/jp62_1front.jpg",
+    "side": "assets/jp_jijo/jp62_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl72_back.jpg",
-    "front_diag": "assets/maids/girl72_front_diag.jpg",
+    "back": "assets/jp_jijo/jp62_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp62_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl72_down.jpg"
+    "down": "assets/jp_jijo/jp62_5body.jpg"
   },
-  "girl73": {
-    "front": "assets/maids/girl73_front.jpg",
-    "side": "assets/maids/girl73_side.jpg",
+  "jp63": {
+    "front": "assets/jp_jijo/jp63_1front.jpg",
+    "side": "assets/jp_jijo/jp63_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl73_back.jpg",
-    "front_diag": "assets/maids/girl73_front_diag.jpg",
+    "back": "assets/jp_jijo/jp63_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp63_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl73_down.jpg"
+    "down": "assets/jp_jijo/jp63_5body.jpg"
   },
-  "girl74": {
-    "front": "assets/maids/girl74_front.jpg",
-    "side": "assets/maids/girl74_side.jpg",
+  "jp64": {
+    "front": "assets/jp_jijo/jp64_1front.jpg",
+    "side": "assets/jp_jijo/jp64_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl74_back.jpg",
-    "front_diag": "assets/maids/girl74_front_diag.jpg",
+    "back": "assets/jp_jijo/jp64_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp64_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl74_down.jpg"
+    "down": "assets/jp_jijo/jp64_5body.jpg"
   },
-  "girl75": {
-    "front": "assets/maids/girl75_front.jpg",
-    "side": "assets/maids/girl75_side.jpg",
+  "jp65": {
+    "front": "assets/jp_jijo/jp65_1front.jpg",
+    "side": "assets/jp_jijo/jp65_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl75_back.jpg",
-    "front_diag": "assets/maids/girl75_front_diag.jpg",
+    "back": "assets/jp_jijo/jp65_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp65_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl75_down.jpg"
+    "down": "assets/jp_jijo/jp65_5body.jpg"
   },
-  "girl76": {
-    "front": "assets/maids/girl76_front.jpg",
-    "side": "assets/maids/girl76_side.jpg",
+  "jp66": {
+    "front": "assets/jp_jijo/jp66_1front.jpg",
+    "side": "assets/jp_jijo/jp66_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl76_back.jpg",
-    "front_diag": "assets/maids/girl76_front_diag.jpg",
+    "back": "assets/jp_jijo/jp66_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp66_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl76_down.jpg"
+    "down": "assets/jp_jijo/jp66_5body.jpg"
   },
-  "girl77": {
-    "front": "assets/maids/girl77_front.jpg",
-    "side": "assets/maids/girl77_side.jpg",
+  "jp67": {
+    "front": "assets/jp_jijo/jp67_1front.jpg",
+    "side": "assets/jp_jijo/jp67_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl77_back.jpg",
-    "front_diag": "assets/maids/girl77_front_diag.jpg",
+    "back": "assets/jp_jijo/jp67_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp67_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl77_down.jpg"
+    "down": "assets/jp_jijo/jp67_5body.jpg"
   },
-  "girl78": {
-    "front": "assets/maids/girl78_front.jpg",
-    "side": "assets/maids/girl78_side.jpg",
+  "jp68": {
+    "front": "assets/jp_jijo/jp68_1front.jpg",
+    "side": "assets/jp_jijo/jp68_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl78_back.jpg",
-    "front_diag": "assets/maids/girl78_front_diag.jpg",
+    "back": "assets/jp_jijo/jp68_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp68_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl78_down.jpg"
+    "down": "assets/jp_jijo/jp68_5body.jpg"
   },
-  "girl79": {
-    "front": "assets/maids/girl79_front.jpg",
-    "side": "assets/maids/girl79_side.jpg",
+  "jp69": {
+    "front": "assets/jp_jijo/jp69_1front.jpg",
+    "side": "assets/jp_jijo/jp69_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl79_back.jpg",
-    "front_diag": "assets/maids/girl79_front_diag.jpg",
+    "back": "assets/jp_jijo/jp69_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp69_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl79_down.jpg"
+    "down": "assets/jp_jijo/jp69_5body.jpg"
   },
-  "girl80": {
-    "front": "assets/maids/girl80_front.jpg",
-    "side": "assets/maids/girl80_side.jpg",
+  "jp70": {
+    "front": "assets/jp_jijo/jp70_1front.jpg",
+    "side": "assets/jp_jijo/jp70_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl80_back.jpg",
-    "front_diag": "assets/maids/girl80_front_diag.jpg",
+    "back": "assets/jp_jijo/jp70_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp70_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl80_down.jpg"
+    "down": "assets/jp_jijo/jp70_5body.jpg"
   },
-  "girl81": {
-    "front": "assets/maids/girl81_front.jpg",
-    "side": "assets/maids/girl81_side.jpg",
+  "jp71": {
+    "front": "assets/jp_jijo/jp71_1front.jpg",
+    "side": "assets/jp_jijo/jp71_2side.jpg",
     "side_dir": -1,
-    "back": "assets/maids/girl81_back.jpg",
-    "front_diag": "assets/maids/girl81_front_diag.jpg",
+    "back": "assets/jp_jijo/jp71_4back.jpg",
+    "front_diag": "assets/jp_jijo/jp71_3diag.jpg",
     "front_diag_dir": -1,
-    "down": "assets/maids/girl81_down.jpg"
+    "down": "assets/jp_jijo/jp71_5body.jpg"
   }
 }

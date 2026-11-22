@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """追加の見え方（横・後ろ・歩き・構え）の写真から背景を除き、正面写真と同じ縮尺にそろえて切り抜く。
-入力: frames/manifest.json  {"girl22": {"side": パス, "back": パス, "walk": パス, "bow": パス, "stab": パス, "action": パス, "flute": パス}, ...}
+入力: frames/manifest.json  {"jp22": {"side": パス, "back": パス, "walk": パス, "bow": パス, "stab": パス, "action": パス, "flute": パス}, ...}
        向きの上書き（任意）: "side_dir": 1（右向き）/ -1（左向き）など "<frame>_dir"
-出力: assets/frames/<id>_<frame>.png と assets/frames/frames.js（寸法情報＋file:// 用の埋め込み画像）
+出力: assets/frames/<id>_<frame>.png と assets/frames/frames.js（寸法情報＋file: 用の埋め込み画像）
 縮尺: 正面写真（assets/<id>.png）の「頭頂〜足元」の高さを基準に、各フレームの頭頂〜足元が同じ高さ（歩き 0.985、突き 0.93）になるよう拡大縮小。足元は画像の下端。
 横顔のキー: side（右向き）／side_left（左向き）／side_right。
-使い方: python3 tools/make_frames.py [--force] [--only girl22,girl09]
+使い方: python3 tools/make_frames.py [--force] [--only jp22,jp09]
 必要: pip install "rembg[cpu]" pillow
 """
 import sys, os, io, json, base64
@@ -17,6 +17,8 @@ FORCE = '--force' in sys.argv
 ONLY = None
 if '--only' in sys.argv: ONLY = set(sys.argv[sys.argv.index('--only') + 1].split(','))
 KINDS = ['front', 'kneel', 'down', 'front_diag', 'back_diag', 'top', 'low', 'side', 'back', 'walk', 'bow', 'stab', 'action', 'flute', 'slump']
+FILE_SUF = {'front': '1front', 'side': '2side', 'front_diag': '3diag', 'back_diag': '3diag_back', 'back': '4back', 'down': '5body'}
+def file_suf(k): return FILE_SUF.get(k, k)
 KH = {'kneel': 0.7, 'side': 1.0, 'back': 1.0, 'walk': 0.985, 'bow': 1.0, 'stab': 0.93, 'flute': 1.0}
 MAXH = 900
 _session = None
@@ -67,17 +69,17 @@ def main():
         if ONLY and gid not in ONLY: continue
         meta.setdefault(gid, {})
         if not fr.get('front') and fr.get('bow') and not os.path.exists(os.path.join(A, gid + '.png')):
-            fr = dict(fr, front=fr['bow'])   # 弓を引く写真しか無い娘（girl01〜）：その写真を正面（縮尺の基準）にも使う
+            fr = dict(fr, front=fr['bow'])   # 弓を引く写真しか無い娘（jp01〜）：その写真を正面（縮尺の基準）にも使う
         if os.path.exists(os.path.join(A, gid + '.png')): ref = front_ref(gid)
         elif fr.get('front') and os.path.exists(fr['front']):
             # 元の写真が無い娘（医療係など）：正面も manifest から作り、その頭頂〜足元を基準にする
-            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_front.png')
+            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_{file_suf('front')}.png')
             if FORCE or not os.path.exists(png) or os.path.getmtime(png) < os.path.getmtime(fr['front']) or 'front' not in meta[gid]:
                 im = cut(fr['front']); a = im.split()[3]; top = head_top(a)
                 f = min(1.0, 640 / im.height); im = im.resize((max(1, round(im.width * f)), max(1, round(im.height * f))), Image.LANCZOS)
                 im.save(png, optimize=True); a = im.split()[3]
                 top = head_top(a); body = im.height - top
-                meta[gid]['front'] = {'hk': round(im.height / body, 4), 'aspect': round(im.width / im.height, 4), 'ax': round(mean_x(a, int(im.height * 0.88), im.height) / im.width, 4), 'dir': 0, 'file': f'{maid_dir(gid)}/{maid_name(gid)}_front.png', 'ref': body}
+                meta[gid]['front'] = {'hk': round(im.height / body, 4), 'aspect': round(im.width / im.height, 4), 'ax': round(mean_x(a, int(im.height * 0.88), im.height) / im.width, 4), 'dir': 0, 'file': f'{maid_dir(gid)}/{maid_name(gid)}_{file_suf('front')}.png', 'ref': body}
                 print(gid, 'front', im.size, meta[gid]['front'])
             ref = meta[gid]['front']['ref']
         else: print('skip (正面写真なし)', gid); continue
@@ -87,7 +89,7 @@ def main():
             if k == 'front' or k not in KINDS or not src or not isinstance(src, str): continue
             if k == 'side' and k0 == 'side' and fr.get('side_left') and fr.get('side_right') is None: pass
             if not os.path.exists(src): print('missing', gid, k, src); continue
-            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_{k}.png')
+            png = os.path.join(ROOT, maid_dir(gid), f'{maid_name(gid)}_{file_suf(k)}.png')
             if not FORCE and os.path.exists(png) and os.path.getmtime(png) >= os.path.getmtime(src) and k in meta[gid]: continue
             im = cut(src); a = im.split()[3]
             top = head_top(a); body = im.height - top
@@ -114,7 +116,7 @@ def main():
                 else:
                     t2 = head_top(a); hx = mean_x(a, t2, t2 + int(h * 0.1)); bb = a.getbbox() or (0, 0, w, h)
                     d = 1 if (bb[2] - hx) > (hx - bb[0]) else -1
-            meta[gid][k] = {'hk': round(h / (ref * f), 4), 'aspect': round(w / h, 4), 'ax': round(ax, 4), 'dir': int(d), 'file': f'{maid_dir(gid)}/{maid_name(gid)}_{k}.png'}
+            meta[gid][k] = {'hk': round(h / (ref * f), 4), 'aspect': round(w / h, 4), 'ax': round(ax, 4), 'dir': int(d), 'file': f'{maid_dir(gid)}/{maid_name(gid)}_{file_suf(k)}.png'}
             if k == 'slump':   # 手すりの上端の位置（写真の下からの高さ比 ry・左からの位置比 rx）。manifest の slump_ry / slump_rx で上書き
                 meta[gid][k]['ry'] = float(fr.get('slump_ry', 0.55)); meta[gid][k]['rx'] = float(fr.get('slump_rx', 0.45))
             print(gid, k, (w, h), 'dir', d, 'ax', round(ax, 3), 'hk', meta[gid][k]['hk'])

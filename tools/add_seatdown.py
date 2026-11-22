@@ -7,7 +7,7 @@
 座席: 黒い座席は黒いズボンと色で分けられないので残し、ゲーム側で座席が乗り物の座席に収まるよう腰の位置で合わせる
 腰の位置: 白いトップスの下端（ベルト）から写真の高さの 0.185 下、トップスの中心。tools/seatdown.json の hip で上書きできる
 大きさ: 頭頂〜腰が身長の 0.43（うなだれて座った姿）になるように hk を決める
-使い方: python3 tools/add_seatdown.py [--only reika,girl29] [--src /workspace/seatdown_src] [--force]
+使い方: python3 tools/add_seatdown.py [--only reika,jp29] [--src /workspace/seatdown_src] [--force]
         （rembg は /workspace/.venv_rembg の python で動かすか pip install "rembg[cpu]" scipy pillow）
 """
 import sys, os, io, json, base64, glob

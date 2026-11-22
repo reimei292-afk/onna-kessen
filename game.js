@@ -2201,9 +2201,9 @@ window.__th = { thSpiralAt, thRaidChat, thVoice, thGirlCull, get updatePlayer() 
 
 // ===== 天鳳ここまで =====
 const TEST = /[?&]test=1/.test(location.search);
-// 名のある侍女の絵のファイル名は日本語のフルネーム（assets/maids/白瀬澄_front.png など）。中のキー（shirase・sec2 など）はそのまま
+// 名のある侍女の絵のファイル名は日本語のフルネーム（assets/jp_jijo/白瀬澄_1front.png など）。中のキー（shirase・sec2 など）はそのまま
 const MAID_REN = { shirase: '白瀬澄', hayase: '早瀬ことね', hibiki: '小鳥遊ひびき', fumi: '綾瀬文乃', ojou: '西園寺すみれ', omiya: '大宮ひなた', sysop: '霧島怜', sec3: '桜井ゆかり', sec4: '宮下千尋', sec5: '小日向ひより', sec6: '氷室しのぶ', sec7: '夏目あかり', reika: '白石麗華', kuon: '久遠静香', ichijo: '一条千景', murase: '村瀬碧', hirose: '広瀬千夏', sanjo: '三条玲奈', surgeon: '九条紗英' };
-const maidFile = f => f.replace(/^(assets\/maids\/)([a-z]+\d*)(?=[_.])/, (m, a, b) => MAID_REN[b] ? a + MAID_REN[b] : m);
+const maidFile = f => f.replace(/^(assets\/jp_jijo\/)([a-z]+\d*)(?=[_.])/, (m, a, b) => MAID_REN[b] ? a + MAID_REN[b] : m);
 const PASSIVE = /[?&]passive=1/.test(location.search);  // テスト用：自動プレイが何もしない
 // スマホ・タブレット（指で操作する端末）。?mobile=1 で強制。画質や敵の数は PC と同じ
 const MOBILE = /[?&]mobile=1/.test(location.search) || (!!window.matchMedia && matchMedia('(pointer: coarse)').matches) ||
@@ -2432,9 +2432,9 @@ const Sfx = {
 // ===================================================================
 // 決戦2「白壁城」（stage kessen2）：天鳳のあと。英国が中国で反乱を起こし、平野の白壁城（高い城壁で四方を囲み、門は東西南北）を奪った。
 // 攻め手 約1500（六つの隊）・守り手 約1000。近くの者は一人ずつ（実体）、遠くの者・人数の多くは簡単な絵（群れ）で出す。
-// 中国の現地兵の絵は KS2_CN_LOOKS の一か所だけ差し替えれば変わる（Grok で作った画像を frames/ に入れて id を並べる）。
+// 中国の現地兵の絵は KS2_CN_LOOKS の一か所だけ差し替えれば変わる（Grok で作った画像を assets/cn/ に入れて id を並べる）。
 // ===================================================================
-const KS2_CN_LOOKS = ['girl42', 'girl43', 'girl44', 'girl45', 'girl46', 'girl47', 'girl48', 'girl49', 'girl50', 'girl51'];   // Grok で作った中国の現地兵（守り手だけ）   // ← 中国の現地兵の絵（ここだけ差し替える）
+const KS2_CN_LOOKS = ['cn01', 'cn02', 'cn03', 'cn04', 'cn05', 'cn06', 'cn07', 'cn08', 'cn09', 'cn10'];   // Grok で作った中国の現地兵（守り手だけ）   // ← 中国の現地兵の絵（ここだけ差し替える）
 const KS2_CN_NAMES = ['李 梅', '王 芳', '張 静', '劉 麗', '陳 玲', '楊 雪', '趙 婷', '黄 蘭', '周 燕', '呉 敏', '徐 霞', '孫 莉', '馬 蕾', '朱 慧', '胡 琳', '郭 娜'];
 const KS2 = { on: false, ph: 'off', t: 0 };
 const KS2_W = 70, KS2_T = 3, KS2_H = 9, KS2_IW = 36, KS2_IH = 7, KS2_GATE = 3.5, KS2_IG = 1.8;   // 外の城壁（±70・厚さ3・高さ9）、内の城壁（±36・高さ7）、門の半幅
@@ -2980,7 +2980,7 @@ function ks2Mk(x, z, kind, team, gid, prof, y) { const e = spawnEnemy(x, z, kind
   if (prof) { Object.assign(e.prof, prof); e.P = PERS[e.prof.pers] || e.P; } if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
   e.ks2 = true; e.passive = true; e.sq = null; e.state = 'idle'; if (e.mk) e.mk.visible = false; e.shadow.visible = false; e.hp = e.hpMax = 3; e.dmg = 8; e.ks2Y = y || 0; e.baseY = e.ks2Y; e.s.position.y = e.ks2Y; e.ks2T = rand(0, 1); e.ks2Cd = rand(1, 5); e.ks2V = [0, 0]; e.speed = rand(2.2, 2.6); return e; }
 const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'reika', 'kuon', 'ichijo', 'murase', 'hirose', 'sanjo', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
-function ks2KLook(arch) { return jpDeal(arch ? 'archer' : 'mob', 'ks2', KS2_KINGDOM_OFF) || 'girl17'; }   // 群れの絵も一人ずつの兵と同じ山札（弓兵を含め均等）
+function ks2KLook(arch) { return jpDeal(arch ? 'archer' : 'mob', 'ks2', KS2_KINGDOM_OFF) || 'jp17'; }   // 群れの絵も一人ずつの兵と同じ山札（弓兵を含め均等）
 // ---- v g：一人ひとり（名前・性格・身長・持ち物）と分隊 ----
 const KS2_UK_FN = ['アリス', 'ベアトリス', 'シャーロット', 'デイジー', 'イーディス', 'フローレンス', 'グレース', 'ハリエット', 'イザベル', 'ジェーン', 'キティ', 'ルーシー', 'メアリー', 'ノラ', 'オリーヴ', 'フィービー', 'ローズ', 'ソフィア', 'ヴァイオレット', 'アグネス', 'クララ', 'エマ', 'ハンナ', 'リディア', 'マチルダ', 'エイダ', 'エヴリン', 'アイヴィ', 'メイベル', 'ドロシー'];
 const KS2_UK_LN = ['アシュフォード', 'ブレイク', 'カーター', 'ダルトン', 'エリス', 'フレッチャー', 'グレイヴス', 'ヒューズ', 'アーヴィング', 'ジェニングス', 'ケント', 'ローソン', 'マーシュ', 'ノリス', 'オズボーン', 'パーカー', 'クイン', 'リード', 'ショウ', 'ターナー', 'ヴォーン', 'ウォルシュ', 'ウェルズ', 'ヤング', 'ヘイル', 'ブルック', 'レーン', 'プライス', 'コール', 'ウォード'];
@@ -3725,7 +3725,7 @@ const SGK_REAL = (() => { const q = parseInt(new URLSearchParams(location.search
 const SGK_DIPS = [40, 579, 1079, 1519, 1825];   // 崖道と谷道がつながる所
 const SGK_LIMIT = 30 * 60;   // 時間切れ（ゲーム内の秒）
 // 祝融：次の幕でも使う（名前・背丈・絵・台詞はここだけ）
-const SGK_SHUKUYU = { name: '祝融', title: '南蛮の女将 祝融', cm: 170, gid: 'girl46', hp: 40, knives: 36,
+const SGK_SHUKUYU = { name: '祝融', title: '南蛮の女将 祝融', cm: 170, gid: 'cn05', hp: 40, knives: 36,
   appear: '死にたければかかってきな！', taunt: ['遅い遅い！ その盾ごと縫い止めてやるよ！', 'ほら、次は誰だい！', '喉元、がら空きだよ！'],
   reload: 'ちっ……刃を拾うまで、ちょいと待ちな！', escape: '……やるじゃないか。今日はここまでだ。この首は、次の山まで預けておくよ！' };
 const SGK_UNITS = [
@@ -3831,11 +3831,11 @@ function sgkMk(x, z, kind, team, gid, prof) { const y = sgkH(x, z), e = ks2Mk(x,
 const SGK_OFF = () => { const S = KS2_KINGDOM_OFF(); S.add(SGK_SHUKUYU.gid); return S; };
 function sgkNamed(U, k, role) { const gid = ks2Gid(k), N = KS2_NM[k]; if (!N) return null; const e = sgkMk(sgkCx(U.s) + rand(-2, 2), 1000 - U.s + 6, 'mob', 'blue', gid, Object.assign({ name: N[0], pers: N[1], vv: 1 }, N[2] ? { cm: N[2] } : {})); if (!e) return null;
   e.sgkU = U; e.sgkRole = role; e.ks2Named = k; e.ks2Title = SGK_TITLE[k]; e.ukTag = SGK_TITLE[k]; e.ks2Vk = KS2_VK[k]; e.hp = e.hpMax = 10; SGK.by[k] = e; U.mem.push(e); if (k === 'shinobu' || k === 'shizuka') e.sgkDuel = true; return e; }
-function sgkMob(U, arch, x, z) { const kind = arch ? 'archer' : 'mob', e = sgkMk(x, z, kind, 'blue', jpDeal(kind, 'sgk', SGK_OFF) || (arch ? 'girl07' : 'girl17'), null); if (!e) return null; e.sgkU = U; e.sgkRole = arch ? 'archer' : 'melee';
+function sgkMob(U, arch, x, z) { const kind = arch ? 'archer' : 'mob', e = sgkMk(x, z, kind, 'blue', jpDeal(kind, 'sgk', SGK_OFF) || (arch ? 'jp07' : 'jp17'), null); if (!e) return null; e.sgkU = U; e.sgkRole = arch ? 'archer' : 'melee';
   if (!arch) { const g = (U.mem.length * 37 + U.k.charCodeAt(0) * 11) % 100; if (U.k === 'F' && g < 16) { e.ks2Gear = 'shield'; e.sgkShield = true; const m = ks2ShMesh(true); m.position.set(0, 0.66, 0.42); e.s.add(m); e.ks2Shd = m; } else if (Math.random() < 0.3) { e.yari = true; makeYari(e); } }
   if (!arch && !e.sgkShield && (U.k === 'R' ? U.mem.length % 3 === 0 : U.mem.length % 25 === 7)) { e.sgkMed = true; e.medic = false; e.ukTag = (U.k === 'R' ? '医務班' : U.name) + ' 衛生兵'; if (e.yari) { e.yari = false; } }   // 各隊に衛生兵（約4%）、医務班は多め
   U.mem.push(e); return e; }
-function sgkCnId() { const L = KS2_CN_LOOKS.filter(g => g !== SGK_SHUKUYU.gid && GIRLS[g]); return L.length ? L[(SGK.cnI++) % L.length] : 'girl42'; }
+function sgkCnId() { const L = KS2_CN_LOOKS.filter(g => g !== SGK_SHUKUYU.gid && GIRLS[g]); return L.length ? L[(SGK.cnI++) % L.length] : 'cn01'; }
 function sgkDef(G, role, x, z, extra) { const gid = sgkCnId(), e = sgkMk(x, z, role === 'wall' || role === 'amb' ? 'archer' : 'mob', 'orange', gid, { name: ks2Name('cn'), pers: ['慎重', '冷静', '臆病', '好戦的'][SGK.cnI % 4], cm: 154 + (SGK.cnI * 7) % 14 }); if (!e) return null;
   e.ks2Cn = true; e.sgkRole = role; e.sgkG = G; e.sgkHome = [x, z]; e.face = e.faceWant = 0; if (role === 'wall' || role === 'amb') e.kind = 'archer'; else if (Math.random() < 0.55) { e.yari = true; makeYari(e); } if (extra) Object.assign(e, extra); if (G) G.def.push(e); SGK.def.push(e); return e; }
 function sgkDefFill(G, n) { const zb = G.z, c = G.x, w = G.fort ? 28 : G.w - 1, nW = Math.round(n * 0.42); let k = 0;
@@ -4001,7 +4001,7 @@ function sgkSayK(k, t, prio) { const e = SGK.by && SGK.by[k]; if (e && !isUp(e))
 function sgkKing(t) { subtitle(t); const el = $('subtitle'); if (el) el.textContent = '殿「' + t + '」'; KS2.subLock = time + Math.max(2.5, t.length * 0.13 + 1.2); }
 // ---- 祝融（討たれない。弱ると霧の中へ逃げ、画面の外で姿を消す。次の幕で再登場） ----
 function sgkBossSpawn() { if (SGK.boss || SGK.shukuyu) return; const G = SGK.gates[1], B = SGK_SHUKUYU, x = G.x + 3, z = G.z + 9;
-  const e = sgkMk(x, z, 'mob', 'orange', GIRLS[B.gid] ? B.gid : 'girl46', { name: B.name, pers: '好戦的', cm: B.cm }); if (!e) return; e.ks2Cn = true; e.ks2Title = e.ukTag = B.title; e.hp = e.hpMax = B.hp; e.speed = 5.2;
+  const e = sgkMk(x, z, 'mob', 'orange', GIRLS[B.gid] ? B.gid : 'cn05', { name: B.name, pers: '好戦的', cm: B.cm }); if (!e) return; e.ks2Cn = true; e.ks2Title = e.ukTag = B.title; e.hp = e.hpMax = B.hp; e.speed = 5.2;
   e.sgkBoss = { kn: SHU_KN, burst: 0, bT: 2.5, out: 0, retT: 0, esc: false, inv: false, lastTaunt: 0 }; e.sgkRole = 'boss'; e.sgkG = G; SGK.boss = e; SGK.shukuyu = 'fighting';
   SGK.fogK = 1; SGK.fogT = 60; showBanner('霧の中から', B.title + ' 現る'); bannerTimer = 3.5; ks2Say(e, B.appear, 2.2);
   SGK.later.push([SGK.t + 2.6, () => sgkKing('近寄るな、盾の後ろへ！')]);
@@ -4465,12 +4465,12 @@ function buildKos() {
 }
 // ---- 兵 ----
 function kosMk(x, z, kind, team, gid, prof) { const y = kosH(x, z), e = ks2Mk(x, z, kind, team, gid, prof, y); if (!e) return null; e.kos = true; e.speed = rand(3.2, 3.8); e.baseY = y; e.s.position.y = y; KOS.all.push(e); return e; }
-const KOS_OFF = () => { const S = KS2_KINGDOM_OFF(); S.add('girl46'); return S; };
+const KOS_OFF = () => { const S = KS2_KINGDOM_OFF(); S.add('cn05'); return S; };
 const KOS_NM_X = { midori: ['村瀬 碧', '好戦的', 164, 'murase'] };   // 白壁城の名簿に無い娘（村瀬：側近付き秘書）
 function kosNamed(U, k, s) { const X = KOS_NM_X[k], gid = X ? (GIRLS[X[3]] ? X[3] : null) : ks2Gid(k), N = X || KS2_NM[k]; if (!N || (X && !gid)) return null; const e = kosMk(kosCx(s) + rand(-2, 2), 1000 - s, 'mob', 'blue', gid, Object.assign({ name: N[0], pers: N[1], vv: 1 }, N[2] ? { cm: N[2] } : {})); if (!e) return null;
   e.kosU = U; e.ks2Named = k; e.ks2Title = e.ukTag = (KOS.ts && TS_TITLE[k]) || KOS_TITLE[k] || N[0]; e.ks2Vk = KS2_VK[k]; e.hp = e.hpMax = 10; KOS.by[k] = e; return e; }
 // 群れの兵。役：弓・衛生兵（各隊およそ4%、後方隊は医務30%）・輜重（後方隊40%、荷を背負う）・槍／刀
-function kosMob(U, role, s) { const arch = role === 'arch', kind = arch ? 'archer' : 'mob', e = kosMk(kosCx(s) + rand(-3, 3), 1000 - s, kind, 'blue', jpDeal(kind, 'kos', KOS_OFF) || (arch ? 'girl07' : 'girl17'), null); if (!e) return null; e.kosU = U; e.kosArch = arch; e.kosRole = role;
+function kosMob(U, role, s) { const arch = role === 'arch', kind = arch ? 'archer' : 'mob', e = kosMk(kosCx(s) + rand(-3, 3), 1000 - s, kind, 'blue', jpDeal(kind, 'kos', KOS_OFF) || (arch ? 'jp07' : 'jp17'), null); if (!e) return null; e.kosU = U; e.kosArch = arch; e.kosRole = role;
   if (role === 'med') { e.kosMed = true; e.ukTag = (U.k === 'R' ? '後方隊 医務班' : U.name) + ' 衛生兵'; } else if (role === 'pack') { e.kosPack = true; e.ukTag = '後方隊 輜重兵'; kosPackMesh(e); } else if (role === 'guard') { e.ukTag = '後方隊 後衛'; e.yari = true; makeYari(e); } else if (role === 'shield') { e.ukTag = '弓隊 盾持ち'; e.kosShd = true; e.sgkShield = true; const m = ks2ShMesh(true); m.position.set(0, 0.66, 0.42); e.s.add(m); } else if (!arch && Math.random() < 0.35) { e.yari = true; makeYari(e); } return e; }
 function kosRole(U, j) { if (U.k === 'A' && j % 7 === 3) return 'shield'; if (U.k === 'R') { const m = j % 10; return m < 3 ? 'med' : m < 7 ? 'pack' : 'guard'; } if (j % 25 === 7) return 'med'; return ((j * 0.618) % 1) < U.arch ? 'arch' : 'mob'; }
 function kosPackMesh(e) { const M = KOS.M, g = new THREE.Group(), b = new THREE.Mesh(KOS.G.pack || (KOS.G.pack = new THREE.BoxGeometry(0.38, 0.42, 0.24)), M.cloth2); g.add(b); const t = new THREE.Mesh(KOS.G.packT || (KOS.G.packT = new THREE.BoxGeometry(0.4, 0.06, 0.26)), M.rope); t.position.y = 0.1; g.add(t); if (Math.random() < 0.5) { const bx = new THREE.Mesh(KOS.G.box, M.wood); bx.scale.setScalar(0.7); bx.position.y = 0.32; g.add(bx); } stageRoot.add(g); e.kosPk = g; }
@@ -4487,8 +4487,8 @@ function kosUnit(D, s, bat) { const U = Object.assign({}, D, { mem: [], s, st: '
 function kosSpawn() { KOS.units = []; KOS.U = {}; KOS.by = {}; KOS.all = []; KOS.foes = []; KOS.fieldK = (LITE ? 210 : 560) / (KOS_TOTAL + KOS_V.n); let s = 262;
   for (const D of KOS_UNITS) { const U = kosUnit(D, s); s -= U.len + 7; }
   // 先鋒が倒した中国の兵（倒れたまま。消えない）
-  const cn = KS2_CN_LOOKS.filter(g => g !== 'girl46' && GIRLS[g]); let ci = 0;
-  const dead = (s0, n, spread) => { for (let i = 0; i < n; i++) { const s1 = s0 + rand(-spread, spread), c = kosCx(s1), x = c + (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 6.5), z = 1000 - s1; const e = kosMk(x, z, 'mob', 'orange', cn.length ? cn[(ci++) % cn.length] : 'girl42', { name: ks2Name('cn'), pers: '冷静', cm: 156 + (ci * 7) % 12 }); if (!e) continue; e.kosPre = true; e.ks2Cn = true; e.hp = 0; killEnemy(e, false, new V3(x + rand(-1, 1), 0, z - 1)); } };
+  const cn = KS2_CN_LOOKS.filter(g => g !== 'cn05' && GIRLS[g]); let ci = 0;
+  const dead = (s0, n, spread) => { for (let i = 0; i < n; i++) { const s1 = s0 + rand(-spread, spread), c = kosCx(s1), x = c + (Math.random() < 0.5 ? -1 : 1) * rand(1.5, 6.5), z = 1000 - s1; const e = kosMk(x, z, 'mob', 'orange', cn.length ? cn[(ci++) % cn.length] : 'cn01', { name: ks2Name('cn'), pers: '冷静', cm: 156 + (ci * 7) % 12 }); if (!e) continue; e.kosPre = true; e.ks2Cn = true; e.hp = 0; killEnemy(e, false, new V3(x + rand(-1, 1), 0, z - 1)); } };
   dead(300, LITE ? 7 : 14, 10); dead(660, LITE ? 5 : 10, 9); }
 function kosSlot(e) { if (KOS.ts) return tsSlot(e); const U = e.kosU, i = e.kosIdx || 0;
   if (U.bx != null && KOS.ring && e.kosRi != null) return kosRing(e);
@@ -4767,8 +4767,8 @@ function kosTick() { const ps = kosPS(), H = KOS.U.H, F = KOS.U.F; kosFallenTick
   if (KOS.ph === 'night' && KOS.t - (KOS.mnT || 0) > 9) { KOS.mnT = KOS.t; kosMobSay('night', 25); }
   if (KOS.ph === 'night' && KOS.rafts.every(R => Math.abs(R.s - R.goal) < 0.3)) kosLand();
   kosFarTick(); }
-function kosAmbush() { KOS.ph = 'amb'; KOS.ev.ambT = KOS.t; const cn = KS2_CN_LOOKS.filter(g => g !== 'girl46' && GIRLS[g]), n = LITE ? 8 : 14, F = KOS.U.F;
-  for (let i = 0; i < n; i++) { const s = F.s + rand(4, 30), c = kosCx(s), side = i % 2 ? 1 : -1, x = c + side * rand(8, 12), z = 1000 - s; const e = kosMk(x, z, 'mob', 'orange', cn[i % cn.length] || 'girl42', { name: ks2Name('cn'), pers: ['慎重', '冷静', '好戦的'][i % 3], cm: 156 + (i * 5) % 12 }); if (!e) continue; e.ks2Cn = true; e.kosCn = true; if (Math.random() < 0.5) { e.yari = true; makeYari(e); } KOS.foes.push(e); }
+function kosAmbush() { KOS.ph = 'amb'; KOS.ev.ambT = KOS.t; const cn = KS2_CN_LOOKS.filter(g => g !== 'cn05' && GIRLS[g]), n = LITE ? 8 : 14, F = KOS.U.F;
+  for (let i = 0; i < n; i++) { const s = F.s + rand(4, 30), c = kosCx(s), side = i % 2 ? 1 : -1, x = c + side * rand(8, 12), z = 1000 - s; const e = kosMk(x, z, 'mob', 'orange', cn[i % cn.length] || 'cn01', { name: ks2Name('cn'), pers: ['慎重', '冷静', '好戦的'][i % 3], cm: 156 + (i * 5) % 12 }); if (!e) continue; e.ks2Cn = true; e.kosCn = true; if (Math.random() < 0.5) { e.yari = true; makeYari(e); } KOS.foes.push(e); }
   kosSeq(KOS_LN.amb, 0.3, 3.4); }
 function kosLand() { if (KOS.ph === 'far') return; KOS.ph = 'far'; KOS.ev.farT = KOS.t; for (const R of KOS.rafts) R.riders.forEach((e, j) => { if (!isUp(e) || e.kosDead) return; e.kosOn = false; e.sgkFree = false; const x = R.x + e.kosSl[0] * 1.4, z = 1000 - (KOS_FAR + 3 + (j % 6) * 1.6);
     if (e.kosSick && e.kosSick.ph !== 'rest') { e.s.position.set(x, kosG(x, z), z); } else { kosHop(e, R.x + e.kosSl[0], 1000 - (KOS_FAR + 1.5), false); e.kosRest = [x * 0.7 + rand(-2, 2), z - rand(6, 22)]; } }); KOS.ph = 'far';
@@ -4781,12 +4781,12 @@ function kosShiraishi() { if (KOS.U.V) return; const U = kosUnit(KOS_V, KOS_V.ba
 function kosAdvance() { if (KOS.ph !== 'far') return; KOS.ph = 'adv'; kosSeq(KOS_LN.adv, 0.5, 4.4); popup('全隊、前へ――殿は本隊（白瀬）と一緒に'); popupTimer = 3; for (const U of KOS.units) for (const e of U.mem) e.kosRest = null; }
 function kosMeet() { if (KOS.ev.meet) return; KOS.ev.meet = KOS.t; KOS.ph = 'meet'; showBanner('白石隊', '先鋒と合流――百五十のうち、残るは九十'); bannerTimer = 3.5; const T = kosSeq(KOS_LN.meet, 1.5, 4.4);
   KOS.later.push([KOS.t + T + 1, () => sgkKing('よく持ちこたえた。ここからは一緒だ')]); const T2 = kosSeq(KOS_LN.quiet, T + 6, 4); KOS.later.push([KOS.t + T + 6 + T2 + 1, () => kosAmbush2()]); }
-const KOS_TOU_LOOKS = () => { const L = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'].filter(g => GIRLS[g]).concat(KS2_CN_LOOKS.filter(g => g !== 'girl46' && GIRLS[g])); return L.length ? L : ['girl42']; };
+const KOS_TOU_LOOKS = () => { const L = ['vn01', 'vn02', 'vn03', 'vn04', 'vn05', 'vn06'].filter(g => GIRLS[g]).concat(KS2_CN_LOOKS.filter(g => g !== 'cn05' && GIRLS[g])); return L.length ? L : ['cn01']; };
 function kosTouMk(x, z, type) { const L = KOS.touL || (KOS.touL = KOS_TOU_LOOKS()), gid = L[(KOS.fSp * 7 + 3) % L.length]; const e = kosMk(x, z, type === 'bow' ? 'archer' : 'mob', 'orange', gid, { name: ks2Name('cn'), pers: ['好戦的', '冷静', '慎重'][KOS.fSp % 3], cm: 154 + (KOS.fSp * 5) % 14 }); if (!e) return null;
   e.ks2Cn = true; e.kosCn = true; e.kosTou = type; e.hp = e.hpMax = 8; e.speed = rand(3.3, 4.1); e.kosBmN = type === 'boom' ? 3 : 0; e.ks2Cd = rand(0.5, 3); e.ukTag = '南蛮 藤甲兵（' + { dao: '大刀', bow: '弓', boom: 'ブーメラン' }[type] + '）'; KOS.foes.push(e); KOS.fSp++; return e; }
 function kosAmbush2() { if (KOS.ev.shu) return; KOS.ev.shu = KOS.t; KOS.ph = 'battle'; KOS.wave = { left: KOS_FOES, next: KOS.t + 1 }; for (const U of KOS.units) { U.bx = U.bat[0]; U.bs = Math.max(U.bs, U.bat[1] - 2); }
   showBanner('伏兵――南蛮の藤甲兵', '大将 祝融。後ろは妻娘返らずの湖――背水の陣'); bannerTimer = 4;
-  const x = rand(-12, 12), z = 1000 - 1452, e = kosMk(x, z, 'mob', 'orange', GIRLS.girl46 ? 'girl46' : 'girl42', { name: '祝融', pers: '好戦的', cm: 170 });
+  const x = rand(-12, 12), z = 1000 - 1452, e = kosMk(x, z, 'mob', 'orange', GIRLS.cn05 ? 'cn05' : 'cn01', { name: '祝融', pers: '好戦的', cm: 170 });
   if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: SHU_KN, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e);
     KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 9, () => kosZh(e, KOS_ZH.die, 2.1)]); KOS.later.push([KOS.t + 22, () => kosZh(e, KOS_ZH.god, 2.1)]); }
   KOS.later.push([KOS.t + 5, () => sgkKing('退くな！ 後ろは湖だ、ここで止めるぞ！')]); KOS.ring = true; KOS.ringN = {}; for (const U of KOS.units) for (const e of U.mem) if (isUp(e) && !e.kosDead) kosRingAssign(e);
@@ -4995,7 +4995,7 @@ const TS_SL = [[0, 1.3], [-0.6, 0.2], [0.6, 0.2], [-0.6, -1.0], [0.6, -1.0], [0,
 const TS_CART0 = 20, TS_CART_ADD = 4, TS_CART_MAX = 40, TS_CART_WIN = 18;   // 鉄車：最初 20 台、45 秒ごとに 4 台（走っているのは 40 台まで）。18 台止めるかオユンを倒せば退く
 function tsCart(side, lead) { const x = side * 178, z = rand(70, 170), C = { m: tsCartMesh(), x, z, h: side > 0 ? -Math.PI / 2 : Math.PI / 2, v: 0, riders: [], st: 'go', tT: 0, side, id: TS.carts.length, hitT: {} };
   const us = USD_IDS.filter(g => GIRLS[g] && GIRLS[g].front);
-  for (let i = 0; i < TS_SL.length; i++) { const gid = us.length ? us[(TS.xnI++ * 5 + 3) % us.length] : 'girl42', nm = TS_XN_NM[(TS.xnI * 7) % TS_XN_NM.length];
+  for (let i = 0; i < TS_SL.length; i++) { const gid = us.length ? us[(TS.xnI++ * 5 + 3) % us.length] : 'cn01', nm = TS_XN_NM[(TS.xnI * 7) % TS_XN_NM.length];
     const e = kosMk(x, z, i === 0 ? 'mob' : 'archer', 'orange', gid, { name: (lead && i === 1) ? 'オユン' : nm, pers: ['好戦的', '冷静', '慎重'][TS.xnI % 3], cm: 158 + (TS.xnI * 3) % 12 }); if (!e) continue;
     e.tsXn = true; e.tsCart = C; e.tsSl = i; e.hp = e.hpMax = 3; e.sgkFree = true; e.ks2Cd = rand(1, 3); e.ukTag = i === 0 ? '匈奴 鉄車の御者' : '匈奴 鉄車の弓兵';
     if (lead && i === 1) { e.hp = e.hpMax = 6; e.ks2Title = e.ukTag = '匈奴の将 オユン'; TS.boss = e; }
@@ -5063,7 +5063,7 @@ function tsCartsCome() { if (TS.ev.carts) return; TS.ev.carts = KOS.t; KOS.ph = 
   KOS.later.push([KOS.t + 26 + T, () => { if (!TS.mode) { KOS.ph = 'choice'; tsChoiceUi(true); popup('下りて白石隊を救うか、丘から弓で援護するか'); popupTimer = 4; } }]); TS.nextW = KOS.t + 70; }
 function tsFlank() { TS.wave++; const n = LITE ? 8 : 12; for (let i = 0; i < n; i++) { const x = rand(-50, 50), z = rand(-120, -95); kosTouMk(x, z, i % 6 === 2 ? 'bow' : i % 6 === 5 ? 'boom' : 'dao'); }
   if (TS.wave === 1) { showBanner('後ろの森から', '祝融の藤甲兵が回り込んできた'); bannerTimer = 3; tsSeq(TS_LN.flank, 1, 4.2); }
-  if (TS.wave === 3 && !KOS.shu) { const x = rand(-10, 10), z = -110, e = kosMk(x, z, 'mob', 'orange', GIRLS.girl46 ? 'girl46' : 'girl42', { name: '祝融', pers: '好戦的', cm: 170 });
+  if (TS.wave === 3 && !KOS.shu) { const x = rand(-10, 10), z = -110, e = kosMk(x, z, 'mob', 'orange', GIRLS.cn05 ? 'cn05' : 'cn01', { name: '祝融', pers: '好戦的', cm: 170 });
     if (e) { e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.kosBoss = { kn: SHU_KN, burst: 0, bT: 4, retT: 0, esc: false, inv: false, lastT: KOS.t }; KOS.shu = e; KOS.foes.push(e); KOS.later.push([KOS.t + 1.2, () => kosZh(e, KOS_ZH.appear, 2.3)]); KOS.later.push([KOS.t + 5, () => sgkKing('祝融……！ 後ろの森から来たか')]); } } }
 function tsCounts() { const c = kosCounts(), V = KOS.U.V; return Object.assign(c, { v: V ? V.mem.filter(e => isUp(e)).length : 0, carts: TS.carts.filter(C => !C.gone && C.st !== 'dead' && C.st !== 'flee').length, tou: KOS.foes.filter(o => o.kosTou && isUp(o) && !o.kosFlee).length }); }
 function tsLabel() { const c = tsCounts(), P = { camp: '野営陣を張る', carts: '鉄車', choice: '下りるか、射るか', rescue: '丘を下りて白石隊へ', bow: '丘から弓で援護', rep: '鉄車を退けた', won: '丘を守りきった', lost: '野営陣が落ちた' }[KOS.ph] || '';
@@ -5417,7 +5417,7 @@ function kgStart() {
   hemiL.intensity = 1.2; ambL.intensity = 0.9; sun.intensity = 0.8;
   if (KG.spr) for (const s of KG.spr) stageRoot.remove(s); KG.spr = [];
   const sg = kgGid('sumi'); const su = sg && kgSprite(sg, 160, KG_SPOT[0] + 1.3, KG_SPOT[1] - 0.3); if (su) KG.spr.push(su);
-  const looks = jpMobLooks().filter(id => /^(girl3[7-9]|girl4[01])$/.test(id)); const pool = looks.length ? looks : jpMobLooks();
+  const looks = jpMobLooks().filter(id => /^(jp3[7-9]|jp4[01])$/.test(id)); const pool = looks.length ? looks : jpMobLooks();
   const P = [[-5.6, -3.4], [6.2, -2.6], [-3.4, -5.0], [3.9, 3.0], [-8.0, -5.2]];
   P.forEach((p, i) => { const s = pool.length && kgSprite(pool[(i * 3 + 1) % pool.length], 156 + (i % 3) * 4, p[0], p[1]); if (s) { s.userData.bx = p[0]; s.userData.ph = i * 1.7; KG.spr.push(s); KG.mob.push(s); } });
   if (VoicePack.ok) for (const l of kgAllLines()) { const f = ks2VoiceFile(l[1], l[0]); if (f && VoicePack.buf[f] === undefined) VoicePack.load(f); }
@@ -6399,7 +6399,7 @@ function hgBmMesh() { const M = HG.bmM || (HG.bmM = { m: new THREE.MeshLambertMa
 // ---- 群れ：絵の組（gid ごとの InstancedMesh） ----
 function hgGroup(gid) { if (HG.pg[gid] !== undefined) return HG.pg[gid]; const G = ks2PxGroup(gid, 900); if (G) { G.cap = 900; G.dl = []; G.gid = gid; } HG.pg[gid] = G || null; return HG.pg[gid]; }
 function hgLooks(team) { const ok = g => GIRLS[g] && GIRLS[g].front && GIRLS[g].front.tex;
-  if (team === 'orange') { const L = KS2_CN_LOOKS.filter(g => g !== 'girl46' && g !== 'girl42' && ok(g)); return L.length ? L : ['girl43'].filter(ok); }
+  if (team === 'orange') { const L = KS2_CN_LOOKS.filter(g => g !== 'cn05' && g !== 'cn01' && ok(g)); return L.length ? L : ['cn02'].filter(ok); }
   const L = jpMobPool().filter(ok); return L.length ? L : jpMobLooks().filter(ok); }   // 日本側は登録した見た目をすべて均等に（件数の上限で新しい顔だけに偏らせない）
 function hgPickW(U) { const r = Math.random(); if (U.kind === 'cav') return 'spear'; if (U.team === 'blue') return U.kind === 'inf' && r < 0.22 ? 'shield' : 'spear'; if (U.kind === 'det') return r < 0.55 ? 'dao' : 'knife'; if (U.reg) return r < 0.42 ? 'shield' : 'spear'; if (U.kind === 'raid') return r < 0.4 ? 'dao' : r < 0.7 ? 'knife' : 'boom'; return r < 0.5 ? 'dao' : 'spear'; }   // 漢の正規軍：盾と槍（弓は弩）。南蛮：大刀・投げナイフ・ブーメラン。味方：盾持ちと槍
 function hgAdd(U, x, z, arch) { const team = U.team, L = team === 'orange' ? HG.lkO : HG.lkB; if (!L || !L.length || HG.px.length >= HG.cap) return null; let G = null;
@@ -6447,7 +6447,7 @@ function hgStart() { HG.on = true; hgReset(); hgLook(); CFG.maxBodies = Math.max
   const X = [-120, -60, 0, 60, 120]; for (let i = 0; i < 5; i++) { const U = hgUnit('漢軍 第' + '一二三四五'[i] + '隊', 'orange', X[i] + rand(-4, 4), 40 + (i % 2) * 8, 136, 0.2, { goT: 99999, reg: true, fm: 'yoko' }); U.vol = true; U.wave = 1; hgMkCn(U, HG_CN_LEAD.reg[i], true, i); }
   for (let i = 0; i < 3; i++) { const sx = [-1, 1, 0][i], U = hgUnit('南蛮 奇襲隊 ' + '一二三'[i], 'orange', sx * 175, i === 2 ? 110 : 75, 130, 0, { kind: 'raid', goT: 99999 }); U.wave = 2; U.bands = [];
     U.mem.forEach((o, j) => { const b = Math.floor(j / 13); if (!U.bands[b]) U.bands[b] = { m: [], st: 'wait', t: rand(0, 14) + b * 2, ox: rand(-25, 25), oz: rand(-20, 20) }; U.bands[b].m.push(o); o.bd = b; }); hgMkCn(U, HG_CN_LEAD.raid[i], false, 5 + i); }
-  { const U = hgUnit('中国軍 本陣', 'orange', 0, 150, 100, 0.25, { kind: 'hq', goT: 99999 }); HG.UG = U; const gid = GIRLS.girl42 ? 'girl42' : HG.lkO[0]; const e = ks2Mk(0, 162, 'mob', 'orange', gid, { name: '韓 麗華', pers: '冷静', cm: 168 }); if (e) { e.hg = true; e.hgCmd = true; e.hgU = U; e.hgOff = [0, 10]; e.ks2Title = e.ukTag = '中国軍の総大将 韓'; e.ks2Cn = true; e.hp = e.hpMax = 24; HG.cmd = e; HG.real.push(e); } }
+  { const U = hgUnit('中国軍 本陣', 'orange', 0, 150, 100, 0.25, { kind: 'hq', goT: 99999 }); HG.UG = U; const gid = GIRLS.cn01 ? 'cn01' : HG.lkO[0]; const e = ks2Mk(0, 162, 'mob', 'orange', gid, { name: '韓 麗華', pers: '冷静', cm: 168 }); if (e) { e.hg = true; e.hgCmd = true; e.hgU = U; e.hgOff = [0, 10]; e.ks2Title = e.ukTag = '中国軍の総大将 韓'; e.ks2Cn = true; e.hp = e.hpMax = 24; HG.cmd = e; HG.real.push(e); } }
   { const C = hgUnit('匈奴 騎馬弓兵 一', 'orange', 200, 70, 80, 1, { kind: 'cav', goT: 99999 }); C.fx = -0.3; C.fz = -0.95; HG.UC = C; const C2 = hgUnit('匈奴 騎馬弓兵 二', 'orange', -150, 165, 80, 1, { kind: 'cav', goT: 99999 }); C2.fx = 0.3; C2.fz = -0.95; HG.UC2 = C2; hgMkCn(C, HG_CN_LEAD.cav[0], true, 8); hgMkCn(C2, HG_CN_LEAD.cav[1], true, 9); }
   hgShuDetach();   // 祝融の別働隊ははじめから敵の左の外に控える（後から湧く兵はいない）
   { const W = HG.W, N = HG.wn; W.yumi.count = Math.max(1, N.bow); W.xbow.count = Math.max(1, N.xb); W.nagi.count = Math.max(1, N.dao); W.boom.count = Math.max(1, N.boom); W.kai.count = Math.max(1, N.kai); W.shield.count = Math.max(1, N.sh); }
@@ -6710,7 +6710,7 @@ function hgRealBrain(e, dt) { const o = e.hgO, U = o.U, p = e.s.position, foe = 
 // ---- 祝融（平原）：別働隊を率いて大きく回り込み、本隊の背後へ。隊を割り、指揮官に一騎打ちを挑む。断られれば「腰抜けめ！」。刃が尽きれば近くの中国側の女から受け取る ----
 function hgShuDetach() { if (HG.shu || HG.shuDead) return; const B = HG.UB[0]; const D = hgUnit('祝融の別働隊', 'orange', -200, 60, 90, 0.15, { kind: 'det', goT: 99999 }); D.fx = 0.3; D.fz = -0.95; HG.UD = D;
   D.onArr = () => { hgSeq(HG_LN.rear, 0.5, 4); showBanner('背後に敵', '祝融の別働隊が本隊の後ろへ'); bannerTimer = 3.5; };
-  const e = ks2Mk(D.x, D.z + 4, 'mob', 'orange', GIRLS.girl46 ? 'girl46' : HG.lkO[0], { name: '祝融', pers: '好戦的', cm: 170 }); if (!e) return;
+  const e = ks2Mk(D.x, D.z + 4, 'mob', 'orange', GIRLS.cn05 ? 'cn05' : HG.lkO[0], { name: '祝融', pers: '好戦的', cm: 170 }); if (!e) return;
   e.hg = true; e.hgU = D; e.ks2Cn = true; e.ks2Title = e.ukTag = '南蛮の大将 祝融'; e.hp = e.hpMax = 40; e.speed = 5.2; e.hgShu = { st: 'with', cdT: HG.t + 30, kn: SHU_KN }; HG.shu = e; HG.real.push(e);
 }
 function hgShuGo() { const D = HG.UD, e = HG.shu; if (!D || D.st === 'gone') return; const W = HG.UB.find(V => V.lk === 'sec4' && hgCapable(V)) || HG.UB.find(V => V.lk === 'ojou' && hgCapable(V)) || HG.UB[0]; D.goT = 0; D.path = [[-190, -10], [W.x - 38, W.z + 8]]; D.tgtU = W;   // 早めに右翼の外へ。そこから指揮官を探して一騎打ちを挑む
@@ -18250,7 +18250,7 @@ function cvThDraw(k) {
   g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(0, Hh * 0.72, W, Hh * 0.28);
   const nP = sl[2], rows = nP > 8 ? 2 : 1, per = Math.ceil(nP / rows);
   for (let r = rows - 1; r >= 0; r--) for (let i = 0; i < per; i++) { const id = r * per + i; if (id >= nP) break;
-    const pool = (typeof jpMobPool === 'function' ? jpMobPool() : Object.keys(GIRLS)), gid = pool.length ? pool[(id * 3 + k * 5) % pool.length] : 'girl17', src = maidFile('assets/maids/' + gid + '.png');
+    const pool = (typeof jpMobPool === 'function' ? jpMobPool() : Object.keys(GIRLS)), gid = pool.length ? pool[(id * 3 + k * 5) % pool.length] : 'jp17', src = maidFile('assets/jp_jijo/' + gid + '_1front.png');
     const im = cvThImg(src); if (!im.complete || !im.naturalWidth) continue;
     const h = rows === 2 ? (r ? 300 : 340) : 420, w = h * im.naturalWidth / im.naturalHeight, span = W * (rows === 2 ? 0.86 : 0.7);
     const x = W / 2 - span / 2 + (per === 1 ? span / 2 : span * i / (per - 1)) + (r ? 30 : 0), y = Hh - 40 - (r ? 70 : 0);
@@ -25416,7 +25416,7 @@ function fbLook() {
   hemiL.color.setHex(0xe8f2ff); hemiL.groundColor.setHex(0x8a9aaa); hemiL.intensity = 1.35; ambL.intensity = 0.85; sun.intensity = 0.55;
 }
 // ---- 人 ----
-const FB_RESERVED = () => new Set([SEC_ID, SEC2_ID, 'omiya', 'girl35', 'murase', 'girl36', 'girl40', FUMI_ID, OJOU_ID]);
+const FB_RESERVED = () => new Set([SEC_ID, SEC2_ID, 'omiya', 'jp35', 'murase', 'jp36', 'jp40', FUMI_ID, OJOU_ID]);
 function fbSp(x, z, kind, team, gid, prof) {
   if (!gid) { const res = FB_RESERVED(); for (let k = 0; k < 12; k++) { const g = pickGirl(kind); const id = g && Object.keys(GIRLS).find(i => GIRLS[i] === g); if (id && !res.has(id)) { gid = id; break; } } }   // 一般の侍女・兵に名前付きの写真を使わない
   const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: {} });
@@ -25427,7 +25427,7 @@ function fbSp(x, z, kind, team, gid, prof) {
   return e;
 }
 const FB_NAMED = [['sumi', () => SEC_ID, { name: '秘書課 白瀬 澄', pers: '冷静', cm: 160, vv: 1 }, 'mob'], ['sec2', () => SEC2_ID, { name: '秘書課 早瀬 ことね', pers: '臆病', cm: 158, vv: 2 }, 'mob'],
-  ['omiya', () => 'omiya', null, 'mob'], ['m35', () => 'girl35', null, 'mob'], ['m37', () => 'murase', null, 'archer'], ['m39', () => 'girl36', null, 'mob'], ['m43', () => 'girl40', null, 'archer']];
+  ['omiya', () => 'omiya', null, 'mob'], ['m35', () => 'jp35', null, 'mob'], ['m37', () => 'murase', null, 'archer'], ['m39', () => 'jp36', null, 'mob'], ['m43', () => 'jp40', null, 'archer']];
 let FB_SKI_G = null, FB_SKI_M = null;
 function fbSkis(e) { if (!FB_SKI_G) { FB_SKI_G = new THREE.BoxGeometry(0.08, 0.03, 1.7); FB_SKI_M = fbMat(0x3a2d22); } for (const sd of [-1, 1]) { const m = new THREE.Mesh(FB_SKI_G, FB_SKI_M); m.position.set(sd * 0.13, 0.03, 0.1); e.s.add(m); } }
 function fbSpawn() {
@@ -27708,8 +27708,8 @@ const ODW = { on: false, op: false, cs: [], gates: [], zone: 0, zT: 0 };
 const ODW_R = { keep: 19, wallIn: 50, moat0: 52, moat1: 62, dor0: 104, dor1: 120, ditch1: 132, edge: 150 };
 // 着替えの前の私服（既にいる侍女から：同じ顔のまま、出てくる時は各自のいつもの服）
 const ODW_CS = [
-  { n: 1, gid: 'girl17', pers: '臆病', vv: 0 }, { n: 2, gid: 'girl18', pers: '慎重', vv: 1 }, { n: 3, gid: 'girl19', pers: '陽気', vv: 2 }, { n: 4, gid: 'girl21', pers: '冷静', vv: 1 },
-  { n: 5, gid: 'girl22', pers: '臆病', vv: 2 }, { n: 6, gid: 'girl35', pers: '慎重', vv: 0 }, { n: 7, gid: 'girl36', pers: '好戦的', vv: 1 }, { n: 8, gid: 'girl38', pers: '冷静', vv: 2 }];
+  { n: 1, gid: 'jp17', pers: '臆病', vv: 0 }, { n: 2, gid: 'jp18', pers: '慎重', vv: 1 }, { n: 3, gid: 'jp19', pers: '陽気', vv: 2 }, { n: 4, gid: 'jp21', pers: '冷静', vv: 1 },
+  { n: 5, gid: 'jp22', pers: '臆病', vv: 2 }, { n: 6, gid: 'jp35', pers: '慎重', vv: 0 }, { n: 7, gid: 'jp36', pers: '好戦的', vv: 1 }, { n: 8, gid: 'jp38', pers: '冷静', vv: 2 }];
 const odwAxis = (x, z, w) => Math.abs(x) < w || Math.abs(z) < w;
 function odwH(x, z) {
   const r = Math.hypot(x, z), R = ODW_R;
@@ -30420,7 +30420,7 @@ function palSpots(R) {
 }
 // ---- 人：時間帯ごとに、いまの階にいる娘だけを出す ----
 const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', FUMI_ID, OJOU_ID, 'omiya', 'kuon', 'reika', 'ichijo', 'murase', 'hirose', 'sanjo', 'surgeon', SYSOP_ID, FLUTE_ID, MEDIC_ID]);   // 名のある娘の絵は、名の無い侍女に使わない
-// 日本の名の無い侍女の見た目すべて：girl01〜81（弓専用の girl01〜06 と、弓を持たない姿のある girl07〜16 を含む）。名のある娘の写真は除く
+// 日本の名の無い侍女の見た目すべて：jp01〜71（弓専用の jp01〜06 と、弓を持たない姿のある jp07〜16 を含む）。名のある娘の写真は除く
 // 名の無い侍女の見た目を、山札のように切って均等に配る（どの見た目も同じ回数ずつ）
 const MOB_DECK = {};
 function mobDeal(key, pool) { if (!pool || !pool.length) return undefined; let D = MOB_DECK[key]; if (!D || D.src !== pool || !D.a.length) { const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } D = MOB_DECK[key] = { src: pool, a }; } return D.a.pop(); }
@@ -30428,7 +30428,7 @@ function inferMaidType(gid, extra) {
   if (extra && extra.type) return extra.type;
   if (gid === 'medic' || gid === 'surgeon' || gid === 'nurse2') return 'medic';
   if (/^(uk|us|fr|vn|cn|ru|de)\d/.test(gid)) return gid.replace(/\d+$/, '');
-  if (/^girl\d+$/.test(gid) || /^sec\d+$/.test(gid)) return 'mob';
+  if (/^jp\d+$/.test(gid) || /^sec\d+$/.test(gid)) return 'mob';
   return 'extra';
 }
 function jpMobLooks() { const no = PAL_NOGEN();
@@ -32297,13 +32297,13 @@ function loadStage(name) {
 }
 
 // ====================================================================
-//  スプライト読み込み（侍女の立ち絵 assets/maids/girlNN（および名のある娘の日本語ファイル名））
+//  スプライト読み込み（侍女の立ち絵 assets/jp_jijo/girlNN（および名のある娘の日本語ファイル名））
 //   http(s) で配信時は PNG を直接読む（差し替えが楽）。
 //   file:// で開いた時は WebGL の制約上、assets/sprites.js の埋め込みデータを使う。
 //   枚数は sprites.js の配列長で決まる（tools/make_sprites.py で再生成）。
 // ====================================================================
 const SPR = { mob: [], archer: [] };
-const SPR_SLOT_IDS = { mob: ['girl17','girl18','hibiki','girl19','girl20','shirase','hayase','girl21','girl22','girl23'], archer: ['girl07','girl08','girl09','girl10','girl11','girl12','girl13','girl14','girl15','girl16'] };
+const SPR_SLOT_IDS = { mob: ['jp17','jp18','hibiki','jp19','jp20','shirase','hayase','jp21','jp22','jp23'], archer: ['jp07','jp08','jp09','jp10','jp11','jp12','jp13','jp14','jp15','jp16'] };
 let texLoaded = 0;
 function loadSprites(done) {
   const useFiles = /^https?:/.test(location.protocol);
@@ -32316,7 +32316,7 @@ function loadSprites(done) {
   for (const [kind, emb, tops] of sets) emb.forEach((data, i) => {
     const sprIds = SPR_SLOT_IDS[kind] || [];
     const gid = sprIds[i];
-    const file = maidFile(`assets/maids/${gid}.png`);
+    const file = maidFile(`assets/jp_jijo/${gid}_1front.png`);
     const ok = t => {
       t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
       SPR[kind][i] = { id: gid, tex: t, img: t.image, aspect: t.image.width / t.image.height, top: tops[i] || 0 };
@@ -32423,7 +32423,7 @@ const tipMat = new THREE.MeshLambertMaterial({ color: 0xd9d4c6 });   // たん�
 const _v = new V3(), _v2 = new V3(), _q = new THREE.Quaternion();
 const qsId = k => { const m = location.search.match(new RegExp('[?&]' + k + '=(\\w+)')); return m ? m[1] : null; };
 let SEC2_ID = qsId('sec2') || 'hayase';   // 二人目の秘書（荷物持ち・靴磨き）
-let SEC_ID = qsId('sec') || 'shirase', FLUTE_ID = qsId('flute') || 'hibiki', MEDIC_ID = qsId('medic') || 'medic';   // 医療係：専用写真（frames の medic）、無ければ ?medic= の娘   // 秘書・笛役に使う写真（?sec=girl20 などで変更可）
+let SEC_ID = qsId('sec') || 'shirase', FLUTE_ID = qsId('flute') || 'hibiki', MEDIC_ID = qsId('medic') || 'medic';   // 医療係：専用写真（frames の medic）、無ければ ?medic= の娘   // 秘書・笛役に使う写真（?sec=jp20 などで変更可）
 const GIRLS = {};      // id -> { id, type: 'mob'|'archer', spr, front, side, back, walk, bow, stab, action, flute }
 function buildGirls() {
   for (const kind of ['mob', 'archer']) for (const sp of SPR[kind]) {
@@ -32495,7 +32495,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261122j';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122k';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -32505,7 +32505,7 @@ function loadFrames(done) {
     const x = EXTRA_GIRLS[gid] || {};
     GIRLS[gid] = Object.assign({ id: gid, type: inferMaidType(gid, x), spr: null, front: null }, x);
   }
-  // assets/maids の名簿（ids.js）にあるが FRAME_META にまだ無いタイプも、正面の絵があれば登録する
+  // assets/jp_jijo の名簿（ids.js）にあるが FRAME_META にまだ無いタイプも、正面の絵があれば登録する
   { const ids = window.MAID_IDS || [], files = window.MAID_FILES || {};
     for (const gid of ids) {
       if (GIRLS[gid]) continue;
@@ -32521,7 +32521,7 @@ function loadFrames(done) {
       }
     }
   }
-  // 弓を持たない姿のある弓兵（girl07〜16）：元の写真（弓を引く立ち姿）は「弓を引く」見え方として残す
+  // 弓を持たない姿のある弓兵（jp07〜16）：元の写真（弓を引く立ち姿）は「弓を引く」見え方として残す
   for (const gid of window.ARCH_UNARMED || []) { const g = GIRLS[gid]; if (g && g.front && !g.bow) { g.bow = g.front; g.unarmed = true; } }
   for (const gid in meta) for (const k in meta[gid]) if (GIRLS[gid]) jobs.push([gid, k, meta[gid][k]]);
   // 歩行サイクル（tools/make_walkcycle.py → assets/frames/cycles.js）：横から見た歩きの連続写真。?cycle=0 で使わない
@@ -32536,7 +32536,7 @@ function loadFrames(done) {
       g.gid = gid; g.kokkaku = g.kokkaku || KOKKAKU[gid] || 'S';
       if (g.cycles) for (const k in g.cycles) { const C = g.cycles[k]; if (C.seq.some(i => !C.frs[i])) delete g.cycles[k]; }   // 読めなかった絵があれば使わない
       g.cycle = g.cycles && g.cycles.walk_side || null;
-      if (g.type === 'archer' && !g.bow && !(g.side && g.back)) g.bowOnly = true;   // 弓を引く立ち姿だけの弓兵（girl01〜06、bowOnly）：一般の山札にも入れる（倒れたら girlNN_down）
+      if (g.type === 'archer' && !g.bow && !(g.side && g.back)) g.bowOnly = true;   // 弓を引く立ち姿だけの弓兵（jp01〜06、bowOnly）：一般の山札にも入れる（倒れたら girlNN_down）
       if (g.bowOnly) {   // 弓を引く写真しか無い娘：どの見え方もその写真（横は向きに合わせて反転）。倒れたあとは写真のまま横たわる
         const b = g.bow || g.front; g.bow = b; g.front = b; g.side = g.side || b; g.walk = g.walk || b;
       }
@@ -32544,7 +32544,7 @@ function loadFrames(done) {
       if (!g.cycle) g.cycle = synthWalk(g);
       if (!g.spr) g.spr = { id: gid, img: g.front.tex.image, top: Math.max(0, 1 - 1 / g.front.hk), tex: g.front.tex, aspect: g.front.aspect }; }
     if (!GIRLS[SEC2_ID]) SEC2_ID = Object.keys(GIRLS).find(k => GIRLS[k].type === 'mob' && k !== SEC_ID && k !== FLUTE_ID) || SEC_ID;
-    if (!GIRLS[MEDIC_ID]) MEDIC_ID = GIRLS.girl20 ? 'girl20' : SEC_ID;
+    if (!GIRLS[MEDIC_ID]) MEDIC_ID = GIRLS.jp20 ? 'jp20' : SEC_ID;
     done();
   };
   let left = jobs.length; if (!left) { done2(); return; }
@@ -32609,79 +32609,79 @@ const EXTRA_GIRLS = {
   sec5: { type: 'mob', anyRole: true, prof: { name: '小日向 ひより', pers: '慎重', cm: 152, vv: 2, pitch: 1.3 } },   // 小柄
   sec6: { type: 'mob', anyRole: true, prof: { name: '氷室 しのぶ', pers: '冷静', cm: 170, vv: 0, pitch: 0.85 } },    // 長身・細身
   sec7: { type: 'mob', anyRole: true, prof: { name: '夏目 あかり', pers: '陽気', cm: 162, vv: 1, pitch: 1.35 } },    // 快活
-  girl01: { type: 'archer', bowOnly: true }, girl02: { type: 'archer', bowOnly: true }, girl03: { type: 'archer', bowOnly: true },
-  girl04: { type: 'archer', bowOnly: true }, girl05: { type: 'archer', bowOnly: true }, girl06: { type: 'archer', bowOnly: true },
+  jp01: { type: 'archer', bowOnly: true }, jp02: { type: 'archer', bowOnly: true }, jp03: { type: 'archer', bowOnly: true },
+  jp04: { type: 'archer', bowOnly: true }, jp05: { type: 'archer', bowOnly: true }, jp06: { type: 'archer', bowOnly: true },
   sec3: { type: 'aide' }, sec4: { type: 'aide' },
   // v5：新しい兵の娘（両軍に出る。固有の名前・性格・身長・声の高さ）
-  girl24: { type: 'mob', anyRole: true, prof: { name: '星野 ゆな', pers: '慎重', cm: 166, vv: 2, pitch: 1.3 } },     // 韓国風の雰囲気・やさしく甘い
-  girl25: { type: 'mob', anyRole: true, prof: { name: '林 玲奈', pers: '好戦的', cm: 163, vv: 1, pitch: 1.1 } },     // 中国風の雰囲気・落ち着いて自信がある
-  girl26: { type: 'mob', anyRole: true, prof: { name: '桐谷 理紗', pers: '冷静', cm: 160, vv: 0, pitch: 0.9 } },     // 眼鏡・冷静で知的
-  girl27: { type: 'mob', anyRole: true, prof: { name: '日比野 夏海', pers: '陽気', cm: 165, vv: 2, pitch: 1.45 } },  // ごく短い髪・日焼け・元気
-  girl28: { type: 'mob', anyRole: true, prof: { name: '雨宮 小夜', pers: '臆病', cm: 157, vv: 1, pitch: 1.2 } },     // 横の三つ編み・物静か
+  jp24: { type: 'mob', anyRole: true, prof: { name: '星野 ゆな', pers: '慎重', cm: 166, vv: 2, pitch: 1.3 } },     // 韓国風の雰囲気・やさしく甘い
+  jp25: { type: 'mob', anyRole: true, prof: { name: '林 玲奈', pers: '好戦的', cm: 163, vv: 1, pitch: 1.1 } },     // 中国風の雰囲気・落ち着いて自信がある
+  jp26: { type: 'mob', anyRole: true, prof: { name: '桐谷 理紗', pers: '冷静', cm: 160, vv: 0, pitch: 0.9 } },     // 眼鏡・冷静で知的
+  jp27: { type: 'mob', anyRole: true, prof: { name: '日比野 夏海', pers: '陽気', cm: 165, vv: 2, pitch: 1.45 } },  // ごく短い髪・日焼け・元気
+  jp28: { type: 'mob', anyRole: true, prof: { name: '雨宮 小夜', pers: '臆病', cm: 157, vv: 1, pitch: 1.2 } },     // 横の三つ編み・物静か
   // v6：新しい兵の娘 6人（正面・横・斜め・後ろの写真。両軍の通常の兵として全ステージに出る）
   reika: { type: 'mob', anyRole: true, prof: { name: '白石 麗華', pers: '好戦的', cm: 165, vv: 1, pitch: 1.15 } },  // 夜会巻き・腰に手・自信家
-  girl29: { type: 'mob', anyRole: true, prof: { name: '高梨 紬', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
-  girl30: { type: 'mob', anyRole: true, prof: { name: '朝倉 ひなた', pers: '陽気', cm: 158, vv: 2, pitch: 1.45 } },  // 両手ピース・ポニーテール・元気いっぱい
-  girl31: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
-  girl32: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
+  jp29: { type: 'mob', anyRole: true, prof: { name: '高梨 紬', pers: '慎重', cm: 157, vv: 2, pitch: 1.35 } }, // 両手ピース・お団子・甘え上手だが用心深い
+  jp30: { type: 'mob', anyRole: true, prof: { name: '朝倉 ひなた', pers: '陽気', cm: 158, vv: 2, pitch: 1.45 } },  // 両手ピース・ポニーテール・元気いっぱい
+  jp31: { type: 'mob', anyRole: true, prof: { name: '藤宮 しおり', pers: '臆病', cm: 161, vv: 1, pitch: 1.2 } },   // 耳に手・お団子・はにかみ屋
+  jp32: { type: 'mob', anyRole: true, prof: { name: '水瀬 りん', pers: '陽気', cm: 159, vv: 1, pitch: 1.3 } },     // 目元でピース・前髪ぱっつん・いたずら好き
   kuon: { type: 'mob', anyRole: true, prof: { name: '久遠 静香', pers: '冷静', cm: 167, vv: 0, pitch: 0.95 } },    // 片手ピース・ポニーテール・落ち着いた長身
   // v9：新しい兵の娘（ティアラ・黒いショルダーバッグ・小柄で人なつこい）
-  girl33: { type: 'mob', anyRole: true, prof: { name: '椎名 みのり', pers: '陽気', cm: 153, vv: 2, pitch: 1.4 } },
+  jp33: { type: 'mob', anyRole: true, prof: { name: '椎名 みのり', pers: '陽気', cm: 153, vv: 2, pitch: 1.4 } },
   // v10：新しい兵の娘（22歳前後）
-  girl34: { type: 'mob', anyRole: true, prof: { name: '春日 ひかり', pers: '陽気', cm: 158, vv: 2, pitch: 1.4 } },    // 低いポニーテール・スマートウォッチ。明るく人なつこい。大学（スポーツ科学）卒、学生時代はテニスサークル
+  jp34: { type: 'mob', anyRole: true, prof: { name: '春日 ひかり', pers: '陽気', cm: 158, vv: 2, pitch: 1.4 } },    // 低いポニーテール・スマートウォッチ。明るく人なつこい。大学（スポーツ科学）卒、学生時代はテニスサークル
   ichijo: { type: 'mob', anyRole: true, prof: { name: '一条 千景', pers: '冷静', cm: 160, vv: 1, pitch: 1.05 } },    // 栗色の肩までの髪・耳飾り。しとやかで品がある。茶道を少したしなむ
   // v11：黒髪の侍女。灰髪の紗良・金髪のゆずは定義に合わないため素材ごと削除した
-  girl35: { type: 'mob', anyRole: true, prof: { name: '神崎 真白', pers: '冷静', cm: 168, vv: 0, pitch: 0.9 } },   // 24歳。黒髪の低いシニヨン、前髪なし、無表情
+  jp35: { type: 'mob', anyRole: true, prof: { name: '神崎 真白', pers: '冷静', cm: 168, vv: 0, pitch: 0.9 } },   // 24歳。黒髪の低いシニヨン、前髪なし、無表情
   murase: { type: 'mob', anyRole: true, prof: { name: '村瀬 碧', pers: '好戦的', cm: 164, vv: 1, pitch: 1.05 } },  // 22歳。顎までの黒髪（白い筋はなし）
-  girl36: { type: 'mob', anyRole: true, prof: { name: '谷口 のぞみ', pers: '臆病', cm: 156, vv: 2, pitch: 1.2 } },  // 19歳。茶髪のぱっつんボブ、ややふくよか
-  girl37: { type: 'mob', anyRole: true, prof: { name: '青葉 みお', pers: '陽気', cm: 160, vv: 1, pitch: 1.15 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
-  girl38: { type: 'mob', anyRole: true, prof: { name: '藤崎 ほのか', pers: '陽気', cm: 158, vv: 0, pitch: 1.1 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
-  girl39: { type: 'mob', anyRole: true, prof: { name: '田中 あおい', pers: '陽気', cm: 160, vv: 1, pitch: 1.2 } },  // 普通の兵。黒髪は前髪だけ残して耳の後ろで束ねる。白のキャミソール、銀のティアラは正面だけ
-  girl40: { type: 'mob', anyRole: true, prof: { name: '遠藤 加那', pers: '冷静', cm: 163, vv: 1, pitch: 1.0 } },  // 普通の侍女。短い黒髪で耳が出る。白キャミ、細い黒革ベルト。銀のティアラは後ろ以外
-  girl41: { type: 'mob', anyRole: true, prof: { name: '長谷川 まい', pers: '陽気', cm: 162, vv: 1, pitch: 1.25 } },  // 普通の侍女。肩までの黒髪に前髪。白キャミはベルトまで。銀のティアラは後ろ以外
+  jp36: { type: 'mob', anyRole: true, prof: { name: '谷口 のぞみ', pers: '臆病', cm: 156, vv: 2, pitch: 1.2 } },  // 19歳。茶髪のぱっつんボブ、ややふくよか
+  jp37: { type: 'mob', anyRole: true, prof: { name: '青葉 みお', pers: '陽気', cm: 160, vv: 1, pitch: 1.15 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
+  jp38: { type: 'mob', anyRole: true, prof: { name: '藤崎 ほのか', pers: '陽気', cm: 158, vv: 0, pitch: 1.1 } },  // 普通の兵。短い黒髪のぱっつんボブ、白のキャミソール、銀のティアラは正面だけ
+  jp39: { type: 'mob', anyRole: true, prof: { name: '田中 あおい', pers: '陽気', cm: 160, vv: 1, pitch: 1.2 } },  // 普通の兵。黒髪は前髪だけ残して耳の後ろで束ねる。白のキャミソール、銀のティアラは正面だけ
+  jp40: { type: 'mob', anyRole: true, prof: { name: '遠藤 加那', pers: '冷静', cm: 163, vv: 1, pitch: 1.0 } },  // 普通の侍女。短い黒髪で耳が出る。白キャミ、細い黒革ベルト。銀のティアラは後ろ以外
+  jp41: { type: 'mob', anyRole: true, prof: { name: '長谷川 まい', pers: '陽気', cm: 162, vv: 1, pitch: 1.25 } },  // 普通の侍女。肩までの黒髪に前髪。白キャミはベルトまで。銀のティアラは後ろ以外
   hirose: { type: 'mob', anyRole: true, prof: { name: '広瀬 千夏', pers: '陽気', cm: 160, vv: 2, pitch: 1.1 } },  // 普通の侍女。ぱっつん前髪と左肩のポニーテール。銀のティアラは後ろ以外
-  // girl42〜55：中国の現地兵（決戦2の守り手だけ。type 'cn' は日本の兵の抽選に入らない。名前はその場で中国の名前）
-  girl42: { type: 'cn', prof: { cm: 158, vv: 0, pitch: 1.05 } },  // 普通の侍女。丸い顔、低いお団子。銀のティアラは後ろ以外。名前は土地のみ
-  girl43: { type: 'cn', prof: { cm: 168, vv: 1, pitch: 0.92 } },  // 普通の侍女。面長、髪をきつく後ろへ。銀のティアラは後ろ以外。名前は土地のみ
-  girl44: { type: 'cn', prof: { cm: 162, vv: 2, pitch: 1.18 } },  // 普通の侍女。色白の面長、長いストレート。銀のティアラは後ろ以外。名前は土地のみ
-  girl45: { type: 'cn', prof: { cm: 165, vv: 0, pitch: 0.96 } },  // 普通の侍女。高いポニーテール。銀のティアラは後ろ以外。名前は土地のみ
-  girl46: { type: 'cn', prof: { cm: 164, vv: 1, pitch: 1.08 } },  // 普通の侍女。編み込みの冠。銀のティアラは後ろ以外。名前は土地のみ
-  girl47: { type: 'cn', prof: { cm: 157, vv: 2, pitch: 1.28 } },  // 普通の侍女。短いボブ。銀のティアラは後ろ以外。名前は土地のみ
-  girl48: { type: 'cn', prof: { cm: 172, vv: 0, pitch: 0.88 } },  // 普通の侍女。長身、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
-  girl49: { type: 'cn', prof: { cm: 166, vv: 1, pitch: 0.98 } },  // 普通の侍女。低いお団子。銀のティアラは後ろ以外。名前は土地のみ
-  girl50: { type: 'cn', prof: { cm: 163, vv: 2, pitch: 1.05 } },  // 普通の侍女。二つ編み。銀のティアラは後ろ以外。名前は土地のみ
-  girl51: { type: 'cn', prof: { cm: 160, vv: 0, pitch: 1.16 } },  // 普通の侍女。細い顔、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
-  girl52: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女（モブ）。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl53: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女（モブ）。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  // cn01〜55：中国の現地兵（決戦2の守り手だけ。type 'cn' は日本の兵の抽選に入らない。名前はその場で中国の名前）
+  cn01: { type: 'cn', prof: { cm: 158, vv: 0, pitch: 1.05 } },  // 普通の侍女。丸い顔、低いお団子。銀のティアラは後ろ以外。名前は土地のみ
+  cn02: { type: 'cn', prof: { cm: 168, vv: 1, pitch: 0.92 } },  // 普通の侍女。面長、髪をきつく後ろへ。銀のティアラは後ろ以外。名前は土地のみ
+  cn03: { type: 'cn', prof: { cm: 162, vv: 2, pitch: 1.18 } },  // 普通の侍女。色白の面長、長いストレート。銀のティアラは後ろ以外。名前は土地のみ
+  cn04: { type: 'cn', prof: { cm: 165, vv: 0, pitch: 0.96 } },  // 普通の侍女。高いポニーテール。銀のティアラは後ろ以外。名前は土地のみ
+  cn05: { type: 'cn', prof: { cm: 164, vv: 1, pitch: 1.08 } },  // 普通の侍女。編み込みの冠。銀のティアラは後ろ以外。名前は土地のみ
+  cn06: { type: 'cn', prof: { cm: 157, vv: 2, pitch: 1.28 } },  // 普通の侍女。短いボブ。銀のティアラは後ろ以外。名前は土地のみ
+  cn07: { type: 'cn', prof: { cm: 172, vv: 0, pitch: 0.88 } },  // 普通の侍女。長身、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
+  cn08: { type: 'cn', prof: { cm: 166, vv: 1, pitch: 0.98 } },  // 普通の侍女。低いお団子。銀のティアラは後ろ以外。名前は土地のみ
+  cn09: { type: 'cn', prof: { cm: 163, vv: 2, pitch: 1.05 } },  // 普通の侍女。二つ編み。銀のティアラは後ろ以外。名前は土地のみ
+  cn10: { type: 'cn', prof: { cm: 160, vv: 0, pitch: 1.16 } },  // 普通の侍女。細い顔、ハーフアップ。銀のティアラは後ろ以外。名前は土地のみ
+  jp42: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.14 } },  // 普通の侍女（モブ）。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp43: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.1 } },  // 普通の侍女（モブ）。丸い眼鏡、ぱっつん前髪、顎までの黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
   sanjo: { type: 'mob', anyRole: true, prof: { name: '三条 玲奈', pers: '豪胆', cm: 158, vv: 2, pitch: 1.18 } },  // 普通の侍女。短い黒髪ボブ、眉の上の前髪、口元のほくろ。両目は出ている。銀のティアラは後ろ以外。呼び名はまだ無いので表示はボブ
-  girl54: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女（モブ）。肩までの茶色の髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl55: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 2, pitch: 1.22 } },  // 普通の侍女（モブ）。長い黒髪、銀の蝶のピン。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl56: { type: 'mob', anyRole: true, prof: { cm: 156, vv: 0, pitch: 0.94 } },  // 普通の侍女（モブ）。短い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl57: { type: 'mob', anyRole: true, prof: { cm: 165, vv: 1, pitch: 1.15 } },  // 普通の侍女（モブ）。長いストレート、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl58: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 2, pitch: 1.0 } },  // 普通の侍女（モブ）。横に流した前髪、真珠の耳飾り。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl59: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた黒髪、赤い唇。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl60: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 2, pitch: 1.12 } },  // 普通の侍女（モブ）。ぱっつん前髪、低いポニテ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl61: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。ぱっつん前髪、長い黒髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl62: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 0, pitch: 0.96 } },  // 普通の侍女（モブ）。短い黒髪、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl63: { type: 'mob', anyRole: true, prof: { cm: 165, vv: 1, pitch: 1.02 } },  // 普通の侍女（モブ）。長い黒髪、分け目、肩の前に二筋。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl64: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.16 } },  // 普通の侍女（モブ）。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl65: { type: 'mob', anyRole: true, prof: { cm: 159, vv: 1, pitch: 1.1 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl66: { type: 'mob', anyRole: true, prof: { cm: 164, vv: 0, pitch: 0.98 } },  // 普通の侍女（モブ）。とても長い黒髪、細い前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl67: { type: 'mob', anyRole: true, prof: { cm: 157, vv: 2, pitch: 1.18 } },  // 普通の侍女（モブ）。短い茶髪のボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl68: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。長い黒髪、横に流した前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl69: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。ぱっつん前髪、肩までの黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl70: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.16 } },  // 普通の侍女（モブ）。厚いぱっつん、肩までの黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl71: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 0, pitch: 0.94 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl72: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.05 } },  // 普通の侍女（モブ）。後ろでまとめた黒髪、頬の横に毛先。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl73: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.12 } },  // 普通の侍女（モブ）。低いポニテ、横に流した細い前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl74: { type: 'mob', anyRole: true, prof: { cm: 164, vv: 0, pitch: 0.96 } },  // 普通の侍女（モブ）。前髪なし、きつく後ろに引いた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl75: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.04 } },  // 普通の侍女（モブ）。横分け、後ろでまとめた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl76: { type: 'mob', anyRole: true, prof: { cm: 159, vv: 2, pitch: 1.18 } },  // 普通の侍女（モブ）。前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl77: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女（モブ）。センター分けのとても長い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl78: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.14 } },  // 普通の侍女（モブ）。前髪、横に小さな真珠の髪留め。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl79: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.0 } },  // 普通の侍女（モブ）。茶髪の前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl80: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。厚いぱっつん、長い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
-  girl81: { type: 'mob', anyRole: true, prof: { cm: 157, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。厚いぱっつん、短い黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp44: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女（モブ）。肩までの茶色の髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp45: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 2, pitch: 1.22 } },  // 普通の侍女（モブ）。長い黒髪、銀の蝶のピン。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp46: { type: 'mob', anyRole: true, prof: { cm: 156, vv: 0, pitch: 0.94 } },  // 普通の侍女（モブ）。短い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp47: { type: 'mob', anyRole: true, prof: { cm: 165, vv: 1, pitch: 1.15 } },  // 普通の侍女（モブ）。長いストレート、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp48: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 2, pitch: 1.0 } },  // 普通の侍女（モブ）。横に流した前髪、真珠の耳飾り。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp49: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた黒髪、赤い唇。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp50: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 2, pitch: 1.12 } },  // 普通の侍女（モブ）。ぱっつん前髪、低いポニテ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp51: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。ぱっつん前髪、長い黒髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp52: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 0, pitch: 0.96 } },  // 普通の侍女（モブ）。短い黒髪、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp53: { type: 'mob', anyRole: true, prof: { cm: 165, vv: 1, pitch: 1.02 } },  // 普通の侍女（モブ）。長い黒髪、分け目、肩の前に二筋。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp54: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.16 } },  // 普通の侍女（モブ）。顎までの黒髪ボブ、ぱっつん前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp55: { type: 'mob', anyRole: true, prof: { cm: 159, vv: 1, pitch: 1.1 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp56: { type: 'mob', anyRole: true, prof: { cm: 164, vv: 0, pitch: 0.98 } },  // 普通の侍女（モブ）。とても長い黒髪、細い前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp57: { type: 'mob', anyRole: true, prof: { cm: 157, vv: 2, pitch: 1.18 } },  // 普通の侍女（モブ）。短い茶髪のボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp58: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。長い黒髪、横に流した前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp59: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。ぱっつん前髪、肩までの黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp60: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.16 } },  // 普通の侍女（モブ）。厚いぱっつん、肩までの黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp61: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 0, pitch: 0.94 } },  // 普通の侍女（モブ）。ぱっつん前髪、後ろでまとめた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp62: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.05 } },  // 普通の侍女（モブ）。後ろでまとめた黒髪、頬の横に毛先。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp63: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.12 } },  // 普通の侍女（モブ）。低いポニテ、横に流した細い前髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp64: { type: 'mob', anyRole: true, prof: { cm: 164, vv: 0, pitch: 0.96 } },  // 普通の侍女（モブ）。前髪なし、きつく後ろに引いた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp65: { type: 'mob', anyRole: true, prof: { cm: 161, vv: 1, pitch: 1.04 } },  // 普通の侍女（モブ）。横分け、後ろでまとめた黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp66: { type: 'mob', anyRole: true, prof: { cm: 159, vv: 2, pitch: 1.18 } },  // 普通の侍女（モブ）。前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp67: { type: 'mob', anyRole: true, prof: { cm: 163, vv: 1, pitch: 1.06 } },  // 普通の侍女（モブ）。センター分けのとても長い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp68: { type: 'mob', anyRole: true, prof: { cm: 158, vv: 2, pitch: 1.14 } },  // 普通の侍女（モブ）。前髪、横に小さな真珠の髪留め。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp69: { type: 'mob', anyRole: true, prof: { cm: 160, vv: 1, pitch: 1.0 } },  // 普通の侍女（モブ）。茶髪の前髪、明るい笑顔。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp70: { type: 'mob', anyRole: true, prof: { cm: 162, vv: 1, pitch: 1.08 } },  // 普通の侍女（モブ）。厚いぱっつん、長い黒髪。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
+  jp71: { type: 'mob', anyRole: true, prof: { cm: 157, vv: 2, pitch: 1.2 } },  // 普通の侍女（モブ）。厚いぱっつん、短い黒髪ボブ。銀のティアラは後ろ以外。名前は毎回、普通の侍女と同じく無作為
 
   vn01: { type: 'vn', prof: { name: 'ハノイのアイン', pers: '冷静', cm: 162, vv: 1 } },
   vn02: { type: 'vn', prof: { name: 'ハノイのフォン', pers: '慎重', cm: 158, vv: 2 } },
@@ -32720,7 +32720,7 @@ function fallImages(e) {
   if (g.down) seq.push(g.down);
   g.fallSeq = seq; return seq;
 }
-// 日本の名の無い侍女（兵）の見た目：近接も弓も、登録した全員を山札で均等に配る（弓を引く写真しか無い girl01〜06 は弓兵だけ）
+// 日本の名の無い侍女（兵）の見た目：近接も弓も、登録した全員を山札で均等に配る（弓を引く写真しか無い jp01〜06 は弓兵だけ）
 //   外すもの：英・米・仏・越・中国の娘（type が mob/archer でない）、秘書・笛役・医療係、決戦2が初陣の広瀬・三条。名のある娘の絵は同時に二人出さない
 const JP_POOL = {};
 function jpRolePool(kind, tag, offF) { const key = kind + '|' + tag + '|' + Object.keys(GIRLS).length; if (JP_POOL[key]) return JP_POOL[key];
@@ -33636,7 +33636,7 @@ function hpFlush() {
 }
 // 骨格診断のタイプ（S＝ストレート：上半身に厚み・腰の位置が高め、W＝ウェーブ：上半身が薄く柔らか・重心が低め、N＝ナチュラル：骨格がしっかり・肩幅広め・手足が長い）。
 // 今の写真の輪郭から中立に割り振ったもの（tools/make_kokkaku.py）。歩きの上下動・歩幅と足の運び・揺れ・姿勢にほんの少しだけ効かせる
-const KOKKAKU = {"girl01":"N","girl02":"N","girl03":"N","girl04":"N","girl05":"N","girl06":"N","girl07":"S","girl08":"S","girl09":"S","girl10":"N","girl11":"S","girl12":"S","girl13":"W","girl14":"N","girl15":"W","girl16":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","girl24":"S","girl25":"S","girl26":"S","girl27":"W","girl28":"W","reika":"S","girl29":"W","girl30":"S","girl31":"S","girl32":"W","kuon":"S","girl33":"W","girl34":"N","ichijo":"S","girl35":"W","murase":"S","girl36":"W","girl37":"S","girl38":"W","girl39":"S","girl40":"S","girl41":"S","hirose":"S","girl42":"S","girl43":"S","girl44":"S","girl45":"S","girl46":"S","girl47":"S","girl48":"S","girl49":"S","girl50":"S","girl51":"S","girl52":"S","girl53":"S","sanjo":"S","girl54":"S","girl55":"S","girl56":"S","girl57":"S","girl58":"S","girl59":"S","girl60":"S","girl61":"S","girl62":"S","girl63":"S","girl64":"S","girl65":"S","girl66":"S","girl67":"S","girl68":"S","girl69":"S","girl70":"S","girl71":"S","girl72":"S","girl73":"S","girl74":"S","girl75":"S","girl76":"S","girl77":"S","girl78":"S","girl79":"S","girl80":"S","girl81":"S","medic":"S","girl17":"W","girl18":"S","hibiki":"S","girl19":"W","girl20":"S","shirase":"W","hayase":"W","girl21":"S","girl22":"S","girl23":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
+const KOKKAKU = {"jp01":"N","jp02":"N","jp03":"N","jp04":"N","jp05":"N","jp06":"N","jp07":"S","jp08":"S","jp09":"S","jp10":"N","jp11":"S","jp12":"S","jp13":"W","jp14":"N","jp15":"W","jp16":"W","fr01":"N","fr02":"N","fr03":"W","fr04":"N","fr05":"N","fr06":"N","fr07":"W","fr08":"W","fr09":"N","fr10":"N","fumi":"W","jp24":"S","jp25":"S","jp26":"S","jp27":"W","jp28":"W","reika":"S","jp29":"W","jp30":"S","jp31":"S","jp32":"W","kuon":"S","jp33":"W","jp34":"N","ichijo":"S","jp35":"W","murase":"S","jp36":"W","jp37":"S","jp38":"W","jp39":"S","jp40":"S","jp41":"S","hirose":"S","cn01":"S","cn02":"S","cn03":"S","cn04":"S","cn05":"S","cn06":"S","cn07":"S","cn08":"S","cn09":"S","cn10":"S","jp42":"S","jp43":"S","sanjo":"S","jp44":"S","jp45":"S","jp46":"S","jp47":"S","jp48":"S","jp49":"S","jp50":"S","jp51":"S","jp52":"S","jp53":"S","jp54":"S","jp55":"S","jp56":"S","jp57":"S","jp58":"S","jp59":"S","jp60":"S","jp61":"S","jp62":"S","jp63":"S","jp64":"S","jp65":"S","jp66":"S","jp67":"S","jp68":"S","jp69":"S","jp70":"S","jp71":"S","medic":"S","jp17":"W","jp18":"S","hibiki":"S","jp19":"W","jp20":"S","shirase":"W","hayase":"W","jp21":"S","jp22":"S","jp23":"S","nurse2":"W","ojou":"S","omiya":"W","sec3":"W","sec4":"N","sec5":"W","sec6":"S","sec7":"W","surgeon":"N","sysop":"S","uk00":"W","uk01":"S","uk02":"N","uk03":"N","uk04":"W","uk05":"N","uk06":"W","uk07":"S","uk08":"N","uk09":"S","uk10":"S","us01":"N","us02":"W","us03":"N","us04":"S","us05":"N","us06":"N","us07":"W","us09":"N","us10":"W","us11":"W","us12":"W","us13":"N","us14":"W","us15":"N","us16":"N","us17":"N","us18":"N","us19":"N"};
 const KK = { S: { bob: 0.9, rate: 1.0, sway: 0.8, lean: -0.01 }, W: { bob: 0.8, rate: 1.1, sway: 1.2, lean: 0.012 }, N: { bob: 1.12, rate: 0.9, sway: 1.0, lean: 0.004 } };
 const kkOf = e => KK[(e.girl && e.girl.kokkaku) || 'S'] || KK.S;
 // ---- 秘書たちは身を守る：近く（本陣では 6.5m、殿についている間は殿か自分の 9m 以内）に来た橙組に懐刀（弓の秘書は弓）で応戦する ----
@@ -33771,9 +33771,9 @@ function spawnEnemy(x, z, kind, captain, team = 'orange', opt = {}) {
   return e;
 }
 // 弓道の間合い：胴造り（0.3s）→ 打起し・引分け（0.5s、少し上がって収まる）→ 会（性格で 0.6〜1.0s）→ 離れ → 残心（0.3s）
-// ---- 動画から作ったコマ（motion_sprite.js）：girl17 と girl18。index.html がアドレスに ?msprite=1 を付ける。?msprite=0 なら従来の写真 ----
+// ---- 動画から作ったコマ（motion_sprite.js）：jp17 と jp18。index.html がアドレスに ?msprite=1 を付ける。?msprite=0 なら従来の写真 ----
 const MS_ON = !!window.MotionSprite && /[?&]msprite=1/.test(location.search) && /^https?:/.test(location.protocol);
-const MS_GIRLS = { girl17: 'assets/maids/motion/girl17/', girl18: 'assets/maids/motion/girl18/' };
+const MS_GIRLS = { jp17: 'assets/jp_jijo/motion/jp17/', jp18: 'assets/jp_jijo/motion/jp18/' };
 function msPrefetch(gid) { if (MS_ON && MS_GIRLS[gid]) MotionSprite.load(gid, MS_GIRLS[gid], { lite: LITE, v: ASSET_V }); }   // 何度呼んでも一度だけ読む。スマホは小さいアトラス
 function msBowStage(e, ka) {   // 弓の段階：胴造り→打起し・引分け→会→離れ→残心（敵の AI の時間に合わせる）
   if (e.state === 'zanshin') return e.t < 0.12 ? { stage: 'hanare', u: e.t / 0.12 } : { stage: 'zanshin', u: Math.min(1, (e.t - 0.12) / 0.23) };

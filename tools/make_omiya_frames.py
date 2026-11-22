@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""大宮の写真を rembg で切り抜き、assets/maids/大宮ひなた_*.png と frames_omiya.js を作る。
+"""大宮の写真を rembg で切り抜き、assets/jp_jijo/大宮ひなた_*_1front.png と frames_omiya.js を作る。
 実行: /workspace/.venv_rembg/bin/python tools/make_omiya_frames.py
 side は元が左向きなので左右反転して右向きに揃える。"""
 import json, os, io
@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image, ImageOps
 from rembg import remove, new_session
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'assets/maids'); OUT = os.path.join(ROOT, 'assets/frames')
+SRC = os.path.join(ROOT, 'assets/jp_jijo'); OUT = os.path.join(ROOT, 'assets/frames')
 VIEWS = ['front', 'front_diag', 'side', 'back', 'down']
 sess = new_session('u2net')
 def cut(v):
@@ -25,8 +25,8 @@ def feet_ax(im):
 cuts = {v: cut(v) for v in VIEWS}; fh = cuts['front'].size[1]; meta = {}
 for v, im in cuts.items():
     if v not in ('front', 'down'): im = im.resize((max(8, round(im.size[0] * fh / im.size[1])), fh), Image.Resampling.LANCZOS)
-    fn = f'大宮ひなた_{v}.png'; im.save(os.path.join(ROOT, 'assets/maids', fn)); w, h = im.size
+    fn = f'大宮ひなた_{v}.png'; im.save(os.path.join(ROOT, 'assets/jp_jijo', fn)); w, h = im.size
     m = {'hk': round((h / w) * 1.05, 4), 'aspect': round(w / h, 4), 'ax': 0.5, 'dir': -1} if v == 'down' else {'hk': 1.02, 'aspect': round(w / h, 4), 'ax': round(feet_ax(im), 4), 'dir': 0 if v in ('front', 'back') else 1}
-    m['file'] = 'assets/maids/' + fn; meta[v] = m; print(v, im.size, m)
+    m['file'] = 'assets/jp_jijo/' + fn; meta[v] = m; print(v, im.size, m)
 js = '// 大宮の見え方（tools/make_omiya_frames.py）\n(function(){var X=' + json.dumps({'omiya': meta}) + ';window.FRAME_META=window.FRAME_META||{};for(var k in X)window.FRAME_META[k]=X[k];})();\n'
 open(os.path.join(OUT, 'frames_omiya.js'), 'w').write(js)

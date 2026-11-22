@@ -5,7 +5,7 @@
                  "dir": 1（右向き）/-1, "baseline": 足裏の行(px), "contact": 前足のかかとが着く絵の番号, "stepLen": 一歩の長さ（身長比・参考）}}}
   連番は透明背景・同じ大きさ・体（帯の中心）の位置と足裏の行がそろっていること。
 出力: assets/frames/<id>_<key>_NN.webp（同じ絵は1枚にまとめる）、assets/frames/cycles.js（window.FRAME_CYCLES）、
-      assets/frames/cycles_data.js（file:// 用の埋め込み）
+      assets/frames/cycles_data.js（file: 用の埋め込み）
 縮尺: 正面写真（frames.json の front.ref、無ければ 640px）の頭頂〜足元と同じ高さになるよう縮小。hk＝画像の高さ／頭頂〜足元。
 使い方: python3 tools/make_walkcycle.py
 """

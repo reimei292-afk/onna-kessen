@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""弓を持たない girl07〜16（同じ顔・髪・体・標準の装い）。assets/maids/girlNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
-を rembg で切り抜いて assets/maids/girlNN_u_<view>.png に分け、倒れた写真（girlNN_down.png）からは弓を外す
+"""弓を持たない jp07〜16（同じ顔・髪・体・標準の装い）。assets/jp_jijo/jpNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
+を rembg で切り抜いて assets/jp_jijo/jpNN_u_1front 等に分け、倒れた写真（jpNN_5body.png）からは弓を外す
 （いちばん大きいまとまりだけ残す）。メタは /tmp/arch_meta.json（make_frames_props.py が frames_props.js へ書く）。"""
 import json, os
 import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir, maid_name
@@ -9,7 +9,7 @@ from PIL import Image
 from rembg import remove, new_session
 from scipy import ndimage
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-FR = os.path.join(ROOT, 'assets/frames'); SH = os.path.join(ROOT, 'assets/maids')
+FR = os.path.join(ROOT, 'assets/frames'); SH = os.path.join(ROOT, 'assets/jp_jijo')
 sess = new_session('u2net')
 VIEWS = ['front', 'front_diag', 'side', 'back', 'walk']
 def feet_ax(a):
@@ -22,7 +22,7 @@ def facing(a):   # 横顔：つま先の出ている方（下端 4% の重心が
     return 1 if cx(0.965, 1.0) > cx(0.80, 0.86) else -1
 meta = {}
 for n in range(7, 17):
-    gid = f'girl{n:02d}'; im = Image.open(os.path.join(SH, f'{maid_name(gid)}_sheet.jpg')).convert('RGB')
+    gid = f'jp{n:02d}'; im = Image.open(os.path.join(SH, f'{maid_name(gid)}_sheet.jpg')).convert('RGB')
     W = im.width; out = np.array(remove(im, session=sess).convert('RGBA')); a = out[:, :, 3]
     a[a < 24] = 0
     lab, k = ndimage.label(a > 60); sizes = ndimage.sum(np.ones_like(lab), lab, range(1, k + 1))
@@ -38,14 +38,14 @@ for n in range(7, 17):
         sub = out[sy, sx].copy(); sub[:, :, 3] = np.where(keep[sy, sx], sub[:, :, 3], 0)
         al = sub[:, :, 3]; ys = np.nonzero((al > 40).any(1))[0]; xs = np.nonzero((al > 40).any(0))[0]
         sub = sub[ys.min():ys.max() + 1, max(0, xs.min() - 2):xs.max() + 3]
-        fn = f'assets/maids/{gid}_u_{v}.png'; Image.fromarray(sub).save(os.path.join(ROOT, fn), optimize=True)
+        fn = f"assets/jp_jijo/{gid}_{ {'front':'u_1front','front_diag':'u_3diag','side':'u_2side','back':'u_4back','walk':'u_walk'}[v] }.png"; Image.fromarray(sub).save(os.path.join(ROOT, fn), optimize=True)
         h, w = sub.shape[:2]; d = 0
         if v in ('side', 'front_diag', 'walk'): d = facing(sub[:, :, 3])
         if v == 'walk': d = 0
         m[v] = {'hk': 1.02, 'aspect': round(w / h, 4), 'ax': round(feet_ax(sub[:, :, 3]), 4), 'dir': d, 'file': fn}
     if m['front_diag']['dir'] != m['side']['dir']: m['front_diag']['dir'] = m['side']['dir']
     # 倒れた写真から弓を外す
-    dn = np.array(Image.open(os.path.join(FR, f'{maid_name(gid)}_down.png')).convert('RGBA')); da = dn[:, :, 3]
+    dn = np.array(Image.open(os.path.join(SH, f'{maid_name(gid)}_5body.png')).convert('RGBA')); da = dn[:, :, 3]
     lab2, k2 = ndimage.label(da > 70)
     if k2:
         # 弓は細い：太い所だけ残す開きで体を取り出し、少し戻す（手に触れている弓も外れる）
@@ -58,7 +58,7 @@ for n in range(7, 17):
         dn[:, :, 3] = np.where(body, da, 0)
     al = dn[:, :, 3]; ys = np.nonzero((al > 40).any(1))[0]; xs = np.nonzero((al > 40).any(0))[0]
     dn = dn[ys.min():ys.max() + 1, xs.min():xs.max() + 1]; h, w = dn.shape[:2]
-    fn = f'assets/maids/{gid}_u_down.png'; Image.fromarray(dn).save(os.path.join(ROOT, fn), optimize=True)
+    fn = f'assets/jp_jijo/{gid}_u_5body.png'; Image.fromarray(dn).save(os.path.join(ROOT, fn), optimize=True)
     m['down'] = {'hk': round((h / w) * 1.05, 4), 'aspect': round(w / h, 4), 'ax': 0.5, 'dir': -1, 'file': fn}
     meta[gid] = m; print(gid, {v: (m[v]['dir'], m[v]['aspect']) for v in m})
 json.dump(meta, open('/tmp/arch_meta.json', 'w'), indent=0)

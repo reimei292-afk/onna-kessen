@@ -1,6 +1,6 @@
 import json, os, sys, numpy as np
 from PIL import Image
-os.chdir('/workspace/girl17_hr')
+os.chdir('/workspace/jp17_hr')
 C = json.load(open('chk/cycles.json')); v1 = json.load(open('atlas_v1.json'))
 LEFT = {'w2_side': 116, 'w2_front': 126, 'w2_back': 91, 'w2_fdiag': 92, 'w2_bdiag': 101}
 jobs = [('turn', i) for i in v1['seq']['turn']['src']] + [('turn', 1)]

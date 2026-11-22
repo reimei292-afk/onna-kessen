@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""assets/maids/girlNN.jpg（埋め込みスロット用：近接 girl17.. と弓 girl07〜16）から背景を除去し、切り抜いた透過 PNG と
+"""assets/jp_jijo/jpNN_1front.jpg（埋め込みスロット用：近接 jp17.. と弓 jp07〜16）から背景を除去し、切り抜いた透過 PNG と
 埋め込み版 assets/sprites.js を再生成する。番号は 01 から連番で、存在するものすべてを処理する。
 必要: pip install "rembg[cpu]" pillow   (rembg が無い場合は明るい無地背景向けの色キーで代用)
 使い方: python3 tools/make_sprites.py            （背景除去＋sprites.js 再生成）
@@ -9,7 +9,7 @@ import sys
 NO_CUT = '--no-cut' in sys.argv
 import io, base64, os, glob, re
 from PIL import Image, ImageFilter
-D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'maids')   # 侍女の絵は assets/maids/ にまとめた
+D = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'jp_jijo')   # 侍女の絵は assets/jp_jijo/ にまとめた
 A = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets')
 H = 640
 S = None
@@ -45,12 +45,12 @@ def process(prefix):
     # SPR_SLOT_IDS と同じ並び。名のある娘は日本語のフルネームのファイル（maid_dir.MAID_REN）
     from maid_dir import maid_name
     SLOT = {
-        'mob': ['girl17','girl18','hibiki','girl19','girl20','shirase','hayase','girl21','girl22','girl23'],
+        'mob': ['jp17','jp18','hibiki','jp19','jp20','shirase','hayase','jp21','jp22','jp23'],
         'archer': [f'girl{n:02d}' for n in range(7, 17)],
     }
     files = []
     for gid in SLOT[prefix]:
-        f = os.path.join(D, maid_name(gid) + '.' + ext)
+        f = os.path.join(D, maid_name(gid) + '_1front.' + ext)
         if os.path.exists(f):
             files.append(f)
         else:

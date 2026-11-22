@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""assets/maids を見て、侍女の見た目の名簿 assets/maids/ids.js を作る。
+"""assets/jp_jijo を見て、侍女の見た目の名簿 assets/jp_jijo/ids.js を作る。
 新しいタイプの絵を足したら、この脚本を走らせる（公開前でも可）。game.js は名簿と FRAME_META から
 自動で山札に入れる（名のある娘・外国の娘は除く）。
 """
@@ -10,15 +10,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from maid_dir import MAID_REN
 
 ROOT = Path(__file__).resolve().parents[1]
-MAID = ROOT / 'assets' / 'maids'
+MAID = ROOT / 'assets' / 'jp_jijo'
 REN_BACK = {v: k for k, v in MAID_REN.items()}
-SUFS = ['_front_diag', '_back_diag', '_walk_side', '_seatdown', '_u_front_diag', '_u_front',
-        '_u_back', '_u_side', '_u_down', '_u_walk', '_front', '_side', '_back', '_down',
-        '_walk', '_bow', '_stab', '_kneel', '_low', '_unarmed', '_sheet', '_sit', '_slump', '_top']
+SUFS = ['_u_3diag', '_u_1front', '_u_4back', '_u_2side', '_u_5body', '_u_walk',
+        '_3diag_back', '_3diag', '_1front', '_2side', '_4back', '_5body',
+        '_walk_side', '_seatdown', '_walk', '_bow', '_stab', '_kneel', '_low', '_unarmed', '_sheet', '_sit', '_slump', '_top']
 VIEW_OF = {
-    '_front_diag': 'front_diag', '_back_diag': 'back_diag', '_u_front_diag': 'front_diag',
-    '_u_front': 'front', '_u_back': 'back', '_u_side': 'side', '_u_down': 'down', '_u_walk': 'walk',
-    '_front': 'front', '_side': 'side', '_back': 'back', '_down': 'down', '_walk': 'walk',
+    '_3diag': 'front_diag', '_3diag_back': 'back_diag', '_u_3diag': 'front_diag',
+    '_u_1front': 'front', '_u_4back': 'back', '_u_2side': 'side', '_u_5body': 'down', '_u_walk': 'walk',
+    '_1front': 'front', '_2side': 'side', '_4back': 'back', '_5body': 'down', '_walk': 'walk',
     '_bow': 'bow', '_stab': 'stab', '_kneel': 'kneel', '_seatdown': 'seatdown',
 }
 CYCLE_RE = re.compile(r'_walk_side_\d+$')
@@ -45,12 +45,12 @@ def main():
         if not view:
             continue
         rec = files.setdefault(gid, {})
-        rel = f'assets/maids/{p.name}'
+        rel = f'assets/jp_jijo/{p.name}'
         if view not in rec or (rec[view].endswith(('.jpg', '.jpeg')) and p.suffix.lower() == '.png'):
             rec[view] = rel
     ids = sorted(files, key=lambda s: (re.sub(r'\d+', '', s), int(re.sub(r'\D+', '0', s) or 0), s))
     lines = [
-        '// 自動生成（tools/make_maid_ids.py）。assets/maids にある侍女の見た目の名簿。新しいタイプを足したら再実行する。',
+        '// 自動生成（tools/make_maid_ids.py）。assets/jp_jijo にある侍女の見た目の名簿。新しいタイプを足したら再実行する。',
         'window.MAID_IDS = ' + json.dumps(ids, ensure_ascii=False) + ';',
         'window.MAID_FILES = {',
     ]

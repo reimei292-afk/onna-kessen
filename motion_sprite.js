@@ -1,8 +1,8 @@
 // motion_sprite.js — 動画から作ったスプライト・アトラス（atlas.json + webp）を、既存のビルボード板に貼るローダー。
 // 依存：グローバルの THREE（lib/three.min.js）。ES モジュールではない普通のスクリプト。window.MotionSprite を作る。
 //
-//   MotionSprite.load('girl17', 'assets/maids/motion/girl17/', { lite: LITE })  -> Promise（失敗しても reject せず null）
-//   MotionSprite.ready('girl17')                                          -> bool
+//   MotionSprite.load('jp17', 'assets/jp_jijo/motion/jp17/', { lite: LITE })  -> Promise（失敗しても reject せず null）
+//   MotionSprite.ready('jp17')                                          -> bool
 //   MotionSprite.update(e, st)                                           -> bool（false なら従来の setFrame を使う）
 //
 //   e  : { bb: THREE.Mesh(ビルボード板), mat: そのマテリアル, figH: 身長(m) }（ゲームの NPC オブジェクトをそのまま渡せる）

@@ -2,7 +2,7 @@ from PIL import Image
 import numpy as np
 from scipy import ndimage
 out={}
-for g in ['girl17','girl18','girl19','girl20']:
+for g in ['jp17','jp18','jp19','jp20']:
     src=np.array(Image.open(g+'_src.png')).astype(int); raw=np.array(Image.open(g+'_raw.png'))
     R,G,B=src[...,0],src[...,1],src[...,2]
     wood=(R-B>18)&(R>G)&(G>=B-5)&(R<175)&(R>35)

@@ -3757,5 +3757,42 @@
    "dir": -1,
    "file": "assets/maids/girl77_down.png"
   }
+ },
+ "girl78": {
+  "front": {
+   "hk": 1.0155,
+   "aspect": 0.2567,
+   "ax": 0.5005,
+   "dir": 0,
+   "file": "assets/maids/girl78_front.png"
+  },
+  "side": {
+   "hk": 1.0142,
+   "aspect": 0.1856,
+   "ax": 0.4653,
+   "dir": -1,
+   "file": "assets/maids/girl78_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0161,
+   "aspect": 0.2356,
+   "ax": 0.4821,
+   "dir": -1,
+   "file": "assets/maids/girl78_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0084,
+   "aspect": 0.2589,
+   "ax": 0.4832,
+   "dir": 0,
+   "file": "assets/maids/girl78_back.png"
+  },
+  "down": {
+   "hk": 0.2389,
+   "aspect": 4.1865,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl78_down.png"
+  }
  }
 }

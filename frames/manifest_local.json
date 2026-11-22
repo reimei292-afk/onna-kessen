@@ -432,5 +432,23 @@
     "front_diag": "assets/maids/girl84_front_diag.jpg",
     "front_diag_dir": -1,
     "down": "assets/maids/girl84_down.jpg"
+  },
+  "girl85": {
+    "front": "assets/maids/girl85_front.jpg",
+    "side": "assets/maids/girl85_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl85_back.jpg",
+    "front_diag": "assets/maids/girl85_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl85_down.jpg"
+  },
+  "girl86": {
+    "front": "assets/maids/girl86_front.jpg",
+    "side": "assets/maids/girl86_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl86_back.jpg",
+    "front_diag": "assets/maids/girl86_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl86_down.jpg"
   }
 }

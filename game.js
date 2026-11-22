@@ -643,8 +643,7 @@ function thWatchCrew() { if (TH.watchDone) return TH.audit; TH.watchDone = true;
 function thPickP(dd, mobs) { const U = TH.pUsed || (TH.pUsed = new Set()), DL = dd >= 0 ? (TH.byDeptM || (TH.byDeptM = TH_DEPT.map((_, i) => mobs.filter(q => q.dept === i))))[dd] : null;   // 一人の名簿の人は一人の娘だけ（重ならない）
   for (const L of [DL, mobs]) if (L) for (const q of L) if (!U.has(q.id)) { U.add(q.id); return q; } return mobs[(U.size * 37) % mobs.length]; }
 function thSpawnAll() {
-  thWatchCrew(); const R = thRoster(), pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); let mi = 0;
-  const st = pool.length % 7 ? 7 : 11, mob = () => pool.length ? pool[(mi++ * st) % pool.length] : undefined, mobs = R.filter(p => !p.named); let ri = 0;
+  thWatchCrew(); const R = thRoster(); const mob = () => (typeof jpMobDeal === 'function' ? jpMobDeal('th') : undefined); const mobs = R.filter(p => !p.named); let ri = 0;
   for (const [key, x, z, y, face, lk, tag] of TH_POSTS().concat(TH.posts2 || [])) {
     let e;
     if (key) { const N = TH_NAMED.find(n => n[0] === key), gid = (typeof cvGid === 'function' && cvGid(key)) || mob(); e = thSpawn(x, z, y, gid, { name: N[1], cm: (PAL_NAMED[key] || {}).cm || 160, pers: (PAL_NAMED[key] || {}).pers || '冷静' }, N[2], key); if (e) e.thP = R.find(q => q.key === key) || null; }
@@ -1433,7 +1432,7 @@ function thBuildD16() { TH.esc = null; TH.alert = false; const M = thMats(), y =
 }
 // 空襲・強襲の警報中に殿が最上甲板へ上がると、護衛と秘書がついて来て止める
 function thAlertTick(dt) { if (!TH.alert || thDeckOf(player.pos.y + 0.3) !== 16) { if (TH.esc) for (const e of TH.esc) if (e && e.s) e.s.visible = false; return; }
-  if (!TH.esc || !TH.esc.length) { TH.esc = []; for (const [tag, dx] of [['護衛', -1.4], ['護衛', 1.4], ['秘書', 0]]) { const pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]), e = thSpawn(player.pos.x + dx, player.pos.z + 2.0, thY(16), pool[(TH.esc.length * 5 + 3) % Math.max(1, pool.length)], { name: tag === '秘書' ? '秘書' : '護衛' }, tag, 'bridge'); if (e) { e.thFollow = true; TH.esc.push(e); } } TH.escT = 0; }
+  if (!TH.esc || !TH.esc.length) { TH.esc = []; for (const [tag, dx] of [['護衛', -1.4], ['護衛', 1.4], ['秘書', 0]]) { const e = thSpawn(player.pos.x + dx, player.pos.z + 2.0, thY(16), typeof jpMobDeal === 'function' ? jpMobDeal('th') : undefined, { name: tag === '秘書' ? '秘書' : '護衛' }, tag, 'bridge'); if (e) { e.thFollow = true; TH.esc.push(e); } } TH.escT = 0; }
   for (const e of TH.esc) { if (!e || !e.s) continue; e.s.visible = true; const p = e.s.position, dx = player.pos.x - p.x, dz = player.pos.z - p.z, dd = Math.hypot(dx, dz); e.thY = thY(16); if (dd > 2.0) { p.x += dx / dd * Math.min(dd - 2.0, 3.2 * dt); p.z += dz / dd * Math.min(dd - 2.0, 3.2 * dt); } e.faceWant = Math.atan2(dx, dz); }
   TH.escT -= dt; if (TH.escT <= 0) { TH.escT = 7; showBanner('「危ないです、お下がりください」', '護衛・秘書'); TH.banT = performance.now() + 2600; TH.log.push('esc:warn'); } }
 
@@ -1502,7 +1501,7 @@ function thPlate2(t, x, y, z) { const tx = canvasTex(128, 32, (g, w, h) => { g.f
 // ---- 兵 ----
 function thRaidMk(x, z, team, girl, kind, yari) { const R = TH.raid, y = thY(4), e = spawnEnemy(x, z, kind, false, team, { girl, yari: yari ? 1 : -1, y, set: { state: 'idle', th: true } }); if (!e) return null; e.th = true; e.thR = team; e.thY = e.baseY = y; e.passive = true; e.sq = null; e.silenced = false; if (e.mk) e.mk.visible = false; e.thHp = 3; e.thCd = rand(0.5, 2.5); TH.girls.push(e); return e; }
 function thRaidUS(n, x0) { const R = TH.raid, W = thPlazaW(); for (let i = 0; i < n && R.usLeft > 0; i++) { R.usLeft--; const k = TH_BOARD.total - R.usLeft, id = USD_IDS[k % USD_IDS.length], lane = thLaneOf(k), colt = k % 3 === 2, slot = R.us.filter(o => o.thLane === lane && o.state !== 'down').length; const e = thRaidMk(thLaneX(lane, W) + (slot % 2 ? 0.7 : -0.65), (colt ? -78.6 : -85.4) + (slot % 3) * (colt ? 1.2 : -1.15), 'orange', GIRLS[id] ? id : undefined, 'mob'); if (e) { e.usdW = colt ? 'colt' : 'win'; e.ukTag = 'アメリカ兵 ' + e.prof.name; e.face = e.faceWant = 0; e.thLane = lane; e.thSlot = slot; R.us.push(e); } } }
-function thRaidJP(n) { const R = TH.raid, W = thPlazaW(), pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); for (let i = 0; i < n && R.jpLeft > 0; i++) { R.jpLeft--; const k = R.jp.length, role = k % 3 === 0 ? 'bow' : k % 3 === 1 ? 'yari' : 'tanto', lane = thLaneOf(k), slot = R.jp.filter(o => o.thLane === lane && o.thRole === role).length, z0 = role === 'bow' ? -63.2 : role === 'yari' ? -74.2 : -69.0, z = z0 + (slot % 3) * 0.85; const e = thRaidMk(thLaneX(lane, W) + (slot % 2 ? 0.65 : -0.6), z, 'blue', pool[(k * 7 + 3) % Math.max(1, pool.length)], role === 'bow' ? 'archer' : 'mob', role === 'yari'); if (e) { e.thRole = role; e.melee = role !== 'bow'; e.ukTag = (role === 'bow' ? '弓' : role === 'yari' ? '槍' : '懐刀') + ' ' + e.prof.name; e.face = e.faceWant = Math.PI; e.thLane = lane; e.thSlot = slot; R.jp.push(e); } } }
+function thRaidJP(n) { const R = TH.raid, W = thPlazaW(); for (let i = 0; i < n && R.jpLeft > 0; i++) { R.jpLeft--; const k = R.jp.length, role = k % 3 === 0 ? 'bow' : k % 3 === 1 ? 'yari' : 'tanto', lane = thLaneOf(k), slot = R.jp.filter(o => o.thLane === lane && o.thRole === role).length, z0 = role === 'bow' ? -63.2 : role === 'yari' ? -74.2 : -69.0, z = z0 + (slot % 3) * 0.85; const e = thRaidMk(thLaneX(lane, W) + (slot % 2 ? 0.65 : -0.6), z, 'blue', typeof jpMobDeal === 'function' ? jpMobDeal('th') : undefined, role === 'bow' ? 'archer' : 'mob', role === 'yari'); if (e) { e.thRole = role; e.melee = role !== 'bow'; e.ukTag = (role === 'bow' ? '弓' : role === 'yari' ? '槍' : '懐刀') + ' ' + e.prof.name; e.face = e.faceWant = Math.PI; e.thLane = lane; e.thSlot = slot; R.jp.push(e); } } }
 function thRaidSpawn() { const R = TH.raid, cap = TH_BOARD.cap(); R.jpLeft = TH_BOARD.jp(); thRaidJP(Math.round(cap * 0.8)); thRaidBoat(); }
 function thRaidBoat() { const R = TH.raid, sx = R.boats2.length % 2 ? 1 : -1, m = new THREE.Group(), M = thMats(), h = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.4, 8), M.greyD); h.position.y = 0.7; m.add(h); const r = new THREE.Mesh(new THREE.BoxGeometry(3.0, 1.2, 0.2), M.grey); r.position.set(0, 1.6, -3.9); m.add(r);
   m.position.set(sx * 90, TH_SEA - 0.2, -84 + rand(-6, 6)); m.rotation.y = sx * Math.PI / 2; stageRoot.add(m); R.boats2.push({ m, sx, t: 0, ph: 'in', n: Math.min(R.usLeft, USD_MOB ? 8 : 10) }); }
@@ -1663,7 +1662,7 @@ function thRaidTick(dt) { const R = TH.raid; thRaidShow(TH.on && state === 'play
         let s = null; if (c.team !== 'blue') { const i = R.slotN.pow || 0; R.slotN.pow = i + 1; if (i < 7) { s = [-0.7, thY(4) + 0.42, -41.5 + i * 2.2, 0]; thStretcher(s[0], s[1], s[2], 0); if (!R.guard) { R.guard = thSpawn(0, -43.4, thY(4), undefined, { name: thFreeName() }, '警備（捕虜の見張り）', 'hosp'); if (R.guard) R.guard.face = R.guard.faceWant = Math.PI; thSign('捕虜の負傷者（見張り付き）', 0, thY(4) + 2.6, -42.6, Math.PI, 2.4); } } }
         if (s) {} else if ((s = thBodySlot('bed', R.slotN.bed || 0)) && c.team === 'blue') R.slotN.bed = (R.slotN.bed || 0) + 1; else { s = thBodySlot('str', R.slotN.str || 0); R.slotN.str = (R.slotN.str || 0) + 1; if (s) thStretcher(s[0], s[1], s[2], s[3]); } thPlaceBody(c, s, false); c.thInj = 2.5; M.p = null; } continue; }
     const c = R.cas.filter(c => c.thInj === 2 && !c.thMed).sort((a, b) => (a.team === 'blue' ? 0 : 1000) + a.thDie - (b.team === 'blue' ? 0 : 1000) - b.thDie)[0]; if (!c) continue; c.thMed = true; M.p = c; M.busy = 9;
-    const pool = (typeof jpMobLooks === 'function' ? jpMobLooks() : []).filter(id => GIRLS[id]); for (const dx of [-0.9, 0.9]) { const m = thSpawn(c.s.position.x + dx, c.s.position.z + 0.6, c.thY, pool[((R.t * 13) | 0) % Math.max(1, pool.length)], { name: thFreeName() }, '担架班', 'hosp'); if (m) { m.face = m.faceWant = Math.atan2(-dx, -0.6); M.crew.push(m); } } }
+    const poolOk = typeof jpMobDeal === 'function'; for (const dx of [-0.9, 0.9]) { const m = thSpawn(c.s.position.x + dx, c.s.position.z + 0.6, c.thY, poolOk ? jpMobDeal('th') : undefined, { name: thFreeName() }, '担架班', 'hosp'); if (m) { m.face = m.faceWant = Math.atan2(-dx, -0.6); M.crew.push(m); } } }
   // 戦闘のあと：亡くなった人を順に安置（霊安室の引き出し → 霊安準備室 → 食料の冷蔵庫 → 礼拝室）
   if (R.ph === 'after' && TH.dmg && TH.dmg.flood >= 1 && !TH.ev && !R.sinkT) { R.sinkT = 1; showBanner('浸水が止まらない', '排水が追いつかない。まもなく総員退船'); TH.banT = performance.now() + 3600; R.fx.push([R.t + 12, () => { if (!TH.ev) thEvacStart(); }]); }
   if (R.ph === 'after') { if (R.t > 25 && TH.alert) TH.alert = false; R.bodyT -= dt; const jd = R.dead.filter(e => e.team === 'blue').concat(R.dead.filter(e => e.team !== 'blue')); if (R.bodyT <= 0 && R.bodyI < jd.length && !R.med.some(M => M.busy > 0)) { R.bodyT = 1.2; const e = jd[R.bodyI], s = thBodySlot('body', (TH.bodyK = (TH.bodyK || 0) + 1) - 1); R.bodyI++; thPlaceBody(e, s, true); if (s && s.drawer == null) thTag2((e.team === 'blue' ? '' : '米兵 ') + (e.prof && e.prof.name || ''), s[0], s[1] + 0.27, s[2], s[3]); if (R.bodyI === jd.length) { showBanner('亡くなった人を安置しました', R.bodyI <= 12 ? '霊安室' : R.bodyI <= 42 ? '霊安室・霊安準備室' : R.bodyI <= 57 ? '霊安室・霊安準備室・食料の冷蔵庫' : '霊安室・霊安準備室・食料の冷蔵庫・礼拝室'); TH.banT = performance.now() + 3600; } } } }
@@ -5544,7 +5543,7 @@ function sdView(pg, force) { const U = pg.userData, g = U.g, cx = camera.positio
   if (!force && U.view === v && U.fr === fr && U.mir === mir) return; U.view = v; U.fr = fr; U.mir = mir; const M = U.m; if (M.material.map !== fr.tex) M.material.map = fr.tex;
   const h = U.cm / 100 * (fr.hk || 1), w = h * fr.aspect, sg = mir ? -1 : 1; M.scale.set(w * sg, h, 1); M.position.x = (0.5 - (fr.ax == null ? 0.5 : fr.ax)) * w * sg; for (const p of U.props) p.visible = v === 'front'; }
 function sdSprG(G, gid, cm, x, z, f) { return sdPerson(G, gid, cm, x, z, f); }
-function sdMob(G, x, z, i, f) { const P = SD.pool; if (!P.length) return null; return sdPerson(G, P[(i * 7 + 3) % P.length], 154 + (i * 5) % 14, x, z, f); }
+function sdMob(G, x, z, i, f) { const id = (typeof jpMobDeal === 'function' ? jpMobDeal('sendai') : (SD.pool || [])[0]); if (!id) return null; return sdPerson(G, id, 154 + (i * 5) % 14, x, z, f); }
 function sdNamed(G, k, x, z) { const gid = kgGid(k), cm = (KS2_NM[k] || [0, 0, 160])[2] || 160; const s = gid && sdPerson(G, gid, cm, x, z); if (s) { s.userData.k = k; s.userData.named = true; } return s; }
 // 沿道・駅の一般の人：小田原の時の私服の娘の絵（front/side/back/diag）をそのまま
 function sdCiv(G, x, z, i, f) { const n = (i % 8) + 1, T = SD.csG || (SD.csG = {}); if (!T[n]) { const L = new THREE.TextureLoader(), o = { type: 'civ' }; for (const v of ['front', 'side', 'back']) { const t = L.load(`assets/conscripts/conscript_0${n}_${v}.webp?v=${ASSET_V}`); t.colorSpace = THREE.SRGBColorSpace; o[v] = { tex: t, aspect: ODW_AR[v], ax: 0.5, hk: 1, dir: v === 'side' ? -1 : 0 }; } T[n] = o; }
@@ -6083,8 +6082,8 @@ function amSplash(x, z, n) { for (let i = 0; i < (n || 3); i++) { if (AM.fx.leng
 function amZap(x, z, R) { const pts = []; for (let k = 0; k < 7; k++) { let px = x, pz = z; const a = Math.random() * 6.28; for (let j = 0; j < 6; j++) { const nx = x + Math.cos(a + amRnd(-0.4, 0.4)) * R * (j + 1) / 6, nz = z + Math.sin(a + amRnd(-0.4, 0.4)) * R * (j + 1) / 6; pts.push(new V3(px, 0.08, pz), new V3(nx, 0.08, nz)); px = nx; pz = nz; } }
   const L = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xcff0ff, transparent: true, opacity: 0.95 })); stageRoot.add(L); const c = new THREE.Mesh(new THREE.CircleGeometry(R, 20), AM.flashM); c.rotation.x = -Math.PI / 2; c.position.set(x, 0.06, z); stageRoot.add(c); AM.zap.push({ L, c, t: 0.55 }); }
 // ---- 侍女 ----
-function amMaids() { const P = jpMobLooks(); AM.M = []; for (let i = 0; i < AM_N; i++) { const r = Math.floor(i / 8), l = i % 8, x = amPathX(AM_Z0) + (l - 3.5) * 0.9 + amRnd(-0.2, 0.2), z = AM_Z0 + 3.5 + r * 1.0;
-    const p = amPerson(P[(i * 7 + 3) % P.length], 152 + (i * 5) % 16, x, z); if (!p) continue; Object.assign(p, { i, hp: 3, hpMax: 3, st: 'live', wpn: i % 10 < 3 ? 'bow' : i % 10 < 5 ? 'shield' : 'spear', cd: Math.random() * 2, dT: Math.random() * 0.25, sp: amRnd(2.0, 2.7), stun: 0, lane: (l - 3.5) * 0.9 + amRnd(-0.25, 0.25), row: r, rx: amRnd(-14, 14), rz: amRnd(-12, 12) }); AM.M.push(p); } }
+function amMaids() { AM.M = []; for (let i = 0; i < AM_N; i++) { const r = Math.floor(i / 8), l = i % 8, x = amPathX(AM_Z0) + (l - 3.5) * 0.9 + amRnd(-0.2, 0.2), z = AM_Z0 + 3.5 + r * 1.0;
+    const p = amPerson(jpMobDeal('amazon'), 152 + (i * 5) % 16, x, z); if (!p) continue; Object.assign(p, { i, hp: 3, hpMax: 3, st: 'live', wpn: i % 10 < 3 ? 'bow' : i % 10 < 5 ? 'shield' : 'spear', cd: Math.random() * 2, dT: Math.random() * 0.25, sp: amRnd(2.0, 2.7), stun: 0, lane: (l - 3.5) * 0.9 + amRnd(-0.25, 0.25), row: r, rx: amRnd(-14, 14), rz: amRnd(-12, 12) }); AM.M.push(p); } }
 function amTrailAt(d) { const T = AM.trail, k = Math.min(T.length - 1, Math.floor(d / 0.8)); return T[k]; }
 function amAlive(M) { return M.st === 'live' || M.st === 'latched' || M.st === 'coiled'; }
 function amKill(M) { if (M.st === 'dead' || M.st === 'gone') return; M.st = 'dead'; M.hp = 0; AM.dead++; amLay(M); amMob('fall', M.x, M.z); }
@@ -6223,7 +6222,7 @@ function amReset() { player.pos.set(amPathX(AM_Z0), 0, AM_Z0); player.yaw = 0; p
 function amStart() { AM.on = true; amReset(); player.god = false;
   Object.assign(AM, { q: [], spT: 0, mobT: 0, said: {}, dead: 0, gone: 0, bad: [], snk: [], ant: [], pira: [], eel: [], pr: [], fx: [], zap: [], thr: [], rally: 0, ride: true, kh: Math.PI, lp: null, inRuin: false, end: false, bT: 20, t: 0, leechDone: false, riverSaid: false, sight: false, mobMT: 8 });
   AM.trail = []; for (let z = AM_Z0; z <= 205; z += 0.8) AM.trail.push([amPathX(Math.min(z, 185)), z]);
-  amMaids(); const P = jpMobLooks(); AM.car = []; for (let i = 0; i < 4; i++) { const c = amPerson(P[(i * 11 + 5) % P.length], 160, 0, AM_Z0); if (c) AM.car.push(c); }
+  amMaids(); AM.car = []; for (let i = 0; i < 4; i++) { const c = amPerson(jpMobDeal('amazon'), 160, 0, AM_Z0); if (c) AM.car.push(c); }
   AM.named = []; for (const k of ['sumi', 'fumi', 'reika', 'shinobu', 'kujo', 'omiya', 'akari']) { const gid = kgGid(k), cm = (KS2_NM[k] || [0, 0, 160])[2] || 160, p = gid && amPerson(gid, cm, player.pos.x, AM_Z0 + 2); if (p) { p.k = k; AM.named.push(p); } }
   for (const [x, z] of [[-7, 32], [6, 48], [-2, 31], [11, 33]]) amSnkMake(amPathX(z) + x, z); amSnkMake(AM_SWAMP[1].x + 6, AM_SWAMP[1].z + 3); amSnkMake(amPathX(-130) - 5, -130); amSnkMake(amPathX(110) + 5, 110);
   for (const [x, z] of [[8, 100], [-9, -12], [8, -138]]) amAntMake(amPathX(z) + x, z);
@@ -6401,7 +6400,7 @@ function hgBmMesh() { const M = HG.bmM || (HG.bmM = { m: new THREE.MeshLambertMa
 function hgGroup(gid) { if (HG.pg[gid] !== undefined) return HG.pg[gid]; const G = ks2PxGroup(gid, 900); if (G) { G.cap = 900; G.dl = []; G.gid = gid; } HG.pg[gid] = G || null; return HG.pg[gid]; }
 function hgLooks(team) { const ok = g => GIRLS[g] && GIRLS[g].front && GIRLS[g].front.tex;
   if (team === 'orange') { const L = KS2_CN_LOOKS.filter(g => g !== 'girl50' && g !== 'girl46' && ok(g)); return L.length ? L : ['girl47'].filter(ok); }
-  const L = []; for (let i = 0; i < 40; i++) { const g = ks2KLook(i % 10 < 3); if (ok(g) && !L.includes(g)) L.push(g); } return L; }
+  const L = jpMobPool().filter(ok); return L.length ? L : jpMobLooks().filter(ok); }   // 日本側は登録した見た目をすべて均等に（件数の上限で新しい顔だけに偏らせない）
 function hgPickW(U) { const r = Math.random(); if (U.kind === 'cav') return 'spear'; if (U.team === 'blue') return U.kind === 'inf' && r < 0.22 ? 'shield' : 'spear'; if (U.kind === 'det') return r < 0.55 ? 'dao' : 'knife'; if (U.reg) return r < 0.42 ? 'shield' : 'spear'; if (U.kind === 'raid') return r < 0.4 ? 'dao' : r < 0.7 ? 'knife' : 'boom'; return r < 0.5 ? 'dao' : 'spear'; }   // 漢の正規軍：盾と槍（弓は弩）。南蛮：大刀・投げナイフ・ブーメラン。味方：盾持ちと槍
 function hgAdd(U, x, z, arch) { const team = U.team, L = team === 'orange' ? HG.lkO : HG.lkB; if (!L || !L.length || HG.px.length >= HG.cap) return null; let G = null;
   for (let k = 0; k < L.length; k++) { G = hgGroup(L[(HG.lkI++ + k) % L.length]); if (G && G.list.length < G.cap) break; G = null; } if (!G) return null;
@@ -30425,8 +30424,22 @@ const PAL_NOGEN = () => new Set([SEC_ID, SEC2_ID, 'sec3', 'sec4', 'sec5', 'sec6'
 // 名の無い侍女の見た目を、山札のように切って均等に配る（どの見た目も同じ回数ずつ）
 const MOB_DECK = {};
 function mobDeal(key, pool) { if (!pool || !pool.length) return undefined; let D = MOB_DECK[key]; if (!D || D.src !== pool || !D.a.length) { const a = pool.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } D = MOB_DECK[key] = { src: pool, a }; } return D.a.pop(); }
+// 登録から外した見た目（灰髪の紗良・金髪のゆず）。新しいタイプは名簿（FRAME_META / MAID_IDS）に入れば自動で山札へ。外すときはここに書く
+const MAID_OFF = new Set(['girl36', 'girl38']);
+function inferMaidType(gid, extra) {
+  if (extra && extra.type) return extra.type;
+  if (MAID_OFF.has(gid)) return 'off';
+  if (gid === 'medic' || gid === 'surgeon' || gid === 'nurse2') return 'medic';
+  if (/^(uk|us|fr|vn|cn|ru|de)\d/.test(gid)) return gid.replace(/\d+$/, '');
+  if (/^arch(?:er)?\d+$/.test(gid)) return 'archer';
+  if (/^(mob|girl)\d+$/.test(gid) || /^sec\d+$/.test(gid)) return 'mob';
+  return 'extra';
+}
 function jpMobLooks() { const no = PAL_NOGEN();
-  return Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.front && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
+  return Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; return g && g.front && (g.type === 'mob' || (g.type === 'archer' && g.unarmed && g.side && g.back)) && !no.has(id) && !MAID_OFF.has(id) && !/^(us|uk|fr)\d/.test(id) && !g.us && !g.uk && !g.fr; }); }
+let JP_MOB_CACHE = null;
+function jpMobPool() { const n = Object.keys(GIRLS).length; if (!JP_MOB_CACHE || JP_MOB_CACHE.n !== n) JP_MOB_CACHE = { n, a: jpMobLooks() }; return JP_MOB_CACHE.a; }
+function jpMobDeal(tag) { const P = jpMobPool(); return mobDeal('mob|' + (tag || 'all'), P) || P[0]; }
 function palPool() {
   if (!PAL.poolAll) PAL.poolAll = jpMobLooks();
   if (palJoined()) return PAL.poolAll;   // 入宮式のあとは内定者だった娘も侍女として
@@ -31606,8 +31619,8 @@ function u7SpawnAll() {
   vip('ojou', OJOU_ID, K, 0, '冷静', 158); vip('sumi', SEC_ID, K, 1, '冷静', 160); vip('sec2', SEC2_ID, K, 2, '陽気', 156); vip('sec3', 'sec3', K, 4, '冷静', 158); vip('sec4', 'sec4', K, 5, '慎重', 161);
   vip('fumi', FUMI_ID, T2, 0, '冷静', 159); vip('shizuka', 'girl31', T2, 1, '冷静', 167); vip('reika', 'girl26', T2, 2, '好戦的', 165); vip('kujo', GIRLS.surgeon ? 'surgeon' : MEDIC_ID, T2, 3, '冷静', 162); vip('sysop', SYSOP_ID, T2, 4, '冷静', 161);
   // 名の無い侍女：日本の侍女の見た目（旧 雑兵・弓を持たない弓兵も）を混ぜて順に配る → どの見た目も同じ回数（差は 1 まで）
-  const looks = jpMobLooks(); for (let i = looks.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [looks[i], looks[j]] = [looks[j], looks[i]]; }
-  let li = 0; const look = () => looks.length ? looks[li++ % looks.length] : undefined; UK7.looks = looks;
+  const looks = jpMobPool().slice(); UK7.looks = looks;
+  const look = () => jpMobDeal('uk7');
   let n = 0;
   UK7.tables.slice(2).forEach((T, ti) => { const per = USD_MOB && ti % 2 ? 4 : 5; for (let si = 0; si < per; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z, look()); if (!e) continue; u7Seat(e, S, T); if (n++ % 4 === 3) { e.uk7Con = true; e.ukTag = '徴兵 ' + e.prof.name; e.uk7Bg = UK7.bgN = ((UK7.bgN == null ? -1 : UK7.bgN) + 1); } } });
   for (const [x, z, f] of [[-14, U7.Z0 - 10.9, Math.PI], [-12.8, U7.Z0 - 10.6, -2.4], [11, U7.Z0 - 10.9, Math.PI], [16, U7.Z0 - 10.8, 2.7], [17, U7.Z0 - 9.8, 0.3]]) { const e = u7Spawn(x, z, look()); if (!e) continue; e.uk7Deck = true; e.ukTag = '甲板で夜風に当たる ' + e.prof.name; u7Seat(e, { x, z, face: f, taken: null }, null); }   // 夜の甲板で風に当たる娘
@@ -32206,9 +32219,8 @@ function kfSpawn() {
       const e = u7Spawn(S.x, S.z, gid || undefined, { name: nm, pers, cm, vv: 1 }, { uk7Vip: 'kf_' + k }); if (!e) return;
       e.kfK = k; e.kfT = t; e.ukTag = `第${t + 1}卓 ${nm}`; u7Seat(e, S, T); UK7.vip['kf_' + k] = e; });
   }
-  const looks = jpMobLooks(); for (let i = looks.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [looks[i], looks[j]] = [looks[j], looks[i]]; }
-  let li = 0; const per = USD_MOB ? 3 : 5;
-  UK7.tables.slice(3).forEach(T => { for (let si = 0; si < per; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z, looks.length ? looks[li++ % looks.length] : undefined); if (!e) continue; e.kfMob = li; e.ukTag = '侍女 ' + e.prof.name; u7Seat(e, S, T); } });
+  const looks = jpMobPool(); let li = 0; const per = USD_MOB ? 3 : 5;
+  UK7.tables.slice(3).forEach(T => { for (let si = 0; si < per; si++) { const S = T.seats[si]; const e = u7Spawn(S.x, S.z, jpMobDeal('kf')); if (!e) continue; e.kfMob = ++li; e.ukTag = '侍女 ' + e.prof.name; u7Seat(e, S, T); } });
   UK7.kingSeat = UK7.tables[0].seats[0];
 }
 function kfPre() { if (!VoicePack.ok || !window.VOICE_KF) return; const M = window.VOICE_KF.byText, fs = []; const add = L => { for (const q of L) { const v = q[0] !== 'king' && q[0] !== 'narr' && kfVoice(q[0], q[1]); if (v) fs.push(v.file); } };
@@ -32484,15 +32496,31 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261122h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122i';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
   const jobs = [];
-  // 元の写真が無く、frames に正面がある娘（医療係など）
+  // 元の写真が無く、frames に正面がある娘（医療係など）。type が書いてない日本の侍女は自動でモブ（新しいタイプも山札へ）
   for (const gid in meta) if (!GIRLS[gid] && meta[gid].front) {
     const x = EXTRA_GIRLS[gid] || {};
-    GIRLS[gid] = Object.assign({ id: gid, type: gid === 'medic' || gid === 'surgeon' ? 'medic' : 'extra', spr: null, front: null }, x);
+    GIRLS[gid] = Object.assign({ id: gid, type: inferMaidType(gid, x), spr: null, front: null }, x);
+  }
+  // assets/maids の名簿（ids.js）にあるが FRAME_META にまだ無いタイプも、正面の絵があれば登録する
+  { const ids = window.MAID_IDS || [], files = window.MAID_FILES || {};
+    for (const gid of ids) {
+      if (GIRLS[gid] || MAID_OFF.has(gid)) continue;
+      const x = EXTRA_GIRLS[gid] || {}, typ = inferMaidType(gid, x), fr = (meta[gid] && meta[gid].front) || (files[gid] && files[gid].front);
+      if (!fr || typ === 'off' || typ === 'extra' || typ === 'medic' || typ === 'uk' || typ === 'us' || typ === 'fr' || typ === 'vn' || typ === 'cn') continue;
+      GIRLS[gid] = Object.assign({ id: gid, type: typ, spr: null, front: null }, x);
+      if (!meta[gid] && files[gid]) {
+        const ent = {};
+        for (const k of ['front', 'side', 'back', 'front_diag', 'down', 'walk', 'bow', 'stab', 'kneel']) {
+          if (files[gid][k]) ent[k] = { file: files[gid][k], hk: 1, aspect: 0.28, ax: 0.5, dir: (k === 'side' || k === 'front_diag') ? -1 : 0 };
+        }
+        if (ent.front) meta[gid] = ent;
+      }
+    }
   }
   // 弓を持たない姿のある弓兵（archer01〜10）：元の写真（弓を引く立ち姿）は「弓を引く」見え方として残す
   for (const gid of window.ARCH_UNARMED || []) { const g = GIRLS[gid]; if (g && g.front && !g.bow) { g.bow = g.front; g.unarmed = true; } }
@@ -32699,7 +32727,7 @@ const JP_POOL = {};
 function jpRolePool(kind, tag, offF) { const key = kind + '|' + tag + '|' + Object.keys(GIRLS).length; if (JP_POOL[key]) return JP_POOL[key];
   const off = offF ? offF() : null, no = new Set([SEC_ID, SEC2_ID, FLUTE_ID, MEDIC_ID, 'girl45', 'girl58']);
   return JP_POOL[key] = Object.keys(GIRLS).filter(id => { const g = GIRLS[id]; if (!g || !g.front || (g.type !== 'mob' && g.type !== 'archer')) return false;
-    if (/^(uk|us|fr|vn|cn|ru|de)\d/.test(id) || g.us || g.uk || g.fr || no.has(id) || (off && off.has(id))) return false;
+    if (/^(uk|us|fr|vn|cn|ru|de)\d/.test(id) || g.us || g.uk || g.fr || no.has(id) || MAID_OFF.has(id) || (off && off.has(id))) return false;
     if (kind !== 'archer' && g.bowOnly) return false;
     if (kind !== 'archer' && g.type === 'archer' && !(g.unarmed && g.side && g.back)) return false;
     return true; }); }
@@ -41103,5 +41131,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { camera, scene, get PARRY_LOG() { return PARRY_LOG; }, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { camera, scene, get PARRY_LOG() { return PARRY_LOG; }, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), jpMobDeal: (t) => jpMobDeal(t), jpMobPool: () => jpMobPool(), MAID_OFF, ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

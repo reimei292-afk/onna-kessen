@@ -2966,7 +2966,7 @@ const KS2_Q = new THREE.Object3D(), KS2_V2 = new THREE.Vector3(); let KS2_C1 = n
 function ks2PxDraw() { const cam = camera.position; KS2.pxT = (KS2.pxT || 0) + 1; const every = LITE ? 2 : 1; if (KS2.pxT % every) return; const redo = KS2.pxT % (every * 3) === 0;
   const SH = ks2PxShadow(); let sn = 0;
   for (const k in KS2.pxg) { const G = KS2.pxg[k]; if (!G) continue; const w = G.h * G.asp * 1.0; let dn = 0;
-    for (const o of G.list) { { const ar = ks2PxArea(o), hide = o.real || o.body || (ar !== KS2.view && ar !== '*'); if (hide) { if (o.hz0 !== 1) { o.hz0 = 1; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, 0, 0); KS2_Q.scale.set(0, 0, 0); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); } continue; } o.hz0 = 0; }
+    for (const o of G.list) { { const ar = ks2PxArea(o), hide = o.real || o.body || !ks2AreaVis(ar, KS2.view); if (hide) { if (o.hz0 !== 1) { o.hz0 = 1; KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.rotation.set(0, 0, 0); KS2_Q.scale.set(0, 0, 0); KS2_Q.updateMatrix(); G.im.setMatrixAt(o.i, KS2_Q.matrix); } continue; } o.hz0 = 0; }
       if (!o.alive) { KS2_Q.scale.set(0, 0, 0); KS2_Q.position.set(o.x, o.y, o.z); KS2_Q.updateMatrix(); if (!o.laid) { o.laid = true; if (!G.dn) { KS2_Q.position.set(o.x, o.y + 0.04, o.z); KS2_Q.rotation.set(-Math.PI / 2, 0, 0); KS2_Q.rotateZ(o.ry || 0); KS2_Q.scale.set(w, G.h, 1); KS2_Q.updateMatrix(); } G.im.setMatrixAt(o.i, KS2_Q.matrix); } if (!G.dn) continue;
         // 倒れた絵：横たわった写真を体の軸に沿って置き、軸のまわりでこちらへ向ける（厚みが見える）。下に接地影
         if (redo || o.dj == null) { const ax = Math.cos(o.ry), az = -Math.sin(o.ry), vx = cam.x - o.x, vy = cam.y - o.y, vz = cam.z - o.z, px = vx - (vx * ax + vz * az) * ax, pz = vz - (vx * ax + vz * az) * az, tilt = Math.atan2(Math.hypot(px, pz), vy); KS2_Q.position.set(o.x, o.y + 0.03, o.z); KS2_Q.rotation.set(0, o.ry, 0); KS2_Q.rotateX(-Math.min(1.35, tilt) * (px * -Math.sin(o.ry) + pz * -Math.cos(o.ry) > 0 ? 1 : -1)); KS2_Q.scale.set(G.dw, G.dh, 1); KS2_Q.updateMatrix(); o.dm = (o.dm || new THREE.Matrix4()).copy(KS2_Q.matrix); }
@@ -3033,6 +3033,7 @@ function ks2SquadsU(U) { if (!U.side || U.k === 'N' || !KS2.sq) return;
   bun.forEach(Q => { Q.u = 0; Q.d = 110; Q.mem.forEach((e, i) => { const cv = bamboobundle(e.s.position.x, e.s.position.z, 0, { noCol: true, hp: 99 }); ks2Merge(cv.mesh.children.slice(), cv.mesh); e.ks2Cv = cv; KS2.bun.push(cv); }); }); }
 // ---- 画面の切り替え：南門・東門・西門・北門・本隊。見ている所の兵は全員を本物の人として描き、ほかの所は人数と出来事だけ進める ----
 const KS2_AREAS = ['S', 'E', 'W', 'N', 'H'], KS2_AN = { S: '南門', E: '東門', W: '西門', N: '北門', H: '本隊' };
+function ks2AreaVis(a, V) { return !a || a === '*' || a === V || (V === 'H' && a === 'S'); }   // 本隊は南門の正面から進む。南の攻め手・守り手も同じ画面に出す（出さないと開幕の城壁が無人に見える）
 function ks2AreaOf(e) { if (e.ks2Ar && !isUp(e)) return e.ks2Ar; if (e.team === 'blue') { const U = e.ks2U; if (!U) return 'H'; if (U.k === 'H' && e.ks2Role === 'guard') return KS2.view; return U.k === 'R' ? 'H' : U.k; } if (e === KS2.cmd || e.ks2Role === 'keep') return '*'; return e.ks2Side || 'S'; }
 function ks2PxArea(o) { return o.team === 'blue' ? (o.U.k === 'R' ? 'H' : o.U.k) : (o.role === 'keep' ? '*' : o.side); }
 function ks2Hide(e, hid) { if (!!e.ks2Hid === hid) return; e.ks2Hid = hid; e.s.visible = !hid; if (e.tag) e.tag.visible = false; if (e.ks2Cv) e.ks2Cv.mesh.visible = !hid;
@@ -3051,13 +3052,13 @@ function ks2MatBody(o) { const e = ks2Mk(o.x, o.z, 'mob', o.team, o.gid, null, o
   if (MOTION && e.mo && Mo.C.death) { const c = Mo.C.death; e.mo.pose.set(c.f.subarray((c.n - 1) * Mo.N3, c.n * Mo.N3)); }   // 倒れ終わりの姿勢（厚みの影もこの形）
   toBodies(e); KS2.all.push(e); return e; }
 function ks2AreaSync(force) { if (!KS2.view) return; if (!force && (KS2.arT = (KS2.arT || 0) - 1) > 0) return; KS2.arT = 15; ks2AreaUI(); ks2BarPick(); const V = KS2.view, mU = new Set();
-  for (let i = KS2.all.length - 1; i >= 0; i--) { const e = KS2.all[i]; if (!e) continue; if (!isUp(e) && !e.ks2Ar) e.ks2Ar = ks2AreaOf(e); const a = ks2AreaOf(e), hid = a !== '*' && a !== V;
+  for (let i = KS2.all.length - 1; i >= 0; i--) { const e = KS2.all[i]; if (!e) continue; if (!isUp(e) && !e.ks2Ar) e.ks2Ar = ks2AreaOf(e); const a = ks2AreaOf(e), hid = !ks2AreaVis(a, V);
     if (hid && e.ks2Mat) { const o = e.ks2Mat; if (isUp(e)) { const p = e.s.position; o.x = p.x; o.z = p.z; o.y = e.ks2Y || 0; o.pi = e.ks2Pi; o.inn = e.ks2In; o.wall = e.ks2Wall; if (o.team === 'orange') { o.side = e.ks2Side; if (e.ks2Home) { o.hx = e.ks2Home[0]; o.hz = e.ks2Home[1]; o.hy = e.ks2Home[2]; } } o.real = null; if (e.ks2U) mU.add(e.ks2U); ks2Drop(e); continue; }
       if (o.alive) { o.alive = false; o.ry = e.fallYaw || 0; if (o.team === 'blue') KS2.pxLostA++; else KS2.pxLostD++; } o.body = e; o.real = null; e.ks2Mat = null; }   // 倒れていた者は体を残し、群れの倒れた数に入れる
     ks2Hide(e, hid); }
   let made = 0; const sqU = new Set();
   const cnt = { blue: 0, orange: 0 }; for (const e of KS2.all) if (isUp(e) && !e.ks2Hid) cnt[e.team]++;   // 見ている側の、一人ずつ動く人数（上限まで。残りは群れの絵で、倒れた分を順に埋める）
-  for (const o of KS2.px) { if (o.real || o.body) continue; const a = ks2PxArea(o); if (a !== V && a !== '*') continue; if (o.alive && cnt[o.team] >= KS2_RCAP[o.team]) continue; const e = o.alive ? ks2MatOne(o) : ks2MatBody(o); if (e) { made++; if (o.alive) cnt[o.team]++; if (o.alive && o.team === 'blue') sqU.add(o.U); } }
+  for (const o of KS2.px) { if (o.real || o.body) continue; const a = ks2PxArea(o); if (!ks2AreaVis(a, V)) continue; if (o.alive && cnt[o.team] >= KS2_RCAP[o.team]) continue; const e = o.alive ? ks2MatOne(o) : ks2MatBody(o); if (e) { made++; if (o.alive) cnt[o.team]++; if (o.alive && o.team === 'blue') sqU.add(o.U); } }
   if (KS2.sq) { for (const U of mU) ks2SquadsU(U); KS2.sq = KS2.sq.filter(Q => Q.mem.length); }
   for (const U of mU) { U.mem0 = U.mem.filter(e => isUp(e) && !e.ks2Mat).length; U.px0 = U.px.filter(o => o.alive && !o.real).length; }   // 群れの減り方の基準を取り直す
   if (mU.size || force) for (const k in KS2.zone) { const Z = KS2.zone[k]; Z.r0 = Z.real.filter(isUp).length; Z.px0 = Z.px.filter(o => o.alive && !o.real).length; }
@@ -3305,7 +3306,7 @@ function ks2Start() { KS2.on = true; ks2Reset(); ks2Spawn(); KS2.ph = 'march'; K
   for (const U of KS2.units) { for (const e of U.mem) { const [x, z] = ks2Slot(e); e.s.position.x = x; e.s.position.z = z; e.ks2Lead = e === U.cmd; } U.mem0 = U.mem.length; U.px0 = U.px.length; ks2PxPlace(U, true); }
   KS2.zone = {}; for (const e of KS2.def) { const z = ks2Zone(e.ks2Side, e.ks2Y === KS2_IH ? 'gal' : e.ks2Role); (KS2.zone[z] = KS2.zone[z] || { real: [], px: [] }).real.push(e); }
   for (const o of KS2.px) if (o.team === 'orange') { const z = ks2Zone(o.side, o.role); (KS2.zone[z] = KS2.zone[z] || { real: [], px: [] }).px.push(o); }
-  showBanner('決戦2「白壁城」', '英国の反乱軍が奪った白壁城へ――全軍、進め'); bannerTimer = 4.5; KS2.view = null; ks2View('H', true); ks2Seq(KS2_L.hir.m1, 13); ks2Seq(KS2_L.hir.m2, 27); ks2Seq(KS2_L.hir.m3, 40); ks2Seq(KS2_L.san.m1, 53); ks2Seq(KS2_L.san.m2, 68); ks2Seq(KS2_L.san.m3, 80);
+  showBanner('決戦2「白壁城」', '英国の反乱軍が奪った白壁城へ――全軍、進め'); bannerTimer = 4.5; KS2.view = null; ks2View('H', true); ks2PxDraw(); ks2Seq(KS2_L.hir.m1, 13); ks2Seq(KS2_L.hir.m2, 27); ks2Seq(KS2_L.hir.m3, 40); ks2Seq(KS2_L.san.m1, 53); ks2Seq(KS2_L.san.m2, 68); ks2Seq(KS2_L.san.m3, 80);
   if (TEST) window.__ks2 = { KS2, updateKs2, ks2Counts, ks2Spawn, ks2Rein, ks2Tac, ks2Go, ks2View };
   setTimeout(() => { if (KS2.on && state === 'play') ks2SayK('sumi', KS2_L.march[0][1], 1.9); }, 2500); setTimeout(() => { if (KS2.on && state === 'play') ks2SayK('flute', KS2_L.march[1][1], 1.6); }, 7000); }
 function ks2Zone(s, r) { const g = r === 'rifle' || r === 'bow' || r === 'xbow' || r === 'wall' ? 'wall' : r === 'gal' ? 'gal' : r === 'res' || r === 'post' ? 'res' : r === 'keep' ? 'keep' : r; return (g === 'keep' ? 'K' : s) + ':' + g; }
@@ -3440,15 +3441,15 @@ function updateKs2(dt) { if (!KS2.on || state !== 'play') return; KS2.t += dt; i
     for (const U of KS2.units) for (const e of U.mem) if (!isUp(e) && !e.ks2Dn) { e.ks2Dn = true; const p = e.s.position; if (Math.max(Math.abs(p.x), Math.abs(p.z)) > KS2_W + KS2_T + 1 && Math.random() < 0.4) KS2.wq.push(e); }
     if (KS2.bearers) ks2BearTick();
     // 群れの人数：実体の生き残りの割合に合わせて減らす
-    for (const U of KS2.units) { if ((U.k === 'R' ? 'H' : U.k) === KS2.view) continue; const al = U.mem.filter(e => isUp(e) && !e.ks2Mat).length, want = Math.round(U.px0 * al / Math.max(1, U.mem0)); let live = U.px.filter(o => o.alive && !o.real); while (live.length > want) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
-    for (const k in KS2.zone) { const Z = KS2.zone[k]; if (!Z.px.length || !Z.real.length || k[0] === KS2.view) continue; if (Z.r0 == null) { Z.r0 = Z.real.length; Z.px0 = Z.px.length; } const al = Z.real.filter(e => isUp(e)).length, want = Math.round(Z.px0 * al / Math.max(1, Z.r0)); let live = Z.px.filter(o => o.alive && !o.gave && !o.real); const gv = Z.px.filter(o => o.alive && o.gave && !o.real).length; while (live.length + gv > want && live.length) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
+    for (const U of KS2.units) { if (ks2AreaVis(U.k === 'R' ? 'H' : U.k, KS2.view)) continue; const al = U.mem.filter(e => isUp(e) && !e.ks2Mat).length, want = Math.round(U.px0 * al / Math.max(1, U.mem0)); let live = U.px.filter(o => o.alive && !o.real); while (live.length > want) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
+    for (const k in KS2.zone) { const Z = KS2.zone[k]; if (!Z.px.length || !Z.real.length || ks2AreaVis(k[0], KS2.view)) continue; if (Z.r0 == null) { Z.r0 = Z.real.length; Z.px0 = Z.px.length; } const al = Z.real.filter(e => isUp(e)).length, want = Math.round(Z.px0 * al / Math.max(1, Z.r0)); let live = Z.px.filter(o => o.alive && !o.gave && !o.real); const gv = Z.px.filter(o => o.alive && o.gave && !o.real).length; while (live.length + gv > want && live.length) { const o = live.splice((Math.random() * live.length) | 0, 1)[0]; ks2PxKill(o); } }
     for (const U of KS2.units) ks2PxPlace(U, false);
     for (const o of KS2.px) if (o.team === 'orange' && o.alive && !o.real && o.hx != null && (o.x !== o.hx || o.z !== o.hz)) { const dx = o.hx - o.x, dz = o.hz - o.z, d = Math.hypot(dx, dz), st = Math.min(d, 1.0); o.x += dx / (d || 1) * st; o.z += dz / (d || 1) * st; }
     // 殿が先へ出すぎた：近衛だけが追い、たしなめる
     const dz = H.az - player.pos.z; if (KS2.ph !== 'won' && dz > 14 && (!KS2.kaT || KS2.t - KS2.kaT > 25)) { KS2.kaT = KS2.t; const q = KS2_L.kingAhead[(Math.random() * 2) | 0]; const g = H.mem.find(e => isUp(e) && e.ks2Role === 'guard'); if (g) ks2Say(g, '殿、お一人で先へは行かないでください！', 1.8, 'cs03'); else ks2SayK(q[0], q[1], 1.8); }
     // 伝令：早瀬のそばから各隊へ走る
     if (KS2.ph !== 'march' && (KS2.rnT = (KS2.rnT || 8) - 0.5) <= 0) { KS2.rnT = 18; const r = H.mem.find(e => isUp(e) && e.ks2Role === 'melee' && !e.ks2Run); const U = KS2.units[(Math.random() * 4) | 0]; if (r && U.cmd && isUp(U.cmd) && U.k !== 'N') { const sg = U.k === 'E' ? 1 : -1, w0 = U.k === 'S' ? [] : [[sg * 60, 140], [sg * 100, 95]]; r.ks2Run = { to: U.cmd, t: 0, wp: w0.slice(), wp0: w0 }; if (Math.random() < 0.5) ks2SayK('sec2', KS2_L.march[2][1], 1.2); } } }
-  ks2TacTick(dt); ks2Chat(dt); ks2Music(dt); ks2AreaSync(false); }
+  ks2TacTick(dt); ks2Chat(dt); ks2Music(dt); ks2AreaSync(false); ks2PxDraw(); }
 // ===== 決戦2：陣形・士気・本陣・援軍・負傷者・罠・城門の耐久（v l） =====
 const KS2_FM = {   // 陣形の名と、それぞれの得手不得手（atk 斬り合いの当たり／def 受ける当たり／arr 矢の受けやすさ／vol 斉射の間隔）
   kaku: { n: '鶴翼の陣', atk: 1.15, def: 0.9, arr: 1.0, vol: 1, mor: 0 },
@@ -32579,7 +32580,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261122m';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();

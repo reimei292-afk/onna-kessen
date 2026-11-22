@@ -324,5 +324,41 @@
     "front_diag": "assets/maids/girl72_front_diag.jpg",
     "front_diag_dir": -1,
     "down": "assets/maids/girl72_down.jpg"
+  },
+  "girl73": {
+    "front": "assets/maids/girl73_front.jpg",
+    "side": "assets/maids/girl73_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl73_back.jpg",
+    "front_diag": "assets/maids/girl73_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl73_down.jpg"
+  },
+  "girl74": {
+    "front": "assets/maids/girl74_front.jpg",
+    "side": "assets/maids/girl74_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl74_back.jpg",
+    "front_diag": "assets/maids/girl74_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl74_down.jpg"
+  },
+  "girl75": {
+    "front": "assets/maids/girl75_front.jpg",
+    "side": "assets/maids/girl75_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl75_back.jpg",
+    "front_diag": "assets/maids/girl75_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl75_down.jpg"
+  },
+  "girl76": {
+    "front": "assets/maids/girl76_front.jpg",
+    "side": "assets/maids/girl76_side.jpg",
+    "side_dir": -1,
+    "back": "assets/maids/girl76_back.jpg",
+    "front_diag": "assets/maids/girl76_front_diag.jpg",
+    "front_diag_dir": -1,
+    "down": "assets/maids/girl76_down.jpg"
   }
 }

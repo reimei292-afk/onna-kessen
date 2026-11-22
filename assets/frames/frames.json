@@ -3461,5 +3461,116 @@
    "dir": -1,
    "file": "assets/maids/girl69_down.png"
   }
+ },
+ "girl70": {
+  "front": {
+   "hk": 1.0198,
+   "aspect": 0.2578,
+   "ax": 0.5035,
+   "dir": 0,
+   "file": "assets/maids/girl70_front.png"
+  },
+  "side": {
+   "hk": 1.007,
+   "aspect": 0.1756,
+   "ax": 0.4692,
+   "dir": -1,
+   "file": "assets/maids/girl70_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0192,
+   "aspect": 0.2289,
+   "ax": 0.4967,
+   "dir": -1,
+   "file": "assets/maids/girl70_front_diag.png"
+  },
+  "back": {
+   "hk": 1.007,
+   "aspect": 0.2567,
+   "ax": 0.4929,
+   "dir": 0,
+   "file": "assets/maids/girl70_back.png"
+  },
+  "down": {
+   "hk": 0.2573,
+   "aspect": 3.8859,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl70_down.png"
+  }
+ },
+ "girl71": {
+  "front": {
+   "hk": 1.0173,
+   "aspect": 0.2533,
+   "ax": 0.5011,
+   "dir": 0,
+   "file": "assets/maids/girl71_front.png"
+  },
+  "side": {
+   "hk": 1.0173,
+   "aspect": 0.1789,
+   "ax": 0.4783,
+   "dir": -1,
+   "file": "assets/maids/girl71_side.png"
+  },
+  "front_diag": {
+   "hk": 1.009,
+   "aspect": 0.2389,
+   "ax": 0.4835,
+   "dir": -1,
+   "file": "assets/maids/girl71_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0083,
+   "aspect": 0.2522,
+   "ax": 0.4895,
+   "dir": 0,
+   "file": "assets/maids/girl71_back.png"
+  },
+  "down": {
+   "hk": 0.1873,
+   "aspect": 5.339,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl71_down.png"
+  }
+ },
+ "girl72": {
+  "front": {
+   "hk": 1.0071,
+   "aspect": 0.2544,
+   "ax": 0.4986,
+   "dir": 0,
+   "file": "assets/maids/girl72_front.png"
+  },
+  "side": {
+   "hk": 1.011,
+   "aspect": 0.1556,
+   "ax": 0.5512,
+   "dir": -1,
+   "file": "assets/maids/girl72_side.png"
+  },
+  "front_diag": {
+   "hk": 1.0091,
+   "aspect": 0.2322,
+   "ax": 0.4881,
+   "dir": -1,
+   "file": "assets/maids/girl72_front_diag.png"
+  },
+  "back": {
+   "hk": 1.0078,
+   "aspect": 0.2511,
+   "ax": 0.4871,
+   "dir": 0,
+   "file": "assets/maids/girl72_back.png"
+  },
+  "down": {
+   "hk": 0.2375,
+   "aspect": 4.2098,
+   "ax": 0.5,
+   "dir": -1,
+   "file": "assets/maids/girl72_down.png"
+  }
  }
 }

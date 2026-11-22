@@ -3,7 +3,7 @@
 // 攻め手 約1500（六つの隊）・守り手 約1000。近くの者は一人ずつ（実体）、遠くの者・人数の多くは簡単な絵（群れ）で出す。
 // 中国の現地兵の絵は KS2_CN_LOOKS の一か所だけ差し替えれば変わる（Grok で作った画像を frames/ に入れて id を並べる）。
 // ===================================================================
-const KS2_CN_LOOKS = ['girl46', 'girl47', 'girl48', 'girl49', 'girl50', 'girl51', 'girl52', 'girl53', 'girl54', 'girl55'];   // Grok で作った中国の現地兵（守り手だけ）   // ← 中国の現地兵の絵（ここだけ差し替える）
+const KS2_CN_LOOKS = ['girl42', 'girl43', 'girl44', 'girl45', 'girl46', 'girl47', 'girl48', 'girl49', 'girl50', 'girl51'];   // Grok で作った中国の現地兵（守り手だけ）   // ← 中国の現地兵の絵（ここだけ差し替える）
 const KS2_CN_NAMES = ['李 梅', '王 芳', '張 静', '劉 麗', '陳 玲', '楊 雪', '趙 婷', '黄 蘭', '周 燕', '呉 敏', '徐 霞', '孫 莉', '馬 蕾', '朱 慧', '胡 琳', '郭 娜'];
 const KS2 = { on: false, ph: 'off', t: 0 };
 const KS2_W = 70, KS2_T = 3, KS2_H = 9, KS2_IW = 36, KS2_IH = 7, KS2_GATE = 3.5, KS2_IG = 1.8;   // 外の城壁（±70・厚さ3・高さ9）、内の城壁（±36・高さ7）、門の半幅
@@ -26,7 +26,7 @@ const KS2_NM = { ojou: ['西園寺 すみれ', '冷静', 158], omiya: ['大宮 �
 const KS2_TITLE = { ojou: '南門隊長 西園寺', omiya: '南門隊 副官 大宮', shinobu: '西園寺の秘書 氷室', chikage: '西園寺の秘書 一条', fumi: '東門隊長 綾瀬', reika: '東門隊 副官 白石大佐', uk06: '西門隊長 エレノア', shizuka: '西門隊 副官 久遠中佐',
   sec4: '北門隊長 宮下大佐', sysop: '北門隊 副官 霧島中佐', sumi: '総大将 白瀬', sec2: '本隊 早瀬', akari: '本隊の秘書 夏目', hiyori: '本隊の秘書 小日向', flute: '器楽中佐 小鳥遊', sec3: '後方 桜井大佐', kujo: '軍医中将 九条', hirose: '本隊 広瀬' };
 const KS2_VK = { ojou: 'ojou', omiya: 'omiya', shinobu: 'shinobu', chikage: 'chikage', fumi: 'fumi', reika: 'reika', uk06: 'uk06', shizuka: 'shizuka', sec4: 'sec4', sysop: 'sysop', sumi: 'sumi', sec2: 'sec2', akari: 'akari', hiyori: 'hiyori', flute: 'flute', sec3: 'sec3', kujo: 'kujo', hirose: 'hirose' };
-function ks2Gid(k) { if (k === 'uk06') return 'uk06'; if (k === 'hirose') return GIRLS.girl45 ? 'girl45' : null; const P = PAL_NAMED[k]; const g = P && P.girl(); return g && GIRLS[g] ? g : null; }
+function ks2Gid(k) { if (k === 'uk06') return 'uk06'; if (k === 'hirose') return GIRLS.hirose ? 'hirose' : null; const P = PAL_NAMED[k]; const g = P && P.girl(); return g && GIRLS[g] ? g : null; }
 // ---- 台詞（声は tools/add_ks2_voices.py → assets/voices/ks2/） ----
 const KS2_L = {
   march: [['sumi', '全軍、前へ。隊列を崩さないで'], ['flute', 'さあ、行進曲です！ 歩調を合わせて'], ['sec2', '伝令、各隊へ走って！']],
@@ -169,7 +169,7 @@ function ks2PxKill(o) { if (!o || !o.alive) return; o.alive = false; o.laid = fa
 function ks2Mk(x, z, kind, team, gid, prof, y) { const e = spawnEnemy(x, z, kind, false, team, { girl: gid && GIRLS[gid] ? gid : undefined, yari: -1, set: { special: true } }); if (!e) return null;
   if (prof) Object.assign(e.prof, prof); if (gid && EXTRA_GIRLS[gid] && EXTRA_GIRLS[gid].prof) e.figH = (prof && prof.cm || EXTRA_GIRLS[gid].prof.cm) / 100; else if (prof && prof.cm) e.figH = prof.cm / 100;
   e.ks2 = true; e.passive = true; e.sq = null; e.state = 'idle'; if (e.mk) e.mk.visible = false; e.shadow.visible = false; e.hp = e.hpMax = 3; e.dmg = 8; e.ks2Y = y || 0; e.baseY = e.ks2Y; e.s.position.y = e.ks2Y; e.ks2T = rand(0, 1); e.ks2Cd = rand(1, 5); e.ks2V = [0, 0]; e.speed = rand(2.2, 2.6); return e; }
-const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'girl26', 'girl31', 'girl34', 'girl37', 'girl45', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
+const KS2_KINGDOM_OFF = () => new Set([SEC_ID, SEC2_ID, FUMI_ID, OJOU_ID, SYSOP_ID, FLUTE_ID, 'omiya', 'sec3', 'sec4', 'sec5', 'sec6', 'sec7', 'reika', 'kuon', 'ichijo', 'murase', 'hirose', ...KS2_CN_LOOKS, MEDIC_ID, 'surgeon']);   // 中国の現地兵の絵は守り手だけ
 function ks2KLook() { const off = KS2_KINGDOM_OFF(); const L = (KS2.kLooks = KS2.kLooks || Object.keys(GIRLS).filter(k => /^(mob\d+|girl\d+)$/.test(k) && !off.has(k) && GIRLS[k].front)); return L[(Math.random() * L.length) | 0]; }
 function ks2Spawn() {
   KS2.units = []; KS2.def = []; KS2.by = {}; KS2.px = []; KS2.pxg = {}; KS2.pxLostA = 0; KS2.pxLostD = 0; KS2.all = [];

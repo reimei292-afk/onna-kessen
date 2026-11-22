@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""assets/maids/mobNN.jpg と assets/maids/archerNN.jpg から背景を除去し、切り抜いた透過 PNG (mobNN.png / archerNN.png) と
+"""assets/maids/girlNN.jpg（埋め込みスロット用：近接 girl17.. と弓 girl07〜16）から背景を除去し、切り抜いた透過 PNG と
 埋め込み版 assets/sprites.js を再生成する。番号は 01 から連番で、存在するものすべてを処理する。
 必要: pip install "rembg[cpu]" pillow   (rembg が無い場合は明るい無地背景向けの色キーで代用)
 使い方: python3 tools/make_sprites.py            （背景除去＋sprites.js 再生成）
@@ -42,13 +42,19 @@ def head_top(img):
 import sys as _s; _s.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 def process(prefix):
     ext = 'png' if NO_CUT else 'jpg'
-    # 番号順（mobNN）。名のある娘（mob03・06・07）は日本語のフルネームのファイル（maid_dir.MAID_REN）
+    # SPR_SLOT_IDS と同じ並び。名のある娘は日本語のフルネームのファイル（maid_dir.MAID_REN）
     from maid_dir import maid_name
+    SLOT = {
+        'mob': ['girl17','girl18','hibiki','girl19','girl20','shirase','hayase','girl21','girl22','girl23'],
+        'archer': [f'girl{n:02d}' for n in range(7, 17)],
+    }
     files = []
-    for n in range(1, 100):
-        f = os.path.join(D, maid_name(f'{prefix}{n:02d}') + '.' + ext)
-        if not os.path.exists(f): break
-        files.append(f)
+    for gid in SLOT[prefix]:
+        f = os.path.join(D, maid_name(gid) + '.' + ext)
+        if os.path.exists(f):
+            files.append(f)
+        else:
+            print('missing', f)
     data = []
     for f in files:
         if NO_CUT:

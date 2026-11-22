@@ -2,11 +2,11 @@
 Usage: python3 tools/process2.py [stand_px] [quality] [out_prefix]"""
 import json, os, sys, numpy as np, cv2
 from PIL import Image, ImageDraw
-os.chdir('/workspace/mob01_hr')
+os.chdir('/workspace/girl17_hr')
 STAND = int(sys.argv[1]) if len(sys.argv) > 1 else 192
 Q = int(sys.argv[2]) if len(sys.argv) > 2 else 74
 AQ = int(os.environ.get('AQ', 50))
-OUT = sys.argv[3] if len(sys.argv) > 3 else 'mob01_motion'
+OUT = sys.argv[3] if len(sys.argv) > 3 else 'girl17_motion'
 JSON = sys.argv[4] if len(sys.argv) > 4 else 'atlas.json'
 WALKH = STAND * 228 / 236
 N = 12
@@ -147,7 +147,7 @@ print('bow', len(out), 'scale', round(bsc, 3))
 
 # ---- pages: turn+fall (always), walks, bow (on demand). Each page <= PAGE x PAGE
 GROUPS = [['turn', 'fall'], [k for k in frames if k.startswith('walk_')], ['bow']]
-meta = {'v': 3, 'id': 'mob01', 'stand': STAND, 'kokkaku': 'W', 'pages': [],
+meta = {'v': 3, 'id': 'girl17', 'stand': STAND, 'kokkaku': 'W', 'pages': [],
         'note': 'frame = [x, y, w, h, ox, oy, page] px; ox = crop left edge minus anchor (torso centre), oy = crop bottom above ground; hd[k] = [lx, ly, rx, ry] px from anchor/ground (image-left hand, image-right hand; null if unseen); '
                 'turn[k] = view angle k*22.5 deg (camera toward her left); walk index 0 = left foot forward at contact',
         'walk8': [['walk_front', 0], ['walk_fdiag', 0], ['walk_side', 1], ['walk_bdiag', 1],

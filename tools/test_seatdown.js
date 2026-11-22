@@ -1,4 +1,4 @@
-// 席で事切れる見え方の確認: BASE=… ST=plane|plains|beach [CTX=kei|car|plane|boat] [WHO=girl26] [D=距離 HG=高さ] NODE_PATH=…/node_modules node tools/test_seatdown.js（/workspace/sq/seat_<stage>_{0,1,2}.png）
+// 席で事切れる見え方の確認: BASE=… ST=plane|plains|beach [CTX=kei|car|plane|boat] [WHO=reika] [D=距離 HG=高さ] NODE_PATH=…/node_modules node tools/test_seatdown.js（/workspace/sq/seat_<stage>_{0,1,2}.png）
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8799', st = process.env.ST || 'plane', WHO = process.env.WHO || '';
 (async () => {

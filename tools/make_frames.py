@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """追加の見え方（横・後ろ・歩き・構え）の写真から背景を除き、正面写真と同じ縮尺にそろえて切り抜く。
-入力: frames/manifest.json  {"mob09": {"side": パス, "back": パス, "walk": パス, "bow": パス, "stab": パス, "action": パス, "flute": パス}, ...}
+入力: frames/manifest.json  {"girl22": {"side": パス, "back": パス, "walk": パス, "bow": パス, "stab": パス, "action": パス, "flute": パス}, ...}
        向きの上書き（任意）: "side_dir": 1（右向き）/ -1（左向き）など "<frame>_dir"
 出力: assets/frames/<id>_<frame>.png と assets/frames/frames.js（寸法情報＋file:// 用の埋め込み画像）
 縮尺: 正面写真（assets/<id>.png）の「頭頂〜足元」の高さを基準に、各フレームの頭頂〜足元が同じ高さ（歩き 0.985、突き 0.93）になるよう拡大縮小。足元は画像の下端。
 横顔のキー: side（右向き）／side_left（左向き）／side_right。
-使い方: python3 tools/make_frames.py [--force] [--only mob09,archer03]
+使い方: python3 tools/make_frames.py [--force] [--only girl22,girl09]
 必要: pip install "rembg[cpu]" pillow
 """
 import sys, os, io, json, base64
@@ -67,7 +67,7 @@ def main():
         if ONLY and gid not in ONLY: continue
         meta.setdefault(gid, {})
         if not fr.get('front') and fr.get('bow') and not os.path.exists(os.path.join(A, gid + '.png')):
-            fr = dict(fr, front=fr['bow'])   # 弓を引く写真しか無い娘（arch01〜）：その写真を正面（縮尺の基準）にも使う
+            fr = dict(fr, front=fr['bow'])   # 弓を引く写真しか無い娘（girl01〜）：その写真を正面（縮尺の基準）にも使う
         if os.path.exists(os.path.join(A, gid + '.png')): ref = front_ref(gid)
         elif fr.get('front') and os.path.exists(fr['front']):
             # 元の写真が無い娘（医療係など）：正面も manifest から作り、その頭頂〜足元を基準にする

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""弓を持たない archer01〜10（同じ顔・髪・体・標準の装い）。assets/maids/archerNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
-を rembg で切り抜いて assets/maids/archerNN_u_<view>.png に分け、倒れた写真（archerNN_down.png）からは弓を外す
+"""弓を持たない girl07〜16（同じ顔・髪・体・標準の装い）。assets/maids/girlNN_sheet.jpg（正面・斜め前・横・後ろ・歩き）
+を rembg で切り抜いて assets/maids/girlNN_u_<view>.png に分け、倒れた写真（girlNN_down.png）からは弓を外す
 （いちばん大きいまとまりだけ残す）。メタは /tmp/arch_meta.json（make_frames_props.py が frames_props.js へ書く）。"""
 import json, os
 import sys as _s, os as _o; _s.path.insert(0, _o.path.dirname(_o.path.abspath(__file__))); from maid_dir import maid_dir, maid_name
@@ -21,8 +21,8 @@ def facing(a):   # 横顔：つま先の出ている方（下端 4% の重心が
         m = a[int(h * r0):int(h * r1)] > 80; ys, xs = np.nonzero(m); return xs.mean() if len(xs) else 0
     return 1 if cx(0.965, 1.0) > cx(0.80, 0.86) else -1
 meta = {}
-for n in range(1, 11):
-    gid = f'archer{n:02d}'; im = Image.open(os.path.join(SH, f'{maid_name(gid)}_sheet.jpg')).convert('RGB')
+for n in range(7, 17):
+    gid = f'girl{n:02d}'; im = Image.open(os.path.join(SH, f'{maid_name(gid)}_sheet.jpg')).convert('RGB')
     W = im.width; out = np.array(remove(im, session=sess).convert('RGBA')); a = out[:, :, 3]
     a[a < 24] = 0
     lab, k = ndimage.label(a > 60); sizes = ndimage.sum(np.ones_like(lab), lab, range(1, k + 1))

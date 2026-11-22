@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """assets/maids を見て、侍女の見た目の名簿 assets/maids/ids.js を作る。
 新しいタイプの絵を足したら、この脚本を走らせる（公開前でも可）。game.js は名簿と FRAME_META から
-自動で山札に入れる（名のある娘・外国の娘・登録から外した灰髪・金髪は除く）。
+自動で山札に入れる（名のある娘・外国の娘は除く）。
 """
 import json, re
 from pathlib import Path

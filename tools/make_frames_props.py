@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """assets/frames/frames_props.js を書く：
- PROP_META（武器アトラスの切り出し・実寸・握り）、弓を持たない archer01〜10 の見え方、
+ PROP_META（武器アトラスの切り出し・実寸・握り）、弓を持たない girl07〜16 の見え方、
  HAND_META[gid][view] = [uL, vL, uR, vR]（画像の左右の手の位置。u は左から、v は上からの割合。横向きは前の手）。
 先に tools/make_props.py と tools/make_archer_unarmed.py を回しておく。"""
 import json, os, re, glob

@@ -5939,6 +5939,331 @@ function sdUpdate(dt) { if (!SD.on || state !== 'play') return; const S = SD.set
   sdPeopleTick(dt, S); const hv = sdHover(); if (hv !== SD.hov) { SD.hov = hv; sdUi(); }
   SD.ct += dt; sdVoiceTick(); if (c && c.wait && c.wait()) SD.cd = 0; if (SD.ct >= SD.cd) sdNext(); }
 
+// ================= 南米の森（amazon）：殿と侍女 約四百が、深い密林を抜けて川沿いの集落跡へ =================
+// 勝ち：殿が集落跡に着き、侍女が百五十人以上そこに集まる。負け：殿が倒れる／動ける侍女が百五十人を切る。倒れた体は残る（大蛇に飲まれた者だけは消える）
+// 獣はただの危ない野生の生き物：ラーテル（茂みから飛び出して脚に食らいつく。三人で囲めば追い払える）、大蛇（巻きついて丸飲み。少しのあいだに叩けば吐き出す）、
+// 猿（木の上から物を投げ、弓や槍を盗み、侍女のしぐさを見て覚えて真似する）、吸血ヒル（沼で気づかないうちに体力が減る。見せるのは体力の棒だけ）、オオアリクイ（立ち上がって長い爪で払う）
+// 殿は輿に乗る（担ぎ手は立ったまま。座るのは殿だけ）。輿の上ではヒルに吸われない。降りて歩くこともできる
+const AM = { on: false };
+const AM_N = 400, AM_NEED = 150, AM_Z0 = 150, AM_ZE = -192;
+const AM_PATH = [[0, 185], [0, 170], [10, 125], [-8, 85], [4, 40], [-10, 0], [8, -40], [-5, -80], [6, -120], [0, -160], [0, -200]];
+const AM_SWAMP = [{ x: -8, z: 85, r: 14 }, { x: -5, z: -80, r: 15 }];
+const AM_RIVER = { z0: 34, z1: 46 };
+const AM_NM = { sumi: '白瀬', fumi: '綾瀬', reika: '白石', shinobu: '氷室', kujo: '九条', omiya: '大宮', akari: '夏目' };
+const AM_LN = {
+  start: [['sumi', '殿、ここから先は道がありません。川沿いの集落跡まで、侍女四百で抜けます'], ['shinobu', '見通しが悪いので、列を詰めて。茂みの音に気をつけてください'], ['kujo', '沼にはヒルがいます。殿は、なるべく輿から降りないでください'], ['reika', '獣が出たら、まとめて叩くわよ。……殿は見ててくださればいいわ'], ['omiya', 'はいっ、殿！ 輿の担ぎ手、交代しながら行きます！']],
+  badger: [['shinobu', 'ラーテルです！ 一頭に三人以上で当たって。噛みついたら、離しません！'], ['akari', '脚に食らいついてます！ 囲んで、囲んで！']],
+  badgerOff: [['omiya', '追い払いました！ 三人いれば、なんとかなります！']],
+  snake: [['sumi', '大蛇です！ 巻かれたら、すぐに叩いて！ 今なら、まだ吐き出させられます！'], ['reika', '川べりから来るわよ。水際に寄りすぎないで！']],
+  snakeOut: [['kujo', '吐き出しました。……息はあります。後ろへ下げて']],
+  fed: [['sumi', '……間に合いませんでした。あの大蛇、もう動きが鈍いです。近づかないで']],
+  monkey: [['fumi', '上から……猿です。頭を守って。的は、私が外しませんけど'], ['akari', '木の上から何か投げてきます！']],
+  steal: [['reika', '弓を盗られた！？ あの猿……！'], ['fumi', '槍まで持っていかれました。武器は、手から離さないで']],
+  learn: { spear: ['sumi', '殿、猿が……槍の突きを真似しています'], stone: ['fumi', '石の投げ方を覚えられました。狙いが、正確になっています'], shield: ['shinobu', '猿が木の皮を盾にしています。私たちの構えを、見ていたのね'], bow: ['reika', '盗った弓を……射ってきた！？ 見て覚えたっていうの！？'] },
+  anteater: [['kujo', 'オオアリクイ……立ち上がったら近づかないで。あの爪は、とても長い'], ['shinobu', '正面に立たないで。横から、まとめて']],
+  river: [['sumi', '川を渡ります。足元に気をつけて'], ['omiya', '輿、高く上げて！ 殿を濡らさないで！']],
+  swamp: [['kujo', '沼です。……ここは、早く抜けましょう']],
+  leech: [['kujo', '殿、皆の足を見ました。……ヒルです。沼で、気づかないうちに体力を吸われていました']],
+  leechR: [['kujo', '……それに近い状態です。少し休めば戻ります']],
+  stock: [['sumi', 'ヒルと棘で、ほとんど伝線しております。替えは集落跡で']],
+  sight: [['sumi', '見えました。川沿いの集落跡です'], ['fumi', '列の最後まで、着くのを待ちましょう']],
+  win: [['sumi', '着きました。……殿、皆、よく歩きました'], ['kujo', '手当ては、ここでします。ヒルの跡も、全部見ます']],
+  lose: [['sumi', '……殿、もう列が保てません。引き返します']],
+  pira: [['kujo', 'ピラニアです！ 傷のある人ほど寄ってきます。怪我をした人は、急いで渡って！'], ['shinobu', '水の中で止まらないで！ 足を動かし続けて！']],
+  eel: [['shinobu', '水が光った……デンキウナギです！ 痺れた人は、引っぱり出して！']],
+  dis: [['omiya', '殿、降りられるんですか！？ 足元、気をつけてください！']], mount: [['omiya', 'はいっ、殿！ お乗りください！']],
+};
+const AM_MOB = { latch: ['きゃっ、足に！', '離して、離してよ！', '噛みついて、取れない……！'], help: ['三人で囲んで！', 'こっち、手を貸して！', '今だ、突いて！'], snake: ['蛇！ 蛇がいる！', '巻かれてる……！', '動けない……！'],
+  fed: ['うそ……飲まれちゃった……', '見ちゃだめ、前だけ見て！', 'ご、ご飯って……'], throw: ['上から何か！', 'いたっ……木の実！？', '頭、守って！'], steal: ['弓が……ない！', '槍、取られた！', '返しなさいよ、それ！'],
+  ant: ['アリクイ！ 立った！', '爪、爪が長い！', '下がって、下がって！'], river: ['川、冷たい……', '足、取られる……'], swamp: ['ここ、ぬかるんでる……', 'なんか、体がだるい……'],
+  leech: ['もうフラフラです……', '殿は輿だから……', 'レバー食べたい……', '伝線どころじゃないです', '足がごわごわする……'], march: ['殿、こちらです！', '前の人、見失わないで！', '暑い……', '虫が、すごい……'],
+  pira: ['足、足に何か！', '魚！ 魚がいっぱい！', '水から出して、早く！', 'ちくちくする、痛い……！'],
+  eel: ['しびれる……！', '体が、動かない……', 'ビリッてした！'],
+  fall: ['……っ', 'あ……'], win: ['着いた……！', 'やっと、着いた……'] };
+const AM_KING = { eel: 'デンキウナギまでいるのか……この川、どうなってるんだ', pira: 'ピラニアか。……止まるな、渡り切れ', pira2: '傷のある者を、川の真ん中に入れるな', leech: 'みんな鉄分不足になった？', stock: '白瀬、みんなのストッキングどうなってるの', fed: 'ご飯になっちゃったか', start: 'よし、行くか', win: 'みんな、よく歩いた。……今日はここで休もう' };
+function amMat(c) { const M = AM.mat || (AM.mat = {}); return M[c] || (M[c] = new THREE.MeshLambertMaterial({ color: c })); }
+function amCT(key, w, h, draw) { const T = AM.tex || (AM.tex = {}); if (T[key]) return T[key]; const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; T[key] = t; return t; }
+function amRnd(a, b) { return a + Math.random() * (b - a); }
+function amNz(x, w, h, n, cols, a, s) { for (let i = 0; i < n; i++) { x.fillStyle = cols[(Math.random() * cols.length) | 0]; x.globalAlpha = a * Math.random(); const r = amRnd(1, s || 3); x.fillRect(Math.random() * w, Math.random() * h, r, r); } x.globalAlpha = 1; }
+const AM_TX = {
+  floor: () => amCT('amFloor', 256, 256, (x, w, h) => { x.fillStyle = '#3e3424'; x.fillRect(0, 0, w, h); amNz(x, w, h, 2600, ['#5a4a2e', '#2c2618', '#6a5a34', '#4a5a2a', '#7a6a3a'], 0.8, 6); for (let i = 0; i < 90; i++) { x.fillStyle = ['#6a5530', '#8a6a3a', '#4f5f2c'][i % 3]; x.save(); x.translate(Math.random() * w, Math.random() * h); x.rotate(Math.random() * 6); x.beginPath(); x.ellipse(0, 0, 7, 3, 0, 0, 7); x.fill(); x.restore(); } }),
+  leaf: () => amCT('amLeaf', 128, 128, (x, w, h) => { x.clearRect(0, 0, w, h); for (let i = 0; i < 26; i++) { const a = -Math.PI / 2 + amRnd(-1.2, 1.2), L = amRnd(30, 60), bx = 64 + amRnd(-10, 10); x.strokeStyle = '#2f4a1e'; x.lineWidth = 2; x.beginPath(); x.moveTo(bx, 128); x.lineTo(bx + Math.cos(a) * L, 128 + Math.sin(a) * L * 1.6); x.stroke();
+    x.fillStyle = ['#2f6a2a', '#3f7a32', '#256022', '#4a8a3a'][i % 4]; x.save(); x.translate(bx + Math.cos(a) * L, 128 + Math.sin(a) * L * 1.6); x.rotate(a + Math.PI / 2); x.beginPath(); x.ellipse(0, 0, 9, 22, 0, 0, 7); x.fill(); x.restore(); } }),
+  bark: () => amCT('amBark', 64, 128, (x, w, h) => { x.fillStyle = '#4a3a2a'; x.fillRect(0, 0, w, h); for (let i = 0; i < 30; i++) { x.strokeStyle = `rgba(${30 + amRnd(0, 30) | 0},${24 + amRnd(0, 20) | 0},16,.7)`; x.lineWidth = amRnd(1, 3); const xx = Math.random() * w; x.beginPath(); x.moveTo(xx, 0); x.lineTo(xx + amRnd(-4, 4), h); x.stroke(); } amNz(x, w, h, 300, ['#5a7a3a', '#3a5a2a'], 0.6, 4); }),
+  water: () => amCT('amWater', 128, 128, (x, w, h) => { x.fillStyle = '#7a6440'; x.fillRect(0, 0, w, h); for (let i = 0; i < 40; i++) { x.strokeStyle = 'rgba(225,215,180,.35)'; x.beginPath(); const y = Math.random() * h; x.moveTo(0, y); x.bezierCurveTo(40, y + 4, 80, y - 4, 128, y); x.stroke(); } }),
+  swamp: () => amCT('amSwamp', 128, 128, (x, w, h) => { x.fillStyle = '#2e3420'; x.fillRect(0, 0, w, h); amNz(x, w, h, 1500, ['#3a4a22', '#1e2414', '#4a5a2a'], 0.8, 5); }),
+  stone: () => amCT('amStone', 128, 128, (x, w, h) => { x.fillStyle = '#7a7466'; x.fillRect(0, 0, w, h); for (let j = 0; j < 8; j++) for (let i = 0; i < 4; i++) { const v = amRnd(-18, 18); x.fillStyle = `rgb(${120 + v | 0},${114 + v | 0},${100 + v | 0})`; x.fillRect(i * 32 - (j % 2) * 16 + 1, j * 16 + 1, 30, 14); } amNz(x, w, h, 700, ['#4a6a2a', '#5a7a32', '#3a4a22'], 0.7, 6); }),
+  snake: () => amCT('amSnake', 64, 64, (x, w, h) => { x.fillStyle = '#5a6a2a'; x.fillRect(0, 0, w, h); for (let i = 0; i < 9; i++) { x.fillStyle = '#1e2410'; x.beginPath(); x.ellipse(amRnd(0, w), amRnd(0, h), amRnd(5, 9), amRnd(4, 7), 0, 0, 7); x.fill(); } }),
+};
+function amPathX(z) { const P = AM_PATH; for (let i = 0; i < P.length - 1; i++) { const a = P[i], b = P[i + 1]; if (z <= a[1] && z >= b[1]) { const k = (a[1] - z) / (a[1] - b[1] || 1); return a[0] + (b[0] - a[0]) * k; } } return 0; }
+function amInSwamp(x, z) { for (const s of AM_SWAMP) if (Math.hypot(x - s.x, z - s.z) < s.r) return s; return null; }
+// ---- 森を作る（幹・樹冠・下草・つる・川・沼・集落跡）。多いものは InstancedMesh ----
+function amInst(geo, mat, list, fn) { const m = new THREE.InstancedMesh(geo, mat, Math.max(1, list.length)); const o = new THREE.Object3D(); list.forEach((p, i) => { fn(o, p); o.updateMatrix(); m.setMatrixAt(i, o.matrix); }); m.count = list.length; stageRoot.add(m); return m; }
+function buildAmazon() {
+  ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false;
+  TERR.fn = (x, z) => AM.ride && Math.hypot(x - player.pos.x, z - player.pos.z) < 0.3 ? 0.75 : 0;   // 輿の上：目の高さが上がる
+  TERR.move = (ox, oz, nx, nz) => nz < 186 && nz > -214 && Math.abs(nx - amPathX(nz)) < 30 ? 1 : 0;
+  const LOW = MOBILE || LITE, f = AM_TX.floor().clone(); f.needsUpdate = true; f.repeat.set(30, 100);
+  const gr = new THREE.Mesh(new THREE.PlaneGeometry(140, 440), new THREE.MeshLambertMaterial({ map: f })); gr.rotation.x = -Math.PI / 2; gr.position.set(0, 0, -15); stageRoot.add(gr);
+  // 川（横切る）と沼
+  const wt = AM_TX.water().clone(); wt.needsUpdate = true; wt.repeat.set(20, 2); AM.waterT = wt; const rv = new THREE.Mesh(new THREE.PlaneGeometry(140, AM_RIVER.z1 - AM_RIVER.z0), new THREE.MeshLambertMaterial({ map: wt, transparent: true, opacity: 0.92 })); rv.rotation.x = -Math.PI / 2; rv.position.set(0, 0.03, (AM_RIVER.z0 + AM_RIVER.z1) / 2); stageRoot.add(rv);
+  const rv2 = new THREE.Mesh(new THREE.PlaneGeometry(14, 60), rv.material); rv2.rotation.x = -Math.PI / 2; rv2.position.set(26, 0.03, -195); stageRoot.add(rv2);   // 集落跡の脇の川
+  const sm = new THREE.MeshLambertMaterial({ map: AM_TX.swamp(), transparent: true, opacity: 0.95 }); for (const s of AM_SWAMP) { const m = new THREE.Mesh(new THREE.CircleGeometry(s.r, 28), sm); m.rotation.x = -Math.PI / 2; m.position.set(s.x, 0.025, s.z); stageRoot.add(m); }
+  // 木：道から 4m 以上はなす
+  const trees = [], bush = [], vine = [], reed = []; AM.trees = trees;
+  for (let i = 0; i < (LOW ? 520 : 820); i++) { const z = amRnd(-212, 186), px = amPathX(z), x = px + (Math.random() < 0.5 ? -1 : 1) * amRnd(4.5, 34); if (z > AM_RIVER.z0 - 1 && z < AM_RIVER.z1 + 1) continue; if (z < -178 && Math.abs(x) < 22) continue; if (amInSwamp(x, z)) continue; trees.push({ x, z, r: amRnd(0.25, 0.7), h: amRnd(9, 20) }); }
+  for (let i = 0; i < (LOW ? 1400 : 2600); i++) { const z = amRnd(-212, 186), px = amPathX(z), d = amRnd(1.6, 32), x = px + (Math.random() < 0.5 ? -1 : 1) * d; if (z > AM_RIVER.z0 && z < AM_RIVER.z1) continue; if (z < -180 && Math.abs(x) < 18) continue; bush.push({ x, z, s: amRnd(0.6, 1.5), r: Math.random() * 3 }); }
+  for (let i = 0; i < (LOW ? 160 : 300); i++) { const t = trees[(Math.random() * trees.length) | 0]; vine.push({ x: t.x + amRnd(-2, 2), z: t.z + amRnd(-2, 2), h: amRnd(4, 9), y: t.h * 0.8 }); }
+  for (const s of AM_SWAMP) for (let i = 0; i < 70; i++) { const a = Math.random() * 6.3, r = Math.sqrt(Math.random()) * s.r; reed.push({ x: s.x + Math.cos(a) * r, z: s.z + Math.sin(a) * r, h: amRnd(0.6, 1.4) }); }
+  const bt = AM_TX.bark().clone(); bt.needsUpdate = true; bt.repeat.set(1, 3);
+  amInst(new THREE.CylinderGeometry(0.75, 1, 1, 7), new THREE.MeshLambertMaterial({ map: bt }), trees, (o, t) => { o.position.set(t.x, t.h / 2, t.z); o.scale.set(t.r, t.h, t.r); o.rotation.set(0, Math.random() * 6, 0); });
+  amInst(new THREE.IcosahedronGeometry(1, 0), amMat(0x2a4a22), trees, (o, t) => { o.position.set(t.x, t.h, t.z); o.scale.set(t.r * 7, t.r * 3.6, t.r * 7); o.rotation.set(0, Math.random() * 6, 0); });
+  amInst(new THREE.IcosahedronGeometry(1, 0), amMat(0x355a2a), trees.filter((_, i) => i % 2), (o, t) => { o.position.set(t.x + 1.5, t.h * 0.72, t.z - 1); o.scale.set(t.r * 4.5, t.r * 2.4, t.r * 4.5); });
+  const bg = new THREE.PlaneGeometry(1.6, 1.3); bg.translate(0, 0.65, 0); const bx = bg.clone().rotateY(Math.PI / 2); const bm = new THREE.MeshLambertMaterial({ map: AM_TX.leaf(), alphaTest: 0.45, side: THREE.DoubleSide });
+  for (const g of [bg, bx]) amInst(g, bm, bush, (o, b) => { o.position.set(b.x, 0, b.z); o.scale.setScalar(b.s); o.rotation.set(0, b.r, 0); });
+  amInst(new THREE.CylinderGeometry(0.025, 0.025, 1, 4), amMat(0x3a4a22), vine, (o, v) => { o.position.set(v.x, v.y - v.h / 2, v.z); o.scale.set(1, v.h, 1); o.rotation.set(amRnd(-0.1, 0.1), 0, amRnd(-0.1, 0.1)); });
+  amInst(new THREE.CylinderGeometry(0.015, 0.02, 1, 3), amMat(0x5a6a32), reed, (o, r) => { o.position.set(r.x, r.h / 2, r.z); o.scale.set(1, r.h, 1); o.rotation.set(amRnd(-0.2, 0.2), 0, amRnd(-0.2, 0.2)); });
+  // 集落跡（崩れた石垣・柱・壊れた小屋の骨組み）
+  const st = AM_TX.stone(); const sMat = new THREE.MeshLambertMaterial({ map: st }); AM.ruin = { x: 0, z: -195, r: 18 };
+  for (const [x, z, w, h, d, r] of [[-12, -188, 7, 1.6, 0.8, 0.1], [-14, -198, 0.8, 1.2, 9, 0], [12, -186, 6, 2.2, 0.8, -0.2], [14, -200, 0.8, 1.4, 7, 0], [-4, -208, 9, 1.0, 0.8, 0], [6, -207, 4, 2.6, 0.8, 0.1], [0, -195, 4, 0.5, 4, 0]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), sMat); m.position.set(x, h / 2, z); m.rotation.y = r; stageRoot.add(m); }
+  for (const [x, z] of [[-8, -192], [-8, -200], [-2, -192], [-2, -200], [8, -194], [8, -202]]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 2.6, 6), amMat(0x5a4632)); m.position.set(x, 1.3, z); m.rotation.z = amRnd(-0.15, 0.15); stageRoot.add(m); }
+  const rr = new THREE.Mesh(new THREE.RingGeometry(17, 17.6, 48), new THREE.MeshBasicMaterial({ color: 0xe8c45a, transparent: true, opacity: 0.5, side: THREE.DoubleSide })); rr.rotation.x = -Math.PI / 2; rr.position.set(0, 0.05, -195); stageRoot.add(rr); AM.ring = rr;
+  // 猿の群れの木（樹上の足場）
+  AM.troops = []; for (const [x, z] of [[9, 140], [-14, 60], [14, 12], [-12, -30], [12, -105], [-10, -150]]) { const T = { x: amPathX(z) + x, z, h: 9, m: [], learn: {}, gear: { bow: 0, spear: 0 }, thT: amRnd(2, 5), stT: amRnd(8, 14), shot: 0 };
+    const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.0, 14, 8), new THREE.MeshLambertMaterial({ map: bt })); tr.position.set(T.x, 7, T.z); stageRoot.add(tr); const pl = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.2, 0.3, 10), amMat(0x4a3a24)); pl.position.set(T.x, T.h - 0.15, T.z); stageRoot.add(pl);
+    const cn = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 1), amMat(0x2a4a22)); cn.position.set(T.x, T.h + 3.4, T.z); cn.scale.set(5.5, 2.6, 5.5); stageRoot.add(cn); trees.push({ x: T.x, z: T.z, r: 0.9, h: 14 });
+    for (let i = 0; i < 6; i++) { const mk = amMonkey(); const a = i * 1.05; mk.home = [T.x + Math.cos(a) * 2.2, T.h, T.z + Math.sin(a) * 2.2]; mk.g.position.set(...mk.home); mk.st = 'perch'; T.m.push(mk); } AM.troops.push(T); }
+  // 輿（漆の黒と金。担ぎ手は立ったまま）
+  const K = new THREE.Group(); const lq = amMat(0x1a1210), gd = amMat(0xc9a144); const add = (geo, m, x, y, z) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); K.add(o); return o; };
+  add(new THREE.BoxGeometry(1.3, 0.12, 1.5), lq, 0, 0.55, 0); for (const sx of [-0.68, 0.68]) add(new THREE.CylinderGeometry(0.04, 0.04, 4.6, 6), gd, sx, 0.5, 0).rotation.x = Math.PI / 2;
+  for (const [x, z] of [[-0.6, -0.68], [0.6, -0.68], [-0.6, 0.68], [0.6, 0.68]]) add(new THREE.BoxGeometry(0.06, 2.3, 0.06), lq, x, 1.75, z); add(new THREE.BoxGeometry(1.5, 0.1, 1.7), lq, 0, 2.95, 0); add(new THREE.BoxGeometry(1.52, 0.05, 1.72), gd, 0, 2.87, 0);
+  add(new THREE.BoxGeometry(1.24, 0.6, 0.06), amMat(0x6a1a1a), 0, 0.9, 0.7); stageRoot.add(K); AM.koshi = K;
+  // 獣の材質など
+  AM.flashM = new THREE.MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false });
+}
+// ---- 獣の形（簡単な立体） ----
+function amMonkey(big) { const g = new THREE.Group(), c = amMat(0x5a3e26), s = big ? 1.3 : 1; const b = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), c); b.scale.set(1, 1.3, 0.9); b.position.y = 0.42; g.add(b); const h = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), c); h.position.set(0, 0.78, 0.04); g.add(h);
+  const fc = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), amMat(0xc8a07a)); fc.position.set(0, 0.76, 0.13); fc.scale.z = 0.5; g.add(fc); for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.42, 5), c); a.position.set(sx * 0.24, 0.48, 0.04); a.rotation.z = sx * 0.4; g.add(a); const l = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.32, 5), c); l.position.set(sx * 0.1, 0.15, 0); g.add(l); }
+  const t = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.025, 4, 10, Math.PI * 1.3), c); t.position.set(0, 0.45, -0.3); t.rotation.y = Math.PI / 2; g.add(t); g.scale.setScalar(s); stageRoot.add(g); return { g, hp: 2, st: 'perch', t: 0, item: null }; }
+function amBadgerMesh() { const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 7), amMat(0x141414)); b.scale.set(0.85, 0.6, 1.45); b.position.y = 0.26; g.add(b);
+  const top = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 7, 0, Math.PI * 2, 0, Math.PI / 2.6), amMat(0xb8b8b0)); top.scale.set(0.8, 0.55, 1.42); top.position.y = 0.3; g.add(top); const h = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), amMat(0x141414)); h.position.set(0, 0.25, 0.46); h.scale.z = 1.3; g.add(h);
+  for (const [x, z] of [[-0.16, 0.25], [0.16, 0.25], [-0.16, -0.25], [0.16, -0.25]]) { const l = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.16, 5), amMat(0x0e0e0e)); l.position.set(x, 0.08, z); g.add(l); } stageRoot.add(g); return g; }
+function amAntMesh() { const g = new THREE.Group(), body = new THREE.Group(); g.add(body); const c = amMat(0x6a5a48); const b = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), c); b.scale.set(0.8, 0.85, 1.6); b.position.y = 0.75; body.add(b);
+  const st = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.12, 0.5), amMat(0x1a1a1a)); st.position.set(0, 0.95, 0.3); st.rotation.set(0.5, 0, 0); body.add(st); const sn = new THREE.Mesh(new THREE.ConeGeometry(0.11, 1.0, 7), c); sn.rotation.x = Math.PI / 2; sn.position.set(0, 0.85, 1.15); body.add(sn);
+  const tl = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 6), amMat(0x4a3e30)); tl.scale.set(0.35, 1.0, 1.4); tl.position.set(0, 0.9, -0.95); body.add(tl); const arms = [];
+  for (const sx of [-1, 1]) { const a = new THREE.Group(); a.position.set(sx * 0.32, 0.7, 0.45); body.add(a); const u = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.6, 6), amMat(0xd8d0c0)); u.position.y = -0.3; a.add(u); for (let k = -1; k <= 1; k++) { const cl = new THREE.Mesh(new THREE.ConeGeometry(0.02, 0.22, 4), amMat(0x2a2620)); cl.position.set(k * 0.035, -0.66, 0.04); cl.rotation.x = Math.PI; a.add(cl); } arms.push(a);
+    const l = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.6, 6), c); l.position.set(sx * 0.25, 0.3, -0.45); body.add(l); }
+  stageRoot.add(g); return { g, body, arms }; }
+function amSnakeMesh(n) { const segs = [], mat = new THREE.MeshLambertMaterial({ map: AM_TX.snake() }); for (let i = 0; i < n; i++) { const r = i === 0 ? 0.2 : 0.17 - Math.max(0, i - n * 0.7) * 0.02; const m = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.06, r), 8, 6), mat); if (i === 0) m.scale.set(1.1, 0.7, 1.5); stageRoot.add(m); segs.push(m); } return segs; }
+// ---- 人（板絵）：同じ見た目・同じ向きの写真は材質を共有。遠い者は描かない ----
+function amPMat(fr) { const M = AM.pm || (AM.pm = new Map()); let m = M.get(fr.tex); if (!m) { m = new THREE.MeshBasicMaterial({ map: fr.tex, alphaTest: 0.5, side: THREE.DoubleSide }); M.set(fr.tex, m); } return m; }
+function amPerson(gid, cm, x, z) { const g = GIRLS[gid]; if (!g || !g.front) return null; const m = new THREE.Mesh(AM.pGeo || (AM.pGeo = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0)), amPMat(g.front)); stageRoot.add(m);
+  const P = { g, cm, x, z, y: 0, fy: Math.PI, m, view: '', fr: null, mir: false }; amView(P, true); return P; }
+function amView(P, force) { const g = P.g, cx = camera.position.x - P.x, cz = camera.position.z - P.z, toCam = Math.atan2(cx, cz); let d = P.fy - toCam; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2;
+  const c = Math.cos(d), mg = 0.08, v = c > 0.5 + (P.view === 'front' ? -mg : mg) ? 'front' : c < -0.5 - (P.view === 'back' ? -mg : mg) ? 'back' : 'side', fr = (v === 'side' ? g.side : v === 'back' ? g.back : null) || g.front;
+  const sgn = Math.sin(P.fy) * Math.cos(player.yaw) - Math.cos(P.fy) * Math.sin(player.yaw) > 0 ? 1 : -1, mir = fr !== g.front && fr.dir ? fr.dir !== sgn : false;
+  if (force || P.fr !== fr || P.mir !== mir) { P.view = v; P.fr = fr; P.mir = mir; P.m.material = amPMat(fr); }
+  const h = P.cm / 100 * (fr.hk || 1), w = h * fr.aspect, sg = mir ? -1 : 1, off = (0.5 - (fr.ax == null ? 0.5 : fr.ax)) * w * sg;
+  P.m.rotation.set(0, toCam, 0); P.m.scale.set(w * sg, h, 1); P.m.position.set(P.x + Math.cos(toCam) * off, P.y, P.z - Math.sin(toCam) * off); }
+function amLay(P) { const g = P.g, fr = g.side || g.front; P.m.material = amPMat(fr); const h = P.cm / 100 * (fr.hk || 1), w = h * fr.aspect; P.m.rotation.set(-Math.PI / 2, 0, Math.random() * 6.28); P.m.scale.set(w, h, 1); P.m.position.set(P.x, 0.04, P.z); }   // 倒れた体（残る）
+// ---- 台詞：名のある娘と殿は字幕（娘は声も）、群れは声だけ ----
+function amSay(k, t) { AM.q.push({ k, t }); }
+function amSayL(L) { for (const l of L) amSay(l[0], l[1]); }
+function amOnce(key, L) { if (AM.said[key]) return; AM.said[key] = true; amSayL(L); }
+function amSpeakTick() { if (time < AM.spT || !AM.q.length) return; const s = AM.q.shift();
+  if (s.k === 'king') { sgkKing(s.t); AM.spT = time + Math.max(2.2, s.t.length * 0.13 + 1.0); return; }
+  const f = ks2VoiceFile(s.t, KS2_VK[s.k] || s.k), b = f && VoicePack.buf[f]; if (f && VoicePack.ok) VoicePack.play(f, 3, 2.4, 1); subtitle(s.t); const el = $('subtitle'); if (el) el.textContent = (AM_NM[s.k] || '') + '「' + s.t + '」'; KS2.subLock = time + 2.6;
+  AM.spT = time + (b ? b.duration + 0.4 : Math.max(1.8, s.t.length * 0.15 + 0.6)); }
+function amMob(cat, x, z) { if (time < AM.mobT || !VoicePack.ok) return; const L = AM_MOB[cat]; if (!L) return; const d = Math.hypot(x - player.pos.x, z - player.pos.z); if (d > 30) return; const f = ks2VoiceFile(L[(Math.random() * L.length) | 0], 'kmob'); if (f) { VoicePack.play(f, Math.max(2, d), 1.2, 1); AM.mobT = time + 0.7 + Math.random() * 0.6; } }
+function amHurt(d) { if (state !== 'play' || AM.end) return; player.hp -= d; player.hurtT = 0.5; player.shake = 0.2; if (d >= 2 && Sfx.hurt) Sfx.hurt(); if (player.hp <= 0) { player.hp = 0; amLose('king'); } }   // 殿の怪我（赤いものは何も出さない）
+// ---- 飛ぶもの・しぶき・稲光のような光 ----
+function amShot(kind, a, b, hit) { const geo = kind === 'arrow' ? (AM.gA || (AM.gA = new THREE.CylinderGeometry(0.012, 0.012, 0.7, 4).rotateX(Math.PI / 2))) : (AM.gS || (AM.gS = new THREE.SphereGeometry(0.06, 6, 4))); const m = new THREE.Mesh(geo, amMat(kind === 'arrow' ? 0x6a5a40 : kind === 'fruit' ? 0xd0802a : 0x7a7670)); m.position.copy(a); stageRoot.add(m);
+  AM.pr.push({ m, a: a.clone(), b: b.clone(), t: 0, T: Math.max(0.25, a.distanceTo(b) / (kind === 'arrow' ? 28 : 14)), h: kind === 'arrow' ? 0.4 : 1.4, hit }); }
+function amSplash(x, z, n) { for (let i = 0; i < (n || 3); i++) { if (AM.fx.length > 70) return; const m = new THREE.Mesh(AM.gF || (AM.gF = new THREE.SphereGeometry(0.05, 5, 4)), amMat(0xe8f0ec)); m.position.set(x + amRnd(-0.4, 0.4), 0.1, z + amRnd(-0.4, 0.4)); stageRoot.add(m); AM.fx.push({ m, vy: amRnd(1.5, 3), vx: amRnd(-0.6, 0.6), vz: amRnd(-0.6, 0.6), t: 0.6 }); } }
+function amZap(x, z, R) { const pts = []; for (let k = 0; k < 7; k++) { let px = x, pz = z; const a = Math.random() * 6.28; for (let j = 0; j < 6; j++) { const nx = x + Math.cos(a + amRnd(-0.4, 0.4)) * R * (j + 1) / 6, nz = z + Math.sin(a + amRnd(-0.4, 0.4)) * R * (j + 1) / 6; pts.push(new V3(px, 0.08, pz), new V3(nx, 0.08, nz)); px = nx; pz = nz; } }
+  const L = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xcff0ff, transparent: true, opacity: 0.95 })); stageRoot.add(L); const c = new THREE.Mesh(new THREE.CircleGeometry(R, 20), AM.flashM); c.rotation.x = -Math.PI / 2; c.position.set(x, 0.06, z); stageRoot.add(c); AM.zap.push({ L, c, t: 0.55 }); }
+// ---- 侍女 ----
+function amMaids() { const P = jpMobLooks(); AM.M = []; for (let i = 0; i < AM_N; i++) { const r = Math.floor(i / 8), l = i % 8, x = amPathX(AM_Z0) + (l - 3.5) * 0.9 + amRnd(-0.2, 0.2), z = AM_Z0 + 3.5 + r * 1.0;
+    const p = amPerson(P[(i * 7 + 3) % P.length], 152 + (i * 5) % 16, x, z); if (!p) continue; Object.assign(p, { i, hp: 3, hpMax: 3, st: 'live', wpn: i % 10 < 3 ? 'bow' : i % 10 < 5 ? 'shield' : 'spear', cd: Math.random() * 2, dT: Math.random() * 0.25, sp: amRnd(2.0, 2.7), stun: 0, lane: (l - 3.5) * 0.9 + amRnd(-0.25, 0.25), row: r, rx: amRnd(-14, 14), rz: amRnd(-12, 12) }); AM.M.push(p); } }
+function amTrailAt(d) { const T = AM.trail, k = Math.min(T.length - 1, Math.floor(d / 0.8)); return T[k]; }
+function amAlive(M) { return M.st === 'live' || M.st === 'latched' || M.st === 'coiled'; }
+function amKill(M) { if (M.st === 'dead' || M.st === 'gone') return; M.st = 'dead'; M.hp = 0; AM.dead++; amLay(M); amMob('fall', M.x, M.z); }
+function amDmg(M, d) { if (!amAlive(M)) return; M.hp -= d; if (M.hp <= 0) amKill(M); }
+// 侍女の行い（猿が見て覚える）
+function amAct(type, x, z) { for (const T of AM.troops) { if (T.learn[type] || Math.hypot(T.x - x, T.z - z) > 18) continue; if (Math.random() < 0.12) { T.learn[type] = true; popup({ spear: '猿が槍の突きを覚えた', stone: '猿が石の投げ方を覚えた', shield: '猿が盾の構えを覚えた', bow: '猿が弓の射ち方を覚えた' }[type]); amSay(AM_LN.learn[type][0], AM_LN.learn[type][1]);
+  if (type === 'shield') for (const mk of T.m) { const d = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 8), amMat(0x6a5236)); d.rotation.x = Math.PI / 2; d.position.set(0.2, 0.5, 0.15); mk.g.add(d); } } } }
+// 脅威（侍女が向かう相手）
+function amThreats() { const L = []; for (const b of AM.bad) if (b.st !== 'gone') L.push({ x: b.x, z: b.z, y: 0.3, a: b, k: 'bad', pr: b.st === 'latch' ? 3 : 1 });
+  for (const s of AM.snk) if (s.st === 'coil' || s.st === 'swal' || s.st === 'strike') L.push({ x: s.segs[0].position.x, z: s.segs[0].position.z, y: 0.6, a: s, k: 'snk', pr: 3 });
+  for (const a of AM.ant) if (a.st !== 'gone') L.push({ x: a.x, z: a.z, y: 1.0, a, k: 'ant', pr: a.st === 'stand' ? 2 : 1 });
+  for (const T of AM.troops) for (const mk of T.m) if (mk.st !== 'gone') { const p = mk.g.position; L.push({ x: p.x, z: p.z, y: p.y + 0.5, a: mk, T, k: 'mk', pr: p.y < 2 ? 2 : 0.5 }); } AM.thr = L; }
+function amHit(t, dmg, who) { const a = t.a; if (t.k === 'bad') amBadHit(a, dmg, who); else if (t.k === 'snk') amSnkHit(a, dmg, who); else if (t.k === 'ant') { a.hp -= dmg; if (a.hp <= 0 && a.st !== 'flee') { a.st = 'flee'; a.t = 0; } }
+  else if (t.k === 'mk') { if (t.T.learn.shield && Math.random() < 0.5) return; a.hp -= dmg; if (a.hp <= 0) { a.st = 'gone'; a.g.visible = false; } } }
+function amMaidTick(M, dt, i) {
+  if (M.st === 'dead' || M.st === 'gone') return; const inW = M.z > AM_RIVER.z0 && M.z < AM_RIVER.z1, sw = amInSwamp(M.x, M.z); M.inW = inW;
+  if (sw) M.hp -= 0.045 * dt;   // ヒル（見せない）
+  if (M.hp <= 0) { amKill(M); return; }
+  if (M.st !== 'live') return; if (M.stun > 0) { M.stun -= dt; M.y = 0; return; }
+  M.cd -= dt; M.dT -= dt;
+  if (M.dT <= 0) { M.dT = 0.25; M.tg = null; let bd = 11; for (const t of AM.thr) { const d = Math.hypot(t.x - M.x, t.z - M.z) / t.pr; if (d < bd) { bd = d; M.tg = t; } } }
+  let tx, tz, sp = M.sp; const t = M.tg;
+  if (t) { const d = Math.hypot(t.x - M.x, t.z - M.z), ranged = M.wpn === 'bow' || M.wpn === 'none' || t.y > 2;
+    if (ranged) { tx = M.x; tz = M.z; if (M.cd <= 0 && d < (M.wpn === 'bow' ? 17 : 10)) { M.cd = M.wpn === 'bow' ? 2.2 : 1.8; const k = M.wpn === 'bow' ? 'arrow' : 'stone', tt = t; amShot(k, new V3(M.x, 1.4, M.z), new V3(t.x, t.y, t.z), () => amHit(tt, k === 'arrow' ? 1 : 0.5, M)); amAct(M.wpn === 'bow' ? 'bow' : 'stone', M.x, M.z); }
+      if (d < 2.2 && t.k !== 'mk') { tx = M.x - (t.x - M.x); tz = M.z - (t.z - M.z); } }   // 弓は近すぎれば下がる
+    else { if (d > 1.2) { tx = t.x; tz = t.z; sp *= 1.25; } else { tx = M.x; tz = M.z; if (M.cd <= 0) { M.cd = 1.1; amHit(t, 1, M); amAct('spear', M.x, M.z); if (Math.random() < 0.15) amMob('help', M.x, M.z); } } }
+    M.fy = Math.atan2(t.x - M.x, t.z - M.z); }
+  else if (AM.inRuin) { tx = AM.ruin.x + M.rx; tz = AM.ruin.z + M.rz; }
+  else { const p = amTrailAt(3.5 + M.row * (AM.rally > 0 ? 0.6 : 1.0)); tx = p[0] + M.lane; tz = p[1]; }
+  if (inW) sp *= 0.55; else if (sw) sp *= 0.7; const dx = tx - M.x, dz = tz - M.z, d = Math.hypot(dx, dz);
+  if (d > 0.25) { const s = Math.min(d, sp * dt); M.x += dx / d * s; M.z += dz / d * s; if (!t) M.fy = Math.atan2(dx, dz); }
+  M.y = inW ? -0.25 : 0; }
+// ---- ラーテル ----
+function amBadSpawn() { const L = AM.M.filter(M => M.st === 'live' && Math.hypot(M.x - player.pos.x, M.z - player.pos.z) < 40 && M.z > AM_ZE + 15); if (!L.length) return; const M = L[(Math.random() * L.length) | 0], s = Math.random() < 0.5 ? -1 : 1;
+  const b = { x: M.x + s * 7, z: M.z + amRnd(-3, 3), hp: 6, st: 'run', tg: M, t: 0, help: 0, g: amBadgerMesh() }; if (!AM.ride && Math.random() < 0.25 && Math.hypot(player.pos.x - M.x, player.pos.z - M.z) < 12) b.tg = 'king'; AM.bad.push(b); amOnce('badger', AM_LN.badger); }
+function amBadHit(b, dmg, who) { if (b.st === 'flee' || b.st === 'gone') return; b.hp -= dmg; if (who === 'king') b.kh = (b.kh || 0) + 1; if (b.hp <= 0 || (b.tg === 'king' && b.kh >= 2)) amBadOff(b); }
+function amBadOff(b) { if (b.tg && b.tg !== 'king' && b.tg.st === 'latched') b.tg.st = 'live'; b.st = 'flee'; b.t = 0; if (!AM.said.badOff) { AM.said.badOff = true; amSayL(AM_LN.badgerOff); } }
+function amBadTick(b, dt) { b.t += dt; const g = b.g;
+  if (b.st === 'run') { const tx = b.tg === 'king' ? player.pos.x : b.tg.x, tz = b.tg === 'king' ? player.pos.z : b.tg.z, dx = tx - b.x, dz = tz - b.z, d = Math.hypot(dx, dz);
+    if (b.tg !== 'king' && b.tg.st !== 'live') { const n = AM.M.find(M => M.st === 'live' && Math.hypot(M.x - b.x, M.z - b.z) < 8); if (n) b.tg = n; else { b.st = 'flee'; return; } }
+    if (b.tg === 'king' && AM.ride) { b.st = 'flee'; return; }
+    if (d < 0.6) { b.st = 'latch'; b.t = 0; if (b.tg !== 'king') { b.tg.st = 'latched'; amMob('latch', b.x, b.z); } } else { b.x += dx / d * 6 * dt; b.z += dz / d * 6 * dt; g.rotation.y = Math.atan2(dx, dz); } }
+  else if (b.st === 'latch') { if (b.tg === 'king') { b.x = player.pos.x + 0.3; b.z = player.pos.z + 0.3; amHurt(4 * dt); if (AM.ride) amBadOff(b); }
+    else { const M = b.tg; b.x = M.x + 0.25; b.z = M.z + 0.2; M.hp -= 0.55 * dt; if (M.hp <= 0) { amKill(M); const n = Math.random() < 0.5 && AM.M.find(o => o.st === 'live' && Math.hypot(o.x - b.x, o.z - b.z) < 6); if (n) { b.tg = n; b.st = 'run'; } else { b.st = 'flee'; b.t = 0; } return; }
+      let h = 0; for (const o of AM.M) if (o.st === 'live' && Math.abs(o.x - b.x) < 1.5 && Math.abs(o.z - b.z) < 1.5) h++; for (const n of AM.named) if (Math.hypot(n.x - b.x, n.z - b.z) < 1.5) h++;   // 三人で囲めば離れる
+      b.help = h >= 3 ? b.help + dt : Math.max(0, b.help - dt); if (b.help > 1.0) amBadOff(b); }
+    g.rotation.y = Math.sin(b.t * 20) * 0.4; }
+  else if (b.st === 'flee') { const s = b.x > amPathX(b.z) ? 1 : -1; b.x += s * 7 * dt; g.rotation.y = s * Math.PI / 2; if (b.t > 4) { b.st = 'gone'; g.visible = false; } }
+  g.position.set(b.x, 0, b.z); }
+// ---- 大蛇 ----
+function amSnkMake(x, z) { const s = { hx: x, hz: z, x, z, st: 'lurk', t: 0, segs: amSnakeMesh(MOBILE ? 14 : 18), hist: [], hits: 0, tg: null, bulge: -1 }; AM.snk.push(s); amSnkPose(s); }
+function amSnkPose(s) { const n = s.segs.length;
+  if (s.st === 'lurk') { for (let i = 0; i < n; i++) { const a = i * 0.7, r = 0.25 + i * 0.045; s.segs[i].position.set(s.x + Math.cos(a) * r, 0.14, s.z + Math.sin(a) * r); } return; }
+  if (s.st === 'coil' || s.st === 'swal') { const M = s.tg; for (let i = 1; i < n; i++) { const a = i * 0.9 + s.t * 1.5, y = 0.2 + i * (1.3 / n); s.segs[i].position.set(M.x + Math.cos(a) * 0.32, y, M.z + Math.sin(a) * 0.32); } s.segs[0].position.set(M.x + 0.15, 1.55, M.z + 0.1); return; }
+  const H = s.hist; for (let i = 0; i < n; i++) { const p = H[Math.min(H.length - 1, i * 2)] || [s.x, s.z]; s.segs[i].position.set(p[0], 0.15, p[1]); const sc = s.bulge >= 0 && Math.abs(i - s.bulge) < 1.5 ? 1.9 : 1; if (i) s.segs[i].scale.setScalar(sc); } }
+function amSnkMove(s, tx, tz, sp, dt) { const dx = tx - s.x, dz = tz - s.z, d = Math.hypot(dx, dz); if (d > 0.05) { const k = Math.min(d, sp * dt); s.x += dx / d * k; s.z += dz / d * k; } const H = s.hist, L = H[0]; if (!L || Math.hypot(L[0] - s.x, L[1] - s.z) > 0.14) { H.unshift([s.x, s.z]); if (H.length > 60) H.pop(); } return d; }
+function amSnkHit(s, dmg, who) { if (s.st === 'coil' || s.st === 'swal' || s.st === 'strike') { s.hits += who === 'king' ? 3 : 1; if (s.hits >= 3) { const M = s.tg; if (M && M.st === 'coiled') { M.st = 'live'; M.hp = Math.min(M.hp, 1.2); M.m.visible = true; amSayL(AM_LN.snakeOut); } s.st = 'flee'; s.t = 0; s.hist = [[s.x, s.z]]; } } else if (s.st === 'lurk') { s.st = 'flee'; s.t = 0; s.hist = [[s.x, s.z]]; } }
+function amSnkTick(s, dt) { s.t += dt;
+  if (s.st === 'lurk') { const M = AM.M.find(o => o.st === 'live' && Math.abs(o.x - s.x) < 4.5 && Math.abs(o.z - s.z) < 4.5); if (M) { s.st = 'strike'; s.tg = M; s.t = 0; s.hist = [[s.x, s.z]]; amOnce('snake', AM_LN.snake); amMob('snake', M.x, M.z); } }
+  else if (s.st === 'strike') { const M = s.tg; if (M.st !== 'live') { s.st = 'lurk'; return; } if (amSnkMove(s, M.x, M.z, 7, dt) < 0.4) { s.st = 'coil'; s.t = 0; s.hits = 0; M.st = 'coiled'; } }
+  else if (s.st === 'coil') { if (s.t > 2.5) { s.st = 'swal'; s.t = 0; } }
+  else if (s.st === 'swal') { const M = s.tg; if (s.t > 3) { M.st = 'gone'; M.m.visible = false; AM.gone++; s.st = 'fed'; s.t = 0; s.x = M.x; s.z = M.z; s.hist = [[s.x, s.z]]; s.bulge = 2; amOnce('fed', AM_LN.fed); amMob('fed', M.x, M.z);
+      if (Math.hypot(player.pos.x - M.x, player.pos.z - M.z) < 20 && time > (AM.fedT || 0)) { AM.fedT = time + 50; amSay('king', AM_KING.fed); setTimeout(() => { if (AM.on) amMob('fed', M.x, M.z); }, 2600); } } }   // 間に合わなければ、飲まれて消える
+  else if (s.st === 'fed') { const away = s.hx + (s.hx > amPathX(s.hz) ? 8 : -8); amSnkMove(s, away, s.hz, 0.35, dt); s.bulge = Math.min(s.segs.length - 3, 2 + s.t * 0.12); }   // 食べた蛇はのろく、ふくらみが見える
+  else if (s.st === 'flee') { const away = s.hx + (s.hx > amPathX(s.hz) ? 14 : -14); if (amSnkMove(s, away, s.hz + 3, 2.2, dt) < 0.3) { s.st = 'gone'; for (const g of s.segs) g.visible = false; } }
+  if (s.st !== 'gone') amSnkPose(s); }
+// ---- オオアリクイ ----
+function amAntMake(x, z) { const a = Object.assign({ x, z, hx: x, hz: z, hp: 9, st: 'wander', t: 0, cd: 0, f: 0, wx: x, wz: z }, amAntMesh()); AM.ant.push(a); }
+function amAntTick(a, dt) { a.t += dt; a.cd -= dt; let near = null, nd = 4.5; for (const M of AM.M) if (M.st === 'live' && Math.abs(M.x - a.x) < nd && Math.abs(M.z - a.z) < nd) { const d = Math.hypot(M.x - a.x, M.z - a.z); if (d < nd) { nd = d; near = M; } } const kd = Math.hypot(player.pos.x - a.x, player.pos.z - a.z); if (!AM.ride && kd < nd) { near = 'king'; nd = kd; }
+  if (a.st === 'wander') { if (near) { a.st = 'stand'; a.t = 0; amOnce('ant', AM_LN.anteater); amMob('ant', a.x, a.z); } else { if (Math.hypot(a.wx - a.x, a.wz - a.z) < 0.3) { a.wx = a.hx + amRnd(-6, 6); a.wz = a.hz + amRnd(-6, 6); } const dx = a.wx - a.x, dz = a.wz - a.z, d = Math.hypot(dx, dz) || 1; a.x += dx / d * 0.6 * dt; a.z += dz / d * 0.6 * dt; a.f = Math.atan2(dx, dz); } a.body.rotation.x = 0; }
+  else if (a.st === 'stand') { a.body.rotation.x = -Math.min(1.15, a.t * 2.2); if (near) { const tx = near === 'king' ? player.pos.x : near.x, tz = near === 'king' ? player.pos.z : near.z; a.f = Math.atan2(tx - a.x, tz - a.z);
+      if (a.cd <= 0 && nd < 2.3 && a.t > 0.6) { a.cd = 1.5; a.sw = 0.35; for (const M of AM.M) if (M.st === 'live' && Math.hypot(M.x - a.x, M.z - a.z) < 2.3) { const dd = Math.atan2(M.x - a.x, M.z - a.z) - a.f; if (Math.cos(dd) > 0.3) amDmg(M, 3); } if (near === 'king' || (!AM.ride && kd < 2.3)) amHurt(22); } }
+    else if (a.t > 8) { a.st = 'wander'; } }
+  else if (a.st === 'flee') { a.body.rotation.x = 0; const s = a.x > amPathX(a.z) ? 1 : -1; a.x += s * 3 * dt; a.f = s * Math.PI / 2; if (a.t > 6) { a.st = 'gone'; a.g.visible = false; } }
+  if (a.sw > 0) { a.sw -= dt; for (const ar of a.arms) ar.rotation.x = -1.8 * Math.sin((0.35 - a.sw) / 0.35 * Math.PI); } else for (const ar of a.arms) ar.rotation.x = a.st === 'stand' ? -0.6 : 0;
+  a.g.position.set(a.x, 0, a.z); a.g.rotation.y = a.f; }
+// ---- 猿（投げる・盗む・見て覚えて真似る） ----
+function amTroopTick(T, dt) { const kd = Math.hypot(player.pos.x - T.x, player.pos.z - T.z); const near = AM.M.filter(M => M.st === 'live' && Math.abs(M.x - T.x) < 18 && Math.abs(M.z - T.z) < 18); if (kd > 40 && !near.length) return;
+  for (const mk of T.m) { if (mk.st === 'gone') continue; mk.t += dt; const g = mk.g, p = g.position;
+    if (mk.st === 'perch') { g.position.set(mk.home[0], mk.home[1] + Math.abs(Math.sin(time * 3 + mk.home[0])) * 0.05, mk.home[2]); g.rotation.y = Math.atan2(player.pos.x - p.x, player.pos.z - p.z); }
+    else if (mk.st === 'down') { p.y = Math.max(0, p.y - 3.5 * dt); p.x = T.x + 0.9; p.z = T.z; if (p.y <= 0) mk.st = 'run'; }
+    else if (mk.st === 'run') { const M = mk.tg; if (!M || M.st !== 'live') { mk.st = 'back'; continue; } const dx = M.x - p.x, dz = M.z - p.z, d = Math.hypot(dx, dz); g.rotation.y = Math.atan2(dx, dz);
+      if (d < 0.6) { const w = M.wpn; if (w === 'bow' || w === 'spear' || w === 'shield') { M.wpn = 'none'; T.gear[w === 'bow' ? 'bow' : 'spear']++; mk.item = w; amMob('steal', M.x, M.z); amOnce('steal', AM_LN.steal); if (T.learn.spear) amDmg(M, 0.8); } mk.st = 'back'; }   // 盗む。槍を覚えた猿は突いてもくる
+      else { p.x += dx / d * 5 * dt; p.z += dz / d * 5 * dt; } }
+    else if (mk.st === 'back') { const dx = T.x + 0.9 - p.x, dz = T.z - p.z, d = Math.hypot(dx, dz); if (d < 0.3) mk.st = 'up'; else { p.x += dx / d * 5 * dt; p.z += dz / d * 5 * dt; g.rotation.y = Math.atan2(dx, dz); } }
+    else if (mk.st === 'up') { p.y += 3.5 * dt; if (p.y >= T.h) { mk.st = 'perch'; if (mk.item === 'bow' && !mk.bowM) { mk.bowM = new THREE.Mesh(new THREE.TorusGeometry(0.35, 0.015, 4, 12, Math.PI), amMat(0x5a4028)); mk.bowM.position.set(0.25, 0.5, 0); mk.bowM.rotation.z = Math.PI / 2; g.add(mk.bowM); } } } }
+  const up = T.m.filter(mk => mk.st === 'perch'); if (!up.length) return;
+  T.thT -= dt; if (T.thT <= 0 && (near.length || kd < 16)) { T.thT = T.learn.stone ? amRnd(1.5, 2.5) : amRnd(3, 5); const mk = up[(Math.random() * up.length) | 0], a = mk.g.position.clone().setY(T.h + 0.6), tk = !near.length || (kd < 16 && Math.random() < 0.25);   // 投げる
+    if (tk) amShot('fruit', a, new V3(player.pos.x, player.pos.y + 1.4, player.pos.z), () => { if (Math.hypot(player.pos.x - a.x, player.pos.z - a.z) < 20) amHurt(T.learn.stone ? 5 : 3); });
+    else { const M = near[(Math.random() * near.length) | 0]; amShot(T.learn.stone ? 'stone' : 'fruit', a, new V3(M.x, 1.4, M.z), () => { if (M.wpn === 'shield' && Math.random() < 0.6) { amAct('shield', M.x, M.z); return; } amDmg(M, T.learn.stone ? 0.8 : 0.4); amMob('throw', M.x, M.z); }); }
+    amOnce('monkey', AM_LN.monkey); }
+  T.stT -= dt; if (T.stT <= 0) { T.stT = amRnd(10, 16); const M = near.find(o => o.wpn !== 'none' && Math.hypot(o.x - T.x, o.z - T.z) < 12); if (M && up.length > 1) { const mk = up[0]; mk.st = 'down'; mk.tg = M; } }   // 盗みに下りる
+  if (T.gear.bow > 0 && T.learn.bow && near.length) { T.shot = (T.shot || 3) - dt; if (T.shot <= 0) { T.shot = 3; const mk = up.find(m => m.bowM) || up[0], M = near[(Math.random() * near.length) | 0]; amShot('arrow', mk.g.position.clone().setY(T.h + 0.6), new V3(M.x, 1.3, M.z), () => amDmg(M, 1)); } }   // 盗った弓で射る
+}
+// ---- 川：ピラニア（傷のある者ほど寄ってくる）とデンキウナギ ----
+function amRiverTick(dt) { const inW = AM.M.filter(M => M.st === 'live' && M.inW), wounded = inW.filter(M => M.hp < M.hpMax - 0.05 || M.stun > 0).length, kW = !AM.ride && player.pos.z > AM_RIVER.z0 && player.pos.z < AM_RIVER.z1;
+  const want = (inW.length || kW) ? Math.min(MOBILE ? 7 : 10, 2 + Math.floor(wounded * 0.6)) : 0; while (AM.pira.length < want) { const g = new THREE.Group(); for (let i = 0; i < 7; i++) { const f = new THREE.Mesh(AM.gP || (AM.gP = new THREE.ConeGeometry(0.06, 0.22, 4).rotateX(Math.PI / 2)), amMat(0x7a8a6a)); f.position.set(amRnd(-0.4, 0.4), -0.05, amRnd(-0.4, 0.4)); g.add(f); } stageRoot.add(g);
+    const sx = player.pos.x + (Math.random() < 0.5 ? -1 : 1) * amRnd(12, 24); AM.pira.push({ g, x: sx, z: amRnd(AM_RIVER.z0 + 1, AM_RIVER.z1 - 1), tg: null }); if (!AM.said.pira) { AM.said.pira = true; amSayL(AM_LN.pira); amSay('king', AM_KING.pira); } }
+  if (wounded > 6 && !AM.said.pira2) { AM.said.pira2 = true; amSay('king', AM_KING.pira2); }
+  for (let i = AM.pira.length - 1; i >= 0; i--) { const P = AM.pira[i]; if (!inW.length && !kW) { P.x += (P.x > player.pos.x ? 1 : -1) * 3 * dt; if (Math.abs(P.x - player.pos.x) > 30) { stageRoot.remove(P.g); AM.pira.splice(i, 1); continue; } }
+    else { if (!P.tg || (P.tg === 'king' ? !kW : (P.tg.st !== 'live' || !P.tg.inW))) { let best = null, bs = -1; for (const M of inW) { const s = (M.hp < M.hpMax - 0.05 ? 3 : 1) + (M.stun > 0 ? 3 : 0) - Math.hypot(M.x - P.x, M.z - P.z) * 0.05; if (s > bs) { bs = s; best = M; } } P.tg = best || (kW ? 'king' : null); }
+      const T = P.tg; if (T) { const tx = T === 'king' ? player.pos.x : T.x, tz = T === 'king' ? player.pos.z : T.z, dx = tx - P.x, dz = tz - P.z, d = Math.hypot(dx, dz);
+        if (d > 0.7) { P.x += dx / d * 3.2 * dt; P.z += dz / d * 3.2 * dt; } else { if (T === 'king') amHurt(3 * dt); else { amDmg(T, (T.stun > 0 ? 0.7 : 0.35) * dt); if (Math.random() < 1.5 * dt) amMob('pira', T.x, T.z); } if (Math.random() < 6 * dt) amSplash(tx, tz, 2); } } }   // しぶきだけ
+    P.z = Math.max(AM_RIVER.z0 + 0.3, Math.min(AM_RIVER.z1 - 0.3, P.z)); P.g.position.set(P.x, 0, P.z); P.g.rotation.y += dt * 4; }
+  for (const E of AM.eel) { E.t -= dt; E.x += Math.sin(time * 0.3 + E.ph) * 0.6 * dt; E.m.position.set(E.x, -0.12, E.z); E.m.rotation.y = Math.sin(time * 0.5 + E.ph);
+    if (E.t <= 0) { E.t = amRnd(9, 13); const hit = inW.filter(M => Math.hypot(M.x - E.x, M.z - E.z) < 4.5); if (!hit.length && !(kW && Math.hypot(player.pos.x - E.x, player.pos.z - E.z) < 4.5)) continue;
+      amZap(E.x, E.z, 4.5); for (const M of hit) { M.stun = 3; amDmg(M, 0.3); } amMob('eel', E.x, E.z); if (kW && Math.hypot(player.pos.x - E.x, player.pos.z - E.z) < 4.5) amHurt(4);
+      if (!AM.said.eel) { AM.said.eel = true; amSayL(AM_LN.eel); amSay('king', AM_KING.eel); } } }   // 放電：まわりの侍女が数秒しびれる
+  if (AM.waterT) AM.waterT.offset.x += dt * 0.04; }
+// ---- 輿・名のある娘・殿の攻撃 ----
+function amKoshiTick(dt) { const K = AM.koshi; if (!K) return; const p = player.pos;
+  if (AM.ride) { if (AM.lp) { const dx = p.x - AM.lp[0], dz = p.z - AM.lp[1], d = Math.hypot(dx, dz), mx = 2.5 * dt; if (d > mx && d < 3) { p.x = AM.lp[0] + dx / d * mx; p.z = AM.lp[1] + dz / d * mx; } if (d > 0.01) AM.kh = Math.atan2(dx, dz); }   // 担ぎ手の足に合わせる
+    K.position.set(p.x, 0, p.z); }
+  else { const bx = p.x + Math.sin(AM.kh) * -3.5, bz = p.z + Math.cos(AM.kh) * -3.5, dx = bx - K.position.x, dz = bz - K.position.z, d = Math.hypot(dx, dz); if (d > 0.2) { const k = Math.min(d, 3 * dt); K.position.x += dx / d * k; K.position.z += dz / d * k; } if (Math.hypot(p.x - K.position.x, p.z - K.position.z) > 0.8) AM.kh = Math.atan2(p.x - K.position.x, p.z - K.position.z); }
+  AM.lp = [p.x, p.z]; K.rotation.y = AM.kh; const c = Math.cos(AM.kh), s = Math.sin(AM.kh);
+  AM.car.forEach((P, i) => { const lx = i % 2 ? 0.68 : -0.68, lz = i < 2 ? 2.0 : -2.0; P.x = K.position.x + lx * c + lz * s; P.z = K.position.z - lx * s + lz * c; P.fy = AM.kh; amView(P); }); }
+function amRide(on) { if (on === AM.ride) return; if (on && Math.hypot(player.pos.x - AM.koshi.position.x, player.pos.z - AM.koshi.position.z) > 4.5) { popup('輿まで戻ってください'); return; } AM.ride = on; if (on) { player.pos.x = AM.koshi.position.x; player.pos.z = AM.koshi.position.z; amSayL(AM_LN.mount); } else { player.pos.x += Math.cos(AM.kh) * 1.4; player.pos.z -= Math.sin(AM.kh) * 1.4; player.pos.y = 0; amSayL(AM_LN.dis); } amUi(); }
+function amNamedTick(dt) { const off = [[1.6, -1.2], [-1.6, -1.2], [2.6, 1.0], [-2.6, 1.0], [1.4, 2.4], [-1.4, 2.4], [0, 3.6]], c = Math.cos(player.yaw), s = Math.sin(player.yaw);
+  AM.named.forEach((P, i) => { const o = off[i], tx = player.pos.x + o[0] * c + o[1] * s, tz = player.pos.z - o[0] * s + o[1] * c, dx = tx - P.x, dz = tz - P.z, d = Math.hypot(dx, dz); if (d > 0.3) { const k = Math.min(d, Math.max(2.6, d) * dt); P.x += dx / d * k; P.z += dz / d * k; P.fy = Math.atan2(dx, dz); }
+    P.cd = (P.cd || 0) - dt; if (P.cd <= 0) { P.cd = 1.6; for (const t of AM.thr) if (t.pr >= 1 && Math.hypot(t.x - P.x, t.z - P.z) < 6) { amHit(t, 1, P); P.fy = Math.atan2(t.x - P.x, t.z - P.z); break; } }
+    P.y = P.z > AM_RIVER.z0 && P.z < AM_RIVER.z1 ? -0.25 : 0; amView(P); }); }
+function amAttack() { if (!AM.on || state !== 'play' || time < (AM.atkT || 0)) return; AM.atkT = time + 0.45; const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw); let best = null, bd = 2.9;
+  for (const b of AM.bad) if (b.st === 'latch' && b.tg === 'king') { best = { k: 'bad', a: b }; bd = 0; }
+  if (!best) for (const t of AM.thr) { if (t.y > 2.5) continue; let x = t.x, z = t.z; if (t.k === 'snk') { let m = 9; for (const g of t.a.segs) { const d = Math.hypot(g.position.x - player.pos.x, g.position.z - player.pos.z); if (d < m) { m = d; x = g.position.x; z = g.position.z; } } }
+    const dx = x - player.pos.x, dz = z - player.pos.z, d = Math.hypot(dx, dz); if (d < bd && (d < 0.8 || (dx * fx + dz * fz) / d > 0.3)) { bd = d; best = t; } }
+  const o = Sfx.at && Sfx.at(player.pos, 20, 0.6); if (o) Sfx.noiseBurst(0.12, 'bandpass', 1800, 600, 0.4, 0.4, 0, o); if (best) { amHit(best, 2, 'king'); popup('殿の一撃'); } }
+// ---- 画面：小さなボタン ----
+function amUi() { if (!AM.on && !$('amUi')) return; const show = AM.on && state === 'play'; document.documentElement.classList.toggle('amazon', show);
+  let u = $('amUi'); if (!u) { u = document.createElement('div'); u.id = 'amUi'; u.style.cssText = 'position:fixed;right:8px;top:122px;z-index:41;display:none;width:64px'; document.body.appendChild(u);
+    for (const [id, t, f, tip] of [['amAtk', '攻撃', () => amAttack(), '目の前の獣を打つ（F）'], ['amRally', '集まれ', () => { AM.rally = 15; popup('列を詰めさせた'); }, '列を詰めさせる'], ['amRide', '輿を降りる', () => amRide(!AM.ride), '輿の乗り降り（R）']]) { const b = document.createElement('button'); b.id = id; b.textContent = t; b.title = tip; b.style.cssText = KSK_BS + ';display:block;width:100%;margin:0 0 3px;padding:2px 4px;font-size:10px'; kosKgBind(b, f); u.appendChild(b); }
+    addEventListener('keydown', ev => { if (!AM.on || state !== 'play' || ev.repeat) return; if (ev.code === 'KeyF') amAttack(); else if (ev.code === 'KeyR') amRide(!AM.ride); }); }
+  u.style.display = show ? 'block' : 'none'; if (show) $('amRide').textContent = AM.ride ? '輿を降りる' : '輿に乗る'; }
+setInterval(() => { try { amUi(); } catch (_) {} }, 500);
+// ---- 段取り ----
+function amReset() { player.pos.set(amPathX(AM_Z0), 0, AM_Z0); player.yaw = 0; player.pitch = 0; player.vy = 0; player.hp = CFG.maxHp; }
+function amStart() { AM.on = true; amReset(); player.god = false;
+  Object.assign(AM, { q: [], spT: 0, mobT: 0, said: {}, dead: 0, gone: 0, bad: [], snk: [], ant: [], pira: [], eel: [], pr: [], fx: [], zap: [], thr: [], rally: 0, ride: true, kh: Math.PI, lp: null, inRuin: false, end: false, bT: 20, t: 0, leechDone: false, riverSaid: false, sight: false, mobMT: 8 });
+  AM.trail = []; for (let z = AM_Z0; z <= 205; z += 0.8) AM.trail.push([amPathX(Math.min(z, 185)), z]);
+  amMaids(); const P = jpMobLooks(); AM.car = []; for (let i = 0; i < 4; i++) { const c = amPerson(P[(i * 11 + 5) % P.length], 160, 0, AM_Z0); if (c) AM.car.push(c); }
+  AM.named = []; for (const k of ['sumi', 'fumi', 'reika', 'shinobu', 'kujo', 'omiya', 'akari']) { const gid = kgGid(k), cm = (KS2_NM[k] || [0, 0, 160])[2] || 160, p = gid && amPerson(gid, cm, player.pos.x, AM_Z0 + 2); if (p) { p.k = k; AM.named.push(p); } }
+  for (const [x, z] of [[-7, 32], [6, 48], [-2, 31], [11, 33]]) amSnkMake(amPathX(z) + x, z); amSnkMake(AM_SWAMP[1].x + 6, AM_SWAMP[1].z + 3); amSnkMake(amPathX(-130) - 5, -130); amSnkMake(amPathX(110) + 5, 110);
+  for (const [x, z] of [[8, 100], [-9, -12], [8, -138]]) amAntMake(amPathX(z) + x, z);
+  for (const x of [-6, 5]) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 1.6, 6).rotateZ(Math.PI / 2), amMat(0x23281e)); stageRoot.add(m); AM.eel.push({ m, x: amPathX(40) + x, z: 40 + x * 0.3, t: amRnd(4, 8), ph: Math.random() * 6 }); }
+  scene.background = new THREE.Color(0x56664c); if (scene.fog) { scene.fog.color.set(0x56664c); scene.fog.near = 6; scene.fog.far = 50; } hemiL.intensity = 1.0; ambL.intensity = 0.75; sun.intensity = 0.55;
+  if (VoicePack.ok) for (const l of amAllLines()) { const f = ks2VoiceFile(l[1], l[0]); if (f && VoicePack.buf[f] === undefined) VoicePack.load(f); }
+  showBanner('南米の森', '侍女 約四百。密林を抜け、川沿いの集落跡へ'); amSayL(AM_LN.start); amSay('king', AM_KING.start); amUi();
+  if (TEST) window.__am = { AM, amAttack, amRide, amAllLines, amBadSpawn }; }
+function amAllLines() { const L = [], seen = {}; const add = (v, t) => { const k = v + '|' + t; if (!seen[k]) { seen[k] = 1; L.push([v, t]); } }; for (const k in AM_LN) { const v = AM_LN[k]; if (Array.isArray(v)) for (const l of v) add(KS2_VK[l[0]] || l[0], l[1]); else for (const q in v) add(KS2_VK[v[q][0]] || v[q][0], v[q][1]); }
+  for (const k in AM_MOB) for (const t of AM_MOB[k]) add('kmob', t); return L; }
+function amCounts() { let live = 0, inR = 0; for (const M of AM.M) if (amAlive(M)) { live++; if (Math.hypot(M.x - AM.ruin.x, M.z - AM.ruin.z) < AM.ruin.r) inR++; } return { live, inR }; }
+function amLabel() { if (!AM.M) return '南米の森'; const c = amCounts(); return AM.inRuin ? `集落跡 着${c.inR}/${AM_NEED} 列${c.live}` : `侍女${c.live}/${AM_N} 倒${AM.dead} 飲${AM.gone} 残${Math.max(0, Math.round(player.pos.z - AM.ruin.z))}m`; }
+function amLose(why) { if (AM.end) return; AM.end = true; amSayL(AM_LN.lose); setTimeout(() => { if (!AM.on || state !== 'play') return; gameOver(false); const h1 = document.querySelector('#over h1'); if (h1) h1.textContent = why === 'king' ? '殿が倒れた' : '列が崩れた'; const h2 = document.querySelector('#over h2'); if (h2) h2.textContent = why === 'king' ? '密林の中で、行軍は止まった' : '集落跡まで歩ける侍女が足りなくなった'; $('result').innerHTML = amResult(); }, why === 'king' ? 600 : 3000); }
+function amWin() { if (AM.end) return; AM.end = true; amSayL(AM_LN.win); amSay('king', AM_KING.win); setTimeout(() => { if (!AM.on || state !== 'play') return; gameOver(true); const h1 = document.querySelector('#over h1'); if (h1) h1.textContent = '集落跡に着いた'; const h2 = document.querySelector('#over h2'); if (h2) h2.textContent = '密林を抜け、川沿いの集落跡で休む'; $('result').innerHTML = amResult(); }, 6000); }
+function amResult() { const c = amCounts(); let lr = 0; for (const T of AM.troops) lr += Object.keys(T.learn).length; return `南米の森　着いた侍女 <b>${c.inR}</b>　列に残った侍女 <b>${c.live}</b> / ${AM_N}<br>倒れた ${AM.dead}　大蛇に飲まれた ${AM.gone}　猿が覚えたしぐさ ${lr}`; }
+function amUpdate(dt) { if (!AM.on || state !== 'play' || !AM.M) return; AM.t += dt; const p = player.pos;
+  // 殿の足跡（列はこれをたどる）
+  const T = AM.trail; if (!T.length || Math.hypot(T[0][0] - p.x, T[0][1] - p.z) > 0.8) { T.unshift([p.x, p.z]); if (T.length > 140) T.pop(); }
+  for (const t of AM.trees) { if (Math.abs(t.x - p.x) > 2 || Math.abs(t.z - p.z) > 2) continue; const dx = p.x - t.x, dz = p.z - t.z, d = Math.hypot(dx, dz), r = t.r + 0.35; if (d < r && d > 1e-4) { p.x = t.x + dx / d * r; p.z = t.z + dz / d * r; } }
+  amKoshiTick(dt); if (AM.rally > 0) AM.rally -= dt; amThreats();
+  for (let i = 0; i < AM.M.length; i++) amMaidTick(AM.M[i], dt, i);
+  for (const b of AM.bad) if (b.st !== 'gone') amBadTick(b, dt); for (const s of AM.snk) if (s.st !== 'gone') amSnkTick(s, dt); for (const a of AM.ant) if (a.st !== 'gone') amAntTick(a, dt); for (const Tr of AM.troops) amTroopTick(Tr, dt); amRiverTick(dt); amNamedTick(dt);
+  AM.bT -= dt; if (AM.bT <= 0) { AM.bT = amRnd(16, 28); if (AM.bad.filter(b => b.st !== 'gone').length < 3 && p.z > AM_ZE + 20) amBadSpawn(); }
+  // ヒル：歩いている殿だけ（輿の上は平気）。何も知らせず、体力の棒だけが減る
+  if (!AM.ride && amInSwamp(p.x, p.z)) { player.hp -= 0.6 * dt; if (player.hp <= 0) { player.hp = 0; amLose('king'); } }
+  for (const M of AM.M) if (M.st === 'live' && Math.random() < 0.002 * dt * 60 / AM_N * 4) { if (M.inW) amMob('river', M.x, M.z); else if (amInSwamp(M.x, M.z)) amMob('swamp', M.x, M.z); }
+  if ((AM.mobMT -= dt) <= 0) { AM.mobMT = amRnd(9, 16); const n = AM.M.find(M => M.st === 'live' && Math.hypot(M.x - p.x, M.z - p.z) < 10); if (n) amMob('march', n.x, n.z); }
+  if (!AM.riverSaid && p.z < AM_RIVER.z1 + 8) { AM.riverSaid = true; amSayL(AM_LN.river); } if (!AM.said.swamp && amInSwamp(p.x, p.z + 4)) { AM.said.swamp = true; amSayL(AM_LN.swamp); }
+  if (!AM.leechDone && p.z < AM_SWAMP[0].z - AM_SWAMP[0].r - 8) { AM.leechDone = true; amSayL(AM_LN.leech); amSay('king', AM_KING.leech); amSayL(AM_LN.leechR); amSay('king', AM_KING.stock); amSayL(AM_LN.stock); AM.leechMob = 4; AM.leechMT = 2; }   // 沼を抜けたあと
+  if (AM.leechMob > 0 && AM.q.length === 0 && (AM.leechMT -= dt) <= 0) { AM.leechMT = amRnd(1.2, 2.4); AM.leechMob--; const n = AM.M.find(M => M.st === 'live' && Math.hypot(M.x - p.x, M.z - p.z) < 14 && Math.random() < 0.3) || AM.M.find(M => M.st === 'live'); if (n) { AM.mobT = 0; amMob('leech', n.x, n.z); } }
+  if (!AM.sight && p.z < AM.ruin.z + 45) { AM.sight = true; amSayL(AM_LN.sight); }
+  AM.inRuin = Math.hypot(p.x - AM.ruin.x, p.z - AM.ruin.z) < AM.ruin.r; const c = amCounts(); if (!AM.end) { if (c.live < AM_NEED) amLose('lost'); else if (AM.inRuin && c.inR >= AM_NEED) { amWin(); amMob('win', p.x, p.z); } }
+  // 飛ぶもの・しぶき・放電の光
+  for (let i = AM.pr.length - 1; i >= 0; i--) { const s = AM.pr[i]; s.t += dt; const k = Math.min(1, s.t / s.T); s.m.position.lerpVectors(s.a, s.b, k); s.m.position.y += Math.sin(k * Math.PI) * s.h; if (k >= 1) { stageRoot.remove(s.m); AM.pr.splice(i, 1); try { s.hit(); } catch (_) {} } else if (s.m.geometry === AM.gA) s.m.lookAt(s.b); }
+  for (let i = AM.fx.length - 1; i >= 0; i--) { const f = AM.fx[i]; f.t -= dt; f.vy -= 9 * dt; f.m.position.x += f.vx * dt; f.m.position.y += f.vy * dt; f.m.position.z += f.vz * dt; if (f.t <= 0) { stageRoot.remove(f.m); AM.fx.splice(i, 1); } }
+  for (let i = AM.zap.length - 1; i >= 0; i--) { const z = AM.zap[i]; z.t -= dt; z.L.visible = Math.random() < 0.7; z.c.material.opacity = 0.5 * Math.random(); if (z.t <= 0) { stageRoot.remove(z.L); stageRoot.remove(z.c); z.L.geometry.dispose(); AM.zap.splice(i, 1); } }
+  // 板絵の向き（近い者だけ描く）
+  const cx = camera.position.x, cz = camera.position.z; for (const M of AM.M) { if (M.st === 'gone') continue; const far = Math.abs(M.x - cx) > 52 || Math.abs(M.z - cz) > 52; M.m.visible = !far; if (far || M.st === 'dead') continue; if (M.st === 'coiled' && AM.snk.some(s => s.tg === M && s.st === 'swal' && s.t > 2.6)) M.m.visible = false; amView(M); }
+  amSpeakTick(); }
+
 // ===== 平原の大会戦（heigen）：見渡すかぎりの平原。味方 九隊 約1500・中国軍 約1650 が隊ごとの塊（旗のまわり）で並び、本当に戦う =====
 //  遠くの者：InstancedMesh の絵＋槍・弓（これも Instanced）。一人ひとりが前の敵と打ち合い、倒れた体は残る
 //  近くの者（王のまわり）：同じ絵の本物の NPC に入れ替わる（消えない。離れたら絵に戻る）。槍・弓を持ち、打ち合い・倒れ・声（群れは声だけ）
@@ -22870,6 +23195,7 @@ const STAGES = {
   ukPrincess: { name: '英国淑女編 第四幕「王女」', desc: 'アラベラ王女が本隊を率いて浜に陣を築いた。木の柵・大砲・銃剣の戦列・長槍の方陣。正面の主力か東へ回る別働隊か、殿のつく隊を選び、竹束を盾に柵の口を破って王旗の天幕へ。護衛を崩せば王女は降る。' },
   ukNight: { name: '英国淑女編 第三幕「夜襲」', desc: '夜明け前。入り江に錨を下ろしたライオネス号へ小早で漕ぎ寄せる。見張りのカンテラの輪に入れば見つかる（E で漕ぐ／止まる）。舷側に着いたら縄梯子と舷梯で乗り移り、狭い甲板で斬り合う。後甲板を押さえるか、船尾の軍艦旗を下ろせ。' },
   sangaku: { name: '山岳の関所', desc: '決戦2のあと、中国南部の山中。麓（標高約200m）から山頂の砦（約800m）まで約2kmの谷道を、日本の侍女 約1500で登る。守り手は中国の兵 約1000。関所は三つ（標高 約350・500・650m）。上から転がる岩と丸太、崖の小石、霧の伏兵、そして第二の関所には祝融。坂では息が上がる――握り飯で取り戻す。6〜0 で正面・崖道・弓・本隊・後方へ視点を移す。' },
+  amazon: { name: '南米の森', desc: '殿は輿に乗り、侍女 約四百と密林を抜けて川沿いの集落跡へ。ラーテル・大蛇・猿・ヒル・オオアリクイ・ピラニア・デンキウナギ。侍女 150 人以上で集落跡に着けば成功' },
   sendai: { name: '仙台 御視察', desc: '一泊二日の地方視察。宮殿から車列で東京駅、新幹線で仙台へ。駅で知事の出迎え（挨拶は一分以内）、ホテル、懇談会、港湾視察、夕食会、二日目は学院。白瀬・綾瀬・一条・小日向・桜井・氷室・九条が随行。戦いは無い。最後に綾瀬が採点する。' },
   kaigi: { name: '月例総督会議', desc: '世界統一のあと。宮殿の大広間で、二十の総督府と画面越しの月例会議。十九時開始。それまでは広間を歩ける（遅れると白瀬が先に始める）。総督を指名して詳しい報告を聞き、議題は殿が裁く。決定は次の月に引き継がれる。' },
   heigen: { name: '平原の大会戦', desc: '見渡すかぎりの平原での大会戦。味方は九隊（本隊を中央後ろに、前に綾瀬・白石・久遠、右翼に西園寺・宮下、左翼に大宮・桜井、遊撃に早瀬隊）約千三百、中国軍は騎馬と祝融の別働隊を含め約千四百。後から湧く兵はいない。弓の射ち合いから正面の衝突、右翼を先に出す斜行陣、早瀬隊の側面攻撃、敵騎馬隊の横撃、祝融の別働隊の背後襲撃、予備隊の投入、そして敵本陣へ。戦える隊が一つ以下になるか、九割を失った側が降伏する。近づいた侍女は一人ずつの兵として戦い、王も群れの敵を射て斬れる。' },
@@ -31955,9 +32281,9 @@ function loadStage(name) {
   if (MTN.stones) for (const s of MTN.stones) if (s.m) scene.remove(s.m);
   MTN.stones = []; MTN.on = false;
   SNOW.on = false; SNOW.blizzard = false; BEACH.on = false; TRENCH.on = name === 'trench';
-  stageLook(name); if (typeof thLook === 'function') thLook(name); KS2.on = name === 'kessen2'; if (KS2.on) ks2Look(); TERR.fn = null; SGK.on = name === 'sangaku'; if (SGK.on) sgkLook(); KG.on = name === 'kaigi'; SD.on = name === 'sendai'; HG.on = name === 'heigen'; KOS.on = name === 'kosui' || name === 'tessha'; KOS.ts = name === 'tessha'; YJ.on = false;
+  stageLook(name); if (typeof thLook === 'function') thLook(name); KS2.on = name === 'kessen2'; if (KS2.on) ks2Look(); TERR.fn = null; SGK.on = name === 'sangaku'; if (SGK.on) sgkLook(); KG.on = name === 'kaigi'; SD.on = name === 'sendai'; AM.on = name === 'amazon'; HG.on = name === 'heigen'; KOS.on = name === 'kosui' || name === 'tessha'; KOS.ts = name === 'tessha'; YJ.on = false;
   if (name === 'usTown') campBuildTown(); else if (name === 'usPal') campBuildPal(); else if (name === 'yamajiro') yjBuild(); else if (name === 'usOdw') odwBuild(); else
-  if (name === 'heigen') { buildHg(); hgLook(); } else if (name === 'kaigi') buildKaigi(); else if (name === 'sendai') buildSendai(); else if (name === 'tessha') { buildTs(); kosLook(0); } else if (name === 'kosui') { buildKos(); kosLook(0); } else if (name === 'sangaku') buildSgk(); else if (name === 'kessen2') buildKs2(); else if (name === 'tenhou') buildTenhou(); else if (/^ab\d/.test(name)) abBuild(name); else if (name === 'fubuki') buildFubuki(); else if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty' || name === 'ks2Feast') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
+  if (name === 'heigen') { buildHg(); hgLook(); } else if (name === 'kaigi') buildKaigi(); else if (name === 'sendai') buildSendai(); else if (name === 'amazon') buildAmazon(); else if (name === 'tessha') { buildTs(); kosLook(0); } else if (name === 'kosui') { buildKos(); kosLook(0); } else if (name === 'sangaku') buildSgk(); else if (name === 'kessen2') buildKs2(); else if (name === 'tenhou') buildTenhou(); else if (/^ab\d/.test(name)) abBuild(name); else if (name === 'fubuki') buildFubuki(); else if (name === 'palace') buildPalace(); else if (name === 'usDrop') buildUsDrop(); else if (name === 'usRaid') buildUsRaid(); else if (name === 'usDuel') buildUsDuel(); else if (name === 'frSea') buildFrSea(); else if (name === 'ukParty' || name === 'ks2Feast') buildUkParty(); else if (name === 'ukLanding') buildUkLanding(); else if (name === 'ukPrincess') buildUkPrincess(); else if (name === 'ukNight') buildUkNight(); else if (name === 'ukHarbor') buildUkHarbor(); else if (name === 'ukMeet') buildUkMeet(); else if (name === 'fort') buildFort(); else if (name === 'plane') buildPlane(); else if (name === 'castle') buildCastle(); else if (name === 'beach') buildBeach(); else if (name === 'snow') buildSnow(); else if (name === 'mtn') buildMountain(); else if (name === 'twofront') buildTwoFront(); else if (name === 'airport') buildAirport(); else if (name === 'trench') buildTrench(); else if (name === 'nightRaid') buildNightRaid(); else if (name === 'island') buildIsland(); else if (name === 'nanban') buildNanban(); else if (/^keiku/.test(name)) { CV.act = name === 'keiku2' ? 2 : name === 'keiku3' ? 3 : name === 'keiku4' ? 4 : 1; buildKeiku(); } else buildPlains();
   builtStage = name;
   stageReceiveShadows();
 }
@@ -32158,7 +32484,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261121g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -34398,7 +34724,7 @@ function startWave(n) {
   setTimeout(() => { if (state === 'play' && !VoicePack.extra('command', 0)) Voice.say('かかれーっ！', { pitch: 1.3, rate: 1.1 }, 1); }, 600);
 }
 function waveUpdate(dt) {
-  if (KG.on || SD.on || HG.on || KS2.on || SGK.on || KOS.on || AB.on || FB.on || NB.on || ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || TH.on || CAMP.on || CV.on) return;   // 軽空母は自前の対空戦
+  if (KG.on || SD.on || AM.on || HG.on || KS2.on || SGK.on || KOS.on || AB.on || FB.on || NB.on || ISLAND.on || UK.on || UK2.on || UK3.on || UK4.on || UK7.on || USD.on || PAL.on || TH.on || CAMP.on || CV.on) return;   // 軽空母は自前の対空戦
   if (AIRPORT.on) { airportUpdate(dt); return; }
   if (TRENCH.on) { trenchUpdate(dt); return; }
   if (BEACH.on) { beachWaveTick(dt); return; }
@@ -37241,7 +37567,7 @@ function updateHud(dt) {
   $('hpfill').style.background = player.hp < 30 ? 'linear-gradient(#ff8a5a,#c0402a)' : '';
   setText('kills', String(player.kills)); setText('allykills', String(player.allyKills));
   setText('arrowcnt', String(player.arrows)); setText('arrowmax', String(arrowsMax()));
-  setText('wavetxt', HG.on ? hgLabel() : KG.on ? kgLabel() : SD.on ? sdLabel() : KOS.on ? (KOS.ts ? tsLabel() : kosLabel()) : SGK.on ? sgkLabel() : KS2.on ? ks2Label() : FB.on ? (FB.ph === 'slopeWait' ? `斜面：一人ずつ渡っている…… 残り ${Math.ceil(34 - FB.st)} 秒` : fbLabel()) : CAMP.on ? campLabel() : PAL.on ? palPhaseLabel() : TH.on ? thPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
+  setText('wavetxt', HG.on ? hgLabel() : KG.on ? kgLabel() : SD.on ? sdLabel() : AM.on ? amLabel() : KOS.on ? (KOS.ts ? tsLabel() : kosLabel()) : SGK.on ? sgkLabel() : KS2.on ? ks2Label() : FB.on ? (FB.ph === 'slopeWait' ? `斜面：一人ずつ渡っている…… 残り ${Math.ceil(34 - FB.st)} 秒` : fbLabel()) : CAMP.on ? campLabel() : PAL.on ? palPhaseLabel() : TH.on ? thPhaseLabel() : USD.on ? usdPhaseLabel() : FRS.on ? frsPhaseLabel() : UK7.on ? uk7PhaseLabel() : UK4.on ? uk4PhaseLabel() : UK3.on ? uk3PhaseLabel() : UK2.on ? uk2PhaseLabel() : UK.on ? '英国淑女編 第一幕「邂逅」' : `第${waveName(Math.max(1, wave.n))}波`);
   if (!UK.on) lordSecTalk();
   const bg = $('bGod');
   if (bg) {
@@ -37792,7 +38118,7 @@ function resetGame() {
   else if (builtStage === 'tessha') { kosReset(); tsReset(); }   // 丘陵の鉄車
   else if (builtStage === 'heigen') hgReset();   // 平原の大会戦
   else if (builtStage === 'kaigi') kgReset();
-  else if (builtStage === 'sendai') sdReset();   // 仙台 御視察   // 月例総督会議
+  else if (builtStage === 'sendai') sdReset(); else if (builtStage === 'amazon') amReset();   // 仙台 御視察   // 月例総督会議
   else if (builtStage === 'tenhou') thReset();   // 天鳳：王の居室
   else if (builtStage === 'palace') palReset();   // 宮殿の日常：最上階・帝王の間
   else if (builtStage === 'usRaid') rkReset();   // 陸攻出撃：一番機の操縦席
@@ -37811,7 +38137,7 @@ function startGame() {
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
   if (CAMP.on) { if (!CAMP.switching) campDispose(); builtStage = null; campPhaseReset(); }
-  if (stageName === 'kessen2' || stageName === 'sangaku' || stageName === 'kosui' || stageName === 'tessha' || stageName === 'heigen' || stageName === 'kaigi' || stageName === 'sendai' || stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'ks2Feast' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'fubuki' || stageName === 'palace' || stageName === 'tenhou' || /^ab\d/.test(stageName)) builtStage = null;   // 罠・門・川をやり直しのたびに戻す
+  if (stageName === 'kessen2' || stageName === 'sangaku' || stageName === 'kosui' || stageName === 'tessha' || stageName === 'heigen' || stageName === 'kaigi' || stageName === 'sendai' || stageName === 'amazon' || stageName === 'snow' || stageName === 'mtn' || stageName === 'airport' || stageName === 'trench' || stageName === 'island' || stageName === 'nanban' || /^keiku/.test(stageName) || stageName === 'ukMeet' || stageName === 'ukHarbor' || stageName === 'ukNight' || stageName === 'ukPrincess' || stageName === 'ukLanding' || stageName === 'ukParty' || stageName === 'ks2Feast' || stageName === 'frSea' || stageName === 'usDuel' || stageName === 'fubuki' || stageName === 'palace' || stageName === 'tenhou' || /^ab\d/.test(stageName)) builtStage = null;   // 罠・門・川をやり直しのたびに戻す
   loadStage(stageName);
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
@@ -37824,13 +38150,13 @@ function startGame() {
   else if (builtStage === 'frSea') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const m of medics.blue) spawnMedic('blue', m); }   // フランス人形編 第一幕：秘書課と救護班は殿の船に（西園寺は自分の船の船長）
   else if (builtStage === 'ukPrincess' || builtStage === 'ukLanding') { spawnSecretary(); spawnSec2(); spawnFumi(); spawnSysop(); for (const R of runners) spawnRunner(R); }   // 第四幕：秘書課は本陣に（西園寺は侍大将として前線、救護班は第四幕が置く）
   else if (CAMP_OWN.includes(builtStage)) { /* 第二幕：段ごとに campStart が置く */ }
-  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kaigi' && builtStage !== 'sendai' && builtStage !== 'kessen2' && builtStage !== 'sangaku' && builtStage !== 'kosui' && builtStage !== 'tessha' && builtStage !== 'heigen' && builtStage !== 'usRaid' && builtStage !== 'usDrop') {
+  else if (builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kaigi' && builtStage !== 'sendai' && builtStage !== 'amazon' && builtStage !== 'kessen2' && builtStage !== 'sangaku' && builtStage !== 'kosui' && builtStage !== 'tessha' && builtStage !== 'heigen' && builtStage !== 'usRaid' && builtStage !== 'usDrop') {
     spawnSecretary(); spawnSec2(); spawnOjou(); spawnFumi(); spawnSysop();
     for (const t of ['blue','orange']) if (!(builtStage === 'ukHarbor' && t === 'orange')) for (const m of medics[t]) spawnMedic(t,m);   // 第二幕：英国の救護係は船の上
     for (const A of aides) spawnAide(A);
     for (const R of runners) spawnRunner(R);
   }
-  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && !/^ab\d/.test(builtStage) && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kaigi' && builtStage !== 'sendai' && builtStage !== 'kessen2' && builtStage !== 'sangaku' && builtStage !== 'kosui' && builtStage !== 'tessha' && builtStage !== 'heigen' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
+  GUARD.list = []; GUARD.lead = null; wave.n = 1; if (!CAMP_OWN.includes(builtStage) && builtStage !== 'twofront' && builtStage !== 'trench' && builtStage !== 'island' && builtStage !== 'nanban' && builtStage !== 'keiku' && builtStage !== 'ukMeet' && builtStage !== 'ukNight' && builtStage !== 'ukPrincess' && builtStage !== 'ukLanding' && builtStage !== 'ukParty' && builtStage !== 'ks2Feast' && builtStage !== 'frSea' && builtStage !== 'usDuel' && builtStage !== 'fubuki' && !/^ab\d/.test(builtStage) && builtStage !== 'palace' && builtStage !== 'tenhou' && builtStage !== 'kaigi' && builtStage !== 'sendai' && builtStage !== 'amazon' && builtStage !== 'kessen2' && builtStage !== 'sangaku' && builtStage !== 'kosui' && builtStage !== 'tessha' && builtStage !== 'heigen' && builtStage !== 'usRaid' && builtStage !== 'usDrop') guardFill(1, false);   // 近衛分隊
   unlockAudio(); goFullscreen(); resetTouch();
   $('title').style.display = 'none'; $('over').style.display = 'none'; $('pause').style.display = 'none'; document.body.classList.remove('paused');
   $('hud').style.display = 'block';
@@ -37850,7 +38176,7 @@ function startGame() {
   else if (builtStage === 'tessha') tsStart();   // 丘陵の鉄車
   else if (builtStage === 'heigen') hgStart();   // 平原の大会戦
   else if (builtStage === 'kaigi') kgStart();
-  else if (builtStage === 'sendai') sdStart();   // 仙台 御視察   // 月例総督会議
+  else if (builtStage === 'sendai') sdStart(); else if (builtStage === 'amazon') amStart();   // 仙台 御視察   // 月例総督会議
   else if (builtStage === 'tenhou') thStart();   // 天鳳
   else if (builtStage === 'ukParty') uk7Start(); else if (builtStage === 'ks2Feast') kfStart();   // 白壁城祝勝会   // 第七幕：祝勝会
   else if (builtStage === 'ukLanding') uk5Start();   // 第五幕：上陸→港の防衛（援軍三波）
@@ -37922,7 +38248,7 @@ function toTitle() {
 function gameOver(win) {
   if (state === 'play') try { SITU.end(win); } catch (_) {}
   state = 'over'; if (typeof sgkUI === 'function' && $('sgkArea')) sgkUI(); player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
-  if (!win && !player.deathCold && !KS2.on && !SGK.on && !KOS.on) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
+  if (!win && !player.deathCold && !KS2.on && !SGK.on && !KOS.on && !AM.on) spillBlood(player.pos.x, player.pos.y, player.pos.z, 0.7);
   { const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2'); if (h1) h1.textContent = win ? (CV.on && CV.endWhy === 'leave' ? '航海を終えた' : '勝利') : (CV.on && CV.endWhy === 'king' ? '作戦中止' : CV.on && CV.hp <= 0 ? '航行不能' : '敗北'); if (h2) h2.textContent = win ? (CV.on ? (CV.endWhy === 'leave' ? '終了ボタンで幕を引いた' : '米軍の空襲を退けた') : NB.on ? '山間の稜線まで抜けた' : AIRPORT.on ? '地上侵入部隊を撃退した' : ISLAND.on ? '最終広場の敵役を全員倒し、生還した' : MTN.on ? '山城の本丸を落とした' : SNOW.on ? '極寒の峡谷を突破した' : BEACH.on ? 'すべてのトーチカを制圧した' : MECH.on ? '砦を落とした' : '勝利') : (CV.on && CV.hp <= 0 ? '終了ボタンで、航行不能を結果にした' : AIRPORT.on ? '管制塔の守備隊が全滅した' : player.deathCold ? '凍死した。血は出ていない' : SNOW.on && SNOW.cold > 36 ? '凍傷で倒れた' : 'あなたに戦死判定が下った'); }
   if (AB.on) abOverText(win);   // 幕五
   if (FB.on) fbOverText(win);   // 吹雪の山岳行軍
@@ -38088,7 +38414,7 @@ function updatePlayer(dt) {
     if (keys.Space && player.onGround) { player.vy = PLANE.on ? 2.6 : 5.2; player.onGround = false; player.seated = false; }   // 機内は天井が低い
     player.vy -= 14 * dt; player.yPre = player.pos.y; player.pos.y += player.vy * dt;
   }
-  { const L = MECH.on ? MECH.lim : (CV.on || TH.on ? 420 : FB.on ? 280 : (SGK.on || KOS.on) ? 1100 : KS2.on ? 300 : HG.on ? 300 : AB.on ? 900 : SD.on ? 2100 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
+  { const L = MECH.on ? MECH.lim : (CV.on || TH.on ? 420 : FB.on ? 280 : (SGK.on || KOS.on) ? 1100 : KS2.on ? 300 : HG.on ? 300 : AB.on ? 900 : SD.on ? 2100 : AM.on ? 260 : CFG.field); player.pos.x = clamp(player.pos.x, -L, L); player.pos.z = clamp(player.pos.z, -L, L); }   // 空母では大淀まで歩ける
   for (const c of colliders) {
     if (player.pos.y > 2) continue;
     const dx = player.pos.x - c.x, dz = player.pos.z - c.z, d = Math.hypot(dx, dz), r = c.r + 0.35;
@@ -40590,7 +40916,7 @@ function frame(now) {
     time += dt;
     if (TEST) testBot(dt);
     stepBudget = 3;
-    kgUpdate(dt); sdUpdate(dt); if (AB.on) abUpdate(dt); if (FB.on) updateFb(dt); if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (TH.on) updateTenhou(dt); if (KS2.on) updateKs2(dt); if (SGK.on) updateSgk(dt); if (KOS.on) updateKos(dt); if (HG.on) hgUpdate(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
+    kgUpdate(dt); sdUpdate(dt); amUpdate(dt); if (AB.on) abUpdate(dt); if (FB.on) updateFb(dt); if (USD.on) updateUsd(dt); if (CAMP.on) updateCamp(dt); if (UK.on) updateUk(dt); if (FRS.on) updateFrs(dt); else if (UK2.on) updateUk2(dt); if (UK3.on) updateUk3(dt); if (UK4.on) updateUk4(dt); if (UK7.on) updateUk7(dt); if (PAL.on) updatePal(dt); if (TH.on) updateTenhou(dt); if (KS2.on) updateKs2(dt); if (SGK.on) updateSgk(dt); if (KOS.on) updateKos(dt); if (HG.on) hgUpdate(dt); if (BEACH.on) updateBeach(dt); if (CAR.g) updateCar(dt); if (PLAINMG.on) plainMGUpdate(dt); if (MECH.on) updateMech(dt); if (DUAL.on) updateDual(dt); if (SMOKE.clouds.length || SMOKE.balls.length) updateSmoke(dt); if (KNIFE.fly.length || KNIFE.ground.length || !player.knife) updateKnives(dt);
     updatePlayer(dt); if (SNOW.on) updateSnow(dt); if (MTN.on) updateMountain(dt); updateHQ(dt); updateAides(dt); waveUpdate(dt); if (seirans.length) updateSeiran(dt); if (CASTLE.on) { updateCastle(dt); castleAtkWin(dt); } fortAtkUpdate(dt); updateGuards(); { const _t0 = performance.now(); updateEnemies(dt); if (FRS.on) FRS.perfE = (FRS.perfE || 0) * 0.95 + (performance.now() - _t0) * 0.05; } if (ISLAND.on) updateIsland(dt); if (NB.on) updateNanban(dt); if (CV.on) updateCv(dt); updateBodies(dt); updateArrows(dt); updatePickups(dt); updateHud(dt); updateSquads(dt);
     if (window.__cam) { const C = window.__cam; camera.position.set(C.p[0], C.p[1], C.p[2]); camera.lookAt(C.t[0], C.t[1], C.t[2]); }   // テスト撮影用の視点
     if (UK.on || FB.on) ukTalkHud(); if (FRS.on) frsTalkHud();

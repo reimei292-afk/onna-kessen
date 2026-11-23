@@ -3389,12 +3389,12 @@ function ks2Siege2(dt) { const S = KS2.U.S, E = KS2.U.E, W = KS2.U.W, N = KS2.U.
   if (!KS2.sur && KS2.ph === 'keep') { if (!KS2.keepT) KS2.keepT = KS2.t; let k = 0, b = 0; for (const e of KS2.live.orange) if (e.ks2Role === 'keep' && !e.ks2Gave) k++; for (const e of KS2.live.blue) if (Math.max(Math.abs(e.s.position.x), Math.abs(e.s.position.z)) < KS2_IW) b++; for (const o of KS2.px) if (o.team === 'blue' && o.alive && !o.real && Math.max(Math.abs(o.x), Math.abs(o.z)) < KS2_IW) b++; if (Math.max(Math.abs(player.pos.x), Math.abs(player.pos.z)) < KS2_IW) b += 3;
     if ((k <= (LITE ? 1 : 2) && b >= 5) || (KS2.t - KS2.keepT > 240 && b >= 20)) ks2Surrender(); }   // 本丸の守りがほぼ尽きたか、中庭を大勢で四分間押さえ続けた
   // 負け：攻め手が一割五分を切った（総崩れ）。殿が倒れたときは hurtPlayer の負け
-  if (!KS2.sur && !KS2.lost && (KS2.ph === 'siege' || KS2.ph === 'keep') && (KS2.lcT = (KS2.lcT || 2) - dt) <= 0) { KS2.lcT = 2; const c = ks2Counts(); if (c.a < KS2.atkTotal * 0.15) { KS2.lost = { t: KS2.t, a: c.a }; KS2.log.push(['lost', Math.round(KS2.t), c.a]); showBanner('攻め手が総崩れ', '残った兵では城を取れない。全軍、退却'); bannerTimer = 5; setTimeout(() => { if (!KS2.on || state !== 'play') return; gameOver(false); const c2 = ks2Counts(); $('result').innerHTML = `攻め手が総崩れになり、退いた。攻め手の残り <b>${c2.a}</b> / ${KS2.atkTotal}・守り手の残り <b>${c2.d}</b> / ${KS2.defTotal}。`; }, 6000); } } }
-function ks2Surrender() { KS2.sur = { t: KS2.t }; KS2.ph = 'won'; KS2.log.push(['surrender', Math.round(KS2.t)]); for (const e of KS2.def) if (isUp(e)) { e.ks2Gave = true; e.tgt = null; } for (const o of KS2.px) if (o.team === 'orange') o.gave = true;
+  if (!KS2.sur && !KS2.lost && (KS2.ph === 'siege' || KS2.ph === 'keep') && (KS2.lcT = (KS2.lcT || 2) - dt) <= 0) { KS2.lcT = 2; const c = ks2Counts(); if (c.a < KS2.atkTotal * 0.15) { KS2.lost = { t: KS2.t, a: c.a }; KS2.log.push(['lost', Math.round(KS2.t), c.a]); showBanner('攻め手が総崩れ', '残った兵では城を取れない。全軍、退却'); bannerTimer = 5; holdEnd(false, '負け', '攻め手が総崩れ', `攻め手が総崩れになり、退いた。攻め手の残り <b>${c.a}</b> / ${KS2.atkTotal}・守り手の残り <b>${c.d}</b> / ${KS2.defTotal}。`); } } }
+function ks2Surrender() { KS2.sur = { t: KS2.t }; KS2.ph = 'won'; KS2.log.push(['surrender', Math.round(KS2.t)]); holdEnd(true, '勝ち', '白壁城、開城！', holdEndStats()); for (const e of KS2.def) if (isUp(e)) { e.ks2Gave = true; e.tgt = null; } for (const o of KS2.px) if (o.team === 'orange') o.gave = true;
   const c = KS2.cmd; if (c) { c.s.position.set(0, 0, 13.5); c.ks2Home = [0, 13.5, 0]; } ks2En('cmd1', c, 2, 20); setTimeout(() => { if (KS2.on) ks2En('cmd2', c, 2, 20); }, 5500); setTimeout(() => { const el = KS2.by.uk06; if (KS2.on && el && isUp(el)) ks2En('elThanks', el, 1.8, 25); }, 9000);
   setTimeout(() => { if (!KS2.on || state !== 'play') return; showBanner('白壁城、開城！', '反乱軍を率いたアラベラ王女が本丸で降伏した'); bannerTimer = 5; Sfx.fanfare && Sfx.fanfare(); }, 10500);
   { const L = ['sumi', 'uk06', ...ks2Named((e, k) => k !== 'sumi' && k !== 'uk06' && KS2_X[k] && KS2_X[k].sur && Math.hypot(e.s.position.x - player.pos.x, e.s.position.z - player.pos.z) < 60).sort(() => Math.random() - 0.5).slice(0, 4)]; L.forEach((k, i) => KS2.later.push([KS2.t + 12 + i * 4.3, () => ks2Ln(k, 'sur', 1.8)])); }
-  setTimeout(() => { if (!KS2.on || state !== 'play') return; try { localStorage.setItem('ks2_fallen', JSON.stringify(Object.keys(KS2.by || {}).filter(k => KS2.by[k] && !isUp(KS2.by[k])))); } catch (_) {} gameOver(true); if ($('kfBtn')) $('kfBtn').style.display = ''; const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / ${KS2.atkTotal}・守り手の残り <b>${c2.d}</b> / ${KS2.defTotal}（降伏）。治療して戦列に戻った者 ${KS2.healed || 0} 人。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 38000); }
+  setTimeout(() => { if (!KS2.on || state !== 'play') return; try { localStorage.setItem('ks2_fallen', JSON.stringify(Object.keys(KS2.by || {}).filter(k => KS2.by[k] && !isUp(KS2.by[k])))); } catch (_) {} if ($('kfBtn')) $('kfBtn').style.display = ''; const c2 = ks2Counts(); $('result').innerHTML = `白壁城を取り戻した。攻め手 <b>${c2.a}</b> / ${KS2.atkTotal}・守り手の残り <b>${c2.d}</b> / ${KS2.defTotal}（降伏）。治療して戦列に戻った者 ${KS2.healed || 0} 人。担架で運んだ負傷者 ${KS2.carried} 人。`; }, 38000); }
 function ks2VoicePre() { if (KS2.vPre || !VoicePack.ok || !window.VOICE_KS2) return; KS2.vPre = true; const M = window.VOICE_KS2.byText, fs = [], add = t => { for (const x of M[t] || []) fs.push(x.file); };   // 号令・名のある娘の台詞・英語の呼びかけは先に読む
   for (const k in KS2_L) { const v = KS2_L[k]; if (k === 'succ') for (const n in v) add(v[n]); else if (k === 'hir' || k === 'san') for (const g in v) for (const q of v[g]) add(q[1]); else for (const q of v) add(q[1]); } for (const k in KS2_EN) add(KS2_EN[k][1]); for (const t of KS2_RV.ramen) add(t);
   for (let i = fs.length - 1; i >= 0; i--) VoicePack.load(fs[i], i < 12); }
@@ -3617,7 +3617,7 @@ function ks2TacSiege(e, dt, t, U, rng) { const s = U.side, G = KS2.gates[s], p =
     if (e.ks2Hold && v < KS2_W) { if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 6 && Math.abs(t.s.position.y - p.y) < 1.5) { const d = Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z); if (d > 1.1) ks2Walk(e, t.s.position.x, t.s.position.z, e.speed, dt); else ks2Hit(e, t); return true; }
       const [x, z] = ks2Rot(s, ((Math.floor(j / 2) % 7) - 3) * 1.3, KS2_W - 6 - (Math.floor(j / 14) % 2) * 1.4); ks2Walk(e, x, z, e.speed, dt); if (!e.moving) e.faceWant = Math.atan2(-p.x, -p.z); return true; } }
   if (G.open && !e.ks2In && !rng && e.ks2Gear !== 'heavy' && T.openAt && KS2.t - (T.openAt[s] || -99) < 7 && (U.hvN || 0) > 0 && e.ks2Y < 1) { const [x, z] = ks2Rot(s, ((j % 9) - 4) * 1.2, KS2_W + 10 + (j % 3) * 1.2); ks2Walk(e, x, z, e.speed, dt); if (!e.moving) e.faceWant = Math.atan2(-p.x, -p.z); return true; }   // 門へは重装が先に
-  if (e.ks2Gear === 'shield' && !G.open && !e.ks2In && e.ks2Y < 1 && U.st === 'atk' && !e.ks2Push && !e.ks2Carry && !e.ks2Climb) { const A = KS2.sq.filter(Q => Q.U === U && Q.k === 'arch' && Q.ld && isUp(Q.ld)), P = T.posts && T.posts[s]; let x, z;   // 盾隊：弓の列と隊長の前に置き盾を並べる
+  if (e.ks2Gear === 'shield' && !G.open && !e.ks2In && e.ks2Y < 1 && U.st === 'atk' && !e.ks2Push && !e.ks2Carry && !e.ks2Climb) { const A = (KS2.sq || []).filter(Q => Q.U === U && Q.k === 'arch' && Q.ld && isUp(Q.ld)), P = T.posts && T.posts[s]; let x, z;   // 盾隊：弓の列と隊長の前に置き盾を並べる
     if ((j % 5 === 4 && P) || !A.length) { const [cu, cv] = P ? ks2UV(s, P.cmd[0], P.cmd[1]) : [0, KS2_POST[s]]; [x, z] = ks2Rot(s, cu + ((j % 3) - 1) * 1.3, cv - 2.4); }
     else { const Q = A[j % A.length], [qu, qv] = ks2UV(s, Q.ld.s.position.x, Q.ld.s.position.z); [x, z] = ks2Rot(s, qu + ((Math.floor(j / A.length) % 5) - 2) * 1.5, qv - 2.2); }
     if (t && Math.hypot(t.s.position.x - p.x, t.s.position.z - p.z) < 1.6 && Math.abs(t.s.position.y - p.y) < 1.5) { ks2Hit(e, t); return true; }
@@ -5085,11 +5085,10 @@ function tsTick() { kosFallenTick(); if ((TS.rfT = (TS.rfT || 0) - 0.5) <= 0) { 
   if (TS.ev.carts && !TS.ev.rep && (TS.cartK >= TS_CART_WIN || (TS.boss && !isUp(TS.boss)))) { TS.ev.rep = KOS.t; const b = TS.boss; if (b && isUp(b)) tsMn(b, TS_MN.retreat, 2.2); else { popup('匈奴の将オユンが倒れた――鉄車が退いていく'); popupTimer = 3; } for (const C of TS.carts) if (!C.gone && C.st !== 'dead') C.st = 'flee'; tsChoiceUi(false); if (!TS.mode) TS.mode = 'bow';
     KOS.later.push([KOS.t + 4, () => tsSeq(TS_LN.rep, 0, 4.4)]); if (c.v > 0) { TS.vC = [30, 40]; KOS.later.push([KOS.t + 20, () => { if (TS.mode === 'bow') tsSeq(TS_LN.vBack, 0, 5); }]); } }
   // 勝ち：鉄車を退け、後ろの森も守った（祝融は退く。討ち取れない）
-  if (TS.ev.rep && TS.wave >= 3 && (KOS.shu ? KOS.shu.kosBoss.esc || !isUp(KOS.shu) : false) && c.tou <= 3 && !TS.ev.win) { TS.ev.win = true; KOS.ph = 'won'; tsSeq(TS_LN.win, 1, 4.6); setTimeout(() => { if (!KOS.on || state !== 'play') return; const c2 = tsCounts(); gameOver(true);
-    $('result').innerHTML = `丘陵の鉄車：${TS.mode === 'rescue' ? '殿は丘を下りて白石隊を救い' : '殿は丘の上から弓で援護し'}、匈奴の鉄車を退け、後ろの森から来た祝融の藤甲兵も防いだ。残った兵 <b>${c2.a}</b>（丘の上${TS_TOTAL}＋白石隊${TS_VN}。1体＝1人）・戦死 ${c2.dead}・白石隊の生き残り ${c2.v}・止めた鉄車 ${TS.cartK}・祝融は森へ退いた。`; }, 7000); }
+  if (TS.ev.rep && TS.wave >= 3 && (KOS.shu ? KOS.shu.kosBoss.esc || !isUp(KOS.shu) : false) && c.tou <= 3 && !TS.ev.win) { TS.ev.win = true; KOS.ph = 'won'; tsSeq(TS_LN.win, 1, 4.6); { const c2 = tsCounts(); holdEnd(true, '勝ち', '丘陵の鉄車を退けた', `丘陵の鉄車：${TS.mode === 'rescue' ? '殿は丘を下りて白石隊を救い' : '殿は丘の上から弓で援護し'}、匈奴の鉄車を退け、後ろの森から来た祝融の藤甲兵も防いだ。残った兵 <b>${c2.a}</b>（丘の上${TS_TOTAL}＋白石隊${TS_VN}。1体＝1人）・戦死 ${c2.dead}・白石隊の生き残り ${c2.v}・止めた鉄車 ${TS.cartK}・祝融は森へ退いた。`); } }
   if (TS.ev.rep && TS.wave >= 5 && KOS.shu && !KOS.shu.kosBoss.esc && isUp(KOS.shu) && c.tou <= 3) kosBossEscape(KOS.shu);   // 残るは祝融だけ：森へ退く
   if (TS.ev.rep && TS.wave < 3) TS.nextW = Math.min(TS.nextW, KOS.t + 3);
-  if (KOS.t > 30 && c.a < 120 && !TS.ev.lost) { TS.ev.lost = true; KOS.ph = 'lost'; setTimeout(() => { if (!KOS.on || state !== 'play') return; gameOver(false); $('result').innerHTML = '丘陵の鉄車：野営陣が落ちた。'; }, 3000); } }
+  if (KOS.t > 30 && c.a < 120 && !TS.ev.lost) { TS.ev.lost = true; KOS.ph = 'lost'; holdEnd(false, '負け', '野営陣が落ちた', '丘陵の鉄車：野営陣が落ちた。'); } }
 TS.vC0 = () => TS.vC || TS_V.c;
 // ================= 月例総督会議（kaigi）：世界統一のあと。宮殿の大広間の大きな画面で、二十人の総督と画面越しの会議 =================
 // 戦いは無い。殿は会議の前に広間を歩ける（遅れると白瀬が先に始める）。台詞は名のある娘は字幕＋声、群れの侍女は声だけ、殿は字幕だけ。
@@ -6956,12 +6955,13 @@ function hgSurrCheck(dt) { if (HG.surr || HG.t < 60) return; const c = HG.cnt ||
   for (const o of HG.px) { o.hold = 0; o.flee = 0; } HG.evLog.push([Math.round(HG.t), HG.surr, '降伏']);
   if (HG.surr === 'orange') { showBanner('中国軍、降伏', fO >= 0.9 ? '九割が倒れた' : '戦える隊が尽きた'); bannerTimer = 5; if (HG.cmd && isUp(HG.cmd)) hgZh(HG.cmd, HG_ZH.surr, 2.3);
     const e = HG.shu; if (e && isUp(e)) { e.hgShu.st = 'surr'; e.hp = Math.max(e.hp, 15); HG.joinW = HG.t; }   // 祝融が生きていれば：王のそばまで来てから、王が誘う
-    else { HG.later.push([HG.t + 4, () => hgSeq(HG_LN.win, 0, 3)]); HG.later.push([HG.t + 10, () => { if (state === 'play' && HG.on) gameOver(true); }]); } }
-  else { showBanner('味方、降伏', fB >= 0.9 ? '九割が倒れた' : '戦える隊が尽きた'); bannerTimer = 5; HG.later.push([HG.t + 2, () => hgSeq(HG_LN.lose, 0, 3)]); HG.later.push([HG.t + 9, () => { if (state === 'play' && HG.on) gameOver(false); }]); } }
-function hgJoin() { const e = HG.shu; HG.joinW = 0; if (!e || !isUp(e)) { HG.later.push([HG.t + 2, () => hgSeq(HG_LN.win, 0, 3)]); HG.later.push([HG.t + 8, () => { if (state === 'play' && HG.on) gameOver(true); }]); return; }
+    else { HG.later.push([HG.t + 4, () => hgSeq(HG_LN.win, 0, 3)]); }
+    holdEnd(true, '勝ち', fO >= 0.9 ? '九割が倒れた' : '戦える隊が尽きた', holdEndStats()); }
+  else { showBanner('味方、降伏', fB >= 0.9 ? '九割が倒れた' : '戦える隊が尽きた'); bannerTimer = 5; HG.later.push([HG.t + 2, () => hgSeq(HG_LN.lose, 0, 3)]); holdEnd(false, '負け', fB >= 0.9 ? '九割が倒れた' : '戦える隊が尽きた', holdEndStats()); } }
+function hgJoin() { const e = HG.shu; HG.joinW = 0; if (!e || !isUp(e)) { HG.later.push([HG.t + 2, () => hgSeq(HG_LN.win, 0, 3)]); holdEnd(true, '勝ち', '中国軍、降伏', holdEndStats()); return; }
       e.hgShu.go = [player.pos.x + 1.8, player.pos.z + 2.6]; hgZh(e, HG_ZH.j1, 2.4);
       HG.later.push([HG.t + 5, () => sgkKing('祝融。お前の腕は惜しい。こちらに来ないか')]); HG.later.push([HG.t + 9, () => hgZh(e, HG_ZH.j2, 2.4)]); HG.later.push([HG.t + 13, () => hgSeq(HG_LN.join, 0, 3)]);
-      HG.later.push([HG.t + 17, () => sgkKing('本気だ。南の地は、お前が一番よく知っている')]); HG.later.push([HG.t + 21.5, () => hgZh(e, HG_ZH.j3, 2.4)]); HG.later.push([HG.t + 29, () => { showBanner('祝融、加わる', '南蛮の大将が殿の陣に'); bannerTimer = 4; }]); HG.later.push([HG.t + 34, () => { if (state === 'play' && HG.on) gameOver(true); }]); }
+      HG.later.push([HG.t + 17, () => sgkKing('本気だ。南の地は、お前が一番よく知っている')]); HG.later.push([HG.t + 21.5, () => hgZh(e, HG_ZH.j3, 2.4)]); HG.later.push([HG.t + 29, () => { showBanner('祝融、加わる', '南蛮の大将が殿の陣に'); bannerTimer = 4; }]); holdEnd(true, '勝ち', '祝融、加わる', holdEndStats()); }
 // ---- 毎フレーム ----
 function hgUpdate(dt) { if (!HG.on || state !== 'play') return; dt = Math.min(dt, 0.1); HG.t += dt;
   for (let i = HG.later.length - 1; i >= 0; i--) if (HG.t >= HG.later[i][0]) { const f = HG.later[i][1]; HG.later.splice(i, 1); try { f(); } catch (_) {} }
@@ -29681,13 +29681,10 @@ function uk4Act5(k) { UK4.act5 = k; UK4.log.push('act5:' + k); try { localStorag
 function uk4Ending() {
   if (UK4.ended) return; UK4.ended = true;
   try { SITU.end(true); } catch (_) {}
-  state = 'over'; player.drawing = false; $('banner').style.opacity = 0; bannerTimer = 0; if ($('ukdlg')) $('ukdlg').style.display = 'none';
-  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
-  if (h1) h1.textContent = '第四幕「王女」 完'; if (h2) h2.textContent = '英国淑女編 ― 王女アラベラが剣を収めた';
+  player.drawing = false; if ($('ukdlg')) $('ukdlg').style.display = 'none';
   const bl = bodies.filter(b => b.team === 'blue').length, ol = bodies.filter(b => b.team === 'orange').length, peace = UK4.act5 !== 'battle';
-  $('result').innerHTML = `浜の柵を破り、王旗の天幕の護りを崩した。アラベラ王女は武器を下ろさせ、殿の前に立った。<br>倒れた者　味方 <b>${bl}</b>　／　英国 <b>${ol}</b>　／　殿の撃破 <b>${player.kills}</b>　／　${UK4.join === 'K' ? '東の別働隊と共に' : '正面の主力と共に'}<br><b>次回 第五幕「${peace ? '和睦' : '決戦'}」</b><br><span style="opacity:.8">${peace ? '旗艦ソヴリン号の甲板で、殿と王女が向かい合う——提督たちは、まだ剣を収めていない' : '沖に並ぶ大型艦が帆を上げる——海の上で、すべてをかけた決戦が始まる'}</span>`;
-  if (document.exitPointerLock) document.exitPointerLock();
-  $('over').style.display = 'flex';
+  const result = `浜の柵を破り、王旗の天幕の護りを崩した。アラベラ王女は武器を下ろさせ、殿の前に立った。<br>倒れた者　味方 <b>${bl}</b>　／　英国 <b>${ol}</b>　／　殿の撃破 <b>${player.kills}</b>　／　${UK4.join === 'K' ? '東の別働隊と共に' : '正面の主力と共に'}<br><b>次回 第五幕「${peace ? '和睦' : '決戦'}」</b><br><span style="opacity:.8">${peace ? '旗艦ソヴリン号の甲板で、殿と王女が向かい合う——提督たちは、まだ剣を収めていない' : '沖に並ぶ大型艦が帆を上げる——海の上で、すべてをかけた決戦が始まる'}</span>`;
+  holdEnd(true, '第四幕「王女」 完', '英国淑女編 ― 王女アラベラが剣を収めた', result);
 }
 // ---- 本体から呼ぶ小さな口 ----
 function uk4CanTarget(e, t) {
@@ -32580,7 +32577,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261122o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261122p';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -37343,7 +37340,12 @@ function hurtPlayer(dmg) {
   Sfx.hurt();
   if (player.hp <= 0) {
     if (CV.on) { player.hp = 0; cvKingDown(); return; }
-    player.hp = 0; gameOver();
+    player.hp = 0;
+    if (typeof holdEndOk === 'function' && holdEndOk()) {
+      if (!HOLDEND.on) holdEnd(false, '敗北', '殿が倒れた', (typeof holdEndStats === 'function' && holdEndStats()) || '');
+      return;
+    }
+    gameOver();
   }
 }
 
@@ -38264,6 +38266,7 @@ function resetGame() {
   smokeReset(); knifeReset();
 }
 function startGame() {
+  if (typeof holdEndClear === 'function') holdEndClear();
   REC.reset();
   Sfx.init(); if (Voice.ok) { Voice.pick(); speechSynthesis.cancel(); }
   if (!CAMP.switching) { CAMP.on = stageName === 'usTown' || stageName === 'yamajiro'; if (CAMP.on) campInit(stageName === 'yamajiro'); else campFadeOff(); }   // アメリカ西部編 第二幕／山城の守り
@@ -38273,7 +38276,7 @@ function startGame() {
   resetGame();
   if (builtStage === 'airport') airportCrewRebuild();
   plainMGCrewEnsure();
-  $('bTrenchAttack').style.display='none'; $('bKs2Go').style.display='none'; if ($('ks2Area')) $('ks2Area').style.display = 'none'; if ($('ks2Tac')) $('ks2Tac').style.display = 'none'; if ($('ks2Info')) $('ks2Info').style.display = 'none';
+  $('bTrenchAttack').style.display='none'; $('bKs2Go').style.display='none'; if ($('ks2Area')) $('ks2Area').style.display = 'none'; if ($('ks2Tac')) $('ks2Tac').style.display = 'none'; if ($('ks2Info')) $('ks2Info').style.display = 'none'; if (typeof holdEndClear === 'function') holdEndClear();
   // 塹壕戦は戦闘員を配置してから、通常の秘書・医務班・伝令・補佐役を追加する。
   if (/^ab\d/.test(builtStage)) { }   // 幕五：人は abStart が置く
   else if (builtStage === 'fubuki') { for (const m of medics.blue) spawnMedic('blue', m); }   // 吹雪の山岳行軍：人は fbSpawn が置く
@@ -38371,11 +38374,51 @@ function resumeGame() {
   if (UD.on) udHud(true);
 }
 function toTitle() {
+  if (typeof holdEndClear === 'function') holdEndClear();
   $('bTrenchAttack').style.display='none';
   if (CAMP.on || CAMP.run) { CAMP.on = false; CAMP.run = false; stageModes.castle = CAMP.oldMode || stageModes.castle; if (stageName === 'castle' || stageName === 'usPal' || stageName === 'usOdw') stageName = CAMP.solo ? 'yamajiro' : 'usTown'; campFadeOff(); const h = $('campHud'); if (h) h.style.display = 'none'; }
   state = 'title'; resetGame(); removeSecretary(); removeFluter();
   $('pause').style.display = 'none'; $('over').style.display = 'none'; $('hud').style.display = 'none'; $('title').style.display = 'flex';
 }
+
+const HOLDEND = { on: false, win: false, title: '', sub: '', result: '' };
+function holdEndOk() { return !!(HG.on || (typeof KS2 !== 'undefined' && KS2.on) || (typeof KOS !== 'undefined' && KOS.on && KOS.ts) || (typeof UK4 !== 'undefined' && UK4.on && !UK4.v5) || (typeof FRF !== 'undefined' && FRF.on)); }
+function holdEndClear() {
+  HOLDEND.on = false; HOLDEND.title = ''; HOLDEND.sub = ''; HOLDEND.result = '';
+  const b = $('bHoldEnd'), bar = $('holdEndBar');
+  if (b) b.style.display = 'none'; if (bar) bar.style.display = 'none';
+}
+function holdEndStats() {
+  if (HG.on) { const c = (typeof hgCounts === 'function' && hgCounts()) || {}; return `味方 残り <b>${c.b != null ? c.b : '?'}</b>　／　中国軍 残り <b>${c.o != null ? c.o : '?'}</b>　／　殿の撃破 <b>${player.kills}</b>`; }
+  if (typeof KS2 !== 'undefined' && KS2.on) { const c = ks2Counts(); return `攻め手の残り <b>${c.a}</b> / ${KS2.atkTotal}・守り手の残り <b>${c.d}</b> / ${KS2.defTotal}。`; }
+  if (typeof KOS !== 'undefined' && KOS.ts && typeof tsCounts === 'function') { const c = tsCounts(); return `丘陵の鉄車：残った兵 <b>${c.a}</b>・戦死 ${c.dead}・白石隊の生き残り ${c.v}・止めた鉄車 ${TS.cartK}。`; }
+  if (typeof UK4 !== 'undefined' && UK4.on && !UK4.v5) { const bl = bodies.filter(b => b.team === 'blue').length, ol = bodies.filter(b => b.team === 'orange').length; return `倒れた者　味方 <b>${bl}</b>　／　英国 <b>${ol}</b>　／　殿の撃破 <b>${player.kills}</b>`; }
+  if (typeof FRF !== 'undefined' && FRF.on && typeof frfResultHtml === 'function') return frfResultHtml();
+  return '';
+}
+function holdEnd(win, title, sub, result) {
+  if (HOLDEND.on) return;
+  HOLDEND.on = true; HOLDEND.win = !!win; HOLDEND.title = title || (win ? '勝ち' : '負け');
+  HOLDEND.sub = sub || ''; HOLDEND.result = result || holdEndStats() || '';
+  if (typeof showBanner === 'function') { showBanner(HOLDEND.title, HOLDEND.sub); bannerTimer = Math.max(bannerTimer || 0, 6); }
+  const bar = $('holdEndBar'), t = $('holdEndTxt'), b = $('bHoldEnd');
+  if (bar) bar.style.display = 'flex';
+  if (t) t.innerHTML = `<b>${HOLDEND.title}</b>${HOLDEND.sub ? '　' + HOLDEND.sub : ''}${HOLDEND.result ? '<br>' + HOLDEND.result : ''}`;
+  if (b) b.style.display = 'inline-block';
+}
+function holdEndGo() {
+  if (!HOLDEND.on) return;
+  const win = HOLDEND.win, title = HOLDEND.title, sub = HOLDEND.sub, result = HOLDEND.result;
+  const ks2kf = typeof KS2 !== 'undefined' && KS2.on && KS2.sur;
+  holdEndClear();
+  gameOver(win);
+  const h1 = document.querySelector('#over h1'), h2 = document.querySelector('#over h2');
+  if (h1) h1.textContent = title;
+  if (h2) h2.textContent = sub;
+  if (result && $('result')) $('result').innerHTML = result;
+  if (ks2kf && $('kfBtn')) $('kfBtn').style.display = '';
+}
+
 function gameOver(win) {
   if (state === 'play') try { SITU.end(win); } catch (_) {}
   state = 'over'; if (typeof sgkUI === 'function' && $('sgkArea')) sgkUI(); player.drawing = false; CAR.riding = false; $('banner').style.opacity = 0; bannerTimer = 0;
@@ -38431,6 +38474,8 @@ $('titleBtn').onclick = toTitle;
 $('resumeBtn').onclick = resumeGame;
 $('quitBtn').onclick = toTitle;
 { const b = $('bCvEnd'); if (b) { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; cvEndAsk(); }; b.addEventListener('click', f); b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); } }
+{ const b = $('bHoldEnd'); if (b) { const f = ev => { ev.preventDefault(); ev.stopPropagation(); const t = performance.now(); if (t - (b.t0 || 0) < 400) return; b.t0 = t; holdEndGo(); }; b.addEventListener('click', f); b.addEventListener('touchstart', f, { passive: false }); b.addEventListener('mousedown', ev => ev.stopPropagation()); } }
+
 
 // 梯子の案内：近くに梯子があれば「W で上る／E で自動」などを出す（スマホは「梯子」ボタン）
 function ladderGo() {
@@ -41217,5 +41262,5 @@ requestAnimationFrame(frame);
 
 window.__doorSet = (d, o, by) => doorSet(d, o, by);
 if (TEST) window.__cx = src => eval(src);   // テスト用：内部の変数を読む
-window.__game = { get SD(){return typeof SD!=="undefined"?SD:null;}, get AM(){return typeof AM!=="undefined"?AM:null;}, get PAL(){return typeof PAL!=="undefined"?PAL:null;}, get KG(){return typeof KG!=="undefined"?KG:null;}, camera, scene, get PARRY_LOG() { return PARRY_LOG; }, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), jpMobDeal: (t) => jpMobDeal(t), jpMobPool: () => jpMobPool(), ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
+window.__game = { get HOLDEND(){return HOLDEND;}, holdEnd, holdEndGo, holdEndOk,  get SD(){return typeof SD!=="undefined"?SD:null;}, get AM(){return typeof AM!=="undefined"?AM:null;}, get PAL(){return typeof PAL!=="undefined"?PAL:null;}, get KG(){return typeof KG!=="undefined"?KG:null;}, camera, scene, get PARRY_LOG() { return PARRY_LOG; }, pickGirl: (k) => pickGirl(k), jpMobLooks: () => jpMobLooks(), jpMobDeal: (t) => jpMobDeal(t), jpMobPool: () => jpMobPool(), ks2KLook: (a) => ks2KLook(a), ks2PickLook: (k) => ks2PickLook(k), KS2_UNITS, ks2TalkNear: () => ks2TalkNear(), get NAMED_BAD(){return NAMED_BAD;}, get KS2(){return KS2;}, ks2View, ks2PxKill, killEnemy, get HPS(){return HP;}, tagNear, updateKs2, ks2Counts, ks2Go, get FB(){return FB;}, get updateFb(){return updateFb;}, get AB(){return AB;}, get CV(){return typeof CV!=="undefined"?CV:null;}, get CVB(){return { cvOyReunion, cvFinalBoom, cvChainStart, cvFallSpawn, cvLbStep, cvFallStep, get K(){return CV.sk;}, cvBoardStart, cvBoardStep, cv3React, cvAbandonStart, get B(){return CV.board;} };}, get CVFX(){return { cvfPlay, CVF_FUN, cvfAskMenu, cvfProf, cvfStage, cvGid, CVF_SEAT };}, get FRS(){return FRS;}, memInfo: () => memInfo(), renderer, scene, stageRoot, ground, get stage(){return stageName;}, get state(){return state;}, get enemies(){return enemies;}, get bodies(){return bodies;}, get hq(){return hq;}, get player(){return player;}, SEC_REQ, inHQ, startGame, damageEnemy, AIRPORT, airportUpdate, airportSpawnForces, SMOKE, KNIFE, castleGateBreak, castleLOS, castleCanTarget, chooseTarget, smokeCloud, playerThrowKnife, carDbg: () => { const L = []; for (const o of enemies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push([o.prof.name, o.state, +lx.toFixed(2), +lz.toFixed(2), !!o.guard, !!o.secretary, !!o.aide, o === CAR.driver]); } for (const o of bodies) { const [lx, lz] = carL(o.s.position.x, o.s.position.z); if (Math.abs(lx) < 3 && lz > -3 && lz < 6) L.push(['body', +lx.toFixed(2), +lz.toFixed(2)]); } return L; }, BEACH, TRENCH, ISLAND, updateIsland, islandPlaza, trenchCharge, CAR, MG, BH, PLAINMG, plainMGUpdate, plainMGCrewEnsure, isUp, cataSit, carUse, carCommand, carNear, carOn, groundH, boatAt, kingSay, beachLand, keiSit, keiUse, keiDrop, keiBeside, keiCount, updateKei, beachHqBrain, mgShot, updateCar, GUARD, YARI, CASTLE, CS, castleRegion, castleRoute, castleUse, castleSpring, updateCastle, get lean() { return { LEAN_P }; }, get drawCalls() { return renderer.info.render.calls; }, get tris() { return renderer.info.render.triangles; }, PLANE, PL, pileAt, planeAmbush, plCellAt, planeRoute, hq: () => hq, squads, runners, SQ, updateSquads, AMMO_MAX, tagLabel, showSquadReport, pauseGame, resumeGame, AudioGuard, ladders, floors, boxes, ladPts, tryClimb, startClimb, tgtFloor, ladderTo, get gtime() { return time; }, ojou, OJOU_REQ, enemyShoot, seiranSync, spawnEnemy, FOLLOW, Talk, seirans, seiranWave, aides, updateAides, MOTION, Mo, sec2, SEC2_REQ, get menuWho() { return menuWho; }, medics, medPost, revivePatient, get state() { return state; }, towers, sayRemark, sec, SEC_REQ, openSecMenu, closeSecMenu, inHQ, get menuOpen() { return menuOpen; }, get allyStance() { return allyStance; }, GIRLS, get framesLoaded() { return framesLoaded; }, get stage() { return builtStage; }, MTN, perches, VoicePack, player, get enemies() { return enemies; }, get bodies() { return bodies; }, get wave() { return wave; }, get texLoaded() { return texLoaded; }, MOBILE, touch, get arrows() { return arrows; }, covers, colliders, SPR, startGame, damageEnemy, startWave, startEscort, askMeal, orderMeal, onigiriRemark, fluter, Sfx, MECH, toggleGod, seatPose, seatCtxOf, fumi, FUMI_REQ, REC, sysop, SYSOP_REQ, medics, killEnemy: (e, f) => killEnemy(e, f), hurtPlayer, updateMech, mechSit, mechPuncture, mechTireHit, mechFix, mechUse, mechCrew, mechPark, mechWave, lordSecTalk, mechClimb, mechMarch, mechVehicles, updateEnemies, updatePlayer, spawnAlly, waveUpdate, DUAL, updateDual, routeTo };
 })();

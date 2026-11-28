@@ -6346,10 +6346,12 @@ function buildKt() {
   if (!HG.flagM) HG.flagM = { b: new THREE.MeshLambertMaterial({ color: 0xf2efe6, side: THREE.DoubleSide }), o: new THREE.MeshLambertMaterial({ color: 0xb8362e, side: THREE.DoubleSide }), mk: new THREE.MeshLambertMaterial({ color: 0xc8402e, side: THREE.DoubleSide }), pole: sgkMat(0x5a4a36) };
 }
 function ktClear() {
+  document.documentElement.classList.remove('ktsub');
   if (KT.bases) for (const B of KT.bases) if (B.g && B.g.parent) B.g.parent.remove(B.g);
   if (KT.pal && KT.pal.g && KT.pal.g.parent) KT.pal.g.parent.remove(KT.pal.g);
   if (KT.flagG && KT.flagG.parent) KT.flagG.parent.remove(KT.flagG);
   const hud = $('ktHud'); if (hud) hud.style.display = 'none';
+  for (const id of ['hpbox', 'stats', 'wavebox']) { const e = $(id); if (e) e.style.visibility = ''; }
   KT.bases = []; KT.pal = null; KT.flagG = null; KT.misaki = null; KT.gen = null; KT.ph = ''; KT.pt = 0;
 }
 function ktFlagMesh(team, scale) {
@@ -6490,12 +6492,10 @@ function ktFlip(B, team, byU) {
   if (B.team === team) return;
   const old = B.team; ktSetFlag(B, team); B.capT = 0;
   if (team === 'blue') {
-    const q = KT_LN.take[(Math.random() * KT_LN.take.length) | 0];
-    if (HG.by[q[0]]) hgSay(q[0], q[1], 1.7);
-  } else if (KT.gen) hgZh(KT.gen, KT_ZH.take, 1.6);
-  else {
-    const q = KT_LN.lose[(Math.random() * KT_LN.lose.length) | 0];
-    if (HG.by[q[0]]) hgSay(q[0], q[1], 1.7);
+    if (!(byU && ktSitU(byU, 'take', 1.9)) && !ktSit('sumi', 'take', 1.9)) { const q = KT_LN.take[(Math.random() * KT_LN.take.length) | 0]; if (HG.by[q[0]]) hgSay(q[0], q[1], 1.7); }
+  } else {
+    if (KT.gen) hgZh(KT.gen, KT_ZH.take, 1.6);
+    if (old === 'blue') ktLater(2.6, () => { if (!ktSit('sumi', 'lost', 1.9)) { const q = KT_LN.lose[(Math.random() * KT_LN.lose.length) | 0]; if (HG.by[q[0]]) hgSay(q[0], q[1], 1.7); } });
   }
   showBanner(team === 'blue' ? '拠点を確保' : '拠点が落ちた', B.label || ''); bannerTimer = 2.4;
   { const og = B.gar; if (og && og.team !== team && og.st !== 'gone') { const H = ktMed(og.team, B.x, B.z) || ktSup(og.team, B.x, B.z); og.role = 'det'; og.kind = 'inf'; og.base = null; B.gar = null; if (H) ktOrder(og, 'go', H.x, H.z, { B: H }); } }
@@ -6757,6 +6757,151 @@ const KT_ZHO = {
   flank: ['从侧面攻！', '横から攻めろ！']
 };
 const KT_MOBW = ['救護所へ……', '下がります……'];
+// 名のある娘の、場面ごとの台詞（声つき）。同じ台詞はしばらく繰り返さない
+const KT_SIT = {
+  sumi: { contact: ['当たりました。落ち着いて、列を保って。', '前列、構え。後ろは矢を。'], win: ['敵の隊が崩れました。追いすぎないで。', '一つ、退けました。次に備えて。'], hurt: ['損害が出ています。無理はしないで。'],
+    take: ['拠点を取りました。守りを置いて。', 'よくやりました。次へ。'], lost: ['拠点を一つ失いました。立て直します。', '落ち着いて。まだ取り返せます。'],
+    praise: ['殿、お見事です。でも前に出すぎないでください。', '殿、下がってください。……と言っても聞かないんですよね。'] },
+  ojou: { contact: ['まあ、お越しになりましたのね。お相手いたしますわ。', '列を乱さずに。わたくしの隊は、崩れませんわ。'], win: ['お引き取りいただけましたわね。', 'ごきげんよう。もう来なくて結構ですわ。'],
+    hurt: ['少し、痛手ですわね。氷室、列を詰めて。'], take: ['この拠点、わたくしがお預かりいたしますわ。'], relief: ['お待たせいたしましたわ。ここからは、ご一緒に。'], praise: ['王様、お上手ですこと。でも、ご無理はなさらないで。'] },
+  shinobu: { contact: ['西園寺様の前には、通しません。'], win: ['片付きました。'], relief: ['西園寺様のご指示で参りました。'] },
+  chikage: { hurt: ['西園寺様、損害が三割を超えました。'], take: ['記録します。拠点、確保。'] },
+  omiya: { contact: ['来ましたね！押し返します！', '列を崩さない！前、構えて！'], win: ['やりました！次、行きます！', '逃げましたね！追いすぎない！'], hurt: ['まだまだ！持ち場を守って！'],
+    heavy: ['苦しいです……でも、下がりません！'], take: ['拠点、いただきました！守りを置きます！'], relief: ['お待たせしました！大宮隊、到着です！'], praise: ['殿、さすがです！でも前に出すぎです！'] },
+  akari: { contact: ['大宮さまの次に速いのは私です！行きます！'], win: ['腕相撲より簡単です！'], relief: ['夏目、到着しました！'] },
+  fumi: { contact: ['来ましたね。外しませんから、安心してください。', '弓、構え。焦らず、よく狙って。'], win: ['思ったより、あっけないですね。', '的が逃げました。追いますか？ いいえ、やめておきます。'],
+    hurt: ['少し削られました。記録しておきます。'], take: ['拠点、こっちです。帳簿に付けておきますね。'], praise: ['殿、今のは悪くなかったです。私ほどではありませんけど。'] },
+  midori: { contact: ['押し込みます！歴史に残る一戦にしましょう！'], win: ['よし、押し返した！'], take: ['この拠点、本に書けますね！'] },
+  sec2: { contact: ['き、来ました！ま、前を固めて！', 'だ、大丈夫です、列はこのまま！'], win: ['や、やりました……！澄お姉さま、見てましたか？'], hurt: ['あ、あの、損害が……！どうしよう……'],
+    take: ['と、取れました！拠点です！'], relief: ['お、お待たせしました！早瀬隊です！'], praise: ['と、殿！すごいです……！'] },
+  reika: { contact: ['来たわね。全部まとめて相手してあげるわ。', '前列、槍を揃えなさい！'], win: ['口ほどにもないわね。', 'ほら、逃げたわよ。次はどこ？'], hurt: ['削られたわね。でも、まだやれるわ。'],
+    take: ['拠点はもらったわ。'], praise: ['殿、やるじゃない。見直したわ。'] },
+  hirose: { contact: ['当たります！澄さんの隊より先に崩してみせます。'], win: ['一つ目です。文乃さんより早いですよね？'], take: ['拠点、取りました。……べつに、褒めなくていいです。'],
+    relief: ['広瀬隊、着きました！'], hurt: ['まだ大丈夫です。お姉さん分ですから。'] },
+  shizuka: { contact: ['来ました。受けます。'], win: ['崩れました。深追いはしません。'], hurt: ['損害、少し。持ちます。'], take: ['確保。静かにいきましょう。'] },
+  sec4: { contact: ['隊列、このまま。正確にいきます。'], hurt: ['損害を記録しました。三割です。'], take: ['拠点確保、記録しました。'], win: ['敵隊、後退。記録します。'] },
+  sec3: { contact: ['敵、およそ二百。正面です。'], hurt: ['残り六割。まだ持ちます。'], win: ['敵の数、半分まで減りました。'] },
+  kujo: { med: ['救護所、空きはあります。どんどん連れてきて。', '慌てないで。順番に診ます。'] },
+  sysop: { info: ['敵の隊、右手から回り込んでいます。', '情報室より。敵の本陣、守りが薄くなっています。'] },
+  hiyori: { run: ['伝令、走ります！'] },
+  sanjo: { idle: ['あー、はいはい。白瀬に任せとけば大丈夫でしょ。', 'あたし？ 序列とかいいから、前に出ていい？'] },
+  flute: { cheer: ['笛、鳴らします！みんな、もうひと息！'] }
+};
+// 掛け合い（先に言う人、返す人）
+const KT_BANTER = [
+  ['sumi', 'ことね、列が乱れています。', 'sec2', 'す、すみません澄お姉さま！すぐ直します！'],
+  ['fumi', 'ことね、顔が赤いですよ。', 'sec2', 'あ、赤くないです！'],
+  ['sumi', '文乃、口より手を動かして。', 'fumi', '口うるさいのは、誰のせいだと思います？'],
+  ['hirose', '澄さん、今日はわたしの隊が先に拠点を取ります。', 'sumi', 'どうぞ。取れるものなら。'],
+  ['omiya', 'すみれさん、置いていきますよ！', 'ojou', 'まあ、ひなた。急がば回れ、ですわ。'],
+  ['reika', '隊長、まだなの？ 先に行くわよ。', 'sec2', 'ま、待ってください白石さん！'],
+  ['fumi', '千夏さん、張り切りすぎです。', 'hirose', 'べ、べつに張り切ってません。'],
+  ['sanjo', '白瀬、あたしにも何か回してよ。', 'sumi', '三条殿は本陣にいてください。お願いします。'],
+  ['omiya', '夏目さん、勤務中です！走って！', 'akari', 'はいっ！足なら負けません！'],
+  ['shinobu', '一条、記録は。', 'chikage', '取っています。西園寺様の赤ペンが怖いので。'],
+  ['sec3', '宮下さん、残りの矢は何本？', 'sec4', '四百十二本です。正確に。'],
+  ['shizuka', '広瀬さま、焦らないで。', 'hirose', '焦ってません。……少しだけです。'],
+  ['kujo', '白瀬さん、救護所は回っています。心配しないで。', 'sumi', '助かります、九条さん。'],
+  ['flute', '大宮さん、笛で元気出しますね！', 'omiya', 'はいっ、お願いします！']
+];
+// 追加の台詞（戦闘中・行軍中のつぶやき、勝ち・損害の言い換え）
+const KT_SIT2 = {
+  sumi: { fight: ['左、薄くなっています。詰めて。', '弓、次の列を狙って。前の味方に当てないで。', 'ことね、そちらはどうですか。', '慌てないで。押し返せます。'],
+    march: ['列を保ったまま進みます。', '前を見て。足並みを揃えて。', '文乃、遅れないで。'], win: ['よし。息を整えて、次です。'], hurt: ['数が減っています。前列を入れ替えて。'] },
+  ojou: { fight: ['氷室、右をお願いしますわ。', '一条、記録はあとで。今は前を。', 'まあ、しつこいお方たちですこと。', '薙刀の間合いですわ。お下がりなさい。'],
+    march: ['ゆっくり参りましょう。列が乱れては、元も子もありませんわ。', 'ひなた、お先にどうぞ。わたくしは列を整えてから参りますわ。'], win: ['お見事ですわ、皆さま。'] },
+  shinobu: { fight: ['右、抑えます。', '西園寺様、ここはお任せを。'], march: ['西園寺様の前を固めます。'] },
+  chikage: { fight: ['損害、一割。まだ持ちます。', '記録より、まず前です。'], win: ['敵隊、後退。記録しました。'] },
+  omiya: { fight: ['押して！押して！下がらない！', '夏目さん、左をお願い！', '前列、交代！後ろの子、前へ！', 'まだまだ、勤務中ですよ！'],
+    march: ['駆け足！でも列は崩さない！', 'すみれさん、置いていきますよー！', '遅れた人、あとでお説教です！'], win: ['よーし、次！'], hurt: ['負けません！持ち場を守って！'] },
+  akari: { fight: ['腕相撲なら負けません！押し返します！', '大宮さま、左は任せてください！'], march: ['走るのは得意です！'], hurt: ['まだいけます！'] },
+  fumi: { fight: ['次の列、狙って。……はい、当たり。', 'ことね、前に出すぎ。', '澄さん、こっちは大丈夫です。', '矢の数、帳簿どおりです。'],
+    march: ['歩きながら本が読めればいいんですけど。', '澄さん、急がなくても拠点は逃げませんよ。'], hurt: ['数が減りました。顔には出しませんけど。'] },
+  midori: { fight: ['押し込め！ここが山場です！', 'この戦い、ちゃんと書き残しますからね！'], march: ['進みます！遅れないで！'], hurt: ['まだです、まだ押せます！'], relief: ['村瀬隊、来ました！'] },
+  sec2: { fight: ['み、右です！右から来てます！', '列、このまま……このまま……！', '澄お姉さま、ちゃんとやってます！'],
+    march: ['ま、待ってください、すぐ行きます！', 'み、みんな、遅れないでくださいね！'], heavy: ['あ、あの、もう半分以下です……でも、下がりません！'], win: ['と、取り返しました……！'] },
+  reika: { fight: ['遅いわね。もっと来なさい。', '槍を揃えて！突くわよ！', '隊長、ぼんやりしないで！'], march: ['さっさと行くわよ。退屈なのは嫌いなの。'],
+    heavy: ['ちょっと、きついわね……でも、引かないわよ。'], relief: ['助けに来てあげたわ。感謝しなさい。'] },
+  hirose: { fight: ['澄さんには負けません！押して！', '文乃さん、見ててくださいね！', 'ことねちゃん、無理しないで！'],
+    march: ['広瀬隊、遅れません！', 'べつに急いでません。……少し急ぎます。'], win: ['崩しました。……べつに、自慢じゃないです。'], heavy: ['お姉さん分ですから、ここは下がりません！'] },
+  shizuka: { fight: ['受けて、流して。', '焦らない。崩れるのは向こうです。'], march: ['静かに進みます。'], relief: ['久遠隊、着きました。'], heavy: ['数が少ない。でも、持ちます。'] },
+  sec4: { fight: ['前列、損害一割。正確に入れ替えます。', '矢の残り、八割です。'], march: ['隊列、乱れなし。'], relief: ['宮下隊、到着しました。'] },
+  sec3: { fight: ['正面、およそ百五十。右に五十。', '敵の列、薄くなりました。押せます。'], march: ['この先、地面が低くなります。足元に注意。'], take: ['拠点確保。数字の上でも有利です。'], relief: ['桜井隊、着きました。'] },
+  kujo: { med: ['重い子から先に診ます。軽い子は、少し待って。', '救護所は大丈夫。前は前に集中して。'] },
+  sysop: { info: ['情報室より。左手の拠点、敵が集まり始めています。', '情報室より。いま押せば、敵の列が割れます。', '殿、パスワードの話はあとにします。今は前を。'] },
+  hiyori: { run: ['伝令です！白瀬さまから！', '走ります！顔と名前は全部覚えてます！'] },
+  sanjo: { idle: ['本陣、暇なんだけど。……冗談だって。', '白瀬、あたしの出番まだ？', 'みんな、いい顔してるじゃん。'] },
+  flute: { cheer: ['もうひと息ですよー！笛、鳴らします！', 'みんなの声、ちゃんと聞こえてます！'] }
+};
+const KT_BANTER2 = [
+  ['omiya', 'すみれさん、遅いですよ！', 'ojou', 'ひなた、木登りの頃から変わりませんわね。'],
+  ['ojou', '氷室、もう少しゆっくりでよろしくてよ。', 'shinobu', '西園寺様が遅すぎるのです。'],
+  ['sumi', '文乃、矢の数は足りていますか。', 'fumi', '帳簿どおりです。澄さんの心配性も帳簿どおりです。'],
+  ['sec2', '文乃さん、いま当たりましたか？', 'fumi', '当たりましたよ。ことねの声で外すところでしたけど。'],
+  ['hirose', 'ことねちゃん、列が曲がってるよ。', 'sec2', 'ち、千夏さんまで……！'],
+  ['reika', '久遠、どっちが多く崩すか勝負よ。', 'shizuka', '勝負はしません。でも、負けません。'],
+  ['akari', '大宮さま、足、速すぎます！', 'omiya', '夏目さん、勤務中です！ついてきて！'],
+  ['sanjo', 'ねえ白瀬、あたしも前に出ていい？', 'sumi', 'だめです、三条殿。本陣にいてください。'],
+  ['sec3', '宮下さん、敵の数、もう一度。', 'sec4', '正面百八十。さっきより二十減りました。'],
+  ['fumi', '千夏さん、今日は静かですね。', 'hirose', 'べ、べつに。集中してるだけです。'],
+  ['midori', 'この戦い、本にしたら売れますよ！', 'sumi', '村瀬、書くのは勝ってからにして。'],
+  ['kujo', '大宮さん、無理をさせないでね。', 'omiya', 'はいっ、九条さん！気をつけます！'],
+  ['flute', '久遠さん、笛、うるさくないですか？', 'shizuka', 'いいえ。落ち着きます。'],
+  ['chikage', '西園寺様、損害の記録です。', 'ojou', 'ありがとう、一条。赤ペンは、あとにいたしますわ。'],
+  ['sysop', '白瀬さん、敵の動き、送ります。', 'sumi', '助かります、霧島さん。'],
+  ['reika', 'ことね、もっと胸を張りなさい。隊長でしょう。', 'sec2', 'は、はいっ、白石さん！'],
+  ['hiyori', '綾瀬さま、伝令です！', 'fumi', 'ありがとう、ひより。走りすぎないでね。'],
+  ['omiya', '玲奈さま、本陣でおとなしくしていてくださいね！', 'sanjo', 'はいはい。ひなたは相変わらずだね。']
+];
+for (const k in KT_SIT2) for (const q in KT_SIT2[k]) { KT_SIT[k] = KT_SIT[k] || {}; KT_SIT[k][q] = (KT_SIT[k][q] || []).concat(KT_SIT2[k][q]); }
+KT_BANTER.push(...KT_BANTER2);
+function ktSit(k, sit, prio, force) {
+  const L = KT_SIT[k] && KT_SIT[k][sit], e = HG.by[k]; if (!L || !L.length || !e || !isUp(e)) return false;
+  KT.sitC = KT.sitC || {}; KT.sitU = KT.sitU || {};
+  if (!force) { if ((KT.sitC[k] || 0) > HG.t || (KT.sitT || 0) > HG.t || (HG.t < (KT.ordT || 0) && (prio || 0) < 2)) return false; }
+  const free = L.filter(t => (KT.sitU[t] || 0) <= HG.t); if (!free.length) return false;
+  const t = free[(Math.random() * free.length) | 0];
+  KT.sitU[t] = HG.t + 70; KT.sitC[k] = HG.t + 7; KT.sitT = HG.t + 2.6; KT.ordT = Math.max(KT.ordT || 0, HG.t + 2.4);
+  KT.sitN = (KT.sitN || 0) + 1; (KT.ordLog = KT.ordLog || []).push([Math.round(HG.t), k, t]);
+  hgSay(k, t, prio || 1.8); return true;
+}
+function ktSitU(U, sit, prio) {
+  if (!U || U.team !== 'blue') return false;
+  const ks = [U.lk].concat((U.names || []).map(e => e && e.hgK)).filter(k => k && KT_SIT[k] && KT_SIT[k][sit]);
+  if (!ks.length) return false; if (ks.length > 1 && Math.random() < 0.35) ks.push(ks.shift());
+  for (const k of ks) if (ktSit(k, sit, prio)) return true; return false;
+}
+function ktSitE(U, sit) { if (ktSitU(U, sit)) return true; if (U && U.team === 'blue') (KT.sitQ = KT.sitQ || []).push([U, sit, HG.t + 12]); return false; }   // その場で言えなければ少し待って言う
+function ktSitTick() {
+  if (!KT.on || KT.ph !== 'battle' || KT.done) return;
+  const T = HG.t;
+  if (KT.sitQ && KT.sitQ.length) { KT.sitQ = KT.sitQ.filter(q => q[2] > T && q[0].st !== 'gone'); for (let i = 0; i < KT.sitQ.length; i++) { const q = KT.sitQ[i]; if (ktSitU(q[0], q[1])) { KT.sitQ.splice(i, 1); break; } if ((KT.sitT || 0) > T || (KT.ordT || 0) > T) break; } }
+  for (const U of HG.UB) {
+    if (U.st === 'gone' || !U.lk) continue;
+    if (U.st === 'fight') { U._fT = T; if (!U._wasF) { U._wasF = true; ktSitE(U, 'contact'); } } else if (U._wasF && T - (U._fT || 0) > 10) U._wasF = false;
+    const fr = U.up / Math.max(1, U.n0 || U.n || 1);
+    if (fr < 0.6 && !U._h1) { U._h1 = 1; ktSitE(U, 'hurt'); }
+    if (fr < 0.35 && !U._h2) { U._h2 = 1; ktSitU(U, 'heavy') || ktSitU(U, 'hurt'); }
+  }
+  for (const V of HG.UO) {
+    if (V._won || V.role === 'gar' && V.st !== 'gone') continue;
+    if ((V.st === 'gone' && V.mem.length > 0) || V.st === 'rout') { V._won = 1; let best = null, bd = 70; for (const U of HG.UB) { if (U.st === 'gone' || !U.lk) continue; const d = Math.hypot(U.x - V.x, U.z - V.z); if (d < bd) { bd = d; best = U; } } if (best) ktSitE(best, 'win'); }
+  }
+  if (T > (KT.chatT || 12)) {   // 戦っている隊・進んでいる隊の名のある娘が、ときどき口を開く
+    const F = HG.UB.filter(U => U.st !== 'gone' && U.lk && (U.st === 'fight' || U.st === 'adv' || U.st === 'march'));
+    const fi = F.filter(U => U.st === 'fight'), pool = fi.length && Math.random() < 0.7 ? fi : F;
+    if (pool.length) { const U = pool[(Math.random() * pool.length) | 0]; if (ktSitU(U, U.st === 'fight' ? 'fight' : 'march')) KT.chatT = T + 5 + Math.random() * 4; else KT.chatT = T + 1.5; } else KT.chatT = T + 3;
+  }
+  if ((player.kills || 0) > (KT.kl0 || 0)) { KT.kl0 = player.kills; if (T > (KT.praiseT || 0)) { const p = player.pos; let best = null, bd = 40; for (const k in HG.by) { const e = HG.by[k]; if (!e || !isUp(e) || !KT_SIT[k] || !KT_SIT[k].praise) continue; const q = e.s.position, d = Math.hypot(q.x - p.x, q.z - p.z); if (d < bd) { bd = d; best = k; } } if (!best) best = 'sumi'; if (ktSit(best, 'praise', 1.9)) KT.praiseT = T + 35; } }
+  if (T > (KT.hqT || 30)) { KT.hqT = T + 17 + Math.random() * 9; const walk = HG.px.filter(o => o.alive && o.ktW).length; const pick = walk > 25 && Math.random() < 0.5 ? ['kujo', 'med'] : [['sysop', 'info'], ['flute', 'cheer'], ['sanjo', 'idle']][(Math.random() * 3) | 0]; ktSit(pick[0], pick[1]); }
+  if (T > (KT.banT || 22) && T > (KT.sitT || 0) + 2.5 && T > (KT.ordT || 0) + 1.5) {
+    KT.banT = T + 10 + Math.random() * 6; KT.banU = KT.banU || {};
+    const ok = KT_BANTER.filter(b => (KT.banU[b[1]] || 0) <= T && HG.by[b[0]] && isUp(HG.by[b[0]]) && HG.by[b[2]] && isUp(HG.by[b[2]]));
+    if (ok.length) { const b = ok[(Math.random() * ok.length) | 0]; KT.banU[b[1]] = T + 200; KT.banN = (KT.banN || 0) + 1; KT.ordT = Math.max(KT.ordT || 0, T + 6.5); KT.sitT = T + 6.5;
+      (KT.ordLog = KT.ordLog || []).push([Math.round(T), b[0], b[1]]); hgSay(b[0], b[1], 1.8);
+      ktLater(3.3, () => { if (HG.by[b[2]] && isUp(HG.by[b[2]])) { (KT.ordLog = KT.ordLog || []).push([Math.round(HG.t), b[2], b[3]]); hgSay(b[2], b[3], 1.8); } }); }
+  }
+}
 function ktOwnMedical(team) { return (KT.bases || []).filter(B => B.team === team && (B.kind === 'medical' || B.hq)).length; }
 function ktMed(team, x, z) { let b = null, bd = 1e9; for (const B of KT.bases || []) { if (B.team !== team || !(B.kind === 'medical' || B.kind === 'both' || B.hq)) continue; const d = Math.hypot(B.x - x, B.z - z); if (d < bd) { bd = d; b = B; } } return b; }
 function ktSup(team, x, z) { let b = null, bd = 1e9; for (const B of KT.bases || []) { if (B.team !== team || !(B.kind === 'supply' || B.kind === 'both' || B.hq)) continue; const d = Math.hypot(B.x - x, B.z - z); if (d < bd) { bd = d; b = B; } } return b; }
@@ -6766,7 +6911,7 @@ function ktLine(k, key, prio) {
   const L = KT_ORD[k], t = L && L[key], e = HG.by[k]; if (!t || !e || !isUp(e)) return false;
   const id = k + ':' + key; KT.said = KT.said || {}; if ((KT.said[id] || 0) > HG.t) return false;
   if (HG.t < (KT.ordT || 0) && (prio || 0) < 2) return false;
-  KT.said[id] = HG.t + 45; KT.ordT = HG.t + 3.4; (KT.ordLog = KT.ordLog || []).push([Math.round(HG.t), k, t]);
+  KT.said[id] = HG.t + 30; KT.ordT = HG.t + 3.4; (KT.ordLog = KT.ordLog || []).push([Math.round(HG.t), k, t]);
   hgSay(k, t, prio || 1.85); return true;
 }
 function ktLater(dt, f) { HG.later.push([HG.t + dt, f]); }
@@ -6844,24 +6989,37 @@ function ktUnits(dt) {
       F = ktFoe(U, 90); const fd = F ? Math.hypot(F.x - U.x, F.z - U.z) : 1e9;
       const back = O && O.k === 'back', cover = O && O.k === 'cover' && O.V && O.V.st !== 'gone';
       const fightR = back ? 8 : cover ? 14 : U.reinT > HG.t ? 12 : 24;
-      if (F && fd < fightR) { const d = fd || 1; U.st = 'fight'; U.fd = d; const push = ((U.mor - (F.mor || 50)) / 100) * 0.7 * dt, close = Math.max(0, d - 3); U.tx = U.x + (F.x - U.x) / d * (push * 20 + close); U.tz = U.z + (F.z - U.z) / d * (push * 20 + close); }
+      if (F && fd < fightR) { const C = ktBody(F), cx = C[0] - U.x, cz = C[1] - U.z, d = Math.hypot(cx, cz) || 1; U.st = 'fight'; U.fd = Math.max(0, d - C[2]); const push = ((U.mor - (F.mor || 50)) / 100) * 0.7 * dt, close = d - C[2] - 2.4; U.tx = U.x + cx / d * (push * 20 + close); U.tz = U.z + cz / d * (push * 20 + close); }   // 隊の前列を敵の隊の体の手前（槍の届く間合い）で止める：隊どうしが重ならない
       else if (cover) { const V = O.V, VF = V.F || F; const bx = V.team === 'blue' ? 0 : 0, bz = V.team === 'blue' ? -1 : 1; let ax = -V.fx || bx, az = -V.fz || bz; U.tx = V.x + ax * 28; U.tz = V.z + az * 28; U.st = Math.hypot(U.tx - U.x, U.tz - U.z) > 14 ? 'march' : 'support'; if (VF) U.aim = { x: VF.x, z: VF.z }; }
       else if (O && O.k === 'flank' && O.V && O.V.st !== 'gone' && O.V.up > 0) { const T = O.V, A = O.A; let lx = T.fz, lz = -T.fx; const sd = Math.sign((U.x - T.x) * lx + (U.z - T.z) * lz) || 1; U.tx = T.x + lx * sd * 14 - T.fx * 4; U.tz = T.z + lz * sd * 14 - T.fz * 4; if (Math.hypot(U.tx - U.x, U.tz - U.z) < 8) { U.tx = T.x; U.tz = T.z; } U.st = 'march'; }
-      else if (O && (O.k === 'go' || O.k === 'back' || O.k === 'conv')) { const d = Math.hypot(O.x - U.x, O.z - U.z); U.tx = O.x; U.tz = O.z; U.st = d > 12 ? (F && fd < 40 && !back ? 'adv' : 'march') : (back ? 'hold' : 'adv'); if (d <= 12) { O.arr = O.arr || HG.t; if (U.role === 'det' && O.B) ktDetArrive(U, O.B); } }
+      else if (O && (O.k === 'go' || O.k === 'back' || O.k === 'conv')) { const d = Math.hypot(O.x - U.x, O.z - U.z); U.tx = O.x; U.tz = O.z; U.st = d > 12 ? (F && fd < 40 && !back ? 'adv' : 'march') : (back ? 'hold' : 'adv'); if (d <= 12) { if (!O.arr && O.B && O.B.team === U.team) ktSitE(U, 'relief'); O.arr = O.arr || HG.t; if (U.role === 'det' && O.B) ktDetArrive(U, O.B); } }
       else { U.st = F && fd < 40 ? 'adv' : 'hold'; U.tx = U.x; U.tz = U.z; }
       if (U.st === 'adv' && F && fd < 40 && !(O && O.k === 'back')) { /* 近くの敵へ寄せる */ const d = fd || 1; if (!(O && O.k === 'go' && Math.hypot(O.x - U.x, O.z - U.z) > 12)) { U.tx = F.x - (F.x - U.x) / d * 12; U.tz = F.z - (F.z - U.z) / d * 12; } }
     }
     U.F = F;
-    { const tF = U.aim || F; if (tF && U.st !== 'march') { const d = Math.hypot(tF.x - U.x, tF.z - U.z) || 1, wx = (tF.x - U.x) / d, wz = (tF.z - U.z) / d, cr = U.fx * wz - U.fz * wx, dot = U.fx * wx + U.fz * wz, ang = Math.atan2(cr, dot), mx = 0.5 * dt, r = clamp(ang, -mx, mx), c = Math.cos(r), s = Math.sin(r); const nfx = U.fx * c - U.fz * s, nfz = U.fx * s + U.fz * c; U.fx = nfx; U.fz = nfz; }
+    { const tF = U.aim || F; if (tF && U.st !== 'march' && !((U.role === 'hq' || U.role === 'gar') && U.st !== 'fight')) { const d = Math.hypot(tF.x - U.x, tF.z - U.z) || 1, wx = (tF.x - U.x) / d, wz = (tF.z - U.z) / d, cr = U.fx * wz - U.fz * wx, dot = U.fx * wx + U.fz * wz, ang = Math.atan2(cr, dot), mx = 0.28 * dt, r = clamp(ang, -mx, mx), c = Math.cos(r), s = Math.sin(r); const nfx = U.fx * c - U.fz * s, nfz = U.fx * s + U.fz * c, hh = U.fm === 'hou' ? 0 : Math.ceil(up / Math.max(1, U.cols || 12)) * HG_GAPZ / 2; U.x += (nfx - U.fx) * hh; U.z += (nfz - U.fz) * hh; U.tx += (nfx - U.fx) * hh; U.tz += (nfz - U.fz) * hh; U.fx = nfx; U.fz = nfz; }
       else { const dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz); if (d > 2) { const k = Math.min(1, dt * 0.6); U.fx += (dx / d - U.fx) * k; U.fz += (dz / d - U.fz) * k; const l = Math.hypot(U.fx, U.fz) || 1; U.fx /= l; U.fz /= l; } } }
-    { const dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz), sp = (U.st === 'march' ? 2.6 * spm : U.st === 'fight' ? ((U.fd || 0) > 4 ? 1.0 : 0.25) : U.st === 'support' ? 1.6 : U.st === 'adv' ? 1.7 * spm : 1.0); if (d > 0.3) { const s = Math.min(d, sp * dt); U.x = clamp(U.x + dx / d * s, -300, 300); U.z = clamp(U.z + dz / d * s, -300, 300); } }
-    if ((U.rotT = (U.rotT == null ? 6 : U.rotT) - dt) <= 0) { U.rotT = U.st === 'fight' ? 18 : 6; hgSlotAll(U); }
+    if ((U.cohT = (U.cohT || 0) - dt) <= 0) { U.cohT = 1; let sd = 0, sn = 0; for (let i = 0; i < U.mem.length && sn < 30; i += Math.max(1, (U.mem.length / 30) | 0)) { const o = U.mem[i]; if (!o.alive || o.real || o.ktW) continue; const sl = hgSlot(U, o.slot); sd += Math.hypot(sl[0] - o.x, sl[1] - o.z); sn++; } const av = sn ? sd / sn : 0; U.coh = av; U.lagK = av > 6 ? 0.3 : av > 3.5 ? 0.65 : 1; }   // 列が崩れていたら、隊の先頭は歩みをゆるめて揃うのを待つ
+    { const lk = U.lagK || 1, mFM = FM.sp * (U.kind === 'det' ? 1.5 : 1), dx = U.tx - U.x, dz = U.tz - U.z, d = Math.hypot(dx, dz), sp = (U.st === 'march' ? 2.15 * mFM * lk : U.st === 'fight' ? ((U.fd || 0) > 4 ? 0.9 : 0.25) : U.st === 'support' ? 1.3 * lk : U.st === 'adv' ? 1.45 * FM.sp * lk : 0.9); if (d > 0.3) { const s = Math.min(d, sp * dt); U.x = clamp(U.x + dx / d * s, -300, 300); U.z = clamp(U.z + dz / d * s, -300, 300); } }
+    if ((U.rotT = (U.rotT == null ? 6 : U.rotT) - dt) <= 0 || Math.abs((U._slN || 0) - up) > Math.max(4, up * 0.06)) { U.rotT = U.st === 'fight' ? 22 : 30; U._slN = up; ktSlotAll(U); }   // 列の入れ替えはたまにだけ（毎回並べ直すと全員が歩き回って塊になる）
     if (U.vol && (U.volT = (U.volT == null ? 5 : U.volT) - dt) <= 0) { U.volT = 8; if (U.st !== 'march' && (U.aim || (F && Math.hypot(F.x - U.x, F.z - U.z) < 120))) { for (const o of U.mem) if (o.alive && o.arch && !o.real && !o.ktW) o.cd = rand(0, 0.6); if (U.reg) { hgGong(U); if (Math.random() < 0.4) hgMobZh(U.x, U.z, HG_ZHM.reg); } } }
     if (U.reg && U.st === 'march' && (U.drT = (U.drT || 0) - dt) <= 0) { U.drT = 0.85; hgGong(U, true); }
     if (U.flag) { const fx = U.x - U.fx * 7, fz = U.z - U.fz * 7; U.flag.position.set(fx, ktY(fx, fz), fz); U.flag.rotation.y = Math.atan2(U.fx, U.fz) + Math.PI / 2; }
   }
   for (const L of [HG.UB, HG.UO]) for (let i = L.length - 1; i >= 0; i--) if (L[i].role === 'det' && L[i].st === 'gone' && !L[i].mem.length) L.splice(i, 1);
 }
+// 拠点の野：並べ直しても、各自いまいる場所に近い枠へ（盾→槍→弓→医の順に前から。同じ組の中では今の列・左右の順を保つ）
+function ktSlotAll(U) {
+  const A = U.mem.filter(o => o.alive && !o.real), n = A.length; if (!n) return;
+  const grp = o => o.medic ? 3 : o.arch ? 2 : o.w === 'shield' ? 0 : 1; A.sort((a, b) => grp(a) - grp(b));
+  U.sl = hgFmLayout(U, n); const L = U.sl, rx = U.fz, rz = -U.fx;
+  const cd = o => Math.round(-((o.x - U.x) * U.fx + (o.z - U.z) * U.fz) / HG_GAPZ), cq = o => (o.x - U.x) * rx + (o.z - U.z) * rz;
+  let i = 0; while (i < n) { let j = i; const g = grp(A[i]); while (j < n && grp(A[j]) === g) j++;
+    const S = []; for (let k = i; k < j; k++) S.push(k); S.sort((a, b) => (Math.round(L[a * 2 + 1] / HG_GAPZ) - Math.round(L[b * 2 + 1] / HG_GAPZ)) || (L[a * 2] - L[b * 2]));
+    const M = A.slice(i, j).sort((a, b) => (cd(a) - cd(b)) || (cq(a) - cq(b)));
+    for (let k = 0; k < M.length; k++) M[k].slot = S[k]; i = j; }
+}
+function ktBody(F) { const n = F.up || (F.mem ? F.mem.length : 20); if (F.fm === 'hou') { const r = Math.sqrt(n * HG_GAPX * HG_GAPZ / Math.PI) + 2.8; return [F.x - (F.fx || 0) * r, F.z - (F.fz || 0) * r, r]; } const dep = Math.ceil(n / Math.max(1, F.cols || 12)) * HG_GAPZ, h = dep / 2; return [F.x - (F.fx || 0) * h, F.z - (F.fz || 0) * h, h + 0.6]; }   // 敵の隊の体の中心と、そこから縁までの距離
 function ktDetArrive(D, B) {
   if (B.team !== D.team) return;   // 敵の拠点：そのまま居座って取りにかかる（取れたら守備になる）
   if (B.gar && B.gar !== D && B.gar.st !== 'gone' && B.gar.team === D.team) ktMerge(D, B.gar);
@@ -6892,6 +7050,7 @@ function ktPressed(U) {   // 苦しんでいる近くの味方の隊
 // 隊長・副官の判断（数秒ごと）。性格で手が変わる
 function ktBrain(dt) {
   KT.bT = (KT.bT || 0) - dt; if (KT.bT > 0) return; KT.bT = 0.5;
+  ktSitTick();
   const all = HG.UB.concat(HG.UO), T = KT.battleT || 0;
   // 開戦直後：白瀬が全隊へ。大宮が先に出ると言い、白瀬が止め、大宮が言い返す
   if (T > 1.5 && !KT.s0) { KT.s0 = 1; KT.ordT = 0; ktLine('sumi', 'go', 1.95); }
@@ -7049,7 +7208,11 @@ function ktHudTick() {
   const el = ktHud(); if (!el) return;
   const bc = ktBaseCounts(), c = HG.cnt || (typeof hgCounts === 'function' ? hgCounts() : { b: '?', o: '?' });
   const ph = KT.ph === 'battle' ? '' : '（開幕）';
-  el.innerHTML = `拠点争奪の野 ${ph}<br>拠点 日本 <b>${bc.b}</b>　／　中国 <b>${bc.o}</b><br>兵 日本 ${c.b}（${c.capB || 0}隊）　／　中国 ${c.o}（${c.capO || 0}隊）`;
+  for (const id of ['hpbox', 'stats', 'wavebox']) { const e = $(id); if (e && e.style.visibility !== 'hidden') e.style.visibility = 'hidden'; }   // 拠点の野は一枚の表だけ（古い体力・撃破数・時計は出さない）
+  { const st = $('subtitle'); document.documentElement.classList.toggle('ktsub', !!(st && +getComputedStyle(st).opacity > 0.05)); }   // 台詞の字幕が出ている間は、狙った兵の札を隠す（重ならない）
+  const hp = Math.max(0, Math.round(player.hp)), hpc = hp > 50 ? '#9fe0a0' : hp > 25 ? '#ffd27a' : '#ff8a7a';
+  const html = `<b>拠点争奪の野</b>${ph}　殿の体力 <b style="color:${hpc}">${hp}</b>　撃破 ${player.kills || 0}<br>拠点 日本 <b>${bc.b}</b>　／　中国 <b>${bc.o}</b><br>兵 日本 ${c.b}（${c.capB || 0}隊）　／　中国 ${c.o}（${c.capO || 0}隊）`;
+  if (el._h !== html) { el._h = html; el.innerHTML = html; }
   el.style.display = 'block';
 }
 function ktPost(dt) {
@@ -7354,7 +7517,7 @@ function hgUnit(name, team, x, z, n, af, opt) { const fz = team === 'blue' ? 1 :
   for (let i = 0; i < n; i++) hgAdd(U, x, z, i >= n * (1 - af)); hgSlotAll(U); for (const o of U.mem) { if (o.ox != null) { o.x = x + o.ox; o.z = z + o.oz; } else { const [sx, sz] = hgSlot(U, o.slot); o.x = sx; o.z = sz; } } return U; }
 function hgSlot(U, k) { const L = U.sl; let q, d; if (L && k * 2 + 1 < L.length) { q = L[k * 2]; d = L[k * 2 + 1]; } else { const c = U.cols, r = Math.floor(k / c); q = ((k % c) - (c - 1) / 2) * HG_GAPX; d = r * HG_GAPZ; }
   const rx = U.fz, rz = -U.fx; return [U.x + rx * q - U.fx * d, U.z + rz * q - U.fz * d]; }
-function hgSlotAll(U) { let k = 0; const A = U.mem.filter(o => o.alive), key = o => (o.medic ? 20 : 0) + (o.arch ? 10 : 0) - (o.w === 'shield' ? 3 : 0) - o.hp; A.sort((a, b) => key(a) - key(b)); for (const o of A) o.slot = k++; U.sl = hgFmLayout(U, A.length); }   // 前（方円なら外側）に盾持ち、次に元気な近接、後ろ（内側）に弓。前列の交代もこれで
+function hgSlotAll(U) { if (typeof KT !== 'undefined' && KT.on && !U.horde) { ktSlotAll(U); U._slN = U.mem.filter(o => o.alive).length; return; } let k = 0; const A = U.mem.filter(o => o.alive), key = o => (o.medic ? 20 : 0) + (o.arch ? 10 : 0) - (o.w === 'shield' ? 3 : 0) - o.hp; A.sort((a, b) => key(a) - key(b)); for (const o of A) o.slot = k++; U.sl = hgFmLayout(U, A.length); }   // 前（方円なら外側）に盾持ち、次に元気な近接、後ろ（内側）に弓。前列の交代もこれで
 //  陣形ごとの並び（q＝横、d＝前から後ろへの深さ）。形がはっきり見えるように
 function hgFmLayout(U, n) { const fm = U.fm || 'yoko', out = new Float32Array(Math.max(1, n) * 2), sx = HG_GAPX, sz = HG_GAPZ, c0 = U.cols; let i = 0; const put = (q, d) => { if (i < n) { out[i * 2] = q; out[i * 2 + 1] = d; i++; } };
   if (fm === 'hou') { const rings = []; let r = 2.8, tot = 0; while (tot < n) { const c = Math.max(6, Math.floor(2 * Math.PI * r / HG_GAPX)); rings.push([r, c]); tot += c; r += HG_GAPZ; } const Rm = rings[rings.length - 1][0]; let left = n;
@@ -7489,6 +7652,9 @@ function hgSwing(ax, az, e, p) { if (!e || !e.alive) return; if (e.real) { if (i
   const r = Math.random(); if (r < p) { hgHurt(e, 1, false, new V3(ax, 0, az)); return; }
   const front = (e.hx * (ax - e.x) + e.hz * (az - e.z)) > 0, k = e.w === 'shield' && front ? 'block' : r < p + 0.33 ? (e.arch ? 'dodge' : 'parry') : r < p + 0.58 ? 'dodge' : null; if (!k) return;
   e.re = k; e.reT = 0.35; e.reS = Math.random() < 0.5 ? 1 : -1; const pp = player.pos; if (k !== 'dodge' && (e.x - pp.x) ** 2 + (e.z - pp.z) ** 2 < 900) { const q = new V3(e.x, 1.1, e.z); if (sfxGate(q, 30)) { if (k === 'block') Sfx.thunkAt(q, true); else if (Sfx.clashAt) Sfx.clashAt(q); } } }
+// 拠点の野：隊列を崩さない。前の二列だけが前へ出て打ち合い、後ろの列は自分の場所で待つ（目の前に来た敵だけ相手にする）
+function ktEngR(U, o, eng) { const L = U.sl, d = L && o.slot * 2 + 1 < L.length ? L[o.slot * 2 + 1] : Math.floor(o.slot / (U.cols || 12)) * HG_GAPZ, row = d / HG_GAPZ; if (U.fm === 'hou') return eng ? (o.slot < (U.up || 20) * 0.4 ? 5 : 2.2) : 2.2; return eng ? (row < 1.5 ? 5.5 : row < 3.5 ? 3 : 2) : 2.4; }
+function ktNearS(o, U, foe, eng) { const sl = hgSlot(U, o.slot); return hgNear(sl[0], sl[1], foe, ktEngR(U, o, eng)); }   // 自分の持ち場（列の枠）から届く敵だけ相手にする：追いかけて列から離れない
 function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts = LITE ? 4 : 3, k = HG.sim++ % parts; if (k === 0) hgGridBuild();
   for (let i = 0; i < n; i++) { const o = A[i]; if (!o.alive || o.real) continue; const U = o.U, foe = o.team === 'blue' ? 'orange' : 'blue'; if (o.atk > 0) o.atk -= dt; if (o.kn > 0) o.kn -= dt; if (o.reT > 0) o.reT -= dt;
     if (o.hold > 0) { o.hold -= dt; const D = HG.duel; if (D && !o.ringX) { const dx = o.x - D.x, dz = o.z - D.z, d = Math.hypot(dx, dz) || 1; if (d < 7) { o.x += dx / d * Math.min(7 - d, 2.5 * dt); o.z += dz / d * Math.min(7 - d, 2.5 * dt); } } hgTankPush(o, 0.45); continue; }   // 一騎打ちのまわりは場をあけて見守る
@@ -7504,7 +7670,7 @@ function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts 
     if (o.ktW) { tx = o.ktW.x + (o.ktWx || 0); tz = o.ktW.z + (o.ktWz || 0); sp = 2.1; }   // 深手：自分で救護へ歩く
     else if (o.flee > 0) { o.flee -= sdt; tx = o.x - U.fx * 20; tz = o.z - U.fz * 20; sp = 2.8; }   // 何人かは崩れて逃げる（しばらくして戻る）
     else if (U.st !== 'rout' && U.st !== 'march' && U.st !== 'fall' && engR !== 0) {
-      if (!o.arch && !o.medic) { const eng = engR > 0 || U.st === 'fight' || (U.horde && U.st === 'adv'); let e = hgNear(o.x, o.z, foe, engR > 0 ? engR : eng ? (U.horde ? 14 : 10) : 3.5); if (e && hgIsFleeing(e)) { if (!hgChaseOk(o, e)) e = null; } else hgChaseDrop(o); const ed = e ? Math.hypot(e.x - o.x, e.z - o.z) : 1e9;
+      if (!o.arch && !o.medic) { const eng = engR > 0 || U.st === 'fight' || (U.horde && U.st === 'adv'); let e = (engR <= 0 && KT.on && !U.horde) ? ktNearS(o, U, foe, eng) : hgNear(o.x, o.z, foe, engR > 0 ? engR : eng ? (U.horde ? 14 : 10) : 3.5); if (e && hgIsFleeing(e)) { if (!hgChaseOk(o, e)) e = null; } else hgChaseDrop(o); const ed = e ? Math.hypot(e.x - o.x, e.z - o.z) : 1e9;
         if ((o.w === 'knife' || o.w === 'boom') && o.cd <= 0 && ed > 4 && U.st !== 'hold') { const t = hgNear(o.x, o.z, foe, 22); if (t) { o.cd = rand(3.4, 5.4); o.atk = 0.45; const dx = t.x - o.x, dz = t.z - o.z, d = Math.hypot(dx, dz) || 1; o.hx = dx / d; o.hz = dz / d; hgThrow(o.x, o.z, t, o.w, o); } }   // 投げナイフ・ブーメラン
         if (e) { const dx = e.x - o.x, dz = e.z - o.z, d = ed || 1; o.hx = dx / d; o.hz = dz / d; const reach = o.w === 'dao' ? 1.7 : o.w === 'knife' || o.w === 'shield' ? 1.3 : 2.4;   // 槍は二歩半、大刀・刀は短く、ナイフはさらに短い
           const lat = ((o.slot % 7) - 3) * HG_GAPX * 0.85, px = -dz / d * lat, pz = dx / d * lat;
@@ -7610,9 +7776,11 @@ function hgThrow(x, z, t, kind, src) { const pp = player.pos, tx = t === player 
 function hgMobZh(x, z, L) { const t = L[(Math.random() * L.length) | 0], d = Math.hypot(x - player.pos.x, z - player.pos.z); if (d > 55) return; const f = ks2VoiceFile(t); if (f && VoicePack.ok) Talk.as(null, () => VoicePack.play(f, Math.min(50, d), 1.0, 1)); }   // 中国の群れ：声だけ（字幕なし）
 // 矢の見た目（王から見える範囲）
 function hgArrowFx(o, x, z, sure) { if (HG.tr.length > (LITE ? 60 : 140)) return; const pp = player.pos; if ((o.x - pp.x) ** 2 + (o.z - pp.z) ** 2 > 260 * 260 && (x - pp.x) ** 2 + (z - pp.z) ** 2 > 260 * 260) return;
-  const a = new V3(o.x, 1.5, o.z), b = new V3(x + (sure ? 0 : rand(-2.5, 2.5)), 0.4, z + (sure ? 0 : rand(-2.5, 2.5))), d = a.distanceTo(b); const m = arrowWar.clone(); m.scale.setScalar(1.6); stageRoot.add(m); HG.tr.push({ a, b, t: 0, T: Math.min(2.4, 0.35 + d / 42), h: Math.min(22, 1 + d * 0.2), m, stick: true }); }
+  const bx = x + (sure ? 0 : rand(-2.5, 2.5)), bz = z + (sure ? 0 : rand(-2.5, 2.5));
+  const a = new V3(o.x, hgGY(o.x, o.z) + 1.5, o.z), b = new V3(bx, hgGY(bx, bz) + (sure ? 0.4 : 0.12), bz), d = a.distanceTo(b); const m = arrowWar.clone(); m.scale.setScalar(1.6); stageRoot.add(m); HG.tr.push({ a, b, t: 0, T: Math.min(2.4, 0.35 + d / 42), h: Math.min(22, 1 + d * 0.2), m, stick: true }); }
+function hgGY(x, z) { return (typeof KT !== 'undefined' && KT.on && typeof ktH === 'function') ? ktH(x, z) : 0; }   // 拠点の野は起伏がある：矢は地面の高さへ落ちて刺さる
 function hgTrTick(dt) { const Q = new V3(); for (let i = HG.tr.length - 1; i >= 0; i--) { const T = HG.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T); if (k >= 1) { HG.tr.splice(i, 1);
-    if (T.stick) { T.m.position.y = 0.3; HG.stuck.push(T.m); if (HG.stuck.length > (LITE ? 150 : 400)) stageRoot.remove(HG.stuck.shift()); } else if (!T.keep) stageRoot.remove(T.m); if (T.on) T.on(); continue; }   // 外れた矢はしばらく地面に刺さったまま
+    if (T.stick) { const _dv = new V3(0, 0, 1).applyQuaternion(T.m.quaternion); if (_dv.y > -0.35) { _dv.y = -0.35; _dv.normalize(); T.m.quaternion.setFromUnitVectors(Z, _dv); } T.m.position.set(T.b.x - _dv.x * 0.25, hgGY(T.b.x, T.b.z) + 0.3, T.b.z - _dv.z * 0.25); HG.stuck.push(T.m); if (HG.stuck.length > (LITE ? 150 : 400)) stageRoot.remove(HG.stuck.shift()); } else if (!T.keep) stageRoot.remove(T.m); if (T.on) T.on(); continue; }   // 外れた矢はしばらく地面に刺さったまま
   Q.lerpVectors(T.a, T.b, k); Q.y += Math.sin(k * Math.PI) * T.h; if (T.side) { const dx = T.b.x - T.a.x, dz = T.b.z - T.a.z, l = Math.hypot(dx, dz) || 1, s = Math.sin(k * Math.PI) * T.side; Q.x += -dz / l * s; Q.z += dx / l * s; }
   if (T.spin) { T.m.position.copy(Q); T.m.rotation.y += dt * 24; continue; }
   const pv = T.m.position.clone(); T.m.position.copy(Q); const dv = Q.clone().sub(pv); if (dv.lengthSq() > 1e-6) T.m.quaternion.setFromUnitVectors(Z, dv.normalize()); } }

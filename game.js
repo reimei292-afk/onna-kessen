@@ -40689,11 +40689,13 @@ function hsCyl(r, h, x, y, z, mat, solid) {
 function hsAddBridge(x0, x1, z0, z1, y, y1, alongX, rev) {
   (HS.bridges || (HS.bridges = [])).push({ x0, x1, z0, z1, y, y0: y, y1: y1 == null ? y : y1, alongX: !!alongX, rev: !!rev });
   const M = hsMats(); const yy0 = y, yy1 = y1 == null ? y : y1, mid = (yy0 + yy1) / 2, thick = 0.35;
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, thick, z1 - z0), M.earth);
-  mesh.position.set((x0 + x1) / 2, mid, (z0 + z1) / 2);
-  if (y1 != null && y1 !== y) {
-    const dx = x1 - x0, dz = z1 - z0, dy = y1 - y, len = alongX ? dx : dz;
-    mesh.rotation[alongX ? 'z' : 'x'] = Math.atan2(dy, len) * (alongX ? -1 : 1) * (rev ? -1 : 1);
+  const sl = y1 != null && y1 !== y, dyy = (y1 == null ? y : y1) - y, lenA = alongX ? x1 - x0 : z1 - z0, slen = sl ? Math.hypot(lenA, dyy) : lenA;
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(alongX ? slen : x1 - x0, thick, alongX ? z1 - z0 : slen), M.earth);
+  mesh.position.set((x0 + x1) / 2, mid - thick / 2, (z0 + z1) / 2);   // 上面が歩く高さ（hsH）に合う
+  if (sl) {
+    // 坂の向き：y0 から y1 へ上る（rev なら逆）。以前は向きが逆で、見た目と足元が食い違っていた
+    const a = Math.atan2(dyy, lenA) * (rev ? -1 : 1);
+    if (alongX) mesh.rotation.z = a; else mesh.rotation.x = -a;
   }
   stageRoot.add(mesh); if (HS.stat) HS.stat.push(mesh);
   // 欄干
@@ -41057,6 +41059,7 @@ function hsDorui() {
   const crestPerch = (a0, a1, c, alongX) => {
     for (let t = a0 + 1.6; t < a1 - 1.6; t += 2.6) {
       const x = alongX ? t : c, z = alongX ? c : t;
+      if (alongX && c < so.z0 && Math.abs(Math.abs(x) - 48) < 5.5) continue;   // 攻城塔の仮橋の切通しには立たない
       (HS.perches || (HS.perches = [])).push({ x, z, y: h, taken: null, kind: 'dorui' });
     }
   };
@@ -42290,6 +42293,65 @@ function hsOnGate(G, why) {
 }
 
 
+
+// 曲輪の道筋：外(0)→枡形(1)→三の丸(2)→二の丸(3)→本丸(4)。堀や石垣を突っ切らず、土橋と門を通る
+const HS_PORT = [
+  { a: [0, -119], b: [1.5, -96], gate: 'ote1' },   // 大手 土橋 → 一の門 → 枡形
+  { a: [8, -90], b: [21, -90], gate: 'ote2' },     // 枡形 → 二の門 → 三の丸
+  { a: [0, -63], b: [0, -46], gate: 'ni' },        // 三の丸 → 二の丸
+  { a: [0, -30], b: [0, -14], gate: 'hon' }        // 二の丸 → 本丸
+];
+function hsZoneI(x, z) {
+  if (hsIn(HS_HON, x, z, 1.6)) return 4; if (hsIn(HS_NI, x, z, 1.6)) return 3;
+  if (x >= -5 && x <= HS_MASU.x1 && z >= HS_SAN.z0 - 1.6 && z <= HS_MASU.z1) return 1;
+  if (hsIn(HS_SAN, x, z, 1.6)) return 2; return 0;
+}
+function hsSegHit(r, ax, az, bx, bz) {   // 線分が矩形を通るか（粗い標本）
+  for (let i = 1; i < 12; i++) { const t = i / 12, x = ax + (bx - ax) * t, z = az + (bz - az) * t; if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return true; } return false;
+}
+function hsDetour(zi, x, z, tx, tz) {   // 同じ曲輪の中で、内側の曲輪（＋堀）を回り込む
+  const R = zi === 0 ? HS_SAN : zi === 2 ? HS_NI : zi === 3 ? HS_HON : null; if (!R) return null;
+  const pad = (zi === 0 ? HS_SAN_MOAT : zi === 2 ? HS_NI_MOAT : HS_HON_MOAT) + 1.5;
+  const P = { x0: R.x0 - pad, x1: R.x1 + pad, z0: R.z0 - pad, z1: R.z1 + pad };
+  if (!hsSegHit(P, x, z, tx, tz)) return null;
+  const sx = (x + tx) < 0 ? P.x0 - 0.5 : P.x1 + 0.5;
+  if (x > P.x0 && x < P.x1) return [x < 0 ? P.x0 - 0.5 : P.x1 + 0.5, z > P.z1 ? P.z1 + 0.5 : P.z0 - 0.5];
+  if (tz < P.z0 || tz > P.z1) return [sx, tz < P.z0 ? P.z0 - 0.5 : P.z1 + 0.5];
+  return [x < P.x0 ? P.x0 - 0.5 : P.x1 + 0.5, tz];
+}
+function hsRoute(o, tx, tz) {
+  const zc = hsZoneI(o.x, o.z), zt = hsZoneI(tx, tz);
+  { const B = hsOutMoat(zc, o.x, o.z); if ((B[0] !== o.x || B[1] !== o.z) && !hsNearPort(o.x, o.z)) return B; }   // 堀に入ってしまった者は、まず岸へ上がる
+  if (zc !== zt) {
+    const up = zt > zc, P = HS_PORT[up ? zc : zc - 1]; if (!P) return [tx, tz];
+    const A = up ? P.a : P.b, B = up ? P.b : P.a;
+    const G = hsGateById(P.gate), shut = G && !G.open && o.team === hsAtkT();
+    // 通路（AB の帯）にいれば向こう側へ、いなければまず手前の口へ
+    const abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((o.x - A[0]) * abx + (o.z - A[1]) * abz) / L2));
+    const cx = A[0] + abx * t, cz = A[1] + abz * t, inC = Math.hypot(o.x - cx, o.z - cz) < 3.2 && Math.hypot(o.x - A[0], o.z - A[1]) < Math.sqrt(L2) + 1;
+    if (inC && !shut) return [B[0] + (o.ox || 0) * 0.15, B[1]];
+    const ax = A[0] + (shut ? (o.ox || 0) * 0.5 : (o.ox || 0) * 0.15), az = A[1];
+    return hsDetour(zc, o.x, o.z, ax, az) || [ax, az];
+  }
+  const T = hsOutMoat(zc, tx, tz); return hsDetour(zc, o.x, o.z, T[0], T[1]) || T;
+}
+function hsOutMoat(zi, tx, tz) {   // 目標が堀の中なら手前の岸へ
+  const R = zi === 0 ? HS_SAN : zi === 2 ? HS_NI : zi === 3 ? HS_HON : null; if (!R) return [tx, tz];
+  const pad = (zi === 0 ? HS_SAN_MOAT : zi === 2 ? HS_NI_MOAT : HS_HON_MOAT) + 1.2;
+  if (!hsIn(R, tx, tz, pad)) return [tx, tz];
+  const d = [tx - (R.x0 - pad), (R.x1 + pad) - tx, tz - (R.z0 - pad), (R.z1 + pad) - tz], m = Math.min(...d), i = d.indexOf(m);
+  return i === 0 ? [R.x0 - pad - 0.3, tz] : i === 1 ? [R.x1 + pad + 0.3, tz] : i === 2 ? [tx, R.z0 - pad - 0.3] : [tx, R.z1 + pad + 0.3];
+}
+function hsWet(x, z) {   // 水堀の中（土橋・石垣の上は除く）
+  if (!(hsInMoat(HS_SAN, HS_SAN_MOAT, x, z) || hsInMoat(HS_NI, HS_NI_MOAT, x, z) || hsInMoat(HS_HON, HS_HON_MOAT, x, z))) return false;
+  return hsH(x, z) < -0.3;
+}
+function hsNearPort(x, z) { for (const P of HS_PORT) { const A = P.a, B = P.b, abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((x - A[0]) * abx + (z - A[1]) * abz) / L2)); if (Math.hypot(x - A[0] - abx * t, z - A[1] - abz * t) < 5) return true; } return false; }
+function hsKeepOffWall(o) {   // 槍・刀の者は石垣の上（狭間道）に立たない。上に立つのは弓だけ
+  const zi = hsZoneI(o.x, o.z), R = zi === 4 ? HS_HON : zi === 3 ? HS_NI : zi === 2 ? HS_SAN : null; if (!R || hsNearPort(o.x, o.z)) return;
+  const m = 1.2, e = hsEdge(R, o.x, o.z); if (e >= m) return;
+  o.x = Math.max(R.x0 + m, Math.min(R.x1 - m, o.x)); o.z = Math.max(R.z0 + m, Math.min(R.z1 - m, o.z));
+}
 function hsSim(dt) {
   const parts = LITE ? 4 : 3, k = (HS.sim++ % parts), sdt = dt * parts;
   if (k === 0) hsGridBuild();
@@ -42309,9 +42371,13 @@ function hsSim(dt) {
     }
     if (o.runTo) { tx = o.runTo.x; tz = o.runTo.z; }
     if (o.flee > 0) { tz += (o.team === hsDefT() ? 8 : -8); }
+    if (!o.runTo || !o.runTo.direct) { const r = hsRoute(o, tx, tz); tx = r[0]; tz = r[1]; }
     const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz);
     if (d > 0.6) { o.x += dx / d * Math.min(d, sp * sdt); o.z += dz / d * Math.min(d, sp * sdt); o.hx = dx / d; o.hz = dz / d; }
     else if (!o.hx && !o.hz) { o.hx = 0; o.hz = o.team === hsAtkT() ? 1 : -1; }
+    if (!o.arch) hsKeepOffWall(o);
+    if (hsWet(o.x, o.z)) { if (o.lx != null && !hsWet(o.lx, o.lz)) { if (!hsWet(o.x, o.lz)) o.z = o.lz; else if (!hsWet(o.lx, o.z)) o.x = o.lx; else { o.x = o.lx; o.z = o.lz; } } }   // 水堀には入らない（横に滑るか、元の場所へ）
+    else { o.lx = o.x; o.lz = o.z; }
     if (!o.perch) o.y = hsH(o.x, o.z);
     // 射撃
     if (o.arch && o.cd <= 0 && U.confT <= 0 && U.st !== 'rout') { const t = hsPickTarget(o); if (t) hsShoot(o, t); else o.cd = rand(0.5, 1); }
@@ -42321,7 +42387,7 @@ function hsSim(dt) {
       if (t && dd < 2.4) { o.cd = rand(1.1, 1.8); o.atk = 0.4; hsHurt(t, 1, false); }
     }
   }
-  if (k === 0) hgSep(HS.px);
+  if (k === 0) { hgSep(HS.px); for (const o of HS.px) if (o.alive && !o.real && !o.perch && o.lx != null && hsWet(o.x, o.z) && !hsWet(o.lx, o.lz)) { o.x = o.lx; o.z = o.lz; o.y = hsH(o.x, o.z); } }   // 押し合いでも堀へ落ちない
   // 隊の重心
   if (k === 0) for (const U of [...(HS.UB || []), ...(HS.UO || [])]) {
     let sx = 0, sz = 0, n = 0, px = 0, pz = 0, pn = 0;

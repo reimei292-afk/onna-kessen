@@ -6715,7 +6715,7 @@ function ktOpen(dt) {
         HG.later.push([HG.t + 4.6, () => { if (KT.fastU && KT.fastU.lead) hgZh(KT.fastU.lead, KT_ZH.rush, 1.8); }]);
       }
     }
-    if (KT.pt > 5.2) { KT.ph = 'battle'; KT.pt = 0; KT.battleT = 0; showBanner('全隊、迎え撃て', ''); bannerTimer = 2.8; }
+    if (KT.pt > 5.2) { KT.ph = 'battle'; KT.pt = 0; KT.battleT = 0; for (const U of HG.UB.concat(HG.UO)) if (U.role !== 'gar' && U.role !== 'det' && typeof hgStaffMedics === 'function') hgStaffMedics(U);   /* 各隊に衛生兵（浅手はその場で手当て） */ showBanner('全隊、迎え撃て', ''); bannerTimer = 2.8; }
   }
 }
 function ktMurmur(dt) {
@@ -6934,19 +6934,26 @@ function ktMerge(D, G) { KT.merges = (KT.merges || 0) + 1; (KT.mergeLog = KT.mer
 // 一人ずつ：深手の者は自分で近くの救護へ歩き、手当て（矢も抜く）を受けて隊へ戻る
 function ktWounded(dt) {
   KT.wT = (KT.wT || 0) - dt; if (KT.wT > 0) return; KT.wT = 0.5;
+  for (const U of HG.UB.concat(HG.UO)) { U._wN = 0; U._fq = 0; U._md = 0; for (const m of U.mem) if (m.alive) { if (m.ktW) U._wN++; if (m.ktFt) U._fq++; if (m.medic) U._md++; } }
   for (const o of HG.px) {
     if (!o.alive || o.real || o.named) continue;
     if (o.ktW) {
       let B = o.ktW; if (B.team !== o.team) { B = o.ktW = ktMed(o.team, o.x, o.z); if (!B) continue; }
       if (Math.hypot(o.x - B.x - (o.ktWx || 0), o.z - B.z - (o.ktWz || 0)) < 4) {
         o.ktWt = (o.ktWt || 0) + 0.5;
-        if (o.ktWt >= 4) { o.hp = 5; o.ktW = null; o.ktWt = 0; o.gx = null; if (typeof hgClearStuck === 'function') hgClearStuck(o); KT.healed = (KT.healed || 0) + 1;
+        if (o.ktWt >= 4) { o.hp = 5; o.ktLt = null; o.ktW = null; o.ktWt = 0; o.gx = null; if (typeof hgClearStuck === 'function') hgClearStuck(o); KT.healed = (KT.healed || 0) + 1;
           if (!o.U || o.U.st === 'gone' || !o.U.up) { const G = B.gar && B.gar.st !== 'gone' ? B.gar : (o.team === 'blue' ? HG.UB : HG.UO).find(U => U.role === 'hq'); if (G) { if (o.U) { const i = o.U.mem.indexOf(o); if (i >= 0) o.U.mem.splice(i, 1); } o.U = G; G.mem.push(o); hgSlotAll(G); } } }
         if (o.team === 'blue' && B.hq && HG.by.kujo && (KT.kujoT || 0) < HG.t && Math.hypot(B.x - player.pos.x, B.z - player.pos.z) < 60) { KT.kujoT = HG.t + 60; ktLine('kujo', 'treat', 1.6); }
       }
       continue;
     }
+    if (o.ktFt) { if (HG.t >= o.ktFt) { o.ktFt = 0; o.ktLt = null; o.hp = Math.max(o.hp, 4); KT.healed = (KT.healed || 0) + 1; KT.fieldHeal = (KT.fieldHeal || 0) + 1; } continue; }   // 隊の衛生兵がその場で手当て中
     if (o.hp > 2 || !o.U || o.U.role === 'hq') continue;
+    { const U = o.U;
+      if (o.ktLt == null) o.ktLt = o.hp >= 1.5 || Math.random() < 0.5;   // 浅手か深手か（一度だけ決める）
+      if (o.ktLt && U._md > 0 && U._fq < U._md * 3) { o.ktFt = HG.t + 7; U._fq++; continue; }   // 浅手は隊の衛生兵が列の中で手当てする（救護所まで歩かない）
+      if (U._wN >= Math.max(3, Math.round((U.up || 0) * 0.05))) continue;   // 救護所へ歩く深手は一度に少しずつ（何百人も列をなさない）
+      U._wN++; }
     const B = ktMed(o.team, o.x, o.z); if (!B || Math.hypot(B.x - o.x, B.z - o.z) > 260) continue;
     if (B.gar === o.U && Math.hypot(B.x - o.x, B.z - o.z) < B.r) { o.ktW = B; o.ktWx = rand(-3, 3); o.ktWz = rand(-3, 3); o.ktWt = 0; continue; }
     o.ktW = B; o.ktWx = rand(-4, 4); o.ktWz = rand(-4, 4); o.ktWt = 0; o.flee = 0; KT.wnd = (KT.wnd || 0) + 1;
@@ -7029,7 +7036,8 @@ function ktNeedHelp(B) {
   const pr = ktPres(B), foe = B.team === 'blue' ? pr.o : pr.b;
   if (B.hq) return foe >= 8;
   const g = B.gar, up = g && g.st !== 'gone' ? g.mem.filter(o => o.alive).length : 0;
-  return (up < 22 && foe > 3) || up < 16;
+  const n0 = g && g.st !== 'gone' ? Math.max(g.n0 || 0, g.n || 0) : 0;
+  return (n0 > 0 && up < n0 * 0.5) || (up < 22 && foe > 3) || up < 16;   // 守りが半分を切ったら援軍を呼ぶ
 }
 function ktTgtBase(U, how) {
   const foe = (KT.bases || []).filter(B => B.team !== U.team);

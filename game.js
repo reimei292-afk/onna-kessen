@@ -40531,10 +40531,10 @@ function hsH(x, z) {
   }
   // 本丸 → 二の丸 → 三の丸（中は盛土、縁は石垣の上の通路）
   if (hsIn(HS_HON, x, z, 0)) return HS_HON.y;
-  if (hsIn(HS_HON, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_HON.z0) < 1.7 ? HS_HON.y : HS_HON.y + 1;   // 本丸の狭間道（門の通路は床の高さ）
+  if (hsIn(HS_HON, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_HON.z0) < 1.7 ? (z < HS_HON.z0 ? HS_NI.y : HS_HON.y) : HS_HON.y + 1;   // 本丸の狭間道（門の通路は床の高さ）
   if (hsInMoat(HS_HON, HS_HON_MOAT, x, z)) return HS_NI.y;   // 見た目は二の丸の床（堀は描かれていない）
   if (hsIn(HS_NI, x, z, 0)) return HS_NI.y;
-  if (hsIn(HS_NI, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_NI.z0) < 1.7 ? HS_NI.y : HS_NI.y + 1;
+  if (hsIn(HS_NI, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_NI.z0) < 1.7 ? (z < HS_NI.z0 ? HS_SAN.y : HS_NI.y) : HS_NI.y + 1;
   if (hsInMoat(HS_NI, HS_NI_MOAT, x, z)) return HS_SAN.y;   // 見た目は三の丸の床
   if (hsIn(HS_SAN, x, z, 0)) return HS_SAN.y;
   if (hsIn(HS_SAN, x, z, 1.6)) return HS_SAN.y + 1;
@@ -41133,7 +41133,7 @@ function hsPlane(x0, x1, z0, z1, y, mat) {
 }
 function hsGround() {
   const M = hsMats();
-  const so = HS_SO, th = so.th, mo = HS_SO_MOAT, R = 260;
+  const so = HS_SO, th = so.th, mo = HS_SO_MOAT, R = 360;   // 遠くから進んでくる敵の足元まで地面を敷く
   const ox0 = so.x0 - th - mo, ox1 = so.x1 + th + mo, oz0 = so.z0 - th - mo, oz1 = so.z1 + th + mo;
   const ix0 = so.x0 - th, ix1 = so.x1 + th, iz0 = so.z0 - th, iz1 = so.z1 + th;
   // 野外（空堀の外側）。平面を割って空堀の穴を残す

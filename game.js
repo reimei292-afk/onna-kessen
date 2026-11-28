@@ -6277,12 +6277,12 @@ const KT = { on: false };
 const KT_TITLE = {
   sanjo: '本陣 三条殿', sumi: '本陣 指揮 白瀬', kujo: '本陣 軍医 九条大将', sysop: '本陣 諜報 霧島少将',
   hiyori: '本陣 伝令 小日向', flute: '本陣 信号 小鳥遊',
-  ojou: '西園寺隊 隊長 西園寺', shinobu: '西園寺隊 氷室', chikage: '西園寺隊 一条少将',
-  omiya: '大宮隊 隊長 大宮', akari: '大宮隊 夏目',
-  fumi: '綾瀬隊 隊長 綾瀬', midori: '綾瀬隊 村瀬',
+  ojou: '西園寺隊 隊長 西園寺', shinobu: '西園寺隊 副官 氷室', chikage: '西園寺隊 副官 一条少将',
+  omiya: '大宮隊 隊長 大宮', akari: '大宮隊 副官 夏目',
+  fumi: '綾瀬隊 隊長 綾瀬', midori: '綾瀬隊 副官 村瀬女爵',
   sec2: '早瀬隊 隊長 早瀬', reika: '早瀬隊 副官 白石中将',
   hirose: '広瀬隊 隊長 広瀬', shizuka: '広瀬隊 副官 久遠中将',
-  sec4: '宮下隊 隊長 宮下', sec3: '宮下隊 副官 桜井中将',
+  sec4: '宮下隊 隊長 宮下大佐', sec3: '宮下隊 副官 桜井中将',
   misaki: '篠原 美咲 大尉'
 };
 const KT_RIDE = { sumi: 1, ojou: 1, shinobu: 1, chikage: 1, omiya: 1, akari: 1, fumi: 1, midori: 1, sec2: 1, reika: 1, hirose: 1, shizuka: 1, sec4: 1, sec3: 1, hiyori: 1 };
@@ -6996,7 +6996,7 @@ function ktUnits(dt) {
       F = ktFoe(U, 90); const fd = F ? Math.hypot(F.x - U.x, F.z - U.z) : 1e9;
       const back = O && O.k === 'back', cover = O && O.k === 'cover' && O.V && O.V.st !== 'gone';
       const fightR = back ? 8 : cover ? 14 : U.reinT > HG.t ? 12 : 24;
-      if (F && fd < fightR) { const C = ktBody(F), cx = C[0] - U.x, cz = C[1] - U.z, d = Math.hypot(cx, cz) || 1; U.st = 'fight'; U.fd = Math.max(0, d - C[2]); const push = ((U.mor - (F.mor || 50)) / 100) * 0.7 * dt, close = d - C[2] - 2.4; U.tx = U.x + cx / d * (push * 20 + close); U.tz = U.z + cz / d * (push * 20 + close); }   // 隊の前列を敵の隊の体の手前（槍の届く間合い）で止める：隊どうしが重ならない
+      if (F && fd < fightR) { const C = ktBody(F), cx = C[0] - U.x, cz = C[1] - U.z, d = Math.hypot(cx, cz) || 1; U.st = 'fight'; U.fd = Math.max(0, d - C[2]); const push = ((U.mor - (F.mor || 50)) / 100) * 0.7 * dt, close = d - C[2] - 3; U.tx = U.x + cx / d * (push * 20 + close); U.tz = U.z + cz / d * (push * 20 + close); }   // 隊の前列を敵の隊の体の手前（槍の届く間合い）で止める：隊どうしが重ならない
       else if (cover) { const V = O.V, VF = V.F || F; const bx = V.team === 'blue' ? 0 : 0, bz = V.team === 'blue' ? -1 : 1; let ax = -V.fx || bx, az = -V.fz || bz; U.tx = V.x + ax * 28; U.tz = V.z + az * 28; U.st = Math.hypot(U.tx - U.x, U.tz - U.z) > 14 ? 'march' : 'support'; if (VF) U.aim = { x: VF.x, z: VF.z }; }
       else if (O && O.k === 'flank' && O.V && O.V.st !== 'gone' && O.V.up > 0) { const T = O.V, A = O.A; let lx = T.fz, lz = -T.fx; const sd = Math.sign((U.x - T.x) * lx + (U.z - T.z) * lz) || 1; U.tx = T.x + lx * sd * 14 - T.fx * 4; U.tz = T.z + lz * sd * 14 - T.fz * 4; if (Math.hypot(U.tx - U.x, U.tz - U.z) < 8) { U.tx = T.x; U.tz = T.z; } U.st = 'march'; }
       else if (O && (O.k === 'go' || O.k === 'back' || O.k === 'conv')) { const d = Math.hypot(O.x - U.x, O.z - U.z); U.tx = O.x; U.tz = O.z; U.st = d > 12 ? (F && fd < 40 && !back ? 'adv' : 'march') : (back ? 'hold' : 'adv'); if (d <= 12) { if (!O.arr && O.B && O.B.team === U.team) ktSitE(U, 'relief'); O.arr = O.arr || HG.t; if (U.role === 'det' && O.B) ktDetArrive(U, O.B); } }
@@ -7661,7 +7661,7 @@ function hgSwing(ax, az, e, p) { if (!e || !e.alive) return; if (e.real) { if (i
   const front = (e.hx * (ax - e.x) + e.hz * (az - e.z)) > 0, k = e.w === 'shield' && front ? 'block' : r < p + 0.33 ? (e.arch ? 'dodge' : 'parry') : r < p + 0.58 ? 'dodge' : null; if (!k) return;
   e.re = k; e.reT = 0.35; e.reS = Math.random() < 0.5 ? 1 : -1; const pp = player.pos; if (k !== 'dodge' && (e.x - pp.x) ** 2 + (e.z - pp.z) ** 2 < 900) { const q = new V3(e.x, 1.1, e.z); if (sfxGate(q, 30)) { if (k === 'block') Sfx.thunkAt(q, true); else if (Sfx.clashAt) Sfx.clashAt(q); } } }
 // 拠点の野：隊列を崩さない。前の二列だけが前へ出て打ち合い、後ろの列は自分の場所で待つ（目の前に来た敵だけ相手にする）
-function ktEngR(U, o, eng) { const L = U.sl, d = L && o.slot * 2 + 1 < L.length ? L[o.slot * 2 + 1] : Math.floor(o.slot / (U.cols || 12)) * HG_GAPZ, row = d / HG_GAPZ; if (U.fm === 'hou') return eng ? (o.slot < (U.up || 20) * 0.4 ? 5 : 2.2) : 2.2; return eng ? (row < 1.5 ? 5.5 : row < 3.5 ? 3 : 2) : 2.4; }
+function ktEngR(U, o, eng) { const L = U.sl, d = L && o.slot * 2 + 1 < L.length ? L[o.slot * 2 + 1] : Math.floor(o.slot / (U.cols || 12)) * HG_GAPZ, row = d / HG_GAPZ; if (U.fm === 'hou') return eng ? (o.slot < (U.up || 20) * 0.4 ? 4 : 2) : 2; return eng ? (row < 1.5 ? 4 : row < 3.5 ? 2.6 : 1.8) : 2.2; }   // 正面がぶつかっても列のまま：前の二列だけが少し踏み出す
 function ktNearS(o, U, foe, eng) { const sl = hgSlot(U, o.slot); return hgNear(sl[0], sl[1], foe, ktEngR(U, o, eng)); }   // 自分の持ち場（列の枠）から届く敵だけ相手にする：追いかけて列から離れない
 function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts = LITE ? 4 : 3, k = HG.sim++ % parts; if (k === 0) hgGridBuild();
   for (let i = 0; i < n; i++) { const o = A[i]; if (!o.alive || o.real) continue; const U = o.U, foe = o.team === 'blue' ? 'orange' : 'blue'; if (o.atk > 0) o.atk -= dt; if (o.kn > 0) o.kn -= dt; if (o.reT > 0) o.reT -= dt;

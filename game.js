@@ -40651,11 +40651,11 @@ function hsLadder(x, z, y0, y1, alongZ, sign) {
   if (alongZ !== false) {
     const z0 = z, z1 = z + dir * len, za = Math.min(z0, z1), zb = Math.max(z0, z1), zc = (za + zb) / 2;
     for (const sx of [-1, 1]) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, (y1 - y0) + 0.3, 0.08), M.woodD);
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.13, (y1 - y0) + 0.3, 0.13), M.woodD);
       p.position.set(x + sx * 0.32, (y0 + y1 + 0.15) / 2, zc); stageRoot.add(p); posts.push(p);
     }
     for (let y = y0 + 0.35; y < y1 + 0.12; y += 0.35) {
-      const r = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.06, 0.06), M.woodL);
+      const r = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.085, 0.085), M.woodL);
       r.position.set(x, y, zc); stageRoot.add(r); rungs.push(r);
     }
     const L = { x0: x - 0.6, x1: x + 0.6, z0: za, z1: zb, y0, y1, dir, alongZ: true };
@@ -40663,11 +40663,11 @@ function hsLadder(x, z, y0, y1, alongZ, sign) {
   }
   const x0 = x, x1 = x + dir * len, xa = Math.min(x0, x1), xb = Math.max(x0, x1), xc = (xa + xb) / 2;
   for (const sz of [-1, 1]) {
-    const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, (y1 - y0) + 0.3, 0.08), M.woodD);
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.13, (y1 - y0) + 0.3, 0.13), M.woodD);
     p.position.set(xc, (y0 + y1 + 0.15) / 2, z + sz * 0.32); stageRoot.add(p); posts.push(p);
   }
   for (let y = y0 + 0.35; y < y1 + 0.12; y += 0.35) {
-    const r = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.64), M.woodL);
+    const r = new THREE.Mesh(new THREE.BoxGeometry(0.085, 0.085, 0.66), M.woodL);
     r.position.set(xc, y, z); stageRoot.add(r); rungs.push(r);
   }
   const L = { x0: xa, x1: xb, z0: z - 0.6, z1: z + 0.6, y0, y1, dir, alongZ: false };

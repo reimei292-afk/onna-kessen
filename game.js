@@ -43213,7 +43213,7 @@ function updatePlayer(dt) {
   }
   if (HS.on && !player.climbing && !player.autoClimb) {   // 蓮見：段差（石垣・土塁・櫓台）へ一歩で 0.75m 以上は上がれない（ぽんと上に乗る瞬間移動を防ぐ）
     const k = player.hsOk;
-    if (k && player.onGround && gh - player.pos.y > 0.75 && Math.hypot(player.pos.x - k[0], player.pos.z - k[1]) < 3) { player.pos.x = k[0]; player.pos.z = k[1]; gh = k[2]; player.lastXZ = [k[0], k[1]]; player.terrOk = null; }
+    if (k && gh - player.pos.y > 0.75 && Math.hypot(player.pos.x - k[0], player.pos.z - k[1]) < 3) { player.pos.x = k[0]; player.pos.z = k[1]; gh = k[2]; player.lastXZ = [k[0], k[1]]; player.terrOk = null; }
     else if (player.pos.y <= gh + 0.3) player.hsOk = [player.pos.x, player.pos.z, gh];
   } else if (HS.on) player.hsOk = null;
   if (player.pos.y <= gh && !player.climbing && !player.autoClimb) { player.pos.y = gh; player.vy = 0; player.onGround = true; }

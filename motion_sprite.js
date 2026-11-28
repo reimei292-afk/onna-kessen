@@ -69,7 +69,10 @@
     var S = meta.seq, a = viewDeg(st), n, k;
     switch (st.state) {
       case 'walk': {
-        var sec = Math.round(a / 45) % 8, w = meta.walk8[sec], q = S[w[0]].f, N = q.length;
+        var sec = Math.round(a / 45) % 8;
+        if (e._msSec != null) { var mid = e._msSec * 45, da = ((a - mid + 540) % 360) - 180; if (Math.abs(da) < 28) sec = e._msSec; }
+        e._msSec = sec;
+        var w = meta.walk8[sec], q = S[w[0]].f, N = q.length;
         var t = st.stepT;
         if (t == null) { e._msT = (e._msT || 0) + (st.dt || 0) * (st.speed || 1.2) * (meta.stepsPerMeter || 1.6) * Math.PI; t = e._msT; }
         var u = t / TAU; u -= Math.floor(u);

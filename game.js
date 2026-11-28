@@ -6407,7 +6407,56 @@ function hgWeapons(n, ncav) { const sh = new THREE.Mesh(new THREE.CylinderGeomet
 function hgMount(e) { const m = new THREE.Mesh(HG.W.horseG, HG.W.horseM); m.position.y = -HG_RY; m.castShadow = true; e.s.add(m); e.hgRide = m; }   // 隊長の馬
 function hgBmMesh() { const M = HG.bmM || (HG.bmM = { m: new THREE.MeshLambertMaterial({ color: 0x8a5a2c }), g: new THREE.BoxGeometry(0.32, 0.03, 0.07) }); const g = new THREE.Group(); for (const a of [0.6, -0.6]) { const b = new THREE.Mesh(M.g, M.m); b.rotation.y = a; b.position.set(Math.sin(a) * 0.11, 0, 0.13 * Math.cos(a) - 0.1); g.add(b); } g.scale.setScalar(2.2); return g; }
 // ---- 群れ：絵の組（gid ごとの InstancedMesh） ----
-function hgGroup(gid) { if (HG.pg[gid] !== undefined) return HG.pg[gid]; const G = ks2PxGroup(gid, 900); if (G) { G.cap = 900; G.dl = []; G.gid = gid; } HG.pg[gid] = G || null; return HG.pg[gid]; }
+function hgGroup(gid) { if (HG.pg[gid] !== undefined) return HG.pg[gid]; const G = ks2PxGroup(gid, 900); if (G) { G.cap = 900; G.dl = []; G.gid = gid; hgPxViews(G, gid); } HG.pg[gid] = G || null; return HG.pg[gid]; }
+function hgPxViews(G, gid) {
+  const g = GIRLS[gid]; if (!g || !G.im) return;
+  const cap = (G.im.instanceMatrix && G.im.instanceMatrix.count) || G.cap || 900;
+  const mk = fr => {
+    if (!fr || !fr.tex) return null;
+    const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, 0.5, 0);
+    const mat = new THREE.MeshBasicMaterial({ map: fr.tex, transparent: true, alphaTest: 0.45, depthWrite: true, side: THREE.DoubleSide, fog: true });
+    const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; stageRoot.add(im);
+    const img = fr.tex.image; return { im, asp: (img && img.width) ? img.width / img.height : G.asp };
+  };
+  G.vxS = mk(g.side); G.vxB = mk(g.back);
+}
+function hgPxPick(o, camYaw) {
+  const face = Math.atan2(o.hx || 0, o.hz || 1);
+  const c = Math.cos(face - camYaw);
+  let v = o.pv || 'front';
+  const m = 0.12;
+  if (c > 0.5 + (v === 'front' ? -m : m)) v = 'front';
+  else if (c < -0.5 - (v === 'back' ? -m : m)) v = 'back';
+  else v = 'side';
+  o.pv = v;
+  const flip = (Math.sin(face) * Math.cos(camYaw) - Math.cos(face) * Math.sin(camYaw) > 0) ? -1 : 1;
+  return { v, flip };
+}
+function hgPxPut(G, o, Q, except) {
+  const i = o.i;
+  if (except !== 'front') G.im.setMatrixAt(i, HG_Z0);
+  if (G.vxS && except !== 'side') G.vxS.im.setMatrixAt(i, HG_Z0);
+  if (G.vxB && except !== 'back') G.vxB.im.setMatrixAt(i, HG_Z0);
+  if (except === 'front') G.im.setMatrixAt(i, Q.matrix);
+  else if (except === 'side' && G.vxS) G.vxS.im.setMatrixAt(i, Q.matrix);
+  else if (except === 'back' && G.vxB) G.vxB.im.setMatrixAt(i, Q.matrix);
+  else G.im.setMatrixAt(i, Q.matrix);
+}
+function hgTankPush(p, r) {
+  if (!HG.on || !HG.veh || !HG.veh.length) return;
+  r = r == null ? 0.4 : r;
+  for (const T of HG.veh) {
+    const fx = T.fx || Math.sin(T.ry || 0), fz = T.fz || Math.cos(T.ry || 0);
+    const rx = fz, rz = -fx;
+    const dx = p.x - T.x, dz = p.z - T.z;
+    const f = dx * fx + dz * fz, s = dx * rx + dz * rz;
+    const hf = 2.05 + r, hs = 1.15 + r;
+    if (Math.abs(f) >= hf || Math.abs(s) >= hs) continue;
+    const pf = hf - Math.abs(f), ps = hs - Math.abs(s);
+    if (pf < ps) { const sig = f >= 0 ? 1 : -1; p.x += fx * pf * sig; p.z += fz * pf * sig; }
+    else { const sig = s >= 0 ? 1 : -1; p.x += rx * ps * sig; p.z += rz * ps * sig; }
+  }
+}
 function hgLooks(team) { const ok = g => GIRLS[g] && GIRLS[g].front && GIRLS[g].front.tex;
   if (team === 'orange') { const L = KS2_CN_LOOKS.filter(g => g !== 'cn05' && g !== 'cn01' && ok(g)); return L.length ? L : ['cn02'].filter(ok); }
   const L = jpMobPool().filter(ok); return L.length ? L : jpMobLooks().filter(ok); }   // 日本側は登録した見た目をすべて均等に（件数の上限で新しい顔だけに偏らせない）
@@ -6445,7 +6494,7 @@ function hgSay(k, t, prio) { const e = HG.by[k]; if (e && !isUp(e)) return; ks2S
 function hgSeq(L, t0, gap) { L.forEach(([k, t], j) => HG.later.push([HG.t + t0 + j * gap, () => hgSay(k, t)])); return L.length * gap; }
 function hgZh(e, q, prio) { if (e && isUp(e)) kosZh(e, q, prio || 1.9); }
 // ---- 開始 ----
-function hgReset() { if (HG.px) for (const k in HG.pg) { const G = HG.pg[k]; if (G) { stageRoot.remove(G.im); if (G.dn) stageRoot.remove(G.dn); } }
+function hgReset() { if (HG.px) for (const k in HG.pg) { const G = HG.pg[k]; if (G) { stageRoot.remove(G.im); if (G.dn) stageRoot.remove(G.dn); if (G.vxS && G.vxS.im) stageRoot.remove(G.vxS.im); if (G.vxB && G.vxB.im) stageRoot.remove(G.vxB.im); } }
   if (HG.W) for (const k in HG.W) if (HG.W[k] && HG.W[k].isObject3D) stageRoot.remove(HG.W[k]); for (const U of [...(HG.UB || []), ...(HG.UO || [])]) if (U.flag) stageRoot.remove(U.flag); for (const m of HG.stuck || []) stageRoot.remove(m); for (const T of HG.tr || []) if (T.m) stageRoot.remove(T.m); for (const T of HG.veh || []) stageRoot.remove(T.m);
   Object.assign(HG, { t: 0, px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], lkI: 0, wave: 0, allyW: 0, sim: 0, grid: new Map(), lostB: 0, lostO: 0, pK: 0, tr: [], shu: null, shuDead: false, cmd: null, duel: null, said: {}, done: false, drawT: 0, mobT: 4, enT: 0,
     total: { blue: 0, orange: 0 }, pend: { blue: 0, orange: 0 }, cavN: 0, cap: 3400, joinW: 0, UC: null, UD: null, UG: null, shuFocus: null, ringL: null, given: 0, pulled: 0, shuK: 0, evLog: [], stuck: [], W: null, lodT: 0, hqGo: 0, surr: null, surrT: 0, ev: {},
@@ -6559,11 +6608,13 @@ function hgSwing(ax, az, e, p) { if (!e || !e.alive) return; if (e.real) { if (i
   const r = Math.random(); if (r < p) { hgHurt(e, 1, false, new V3(ax, 0, az)); return; }
   const front = (e.hx * (ax - e.x) + e.hz * (az - e.z)) > 0, k = e.w === 'shield' && front ? 'block' : r < p + 0.33 ? (e.arch ? 'dodge' : 'parry') : r < p + 0.58 ? 'dodge' : null; if (!k) return;
   e.re = k; e.reT = 0.35; e.reS = Math.random() < 0.5 ? 1 : -1; const pp = player.pos; if (k !== 'dodge' && (e.x - pp.x) ** 2 + (e.z - pp.z) ** 2 < 900) { const q = new V3(e.x, 1.1, e.z); if (sfxGate(q, 30)) { if (k === 'block') Sfx.thunkAt(q, true); else if (Sfx.clashAt) Sfx.clashAt(q); } } }
-function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts = LITE ? 4 : 3, k = HG.sim++ % parts, sdt = dt * parts; if (k === 0) hgGridBuild();
-  for (let i = k; i < n; i += parts) { const o = A[i]; if (!o.alive || o.real) continue; const U = o.U, foe = o.team === 'blue' ? 'orange' : 'blue'; if (o.atk > 0) o.atk -= sdt; if (o.kn > 0) o.kn -= sdt; if (o.reT > 0) o.reT -= sdt;
-    if (o.hold > 0) { o.hold -= sdt; const D = HG.duel; if (D && !o.ringX) { const dx = o.x - D.x, dz = o.z - D.z, d = Math.hypot(dx, dz) || 1; if (d < 7) { o.x += dx / d * Math.min(7 - d, 2.5 * sdt); o.z += dz / d * Math.min(7 - d, 2.5 * sdt); } } continue; }   // 一騎打ちのまわりは場をあけて見守る
-    if (U.st === 'surr' || HG.surr) continue;
-    o.cd -= sdt; if (U.kind === 'cav') { hgCavSim(o, U, sdt); continue; }
+function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts = LITE ? 4 : 3, k = HG.sim++ % parts; if (k === 0) hgGridBuild();
+  for (let i = 0; i < n; i++) { const o = A[i]; if (!o.alive || o.real) continue; const U = o.U, foe = o.team === 'blue' ? 'orange' : 'blue'; if (o.atk > 0) o.atk -= dt; if (o.kn > 0) o.kn -= dt; if (o.reT > 0) o.reT -= dt;
+    if (o.hold > 0) { o.hold -= dt; const D = HG.duel; if (D && !o.ringX) { const dx = o.x - D.x, dz = o.z - D.z, d = Math.hypot(dx, dz) || 1; if (d < 7) { o.x += dx / d * Math.min(7 - d, 2.5 * dt); o.z += dz / d * Math.min(7 - d, 2.5 * dt); } } hgTankPush(o, 0.45); continue; }   // 一騎打ちのまわりは場をあけて見守る
+    if (U.st === 'surr' || HG.surr) { hgTankPush(o, 0.45); continue; }
+    if (U.kind === 'cav') { hgCavSim(o, U, dt); hgTankPush(o, 0.55); if (o.mv) o.stepT = (o.stepT || 0) + (o.gsp || 7) * dt * 2.2; continue; }
+    const think = (i % parts) === k; const sdt = dt * parts;
+    if (think) o.cd -= sdt;
     const FM = HG_FM[U.fm] || HG_FM.yoko; let tx, tz, sp, engR = -1;
     if (U.kind === 'raid') { const r = hgRaidPos(o, U); tx = r[0]; tz = r[1]; sp = r[2]; engR = r[3]; }
     else if (U.horde) { tx = U.x + o.ox + Math.sin(HG.t * 0.6 + o.k) * 1.8; tz = U.z + o.oz + Math.cos(HG.t * 0.5 + o.k * 1.3) * 1.8; sp = U.st === 'rout' ? 2.8 : (U.st === 'adv' || U.st === 'fight') ? 2.7 : 1.6; }
@@ -6581,7 +6632,11 @@ function hgSim(dt) { const A = HG.px, n = A.length; if (!n) return; const parts 
       else if (o.cd <= 0) { o.cd = U.vol ? rand(6, 9) : rand(3.5, 6.5); const aim = U.aim, t = HG.shuFocus && HG.shuFocus.U === U && HG.shu && isUp(HG.shu) ? 'shu' : (aim && hgNear(aim.x, aim.z, foe, 30)) || hgNear(o.x + o.hx * 75, o.z + o.hz * 75, foe, 62);   // 弓・弩：援護の隊は味方が戦っている相手へ、ほかは前方の敵へ
         if (t === 'shu') { const q = HG.shu.s.position; o.atk = 0.5; hgArrowFx(o, q.x, q.z, true); if (Math.random() < 0.05) { HG.shu.hp -= 1; HG.shu.flash = 0.1; } }
         else if (t && Math.hypot(t.x - o.x, t.z - o.z) < (o.w === 'xbow' ? 120 : 135)) { o.atk = 0.5; const dx = t.x - o.x, dz = t.z - o.z, d = Math.hypot(dx, dz) || 1; o.hx = dx / d; o.hz = dz / d; hgArrowFx(o, t.x, t.z, false); hgRangedHit(t, o.w === 'xbow' ? 0.055 : 0.045, o.x, o.z); } } }
-    const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d > 0.08) { const s = Math.min(d, sp * sdt); o.x += dx / d * s; o.z += dz / d * s; o.mv = d > 0.3; if (o.mv && !o.atk && d > 2) { o.hx = dx / d; o.hz = dz / d; } } else o.mv = false; } }
+    if (think) { o.gx = tx; o.gz = tz; o.gsp = sp; }
+    tx = o.gx; tz = o.gz; sp = o.gsp;
+    if (tx == null) { if (U.kind === 'raid') { const r = hgRaidPos(o, U); tx = r[0]; tz = r[1]; sp = r[2]; } else if (U.horde) { tx = U.x + o.ox; tz = U.z + o.oz; sp = 2.4; } else { const sl = hgSlot(U, o.slot); tx = sl[0]; tz = sl[1]; sp = 1.8; } }
+    const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz); if (d > 0.08) { const s = Math.min(d, (sp || 1.8) * dt); o.x += dx / d * s; o.z += dz / d * s; o.mv = d > 0.3; o.stepT = (o.stepT || 0) + s * 2.7; if (o.mv && !o.atk && d > 2) { const kF = Math.min(1, dt * 8), wx = dx / d, wz = dz / d; o.hx = (o.hx || wx) * (1 - kF) + wx * kF; o.hz = (o.hz || wz) * (1 - kF) + wz * kF; const hn = Math.hypot(o.hx, o.hz) || 1; o.hx /= hn; o.hz /= hn; } } else o.mv = false;
+    hgTankPush(o, 0.45); } }
 //  南蛮の小隊（十数人ずつ）：隊列を組まず、味方の隊の横か後ろへ回って襲い、しばらく打ち合ったら散り、別の方向から戻ってくる
 function hgBandC(B) { let x = 0, z = 0, n = 0; for (const o of B.m) if (o.alive) { x += o.x; z += o.z; n++; } return n ? [x / n, z / n, n] : null; }
 function hgRaidTick(U, dt) { if (U.st === 'fall' || U.st === 'regroup') return; for (const B of U.bands) { const c = hgBandC(B); if (!c) continue; B.t -= dt; B.cx = c[0]; B.cz = c[1];
@@ -6744,7 +6799,7 @@ function hgScript() { const T = HG.t, E = HG.ev;
     if (U && F && hgCapable(U)) { U.goT = 0; U.path = [[F.x + 60, U.z + 30], [F.x + 60, F.z - 5], [F.x + 28, F.z]]; U.tgtU = F; U.onArr = () => { hgSeq(HG_LN.flankIn, 0.5, 3); }; hgSeq(HG_LN.flank, 0, 4); showBanner('早瀬隊、回り込む', '左の外から敵の横腹へ'); bannerTimer = 3; } }
   if (!E.oloss && HG.lostO > HG.total.orange * 0.4) { E.oloss = 1; hgZh(HG.cmd, HG_ZH.loss, 2.2); }
   const cap = HG.UO.filter(U => U.kind !== 'hq' && hgCapable(U)).length; if (!HG.hqGo && T > 200 && (cap <= 4 || T > 600)) { HG.hqGo = T; const c = HG.cmd; showBanner('敵の本陣', '中国軍の総大将が前に出た'); bannerTimer = 3.5; if (c) hgZh(c, HG_ZH.cGo, 2.2); hgSeq(HG_LN.cmd, 3, 4.5); } }
-function hgGo(e, tx, tz, sp, dt) { const p = e.s.position, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz); if (d < 0.3) { e.moving = false; return true; } const s = Math.min(d, sp * dt); p.x += dx / d * s; p.z += dz / d * s; e.moving = d > 0.5; e.faceWant = Math.atan2(dx, dz); return false; }
+function hgGo(e, tx, tz, sp, dt) { const p = e.s.position, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz); if (d < 0.3) { e.moving = false; hgTankPush(p, 0.4); return true; } const s = Math.min(d, sp * dt); p.x += dx / d * s; p.z += dz / d * s; e.moving = d > 0.5; e.faceWant = Math.atan2(dx, dz); hgTankPush(p, 0.4); return false; }
 function hgBrain(e, dt) { if (!HG.on || !e.hg) return false; const p = e.s.position; e.passive = true; e.kneel = false; e.crouch = 0; e.seated = false; if (e.knock) e.knock.set(0, 0, 0); e.t += dt; p.y = e.baseY = e.hgRide ? HG_RY : 0;
   if (e.hgO) { hgRealBrain(e, dt); return true; }
   if (e.hgTk && hgCrewBrain(e, dt)) return true;
@@ -6848,7 +6903,7 @@ function hgDuelEnd(why) { const D = HG.duel, e = HG.shu; if (!D) return; HG.duel
 // ---- 王（プレイヤー）の矢が群れに当たる／敵の矢が王に ----
 function hgArrowHit(p0, sx, sz, sl, sy) { let best = null, bt = 2; const cx = Math.floor(p0.x / 8), cz = Math.floor(p0.z / 8);
   for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const tm of [1, 0]) { const L = HG.grid.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + tm); if (!L) continue;
-    for (const o of L) { if (!o.alive || o.real || o.tank) continue; const t = clamp(((o.x - p0.x) * sx + (o.z - p0.z) * sz) / sl, 0, 1), d = Math.hypot(p0.x + sx * t - o.x, p0.z + sz * t - o.z), y = p0.y + sy * t - (o.U.kind === 'cav' ? HG_RY : 0); if (d < 0.34 && y > 0 && y < 1.62 && t < bt) { bt = t; best = o; } } }
+    for (const o of L) { if (!o.alive || o.real) continue; const t = clamp(((o.x - p0.x) * sx + (o.z - p0.z) * sz) / sl, 0, 1), d = Math.hypot(p0.x + sx * t - o.x, p0.z + sz * t - o.z), y = p0.y + sy * t - (o.tank ? 0 : (o.U && o.U.kind === 'cav' ? HG_RY : 0)); const rad = o.tank ? 1.5 : 0.34, yTop = o.tank ? 2.2 : 1.62; if (d < rad && y > 0 && y < yTop && t < bt) { bt = t; best = o; } } }
   return best ? { o: best, t: bt } : null; }
 function hgThreat(dt) { if ((HG.enT -= dt) > 0) return; HG.enT = 1.1; const pp = player.pos, o = hgNear(pp.x, pp.z, 'orange', 80); if (!o || o.real) return; const d = Math.hypot(o.x - pp.x, o.z - pp.z);
   if (o.arch && d > 30 && Math.random() < 0.3) { const from = new V3(o.x, 1.4, o.z), T = Math.max(0.6, d / 32), vel = new V3((pp.x - o.x) / T + rand(-1.5, 1.5), (pp.y + 1.2 - 1.4) / T + 4.9 * T, (pp.z - o.z) / T + rand(-1.5, 1.5)); addArrow('orange', from, vel, { dmg: 5 }); o.atk = 0.5; } }
@@ -6862,16 +6917,17 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
   for (const k in HG.pg) { const G = HG.pg[k]; if (!G) continue; const w = G.h * G.asp; let dn = G.dnN || 0;
     for (const o of G.list) {
       if (!o.alive) { if (o.dI === -1 || o.dI === -2) { hgZeroW(o); if (o.hk != null) W.horse.setMatrixAt(o.hk, HG_Z0);
-          if (o.dI === -2) { G.im.setMatrixAt(o.i, HG_Z0); W.spear.setMatrixAt(o.k, HG_Z0); o.dI = -3; }   // 本物の体が倒れている（体はそのまま残る）
-          else { if (G.dn) { G.im.setMatrixAt(o.i, HG_Z0); o.dI = dn++; G.dl.push(o); o.dRedo = true; } else { Q.position.set(o.x, 0.04, o.z); Q.rotation.set(-Math.PI / 2, 0, o.ry); Q.scale.set(w, G.h, 1); Q.updateMatrix(); G.im.setMatrixAt(o.i, Q.matrix); o.dI = -4; }   // 倒れた絵：倒れた写真が無い娘は絵を寝かせる
+          if (o.dI === -2) { hgPxPut(G, o, Q, null); W.spear.setMatrixAt(o.k, HG_Z0); o.dI = -3; }   // 本物の体が倒れている（体はそのまま残る）
+          else { if (G.dn) { hgPxPut(G, o, Q, null); o.dI = dn++; G.dl.push(o); o.dRedo = true; } else { Q.position.set(o.x, 0.04, o.z); Q.rotation.set(-Math.PI / 2, 0, o.ry); Q.scale.set(w, G.h, 1); Q.updateMatrix(); hgPxPut(G, o, Q, 'front'); o.dI = -4; }   // 倒れた絵：倒れた写真が無い娘は絵を寝かせる
             Q.position.set(o.x + Math.cos(o.ry) * 0.5, 0.04, o.z - Math.sin(o.ry) * 0.5); Q.rotation.set(0, o.ry, 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); if (o.w === 'spear') W.spear.setMatrixAt(o.k, Q.matrix); else W.spear.setMatrixAt(o.k, HG_Z0); } }   // 倒れた者の槍は体のそばの地面に
         continue; }
-      if (o.real) { if (o.drawn !== 2) { o.drawn = 2; G.im.setMatrixAt(o.i, HG_Z0); W.spear.setMatrixAt(o.k, HG_Z0); hgZeroW(o); } continue; }
+      if (o.real) { if (o.drawn !== 2) { o.drawn = 2; hgPxPut(G, o, Q, null); W.spear.setMatrixAt(o.k, HG_Z0); hgZeroW(o); } continue; }
       const dx = cam.x - o.x, dz = cam.z - o.z, dd = dx * dx + dz * dz; if (dd > 40000 && !redo && o.drawn === 1 && !o.atk && !o.mv && !(o.reT > 0)) continue;   // 200m より遠く静かな者は数フレームおき
-      o.drawn = 1; const a = Math.atan2(dx, dz), cav = o.hk != null, y0 = cav ? HG_RY : 0, ls = o.atk > 0 ? Math.sin(o.atk / 0.4 * Math.PI) * 0.35 : 0, kb = o.kn > 0 ? -o.kn * 1.2 : 0, bob = o.mv ? Math.abs(Math.sin(HG.t * (cav ? 9 : 7) + o.k)) * (cav ? 0.09 : 0.05) : 0;
+      o.drawn = 1; const a = Math.atan2(dx, dz), cav = o.hk != null, y0 = cav ? HG_RY : 0, ls = o.atk > 0 ? Math.sin(o.atk / 0.4 * Math.PI) * 0.35 : 0, kb = o.kn > 0 ? -o.kn * 1.2 : 0, bob = o.mv ? Math.abs(Math.sin(o.stepT || 0)) * (cav ? 0.09 : 0.05) : 0;
       let px = o.x + o.hx * (cav ? 0 : ls + kb), pz = o.z + o.hz * (cav ? 0 : ls + kb), rzR = o.kn > 0 ? 0.12 : (o.atk > 0 ? -0.06 : 0);
       if (o.reT > 0 && !cav) { const f = o.reT / 0.35; if (o.re === 'dodge') { px += Math.cos(a) * 0.55 * o.reS * f; pz -= Math.sin(a) * 0.55 * o.reS * f; rzR = -0.2 * o.reS * f; } else { const b = o.re === 'block' ? 0.2 : 0.3; px -= o.hx * b * f; pz -= o.hz * b * f; rzR = 0.1 * f; } }   // かわす（横へ）・受ける（のけぞる）・盾で受ける（押される）。血は出さない
-      Q.position.set(px, y0 + bob, pz); Q.rotation.set(0, a, rzR); Q.scale.set(w, G.h, 1); Q.updateMatrix(); G.im.setMatrixAt(o.i, Q.matrix);
+      const pv = hgPxPick(o, a), useS = pv.v === 'side' && G.vxS, useB = pv.v === 'back' && G.vxB, asp = useS ? G.vxS.asp : useB ? G.vxB.asp : G.asp, bw = G.h * asp, flip = useS ? pv.flip : 1;
+      Q.position.set(px, y0 + bob, pz); Q.rotation.set(0, a, rzR); Q.scale.set(bw * flip, G.h, 1); Q.updateMatrix(); hgPxPut(G, o, Q, useS ? 'side' : useB ? 'back' : 'front');
       const rx = Math.cos(a), rz = -Math.sin(a), s = G.h / 1.6, ww = o.w;   // 絵の右手（カメラから見て）
       if (ww === 'spear') { const fight = o.U.st === 'fight' || cav || o.atk > 0 || o.U.horde && o.U.st === 'adv', el = o.atk > 0 ? 0.05 : fight ? 0.25 : 1.25, th = o.atk > 0 ? Math.sin(o.atk / 0.4 * Math.PI) * 0.7 : 0;   // 槍：ふだんは立て、戦いでは前へ倒し、突くときは前へ
         Q.position.set(px + rx * w * 0.28 + o.hx * th, y0 + 0.95 * s + bob, pz + rz * w * 0.28 + o.hz * th); Q.rotation.set(-el, Math.atan2(o.hx, o.hz), 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); W.spear.setMatrixAt(o.k, Q.matrix); }
@@ -6884,7 +6940,7 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
       if (cav) { Q.position.set(o.x, bob * 0.4, o.z); Q.rotation.set(0, Math.atan2(o.hx, o.hz), 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); W.horse.setMatrixAt(o.hk, Q.matrix); } }
     if (G.dn) { for (const o of G.dl) { if (o.dI < 0 || (!redo && !o.dRedo)) continue; o.dRedo = false; const dx = cam.x - o.x, dz = cam.z - o.z; Q.position.set(o.x, 0.02, o.z); Q.rotation.set(0, Math.atan2(dx, dz), 0); Q.scale.set(G.dw, G.dh, 1); Q.updateMatrix(); G.dn.setMatrixAt(o.dI, Q.matrix); }
       G.dnN = dn; G.dn.count = dn; G.dn.instanceMatrix.needsUpdate = true; }
-    G.im.instanceMatrix.needsUpdate = true; }
+    G.im.instanceMatrix.needsUpdate = true; if (G.vxS) { G.vxS.im.count = G.list.length; G.vxS.im.instanceMatrix.needsUpdate = true; } if (G.vxB) { G.vxB.im.count = G.list.length; G.vxB.im.instanceMatrix.needsUpdate = true; } }
   for (const m of [W.spear, W.yumi, W.xbow, W.nagi, W.kai, W.shield, W.boom, W.horse]) m.instanceMatrix.needsUpdate = true; }
 // ---- 後退と立て直し（両軍とも）：隊がおよそ三割やられたら、隊列を保って後ろへ下がり（接触を切る）、立て直して士気が戻ればまた前へ ----
 function hgFallTick(U, up, dt) { if (U.kind === 'hq' || U.kind === 'det' || U.lk === 'sumi' || (U.kind === 'cav' && !U.go)) return false;
@@ -10763,6 +10819,7 @@ function castleDoorNear() {
   return best;
 }
 function castleUse() {   // E／スマホのボタン：近くの襖を開け閉め
+  if (HS.on && hsDoorUse()) return true;
   if (!castleLive() || player.pos.y > 0.5) return false;
   const d = castleDoorNear(); if (!d) return false;
   if (d.open && enemies.some(o => o.state !== 'down' && Math.abs(o.s.position.x - d.x) < (d.dir === 'x' ? 0.95 : 0.4) && Math.abs(o.s.position.z - d.z) < (d.dir === 'x' ? 0.4 : 0.95))) { popup('敷居に人がいて閉められない'); return true; }
@@ -10871,7 +10928,7 @@ function castleReset() {
 }
 function castleLive() { return !!(CASTLE.on || DUAL.on); }
 function castleDoorClose() { if (!castleLive() || player.pos.y > 0.5) return false; const d = castleDoorNear(); return !!d && Math.hypot(player.pos.x - d.x, player.pos.z - d.z) < 1.25; }
-function castleDoorNearHint() { const d = castleLive() && player.pos.y < 0.5 ? castleDoorNear() : null; return d; }
+function castleDoorNearHint() { if (HS.on) return hsDoorNear(); const d = castleLive() && player.pos.y < 0.5 ? castleDoorNear() : null; return d; }
 // ---- 毎フレーム：門・槌・襖・落とし穴・伏兵・二の丸の制圧 ----
 function updateCastle(dt) {
   if (!CASTLE.on) return;
@@ -32581,7 +32638,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261128c';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261128d';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -37301,6 +37358,7 @@ function updateEnemies(dt) {
       e.baseY = Math.abs(th - e.baseY) < 0.7 ? th : th > e.baseY ? Math.min(th, e.baseY + 5 * dt) : Math.max(th, e.baseY - 9 * dt);
       e.footOk = [p.x, p.z];
     }
+    if (HG.on) hgTankPush(p, 0.4);
     if (!e.perch && !e.seated && !(e.lad && e.lad.ph !== 'go') && boxes.length) {
       const slipBar = DUAL.on && MTN.bar && ((DUAL.betrayed && (e.saiRunner || e === DUAL.miyashita)) || (e.missionRelief && e.team === 'blue'));
       const slipGate = e.missionRelief && e.team === 'blue' && DUAL.on;
@@ -37643,6 +37701,15 @@ function swingResolve() {
     Sfx.clash(); player.shake = Math.max(player.shake, 0.08);
   } else if ((MTN.on || DUAL.on) && mtnMeleeHon()) { /* 本丸の扉は近接で叩く */ }
   else if (MTN.on) mtnMeleeGate();
+  else if (HG.on && HG.veh) {
+    for (const T of HG.veh) {
+      if (!T.alive) continue;
+      const dx = T.x - player.pos.x, dz = T.z - player.pos.z, d = Math.hypot(dx, dz);
+      if (d > 3.2) continue;
+      const along = dx * fwd.x + dz * fwd.z, lat = Math.abs(dx * fwd.z - dz * fwd.x);
+      if (along > 0.3 && along < 3.2 && lat < 1.8) { hgTankHit(T, 2); Sfx.clash(); player.shake = Math.max(player.shake, 0.08); return; }
+    }
+  }
 }
 
 // ---- 拾い物 ----
@@ -37731,7 +37798,8 @@ function updateHud(dt) {
   if (FB.on) setText('remain', fbRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
-  if (HG.on || FRF.on || HS.on) setText('remain', '');   // 平原：上の数の下の「残敵・味方」の行は出さない
+  if (HG.on || FRF.on) setText('remain', '');   // 平原：上の数の下の「残敵・味方」の行は出さない
+  if (HS.on) setText('remain', (typeof hsRemain === 'function' && hsRemain()) || '');
   if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'gun' ? '第一艦隊・桜鳳　砲戦' : CV.phase === 'board' ? '第一艦隊・桜鳳　乗り込み' : CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
   if (bannerTimer > 0) { bannerTimer -= dt; if (bannerTimer <= 0) $('banner').style.opacity = 0; }
@@ -37949,7 +38017,7 @@ const touch = { joyId: null, jx: 0, jy: 0, jox: 0, joy: 0, lookId: null, lx: 0, 
 const JOY_R = 60;
 function lookBy(dx, dy) {
   const sens = 0.0055 * (camera.fov / 75);
-  player.yaw -= dx * sens; player.pitch = clamp(player.pitch - dy * sens, -1.45, 1.45);
+  player.yaw -= dx * sens; player.pitch = clamp(player.pitch - dy * sens, -1.56, 1.56);
 }
 function placeJoy(x, y, kx, ky, active) {
   const j = $('joy'), k = $('knob');
@@ -38114,7 +38182,7 @@ document.addEventListener('mousemove', e => {
   if (MOBILE) return;
   if (state !== 'play' || !locked()) return;
   const sens = 0.0022 * (camera.fov / 75);
-  player.yaw -= e.movementX * sens; player.pitch = clamp(player.pitch - e.movementY * sens, -1.45, 1.45);
+  player.yaw -= e.movementX * sens; player.pitch = clamp(player.pitch - e.movementY * sens, -1.56, 1.56);
 });
 document.addEventListener('mousedown', e => {
   if (MOBILE) return;
@@ -39268,26 +39336,7 @@ function hsLook() {
 
 function hsMats() {
   if (HS.M) return HS.M;
-  const stoneTex = canvasTex(256, 256, (g, w, h) => {
-    g.fillStyle = '#6a655c'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 280; i++) {
-      const bw = 18 + Math.random() * 36, bh = 10 + Math.random() * 16, x = Math.random() * w, y = Math.random() * h;
-      const c = 78 + ((Math.random() * 36) | 0); g.fillStyle = `rgb(${c},${c - 4},${c - 12})`;
-      g.fillRect(x, y, bw, bh); g.strokeStyle = 'rgba(40,36,30,0.35)'; g.strokeRect(x, y, bw, bh);
-    }
-  });
-  stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
-  const plasTex = canvasTex(128, 128, (g, w, h) => {
-    g.fillStyle = '#efe6d2'; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 80; i++) { g.fillStyle = `rgba(200,190,170,${0.08 + Math.random() * 0.12})`; g.fillRect(Math.random() * w, Math.random() * h, 8 + Math.random() * 20, 3); }
-  });
-  const tileTex = canvasTex(64, 64, (g, w, h) => {
-    g.fillStyle = '#4a4e52'; g.fillRect(0, 0, w, h);
-    g.strokeStyle = '#2e3236';
-    for (let y = 0; y < h; y += 8) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
-    for (let x = 0; x < w; x += 10) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
-  });
-  tileTex.wrapS = tileTex.wrapT = THREE.RepeatWrapping;
+  const C = castleMats();
   const mudTex = canvasTex(256, 256, (g, w, h) => {
     g.fillStyle = '#9a8c64'; g.fillRect(0, 0, w, h);
     for (let i = 0; i < 200; i++) { g.fillStyle = `rgba(${140 + Math.random() * 40},${120 + Math.random() * 30},70,0.35)`; g.fillRect(Math.random() * w, Math.random() * h, 6, 3); }
@@ -39303,11 +39352,8 @@ function hsMats() {
   });
   pavementTex.wrapS = pavementTex.wrapT = THREE.RepeatWrapping;
   const M = {
-    stone: new THREE.MeshLambertMaterial({ map: stoneTex, color: 0x9a9488 }),
-    plas: new THREE.MeshLambertMaterial({ map: plasTex, color: 0xf0e6d0 }),
-    tile: new THREE.MeshLambertMaterial({ map: tileTex, color: 0x5a5e64 }),
-    wood: new THREE.MeshLambertMaterial({ color: 0x5a3e28 }),
-    woodD: new THREE.MeshLambertMaterial({ color: 0x3a2818 }),
+    stone: C.stone, plas: C.plaster, tile: C.tile, wood: C.wood, woodD: C.darkWood, woodL: C.woodL,
+    door: C.door, tatami: C.tatami, fusuma: C.fusuma, black: C.black, iron: C.iron,
     earth: new THREE.MeshLambertMaterial({ map: earthTex, color: 0x8a734c }),
     mud: new THREE.MeshLambertMaterial({ map: mudTex, color: 0xb09c70 }),
     grass: new THREE.MeshLambertMaterial({ color: 0x6a7a4c }),
@@ -39315,16 +39361,45 @@ function hsMats() {
     kara: new THREE.MeshLambertMaterial({ color: 0x4a4030 }),
     town: new THREE.MeshLambertMaterial({ map: mudTex, color: 0xa09068 }),
     water: new THREE.MeshPhongMaterial({ color: 0x3a5a62, transparent: true, opacity: 0.78, shininess: 80, specular: 0x88aabb }),
-    dark: new THREE.MeshLambertMaterial({ color: 0x2a241c }),
-    white: new THREE.MeshLambertMaterial({ color: 0xf4eee0 }),
-    gold: new THREE.MeshLambertMaterial({ color: 0xc4a45a }),
+    dark: C.darkWood, white: C.plaster, gold: new THREE.MeshLambertMaterial({ color: 0xc4a45a }),
     lotus: new THREE.MeshLambertMaterial({ color: 0x6a8a4a }),
-    lotusP: new THREE.MeshLambertMaterial({ color: 0xd8b0c4 }),
-    iron: new THREE.MeshLambertMaterial({ color: 0x3a3c40 })
+    lotusP: new THREE.MeshLambertMaterial({ color: 0xd8b0c4 })
   };
   HS.M = M; return M;
 }
-
+function hsHip(g, x0, x1, z0, z1, y, h) {
+  const r = hipRoof(x0, x1, z0, z1, y, h, hsMats().tile);
+  if (g) { stageRoot.remove(r); r.position.set((x0 + x1) / 2, y, (z0 + z1) / 2); g.add(r); }
+  return r;
+}
+function hsLadder(x, z, y0, y1, alongZ, sign) {
+  const M = hsMats(), len = 0.95, dir = sign >= 0 ? 1 : -1;
+  const posts = [], rungs = [];
+  if (alongZ !== false) {
+    const z0 = z, z1 = z + dir * len, za = Math.min(z0, z1), zb = Math.max(z0, z1), zc = (za + zb) / 2;
+    for (const sx of [-1, 1]) {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, (y1 - y0) + 1.0, 0.08), M.woodD);
+      p.position.set(x + sx * 0.32, (y0 + y1 + 1) / 2, zc); stageRoot.add(p); posts.push(p);
+    }
+    for (let y = y0 + 0.35; y < y1 + 0.9; y += 0.35) {
+      const r = new THREE.Mesh(new THREE.BoxGeometry(0.64, 0.06, 0.06), M.woodL);
+      r.position.set(x, y, zc); stageRoot.add(r); rungs.push(r);
+    }
+    const L = { x0: x - 0.6, x1: x + 0.6, z0: za, z1: zb, y0, y1, dir };
+    ladders.push(L); if (HS.stat) HS.stat.push(...posts, ...rungs); return L;
+  }
+  const x0 = x, x1 = x + dir * len, xa = Math.min(x0, x1), xb = Math.max(x0, x1), xc = (xa + xb) / 2;
+  for (const sz of [-1, 1]) {
+    const p = new THREE.Mesh(new THREE.BoxGeometry(0.08, (y1 - y0) + 1.0, 0.08), M.woodD);
+    p.position.set(xc, (y0 + y1 + 1) / 2, z + sz * 0.32); stageRoot.add(p); posts.push(p);
+  }
+  for (let y = y0 + 0.35; y < y1 + 0.9; y += 0.35) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.64), M.woodL);
+    r.position.set(xc, y, z); stageRoot.add(r); rungs.push(r);
+  }
+  const L = { x0: xa, x1: xb, z0: z - 0.6, z1: z + 0.6, y0, y1, dir };
+  ladders.push(L); if (HS.stat) HS.stat.push(...posts, ...rungs); return L;
+}
 function hsBox(x0, x1, y0, y1, z0, z1, mat, solid) {
   const g = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
   g.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); g.receiveShadow = true;
@@ -39390,71 +39465,101 @@ function hsCutGate(x, z, w, alongZ) {
 function hsYagura(x, z, y0, nFl, name, yaw) {
   const M = hsMats(), g = new THREE.Group(); g.position.set(x, 0, z); if (yaw) g.rotation.y = yaw;
   const w = 7.2, d = 6.4, fh = 3.1;
-  // 石垣の基壇
-  const base = new THREE.Mesh(new THREE.BoxGeometry(w + 1.4, y0 + 0.2, d + 1.4), M.stone);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(w + 1.6, y0 + 0.2, d + 1.6), M.stone);
   base.position.y = (y0 + 0.2) / 2; g.add(base);
   for (let i = 0; i < nFl; i++) {
     const yy = y0 + i * fh, ww = w - i * 0.45, dd = d - i * 0.4;
-    const body = new THREE.Mesh(new THREE.BoxGeometry(ww, fh - 0.35, dd), M.plas); body.position.y = yy + (fh - 0.35) / 2; g.add(body);
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(ww + 1.6, 0.28, dd + 1.6), M.tile); roof.position.y = yy + fh - 0.1; g.add(roof);
-    // 入母屋風の小さな破風
-    const gable = new THREE.Mesh(new THREE.BoxGeometry(ww * 0.4, 0.9, 0.2), M.tile); gable.position.set(0, yy + fh + 0.35, dd / 2 + 0.5); g.add(gable);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(ww, fh - 0.45, dd), M.plas); body.position.y = yy + (fh - 0.45) / 2; g.add(body);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.22, fh - 0.2, 0.22), M.woodD);
+      post.position.set(sx * (ww / 2 - 0.15), yy + (fh - 0.2) / 2, sz * (dd / 2 - 0.15)); g.add(post);
+    }
+    hsHip(g, -ww / 2 - 1.15, ww / 2 + 1.15, -dd / 2 - 1.15, dd / 2 + 1.15, yy + fh - 0.35, 1.55);
   }
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 3.2, 5), M.woodD); pole.position.y = y0 + nFl * fh + 1.4; g.add(pole);
   stageRoot.add(g); if (HS.stat) HS.stat.push(g);
   const topY = y0 + nFl * fh - 0.6;
-  floors.push({ x0: x - 2.4, x1: x + 2.4, z0: z - 2.1, z1: z + 2.1, y: topY });
-  // 梯子（南側）
-  ladders.push({ x0: x - 0.4, x1: x + 0.4, z0: z - d / 2 - 0.3, z1: z - d / 2 + 0.4, y0: y0, y1: topY, F: { y: topY }, dir: 1 });
+  const fl = { x0: x - 2.4, x1: x + 2.4, z0: z - 2.1, z1: z + 2.1, y: topY };
+  floors.push(fl);
+  const L = hsLadder(x, z - d / 2 - 0.05, y0, topY, true, -1); if (L) { L.F = fl; L.dir = 1; }
   const perch = [];
-  for (let i = 0; i < 6; i++) perch.push({ x: x - 2 + (i % 3) * 2, z: z - 1.4 + Math.floor(i / 3) * 2.6, y: topY, taken: null, kind: 'yagura', name });
+  for (let i = 0; i < 6; i++) perch.push({ x: x - 2 + (i % 3) * 2, z: z - 1.4 + Math.floor(i / 3) * 2.6, y: topY, taken: null, kind: 'yagura', name, tower: true });
   (HS.perches || (HS.perches = [])).push(...perch);
   (HS.yagura || (HS.yagura = [])).push({ x, z, y: topY, name, g, kind: 'sumi' });
+  try { const nb = nobori(x + 2.6, z + 2.2, HS.atk ? '#d9741c' : '#1f5fb8', HS.atk ? '#fff6e8' : '#f4f1e8', HS.atk ? '橙組' : '青組'); if (nb) nb.position.y = topY; } catch (_) {}
   return { g, y: topY, perch };
 }
 function hsTamon(x0, x1, z0, z1, y0, alongX) {
-  const M = hsMats(), h = 3.0, w = alongX ? (x1 - x0) : 3.4, d = alongX ? 3.4 : (z1 - z0);
-  const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-  hsBox(x0, x1, y0, y0 + h, z0, z1, M.plas, true);
-  hsBox(x0 - 0.4, x1 + 0.4, y0 + h - 0.05, y0 + h + 0.25, z0 - 0.4, z1 + 0.4, M.tile, false);
+  const M = hsMats(), h = 3.0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+  hsBox(x0, x1, y0, y0 + h - 0.35, z0, z1, M.plas, true);
+  const g = new THREE.Group(); g.position.set(cx, 0, cz); stageRoot.add(g); if (HS.stat) HS.stat.push(g);
+  const lw = (x1 - x0) + 1.6, ld = (z1 - z0) + 1.6;
+  const len = alongX ? (x1 - x0) : (z1 - z0);
+  const n = Math.max(1, Math.round(len / 8));
+  for (let i = 0; i < n; i++) {
+    const t0 = i / n, t1 = (i + 1) / n;
+    if (alongX) hsHip(g, -lw / 2 + t0 * lw, -lw / 2 + t1 * lw, -ld / 2, ld / 2, y0 + h - 0.2, 1.15);
+    else hsHip(g, -lw / 2, lw / 2, -ld / 2 + t0 * ld, -ld / 2 + t1 * ld, y0 + h - 0.2, 1.15);
+  }
   const topY = y0 + h - 0.4;
   floors.push({ x0, x1, z0, z1, y: topY });
   const perch = [];
-  const n = Math.max(3, Math.round((alongX ? Math.abs(x1 - x0) : Math.abs(z1 - z0)) / 6));
-  for (let i = 0; i < n; i++) {
-    const t = (i + 0.5) / n;
+  const pn = Math.max(3, Math.round((alongX ? Math.abs(x1 - x0) : Math.abs(z1 - z0)) / 6));
+  for (let i = 0; i < pn; i++) {
+    const t = (i + 0.5) / pn;
     perch.push({ x: alongX ? x0 + (x1 - x0) * t : cx, z: alongX ? cz : z0 + (z1 - z0) * t, y: topY, taken: null, kind: 'tamon' });
   }
   (HS.perches || (HS.perches = [])).push(...perch);
-  (HS.tamon || (HS.tamon = [])).push({ x0, x1, z0, z1, y: topY, alongX });
+  (HS.tamon || (HS.tamon = [])).push({ x0, x1, z0, z1, y: topY, alongX, g });
+  return { y: topY, perch };
 }
-
 function hsGateHouse(x, z, yaw, name, w, y0) {
   const M = hsMats(), g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
-  w = w || 10; const d = 7.2; y0 = y0 == null ? 0 : y0; const H = 7.4;
-  const gap = w * 0.92, side = 1.55, leafH = 4.7;
-  // 左右の袖壁と礎石（通路は空けておく）
-  for (const sx of [-(gap / 2 + side / 2), gap / 2 + side / 2]) {
-    const wing = new THREE.Mesh(new THREE.BoxGeometry(side, H, d), M.plas); wing.position.set(sx, y0 + H / 2, 0); g.add(wing);
-    const base = new THREE.Mesh(new THREE.BoxGeometry(side + 0.7, 1.15, d + 1.0), M.stone); base.position.set(sx, y0 + 0.57, 0); g.add(base);
+  w = w || 10; const d = 7.2; y0 = y0 == null ? 0 : y0; const GH = 4.2, FY = y0 + 4.55;
+  const gap = Math.min(w * 0.52, 5.4);
+  for (const s of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.BoxGeometry(2.0, FY - y0 - 0.15, 1.1), M.woodD);
+    post.position.set(s * (gap / 2 + 1.0), y0 + (FY - y0 - 0.15) / 2, 0); g.add(post);
+    const st = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.0, 1.3), M.stone);
+    st.position.set(s * (gap / 2 + 1.0), y0 + 0.5, 0); g.add(st);
   }
-  // 上階の櫓（通路の上を渡す）と瓦屋根
-  const upper = new THREE.Mesh(new THREE.BoxGeometry(w + 2.6, 2.7, d), M.plas); upper.position.y = y0 + leafH + 1.35; g.add(upper);
-  const lintel = new THREE.Mesh(new THREE.BoxGeometry(gap + 0.3, 0.45, d - 0.4), M.wood); lintel.position.y = y0 + leafH + 0.15; g.add(lintel);
-  const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 4.2, 0.32, d + 2.2), M.tile); roof.position.y = y0 + H + 0.22; g.add(roof);
-  const gab = new THREE.Mesh(new THREE.BoxGeometry(w * 0.38, 0.9, 0.22), M.tile); gab.position.set(0, y0 + H + 0.7, d / 2 + 0.6); g.add(gab);
-  const leaf = new THREE.Mesh(new THREE.BoxGeometry(gap, leafH, 0.28), M.woodD); leaf.position.set(0, y0 + leafH / 2, 0); g.add(leaf);
-  const band1 = new THREE.Mesh(new THREE.BoxGeometry(gap, 0.12, 0.32), M.iron); band1.position.set(0, y0 + leafH * 0.72, 0.16); g.add(band1);
-  const band2 = band1.clone(); band2.position.y = y0 + leafH * 0.32; g.add(band2);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.28, d * 0.75), M.woodD); beam.position.y = FY - 0.12; g.add(beam);
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 2.15, d * 0.72), M.plas); upper.position.y = FY + 1.05; g.add(upper);
+  const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 1.05, 0.18), M.plas); parapet.position.set(0, FY + 0.52, -d * 0.36); g.add(parapet);
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.12, 0.12), M.woodD); rail.position.set(0, FY + 0.95, d * 0.34); g.add(rail);
+  for (const s of [-1, 1]) {
+    const col = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.3, 0.2), M.woodD);
+    col.position.set(s * (w / 2 - 0.15), FY + 1.15, -d * 0.34); g.add(col);
+  }
+  hsHip(g, -(w / 2 + 1.3), w / 2 + 1.3, -d * 0.55, d * 0.5, FY + 2.25, 1.7);
+  const leaves = [];
+  const leafW = gap / 2;
+  for (const s of [-1, 1]) {
+    const leaf = new THREE.Group(), geo = new THREE.BoxGeometry(leafW, GH, 0.2); geo.translate(-s * leafW / 2, GH / 2, 0);
+    const m = new THREE.Mesh(geo, M.door); leaf.add(m); leaf.position.set(s * leafW, y0, 0.05); g.add(leaf); leaves.push(leaf);
+  }
   stageRoot.add(g); if (HS.stat) HS.stat.push(g);
-  const topY = y0 + H - 0.7;
-  const alongZ = Math.abs(Math.cos(yaw || 0)) > 0.5;   // yaw=0 の通路は南北
+  const topY = FY;
+  const alongZ = Math.abs(Math.cos(yaw || 0)) > 0.5;
   const hw = gap / 2, hd = 1.25;
-  floors.push(alongZ ? { x0: x - w / 2, x1: x + w / 2, z0: z - 2, z1: z + 2, y: topY } : { x0: x - 2, x1: x + 2, z0: z - w / 2, z1: z + w / 2, y: topY });
+  const fl = alongZ ? { x0: x - w / 2, x1: x + w / 2, z0: z - 2, z1: z + 2, y: topY } : { x0: x - 2, x1: x + 2, z0: z - w / 2, z1: z + w / 2, y: topY };
+  floors.push(fl);
   const box = alongZ
-    ? { x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, y0: y0, y1: y0 + leafH }
-    : { x0: x - hd, x1: x + hd, z0: z - hw, z1: z + hw, y0: y0, y1: y0 + leafH };
+    ? { x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, y0: y0, y1: y0 + GH, noLean: true }
+    : { x0: x - hd, x1: x + hd, z0: z - hw, z1: z + hw, y0: y0, y1: y0 + GH, noLean: true };
   boxes.push(box);
+  if (alongZ) {
+    const a = hsLadder(x + 3.7, z + 1.7, y0, topY, true, 1); if (a) { a.F = fl; a.dir = -1; }
+    const b = hsLadder(x - 3.7, z + 1.7, y0, topY, true, 1); if (b) { b.F = fl; b.dir = -1; }
+    const c = hsLadder(x + 3.7, z - 1.7, y0, topY, true, -1); if (c) { c.F = fl; c.dir = 1; }
+    const d = hsLadder(x - 3.7, z - 1.7, y0, topY, true, -1); if (d) { d.F = fl; d.dir = 1; }
+  } else {
+    const sg = Math.sin(yaw || 0) > 0 ? 1 : -1;
+    for (const zz of [3.5, -3.5]) {
+      const L1 = hsLadder(x + 1.7 * sg, z + zz, y0, topY, false, sg); if (L1) L1.F = fl;
+      const L2 = hsLadder(x - 1.7 * sg, z + zz, y0, topY, false, -sg); if (L2) L2.F = fl;
+    }
+  }
   const perch = [];
   for (let i = 0; i < 8; i++) {
     const a = (i % 4) / 3 - 0.5, b = Math.floor(i / 4) ? 1 : -1;
@@ -39463,24 +39568,24 @@ function hsGateHouse(x, z, yaw, name, w, y0) {
       : { x: x + b * 1.2, z: z + a * w * 0.7, y: topY, taken: null, kind: 'gate', name });
   }
   (HS.perches || (HS.perches = [])).push(...perch);
-  const G = { id: name, name, x, z, yaw, w, g, leaf, bands: [band1, band2], box, open: false, hp: 120, hpMax: 120, topY, perch, y0 };
+  const G = { id: name, name, x, z, yaw, w, g, leaves, leaf: leaves[0], bands: [], box, open: false, hp: 120, hpMax: 120, topY, perch, y0 };
   (HS.gates || (HS.gates = [])).push(G);
   return G;
 }
 function hsGateOpen(G, why) {
   if (!G || G.open) return;
-  G.open = true; G.leaf.visible = false; if (G.bands) for (const b of G.bands) b.visible = false;
+  G.open = true;
+  if (G.leaves) for (const lf of G.leaves) lf.visible = false;
+  if (G.leaf) G.leaf.visible = false; if (G.bands) for (const b of G.bands) b.visible = false;
   const i = boxes.indexOf(G.box); if (i >= 0) boxes.splice(i, 1);
   showBanner((G.label || G.name) + (why === 'ram' ? '、破れた' : '、開いた'), why === 'ram' ? '破城槌が門を破った' : why === 'climb' ? '墙上から内側の門を開けた' : '門が開いた');
   bannerTimer = 3.2; HS.ev.push([HS.t | 0, 'gate', G.id, why || '']);
   hsOnGate(G, why);
 }
-
 function hsTenshu(x, z) {
   const M = hsMats(), g = new THREE.Group(); g.position.set(x, 0, z);
   const y0 = HS_HON.y, baseH = 8.5;
   const base = new THREE.Mesh(new THREE.BoxGeometry(22, baseH, 19), M.stone); base.position.y = y0 + baseH / 2; g.add(base);
-  // 算木積み風の隅
   for (const sx of [-10.6, 10.6]) for (const sz of [-9.1, 9.1]) {
     const c = new THREE.Mesh(new THREE.BoxGeometry(1.4, baseH, 1.4), M.stone); c.position.set(sx, y0 + baseH / 2, sz); g.add(c);
   }
@@ -39488,12 +39593,14 @@ function hsTenshu(x, z) {
   let yy = y0 + baseH;
   for (let i = 0; i < floorsN.length; i++) {
     const [w, d, h] = floorsN[i];
-    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h - 0.4, d), M.plas); body.position.y = yy + (h - 0.4) / 2; g.add(body);
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 2.4, 0.34, d + 2.4), M.tile); roof.position.y = yy + h - 0.05; g.add(roof);
-    const gab = new THREE.Mesh(new THREE.BoxGeometry(w * 0.35, 1.1, 0.22), M.tile); gab.position.set(0, yy + h + 0.45, d / 2 + 0.9); g.add(gab);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(w, h - 0.45, d), M.plas); body.position.y = yy + (h - 0.45) / 2; g.add(body);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, h - 0.2, 0.24), M.woodD);
+      post.position.set(sx * (w / 2 - 0.2), yy + (h - 0.2) / 2, sz * (d / 2 - 0.2)); g.add(post);
+    }
+    hsHip(g, -w / 2 - 1.3, w / 2 + 1.3, -d / 2 - 1.3, d / 2 + 1.3, yy + h - 0.4, 1.65);
     yy += h;
   }
-  // 相輪
   const sp = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.16, 2.6, 6), M.gold); sp.position.y = yy + 1.1; g.add(sp);
   stageRoot.add(g); if (HS.stat) HS.stat.push(g);
   const topY = yy - 1.2;
@@ -39502,7 +39609,6 @@ function hsTenshu(x, z) {
   HS.tenshu = { x, z, y: topY, g, baseY: y0 + baseH };
   return HS.tenshu;
 }
-
 function hsDorui() {
   const M = hsMats(), so = HS_SO, th = so.th, h = so.y, mo = HS_SO_MOAT;
   // 土塁は四面。門の所は切る
@@ -39533,6 +39639,24 @@ function hsDorui() {
   hsBox(DM.x0, -161, h - 0.04, h + 0.16, DM.z0, DM.z0 + 6, M.grass, false);
   hsBox(-151, DM.x1, h - 0.04, h + 0.16, DM.z0, DM.z0 + 6, M.grass, false);
   hsBox(DM.x0, DM.x1, h - 0.05, h + 0.12, DM.z0 + 6, DM.z1, M.grass, false);   // 出丸の床
+  const crest = (a0, a1, c, alongX) => {
+    const t = 0.3, H = 2.2, yb = h;
+    const box = (u0, u1, yy0, yy1, v0, v1, mat, solid) => {
+      if (alongX) hsBox(u0, u1, yb + yy0, yb + yy1, c + v0, c + v1, mat, solid);
+      else hsBox(c + v0, c + v1, yb + yy0, yb + yy1, u0, u1, mat, solid);
+    };
+    box(a0, a1, 0, 0.7, -t - 0.08, t + 0.08, M.stone, true);
+    box(a0, a1, 0.7, H, -t, t, M.plas, true);
+    box(a0, a1, H, H + 0.12, -t - 0.25, t + 0.25, M.tile, false);
+    box(a0, a1, H + 0.12, H + 0.32, -0.12, 0.12, M.tile, false);
+  };
+  crest(so.x0 + 10, -10, so.z0 - th / 2, true);
+  crest(10, so.x1 - 10, so.z0 - th / 2, true);
+  crest(so.x0 + 4, so.x1 - 4, so.z1 + th / 2, true);
+  crest(so.z0 + 10, -52, so.x0 - th / 2, false);
+  crest(-36, so.z1 - 10, so.x0 - th / 2, false);
+  crest(so.z0 + 10, -52, so.x1 + th / 2, false);
+  crest(-36, so.z1 - 10, so.x1 + th / 2, false);
 }
 
 function hsMoats() {
@@ -39563,39 +39687,33 @@ function hsMoats() {
 
 function hsTown() {
   const M = hsMats(), n = LITE ? 80 : 160, dum = new THREE.Object3D();
-  const bodyG = new THREE.BoxGeometry(6, 3.2, 5), roofG = new THREE.BoxGeometry(7.2, 0.28, 6.2);
-  const bodies = new THREE.InstancedMesh(bodyG, M.wood, n), roofs = new THREE.InstancedMesh(roofG, M.tile, n);
+  const bodyG = new THREE.BoxGeometry(6, 3.2, 5);
+  const roofG = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4, 1); roofG.rotateY(Math.PI / 4); roofG.translate(0, 0.5, 0);
+  const bodies = new THREE.InstancedMesh(bodyG, M.plas, n), woods = new THREE.InstancedMesh(new THREE.BoxGeometry(6.1, 1.05, 5.1), M.wood, n);
+  const roofs = new THREE.InstancedMesh(roofG, M.tile, n);
   let k = 0;
-  // 東西の通りはまっすぐ、南北はずらして城へ直進できない（福山の城下に倣う）
   for (let row = 0; row < 6 && k < n; row++) {
     const z = -268 + row * 14 + (row % 2) * 4;
     if (z > -210) continue;
     for (let col = 0; col < 18 && k < n; col++) {
       const x = -190 + col * 22 + (row % 2 ? 8 : 0) + rand(-1, 1);
-      if (Math.abs(x) < 16 && z > -270) continue;   // 大手へ続く南の道
+      if (Math.abs(x) < 16 && z > -270) continue;
       dum.position.set(x, 1.6, z); dum.rotation.set(0, (row % 2) * 0.02, 0); dum.scale.set(1, 1, 1); dum.updateMatrix();
       bodies.setMatrixAt(k, dum.matrix);
-      dum.position.y = 3.35; dum.updateMatrix(); roofs.setMatrixAt(k, dum.matrix);
+      dum.position.y = 0.52; dum.updateMatrix(); woods.setMatrixAt(k, dum.matrix);
+      dum.position.y = 3.2; dum.scale.set(7.4, 1.35, 6.4); dum.updateMatrix(); roofs.setMatrixAt(k, dum.matrix);
       if (!LITE && Math.abs(x) > 18) boxes.push({ x0: x - 3, x1: x + 3, z0: z - 2.5, z1: z + 2.5, y0: 0, y1: 3.2 });
       k++;
     }
   }
-  bodies.count = roofs.count = k; stageRoot.add(bodies); stageRoot.add(roofs); if (HS.stat) HS.stat.push(bodies, roofs);
+  bodies.count = woods.count = roofs.count = k; stageRoot.add(bodies); stageRoot.add(woods); stageRoot.add(roofs); if (HS.stat) HS.stat.push(bodies, woods, roofs);
 }
-
 function hsTake(x, z, yaw) {
-  const M = hsMats(), g = new THREE.Group();
-  for (let i = 0; i < 7; i++) {
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.7, 5), M.wood);
-    b.position.set(rand(-0.5, 0.5), 0.85, rand(-0.25, 0.25)); b.rotation.z = rand(-0.15, 0.15); g.add(b);
-  }
-  const rope = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.04, 4, 8), M.woodD); rope.rotation.x = 1.2; rope.position.y = 0.7; g.add(rope);
-  g.position.set(x, hsH(x, z), z); g.rotation.y = yaw || 0; stageRoot.add(g);
-  (HS.takes || (HS.takes = [])).push({ x, z, g, yaw: yaw || 0 });
-  if (HS.stat) HS.stat.push(g);
+  const y = hsH(x, z);
+  const cv = (typeof bamboobundle === 'function') ? bamboobundle(x, z, yaw || 0, { y: Math.max(0, y), noCol: false }) : null;
+  (HS.takes || (HS.takes = [])).push({ x, z, g: cv && cv.mesh, yaw: yaw || 0, cv });
   return { x, z, kind: 'take' };
 }
-
 function hsPlane(x0, x1, z0, z1, y, mat) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), mat);
   m.rotation.x = -Math.PI / 2; m.position.set((x0 + x1) / 2, y, (z0 + z1) / 2);
@@ -39645,25 +39763,37 @@ function hsGround() {
 
 
 function hsWallRun(x0, x1, z0, z1, y0, y1, parapet) {
-  const M = hsMats();
-  hsBox(x0, x1, y0, y1, z0, z1, M.stone, true);
+  const M = hsMats(), alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+  const stoneH = Math.min(y1, Math.max(y0 + 1.0, y1 - 1.55));
+  hsBox(x0, x1, y0, stoneH, z0, z1, M.stone, true);
+  if (stoneH < y1) hsBox(x0, x1, stoneH, y1, z0, z1, M.plas, true);
   if (parapet) {
-    const alongX = Math.abs(x1 - x0) > Math.abs(z1 - z0);
-    const ph = y1 + 1.65;
+    const ph = y1 + 1.15, cap = y1 + 1.27, cap2 = y1 + 1.48;
     if (alongX) {
-      const zc = (z0 + z1) / 2, pw = 0.4;
-      hsBox(x0, x1, y1, ph, zc - pw, zc + pw, M.plas, true);
+      const zc = (z0 + z1) / 2;
+      hsBox(x0, x1, y1, ph, zc - 0.22, zc + 0.22, M.plas, true);
+      hsBox(x0, x1, ph, cap, zc - 0.42, zc + 0.42, M.tile, false);
+      hsBox(x0, x1, cap, cap2, zc - 0.14, zc + 0.14, M.tile, false);
+      for (let x = x0 + 3; x < x1 - 2; x += 7) {
+        hsBox(x - 0.09, x + 0.09, y1 + 0.2, y1 + 0.85, zc - 0.24, zc + 0.24, M.black, false);
+        (HS.perches || (HS.perches = [])).push({ x, z: zc, y: y1, taken: null, kind: 'slit', slit: true });
+      }
     } else {
-      const xc = (x0 + x1) / 2, pw = 0.4;
-      hsBox(xc - pw, xc + pw, y1, ph, z0, z1, M.plas, true);
+      const xc = (x0 + x1) / 2;
+      hsBox(xc - 0.22, xc + 0.22, y1, ph, z0, z1, M.plas, true);
+      hsBox(xc - 0.42, xc + 0.42, ph, cap, z0, z1, M.tile, false);
+      hsBox(xc - 0.14, xc + 0.14, cap, cap2, z0, z1, M.tile, false);
+      for (let z = z0 + 3; z < z1 - 2; z += 7) {
+        hsBox(xc - 0.24, xc + 0.24, y1 + 0.2, y1 + 0.85, z - 0.09, z + 0.09, M.black, false);
+        (HS.perches || (HS.perches = [])).push({ x: xc, z, y: y1, taken: null, kind: 'slit', slit: true });
+      }
     }
   }
 }
-
 function buildHs() {
-  ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false;
+  ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = true;
   TERR.fn = hsH; TERR.move = null; hsLook();
-  Object.assign(HS, { on: false, atk: hsAtkOn(), t: 0, stat: [], bridges: [], waters: [], gates: [], perches: [], yagura: [], tamon: [], takes: [], covers: [],
+  Object.assign(HS, { on: false, atk: hsAtkOn(), t: 0, stat: [], bridges: [], waters: [], gates: [], doors: [], perches: [], yagura: [], tamon: [], takes: [], covers: [],
     px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], dead: [], shells: [], tr: [], stuck: [],
     lostB: 0, lostO: 0, total: { blue: 0, orange: 0 }, wn: { bow: 0, xb: 0, dao: 0, boom: 0, kai: 0, sh: 0 },
     rams: [], towers: [], laddersS: [], guns: [], ev: [], plan: '', planT: 0, done: false, outcome: '',
@@ -39762,6 +39892,8 @@ function buildHs() {
   for (let i = 0; i < 8; i++) hsTake(-160 + i * 6, -330, 0);   // 出丸前
 
   hsBuildSiege();
+  hsDressField();
+  hsHonjin();
   if (typeof staticMerge === 'function') { try { staticMerge(stageRoot, [HS.rams, HS.towers, HS.guns, HS.waters, HS.gates.map(G => G.g)]); } catch (_) {} }
 }
 
@@ -39785,16 +39917,37 @@ function hsBuildSiege() {
   mkRam(0, -340);
   // 攻城塔 三基
   function mkTw(x, z) {
-    const g = new THREE.Group(), S = 3.4, H = 11.5;
-    const frame = new THREE.Mesh(new THREE.BoxGeometry(S, H, S), M.wood); frame.position.y = H / 2; g.add(frame);
-    const hide = new THREE.Mesh(new THREE.BoxGeometry(S + 0.1, H - 0.6, 0.08), M.earth); hide.position.set(0, H / 2, S / 2 + 0.06); g.add(hide);   // 正面の獣皮（炎は出さない）
-    for (let i = 1; i <= 3; i++) { const fl = new THREE.Mesh(new THREE.BoxGeometry(S - 0.2, 0.1, S - 0.2), M.woodD); fl.position.y = i * 2.7; g.add(fl); }
-    const br = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 5.5), M.wood); br.position.set(0, H - 0.4, S / 2 + 2.4); br.rotation.x = -0.15; br.visible = false; br.name = 'hsbr'; g.add(br);
-    for (const sx of [-1.5, 1.5]) for (const sz of [-1.5, 1.5]) {
-      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.24, 10), M.woodD); wh.rotation.z = Math.PI / 2; wh.position.set(sx, 0.6, sz); g.add(wh);
+    const g = new THREE.Group(), S = 2.4, Y = 8.6, add = (x0, x1, y0, y1, z0, z1, mat) => {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), mat);
+      m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); g.add(m); return m;
+    };
+    add(-S - 0.2, S + 0.2, 0.55, 0.85, -S - 0.2, S + 0.2, M.woodD);
+    const wheelGeo = new THREE.CylinderGeometry(0.62, 0.62, 0.28, 12); wheelGeo.rotateZ(Math.PI / 2);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const wh = new THREE.Mesh(wheelGeo, M.woodD); wh.position.set(sx * (S + 0.32), 0.62, sz * (S - 0.6)); g.add(wh);
     }
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const m = add(-0.17, 0.17, 0, Y + 0.1, -0.17, 0.17, M.woodD);
+      m.position.set(sx * (S - 0.15), Y / 2 + 0.45, sz * (S - 0.15)); m.rotation.set(sz * -0.035, 0, sx * 0.035);
+    }
+    for (const y of [2.6, 4.9, 7.0]) for (const sz of [-1, 1]) add(-S, S, y - 0.08, y + 0.08, sz * (S - 0.25) - 0.06, sz * (S - 0.25) + 0.06, M.wood);
+    for (const y of [2.6, 4.9, 7.0]) for (const sx of [-1, 1]) add(sx * (S - 0.25) - 0.06, sx * (S - 0.25) + 0.06, y - 0.08, y + 0.08, -S, S, M.wood);
+    for (let y = 0.9; y < Y - 0.2; y += 0.55) add(-S + 0.05, S - 0.05, y, y + 0.5, S - 0.12, S, Math.random() < 0.5 ? M.wood : M.woodL);
+    add(-S - 0.15, S + 0.15, Y - 0.25, Y, -S - 0.15, S + 0.15, M.woodL);
+    const PH = 0.95;
+    add(-S - 0.15, S + 0.15, Y, Y + PH, S, S + 0.15, M.wood);
+    for (const sx of [-1, 1]) add(sx * (S + 0.15) - 0.08, sx * (S + 0.15) + 0.08, Y, Y + PH, -S - 0.15, S + 0.15, M.wood);
+    add(-S - 0.15, S + 0.15, Y + 0.8, Y + 0.9, -S - 0.15, -S - 0.05, M.wood);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) add(sx * (S - 0.05) - 0.07, sx * (S - 0.05) + 0.07, Y, Y + 2.6, sz * (S - 0.05) - 0.07, sz * (S - 0.05) + 0.07, M.woodD);
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(2 * S + 0.6, 0.12, 2 * S + 0.6), M.wood); roof.position.set(0, Y + 2.65, 0); roof.rotation.x = -0.12; g.add(roof);
+    for (const sc of [-1, 1]) add(sc * 0.32 - 0.04, sc * 0.32 + 0.04, 0.8, Y, -S - 0.2, -S - 0.12, M.woodD);
+    for (let y = 1.1; y < Y; y += 0.4) add(-0.32, 0.32, y - 0.03, y + 0.03, -S - 0.2, -S - 0.13, M.woodL);
+    const br = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 5.5), M.wood); br.position.set(0, Y - 0.2, S + 2.4); br.rotation.x = -0.15; br.visible = false; br.name = 'hsbr'; g.add(br);
     g.position.set(x, 0, z); stageRoot.add(g);
-    const T = { g, x, z, br, at: false, pushers: [], n: 0, topY: H - 0.8, target: null, spd: 0.85 };
+    const topY = Y;
+    floors.push({ x0: x - S, x1: x + S, z0: z - S, z1: z + S, y: topY, seiran: true });
+    for (let i = 0; i < 4; i++) (HS.perches || (HS.perches = [])).push({ x: x - 1.2 + (i % 2) * 2.4, z: z + 0.6 + Math.floor(i / 2) * 0.8, y: topY, taken: null, kind: 'seiran', seiran: true });
+    const T = { g, x, z, br, at: false, pushers: [], n: 0, topY, target: null, spd: 0.85, S };
     HS.towers.push(T); return T;
   }
   mkTw(-48, -336); mkTw(48, -336); mkTw(-100, -336);
@@ -39810,6 +39963,82 @@ function hsBuildSiege() {
   mkGun(-24, -368); mkGun(-8, -368); mkGun(8, -368); mkGun(24, -368);
 }
 
+
+
+function hsDressField() {
+  const defC = HS.atk ? '#d9741c' : '#1f5fb8', defT = HS.atk ? '#fff6e8' : '#f4f1e8', defW = HS.atk ? '橙組' : '青組';
+  const atkC = HS.atk ? '#1f5fb8' : '#d9741c', atkT = HS.atk ? '#f4f1e8' : '#fff6e8', atkW = HS.atk ? '青組' : '橙組';
+  try {
+    maku(-10, -348, 12, 0); maku(10, -348, 12, 0); maku(-16, -356, 14, Math.PI / 2); maku(16, -356, 14, Math.PI / 2); maku(0, -362, 16, 0);
+    for (let i = -3; i <= 3; i++) nobori(i * 4, -340, atkC, atkT, i % 2 ? atkW : '必勝');
+    for (let i = -2; i <= 2; i++) nobori(i * 5, -8, defC, defT, i % 2 ? defW : '本陣');
+    nobori(-8, -26, defC, defT, '本陣'); nobori(8, -26, defC, defT, '本陣');
+  } catch (_) {}
+  if (typeof tree === 'function') {
+    for (let i = 0; i < (LITE ? 40 : 90); i++) {
+      const a = Math.random() * Math.PI * 2, r = 300 + Math.random() * 80, x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (Math.abs(x) < 40 && z < -250 && z > -400) continue;
+      try { tree(x, z, rand(0.9, 1.7)); } catch (_) {}
+    }
+  }
+}
+function hsHonjin() {
+  const M = hsMats(), y = HS_HON.y, x0 = -12, x1 = 12, z0 = -18, z1 = -2, H = 3.3;
+  hsBox(x0, x1, y, y + 0.08, z0, z1, M.tatami, false);
+  hsBox(x0, -1.2, y, y + H, z0, z0 + 0.22, M.plas, true);
+  hsBox(1.2, x1, y, y + H, z0, z0 + 0.22, M.plas, true);
+  hsBox(-1.2, 1.2, y + 2.2, y + H, z0, z0 + 0.22, M.plas, true);
+  hsBox(x0, x1, y, y + H, z1 - 0.22, z1, M.plas, true);
+  hsBox(x0, x0 + 0.22, y, y + H, z0, z1, M.plas, true);
+  hsBox(x1 - 0.22, x1, y, y + H, z0, z1, M.plas, true);
+  const g = new THREE.Group(); g.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  hsHip(g, -13.2, 13.2, -9.2, 9.2, y + H, 1.5); stageRoot.add(g); if (HS.stat) HS.stat.push(g);
+  const tw = 0.9;
+  for (let row = 0; row < 4; row++) for (let col = 0; col < 8; col++) {
+    const tx = x0 + 1.2 + col * tw + tw / 2, tz = z0 + 1.2 + row * 0.9 + 0.45;
+    if (tz > z1 - 1) continue;
+    const m = new THREE.Mesh(new THREE.BoxGeometry(tw - 0.02, 0.04, 0.88), M.tatami);
+    m.position.set(tx, y + 0.1, tz); stageRoot.add(m); if (HS.stat) HS.stat.push(m);
+  }
+  const doorMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), M.fusuma, 4);
+  const d = { x: 0, z: (z0 + z1) / 2, dir: 'z', open: false, k: 0, i: 0, mesh: doorMesh, box: { x0: -0.95, x1: 0.95, z0: (z0 + z1) / 2 - 0.06, z1: (z0 + z1) / 2 + 0.06, y0: y, y1: y + 2.0 } };
+  boxes.push(d.box);
+  const write = () => {
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(); q.setFromAxisAngle(new V3(0, 1, 0), Math.PI / 2);
+    for (const s of [-1, 1]) {
+      const off = s * (0.45 + 0.88 * d.k);
+      m4.compose(new V3(d.x + off, y + 0.89, d.z), q, new V3(0.9, 1.78, 0.03)); doorMesh.setMatrixAt(s > 0 ? 1 : 0, m4);
+    }
+    m4.compose(new V3(-1.8, y + 0.89, d.z), q, new V3(0.9, 1.78, 0.03)); doorMesh.setMatrixAt(2, m4);
+    m4.compose(new V3(1.8, y + 0.89, d.z), q, new V3(0.9, 1.78, 0.03)); doorMesh.setMatrixAt(3, m4);
+    doorMesh.instanceMatrix.needsUpdate = true;
+  };
+  d.write = write; write(); stageRoot.add(doorMesh); if (HS.stat) HS.stat.push(doorMesh);
+  (HS.doors || (HS.doors = [])).push(d);
+  try { nobori(-10, -4, HS.atk ? '#d9741c' : '#1f5fb8', HS.atk ? '#fff6e8' : '#f4f1e8', '本陣'); } catch (_) {}
+  try { buildMedPost(6, -6, hsDefT(), y); } catch (_) {}
+  try {
+    const mk = new THREE.Sprite(medicMarkMat[hsDefT()] || medicMarkMat.blue); mk.scale.set(0.45, 0.45, 1); mk.position.set(6, y + 2.4, -6); mk.renderOrder = 6; stageRoot.add(mk);
+  } catch (_) {}
+  HS.honjin = { x0, x1, z0, z1, y, doors: HS.doors };
+  floors.push({ x0, x1, z0, z1, y: y + 0.08 });
+}
+function hsDoorNear() {
+  if (!HS.on || !HS.doors) return null;
+  let best = null, bd = 1.8;
+  for (const d of HS.doors) {
+    const dd = Math.hypot(player.pos.x - d.x, player.pos.z - d.z);
+    if (dd < bd && Math.abs(player.pos.y - (d.box.y0 || 0)) < 1.6) { bd = dd; best = d; }
+  }
+  return best;
+}
+function hsDoorUse() {
+  const d = hsDoorNear(); if (!d) return false;
+  d.open = !d.open; d.k = d.open ? 1 : 0; if (d.write) d.write();
+  d.box.y1 = d.open ? -1 : (d.box.y0 || 0) + 2;
+  try { const o = Sfx.at(new V3(d.x, 1, d.z), 30); if (o) Sfx.noiseBurst(0.32, 'bandpass', 900, 500, 0.12, 0.8, 0, o); } catch (_) {}
+  return true;
+}
 
 function hsLooks(team) {
   const ok = g => GIRLS[g] && GIRLS[g].front && GIRLS[g].front.tex;
@@ -40354,7 +40583,11 @@ function hsPromote(o) {
   if (o.real || !o.alive) return;
   const e = ks2Mk(o.x, o.z, o.arch ? 'archer' : 'mob', o.team, o.gid, o.prof || {}); if (!e) return;
   e.hs = true; e.hsO = o; e.hsU = o.U; e.passive = true; e.kneel = false; e.seated = false; e.hp = e.hpMax = o.hp;
-  e.s.position.set(o.x, o.y, o.z); e.baseY = o.y; o.real = e; HS.rl.push(e);
+  e.medic = !!o.medic; e.climber = !!(o.U && o.U.role === 'ladder') || !!o.arch;
+  const un = (o.U && o.U.name) ? o.U.name : '', role = o.medic ? '【医務】' : o.arch ? '【弓】' : (o.U && o.U.role === 'ladder' ? '【梯子】' : '【兵】');
+  const nm = (o.prof && o.prof.name) || (e.prof && e.prof.name) || '';
+  e.ukTag = (un + role + (nm ? ' ' + nm : '')).trim();
+  e.s.position.set(o.x, o.y || 0, o.z); e.baseY = o.y || 0; o.real = e; HS.rl.push(e);
 }
 function hsDemote(o) {
   const e = o.real; if (!e) return;
@@ -40367,8 +40600,27 @@ function hsBrain(e, dt) {
   e.passive = true; e.kneel = false; e.crouch = 0; e.seated = false; if (e.knock) e.knock.set(0, 0, 0);
   const o = e.hsO, p = e.s.position;
   if (o && !o.alive) return true;
-  if (o) { p.x = o.x; p.z = o.z; p.y = o.y; e.baseY = o.y; if (o.hx) e.faceWant = Math.atan2(o.hx, o.hz); }
+  if (e.lad) { if (o) { o.x = p.x; o.z = p.z; o.y = e.baseY; } return true; }
+  if (o && o.perch) { p.x = o.x; p.z = o.z; p.y = o.y; e.baseY = o.y; e.perch = o.perch; if (o.hx) e.faceWant = Math.atan2(o.hx, o.hz); return true; }
+  if (!e.lad && !e.perch && e.climber && o && !o.perch && (e.noClimbT || 0) <= 0) hsTryClimb(e, o);
+  if (o) { p.x = o.x; p.z = o.z; p.y = o.y || 0; e.baseY = o.y || 0; if (o.hx) e.faceWant = Math.atan2(o.hx, o.hz); }
   if (typeof sgkPose === 'function' && e.sgkAct) sgkPose(e, dt);
+  return true;
+}
+function hsTryClimb(e, o) {
+  const p = e.s.position;
+  let best = null, bd = 10;
+  for (const L of ladders) {
+    ladMeta(L);
+    const d = Math.hypot(ladX(L) - p.x, ladZ(L) - p.z);
+    if (d < bd && Math.abs((L.y0 || 0) - (o.y || 0)) < 2.5) { bd = d; best = L; }
+  }
+  if (!best || bd > 8) return false;
+  const F = best.F; if (!F) return false;
+  const q = (HS.perches || []).find(q => !q.taken && Math.abs(q.y - F.y) < 0.4 && Math.hypot(q.x - ladX(best), q.z - ladZ(best)) < 10);
+  if (q) { q.taken = e; e.climbPerch = q; }
+  startClimb(e, best, true);
+  if (Math.hypot(p.x - player.pos.x, p.z - player.pos.z) < 22) subtitle('はしご、ゆっくり登ります…');
   return true;
 }
 
@@ -40406,7 +40658,13 @@ function hsDrawW(o, dum, used) {
 }
 
 function hsCounts() { const b = HS.B.filter(o => o.alive).length, o = HS.O.filter(o => o.alive).length; HS.cnt = { b, o, lostB: HS.lostB, lostO: HS.lostO }; return HS.cnt; }
-function hsLabel() { const c = hsCounts(), m = Math.floor(HS.t / 60), s = Math.floor(HS.t % 60), side = HS.atk ? '攻め' : '守り'; return `${m}:${String(s).padStart(2, '0')} ${side} 味方${c.b} 敵${c.o}`; }
+function hsLabel() { const side = HS.atk ? '攻め' : '守り'; return `蓮見城の攻防（${side}）`; }
+function hsRemain() {
+  const c = hsCounts();
+  const G = (typeof hsFrontGate === 'function' && hsFrontGate()) || (HS.gates || []).find(g => !g.open) || null;
+  const gn = G ? `　${G.label || G.name} ${G.open ? '開' : (Math.ceil((G.hp / (G.hpMax || 1)) * 100) + '%')}` : '';
+  return `残敵 ${c.o}　味方 ${c.b}${gn}`;
+}
 function hsResultHtml() { const c = hsCounts(); return `味方 残り <b>${c.b}</b>　／　敵 残り <b>${c.o}</b><br>倒した敵 <b>${HS.lostO}</b>　／　失った味方 <b>${HS.lostB}</b>`; }
 
 function hsCheckEnd() {
@@ -40447,7 +40705,7 @@ function hsStart() {
   showBanner(HS.atk ? '蓮見城を取り返す' : '蓮見城を守れ', HS.atk ? '竹束を盾に、一方を陽動して門を破れ' : '土塁と枡形、出丸からの反撃で食い止めよ');
   bannerTimer = 4.5; hsOrder('start');
   if (TEST) window.__hs = { HS, hsCounts, hsUpdate, hsSetView, hsForceWin, hsForceLose, step: (n, dt) => { const d = dt || 0.1; for (let i = 0; i < n; i++) { time += d; hsUpdate(d); if (typeof updatePlayer === 'function') updatePlayer(d); } } };
-  hsAreaUI(true);
+  const _hsA = $('hsArea'); if (_hsA) _hsA.style.display = 'none';
 }
 
 function hsLater() { const L = HS.later, t = HS.t; for (let i = L.length - 1; i >= 0; i--) if (L[i][0] <= t) { const fn = L[i][1]; L.splice(i, 1); try { fn(); } catch (err) { console.warn(err); } } }
@@ -40472,28 +40730,11 @@ function hsUpdate(dt) {
   for (const e of HS.real) if (isUp(e) && e.hsK) hsBrain(e, dt);
   // 水は遅い（見えている堀。壁ではない）
   if (hsWading(player.pos.x, player.pos.z)) { /* 速度は updatePlayer の hsMudK */ }
-  hsDraw(); hsCounts(); hsAreaUI(false); hsCheckEnd();
+  hsDraw(); hsCounts(); const _hsA = $('hsArea'); if (_hsA) _hsA.style.display = 'none'; hsCheckEnd();
 }
 
-function hsAreaUI(force) {
-  let el = $('hsArea');
-  if (!el) {
-    el = document.createElement('div'); el.id = 'hsArea';
-    el.style.cssText = 'display:none;position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:96px;flex-direction:row;gap:4px;pointer-events:auto;';
-    document.body.appendChild(el);
-  }
-  const show = HS.on && state === 'play';
-  el.style.display = show ? 'flex' : 'none';
-  if (!show) return;
-  const want = (HS.UB || []).map((U, i) => U.name.replace(/隊$/, '').slice(0, 3)).join('|');
-  if (!force && el.dataset.w === want) return;
-  el.dataset.w = want; el.innerHTML = '';
-  (HS.UB || []).forEach((U, i) => {
-    const b = document.createElement('button'); b.className = 'btn serif'; b.textContent = U.name.replace(/隊$/, '').replace('漢軍 ', '').slice(0, 3);
-    b.style.cssText = 'font-size:12px;padding:2px 7px;min-width:0;height:22px;line-height:18px;';
-    b.onclick = () => hsSetView(i); el.appendChild(b);
-  });
-}
+function hsAreaUI() { const el = $('hsArea'); if (el) { el.style.display = 'none'; el.innerHTML = ''; } }
+
 function hsSetView(i) {
   const U = HS.UB[i]; if (!U) return; HS.view = i;
   const z = U.z - (U.team === hsAtkT() ? -10 : 10);
@@ -40896,6 +41137,7 @@ function updatePlayer(dt) {
     } else pushOutBoxes(player.pos, 0.35, yA, yB);
   }
   if (CV.on) cvPush(player.pos, 0.35);
+  if (HG.on) hgTankPush(player.pos, 0.4);
   player.lastXZ = [player.pos.x, player.pos.z];
   if (PLANE.on) planeClamp(player.pos, 0.35);
   if (BEACH.on) beachPlayerClamp();

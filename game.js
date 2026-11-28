@@ -6410,37 +6410,91 @@ function hgBmMesh() { const M = HG.bmM || (HG.bmM = { m: new THREE.MeshLambertMa
 function hgGroup(gid) { if (HG.pg[gid] !== undefined) return HG.pg[gid]; const G = ks2PxGroup(gid, 900); if (G) { G.cap = 900; G.dl = []; G.gid = gid; hgPxViews(G, gid); } HG.pg[gid] = G || null; return HG.pg[gid]; }
 function hgPxViews(G, gid) {
   const g = GIRLS[gid]; if (!g || !G.im) return;
-  const cap = (G.im.instanceMatrix && G.im.instanceMatrix.count) || G.cap || 900;
+  if (typeof ensureViews === 'function') try { ensureViews(g); } catch (_) {}
+  const cap = G.cap || 900;
   const mk = fr => {
     if (!fr || !fr.tex) return null;
     const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, 0.5, 0);
     const mat = new THREE.MeshBasicMaterial({ map: fr.tex, transparent: true, alphaTest: 0.45, depthWrite: true, side: THREE.DoubleSide, fog: true });
-    const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; stageRoot.add(im);
-    const img = fr.tex.image; return { im, asp: (img && img.width) ? img.width / img.height : G.asp };
+    const im = new THREE.InstancedMesh(geo, mat, cap); im.count = 0; im.frustumCulled = false; im.matrixAutoUpdate = false; stageRoot.add(im);
+    const asp = (fr.aspect > 0.05 && fr.aspect < 2) ? fr.aspect : (G.asp || 0.4);
+    const hk = (fr.hk > 0.3 && fr.hk < 2) ? fr.hk : 1;
+    const ax = (fr.ax == null || fr.ax < 0 || fr.ax > 1) ? 0.5 : fr.ax;
+    return { im, asp, hk, ax };
   };
   G.vxS = mk(g.side); G.vxB = mk(g.back);
+  G.vxFD = mk(g.front_diag); G.vxBD = mk(g.back_diag);
 }
-function hgPxPick(o, camYaw) {
+function hgPxSlot(G, v) {
+  if (v === 'side') return G.vxS;
+  if (v === 'back') return G.vxB;
+  if (v === 'front_diag') return G.vxFD;
+  if (v === 'back_diag') return G.vxBD;
+  return null;
+}
+function hgPxPick(o, camYaw, G) {
   const face = Math.atan2(o.hx || 0, o.hz || 1);
-  const c = Math.cos(face - camYaw);
+  const rel = face - camYaw, c = Math.cos(rel), s = Math.sin(rel);
+  const hasFD = !!(G && G.vxFD), hasBD = !!(G && G.vxBD);
   let v = o.pv || 'front';
-  const m = 0.12;
-  if (c > 0.5 + (v === 'front' ? -m : m)) v = 'front';
-  else if (c < -0.5 - (v === 'back' ? -m : m)) v = 'back';
-  else v = 'side';
+  const m = 0.10, hy = k => (v === k ? -m : m);
+  if (hasFD || hasBD) {
+    if (c > 0.92 + hy('front')) v = 'front';
+    else if (hasFD && c > 0.38 + hy('front_diag')) v = 'front_diag';
+    else if (c > -0.38 + hy('side')) v = 'side';
+    else if (hasBD && c > -0.92 + hy('back_diag')) v = 'back_diag';
+    else v = 'back';
+    if (v === 'front_diag' && !hasFD) v = 'front';
+    if (v === 'back_diag' && !hasBD) v = 'back';
+  } else {
+    if (c > 0.5 + (v === 'front' ? -m : m)) v = 'front';
+    else if (c < -0.5 - (v === 'back' ? -m : m)) v = 'back';
+    else v = 'side';
+  }
   o.pv = v;
-  const flip = (Math.sin(face) * Math.cos(camYaw) - Math.cos(face) * Math.sin(camYaw) > 0) ? -1 : 1;
-  return { v, flip };
+  return { v, flip: s > 0 ? -1 : 1 };
 }
 function hgPxPut(G, o, Q, except) {
-  const i = o.i;
-  if (except !== 'front') G.im.setMatrixAt(i, HG_Z0);
-  if (G.vxS && except !== 'side') G.vxS.im.setMatrixAt(i, HG_Z0);
-  if (G.vxB && except !== 'back') G.vxB.im.setMatrixAt(i, HG_Z0);
+  const i = o.i, Z = HG_Z0;
+  if (except !== 'front') G.im.setMatrixAt(i, Z);
+  if (G.vxS && except !== 'side') G.vxS.im.setMatrixAt(i, Z);
+  if (G.vxB && except !== 'back') G.vxB.im.setMatrixAt(i, Z);
+  if (G.vxFD && except !== 'front_diag') G.vxFD.im.setMatrixAt(i, Z);
+  if (G.vxBD && except !== 'back_diag') G.vxBD.im.setMatrixAt(i, Z);
   if (except === 'front') G.im.setMatrixAt(i, Q.matrix);
   else if (except === 'side' && G.vxS) G.vxS.im.setMatrixAt(i, Q.matrix);
   else if (except === 'back' && G.vxB) G.vxB.im.setMatrixAt(i, Q.matrix);
-  else G.im.setMatrixAt(i, Q.matrix);
+  else if (except === 'front_diag' && G.vxFD) G.vxFD.im.setMatrixAt(i, Q.matrix);
+  else if (except === 'back_diag' && G.vxBD) G.vxBD.im.setMatrixAt(i, Q.matrix);
+}
+function hgPxBillboard(G, o, px, py, pz, camYaw, rzR) {
+  const Q = HG_QS, pv = hgPxPick(o, camYaw, G), slot = hgPxSlot(G, pv.v);
+  const gf = GIRLS[G.gid] && GIRLS[G.gid].front;
+  const asp = slot ? slot.asp : (gf && gf.aspect > 0.05 ? gf.aspect : (G.asp || 0.4));
+  const hk = slot ? slot.hk : (gf && gf.hk > 0.3 ? gf.hk : 1);
+  const ax = slot ? slot.ax : (gf && gf.ax != null ? gf.ax : 0.5);
+  const h = G.h * hk, bw = h * asp, flip = (pv.v === 'front' || pv.v === 'back') ? 1 : pv.flip;
+  const off = (0.5 - ax) * bw * flip, rx = Math.cos(camYaw), rz = -Math.sin(camYaw);
+  Q.position.set(px + rx * off, py, pz + rz * off);
+  Q.rotation.set(0, camYaw, rzR || 0, 'XYZ');
+  Q.scale.set(bw * flip, h, 1);
+  Q.updateMatrix();
+  hgPxPut(G, o, Q, slot ? pv.v : 'front');
+  return pv;
+}
+function hgPxTouch(G) {
+  if (!G || !G.im) return;
+  const n = (G.list && G.list.length) || G.im.count || 0;
+  G.im.count = n; G.im.instanceMatrix.needsUpdate = true;
+  for (const k of ['vxS', 'vxB', 'vxFD', 'vxBD']) {
+    const S = G[k]; if (S && S.im) { S.im.count = n; S.im.instanceMatrix.needsUpdate = true; }
+  }
+}
+function hgPxRemove(G) {
+  if (!G) return;
+  if (G.im) stageRoot.remove(G.im);
+  if (G.dn) stageRoot.remove(G.dn);
+  for (const k of ['vxS', 'vxB', 'vxFD', 'vxBD']) if (G[k] && G[k].im) stageRoot.remove(G[k].im);
 }
 function hgTankPush(p, r) {
   if (!HG.on || !HG.veh || !HG.veh.length) return;
@@ -6494,7 +6548,7 @@ function hgSay(k, t, prio) { const e = HG.by[k]; if (e && !isUp(e)) return; ks2S
 function hgSeq(L, t0, gap) { L.forEach(([k, t], j) => HG.later.push([HG.t + t0 + j * gap, () => hgSay(k, t)])); return L.length * gap; }
 function hgZh(e, q, prio) { if (e && isUp(e)) kosZh(e, q, prio || 1.9); }
 // ---- 開始 ----
-function hgReset() { if (HG.px) for (const k in HG.pg) { const G = HG.pg[k]; if (G) { stageRoot.remove(G.im); if (G.dn) stageRoot.remove(G.dn); if (G.vxS && G.vxS.im) stageRoot.remove(G.vxS.im); if (G.vxB && G.vxB.im) stageRoot.remove(G.vxB.im); } }
+function hgReset() { if (HG.px) for (const k in HG.pg) { const G = HG.pg[k]; if (G) hgPxRemove(G); }
   if (HG.W) for (const k in HG.W) if (HG.W[k] && HG.W[k].isObject3D) stageRoot.remove(HG.W[k]); for (const U of [...(HG.UB || []), ...(HG.UO || [])]) if (U.flag) stageRoot.remove(U.flag); for (const m of HG.stuck || []) stageRoot.remove(m); for (const T of HG.tr || []) if (T.m) stageRoot.remove(T.m); for (const T of HG.veh || []) stageRoot.remove(T.m);
   Object.assign(HG, { t: 0, px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], lkI: 0, wave: 0, allyW: 0, sim: 0, grid: new Map(), lostB: 0, lostO: 0, pK: 0, tr: [], shu: null, shuDead: false, cmd: null, duel: null, said: {}, done: false, drawT: 0, mobT: 4, enT: 0,
     total: { blue: 0, orange: 0 }, pend: { blue: 0, orange: 0 }, cavN: 0, cap: 3400, joinW: 0, UC: null, UD: null, UG: null, shuFocus: null, ringL: null, given: 0, pulled: 0, shuK: 0, evLog: [], stuck: [], W: null, lodT: 0, hqGo: 0, surr: null, surrT: 0, ev: {},
@@ -6908,7 +6962,8 @@ function hgArrowHit(p0, sx, sz, sl, sy) { let best = null, bt = 2; const cx = Ma
 function hgThreat(dt) { if ((HG.enT -= dt) > 0) return; HG.enT = 1.1; const pp = player.pos, o = hgNear(pp.x, pp.z, 'orange', 80); if (!o || o.real) return; const d = Math.hypot(o.x - pp.x, o.z - pp.z);
   if (o.arch && d > 30 && Math.random() < 0.3) { const from = new V3(o.x, 1.4, o.z), T = Math.max(0.6, d / 32), vel = new V3((pp.x - o.x) / T + rand(-1.5, 1.5), (pp.y + 1.2 - 1.4) / T + 4.9 * T, (pp.z - o.z) / T + rand(-1.5, 1.5)); addArrow('orange', from, vel, { dmg: 5 }); o.atk = 0.5; } }
 // ---- 描く：絵・槍・弓・馬を一括で（遠い者は数フレームおき）。近くの本物になった者の絵は隠す（同じ娘が本物として立っている） ----
-const HG_Q = new THREE.Object3D(), HG_Z0 = new THREE.Matrix4().makeScale(0, 0, 0);
+const HG_Q = new THREE.Object3D(), HG_QS = new THREE.Object3D(), HG_Z0 = new THREE.Matrix4().makeScale(0, 0, 0);
+HG_QS.rotation.order = 'XYZ'; HG_Q.rotation.order = 'YXZ';
 function hgZeroW(o) { if (o.wi == null) return; const W = HG.W, w = o.w; (w === 'bow' ? W.yumi : w === 'xbow' ? W.xbow : w === 'dao' ? W.nagi : w === 'boom' ? W.boom : W.kai).setMatrixAt(o.wi, HG_Z0); if (o.si != null) W.shield.setMatrixAt(o.si, HG_Z0); }
 //  写真の武器の板（カメラへ向け、画面の中で傾ける）。グリップの位置を手に合わせる
 function hgProp(m, k, P, hx, hy, hz, a, rzz, s) { const Q = HG_Q, len = P.len * s, oy = (0.5 - P.grip) * len, lx = -Math.sin(rzz) * oy, ly = Math.cos(rzz) * oy, rx = Math.cos(a), rz = -Math.sin(a);
@@ -6918,7 +6973,7 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
     for (const o of G.list) {
       if (!o.alive) { if (o.dI === -1 || o.dI === -2) { hgZeroW(o); if (o.hk != null) W.horse.setMatrixAt(o.hk, HG_Z0);
           if (o.dI === -2) { hgPxPut(G, o, Q, null); W.spear.setMatrixAt(o.k, HG_Z0); o.dI = -3; }   // 本物の体が倒れている（体はそのまま残る）
-          else { if (G.dn) { hgPxPut(G, o, Q, null); o.dI = dn++; G.dl.push(o); o.dRedo = true; } else { Q.position.set(o.x, 0.04, o.z); Q.rotation.set(-Math.PI / 2, 0, o.ry); Q.scale.set(w, G.h, 1); Q.updateMatrix(); hgPxPut(G, o, Q, 'front'); o.dI = -4; }   // 倒れた絵：倒れた写真が無い娘は絵を寝かせる
+          else { if (G.dn) { hgPxPut(G, o, Q, null); o.dI = dn++; G.dl.push(o); o.dRedo = true; } else { HG_QS.position.set(o.x, 0.04, o.z); HG_QS.rotation.set(-Math.PI / 2, 0, o.ry, 'XYZ'); HG_QS.scale.set(w, G.h, 1); HG_QS.updateMatrix(); hgPxPut(G, o, HG_QS, 'front'); o.dI = -4; }   // 倒れた絵：倒れた写真が無い娘は絵を寝かせる
             Q.position.set(o.x + Math.cos(o.ry) * 0.5, 0.04, o.z - Math.sin(o.ry) * 0.5); Q.rotation.set(0, o.ry, 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); if (o.w === 'spear') W.spear.setMatrixAt(o.k, Q.matrix); else W.spear.setMatrixAt(o.k, HG_Z0); } }   // 倒れた者の槍は体のそばの地面に
         continue; }
       if (o.real) { if (o.drawn !== 2) { o.drawn = 2; hgPxPut(G, o, Q, null); W.spear.setMatrixAt(o.k, HG_Z0); hgZeroW(o); } continue; }
@@ -6926,8 +6981,7 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
       o.drawn = 1; const a = Math.atan2(dx, dz), cav = o.hk != null, y0 = cav ? HG_RY : 0, ls = o.atk > 0 ? Math.sin(o.atk / 0.4 * Math.PI) * 0.35 : 0, kb = o.kn > 0 ? -o.kn * 1.2 : 0, bob = o.mv ? Math.abs(Math.sin(o.stepT || 0)) * (cav ? 0.09 : 0.05) : 0;
       let px = o.x + o.hx * (cav ? 0 : ls + kb), pz = o.z + o.hz * (cav ? 0 : ls + kb), rzR = o.kn > 0 ? 0.12 : (o.atk > 0 ? -0.06 : 0);
       if (o.reT > 0 && !cav) { const f = o.reT / 0.35; if (o.re === 'dodge') { px += Math.cos(a) * 0.55 * o.reS * f; pz -= Math.sin(a) * 0.55 * o.reS * f; rzR = -0.2 * o.reS * f; } else { const b = o.re === 'block' ? 0.2 : 0.3; px -= o.hx * b * f; pz -= o.hz * b * f; rzR = 0.1 * f; } }   // かわす（横へ）・受ける（のけぞる）・盾で受ける（押される）。血は出さない
-      const pv = hgPxPick(o, a), useS = pv.v === 'side' && G.vxS, useB = pv.v === 'back' && G.vxB, asp = useS ? G.vxS.asp : useB ? G.vxB.asp : G.asp, bw = G.h * asp, flip = useS ? pv.flip : 1;
-      Q.position.set(px, y0 + bob, pz); Q.rotation.set(0, a, rzR); Q.scale.set(bw * flip, G.h, 1); Q.updateMatrix(); hgPxPut(G, o, Q, useS ? 'side' : useB ? 'back' : 'front');
+      hgPxBillboard(G, o, px, y0 + bob, pz, a, rzR);
       const rx = Math.cos(a), rz = -Math.sin(a), s = G.h / 1.6, ww = o.w;   // 絵の右手（カメラから見て）
       if (ww === 'spear') { const fight = o.U.st === 'fight' || cav || o.atk > 0 || o.U.horde && o.U.st === 'adv', el = o.atk > 0 ? 0.05 : fight ? 0.25 : 1.25, th = o.atk > 0 ? Math.sin(o.atk / 0.4 * Math.PI) * 0.7 : 0;   // 槍：ふだんは立て、戦いでは前へ倒し、突くときは前へ
         Q.position.set(px + rx * w * 0.28 + o.hx * th, y0 + 0.95 * s + bob, pz + rz * w * 0.28 + o.hz * th); Q.rotation.set(-el, Math.atan2(o.hx, o.hz), 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); W.spear.setMatrixAt(o.k, Q.matrix); }
@@ -6938,9 +6992,9 @@ function hgDraw() { const cam = camera.position; HG.drawT++; const redo = HG.dra
       if (ww === 'shield') { Q.position.set(px + o.hx * 0.34, y0 + 0.66 * s + bob, pz + o.hz * 0.34); Q.rotation.set(0, Math.atan2(o.hx, o.hz), 0, 'YXZ'); Q.scale.set(s, s, s); Q.updateMatrix(); W.shield.setMatrixAt(o.si, Q.matrix); }   // 盾は敵の側に構える
       else if (ww === 'boom') { const th = o.atk > 0; Q.position.set(px + rx * w * 0.32, y0 + (th ? 1.25 : 0.95) * s, pz + rz * w * 0.32); Q.rotation.set(th ? 0.2 : 1.2, a, th ? -0.6 : 0.3, 'YXZ'); Q.scale.set(1.5 * s, 1.5 * s, 1.5 * s); Q.updateMatrix(); W.boom.setMatrixAt(o.wi, Q.matrix); }
       if (cav) { Q.position.set(o.x, bob * 0.4, o.z); Q.rotation.set(0, Math.atan2(o.hx, o.hz), 0, 'YXZ'); Q.scale.set(1, 1, 1); Q.updateMatrix(); W.horse.setMatrixAt(o.hk, Q.matrix); } }
-    if (G.dn) { for (const o of G.dl) { if (o.dI < 0 || (!redo && !o.dRedo)) continue; o.dRedo = false; const dx = cam.x - o.x, dz = cam.z - o.z; Q.position.set(o.x, 0.02, o.z); Q.rotation.set(0, Math.atan2(dx, dz), 0); Q.scale.set(G.dw, G.dh, 1); Q.updateMatrix(); G.dn.setMatrixAt(o.dI, Q.matrix); }
+    if (G.dn) { for (const o of G.dl) { if (o.dI < 0 || (!redo && !o.dRedo)) continue; o.dRedo = false; const dx = cam.x - o.x, dz = cam.z - o.z; HG_QS.position.set(o.x, 0.02, o.z); HG_QS.rotation.set(0, Math.atan2(dx, dz), 0, 'XYZ'); HG_QS.scale.set(G.dw, G.dh, 1); HG_QS.updateMatrix(); G.dn.setMatrixAt(o.dI, HG_QS.matrix); }
       G.dnN = dn; G.dn.count = dn; G.dn.instanceMatrix.needsUpdate = true; }
-    G.im.instanceMatrix.needsUpdate = true; if (G.vxS) { G.vxS.im.count = G.list.length; G.vxS.im.instanceMatrix.needsUpdate = true; } if (G.vxB) { G.vxB.im.count = G.list.length; G.vxB.im.instanceMatrix.needsUpdate = true; } }
+    hgPxTouch(G); }
   for (const m of [W.spear, W.yumi, W.xbow, W.nagi, W.kai, W.shield, W.boom, W.horse]) m.instanceMatrix.needsUpdate = true; }
 // ---- 後退と立て直し（両軍とも）：隊がおよそ三割やられたら、隊列を保って後ろへ下がり（接触を切る）、立て直して士気が戻ればまた前へ ----
 function hgFallTick(U, up, dt) { if (U.kind === 'hq' || U.kind === 'det' || U.lk === 'sumi' || (U.kind === 'cav' && !U.go)) return false;
@@ -32638,7 +32692,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261128e';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261128f';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -37802,7 +37856,8 @@ function updateHud(dt) {
   if (FB.on) setText('remain', fbRemain());
   if (USD.on) { const c = usdCounts(); setText('remain', `アメリカ勢 ${c.foe}／${USD.usTotal || 0}　味方 ${c.ally}`); }
   else if (UK2.on) { const c = uk2Counts(); setText('remain', `残敵 ${c.foe}　味方 ${c.ally}` + (UK2.goal ? '　' + UK2.goal : '')); }   // 他の面と同じ「残敵・味方」（舟の上・未出の短艇の兵も残敵に数える）
-  if (HG.on || FRF.on) setText('remain', '');   // 平原：上の数の下の「残敵・味方」の行は出さない
+  if (HG.on) { const c = HG.cnt || (typeof hgCounts === 'function' && hgCounts()) || { b: 0, o: 0 }; setText('remain', `残敵 ${c.o}　味方 ${c.b}`); }
+  else if (FRF.on) setText('remain', '');
   if (HS.on) setText('remain', (typeof hsRemain === 'function' && hsRemain()) || '');
   if (CV.on) { setText('remain', cvRemain()); setText('wavetxt', CV.phase === 'gun' ? '第一艦隊・桜鳳　砲戦' : CV.phase === 'board' ? '第一艦隊・桜鳳　乗り込み' : CV.phase === 'raid' ? '第一艦隊・桜鳳　対空戦' : CV.carrierGone ? '第一艦隊・大淀' : '第一艦隊・桜鳳'); }
   $('wp0').className = player.weapon === 0 ? 'on' : ''; $('wp1').className = player.weapon === 1 ? 'on' : '';
@@ -40132,7 +40187,7 @@ function hsAdd(U, x, z, opt) {
     wi: null, perch: opt.perch || null, role: opt.role || U.role, flee: 0 };
   if (o.perch) { o.x = o.perch.x; o.z = o.perch.z; o.y = o.perch.y; o.perch.taken = o; }
   const N = HS.wn; if (w === 'bow') o.wi = N.bow++; else if (w === 'xbow') o.wi = N.xb++; else if (w === 'dao') o.wi = N.dao++; else if (w === 'shield') o.wi = N.sh++; else o.wi = N.kai++;
-  o.i = G.list.length; G.list.push(o); G.im.count = G.list.length; if (G.vxS) G.vxS.im.count = G.im.count; if (G.vxB) G.vxB.im.count = G.im.count; U.mem.push(o); HS.px.push(o); (team === 'blue' ? HS.B : HS.O).push(o); HS.total[team]++; return o;
+  o.i = G.list.length; G.list.push(o); G.im.count = G.list.length; if (typeof hgPxTouch === 'function') hgPxTouch(G); else { if (G.vxS) G.vxS.im.count = G.im.count; if (G.vxB) G.vxB.im.count = G.im.count; } U.mem.push(o); HS.px.push(o); (team === 'blue' ? HS.B : HS.O).push(o); HS.total[team]++; return o;
 }
 
 function hsUnit(name, team, x, z, n, af, opt) {
@@ -40770,14 +40825,11 @@ function hsMaybeDown(e, o, dt) {
 }
 
 function hsPxHide(G, o) {
-  if (o.i == null) return;
-  const Z = (typeof HG_Z0 !== 'undefined') ? HG_Z0 : null;
-  if (!Z) {
-    const dum = hsDum(); dum.scale.set(0, 0, 0); dum.updateMatrix();
-    G.im.setMatrixAt(o.i, dum.matrix); if (G.vxS) G.vxS.im.setMatrixAt(o.i, dum.matrix); if (G.vxB) G.vxB.im.setMatrixAt(o.i, dum.matrix);
-    return;
-  }
-  G.im.setMatrixAt(o.i, Z); if (G.vxS) G.vxS.im.setMatrixAt(o.i, Z); if (G.vxB) G.vxB.im.setMatrixAt(o.i, Z);
+  if (o.i == null || !G || !G.im) return;
+  if (typeof hgPxPut === 'function' && typeof HG_QS !== 'undefined') { hgPxPut(G, o, HG_QS, null); return; }
+  const dum = hsDum(); dum.scale.set(0, 0, 0); dum.updateMatrix();
+  G.im.setMatrixAt(o.i, dum.matrix);
+  for (const k of ['vxS', 'vxB', 'vxFD', 'vxBD']) if (G[k] && G[k].im) G[k].im.setMatrixAt(o.i, dum.matrix);
 }
 function hsDraw() {
   const cam = camera.position, W = HS.W; if (!HS.pg) return;
@@ -40796,19 +40848,13 @@ function hsDraw() {
         G.dn.setMatrixAt(nd++, dum.matrix); continue;
       }
       const dx = cam.x - o.x, dz = cam.z - o.z; if (dx * dx + dz * dz > 380 * 380) { hsPxHide(G, o); continue; }
-      const a = Math.atan2(dx, dz), pv = typeof hgPxPick === 'function' ? hgPxPick(o, a) : { v: 'front', flip: 1 };
-      const useS = pv.v === 'side' && G.vxS, useB = pv.v === 'back' && G.vxB;
-      const asp = useS ? G.vxS.asp : useB ? G.vxB.asp : (G.asp || 0.4);
-      const h = G.h || 1.6, bw = h * asp, flip = useS ? pv.flip : 1;
-      dum.position.set(o.x, o.y || 0, o.z); dum.rotation.set(0, a, 0); dum.scale.set(bw * flip, h, 1); dum.updateMatrix();
-      if (typeof hgPxPut === 'function') hgPxPut(G, o, dum, useS ? 'side' : useB ? 'back' : 'front');
-      else G.im.setMatrixAt(o.i, dum.matrix);
+      const a = Math.atan2(dx, dz);
+      if (typeof hgPxBillboard === 'function') hgPxBillboard(G, o, o.x, o.y || 0, o.z, a, 0);
+      else { const h = G.h || 1.6, bw = h * (G.asp || 0.4); dum.position.set(o.x, o.y || 0, o.z); dum.rotation.set(0, a, 0, 'XYZ'); dum.scale.set(bw, h, 1); dum.updateMatrix(); G.im.setMatrixAt(o.i, dum.matrix); }
       if (o.wi != null && o.w) hsDrawW(o, dum, used);
     }
-    const cap = Math.max(G.list.length, G.im.count || 0);
-    G.im.count = cap; G.im.instanceMatrix.needsUpdate = true;
-    if (G.vxS) { G.vxS.im.count = cap; G.vxS.im.instanceMatrix.needsUpdate = true; }
-    if (G.vxB) { G.vxB.im.count = cap; G.vxB.im.instanceMatrix.needsUpdate = true; }
+    if (typeof hgPxTouch === 'function') hgPxTouch(G);
+    else { G.im.count = Math.max(G.list.length, G.im.count || 0); G.im.instanceMatrix.needsUpdate = true; }
     if (G.dn) { G.dn.count = nd; G.dn.instanceMatrix.needsUpdate = true; }
   }
   if (W) for (const k of ['yumi', 'xbow', 'nagi', 'kai', 'shield', 'spear']) if (W[k] && used[k] != null) { W[k].count = Math.max(1, used[k]); W[k].instanceMatrix.needsUpdate = true; }
@@ -40846,7 +40892,7 @@ function hsCheckEnd() {
 }
 
 function hsReset() {
-  if (HS.px) for (const k in HS.pg) { const G = HS.pg[k]; if (G) { stageRoot.remove(G.im); if (G.dn) stageRoot.remove(G.dn); if (G.vxS && G.vxS.im) stageRoot.remove(G.vxS.im); if (G.vxB && G.vxB.im) stageRoot.remove(G.vxB.im); } }
+  if (HS.px) for (const k in HS.pg) { const G = HS.pg[k]; if (G) hgPxRemove(G); }
   if (HS.W) for (const k in HS.W) if (HS.W[k] && HS.W[k].isObject3D) stageRoot.remove(HS.W[k]);
   for (const U of [...(HS.UB || []), ...(HS.UO || [])]) if (U.flag) stageRoot.remove(U.flag);
   for (const m of HS.stuck || []) stageRoot.remove(m);

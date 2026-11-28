@@ -41792,6 +41792,7 @@ function hsCover(ax, az, bx, bz) {
   return null;
 }
 function hsPickTarget(o) {
+  if (!o.arch) { const f = hsNearFoe(o, 2.6); if (f) return f; }   // 白兵は目の前の敵
   const rng = o.arch ? (o.perch ? 200 : 150) : 4;
   const foe = o.team === 'blue' ? HS.O : HS.B;
   let best = null, bd = rng;
@@ -41976,9 +41977,13 @@ function hsTacticTick(dt) {
   }
   // 守りが梯子を突き落す
   for (const L of ev.lads || []) {
-    if (L.fallen) { if (L.tip < 1) { L.tip = Math.min(1, L.tip + dt * 1.4); if (L.g) L.g.rotation.x = -L.sign * 0.2 + L.sign * (Math.PI / 2) * L.tip; } continue; }
+    if (L.fallen) { if (L.tip < 1) { L.tip = Math.min(1, L.tip + dt * 1.4); if (L.g) L.g.rotation.x = -L.sign * 0.2 + L.sign * (Math.PI / 2) * L.tip; }
+      // 突き落とされても、梯子隊が残っていればまたかける（寄せ手は攻め続ける）
+      L.fallT = (L.fallT || 0) + dt; const lu = (HS.atkU || []).find(u => u.role === 'ladder' && u.st !== 'rout' && u.up > 8);
+      if (L.fallT > 24 && lu && !(hsGateById('so_s') || {}).open) { L.fallen = false; L.hooked = true; L.push = 0; L.tip = 0; L.fallT = 0; L.hookT = t; if (L.g) L.g.rotation.x = -L.sign * 0.2; ev.ladRe = (ev.ladRe || 0) + 1; }
+      continue; }
     if (!L.hooked) continue;
-    if (t < 21) continue;   // かけてからしばらく見えるようにする
+    if (t < 21 || t < (L.hookT || 0) + 9) continue;   // かけてからしばらく見えるようにする
     let n = 0;
     for (const o of HS.px) {
       if (!o.alive || o.team !== hsDefT()) continue;
@@ -42108,7 +42113,7 @@ function hsTacticTick(dt) {
   }
 
   // 偽の降伏使節（白旗）と、その間に搦手へ回る
-  if (t >= 46 && !ev.envoyOn && !ev.envoyDone) {
+  if (t >= 58 && !ev.fogOn && !ev.envoyOn && !ev.envoyDone) {   // 霧が晴れてから使者（霧と重ねない）
     ev.envoyOn = true; ev.envoyT = 0;
     const z0 = HS_SO.z0 - 26;
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 3.4, 6), new THREE.MeshLambertMaterial({ color: 0x4a3a28 }));
@@ -42190,23 +42195,41 @@ function hsCmdTick() {
   hsApplyPlan();
 }
 
+// 寄せ手の目標：まだ閉じている一番手前の門の前。全部開いたら本丸の中。曲輪の道筋（hsRoute）で門を一つずつ抜ける
+const HS_GATE_AP = { so_s: [0, -178], ote1: [0, -114], ote2: [5, -92], ni: [0, -66], hon: [0, -33] };
+function hsAtkGoal(back) {
+  const F = hsFrontGate(); back = back || 0;
+  if (!F) return [0, 6 - back * 0.4];
+  const A = HS_GATE_AP[F.id] || [F.x, F.z - 12];
+  return F.id === 'ote2' ? [A[0] - back * 0.2, A[1]] : [A[0], A[1] - back];
+}
+function hsFollowP(U) {   // 攻めの時：殿が先の曲輪へ入ったら、味方の隊も後に続く
+  if (!HS.atk || U.team !== 'blue' || typeof player === 'undefined') return null;
+  const zp = hsZoneI(player.pos.x, player.pos.z), zu = hsZoneI(U.x, U.z); if (zp <= zu || zp < 1) return null;
+  // 殿のいる曲輪まで、途中の門が開いていること（梯子・塔で外から城下町へは可）
+  for (let i = Math.max(1, zu); i < zp; i++) { const P = HS_PORT[i]; const G = P && hsGateById(P.gate); if (G && !G.open) return null; }
+  if (zu === 0 && zp >= 1 && !hsPorts0({ team: 'blue', x: U.x, z: U.z }).some(q => q.open)) return null;
+  return [player.pos.x + (U.fx0 || 0), player.pos.z - 6];
+}
 function hsApplyPlan() {
   const so = hsGateById('so_s'), front = hsFrontGate();
+  const soOpen = !!(so && so.open);
   for (const U of HS.atkU || []) {
-    if (U.st === 'rout' || U.confT > 0) continue;
-    if (U.role === 'feint') { U.tx = HS_SO.x1 - 16; U.tz = (so && so.open) ? HS_EW - 8 : HS_EW - 20; U.st = 'march'; }   // 東門へ見せかけて引きつける
-    else if (U.role === 'gun') { U.tx = 0; U.tz = HS_SO.z0 - 36; U.st = 'hold'; }
+    if (U.st === 'rout' || U.confT > 0 || U.appr) continue;
+    const zu = hsZoneI(U.x, U.z), fol = hsFollowP(U);
+    if (fol) { U.tx = fol[0]; U.tz = fol[1]; U.st = 'march'; continue; }
+    if (U.role === 'gun') { U.tx = 0; U.tz = HS_SO.z0 - 36; U.st = 'hold'; }
     else if (U.role === 'hq') { U.tx = 0; U.tz = HS_SO.z0 - 46; U.st = 'hold'; }
-    else if (U.role === 'reserveA') {
-      if (HS.plan === 'exploit' || HS.plan === 'town' || HS.plan === 'ote') { U.tx = front ? front.x : 0; U.tz = front ? front.z - 14 : HS_SO.z0 - 20; U.st = 'march'; }
-      else { U.tx = 0; U.tz = HS_SO.z0 - 28; U.st = 'hold'; }
-    }
-    else if (U.role === 'tower') { const T = (HS.towers || [])[0]; U.tx = T ? T.x : -32; U.tz = T ? T.z : HS_SO.z0 - 18; U.st = 'march'; }
-    else if (U.role === 'ladder') { U.tx = HS_SO.x0 - 10; U.tz = HS_EW; U.st = 'march'; }   // 搦手（西門）へ梯子
-    else if (U.role === 'take') { U.tx = 0; U.tz = (so && !so.open) ? HS_SO.z0 - 16 : (front ? front.z - 18 : HS_SO.z0 - 12); U.st = 'march'; }
-    else if (U.role === 'main') {
-      if (HS.plan === 'regroup') { U.tx = 0; U.tz = HS_SO.z0 - 18; U.st = 'hold'; }
-      else { U.tx = front ? front.x : 0; U.tz = front ? front.z - 12 : HS_SO.z0 - 16; U.st = 'march'; }
+    else if (U.role === 'feint' && !soOpen) { U.tx = HS_SO.x1 - 16; U.tz = HS_EW - 20; U.st = 'march'; }   // 東門へ見せかけて引きつける
+    else if (U.role === 'ladder' && zu === 0 && !soOpen) { U.tx = HS_SO.x0 - 6; U.tz = HS_EW; U.st = 'march'; }   // 搦手（西）の梯子から城下町へ
+    else if (U.role === 'tower' && zu === 0 && !soOpen) { const T = (HS.towers || []).find(T => !T.wrecked); U.tx = T ? T.x : -32; U.tz = T ? (T.at ? HS_SO.z0 + 6 : T.z) : HS_SO.z0 - 18; U.st = 'march'; }
+    else if (U.role === 'main' && HS.plan === 'regroup') { U.tx = 0; U.tz = HS_SO.z0 - 18; U.st = 'hold'; }
+    else if (U.role === 'reserveA' && !soOpen && !(so && so.hp < so.hpMax * 0.55)) { U.tx = 0; U.tz = HS_SO.z0 - 28; U.st = 'hold'; }
+    else if (U.role === 'take' && !soOpen) { U.tx = 0; U.tz = HS_SO.z0 - 16; U.st = 'march'; }
+    else {
+      // 本隊・予備・竹束・陽動・梯子・塔（中に入った後）：みな一番手前の閉じた門へ、開いていれば奥へ
+      const back = U.role === 'main' ? 0 : U.role === 'reserveA' ? 14 : U.role === 'take' ? 8 : 6;
+      const g = hsAtkGoal(back); U.tx = g[0] + (U.role === 'feint' ? 10 : U.role === 'ladder' ? -10 : 0) * (front ? 0.6 : 0.3); U.tz = g[1]; U.st = 'march';
     }
   }
   for (const U of HS.defU || []) {
@@ -42305,24 +42328,44 @@ function hsOnGate(G, why) {
 
 
 
-// 曲輪の道筋：外(0)→枡形(1)→三の丸(2)→二の丸(3)→本丸(4)。堀や石垣を突っ切らず、土橋と門を通る
+// 曲輪の道筋：外 → 城下町 → 枡形 → 三の丸 → 二の丸 → 本丸。堀や石垣・土塁の塀を突っ切らず、門・土橋・梯子・攻城塔を通る
 const HS_PORT = [
-  { a: [0, -119], b: [1.5, -96], gate: 'ote1' },   // 大手 土橋 → 一の門 → 枡形
+  null,                                                 // 外 → 城下町（惣構）：門・梯子・攻城塔のどれか（hsPorts0）
+  { a: [0, -119], b: [1.5, -96], gate: 'ote1' },   // 城下町 → 大手 土橋 → 一の門 → 枡形
   { a: [8, -90], b: [21, -90], gate: 'ote2' },     // 枡形 → 二の門 → 三の丸
   { a: [0, -63], b: [0, -46], gate: 'ni' },        // 三の丸 → 二の丸
   { a: [0, -30], b: [0, -14], gate: 'hon' }        // 二の丸 → 本丸
 ];
+// 曲輪の番号：外(0)・城下町(1)・枡形(2)・三の丸(3)・二の丸(4)・本丸(5)
 function hsZoneI(x, z) {
-  if (hsIn(HS_HON, x, z, 1.6)) return 4; if (hsIn(HS_NI, x, z, 1.6)) return 3;
-  if (x >= -5 && x <= HS_MASU.x1 && z >= HS_SAN.z0 - 1.6 && z <= HS_MASU.z1) return 1;
-  if (hsIn(HS_SAN, x, z, 1.6)) return 2; return 0;
+  if (hsIn(HS_HON, x, z, 1.6)) return 5; if (hsIn(HS_NI, x, z, 1.6)) return 4;
+  if (x >= -5 && x <= HS_MASU.x1 && z >= HS_SAN.z0 - 1.6 && z <= HS_MASU.z1) return 2;
+  if (hsIn(HS_SAN, x, z, 1.6)) return 3;
+  if (hsIn(HS_SO, x, z, HS_SO.th / 2)) return 1;   // 惣構の土塁の天端（塀）より内側
+  return 0;
+}
+function hsPorts0(o) {   // 外 ↔ 城下町の入口（開いている門、かかっている梯子、着いた攻城塔）
+  const L = [], gate = (id, a, b) => { const G = hsGateById(id); if (G) L.push({ a, b, open: !!G.open }); };
+  gate('so_s', [0, -183], [0, -150]); gate('so_e', [143, HS_EW], [112, HS_EW]); gate('so_w', [-143, HS_EW], [-112, HS_EW]);
+  const ev = HS.tac || {};
+  for (const Ld of ev.lads || []) if (Ld.hooked && !Ld.fallen) L.push({ a: [Ld.x - 2.5, Ld.z], b: [HS_SO.x0 + 5, Ld.z], open: true, lad: true });
+  for (const T of HS.towers || []) if (T.at && !T.wrecked && T.z < HS_SO.z0) L.push({ a: [T.x, T.z - 4], b: [T.x, HS_SO.z0 + 6], open: true });
+  return L;
+}
+function hsPickPort(i, o, up) {
+  if (i > 0) { const P = HS_PORT[i]; if (!P) return null; const G = hsGateById(P.gate); return { a: P.a, b: P.b, open: !G || !!G.open }; }
+  const L = hsPorts0(o); if (!L.length) return null;
+  const atk = o.team === hsAtkT(), side = up ? 'a' : 'b';
+  let best = null, bd = 1e9;
+  for (const P of L) { if (atk && !P.open && L.some(q => q.open)) continue; const d = Math.hypot(P[side][0] - o.x, P[side][1] - o.z); if (d < bd) { bd = d; best = P; } }
+  return best;
 }
 function hsSegHit(r, ax, az, bx, bz) {   // 線分が矩形を通るか（粗い標本）
   for (let i = 1; i < 12; i++) { const t = i / 12, x = ax + (bx - ax) * t, z = az + (bz - az) * t; if (x > r.x0 && x < r.x1 && z > r.z0 && z < r.z1) return true; } return false;
 }
+function hsInner(zi) { return zi === 1 ? [HS_SAN, HS_SAN_MOAT] : zi === 3 ? [HS_NI, HS_NI_MOAT] : zi === 4 ? [HS_HON, HS_HON_MOAT] : null; }
 function hsDetour(zi, x, z, tx, tz) {   // 同じ曲輪の中で、内側の曲輪（＋堀）を回り込む
-  const R = zi === 0 ? HS_SAN : zi === 2 ? HS_NI : zi === 3 ? HS_HON : null; if (!R) return null;
-  const pad = (zi === 0 ? HS_SAN_MOAT : zi === 2 ? HS_NI_MOAT : HS_HON_MOAT) + 1.5;
+  const I = hsInner(zi); if (!I) return null; const R = I[0], pad = I[1] + 1.5;
   const P = { x0: R.x0 - pad, x1: R.x1 + pad, z0: R.z0 - pad, z1: R.z1 + pad };
   if (!hsSegHit(P, x, z, tx, tz)) return null;
   const sx = (x + tx) < 0 ? P.x0 - 0.5 : P.x1 + 0.5;
@@ -42330,25 +42373,35 @@ function hsDetour(zi, x, z, tx, tz) {   // 同じ曲輪の中で、内側の曲�
   if (tz < P.z0 || tz > P.z1) return [sx, tz < P.z0 ? P.z0 - 0.5 : P.z1 + 0.5];
   return [x < P.x0 ? P.x0 - 0.5 : P.x1 + 0.5, tz];
 }
+function hsDetourSo(x, z, tx, tz) {   // 外にいる者が惣構の土塁（塀）を突っ切らないよう、角を回る
+  const so = HS_SO, pad = so.th + HS_SO_MOAT + 1, P = { x0: so.x0 - pad, x1: so.x1 + pad, z0: so.z0 - pad, z1: so.z1 + pad };
+  if (hsIn(P, x, z) || !hsSegHit(P, x, z, tx, tz)) return null;
+  // 目標の口が外周のどの辺にあるかで、近い角へ
+  const cx = tx < so.x0 ? P.x0 - 0.5 : tx > so.x1 ? P.x1 + 0.5 : null, cz = tz < so.z0 ? P.z0 - 0.5 : tz > so.z1 ? P.z1 + 0.5 : null;
+  if (cz != null && (z < P.z0 || z > P.z1)) return null;   // 同じ辺の外にいる（まっすぐ行ける）
+  if (cx != null && (x < P.x0 || x > P.x1)) return null;
+  if (cz != null) return [x < 0 ? P.x0 - 0.5 : P.x1 + 0.5, cz];
+  if (cx != null) return [cx, z < 0 ? P.z0 - 0.5 : P.z1 + 0.5];
+  return null;
+}
 function hsRoute(o, tx, tz) {
   const zc = hsZoneI(o.x, o.z), zt = hsZoneI(tx, tz);
-  { const B = hsOutMoat(zc, o.x, o.z); if ((B[0] !== o.x || B[1] !== o.z) && !hsNearPort(o.x, o.z)) return B; }   // 堀に入ってしまった者は、まず岸へ上がる
+  { const B = hsOutMoat(zc, o.x, o.z); if ((B[0] !== o.x || B[1] !== o.z) && !hsNearPort(o.x, o.z)) return B; }   // 堀の帯に入ってしまった者は、まず岸へ上がる
   if (zc !== zt) {
-    const up = zt > zc, P = HS_PORT[up ? zc : zc - 1]; if (!P) return [tx, tz];
+    const up = zt > zc, P = hsPickPort(up ? zc : zc - 1, o, up); if (!P) return [tx, tz];
     const A = up ? P.a : P.b, B = up ? P.b : P.a;
-    const G = hsGateById(P.gate), shut = G && !G.open && o.team === hsAtkT();
+    const shut = !P.open && o.team === hsAtkT();
     // 通路（AB の帯）にいれば向こう側へ、いなければまず手前の口へ
     const abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((o.x - A[0]) * abx + (o.z - A[1]) * abz) / L2));
     const cx = A[0] + abx * t, cz = A[1] + abz * t, inC = Math.hypot(o.x - cx, o.z - cz) < 3.2 && Math.hypot(o.x - A[0], o.z - A[1]) < Math.sqrt(L2) + 1;
-    if (inC && !shut) return [B[0] + (o.ox || 0) * 0.15, B[1]];
-    const ax = A[0] + (shut ? (o.ox || 0) * 0.5 : (o.ox || 0) * 0.15), az = A[1];
-    return hsDetour(zc, o.x, o.z, ax, az) || [ax, az];
+    if (inC && !shut) return [B[0] + (o.ox || 0) * 0.15, B[1] + (P.lad ? (o.oz || 0) * 0.1 : 0)];
+    const ax = A[0] + (shut ? (o.ox || 0) * 0.5 : (o.ox || 0) * 0.15), az = A[1] + (shut ? -Math.abs(o.oz || 0) * 0.3 : 0);
+    return (zc === 0 ? hsDetourSo(o.x, o.z, ax, az) : hsDetour(zc, o.x, o.z, ax, az)) || [ax, az];
   }
-  const T = hsOutMoat(zc, tx, tz); return hsDetour(zc, o.x, o.z, T[0], T[1]) || T;
+  const T = hsOutMoat(zc, tx, tz); return (zc === 0 ? hsDetourSo(o.x, o.z, T[0], T[1]) : hsDetour(zc, o.x, o.z, T[0], T[1])) || T;
 }
-function hsOutMoat(zi, tx, tz) {   // 目標が堀の中なら手前の岸へ
-  const R = zi === 0 ? HS_SAN : zi === 2 ? HS_NI : zi === 3 ? HS_HON : null; if (!R) return [tx, tz];
-  const pad = (zi === 0 ? HS_SAN_MOAT : zi === 2 ? HS_NI_MOAT : HS_HON_MOAT) + 1.2;
+function hsOutMoat(zi, tx, tz) {   // 目標が堀（石垣のすそ）の帯なら手前へ
+  const I = hsInner(zi); if (!I) return [tx, tz]; const R = I[0], pad = I[1] + 1.2;
   if (!hsIn(R, tx, tz, pad)) return [tx, tz];
   const d = [tx - (R.x0 - pad), (R.x1 + pad) - tx, tz - (R.z0 - pad), (R.z1 + pad) - tz], m = Math.min(...d), i = d.indexOf(m);
   return i === 0 ? [R.x0 - pad - 0.3, tz] : i === 1 ? [R.x1 + pad + 0.3, tz] : i === 2 ? [tx, R.z0 - pad - 0.3] : [tx, R.z1 + pad + 0.3];
@@ -42357,11 +42410,17 @@ function hsWet(x, z) {   // 水堀の中（土橋・石垣の上は除く）
   if (!(hsInMoat(HS_SAN, HS_SAN_MOAT, x, z) || hsInMoat(HS_NI, HS_NI_MOAT, x, z) || hsInMoat(HS_HON, HS_HON_MOAT, x, z))) return false;
   return hsH(x, z) < -0.3;
 }
-function hsNearPort(x, z) { for (const P of HS_PORT) { const A = P.a, B = P.b, abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((x - A[0]) * abx + (z - A[1]) * abz) / L2)); if (Math.hypot(x - A[0] - abx * t, z - A[1] - abz * t) < 5) return true; } return false; }
+function hsNearPort(x, z) { for (const P of HS_PORT) { if (!P) continue; const A = P.a, B = P.b, abx = B[0] - A[0], abz = B[1] - A[1], L2 = abx * abx + abz * abz, t = Math.max(0, Math.min(1, ((x - A[0]) * abx + (z - A[1]) * abz) / L2)); if (Math.hypot(x - A[0] - abx * t, z - A[1] - abz * t) < 5) return true; } return false; }
 function hsKeepOffWall(o) {   // 槍・刀の者は石垣の上（狭間道）に立たない。上に立つのは弓だけ
-  const zi = hsZoneI(o.x, o.z), R = zi === 4 ? HS_HON : zi === 3 ? HS_NI : zi === 2 ? HS_SAN : null; if (!R || hsNearPort(o.x, o.z)) return;
+  const zi = hsZoneI(o.x, o.z), R = zi === 5 ? HS_HON : zi === 4 ? HS_NI : zi === 3 ? HS_SAN : null; if (!R || hsNearPort(o.x, o.z)) return;
   const m = 1.2, e = hsEdge(R, o.x, o.z); if (e >= m) return;
   o.x = Math.max(R.x0 + m, Math.min(R.x1 - m, o.x)); o.z = Math.max(R.z0 + m, Math.min(R.z1 - m, o.z));
+}
+function hsNearFoe(o, r) {   // 近くの敵（格子で探す。全員から無作為に拾うと、目の前の敵に気づかない）
+  if (!HS.grid) return null; const tm = o.team === 'blue' ? 0 : 1, cx = Math.floor(o.x / 8), cz = Math.floor(o.z / 8), k = Math.ceil(r / 8);
+  let best = null, bd = r;
+  for (let i = -k; i <= k; i++) for (let j = -k; j <= k; j++) { const L = HS.grid.get(((cx + i + 500) * 1000 + cz + j + 500) * 2 + tm); if (!L) continue; for (const t of L) { if (!t.alive) continue; const d = Math.hypot(t.x - o.x, t.z - o.z); if (d < bd && Math.abs((t.y || 0) - (o.y || 0)) < 2.2) { bd = d; best = t; } } }
+  return best;
 }
 function hsSim(dt) {
   const parts = LITE ? 4 : 3, k = (HS.sim++ % parts), sdt = dt * parts;
@@ -42374,13 +42433,18 @@ function hsSim(dt) {
     if (o.perch) { if (o.arch && o.cd <= 0 && U.confT <= 0) { const t = hsPickTarget(o); if (t) hsShoot(o, t); else o.cd = rand(0.6, 1.2); } continue; }
     let tx = U.tx + o.ox, tz = U.tz + o.oz, sp = (o.w === 'shield' ? 1.15 : 1.35) * hsMudK(o.x, o.z) * (U.appr ? 1.7 : 1);
     if (U.st === 'hold') { tx = U.x + o.ox; tz = U.z + o.oz; sp *= 0.6; }
-    if (U.role === 'take' && !U.appr && (HS.takes || []).length) {
+    if (U.role === 'take' && !U.appr && !(hsGateById('so_s') || {}).open && (HS.takes || []).length) {
       let best = HS.takes[0], bd = 1e9;
       for (const tk of HS.takes) { const dd = Math.hypot((tk.x || 0) - o.x, (tk.z || 0) - o.z); if (dd < bd) { bd = dd; best = tk; } }
       if (o.arch) { tx = best.x + (o.ox || 0) * 0.35; tz = best.z - 6; }
       else { tx = best.x + (o.ox || 0) * 0.25; tz = best.z - 1.3; }
     }
     if (o.runTo) { tx = o.runTo.x; tz = o.runTo.z; }
+    // 白兵：近く（同じ曲輪）の敵へ詰め寄る。曲輪の中で守り手と寄せ手がぶつかる
+    if (!o.arch && !o.medic && !o.runTo && !(o.flee > 0) && U.st !== 'rout' && !U.appr) {
+      if ((o.chT = (o.chT || 0) - sdt) <= 0) { o.chT = 0.8 + Math.random() * 0.4; const f = hsNearFoe(o, U.team === hsAtkT() ? 11 : 9); o.ch = f && hsZoneI(f.x, f.z) === hsZoneI(o.x, o.z) ? f : null; }
+      const f = o.ch; if (f && f.alive) { const dd = Math.hypot(f.x - o.x, f.z - o.z); if (dd > 1.1) { tx = f.x - (f.x - o.x) / dd * 1.0; tz = f.z - (f.z - o.z) / dd * 1.0; } else { tx = o.x; tz = o.z; } sp *= 1.15; } else o.ch = null;
+    }
     if (o.flee > 0) { tz += (o.team === hsDefT() ? 8 : -8); }
     if (!o.runTo || !o.runTo.direct) { const r = hsRoute(o, tx, tz); tx = r[0]; tz = r[1]; }
     const dx = tx - o.x, dz = tz - o.z, d = Math.hypot(dx, dz);

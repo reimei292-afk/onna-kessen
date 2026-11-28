@@ -42214,12 +42214,14 @@ function hsFollowP(U) {   // 攻めの時：殿が先の曲輪へ入ったら、
 function hsApplyPlan() {
   const so = hsGateById('so_s'), front = hsFrontGate();
   const soOpen = !!(so && so.open);
+  let aN = 0, aUp = 0; for (const U of HS.atkU || []) if (U.role !== 'gun' && U.role !== 'hq') { aN += U.n || 0; aUp += U.up || 0; }
+  const allIn = soOpen && (!front || front.id === 'ni' || front.id === 'hon' || aUp < aN * 0.5);   // 門が全部開いた・攻め手が減った：本陣も砲の組も最後の押し込みに加わる
   for (const U of HS.atkU || []) {
     if (U.st === 'rout' || U.confT > 0 || U.appr) continue;
     const zu = hsZoneI(U.x, U.z), fol = hsFollowP(U);
     if (fol) { U.tx = fol[0]; U.tz = fol[1]; U.st = 'march'; continue; }
-    if (U.role === 'gun') { U.tx = 0; U.tz = HS_SO.z0 - 36; U.st = 'hold'; }
-    else if (U.role === 'hq') { U.tx = 0; U.tz = HS_SO.z0 - 46; U.st = 'hold'; }
+    if (U.role === 'gun' && !allIn) { U.tx = 0; U.tz = HS_SO.z0 - 36; U.st = 'hold'; }
+    else if (U.role === 'hq' && !allIn) { U.tx = 0; U.tz = HS_SO.z0 - 46; U.st = 'hold'; }
     else if (U.role === 'feint' && !soOpen) { U.tx = HS_SO.x1 - 16; U.tz = HS_EW - 20; U.st = 'march'; }   // 東門へ見せかけて引きつける
     else if (U.role === 'ladder' && zu === 0 && !soOpen) { U.tx = HS_SO.x0 - 6; U.tz = HS_EW; U.st = 'march'; }   // 搦手（西）の梯子から城下町へ
     else if (U.role === 'tower' && zu === 0 && !soOpen) { const T = (HS.towers || []).find(T => !T.wrecked); U.tx = T ? T.x : -32; U.tz = T ? (T.at ? HS_SO.z0 + 6 : T.z) : HS_SO.z0 - 18; U.st = 'march'; }
@@ -42228,7 +42230,7 @@ function hsApplyPlan() {
     else if (U.role === 'take' && !soOpen) { U.tx = 0; U.tz = HS_SO.z0 - 16; U.st = 'march'; }
     else {
       // 本隊・予備・竹束・陽動・梯子・塔（中に入った後）：みな一番手前の閉じた門へ、開いていれば奥へ
-      const back = U.role === 'main' ? 0 : U.role === 'reserveA' ? 14 : U.role === 'take' ? 8 : 6;
+      const back = U.role === 'main' ? 0 : U.role === 'reserveA' ? 14 : U.role === 'take' ? 8 : U.role === 'hq' ? 20 : 6;
       const g = hsAtkGoal(back); U.tx = g[0] + (U.role === 'feint' ? 10 : U.role === 'ladder' ? -10 : 0) * (front ? 0.6 : 0.3); U.tz = g[1]; U.st = 'march';
     }
   }
@@ -42740,7 +42742,7 @@ function hsCheckEnd() {
   const atkN = atkTeam === 'blue' ? HS.total.blue : HS.total.orange, defN = defTeam === 'blue' ? HS.total.blue : HS.total.orange;
   const atkA = atkTeam === 'blue' ? c.b : c.o, defA = defTeam === 'blue' ? c.b : c.o;
   const hon = hsGateById('hon'), inHon = HS.px.filter(o => o.alive && o.team === atkTeam && hsIn(HS_HON, o.x, o.z)).length;
-  const atkBroken = atkA < atkN * 0.15, defBroken = defA < defN * 0.15, honTaken = hon && hon.open && inHon >= 60;
+  const atkBroken = atkA < atkN * 0.2, defBroken = defA < defN * 0.15, defHon = HS.px.filter(o => o.alive && o.team === defTeam && hsIn(HS_HON, o.x, o.z)).length, honTaken = hon && hon.open && (inHon >= 60 || (inHon >= 25 && defHon < inHon * 0.6));   // 本丸に攻め手が満ち、守りが少なくなったら落城
   if (honTaken || defBroken) { HS.done = true; HS.outcome = 'winAtk'; const win = HS.atk; hsOrder(win ? 'keep' : ''); if (HS.cnCmd && !win) hsZh(HS.cnCmd, HS_ZH.win, 2); if (win) HS_LN.winA.forEach((q, i) => HS.later.push([HS.t + 1 + i * 3, () => hsSay(q[0], q[1], 1.9)])); else if (HS_LN.loseD) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.loseD[0][1], 1.9)]); holdEnd(win, win ? '勝ち' : '負け', win ? '蓮見城、落ちる' : '本丸が落ちた', hsResultHtml()); return; }
   if (atkBroken) { HS.done = true; HS.outcome = 'winDef'; const win = !HS.atk; if (win) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.winD[0][1], 1.9)]); else if (HS.cnCmd) hsZh(HS.cnCmd, HS_ZH.lose, 2); holdEnd(win, win ? '勝ち' : '負け', win ? '寄せ手を退けた' : '寄せ手が潰えた', hsResultHtml()); }
 }

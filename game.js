@@ -42682,6 +42682,7 @@ function hsCheckEnd() {
 }
 
 function hsReset() {
+  document.documentElement.classList.remove('ktsub');
   hsTacClear();
   if (HS.px) for (const k in HS.pg) { const G = HS.pg[k]; if (G) hgPxRemove(G); }
   if (HS.W) for (const k in HS.W) if (HS.W[k] && HS.W[k].isObject3D) stageRoot.remove(HS.W[k]);
@@ -42765,6 +42766,7 @@ function hsApprTick(dt) {
 }
 function hsUpdate(dt) {
   if (!HS.on || state !== 'play') return;
+  { const st = $('subtitle'); document.documentElement.classList.toggle('ktsub', !!(st && +getComputedStyle(st).opacity > 0.05)); }   // 台詞の字幕と狙った兵の札を重ねない
   dt = Math.min(dt, 0.1);
   if (HS.appr) {   // 行軍中：動きと矢だけ（攻めの段取りはまだ）
     hsApprTick(dt); hsHealTick(dt); hsChat(dt); hsSim(dt); hsTrTick(dt); hsLod(dt);

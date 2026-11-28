@@ -40554,7 +40554,7 @@ function hsH(x, z) {
     if (e < th) return mid * (1 - (e - crest1) / outW);
     const d = e - th;
     if (d < HS_SO_MOAT) {
-      return d > HS_SO_MOAT - 1.2 ? -3.85 * (HS_SO_MOAT - d) / 1.2 : -3.85;   // 見た目どおり：底は平ら、外側だけ急な法面
+      return d > HS_SO_MOAT - 3 ? -3.85 * (HS_SO_MOAT - d) / 3 : -3.85;   // 見た目どおり：底は平ら、外側だけ急な法面
     }
   }
   return 0;
@@ -41151,10 +41151,13 @@ function hsGround() {
   hsPlane(ix1, ox1, ew1, oz1, kY, M.kara);          // 東、東門の北
   hsPlane(ox0, ox1, iz1, oz1, kY, M.kara);          // 北
   // 空堀の法面（外側）
-  hsBox(ox0, ox1, kY, 0, oz0, oz0 + 1.2, M.earth, false);
-  hsBox(ox0, ox1, kY, 0, oz1 - 1.2, oz1, M.earth, false);
-  hsBox(ox0, ox0 + 1.2, kY, 0, oz0, oz1, M.earth, false);
-  hsBox(ox1 - 1.2, ox1, kY, 0, oz0, oz1, M.earth, false);
+  // 外側は 3m の法面（垂直の壁だと、堀へ下りる者が一瞬で上下して見える）
+  { const mat = M.earth.clone(), W = 3; mat.side = THREE.DoubleSide;
+    const quad = (p) => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p.flat(), 3)); g.setIndex([0, 1, 2, 0, 2, 3]); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); stageRoot.add(m); if (HS.stat) HS.stat.push(m); };
+    quad([[ox0, 0, oz0], [ox1, 0, oz0], [ox1, kY, oz0 + W], [ox0, kY, oz0 + W]]);
+    quad([[ox0, 0, oz1], [ox1, 0, oz1], [ox1, kY, oz1 - W], [ox0, kY, oz1 - W]]);
+    quad([[ox0, 0, oz0], [ox0, 0, oz1], [ox0 + W, kY, oz1], [ox0 + W, kY, oz0]]);
+    quad([[ox1, 0, oz0], [ox1, 0, oz1], [ox1 - W, kY, oz1], [ox1 - W, kY, oz0]]); }
   // 城下町の地面
   hsPlane(so.x0, so.x1, so.z0, so.z1, 0.02, M.town);
   // 曲輪の床（高さ関数だけでは見た目の床が無い）

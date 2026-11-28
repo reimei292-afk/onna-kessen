@@ -41151,7 +41151,7 @@ function hsGround() {
   hsPlane(ox1, R, oz0, oz1, -0.02, M.mud);
   // 空堀の底（土橋と出丸の所は欠く）
   const kY = -3.85, ew0 = HS_EW - 8, ew1 = HS_EW + 8;
-  hsPlane(HS_DM.x1 + 2, -6, oz0, iz0, kY, M.kara);          // 南、出丸の東〜南門
+  hsPlane(HS_DM.x1 - 1, -6, oz0, iz0, kY, M.kara);          // 南、出丸の東〜南門（出丸の東の法面の足まで敷く。隙間に穴が見えないよう）
   hsPlane(6, ox1, oz0, iz0, kY, M.kara);            // 南、南門〜東
   hsPlane(ox0, ix0, oz0, ew0, kY, M.kara);          // 西、西門の南
   hsPlane(ox0, ix0, ew1, oz1, kY, M.kara);          // 西、西門の北

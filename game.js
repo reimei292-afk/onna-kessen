@@ -42366,7 +42366,7 @@ function hsSim(dt) {
     if (o.perch) { if (o.arch && o.cd <= 0 && U.confT <= 0) { const t = hsPickTarget(o); if (t) hsShoot(o, t); else o.cd = rand(0.6, 1.2); } continue; }
     let tx = U.tx + o.ox, tz = U.tz + o.oz, sp = (o.w === 'shield' ? 1.15 : 1.35) * hsMudK(o.x, o.z) * (U.appr ? 1.7 : 1);
     if (U.st === 'hold') { tx = U.x + o.ox; tz = U.z + o.oz; sp *= 0.6; }
-    if (U.role === 'take' && (HS.takes || []).length) {
+    if (U.role === 'take' && !U.appr && (HS.takes || []).length) {
       let best = HS.takes[0], bd = 1e9;
       for (const tk of HS.takes) { const dd = Math.hypot((tk.x || 0) - o.x, (tk.z || 0) - o.z); if (dd < bd) { bd = dd; best = tk; } }
       if (o.arch) { tx = best.x + (o.ox || 0) * 0.35; tz = best.z - 6; }

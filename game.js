@@ -40530,18 +40530,18 @@ function hsH(x, z) {
     }
   }
   // 本丸 → 二の丸 → 三の丸（中は盛土、縁は石垣の上の通路）
-  if (hsIn(HS_HON, x, z, -0.4)) return HS_HON.y;
-  if (hsIn(HS_HON, x, z, 1.6)) return HS_HON.y + 0.85;   // 本丸の狭間道
-  if (hsInMoat(HS_HON, HS_HON_MOAT, x, z)) return hsWaterY(x, z, HS_HON, HS_HON_MOAT);
-  if (hsIn(HS_NI, x, z, -0.4)) return HS_NI.y;
-  if (hsIn(HS_NI, x, z, 1.6)) return HS_NI.y + 0.85;
-  if (hsInMoat(HS_NI, HS_NI_MOAT, x, z)) return hsWaterY(x, z, HS_NI, HS_NI_MOAT);
-  if (hsIn(HS_SAN, x, z, -0.4)) return HS_SAN.y;
-  if (hsIn(HS_SAN, x, z, 1.6)) return HS_SAN.y + 0.85;
-  if (hsInMoat(HS_SAN, HS_SAN_MOAT, x, z)) return hsWaterY(x, z, HS_SAN, HS_SAN_MOAT);
+  if (hsIn(HS_HON, x, z, 0)) return HS_HON.y;
+  if (hsIn(HS_HON, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_HON.z0) < 1.7 ? HS_HON.y : HS_HON.y + 1;   // 本丸の狭間道（門の通路は床の高さ）
+  if (hsInMoat(HS_HON, HS_HON_MOAT, x, z)) return HS_NI.y;   // 見た目は二の丸の床（堀は描かれていない）
+  if (hsIn(HS_NI, x, z, 0)) return HS_NI.y;
+  if (hsIn(HS_NI, x, z, 1.6)) return Math.abs(x) < 4.5 && Math.abs(z - HS_NI.z0) < 1.7 ? HS_NI.y : HS_NI.y + 1;
+  if (hsInMoat(HS_NI, HS_NI_MOAT, x, z)) return HS_SAN.y;   // 見た目は三の丸の床
+  if (hsIn(HS_SAN, x, z, 0)) return HS_SAN.y;
+  if (hsIn(HS_SAN, x, z, 1.6)) return HS_SAN.y + 1;
+  if (hsInMoat(HS_SAN, HS_SAN_MOAT, x, z)) return 0;   // 見た目は城下町の地面（水面は地面の下に隠れている）
   // 出丸（南西の突出した土塁）
   const DM = HS.demaru;
-  if (DM && x >= DM.x0 && x <= DM.x1 && z >= DM.z0 && z <= DM.z1) return HS_SO.y;
+  if (DM && x >= DM.x0 && x <= DM.x1 && z >= DM.z0 && z <= DM.z1) return HS_SO.y * Math.min(1, (DM.x1 - x) / 3, (x - DM.x0) / 3);   // 東西の縁は法面
   // 土塁と空堀（内法から外へ：内側法面 4m・天端 4m・外側法面 4m、その先が空堀）
   const so = HS_SO, th = so.th, mid = so.y, inW = 3.5, outW = 5.5, crest0 = inW, crest1 = th - outW;
   if (hsIn(so, x, z)) return 0;   // 城下町（土塁は内法の外側）
@@ -40554,8 +40554,7 @@ function hsH(x, z) {
     if (e < th) return mid * (1 - (e - crest1) / outW);
     const d = e - th;
     if (d < HS_SO_MOAT) {
-      const u = d / HS_SO_MOAT, k = u < 0.2 ? u / 0.2 : u > 0.8 ? (1 - u) / 0.2 : 1;
-      return -4 * Math.min(1, k);
+      return d > HS_SO_MOAT - 1.2 ? -3.85 * (HS_SO_MOAT - d) / 1.2 : -3.85;   // 見た目どおり：底は平ら、外側だけ急な法面
     }
   }
   return 0;
@@ -41260,11 +41259,11 @@ function buildHs() {
 
   // 土橋・坂（空堀・土塁の切通しを渡り切る。門の高さ関数より先に効く）
   const SO = HS_SO, SA = HS_SAN, NI = HS_NI, HO = HS_HON, DM = HS_DM, ew = HS_EW;
-  hsAddBridge(-6, 6, SO.z0 - HS_SO_MOAT, SO.z0 + 12, 0.25);                               // 惣構 南
+  hsAddBridge(-7.8, 7.8, SO.z0 - SO.th - HS_SO_MOAT, SO.z0 + 12, 0.25);   // 空堀の外の縁から（以前は堀の上が穴だった）                               // 惣構 南
   hsAddBridge(-52, -44, SO.z0 - HS_SO_MOAT, SO.z0 + 2, 0.25, SO.y);                        // 攻城塔の仮橋（西）
   hsAddBridge(44, 52, SO.z0 - HS_SO_MOAT, SO.z0 + 2, 0.25, SO.y);                          // 攻城塔の仮橋（東）
-  hsAddBridge(SO.x1 - 2, SO.x1 + HS_SO_MOAT, ew - 6, ew + 6, 0.25, 0.25, true);                  // 惣構 東
-  hsAddBridge(SO.x0 - HS_SO_MOAT, SO.x0 + 2, ew - 6, ew + 6, 0.25, 0.25, true);                // 惣構 西
+  hsAddBridge(SO.x1 - 2, SO.x1 + SO.th + HS_SO_MOAT, ew - 8, ew + 8, 0.25, 0.25, true);                  // 惣構 東
+  hsAddBridge(SO.x0 - SO.th - HS_SO_MOAT, SO.x0 + 2, ew - 8, ew + 8, 0.25, 0.25, true);                // 惣構 西
   hsAddBridge((DM.x0 + DM.x1) / 2 - 4, (DM.x0 + DM.x1) / 2 + 4, DM.z0 - 16, DM.z0 + 6, 0.25);                          // 出丸
   hsAddBridge(-5, 5, SA.z0 - HS_SAN_MOAT, SA.z0, 0.25);                               // 大手 土橋
   hsAddBridge(-5, MU.x1, SA.z0, MU.z1, 0.25);                              // 枡形の中は低い

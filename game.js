@@ -33859,7 +33859,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261128n';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261128o';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -39018,7 +39018,7 @@ function updatePickups(dt) {
 // ====================================================================
 let bannerTimer = 0, popupTimer = 0, hitTimer = 0;
 function showBanner(t, sub) { $('banner').innerHTML = t + (sub ? `<small>${sub}</small>` : ''); $('banner').style.opacity = 1; bannerTimer = 2.6; }
-function popup(t) { if (typeof HS !== 'undefined' && HS.on && HS.done && HS.t - (HS.doneT || 0) > 1) return; $('popup').textContent = t; popupTimer = 0.9; }   // 蓮見城：勝ち負けの表示の上に戦死の知らせを重ねない
+function popup(t) { if (typeof HS !== 'undefined' && HS.on && HS.done) return; $('popup').textContent = t; popupTimer = 0.9; }   // 蓮見城：勝ち負けの表示の上に戦死の知らせを重ねない
 function hitMarker() { hitTimer = 0.15; }
 const hudCache = {};
 function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $(id).textContent = v; } }
@@ -42745,8 +42745,8 @@ function hsCheckEnd() {
   const atkA = atkTeam === 'blue' ? c.b : c.o, defA = defTeam === 'blue' ? c.b : c.o;
   const hon = hsGateById('hon'), inHon = HS.px.filter(o => o.alive && o.team === atkTeam && hsIn(HS_HON, o.x, o.z)).length;
   const atkBroken = atkA < atkN * 0.2, defBroken = defA < defN * 0.15, defHon = HS.px.filter(o => o.alive && o.team === defTeam && hsIn(HS_HON, o.x, o.z)).length, honTaken = hon && hon.open && (inHon >= 60 || (inHon >= 25 && defHon < inHon * 0.6));   // 本丸に攻め手が満ち、守りが少なくなったら落城
-  if (honTaken || defBroken) { HS.done = true; HS.outcome = 'winAtk'; const win = HS.atk; hsOrder(win ? 'keep' : ''); if (HS.cnCmd && !win) hsZh(HS.cnCmd, HS_ZH.win, 2); if (win) HS_LN.winA.forEach((q, i) => HS.later.push([HS.t + 1 + i * 3, () => hsSay(q[0], q[1], 1.9)])); else if (HS_LN.loseD) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.loseD[0][1], 1.9)]); holdEnd(win, win ? '勝ち' : '負け', win ? '蓮見城、落ちる' : '本丸が落ちた', hsResultHtml()); return; }
-  if (atkBroken) { HS.done = true; HS.outcome = 'winDef'; const win = !HS.atk; if (win) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.winD[0][1], 1.9)]); else if (HS.cnCmd) hsZh(HS.cnCmd, HS_ZH.lose, 2); holdEnd(win, win ? '勝ち' : '負け', win ? '寄せ手を退けた' : '寄せ手が潰えた', hsResultHtml()); }
+  if (honTaken || defBroken) { HS.done = true; popupTimer = 0; HS.outcome = 'winAtk'; const win = HS.atk; hsOrder(win ? 'keep' : ''); if (HS.cnCmd && !win) hsZh(HS.cnCmd, HS_ZH.win, 2); if (win) HS_LN.winA.forEach((q, i) => HS.later.push([HS.t + 1 + i * 3, () => hsSay(q[0], q[1], 1.9)])); else if (HS_LN.loseD) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.loseD[0][1], 1.9)]); holdEnd(win, win ? '勝ち' : '負け', win ? '蓮見城、落ちる' : '本丸が落ちた', hsResultHtml()); return; }
+  if (atkBroken) { HS.done = true; popupTimer = 0; HS.outcome = 'winDef'; const win = !HS.atk; if (win) HS.later.push([HS.t + 1, () => hsSay('sumi', HS_LN.winD[0][1], 1.9)]); else if (HS.cnCmd) hsZh(HS.cnCmd, HS_ZH.lose, 2); holdEnd(win, win ? '勝ち' : '負け', win ? '寄せ手を退けた' : '寄せ手が潰えた', hsResultHtml()); }
 }
 
 function hsReset() {

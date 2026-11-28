@@ -36338,8 +36338,10 @@ function damageEnemy(e, dmg, from, crit, hit, by = null) {
     if (hit.arrow && hit.dir) stickArrow(e, hit.pt, hit.dir);
   }
   if (!hitPos) { hitPos = e.s.position.clone(); hitPos.y += e.figH * 0.6; }
-  if (!(KS2.on || SGK.on || KOS.on)) puff(hitPos, 0xb10f25, 7, 0.18, 1.8, 0.34);                             // 赤い飛沫・ダメージパーティクル
-  if (!(KS2.on || SGK.on || KOS.on)) puff(hitPos, 0xff263f, 4, 0.12, 2.2, 0.2);                              // 赤いヒットエフェクト
+  const noRed = KS2.on || SGK.on || KOS.on || (typeof HS !== 'undefined' && HS.on);   // 蓮見城でも赤い飛沫は出さない（白い当たりの火花だけ）
+  if (noRed && typeof HS !== 'undefined' && HS.on) puff(hitPos, 0xfff2d0, 3, 0.1, 2.2, 0.18);
+  if (!noRed) puff(hitPos, 0xb10f25, 7, 0.18, 1.8, 0.34);                             // 赤い飛沫・ダメージパーティクル
+  if (!noRed) puff(hitPos, 0xff263f, 4, 0.12, 2.2, 0.2);                              // 赤いヒットエフェクト
   puff(e.s.position.clone().setY(e.baseY + 0.3), builtStage === 'snow' ? 0xd7e5ef : 0xc8b48a, 3, 0.6, 1.2, 0.6);   // 雪煙／砂埃
   let kx = 0, kz = 1;
   if (from) { kx = e.s.position.x - from.x; kz = e.s.position.z - from.z; }
@@ -39016,7 +39018,7 @@ function updatePickups(dt) {
 // ====================================================================
 let bannerTimer = 0, popupTimer = 0, hitTimer = 0;
 function showBanner(t, sub) { $('banner').innerHTML = t + (sub ? `<small>${sub}</small>` : ''); $('banner').style.opacity = 1; bannerTimer = 2.6; }
-function popup(t) { $('popup').textContent = t; popupTimer = 0.9; }
+function popup(t) { if (typeof HS !== 'undefined' && HS.on && HS.done && HS.t - (HS.doneT || 0) > 1) return; $('popup').textContent = t; popupTimer = 0.9; }   // 蓮見城：勝ち負けの表示の上に戦死の知らせを重ねない
 function hitMarker() { hitTimer = 0.15; }
 const hudCache = {};
 function setText(id, v) { if (hudCache[id] !== v) { hudCache[id] = v; $(id).textContent = v; } }

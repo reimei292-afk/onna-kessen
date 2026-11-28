@@ -14324,8 +14324,15 @@ function floorUnder(x, z, y) {
 }
 function ladderAt(x, z, y) {
   for (const l of ladders) { const m = l.seiran ? 0.35 : 0;   // 動く井闌の梯子は少し広めに取る
+    if (l.gateLad && y < l.y0 + 0.3 && !gateLadFacing(l)) continue;   // 門の梯子は、梯子へ真っすぐ向いた時だけ歩いて上る（斜めに門へ寄っても上らない）
     if (x > l.x0 - m && x < l.x1 + m && z > l.z0 - 0.3 - m && z < l.z1 + 0.3 && y > l.y0 - 0.1 && y < l.y1 + 0.3) return l; }
   return null;
+}
+function gateLadFacing(l) {
+  const fx = -Math.sin(player.yaw), fz = -Math.cos(player.yaw);
+  const cx = (l.x0 + l.x1) / 2, cz = (l.z0 + l.z1) / 2;
+  let tx = 0, tz = 0; if (l.alongZ) tz = Math.sign(l.gz - cz) || 1; else tx = Math.sign(l.gx - cx) || 1;
+  return fx * tx + fz * tz > 0.9;
 }
 // 殿の近くの梯子（案内表示・自動で上り下り用）：下の足元か上の降り口から 1.8m 以内
 function ladderNear(P) {
@@ -40893,15 +40900,18 @@ function hsGateHouse(x, z, yaw, name, w, y0) {
   }
   const edge = deckD / 2 - 0.65;
   if (alongZ) {
-    const a = hsLadder(x + 3.7, z + edge, y0, topY, true, 1); if (a) { a.F = fl; a.dir = -1; }
-    const b = hsLadder(x - 3.7, z + edge, y0, topY, true, 1); if (b) { b.F = fl; b.dir = -1; }
-    const c = hsLadder(x + 3.7, z - edge, y0, topY, true, -1); if (c) { c.F = fl; c.dir = 1; }
-    const dL = hsLadder(x - 3.7, z - edge, y0, topY, true, -1); if (dL) { dL.F = fl; dL.dir = 1; }
+    const lx = gap / 2 + 2.4;   // 門の柱から離す（門へ向かって歩くと勝手に上ってしまわないよう）
+    const a = hsLadder(x + lx, z + edge, y0, topY, true, 1); if (a) { a.F = fl; a.dir = -1; }
+    const b = hsLadder(x - lx, z + edge, y0, topY, true, 1); if (b) { b.F = fl; b.dir = -1; }
+    const c = hsLadder(x + lx, z - edge, y0, topY, true, -1); if (c) { c.F = fl; c.dir = 1; }
+    const dL = hsLadder(x - lx, z - edge, y0, topY, true, -1); if (dL) { dL.F = fl; dL.dir = 1; }
+    for (const L of [a, b, c, dL]) if (L) { L.gateLad = true; L.gx = x; L.gz = z; }
   } else {
     const sg = Math.sin(yaw || 0) > 0 ? 1 : -1;
-    for (const zz of [w * 0.35, -w * 0.35]) {
-      const L1 = hsLadder(x + edge * sg, z + zz, y0, topY, false, sg); if (L1) L1.F = fl;
-      const L2 = hsLadder(x - edge * sg, z + zz, y0, topY, false, -sg); if (L2) L2.F = fl;
+    const lz = gap / 2 + 2.4;
+    for (const zz of [lz, -lz]) {
+      const L1 = hsLadder(x + edge * sg, z + zz, y0, topY, false, sg); if (L1) { L1.F = fl; L1.gateLad = true; L1.gx = x; L1.gz = z; }
+      const L2 = hsLadder(x - edge * sg, z + zz, y0, topY, false, -sg); if (L2) { L2.F = fl; L2.gateLad = true; L2.gx = x; L2.gz = z; }
     }
   }
   const perch = [], tz = Math.max(1.2, deckD / 2 - 1.15), span = Math.max(2, deckW / 2 - 1.15);
@@ -41990,46 +42000,9 @@ function hsTacticTick(dt) {
     if (d.t > 3.6) { if (d.m && d.m.parent) d.m.parent.remove(d.m); ev.drops.splice(i, 1); }
   }
 
-  // 枕形（枡形）：惣構が開いたあと、一の門を自ら開け、三方から射て、二の門の槍で押し返す
-  if (!ev.masuOn && so && so.open && !HS.done) {
-    const near = HS.px.some(o => o.alive && o.team === hsAtkT() && Math.hypot(o.x - (o1 ? o1.x : 0), o.z - (o1 ? o1.z : HS_SAN.z0)) < 70);
-    if (near || t > (ev.soOpenedAt || 0) + 2) {
-      ev.masuOn = true; ev.masuT = 0;
-      if (o1 && !o1.open) hsGateOpen(o1);
-      ev.ote1Opened = !!(o1 && o1.open);
-      hsOrder('masuOpen');
-      HS.defPlan = 'masu';
-    }
-  }
+  // 枡形は自分から開けない。一の門は寄せ手が普通に門を破るまで閉じたまま（門前の普通の戦い）
   if (so && so.open && ev.soOpenedAt == null) ev.soOpenedAt = t;
-  if (ev.masuOn) ev.masuT = (ev.masuT || 0) + dt;
-  if (ev.masuOn && ev.masuT < 12) {
-    ev.masuCd = (ev.masuCd || 0) - dt;
-    if (ev.masuCd <= 0) {
-      ev.masuCd = 0.5;
-      const mx = (HS_MASU.x0 + HS_MASU.x1) / 2, mz = (HS_MASU.z0 + HS_MASU.z1) / 2;
-      let k = 0;
-      for (const o of HS.px) {
-        if (!o.alive || !o.arch || o.team !== hsDefT()) continue;
-        if (o.perch && (o.perch.kind === 'tamon' || o.perch.kind === 'slit' || o.perch.kind === 'yagura' || (o.perch.kind === 'gate' && (o.perch.name === 'ote1' || o.perch.name === 'ote2')))) {
-          const tgt = hsPickTarget(o);
-          if (tgt) { o.cd = 0; hsShoot(o, tgt); k++; }
-        } else if (!o.perch && Math.hypot(o.x - mx, o.z - mz) < 28) {
-          const tgt = hsPickTarget(o);
-          if (tgt) { o.cd = 0; hsShoot(o, tgt); k++; }
-        }
-      }
-      ev.masuShots = (ev.masuShots || 0) + k;
-    }
-  }
-  if (ev.masuOn && ev.masuT > 3.5 && !ev.spearPush) {
-    ev.spearPush = true;
-    for (const U of HS.defU || []) if (U.role === 'soAsh' || U.role === 'san') {
-      if (U.st === 'rout') continue;
-      U.st = 'march'; U.tx = o2 ? o2.x - 2 : 10; U.tz = o2 ? o2.z + 2 : HS_MASU.z1;
-    }
-  }
-  if (ev.masuOn && ev.masuT > 14 && ev.retreated && !ev.retreatGo) {
+  if (o1 && o1.open && ev.retreated && !ev.retreatGo) {
     ev.retreatGo = true; HS.defPlan = 'fallSo';
     for (const U of HS.defU || []) if (U.role === 'soAsh' || U.role === 'dorui' || U.role === 'east' || U.role === 'san') {
       if (U.st === 'rout') continue;
@@ -42326,7 +42299,7 @@ function hsSim(dt) {
     if (o.cd > 0) o.cd -= sdt; if (o.atk > 0) o.atk -= sdt; if (o.flee > 0) o.flee -= sdt;
     // 砲台上の弓は動かず射る
     if (o.perch) { if (o.arch && o.cd <= 0 && U.confT <= 0) { const t = hsPickTarget(o); if (t) hsShoot(o, t); else o.cd = rand(0.6, 1.2); } continue; }
-    let tx = U.tx + o.ox, tz = U.tz + o.oz, sp = (o.w === 'shield' ? 1.15 : 1.35) * hsMudK(o.x, o.z);
+    let tx = U.tx + o.ox, tz = U.tz + o.oz, sp = (o.w === 'shield' ? 1.15 : 1.35) * hsMudK(o.x, o.z) * (U.appr ? 1.7 : 1);
     if (U.st === 'hold') { tx = U.x + o.ox; tz = U.z + o.oz; sp *= 0.6; }
     if (U.role === 'take' && (HS.takes || []).length) {
       let best = HS.takes[0], bd = 1e9;
@@ -42653,6 +42626,7 @@ function hsStart() {
   HS.on = true; hsReset(); hsLook(); UK2.flashes = UK2.flashes || []; CFG.maxBodies = Math.max(CFG.maxBodies || 0, 4000);
   HS.lkB = hsLooks('blue'); HS.lkO = hsLooks('orange'); HS.W = typeof hgWeapons === 'function' ? hgWeapons(HS.cap, 4) : null;
   hsSpawnArmies();
+  if (!HS.atk && !/hsnear=1/.test(location.search)) hsApprSetup(64);   // 寄せ手（中国軍）は遠くから行軍して来る
   if (HS.W) { const W = HS.W, N = HS.wn; if (W.yumi) W.yumi.count = Math.max(1, N.bow); if (W.xbow) W.xbow.count = Math.max(1, N.xb); if (W.nagi) W.nagi.count = Math.max(1, N.dao); if (W.kai) W.kai.count = Math.max(1, N.kai); if (W.shield) W.shield.count = Math.max(1, N.sh); if (W.spear) W.spear.count = Math.max(1, HS.px.length); }
   if (HS.atk) { const z = HS_SO.z0 - 28; player.pos.set(2, hsH(2, z), z); player.yaw = Math.PI; }   // 北の城を向く
   else { const z = HS_SO.z0 + 12; player.pos.set(2, hsH(2, z), z); player.yaw = 0; }   // 南の寄せ手を向く
@@ -42676,9 +42650,52 @@ function hsChat(dt) {
   if (chats[k]) hsSay(k, chats[k], 1.3);   // 既存の声のある台詞だけ（戦場では間を置いて）
 }
 
+// 寄せ手の行軍：遠くに置き直し、元の位置（布陣）まで歩かせる。着くまで戦の段取り（HS.t）は進めない
+function hsApprSetup(DZ) {
+  const A = HS.atkU || []; if (!A.length) return;
+  HS.appr = { t: 0, DZ, eng: [] };
+  for (const U of A) {
+    U.home = [U.x, U.z, U.st]; U.appr = true;
+    for (const o of U.mem) { if (o.perch) continue; o.z += -DZ; o.y = hsH(o.x, o.z); }
+    U.z -= DZ; U.st = 'march'; U.tx = U.home[0]; U.tz = U.home[1];
+    if (U.lead && U.lead.s) { const p = U.lead.s.position; p.z -= DZ; p.y = hsH(p.x, p.z); U.lead.baseY = p.y; }
+    for (const e of U.names || []) if (e && e !== U.lead && e.s) { e.s.position.z -= DZ; e.s.position.y = hsH(e.s.position.x, e.s.position.z); e.baseY = e.s.position.y; }
+  }
+  for (const R of HS.rams || []) { HS.appr.eng.push({ o: R, hx: R.x, hz: R.z, sp: 2.2 }); hsEngSet(R, R.x, R.z - DZ); }
+  for (const G of HS.guns || []) { HS.appr.eng.push({ o: G, hx: G.x, hz: G.z, sp: 2.2 }); hsEngSet(G, G.x, G.z - DZ); }
+  for (const T of HS.towers || []) { HS.appr.eng.push({ o: T, hx: T.x, hz: T.z, sp: 2.0, tw: 1 }); hsEngSet(T, T.x, T.z - DZ, 1); }
+}
+function hsEngSet(E, x, z, tw) {
+  E.x = x; E.z = z; if (E.g) E.g.position.set(x, hsH(x, z) + (tw ? 0.05 : 0), z);
+  if (tw) {
+    const S = E.S || 2.4;
+    if (E.fl) Object.assign(E.fl, { x0: x - S, x1: x + S, z0: z - S, z1: z + S });
+    if (E.lad) Object.assign(E.lad, { x0: x - 0.4, x1: x + 0.4, z0: z - S - 0.95, z1: z - S - 0.05 });
+    if (E.perches) for (let i = 0; i < E.perches.length; i++) { E.perches[i].x = x - 1.2 + (i % 2) * 2.4; E.perches[i].z = z + 0.6 + Math.floor(i / 2) * 0.8; }
+  }
+}
+function hsApprTick(dt) {
+  const P = HS.appr; P.t += dt;
+  let left = 0;
+  for (const U of HS.atkU || []) { if (!U.appr) continue; if (Math.hypot(U.x - U.home[0], U.z - U.home[1]) > 9 && P.t < 48) left++; }
+  for (const E of P.eng) { const o = E.o, dz = E.hz - o.z, dx = E.hx - o.x, d = Math.hypot(dx, dz); if (d > 0.05) { const st = Math.min(d, E.sp * dt); hsEngSet(o, o.x + dx / d * st, o.z + dz / d * st, E.tw); } }
+  if (!P.said && P.t > 1.5) { P.said = 1; showBanner('中国軍、接近', '南から寄せ手が行軍して来る — 持ち場で待て'); bannerTimer = 3.2; if (HS.cnCmd) hsZh(HS.cnCmd, HS_ZH.exploit || HS_ZH.reserve, 1.8); }
+  if (left === 0) {
+    for (const U of HS.atkU || []) { if (!U.appr) continue; U.appr = false; U.st = U.home[2] || 'hold'; U.tx = U.home[0]; U.tz = U.home[1]; }
+    for (const E of P.eng) hsEngSet(E.o, E.hx, E.hz, E.tw);
+    HS.appr = null;
+  }
+}
 function hsUpdate(dt) {
   if (!HS.on || state !== 'play') return;
-  dt = Math.min(dt, 0.1); HS.t += dt;
+  dt = Math.min(dt, 0.1);
+  if (HS.appr) {   // 行軍中：動きと矢だけ（攻めの段取りはまだ）
+    hsApprTick(dt); hsHealTick(dt); hsChat(dt); hsSim(dt); hsTrTick(dt); hsLod(dt);
+    for (const e of HS.rl) if (isUp(e)) hsBrain(e, dt);
+    for (const e of HS.real) if (isUp(e) && e.hsK) hsBrain(e, dt);
+    hsDraw(); hsCounts(); return;
+  }
+  HS.t += dt;
   hsLater(); if ((HS.cmdT -= dt) <= 0) { HS.cmdT = 2.4; hsCmdTick(); } hsHealTick(dt); if (!HS.done) hsChat(dt);
   hsSim(dt); hsSiegeTick(dt); hsTacticTick(dt); hsTrTick(dt); hsShellTick(dt); hsLod(dt);
   for (const e of HS.rl) if (isUp(e)) hsBrain(e, dt);
@@ -43126,6 +43143,11 @@ function updatePlayer(dt) {
     gh = Math.max(gh, Math.min(ph, player.pos.y));
     if (player.pos.y > PL_IN.yMax) { player.pos.y = PL_IN.yMax; player.vy = Math.min(0, player.vy); }   // 頭が天井（2.34m）に届かない高さまで
   }
+  if (HS.on && !player.climbing && !player.autoClimb) {   // 蓮見：段差（石垣・土塁・櫓台）へ一歩で 0.75m 以上は上がれない（ぽんと上に乗る瞬間移動を防ぐ）
+    const k = player.hsOk;
+    if (k && player.onGround && gh - player.pos.y > 0.75 && Math.hypot(player.pos.x - k[0], player.pos.z - k[1]) < 3) { player.pos.x = k[0]; player.pos.z = k[1]; gh = k[2]; player.lastXZ = [k[0], k[1]]; player.terrOk = null; }
+    else if (player.pos.y <= gh + 0.3) player.hsOk = [player.pos.x, player.pos.z, gh];
+  } else if (HS.on) player.hsOk = null;
   if (player.pos.y <= gh && !player.climbing && !player.autoClimb) { player.pos.y = gh; player.vy = 0; player.onGround = true; }
   if (thSpOn && player.thSp != null) { player.pos.y = player.thSp; player.vy = 0; player.onGround = true; }   // 螺旋階段：段の高さをなめらかに
   if (MTN.on && player.onGround) {

@@ -32728,7 +32728,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261128g';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261128h';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -39630,7 +39630,7 @@ function hsTamon(x0, x1, z0, z1, y0, alongX) {
 }
 function hsGateHouse(x, z, yaw, name, w, y0) {
   const M = hsMats(), g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = yaw || 0;
-  w = w || 10; const d = 7.2; y0 = y0 == null ? 0 : y0; const GH = 4.2, FY = y0 + 4.55;
+  w = w || 10; const d = 9.2; y0 = y0 == null ? 0 : y0; const GH = 4.2, FY = y0 + 4.55;
   const gap = Math.min(w * 0.52, 5.4);
   for (const s of [-1, 1]) {
     const post = new THREE.Mesh(new THREE.BoxGeometry(2.0, FY - y0 - 0.15, 1.1), M.woodD);
@@ -39638,17 +39638,21 @@ function hsGateHouse(x, z, yaw, name, w, y0) {
     const st = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.0, 1.3), M.stone);
     st.position.set(s * (gap / 2 + 1.0), y0 + 0.5, 0); g.add(st);
   }
-  const beam = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.28, d * 0.75), M.woodD); beam.position.y = FY - 0.12; g.add(beam);
-  const upper = new THREE.Mesh(new THREE.BoxGeometry(w * 0.62, 2.15, d * 0.28), M.plas); upper.position.y = FY + 1.05; g.add(upper);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(w + 2.6, 0.28, d * 0.92), M.woodD); beam.position.y = FY - 0.12; g.add(beam);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(w + 4.4, 0.14, d + 0.8), M.wood || M.woodD); deck.position.y = FY - 0.04; g.add(deck);
+  const upper = new THREE.Mesh(new THREE.BoxGeometry(w * 0.46, 2.15, d * 0.2), M.plas); upper.position.y = FY + 1.05; g.add(upper);
   for (const sz of [-1, 1]) {
-    const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 1.05, 0.18), M.plas); parapet.position.set(0, FY + 0.52, sz * d * 0.48); g.add(parapet);
+    const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + 4.2, 1.05, 0.18), M.plas); parapet.position.set(0, FY + 0.52, sz * (d * 0.5 + 0.28)); g.add(parapet);
+  }
+  for (const sx of [-1, 1]) {
+    const end = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.05, d + 0.6), M.plas); end.position.set(sx * (w / 2 + 2.1), FY + 0.52, 0); g.add(end);
   }
   const rail = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.12, 0.12), M.woodD); rail.position.set(0, FY + 0.95, d * 0.42); g.add(rail);
   for (const s of [-1, 1]) {
     const col = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.3, 0.2), M.woodD);
     col.position.set(s * (w / 2 - 0.15), FY + 1.15, -d * 0.34); g.add(col);
   }
-  hsHip(g, -(w / 2 + 1.3), w / 2 + 1.3, -d * 0.55, d * 0.5, FY + 2.25, 1.7);
+  hsHip(g, -(w / 2 + 2.2), w / 2 + 2.2, -d * 0.62, d * 0.58, FY + 2.25, 1.85);
   const leaves = [];
   const leafW = gap / 2;
   for (const s of [-1, 1]) {
@@ -39659,13 +39663,13 @@ function hsGateHouse(x, z, yaw, name, w, y0) {
   const topY = FY;
   const alongZ = Math.abs(Math.cos(yaw || 0)) > 0.5;
   const hw = gap / 2, hd = 1.25;
-  const fl = alongZ ? { x0: x - w / 2 - 1, x1: x + w / 2 + 1, z0: z - d * 0.52, z1: z + d * 0.52, y: topY } : { x0: x - d * 0.52, x1: x + d * 0.52, z0: z - w / 2 - 1, z1: z + w / 2 + 1, y: topY };
+  const fl = alongZ ? { x0: x - w / 2 - 2.2, x1: x + w / 2 + 2.2, z0: z - d * 0.55, z1: z + d * 0.55, y: topY } : { x0: x - d * 0.55, x1: x + d * 0.55, z0: z - w / 2 - 2.2, z1: z + w / 2 + 2.2, y: topY };
   floors.push(fl);
   const box = alongZ
     ? { x0: x - hw, x1: x + hw, z0: z - hd, z1: z + hd, y0: y0, y1: y0 + GH, noLean: true }
     : { x0: x - hd, x1: x + hd, z0: z - hw, z1: z + hw, y0: y0, y1: y0 + GH, noLean: true };
   boxes.push(box);
-  const edge = d * 0.5;
+  const edge = d * 0.52;
   if (alongZ) {
     const a = hsLadder(x + 3.7, z + edge, y0, topY, true, 1); if (a) { a.F = fl; a.dir = -1; }
     const b = hsLadder(x - 3.7, z + edge, y0, topY, true, 1); if (b) { b.F = fl; b.dir = -1; }
@@ -39678,7 +39682,7 @@ function hsGateHouse(x, z, yaw, name, w, y0) {
       const L2 = hsLadder(x - edge * sg, z + zz, y0, topY, false, -sg); if (L2) L2.F = fl;
     }
   }
-  const perch = [], tz = d * 0.42;
+  const perch = [], tz = d * 0.36;
   for (const b of [-1, 1]) for (let i = 0; i < 8; i++) {
     const a = i / 7 - 0.5;
     perch.push(alongZ

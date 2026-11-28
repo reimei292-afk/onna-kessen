@@ -32579,7 +32579,7 @@ function synthWalk(g) {
   } catch (err) { return null; }
   return { key: 'walk_side', seq: [0, 1, 2, 3, 4, 5], n: 6, steps: 2, contact: 0, frs };
 }
-const ASSET_V = '20261128a';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
+const ASSET_V = '20261128b';   // 写真を差し替えたら上げる（ブラウザのキャッシュ対策。index.html の ?v= も合わせる）
 function loadFrames(done) {
   const meta = window.FRAME_META || {}, data = window.FRAME_DATA || {};
   const useFiles = /^https?:/.test(location.protocol), loader = new THREE.TextureLoader();
@@ -37795,7 +37795,8 @@ function pickTarget() {
       if (t <= 0 || t > 60) continue;
       if (Math.hypot(o.x + rayDir.x * t - hp.x, o.z + rayDir.z * t - hp.z) < 0.7) return b;
     }
-    if (HG.on) { const r = hgPickBody(o, rayDir); if (r) return r; }   // 平原：倒れた群れの体
+    if (HG.on) { const r = hgPickBody(o, rayDir); if (r) return r; }
+    if (FRF.on) { const r = frfPickBody(o, rayDir); if (r) return r; }   // 長弓の野：倒れた群れの体   // 平原：倒れた群れの体
   }
   return null;
 }
@@ -38273,31 +38274,37 @@ function resetGame() {
 }
 // ======================== フランス人形編 第二幕『長弓の野』 ========================
 // 日本側のみ（英国は出ない）。自軍の弓と破裂弾。フランスは浜で潮待ち、弩と大盾で時間を稼ぐ。白兵・騎馬突撃はしない。
-const FRF_TIDE = 210;   // 満潮までの秒
+const FRF_TIDE = 240;   // 満潮までの秒（実際は数時間を縮めている）
 const FRF_WIN = 0.5;    // フランスがこの割合まで減れば勝ち（潮の前）
+const FRF_BAL = { bowR: 240, xbR: 220, far: 420, accB: 0.055, accX: 0.09, pavArc: 0.45, pavFlat: 0.85, cov: 0.5, hpO: 2, hpB: 2, cdB: [5, 7.5], cdX: [20, 28] };   // 長弓は 200 m 余り届き、1 分に 8〜10 射。弩は巻き上げに 20 秒以上
 const FRF_UNITS = [
-  ['本隊', 'sumi', ['sanjo', 'kujo'], 0, -88, 220, 0.9],
-  ['綾瀬隊', 'fumi', [], -50, -68, 160, 0.9],
-  ['白石隊', 'reika', [], 0, -60, 155, 0.9],
-  ['久遠隊', 'shizuka', [], 50, -68, 150, 0.9],
-  ['西園寺隊', 'ojou', [], -102, -64, 145, 0.88],
-  ['宮下隊', 'sec4', [], -142, -72, 125, 0.86],
-  ['大宮隊', 'omiya', [], 102, -72, 130, 0.88],
-  ['桜井隊', 'sec3', [], 142, -76, 120, 0.86],
-  ['早瀬隊', 'sec2', ['hirose'], 172, -90, 95, 0.9]
+  ['本隊', 'sumi', ['sanjo', 'kujo'], 0, -128, 220, 0.9],
+  ['綾瀬隊', 'fumi', [], -50, -104, 160, 0.9],
+  ['白石隊', 'reika', [], 0, -104, 155, 0.9],
+  ['久遠隊', 'shizuka', [], 50, -104, 150, 0.9],
+  ['西園寺隊', 'ojou', [], -102, -104, 145, 0.88],
+  ['宮下隊', 'sec4', [], -142, -106, 125, 0.86],
+  ['大宮隊', 'omiya', [], 102, -104, 130, 0.88],
+  ['桜井隊', 'sec3', [], 142, -106, 120, 0.86],
+  ['早瀬隊', 'sec2', ['hirose'], 172, -110, 95, 0.9]
 ];
 const FRF_FRU = [
-  ['第1弩隊', -150, 42, 175], ['第2弩隊', -105, 38, 175], ['第3弩隊', -60, 44, 175], ['第4弩隊', -18, 36, 180],
-  ['第5弩隊', 18, 36, 180], ['第6弩隊', 60, 44, 175], ['第7弩隊', 105, 38, 175], ['第8弩隊', 150, 42, 165]
+  ['第1弩隊', -150, 28.5, 175], ['第2弩隊', -105, 28.5, 175], ['第3弩隊', -60, 28.5, 175], ['第4弩隊', -18, 28.5, 180],
+  ['第5弩隊', 18, 28.5, 180], ['第6弩隊', 60, 28.5, 175], ['第7弩隊', 105, 28.5, 175], ['第8弩隊', 150, 28.5, 165]
 ];   // 計 1400
 const FRF_FN = ['カミーユ', 'エリーズ', 'マルゴー', 'イネス', 'ジュリエット', 'エレーヌ', 'クロエ', 'レア', 'マノン', 'セヴリーヌ', 'コゼット', 'セリーヌ', 'オロール', 'シモーヌ', 'サンドリーヌ', 'デルフィーヌ', 'ヴィヴィアン', 'アニエス', 'リュシー', 'フローランス', 'アメリ', 'ノエミ', 'セシリア', 'シャルロット', 'オディール', 'ジョゼット', 'アニタ', 'ロール', 'ナタリー', 'イザベル'];
 const FRF_FS = ['ローラン', 'モロー', 'プティ', 'ベナリ', 'ルソー', 'ベルナール', 'フォンテーヌ', 'ジラール', 'デュボワ', 'マルタン', 'ルブラン', 'デュポン', 'ルフェーブル', 'モレル', 'フォール', 'アンドレ', 'メルシエ', 'ブランシャール', 'デュモン', 'ロベール'];
 const FRF_FP = ['冷静', '陽気', '慎重', '好戦的', '臆病'];
+const FRF_LN = {   // 声のある台詞だけ（他の面で録った声をそのまま使う）
+  vol: { fumi: '一斉に……放て！', sumi: '本隊の弓、一斉に。放て！', omiya: '弓、放て！ 休まない、次！', ojou: '弓隊、放ちなさいませ', sec3: '弓隊、次。……数えて、揃えて、放って' },
+  chat: { fumi: ['弓、狙いを散らさないで。前の敵だけ', '矢を惜しまないで。放て！', '綾瀬隊、弓を揃えて。数えて、放つ。外さないで'], sumi: ['本隊の弓、前の隊を援護して', '下がりません。この距離の矢は、まず当たりません。落ち着いて'],
+    sec3: ['矢の残り、一人あたり二十四本。足りています', '残りの矢、まだ三割あります。最後まで持ちます', '損耗、想定内です。このまま'], ojou: ['まあ、無作法な矢ですこと。……皆さま、竹束の陰へ'], omiya: ['弓、放て！ 休まない、次！'],
+    shizuka: ['間合いを保って。深追いしない'], hirose: ['矢って、こんなに近くを飛ぶんですね……平気です、平気'], kujo: ['後方まで矢が届くのね。……幕を張って、手当てを続けます'] },
+  mob: ['負けないで！', '大丈夫、まだいける！', '旗はまだ立ってる！', '隊長についていって！', '下がらないで！']
+};
 const FRF_Q = new THREE.Object3D();
 const FRF_Z0 = new THREE.Matrix4().makeScale(0, 0, 0);
 
-function frfH(x, z) { const mud = 0.12 * Math.sin(x * 0.037 + z * 0.021) + 0.08 * Math.cos(z * 0.049 - x * 0.013); const wet = z > 55 ? clamp((z - 55) / 50, 0, 1) : 0; return mud * (1 - wet * 0.7) - wet * 0.18; }
-function frfLook() { scene.fog.near = 90; scene.fog.far = 520; scene.background.setHex(0x9eb8c8); sun.intensity = 1.08; ambL.intensity = 0.88; }
 function frfFrName() { return FRF_FN[(Math.random() * FRF_FN.length) | 0] + '・' + FRF_FS[(Math.random() * FRF_FS.length) | 0]; }
 function frfFrProf() { return { name: frfFrName(), pers: FRF_FP[(Math.random() * FRF_FP.length) | 0], cm: 155 + ((Math.random() * 20) | 0), vv: (Math.random() * 3) | 0 }; }
 function frfLooks(team) {
@@ -38311,13 +38318,263 @@ function frfLooks(team) {
   return L.length ? L : (typeof jpMobLooks === 'function' ? jpMobLooks().filter(ok) : []);
 }
 function frfGroup(gid) { if (FRF.pg[gid] !== undefined) return FRF.pg[gid]; const G = ks2PxGroup(gid, 700); if (G) { G.cap = 700; G.list = G.list || []; G.gid = gid; } FRF.pg[gid] = G || null; return FRF.pg[gid]; }
-function frfSay(k, t) {
-  const e = FRF.by[k], name = (e && e.ks2Title) || (e && e.prof && e.prof.name) || k;
-  const el = $('subtitle'); if (!el) return;
-  el.textContent = name + '「' + t + '」'; el.style.opacity = 1;
-  clearTimeout(subTimer); subTimer = setTimeout(() => { el.style.opacity = 0; }, 2500 + t.length * 120);
-}
 function frfKing(t) { sgkKing(t); }
+
+// 地形：畑（泥と畝）→ 浜（砂、ゆるい下り）→ 海（急に深くなる）。z が大きいほど海
+function frfH(x, z) {
+  const mud = 0.11 * Math.sin(x * 0.037 + z * 0.021) + 0.07 * Math.cos(z * 0.049 - x * 0.013) + (z < 20 && z > -200 ? 0.045 * Math.sin(z * 1.35) : 0);   // 畝
+  if (z < 58) return mud - (z < -230 ? 0 : 0);
+  const k = clamp((z - 58) / 8, 0, 1), m = mud * (1 - k);
+  let y = m - (z - 58) * 0.03;   // 浜：100 m で 3 m 下がる
+  if (z > 104) y -= (z - 104) * 0.11;   // 沖：急に深くなる
+  return Math.max(y, -14);
+}
+function frfMudK(x, z) { if (z < 58) return 0.72; if (z < FRF_SEA_SHORE()) return 0.86; return 0.6; }   // 泥の畑は足を取られる。濡れた砂も少し重い
+function FRF_SEA_SHORE() { return FRF.shoreZ || 100; }
+function frfSeaY(tide) { return -1.45 + tide * 1.38; }   // 引き潮 -1.45 m → 満潮 -0.07 m（浜を 45 m ほど上がってくる）
+function frfShoreZ(y) { let lo = 58, hi = 200; for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (frfH(0, m) > y) lo = m; else hi = m; } return (lo + hi) / 2; }
+function frfLook() { scene.fog.near = 140; scene.fog.far = 900; scene.background.setHex(0xb4c4cf); if (scene.fog.color) scene.fog.color.setHex(0xb4c4cf); sun.intensity = 1.0; ambL.intensity = 0.92; }
+function frfCanvasTex(w, h, fn, rep) { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); } t.anisotropy = 4; return t; }
+function frfMudTex() {   // 泥の色むら・小石・轍（明るさだけ。色は頂点色）
+  return frfCanvasTex(256, 256, (c, w, h) => {
+    c.fillStyle = '#d8d8d8'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 2600; i++) { const v = 150 + (Math.random() * 105) | 0; c.fillStyle = `rgba(${v},${v},${v - 8},${0.25 + Math.random() * 0.35})`; const r = 1 + Math.random() * 5; c.beginPath(); c.arc(Math.random() * w, Math.random() * h, r, 0, 7); c.fill(); }
+    for (let i = 0; i < 9; i++) { c.strokeStyle = 'rgba(70,64,52,0.22)'; c.lineWidth = 2 + Math.random() * 3; c.beginPath(); let x = Math.random() * w; c.moveTo(x, 0); for (let y = 0; y <= h; y += 16) { x += (Math.random() - 0.5) * 10; c.lineTo(x, y); } c.stroke(); }   // 足跡と轍
+    for (let i = 0; i < 260; i++) { c.fillStyle = 'rgba(255,255,250,0.5)'; c.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5); }   // 水たまりの照り
+  }, [70, 60]);
+}
+function frfPaviseTex() {   // フランスの大盾：青地に白の十字と金の縁（傷と泥はね）
+  if (FRF.pvTex) return FRF.pvTex;
+  FRF.pvTex = frfCanvasTex(128, 192, (c, w, h) => {
+    c.fillStyle = '#26407a'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#e9e2cc'; c.fillRect(w * 0.42, 14, w * 0.16, h - 28); c.fillRect(12, h * 0.34, w - 24, h * 0.1);
+    c.strokeStyle = '#c4a04a'; c.lineWidth = 6; c.strokeRect(5, 5, w - 10, h - 10);
+    for (let i = 0; i < 160; i++) { c.fillStyle = `rgba(60,48,30,${Math.random() * 0.35})`; c.fillRect(Math.random() * w, h * 0.65 + Math.random() * h * 0.35, 2 + Math.random() * 4, 2 + Math.random() * 3); }   // 泥はね
+    for (let i = 0; i < 14; i++) { c.strokeStyle = 'rgba(20,20,20,0.35)'; c.lineWidth = 1; c.beginPath(); const x = Math.random() * w, y = Math.random() * h; c.moveTo(x, y); c.lineTo(x + (Math.random() - 0.5) * 18, y + (Math.random() - 0.5) * 18); c.stroke(); }
+  });
+  return FRF.pvTex;
+}
+function frfPavise(x, z, yaw) {
+  const M = frfMats(), g = new THREE.Group();
+  const w = 1.05, h = 1.7, t = 0.08;
+  if (!FRF.pvMats) { const face = new THREE.MeshLambertMaterial({ map: frfPaviseTex() }); FRF.pvMats = [M.woodD, M.woodD, M.woodD, M.woodD, face, M.wood]; }
+  const face = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), FRF.pvMats); face.position.y = h / 2 + 0.05; face.rotation.x = -0.08; g.add(face);   // 少し後ろへ傾けて立てる
+  for (const sx of [-0.36, 0.36]) { const lg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.4, 0.06), M.woodD); lg.position.set(sx, 0.12, 0.02); g.add(lg); }
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 1.7, 5), M.woodD); post.position.set(0, 0.62, -0.42); post.rotation.x = 0.55; g.add(post);   // 後ろの支え棒
+  g.position.set(x, frfH(x, z), z); g.rotation.y = yaw; stageRoot.add(g);
+  const P = { x, z, yaw, g, face, hp: 8, stuck: 0, down: false };
+  P.c = { x, z, r: 0.75, kind: 'pavise', P }; FRF.pavise.push(P); FRF.covers.push(P.c);
+  return P;
+}
+function frfGun(x, z, i) {   // 日本の野砲（英国淑女編の破裂弾と同じ弾）
+  const M = frfMats(), g = new THREE.Group();
+  const trail = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.26, 2.2), M.woodD); trail.position.set(0, 0.42, -0.9); trail.rotation.x = -0.18; g.add(trail);
+  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.17, 2.3, 10), M.iron); barrel.rotation.x = Math.PI / 2 - 0.12; barrel.position.set(0, 0.92, 0.35); g.add(barrel);
+  const muzzle = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.035, 6, 12), M.iron); muzzle.position.set(0, 1.06, 1.48); g.add(muzzle);
+  for (const sx of [-0.55, 0.55]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.1, 14), M.wood); w.rotation.z = Math.PI / 2; w.position.set(sx, 0.62, 0.15); g.add(w); const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.16, 8), M.iron); hub.rotation.z = Math.PI / 2; hub.position.set(sx, 0.62, 0.15); g.add(hub); }
+  const axle = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.1, 0.1), M.iron); axle.position.set(0, 0.62, 0.15); g.add(axle);
+  for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), M.iron); b.position.set(-1.1 + (k % 3) * 0.3, 0.16 + (k > 2 ? 0.25 : 0), -1.2 + (k > 2 ? 0.15 : 0)); g.add(b); }   // 弾の山
+  g.position.set(x, frfH(x, z), z); stageRoot.add(g);
+  const G = { x, z, g, i, cd: 9 + i * 3.5, crew: [], kick: 0 };
+  FRF.guns.push(G); return G;
+}
+function frfBoat(x, z) {   // 浜の小舟（満潮で浮く）
+  const M = frfMats(), g = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 0.7, 7.5, 8, 1, true, 0, Math.PI), M.wood); hull.rotation.set(0, 0, Math.PI); hull.rotation.x = Math.PI / 2; hull.scale.set(1, 1, 0.55); hull.position.y = 0.55; g.add(hull);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.06, 6.8), M.woodD); deck.position.y = 0.42; g.add(deck);
+  for (let k = -2; k <= 2; k++) { const th = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.25), M.wood); th.position.set(0, 0.62, k * 1.2); g.add(th); }
+  for (let k = -2; k <= 2; k += 2) for (const s of [-1, 1]) { const oar = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 3.2, 4), M.woodD); oar.rotation.z = s * 1.25; oar.position.set(s * 1.6, 0.5, k * 1.2); g.add(oar); }
+  g.position.set(x, frfH(x, z), z); g.rotation.y = rand(-0.15, 0.15); stageRoot.add(g);
+  const B = { g, x, z, y0: frfH(x, z) }; FRF.boats.push(B); return B;
+}
+function frfShip(x, z, s) {   // 沖に錨を下ろした帆船（帆は畳んである）
+  const M = frfMats(), g = new THREE.Group(), L = 34 * s, W = 9 * s;
+  const hullM = M.shipHull || (M.shipHull = new THREE.MeshLambertMaterial({ color: 0x3b2c1e })), band = M.shipBand || (M.shipBand = new THREE.MeshLambertMaterial({ color: 0xc8b070 })), sail = M.sail || (M.sail = new THREE.MeshLambertMaterial({ color: 0xe8e2d0 }));
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(W, 4.2 * s, L), hullM); hull.position.y = 1.2 * s; g.add(hull);
+  const bow = new THREE.Mesh(new THREE.CylinderGeometry(0.01, W / 2, 8 * s, 4, 1), hullM); bow.rotation.x = Math.PI / 2; bow.rotation.y = Math.PI / 4; bow.scale.set(1, 1, 0.5); bow.position.set(0, 1.6 * s, L / 2 + 3.6 * s); g.add(bow);
+  const stern = new THREE.Mesh(new THREE.BoxGeometry(W * 0.95, 3.2 * s, 7 * s), hullM); stern.position.set(0, 4.6 * s, -L / 2 + 3.5 * s); g.add(stern);
+  const st = new THREE.Mesh(new THREE.BoxGeometry(W + 0.1, 0.4 * s, L * 0.98), band); st.position.y = 2.6 * s; g.add(st);
+  for (let k = 0; k < 7; k++) { const gp = new THREE.Mesh(new THREE.BoxGeometry(W + 0.12, 0.5 * s, 0.6 * s), M.iron); gp.position.set(0, 1.7 * s, -L / 2 + 6 * s + k * 3.6 * s); g.add(gp); }   // 砲門
+  for (const [mz, mh] of [[L * 0.3, 26], [0, 30], [-L * 0.28, 22]]) {
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.22 * s, 0.34 * s, mh * s, 6), M.woodD); mast.position.set(0, 3.2 * s + mh * s / 2, mz); g.add(mast);
+    for (const yy of [0.45, 0.72, 0.92]) { const yard = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * s, 0.12 * s, W * 1.5 * (1.15 - yy * 0.4), 5), M.woodD); yard.rotation.z = Math.PI / 2; yard.position.set(0, 3.2 * s + mh * s * yy, mz); g.add(yard);
+      const fs = new THREE.Mesh(new THREE.CylinderGeometry(0.35 * s, 0.35 * s, W * 1.35 * (1.15 - yy * 0.4), 6), sail); fs.rotation.z = Math.PI / 2; fs.position.set(0, 3.2 * s + mh * s * yy - 0.35 * s, mz); g.add(fs); }   // 畳んだ帆
+  }
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(3.2 * s, 2 * s), M.frFlag || (M.frFlag = new THREE.MeshLambertMaterial({ color: 0x2a4a8a, side: THREE.DoubleSide }))); fl.position.set(1.6 * s, 3.2 * s + 31 * s, 0); g.add(fl);
+  const cab = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 26 * s, 4), M.woodD); cab.rotation.x = 0.9; cab.position.set(W * 0.3, -3 * s, L / 2 + 6 * s); g.add(cab);   // 錨綱
+  g.position.set(x, 0, z); g.rotation.y = rand(-0.25, 0.25) + Math.PI / 2 * (Math.random() < 0.5 ? 1 : -1) * 0.2; stageRoot.add(g);
+  const S = { g, x, z, ph: Math.random() * 6, s }; FRF.ships.push(S); return S;
+}
+function frfCliff(x, z, w, h, d, ry) {   // 白い崖（英国南岸）
+  const M = frfMats(), g = new THREE.Group();
+  const c = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M.chalk || (M.chalk = new THREE.MeshLambertMaterial({ color: 0xe6e1d2 }))); c.position.y = h / 2 - 2; g.add(c);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(w * 1.02, 2.2, d * 1.02), M.turf || (M.turf = new THREE.MeshLambertMaterial({ color: 0x6f8a4e }))); top.position.y = h - 1.6; g.add(top);
+  g.position.set(x, 0, z); g.rotation.y = ry || 0; stageRoot.add(g); FRF.terrain.push(g);
+}
+function buildFrf() {
+  UK2.flashes = [];
+  ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false;
+  TERR.fn = frfH; TERR.move = null; frfLook();
+  Object.assign(FRF, { pavise: [], covers: [], guns: [], boats: [], ships: [], terrain: [], sea: null, foam: null, stuck: [], tr: [], shells: [], pvMats: null });
+  const M = frfMats();
+  const NX = LITE ? 70 : 120, NZ = LITE ? 70 : 120, geo = new THREE.PlaneGeometry(760, 700, NX, NZ); geo.rotateX(-Math.PI / 2); geo.translate(0, 0, 10);
+  const P = geo.attributes.position, C = new Float32Array(P.count * 3), UV = geo.attributes.uv;
+  for (let i = 0; i < P.count; i++) {
+    const x = P.getX(i), z = P.getZ(i), y = frfH(x, z); P.setY(i, y);
+    const n = 0.5 + 0.25 * Math.sin(x * 0.043 + z * 0.027) + 0.25 * Math.cos(z * 0.061 - x * 0.019);
+    let r, gg, b;
+    if (z < 56) { r = 0.36 + 0.07 * n; gg = 0.31 + 0.05 * n; b = 0.21 + 0.03 * n; if (Math.abs(x) > 175 || z < -205) { r = 0.38 + 0.06 * n; gg = 0.45 + 0.07 * n; b = 0.26; } }   // 泥の畑（端は草地）
+    else if (y > -0.1) { const k = clamp((z - 56) / 6, 0, 1); r = 0.36 + 0.36 * k; gg = 0.31 + 0.33 * k; b = 0.21 + 0.24 * k; }   // 乾いた砂
+    else if (y > -1.6) { r = 0.56 + 0.05 * n; gg = 0.5 + 0.04 * n; b = 0.38 + 0.03 * n; }   // 濡れた砂（潮の届く所）
+    else { const k = clamp((-y - 1.6) / 8, 0, 1); r = 0.5 - 0.25 * k; gg = 0.46 - 0.2 * k; b = 0.36 - 0.12 * k; }   // 海の底
+    C[i * 3] = r; C[i * 3 + 1] = gg; C[i * 3 + 2] = b;
+  }
+  P.needsUpdate = true; geo.computeVertexNormals(); geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
+  if (!M.ground) M.ground = new THREE.MeshLambertMaterial({ vertexColors: true, map: frfMudTex() });
+  const gm = new THREE.Mesh(geo, M.ground); gm.receiveShadow = true; stageRoot.add(gm); FRF.terrain.push(gm);
+  // 海：潮で上下し、波が動く。深い所ほど暗い
+  const SX = LITE ? 40 : 70, SZ = LITE ? 24 : 40, sg = new THREE.PlaneGeometry(1400, 760, SX, SZ); sg.rotateX(-Math.PI / 2); sg.translate(0, 0, 440);
+  if (!M.seaW) M.seaW = new THREE.MeshPhongMaterial({ color: 0x24506b, specular: 0x8fb4c8, shininess: 70, transparent: true, opacity: 0.9, depthWrite: true });
+  const sea = new THREE.Mesh(sg, M.seaW); sea.renderOrder = 1; stageRoot.add(sea); FRF.sea = sea; FRF.seaBase = Float32Array.from(sg.attributes.position.array);
+  const fg = new THREE.PlaneGeometry(1400, 3.2, 1, 1); fg.rotateX(-Math.PI / 2);
+  const foam = new THREE.Mesh(fg, M.foam); foam.renderOrder = 2; stageRoot.add(foam); FRF.foam = foam;
+  const fg2 = new THREE.PlaneGeometry(1400, 1.6, 1, 1); fg2.rotateX(-Math.PI / 2); const foam2 = new THREE.Mesh(fg2, M.foam); foam2.renderOrder = 2; stageRoot.add(foam2); FRF.foam2 = foam2;
+  // 沖に錨泊する帆船（深い所）と、浜に引き上げた小舟
+  for (let i = 0; i < 5; i++) frfShip(-230 + i * 115 + rand(-15, 15), 250 + (i % 2) * 40 + rand(-10, 10), 0.9 + Math.random() * 0.2);
+  for (let i = 0; i < 12; i++) frfBoat(-170 + i * 31 + rand(-4, 4), 84 + (i % 3) * 2.5);
+  // 白い崖（左右と後ろ）
+  for (let i = 0; i < 7; i++) { frfCliff(-330 - i * 8, -200 + i * 70, 60, 34 + (i % 3) * 8, 70, 0.1); frfCliff(330 + i * 8, -200 + i * 70, 60, 30 + (i % 2) * 10, 70, -0.1); }
+  for (let i = 0; i < 6; i++) frfCliff(-300 + i * 120, -330, 130, 26 + (i % 2) * 10, 40, 0);
+  // 生け垣と木（畑の境）
+  for (let i = 0; i < 46; i++) { const side = i < 23 ? -1 : 1, x = side * (185 + Math.random() * 40), z = -220 + Math.random() * 260; frfTree(x, z); }
+  { const dum = new THREE.Object3D(), n = LITE ? 220 : 520, im = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.5, 0), M.tuft || (M.tuft = new THREE.MeshLambertMaterial({ color: 0x5f6e3a })), n);
+    for (let i = 0; i < n; i++) { let x, z; do { x = (Math.random() * 2 - 1) * 260; z = -240 + Math.random() * 290; } while (Math.abs(x) < 175 && z > -205); dum.position.set(x, frfH(x, z) + 0.1, z); dum.scale.set(0.6 + Math.random(), 0.4 + Math.random() * 0.6, 0.6 + Math.random()); dum.updateMatrix(); im.setMatrixAt(i, dum.matrix); } stageRoot.add(im); FRF.terrain.push(im); }
+  { const dum = new THREE.Object3D(), n = LITE ? 160 : 380, im = new THREE.InstancedMesh(new THREE.CircleGeometry(1, 7), M.puddle || (M.puddle = new THREE.MeshPhongMaterial({ color: 0x3b3a34, specular: 0x6f7880, shininess: 60, transparent: true, opacity: 0.55, depthWrite: false })), n);   // 畑の水たまり
+    for (let i = 0; i < n; i++) { const x = (Math.random() * 2 - 1) * 170, z = -200 + Math.random() * 250; dum.position.set(x, frfH(x, z) + 0.03, z); dum.rotation.set(-Math.PI / 2, 0, Math.random() * 6); const r = 0.5 + Math.random() * 1.8; dum.scale.set(r, r * (0.5 + Math.random() * 0.5), 1); dum.updateMatrix(); im.setMatrixAt(i, dum.matrix); } stageRoot.add(im); FRF.terrain.push(im); }
+  // 日本側の杭と竹束（射手の前）
+  for (let i = 0; i < 76; i++) {
+    const x = -165 + i * 4.4 + rand(-0.4, 0.4), z = -100 + (i % 3) * 1.1;
+    const st = new THREE.Mesh(new THREE.ConeGeometry(0.07, 1.35, 4), M.stake); st.position.set(x, 0.55 + frfH(x, z), z); st.rotation.x = 0.5; stageRoot.add(st); FRF.terrain.push(st);
+    if (i % 2 === 0) FRF.covers.push({ x, z, r: 0.35, kind: 'stake' });
+  }
+  for (let i = 0; i < 30; i++) {
+    const x = -160 + i * 11 + rand(-1, 1), z = -106 + (i % 2) * 2.4, a = rand(-0.15, 0.15);
+    try { bamboobundle(x, z, a); } catch (_) {}
+    FRF.covers.push({ x, z, r: 1.15, kind: 'take' });
+  }
+  // フランスの大盾（pavise）：最前列の射手の真ん前に一枚ずつ
+  for (let i = 0; i < 96; i++) { const x = -172 + i * 3.6 + rand(-0.25, 0.25), z = 31.2 + rand(-0.3, 0.3); frfPavise(x, z, Math.PI); }
+  // 日本の砲 4 門（本隊の後ろ）
+  for (let i = 0; i < 4; i++) frfGun(-75 + i * 50, -166, i);
+}
+function frfSay(k, t, prio) {   // 名のある娘：声（あれば）と字幕
+  const e = FRF.by[k]; if (e && !isUp(e)) return;
+  if (typeof ks2Say === 'function') { ks2Say(e || null, t, prio == null ? 1.7 : prio, (typeof KS2_VK !== 'undefined' && KS2_VK[k]) || null); return; }
+}
+function frfMobV(U, L) {   // 群れの侍女：声だけ（字幕なし）
+  if (!U || !L || !L.length) return; const pp = player.pos, d = Math.hypot(U.x - pp.x, U.z - pp.z); if (d > 70) return;
+  const t = L[(Math.random() * L.length) | 0], f = ks2VoiceFile(t, 'kmob'); if (f && VoicePack.ok) Talk.as(null, () => VoicePack.play(f, Math.min(50, d), 1.0, 1));
+}
+function frfArrowFx(o, x, z, sure) {
+  if (FRF.tr.length > (LITE ? 150 : 420)) return null;
+  const pp = player.pos; if ((o.x - pp.x) ** 2 + (o.z - pp.z) ** 2 > 330 * 330 && (x - pp.x) ** 2 + (z - pp.z) ** 2 > 330 * 330) return null;
+  const a = new V3(o.x, frfH(o.x, o.z) + 1.5, o.z), miss = sure ? 0 : (o.w === 'xbow' ? 1.6 : 2.4);
+  const bx = x + rand(-miss, miss), bz = z + rand(-miss, miss), b = new V3(bx, frfH(bx, bz) + 0.4, bz), d = Math.hypot(b.x - a.x, b.z - a.z);
+  const m = (typeof arrowWar !== 'undefined' ? arrowWar : (arrowTpl && arrowTpl.player)).clone(); m.scale.setScalar(o.w === 'xbow' ? 2.6 : 2.3); stageRoot.add(m);
+  const T = frfFlightT(o.w, d), H = o.w === 'xbow' ? Math.min(14, d * 0.06) : Math.min(46, d * 0.21);   // 長弓は高く弧を描く。弩は低く速い
+  FRF.tr.push({ a, b, t: 0, T, H, m, src: o, stick: true, bolt: o.w === 'xbow' });
+  return T;
+}
+function frfFlightT(w, d) { return w === 'xbow' ? 0.25 + d / 62 : 0.35 + d / 48; }   // 弩の矢は秒速 60 m 余り、長弓は 50 m 弱（高く上げる分ゆっくり）
+function frfTrTick(dt) {
+  const Q = new V3(), D = new V3();
+  for (let i = FRF.tr.length - 1; i >= 0; i--) {
+    const T = FRF.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T);
+    Q.set(T.a.x + (T.b.x - T.a.x) * k, T.a.y + (T.b.y - T.a.y) * k + 4 * T.H * k * (1 - k), T.a.z + (T.b.z - T.a.z) * k);
+    if (T.m) { T.m.position.copy(Q); D.set(T.b.x - T.a.x, (T.b.y - T.a.y) + 4 * T.H * (1 - 2 * k), T.b.z - T.a.z).normalize(); T.m.quaternion.setFromUnitVectors(Z, D); }
+    if (k < 1) continue;
+    FRF.tr.splice(i, 1);
+    const hitC = frfCover(T.a.x, T.a.z, T.b.x, T.b.z, T.bolt ? 40 : 4);
+    if (hitC && hitC.kind === 'pavise' && hitC.P) { frfStickPavise(hitC.P, T); continue; }
+    if (T.m) frfStickGround(T, !!hitC);
+  }
+}
+function frfFireGun(G) {
+  const up = FRF.pavise.filter(P => !P.down), al = FRF.O.filter(o => o.alive); if (!al.length) return;
+  const P0 = up.length && Math.random() < 0.55 ? up[(Math.random() * up.length) | 0] : null, t = P0 ? null : al[(Math.random() * al.length) | 0];
+  let x = P0 ? P0.x + rand(-1, 1) : t.x + rand(-4, 4), z = P0 ? P0.z - rand(0.5, 1.5) : t.z + rand(-3, 3);   // 大盾の手前／隊の中の隙間
+  [x, z] = frfAimOffPeople(x, z, 2.6);
+  const d = Math.hypot(x - G.x, z - G.z); x += rand(-1, 1) * d * 0.012; z += rand(-1, 1) * d * 0.015;   // 砲のばらつき
+  [x, z] = frfAimOffPeople(x, z, 2.6);
+  const gy = frfH(x, z), air = Math.random() < 0.35;
+  const ball = new THREE.Mesh(FRF.ballG || (FRF.ballG = new THREE.SphereGeometry(0.16, 8, 6)), frfMats().iron); stageRoot.add(ball);
+  const a = new V3(G.x, frfH(G.x, G.z) + 1.1, G.z + 1.5);
+  FRF.shells.push({ x, z, gy, y: air ? rand(3, 5) : 0.25, air, t: 0, T: Math.max(1.2, 2 * Math.sqrt(2 * d * 0.16 / 9.8)), a, H: d * 0.16, ball, whist: false, trail: 0 });
+  // 砲口：白煙と閃光（火は出さない）
+  puff(new V3(G.x, a.y, G.z + 1.7), 0xe8e4da, 14, 0.9, 4.5, 1.6); puff(new V3(G.x, a.y, G.z + 1.7), 0xbdb7aa, 8, 0.4, 2.5, 3);
+  if (typeof uk2Flash === 'function') uk2Flash(new V3(G.x, a.y, G.z + 1.8), 3, 0.08);
+  G.kick = 0.35;
+  const o = Sfx.at && Sfx.at(new V3(G.x, 1, G.z), 140, 1.0); if (o) { Sfx.tone('sine', 90, 40, 0.5, 0.9, 0, o); Sfx.noiseBurst(0.4, 'lowpass', 900, 40, 0.8, 1, 0, o); }
+}
+function frfBurst(S) {
+  const gy = S.gy || 0, P = new V3(S.x, gy + S.y, S.z), G0 = new V3(S.x, gy + 0.15, S.z), dP = Math.hypot(S.x - player.pos.x, S.z - player.pos.z);
+  if (typeof uk2Flash === 'function') uk2Flash(P, S.air ? 6 : 4.5, 0.12);   // 白い閃光（炎は出さない）
+  puff(P, 0xfff6dc, 6, 0.6, 8, 0.1); puff(P, 0x8f8a80, S.air ? 18 : 12, S.air ? 1.6 : 1.3, 2.6, 3.6); puff(P, 0x7d776c, 12, 1.1, 4, 2.6);
+  puff(G0, 0x6b5a40, 26, 1.4, 7, 2.4); puff(G0, 0x8a7656, 16, 0.4, 10, 1.4); puff(G0, 0x4a3e2c, 14, 0.1, 13, 0.9);   // 泥と土が高く跳ねる
+  const o = Sfx.at && Sfx.at(P, 420, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); }
+  if (dP < 40) player.shake = Math.max(player.shake || 0, clamp(0.55 - dP * 0.013, 0.05, 0.45));
+  { const cr = new THREE.Mesh(FRF.crG || (FRF.crG = new THREE.CircleGeometry(1.3, 10)), FRF.crM || (FRF.crM = new THREE.MeshLambertMaterial({ color: 0x2e261a, transparent: true, opacity: 0.85, depthWrite: false }))); cr.rotation.x = -Math.PI / 2; cr.position.set(S.x, gy + 0.04, S.z); cr.scale.setScalar(S.air ? 0.6 : 1); stageRoot.add(cr); FRF.stuck.push(cr); }   // 着弾の跡（黒い泥）
+  let pv = 0;
+  for (const Pv of FRF.pavise) { if (Pv.down) continue; const d = Math.hypot(Pv.x - S.x, Pv.z - S.z); if (d > 4.6) continue; Pv.hp -= d < 2.6 ? 8 : 5;
+    if (Pv.hp <= 0) { Pv.down = true; pv++; if (Pv.c) Pv.c.off = true; Pv.g.rotation.set(-1.3 + rand(-0.15, 0.15), Pv.yaw + rand(-0.4, 0.4), 0, 'YXZ'); Pv.g.position.y = frfH(Pv.x, Pv.z) + 0.06; FRF.pvDown = (FRF.pvDown || 0) + 1; } }   // 大盾が後ろへ倒れる
+  const R = S.air ? 10 : 8; let nh = 0, nk = 0;
+  for (const e of FRF.O) {
+    if (!e.alive) continue;
+    const d = Math.hypot(e.x - S.x, e.z - S.z); if (d > R || d < 2.6) continue;   // 直撃なし。2.6 m 未満にはいない
+    if (frfCover(S.x, S.z, e.x, e.z)) continue;   // 大盾の陰は破片が届かない
+    const k = 1 - d / R; if (nh < 8 && Math.random() < 0.3 + 0.6 * k) { nh++; frfHurt(e, k > 0.55 ? 2 : 1, false, P); if (!e.alive) nk++; }
+  }
+  FRF.gunHits = (FRF.gunHits || 0) + nh; FRF.gunShots = (FRF.gunShots || 0) + 1;
+  if (nh + pv > 0 && dP < 260 && (FRF.gunMsgT || 0) < FRF.t) { FRF.gunMsgT = FRF.t + 14; showBanner('破裂弾、着弾', (pv ? '大盾 ' + pv + ' 枚が倒れた　' : '') + (nk ? 'フランス ' + nk + ' 人が倒れた' : nh ? '破片が敵の列を払う' : '')); bannerTimer = 2.2; }
+  if (dP < 3.2 && !player.god && !frfCover(S.x, S.z, player.pos.x, player.pos.z) && dP >= 2.6) hurtPlayer(3);
+}
+function frfShellTick(dt) {
+  for (const F of UK2.flashes || []) { if (F.t >= F.life) { F.s.visible = false; continue; } F.t += dt; const k = F.t / F.life; F.s.scale.setScalar(F.size * (0.6 + k)); F.s.material.opacity = Math.max(0, 1 - k); }   // 閃光を消す（UK2 の処理はこの面では回らない）
+  for (const S of FRF.shells) {
+    S.t += dt; const k = Math.min(1, S.t / S.T);
+    if (S.ball) { S.ball.position.set(S.a.x + (S.x - S.a.x) * k, S.a.y + (S.gy + S.y - S.a.y) * k + 4 * S.H * k * (1 - k), S.a.z + (S.z - S.a.z) * k); if ((S.trail -= dt) <= 0 && k < 0.97) { S.trail = 0.06; puff(S.ball.position.clone(), 0xd8d4ca, 1, 0.05, 0.4, 1.2); } }   // 弾の弧と細い煙の筋
+    if (!S.whist && S.T - S.t < 1.0) { S.whist = true; const o = Sfx.at && Sfx.at(new V3(S.x, 2, S.z), 120, 1.0); if (o) Sfx.tone('sine', 1700, 480, 1.0, 0.07, 0, o); }
+    if (S.t >= S.T) { frfBurst(S); if (S.ball) stageRoot.remove(S.ball); S.done = true; }
+  }
+  FRF.shells = FRF.shells.filter(S => !S.done);
+  for (const G of FRF.guns) { if (G.kick > 0) { G.kick = Math.max(0, G.kick - dt); G.g.position.z = G.z - G.kick * 1.4; } }   // 撃つと後ろへ下がる
+  if (!FRF.done) for (const G of FRF.guns) { G.cd -= dt; if (G.cd <= 0) { G.cd = rand(11, 15); frfFireGun(G); } }   // 装填に十数秒
+  if (FRF.stuck.length > (LITE ? 220 : 520)) { const old = FRF.stuck.shift(); if (old && old.parent) old.parent.remove(old); }
+}
+function frfTideTick(dt) {
+  if (FRF.done && FRF.outcome === 'tide') FRF.tide = 1;
+  else if (!FRF.done) FRF.tide = Math.min(1, FRF.t / Math.max(30, FRF.tideT));
+  const sy = frfSeaY(FRF.tide); FRF.seaY = sy; FRF.shoreZ = frfShoreZ(sy);
+  if (FRF.sea && FRF.seaBase) {   // うねり
+    const A = FRF.sea.geometry.attributes.position, B = FRF.seaBase, t = FRF.t;
+    if (((FRF.seaN = (FRF.seaN || 0) + 1) % (LITE ? 3 : 2)) === 0) { for (let i = 0; i < A.count; i++) { const x = B[i * 3], z = B[i * 3 + 2]; A.array[i * 3 + 1] = 0.16 * Math.sin(x * 0.045 + t * 0.9) + 0.12 * Math.sin(z * 0.06 - t * 1.3) + 0.06 * Math.sin((x + z) * 0.11 + t * 2.1); } A.needsUpdate = true; FRF.sea.geometry.computeVertexNormals(); }
+    FRF.sea.position.y = sy;
+  }
+  const sw = Math.sin(FRF.t * 0.8) * 1.6;   // 波が寄せては返す
+  if (FRF.foam) { FRF.foam.position.set(0, sy + 0.05, frfShoreZ(sy) - 0.8 - sw * 0.5); FRF.foam.material.opacity = 0.55 + 0.2 * Math.sin(FRF.t * 0.8); }
+  if (FRF.foam2) FRF.foam2.position.set(0, sy + 0.06, frfShoreZ(sy) + 6 + sw);
+  for (const S of FRF.ships) { S.g.position.y = sy - 0.4 + Math.sin(FRF.t * 0.5 + S.ph) * 0.25; S.g.rotation.z = Math.sin(FRF.t * 0.4 + S.ph) * 0.025; S.g.rotation.x = Math.sin(FRF.t * 0.33 + S.ph) * 0.012; }
+  for (const B of FRF.boats) { const fl = sy + 0.12 - B.y0; if (fl > 0) { B.g.position.y = sy - 0.28 + Math.sin(FRF.t * 1.1 + B.x) * 0.06; B.g.rotation.z = Math.sin(FRF.t * 0.9 + B.x) * 0.04; } else { B.g.position.y = B.y0; B.g.rotation.z = 0.06; } }   // 満ちると浮く
+  const fill = $('frfTideFill'), txt = $('frfTideTxt');
+  if (fill) fill.style.width = Math.round(FRF.tide * 100) + '%';
+  if (txt) { const left = Math.max(0, Math.ceil(FRF.tideT - FRF.t)), st = FRF.tide < 0.33 ? '引き潮' : FRF.tide < 0.7 ? '潮が差してきた' : FRF.tide < 1 ? '満潮が近い' : '満潮'; txt.textContent = FRF.done && FRF.outcome === 'win' ? '潮 ' + Math.round(FRF.tide * 100) + '%（決着）' : st + '　潮 ' + Math.round(FRF.tide * 100) + '%' + (left > 0 ? '　満潮まで ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') : ''); }
+}
+function frfPickBody(c, d) {   // 倒れた群れの体にも札を出す
+  if (!FRF.on || !FRF.px || d.y > -0.02) return null; const t = (0.25 - c.y) / d.y; if (t <= 0 || t > 70) return null;
+  const x = c.x + d.x * t, z = c.z + d.z * t; let best = null, bd = 1.0;
+  for (const o of FRF.dead || []) { if (o.real) continue; const q = Math.hypot(o.x - x, o.z - z); if (q < bd) { bd = q; best = o; } }
+  return best ? frfLiveFake(best) : null;
+}
 
 function frfReset() {
   if (FRF.pg) for (const k in FRF.pg) { const G = FRF.pg[k]; if (G) { if (G.im && G.im.parent) stageRoot.remove(G.im); if (G.dn && G.dn.parent) stageRoot.remove(G.dn); } }
@@ -38328,7 +38585,7 @@ function frfReset() {
   for (const S of FRF.shells || []) if (S.ring && S.ring.parent) stageRoot.remove(S.ring);
   for (const e of FRF.rl || []) { try { if (e && e.s && !e.frfNamed) { const i = enemies.indexOf(e); if (i >= 0) enemies.splice(i, 1); disposeNpc(e); } } catch (_) {} }
   Object.assign(FRF, { t: 0, px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], lkI: 0,
-    lostB: 0, lostO: 0, total: { blue: 0, orange: 0 }, stuck: [], W: null, lodT: 0, tr: [], shells: [],
+    lostB: 0, lostO: 0, total: { blue: 0, orange: 0 }, stuck: [], W: null, lodT: 0, tr: [], shells: [], dead: [], shots: 0, gunHits: 0, gunShots: 0, chatT: 12,
     view: 0, volleyT: 0, done: false, outcome: '', tide: 0, tideT: FRF_TIDE, grid: new Map(),
     drawT: 0, sim: 0, wn: { bow: 0, xb: 0 }, said: {}, chatT: 8, evLog: [], cnt: null });
   for (const G of FRF.guns || []) G.cd = 8 + G.i * 3;   // 地形・大盾・砲・舟は buildFrf のもの。やり直しでも残す
@@ -38364,94 +38621,16 @@ function frfTree(x, z) {
   g.position.set(x, frfH(x, z), z); stageRoot.add(g); FRF.terrain.push(g);
 }
 
-function frfPavise(x, z, yaw) {
-  const M = frfMats(), g = new THREE.Group();
-  const w = 1.15, h = 1.85, t = 0.07;
-  const face = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), M.wood); face.position.y = h / 2; g.add(face);
-  const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.06, h + 0.06, t * 0.4), M.woodD); rim.position.y = h / 2; rim.position.z = -0.02; g.add(rim);
-  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.5, 4), M.woodD); post.position.set(0, 0.55, -0.18); post.rotation.x = 0.45; g.add(post);
-  g.position.set(x, frfH(x, z), z); g.rotation.y = yaw; stageRoot.add(g);
-  const P = { x, z, yaw, g, face, hp: 8, stuck: 0, down: false };
-  P.c = { x, z, r: 0.85, kind: 'pavise', P }; FRF.pavise.push(P); FRF.covers.push(P.c);
-  return P;
-}
 
-function frfGun(x, z, i) {
-  const M = frfMats(), g = new THREE.Group();
-  const trail = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.28, 0.7), M.woodD); trail.position.y = 0.55; g.add(trail);
-  const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 2.1, 8), M.iron); barrel.rotation.z = Math.PI / 2; barrel.position.set(0.55, 0.78, 0); g.add(barrel);
-  for (const sx of [-0.45, 0.45]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.12, 10), M.wood); w.rotation.x = Math.PI / 2; w.position.set(-0.15, 0.32, sx); g.add(w); }
-  g.position.set(x, frfH(x, z), z); g.rotation.y = 0; stageRoot.add(g);
-  const G = { x, z, g, i, cd: 8 + i * 3, crew: [] };
-  FRF.guns.push(G); return G;
-}
 
-function frfBoat(x, z) {
-  const M = frfMats(), g = new THREE.Group();
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(3.6, 0.7, 1.3), M.wood); hull.position.y = 0.25; g.add(hull);
-  const prow = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.55, 0.7), M.woodD); prow.position.set(2.0, 0.3, 0); g.add(prow);
-  g.position.set(x, 0.05, z); stageRoot.add(g); FRF.boats.push(g); FRF.terrain.push(g); return g;
-}
 
-function buildFrf() {
-  ground.visible = false; sky.visible = false; for (const m of mountains) m.visible = false;
-  TERR.fn = frfH; TERR.move = null; frfLook();
-  Object.assign(FRF, { pavise: [], covers: [], guns: [], boats: [], terrain: [], sea: null, foam: null, stuck: [], tr: [], shells: [] });
-  const M = frfMats();
-  const N = LITE ? 56 : 88, geo = new THREE.PlaneGeometry(520, 420, N, N); geo.rotateX(-Math.PI / 2);
-  const P = geo.attributes.position, C = new Float32Array(P.count * 3);
-  for (let i = 0; i < P.count; i++) {
-    const x = P.getX(i), z = P.getZ(i), y = frfH(x, z); P.setY(i, y);
-    const wet = z > 50 ? clamp((z - 50) / 55, 0, 1) : 0, n = 0.5 + 0.25 * Math.sin(x * 0.04 + z * 0.02);
-    if (wet > 0.55) { C[i * 3] = 0.72 + 0.08 * n; C[i * 3 + 1] = 0.64 + 0.06 * n; C[i * 3 + 2] = 0.42 + 0.04 * n; }   // 浜
-    else { C[i * 3] = 0.40 + 0.08 * n - wet * 0.05; C[i * 3 + 1] = 0.36 + 0.06 * n; C[i * 3 + 2] = 0.20 + 0.03 * n; }   // 泥の畑
-  }
-  P.needsUpdate = true; geo.computeVertexNormals();
-  geo.setAttribute('color', new THREE.BufferAttribute(C, 3));
-  const gm = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })); gm.receiveShadow = true; stageRoot.add(gm); FRF.terrain = FRF.terrain || []; FRF.terrain.push(gm);
-  // 畝
-  for (let k = 0; k < 18; k++) {
-    const z = -110 + k * 8.5; if (z > 20) break;
-    const f = new THREE.Mesh(new THREE.BoxGeometry(280, 0.08, 0.55), M.mud);
-    f.position.set(0, 0.02, z); stageRoot.add(f); FRF.terrain.push(f);
-  }
-  // 海と水際
-  const sea = new THREE.Mesh(new THREE.PlaneGeometry(560, 220), M.sea); sea.rotation.x = -Math.PI / 2; sea.position.set(0, -0.05, 160); stageRoot.add(sea); FRF.sea = sea;
-  const foam = new THREE.Mesh(new THREE.PlaneGeometry(560, 6), M.foam); foam.rotation.x = -Math.PI / 2; foam.position.set(0, 0.04, 95); foam.renderOrder = 2; stageRoot.add(foam); FRF.foam = foam;
-  // 舟（沖に待機）
-  for (let i = 0; i < 8; i++) frfBoat(-140 + i * 40, 118 + (i % 2) * 8);
-  // 両翼の森（見える木だけ。固体の見えない壁は置かない）
-  for (let i = 0; i < 70; i++) {
-    const side = i < 35 ? -1 : 1, x = side * (168 + Math.random() * 42), z = -120 + Math.random() * 200;
-    frfTree(x, z);
-  }
-  // 日本側の杭と竹束（射手の前）
-  for (let i = 0; i < 70; i++) {
-    const x = -155 + i * 4.5 + rand(-0.4, 0.4), z = -22 + (i % 3) * 1.1;
-    const st = new THREE.Mesh(new THREE.ConeGeometry(0.07, 1.35, 4), M.stake); st.position.set(x, 0.67 + frfH(x, z), z); stageRoot.add(st); FRF.terrain.push(st);
-    FRF.covers = FRF.covers || []; if (i % 2 === 0) FRF.covers.push({ x, z, r: 0.35, kind: 'stake' });
-  }
-  for (let i = 0; i < 28; i++) {
-    const x = -150 + i * 11 + rand(-1, 1), z = -28 + (i % 2) * 2.4, a = rand(-0.15, 0.15);
-    try { bamboobundle(x, z, a); } catch (_) {}
-    FRF.covers.push({ x, z, r: 1.15, kind: 'take' });
-    covers.push({ x, z, r: 1.15 });
-  }
-  // フランスの大盾（pavise）列
-  for (let row = 0; row < 2; row++) for (let i = 0; i < 42; i++) {
-    const x = -168 + i * 8.1 + (row ? 3.4 : 0) + rand(-0.3, 0.3), z = 26 + row * 7 + rand(-0.4, 0.4);
-    frfPavise(x, z, Math.PI);
-  }
-  // 日本の砲 4 門
-  for (let i = 0; i < 4; i++) frfGun(-60 + i * 40, -102, i);
-}
 
 function frfAdd(U, x, z, w, opt) {
   opt = opt || {};
   const team = U.team, gid = opt.gid || (team === 'blue' ? (typeof jpMobDeal === 'function' ? jpMobDeal('frField|' + U.name) : null) : null) || (FRF.lk[team][(FRF.lkI++) % FRF.lk[team].length]);
   const G = frfGroup(gid); if (!G) return null;
   const o = { U, team, x, z, ox: x - U.x, oz: z - U.z, gid, w, arch: w === 'bow' || w === 'xbow', medic: !!opt.medic, guard: !!opt.guard,
-    hp: opt.hp || (opt.medic ? 6 : 5), hpMax: opt.hp || (opt.medic ? 6 : 5), alive: true, real: null, cd: rand(0.4, 3.2), atk: 0,
+    hp: opt.hp || (team === 'orange' ? FRF_BAL.hpO : opt.medic ? 6 : FRF_BAL.hpB), hpMax: opt.hp || (team === 'orange' ? FRF_BAL.hpO : opt.medic ? 6 : FRF_BAL.hpB), alive: true, real: null, cd: team === 'orange' ? rand(18, 30) : rand(0.4, 3.2), atk: 0,
     hx: U.fx, hz: U.fz, k: U.mem.length, flee: 0, hold: 0, drawn: 0, slot: U.mem.length, prof: opt.prof || (team === 'orange' ? frfFrProf() : makeProfile()), wi: null };
   if (o.arch) { const N = FRF.wn; if (w === 'bow') o.wi = N.bow++; else o.wi = N.xb++; }
   G.list = G.list || []; G.list.push(o); if (G.im) G.im.count = G.list.length;
@@ -38503,6 +38682,10 @@ function frfBrain(e, dt) {   // 一般の NPC の考えは使わない（突撃�
   return true;
 }
 
+function frfAnchor(U) {   // 隊の持ち場＝できたときの重心。各人はそこからの位置を覚える（重心を追うと隊が流れていくため）
+  let n = 0, x = 0, z = 0; for (const o of U.mem) { n++; x += o.x; z += o.z; } if (!n) { U.ax = U.x; U.az = U.z; return; }
+  U.ax = U.x = x / n; U.az = U.z = z / n; for (const o of U.mem) { o.ox = o.x - U.ax; o.oz = o.z - U.az; }
+}
 function frfStart() {
   FRF.on = true; frfReset(); frfLook(); CFG.maxBodies = Math.max(CFG.maxBodies || 0, 4000);
   FRF.lk = { blue: frfLooks('blue'), orange: frfLooks('orange') };
@@ -38510,19 +38693,20 @@ function frfStart() {
   for (const [nm, lead, others, x, z, n, af] of FRF_UNITS) {
     const U = { name: nm, team: 'blue', x, z, tx: x, tz: z, fx: 0, fz: 1, n, mem: [], mor: 100, st: 'hold', lead: null, lk: lead, names: [], vice: null, confT: 0, dis: 0, flag: frfFlag('blue'), fm: 'yoko', lossSaid: 0, up: n };
     U.flag.position.set(x, frfH(x, z), z); FRF.UB.push(U);
-    U.lead = frfMk(lead, U, 0, -10);
-    U.names = others.map((k, j) => frfMk(k, U, (j - 1) * 3, -12 - j)).filter(Boolean);
+    U.lead = frfMk(lead, U, 0, -40);
+    U.names = others.map((k, j) => frfMk(k, U, (j - 1) * 3, -42 - j)).filter(Boolean);
     const rest = n - 1 - others.length, nMed = Math.max(4, Math.round(rest * 0.05)), nGuard = Math.max(0, Math.round(rest * (1 - af))) - nMed, nBow = rest - nMed - Math.max(0, nGuard);
     const cols = 22, gap = 1.55;
     let i = 0;
     const place = (w, medic, guard) => {
       const col = i % cols, row = (i / cols) | 0; i++;
-      const px = x + (col - cols / 2) * gap + rand(-0.2, 0.2), pz = z - 8 - row * 1.45 + rand(-0.15, 0.15);
+      const px = x + (col - cols / 2) * gap + rand(-0.2, 0.2), pz = z - 38 - row * 1.45 + rand(-0.15, 0.15);   // 30 m 後ろから前進して並ぶ
       return frfAdd(U, px, pz, w, { medic, guard });
     };
     for (let k = 0; k < nBow; k++) place('bow', false, false);
     for (let k = 0; k < Math.max(0, nGuard); k++) place('bow', false, true);   // 護衛も弓。突進はしない
     for (let k = 0; k < nMed; k++) place('bow', true, false);
+    frfAnchor(U); U.az += 30; U.formed = false; U.nextVol = 30 + rand(0, 6);
   }
   for (const [nm, x, z, n] of FRF_FRU) {
     const U = { name: nm, team: 'orange', x, z, tx: x, tz: z, fx: 0, fz: -1, n, mem: [], mor: 100, st: 'hold', lead: null, lk: null, names: [], vice: null, confT: 0, dis: 0, flag: frfFlag('orange'), fm: 'yoko', lossSaid: 0, up: n };
@@ -38535,14 +38719,15 @@ function frfStart() {
     }
     // 隊長は実体（字幕の対象）
     const leadO = U.mem[Math.floor(U.mem.length / 2)];
+    frfAnchor(U); U.formed = true; U.nextVol = rand(14, 24);
     if (leadO) { const e = frfPromote(leadO, true); if (e) { U.lead = e; e.frfNamed = true; e.ks2Title = e.ukTag = nm + ' 隊長 ' + leadO.prof.name; e.hp = e.hpMax = 8; FRF.real.push(e); } }
   }
-  const H = FRF.UB[0]; player.pos.set(H.x + 3, frfH(H.x, H.z - 20), H.z - 20); player.yaw = 0; player.pitch = -0.05; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
-  showBanner('フランス人形編 第二幕', '長弓の野 ― 潮待ちの浜'); bannerTimer = 5;
-  FRF.later.push([1.2, () => frfKing('フランスは浜で潮を待っている。満ちれば舟で逃げる。弓と砲で、それまでに削れ。槍先は出すな——近づくな、射て。')]);
-  FRF.later.push([6.4, () => frfSay('sumi', '潮が満ちる前に、射尽くします。全隊、斉射の備えを。')]);
-  FRF.later.push([10.2, () => frfSay('ojou', '破裂弾は大盾の手前で割れるよう込めてございますわ。盾を崩せば、弓が通ります。')]);
-  FRF.later.push([14.0, () => frfSay('fumi', '相手は弩と大盾です。焦らず、隙間を射ましょう。')]);
+  const H = FRF.UB[0]; player.pos.set(H.x + 3, frfH(H.x + 3, H.z + 12), H.z + 12); player.yaw = Math.PI; player.pitch = -0.04; if (player.vel) player.vel.set(0, 0, 0); player.terrOk = null;
+  FRF.later.push([1.2, () => frfKing('フランスは浜で潮を待っている。満ちれば舟で逃げる。弓の届く所まで進み、弓と砲で、それまでに半分まで削れ。槍は出すな。')]);
+  FRF.later.push([7.0, () => frfSay('fumi', '弓隊、構えて。私が放てと言うまで、指は離さないで')]);
+  FRF.later.push([12.5, () => frfSay('sumi', '下がりません。この距離の矢は、まず当たりません。落ち着いて')]);
+  FRF.later.push([18.0, () => frfSay('sec3', '弓隊、次。……数えて、揃えて、放って')]);
+  showBanner('フランス人形編 第二幕', '長弓の野 ― 潮待ちの浜。弓の届く所まで前進'); bannerTimer = 5;
   frfAreaUI(true); const bar = $('frfTide'), vol = $('bFrfVolley'); if (bar) bar.style.display = 'block'; if (vol) vol.style.display = 'block';
   if (TEST) window.__frf = { FRF, frfCounts, frfUpdate, frfHurtMany, frfForceTide, frfForceWin, frfSetView, step: (n, dt) => { const d = dt || 0.1; for (let i = 0; i < n; i++) { time += d; frfUpdate(d); if (typeof updatePlayer === 'function') updatePlayer(d); } } };
 }
@@ -38578,8 +38763,8 @@ function frfAreaUI(build) {
 
 function frfSetView(i) {
   if (!FRF.UB[i]) return; FRF.view = i;
-  const U = FRF.UB[i], z = U.z - 16;
-  player.pos.set(U.x + 2, frfH(U.x, z), z); player.yaw = 0; player.pitch = -0.05; if (player.vel) player.vel.set(0, 0, 0);
+  const U = FRF.UB[i], z = U.z - 9;   // 隊の後ろに立つ：自分の隊の列と、頭上を越える矢が見える
+  player.pos.set(U.x + 2, frfH(U.x + 2, z), z); player.yaw = Math.PI; player.pitch = 0.02; if (player.vel) player.vel.set(0, 0, 0);
   frfAreaUI(false); showBanner(U.name, '残り ' + U.up + ' / ' + U.n); bannerTimer = 2.2;
 }
 
@@ -38587,20 +38772,17 @@ function frfVolley() {
   if (!FRF.on || state !== 'play' || FRF.done) return;
   const U = FRF.UB[FRF.view] || FRF.UB[0]; if (!U || U.st === 'gone' || U.st === 'rout') return;
   if (FRF.t < (U.volWait || 0)) { showBanner('斉射、まだ', '弓を引き直している'); bannerTimer = 1.6; return; }
-  U.volWait = FRF.t + 9; let n = 0;
-  for (const o of U.mem) if (o.alive && o.arch && !o.medic) { o.cd = rand(0, 0.35); n++; }
+  U.volWait = FRF.t + 9; U.nextVol = FRF.t + 9; let n = 0;
+  for (const o of U.mem) if (o.alive && o.arch && !o.medic) { o.cd = rand(0, 0.35); o.volT = FRF.t + 1.4; n++; }   // 一斉の矢は大盾の上からも降る
   showBanner(U.name + '、斉射', n + ' 人が弦を引く'); bannerTimer = 2.4;
-  if (U.lk === 'sumi') frfSay('sumi', '斉射——撃て。');
-  else if (U.lk === 'ojou') frfSay('ojou', '皆さま、弦の音を揃えてくださいませ。');
-  else if (U.lk === 'fumi') frfSay('fumi', '間を置かず、続けて。');
-  else if (U.lk === 'sec2') frfSay('sec2', '早瀬隊、射ます！');
+  { const L = FRF_LN.vol[U.lk]; if (L) frfSay(U.lk, L, 1.8); else frfMobV(U, FRF_LN.mob); }
 }
 
-function frfCover(ax, az, bx, bz) {
+function frfCover(ax, az, bx, bz, nearEnd) {
   const dx = bx - ax, dz = bz - az, L2 = dx * dx + dz * dz || 1e-6, L = Math.sqrt(L2);
   for (const c of FRF.covers) {
     if (c.off) continue;   // 倒れた大盾
-    const t = ((c.x - ax) * dx + (c.z - az) * dz) / L2, s = t * L; if (s < 0.6 || L - s < 0.3) continue;
+    const t = ((c.x - ax) * dx + (c.z - az) * dz) / L2, s = t * L; if (s < 0.6 || L - s < 0.3) continue; if (nearEnd && L - s > nearEnd) continue;
     const px = ax + dx * t - c.x, pz = az + dz * t - c.z; if (px * px + pz * pz <= c.r * c.r) return c;
   }
   return null;
@@ -38612,33 +38794,7 @@ function frfNearestPavise(x, z, lim) {
   return best;
 }
 
-function frfArrowFx(o, x, z, sure) {
-  if (FRF.tr.length > (LITE ? 70 : 160)) return;
-  const pp = player.pos; if ((o.x - pp.x) ** 2 + (o.z - pp.z) ** 2 > 280 * 280 && (x - pp.x) ** 2 + (z - pp.z) ** 2 > 280 * 280) return;
-  const a = new V3(o.x, 1.55, o.z), miss = sure ? 0 : (o.w === 'xbow' ? 1.8 : 2.6);
-  const b = new V3(x + rand(-miss, miss), 0.45, z + rand(-miss, miss)), d = a.distanceTo(b);
-  const m = (typeof arrowWar !== 'undefined' ? arrowWar : (arrowTpl && arrowTpl.player)).clone(); m.scale.setScalar(o.w === 'xbow' ? 2.0 : 1.55); stageRoot.add(m);
-  // 鉄の穂先（弩は太い）
-  FRF.tr.push({ a, b, t: 0, T: Math.min(2.6, 0.28 + d / (o.w === 'xbow' ? 52 : 44)), h: Math.min(20, 1 + d * 0.18), m, src: o, stick: true, bolt: o.w === 'xbow' });
-}
 
-function frfTrTick(dt) {
-  const Q = new V3();
-  for (let i = FRF.tr.length - 1; i >= 0; i--) {
-    const T = FRF.tr[i]; T.t += dt; const k = Math.min(1, T.t / T.T);
-    const y = T.a.y + (T.b.y - T.a.y) * k + Math.sin(k * Math.PI) * T.h * 0.35;
-    Q.set(T.a.x + (T.b.x - T.a.x) * k, y, T.a.z + (T.b.z - T.a.z) * k);
-    if (T.m) { T.m.position.copy(Q); const dx = T.b.x - T.a.x, dy = (T.b.y - T.a.y) + Math.cos(k * Math.PI) * T.h * 0.35 * Math.PI / T.T * 0.02, dz = T.b.z - T.a.z; T.m.quaternion.setFromUnitVectors(Z, new V3(dx, dy, dz).normalize()); }
-    if (k < 1) continue;
-    FRF.tr.splice(i, 1);
-    const hitC = frfCover(T.a.x, T.a.z, T.b.x, T.b.z);
-    if (hitC && hitC.kind === 'pavise' && hitC.P) {
-      frfStickPavise(hitC.P, T); continue;
-    }
-    if (hitC && (hitC.kind === 'take' || hitC.kind === 'stake')) { frfStickGround(T, true); continue; }
-    if (T.m) { frfStickGround(T, false); }
-  }
-}
 
 function frfStickPavise(P, T) {
   if (!T.m) return;
@@ -38683,7 +38839,7 @@ function frfHurt(o, dmg, byPlayer, from) {
 }
 
 function frfDie(o, byPlayer) {
-  if (!o.alive) return; o.alive = false; o.hp = 0;
+  if (!o.alive) return; o.alive = false; o.hp = 0; (FRF.dead || (FRF.dead = [])).push(o);
   if (o.team === 'blue') FRF.lostB++; else FRF.lostO++;
   const U = o.U; if (U) { U.up = Math.max(0, (U.up || 0) - 1); if (U.lead && (U.lead === o.real || (U.lead.frfO === o))) frfLeaderLost(U); }
   if (o.real && isUp(o.real)) { try { damageEnemy(o.real, 99, new V3(o.x, 1, o.z), false, null, null); } catch (_) {} }
@@ -38693,7 +38849,7 @@ function frfDie(o, byPlayer) {
 function frfLeaderLost(U) {
   if (U.confT > 0) return; U.confT = 10; U.dis = Math.max(U.dis || 0, 8);
   if (U.lk && FRF.by[U.lk]) { /* 名のある隊長が倒れた */ }
-  showBanner(U.name + '、指揮混乱', '副官の引き継ぎを待つ'); bannerTimer = 3;
+  showBanner(U.name + '、指揮混乱', '副官の引き継ぎを待つ'); bannerTimer = 3; if (U.team === 'blue') frfSay('sumi', HG_LN.ldDown, 1.8);
 }
 
 function frfHandoff(U) {
@@ -38708,7 +38864,7 @@ function frfHandoff(U) {
   friends.sort((a, b) => Math.hypot(a.x - U.x, a.z - U.z) - Math.hypot(b.x - U.x, b.z - U.z));
   const T = friends[0];
   if (T) {
-    for (const o of U.mem) { if (!o.alive) continue; o.U = T; T.mem.push(o); T.n++; T.up++; }
+    for (const o of U.mem) { if (!o.alive) continue; o.U = T; o.ox = o.x - T.ax; o.oz = o.z - T.az; T.mem.push(o); T.n++; T.up++; }
     U.mem = []; U.up = 0; U.st = 'gone'; U.mergedTo = T; if (U.flag) U.flag.visible = false;
     showBanner(U.name + '、合流', T.name + 'の指揮下へ'); bannerTimer = 3;
   } else U.st = 'gone';
@@ -38740,8 +38896,14 @@ function frfUnits(dt) {
     U.up = up; if (up) { U.x = hx / up; U.z = hz / up; if (U.flag) U.flag.position.set(U.x, frfH(U.x, U.z), U.z); }
     if (!up) { U.st = 'gone'; if (U.flag) U.flag.visible = false; continue; }
     if (U.confT > 0) { U.confT -= dt; if (U.confT <= 0) frfHandoff(U); if (U.st === 'gone') continue; }
+    if (!U.formed && Math.abs(U.z - U.az) < 3.5) { U.formed = true; if (U === FRF.UB[1]) { showBanner('弓の届く所に並んだ', '構え——各隊、射ち始め'); bannerTimer = 2.6; } }
+    if (U.formed && !FRF.done && U.st !== 'rout' && FRF.t > (U.nextVol || 0)) {   // 号令で揃えて射る（矢の雨が波のように見える）
+      U.nextVol = FRF.t + (U.team === 'blue' ? rand(9, 12) : rand(15, 19)); let n = 0;
+      for (const o of U.mem) if (o.alive && o.arch && !o.medic && o.cd < (U.team === 'blue' ? 2.2 : 7)) { o.cd = rand(0, 0.6); n++; }
+      if (U.team === 'blue' && n > 20 && Math.random() < 0.3) frfMobV(U, FRF_LN.mob);
+    }
     const loss = 1 - up / Math.max(1, U.n);
-    if (U.st === 'hold' && loss >= 0.3) { U.st = 'fall'; U.fbz = U.z + (U.team === 'blue' ? -28 : 28); U.fbx = U.x; }   // 3 割で退く
+    if (U.st === 'hold' && loss >= 0.3 && !U.fell) { U.fell = true; U.st = 'fall'; U.az += U.team === 'blue' ? -20 : 20; U.fbz = U.az; U.fbx = U.ax; if (U.team === 'blue' && HG_LN.fall[U.lk]) { frfSay(U.lk, HG_LN.fall[U.lk], 1.7); const k = U.lk; FRF.later.push([FRF.t + 14, () => { if (HG_LN.back[k]) frfSay(k, HG_LN.back[k], 1.6); }]); } showBanner(U.team === 'blue' ? U.name + '、下がって組み直す' : 'フランス ' + U.name + '、後ろへ下がった', '三割を失った'); bannerTimer = 2.4; }   // 3 割で一度だけ 20 m 下がって組み直す
     if (U.st === 'fall') {
       // 敵が 25 m いなければ踏みとどまり、救護
       const foe = U.team === 'blue' ? 'orange' : 'blue';
@@ -38749,21 +38911,18 @@ function frfUnits(dt) {
       // 追撃の上限：日本は杭の線より前へ出ない。フランスは盾の線より日本側へ進まない
     }
     if (loss >= 0.7) U.st = 'rout';
-    if (U.st === 'rout') { U.fbz = U.team === 'blue' ? -130 : 110; }
+    if (U.st === 'rout') { U.fbz = U.team === 'blue' ? -200 : (FRF.shoreZ || 90) - 1; }
   }
 }
 
-function frfRangedHit(o, t) {
+function frfRangedHit(o, t, vb) {
   if (!t || !t.alive) return;
   const d = Math.hypot(t.x - o.x, t.z - o.z);
-  const cover = frfCover(o.x, o.z, t.x, t.z);
-  if (cover) {
-    if (cover.kind === 'pavise') { if (Math.random() < 0.72) return; }   // 大盾に阻まれる
-    else if (Math.random() < 0.45) return;
-  }
-  const acc = o.w === 'xbow' ? 0.42 : 0.38, drop = clamp(1 - d / 160, 0.2, 1);
-  if (Math.random() > acc * drop) return;   // 外れ
-  const dmg = o.w === 'xbow' ? (Math.random() < 0.35 ? 2 : 1) : 1;
+  if (t.team === 'orange') { const c = frfCover(o.x, o.z, t.x, t.z, 3.5); if (c && c.kind === 'pavise' && Math.random() < (d > 60 ? FRF_BAL.pavArc : FRF_BAL.pavFlat) * (vb ? 0.6 : 1)) return; }   // 大盾のすぐ後ろの者だけ守られる。高く落ちる矢は盾を越える
+  else { const c = frfCover(o.x, o.z, t.x, t.z, 9); if (c && Math.random() < FRF_BAL.cov) return; }   // 竹束・杭が弩の矢を止める
+  const acc = o.w === 'xbow' ? FRF_BAL.accX : FRF_BAL.accB, drop = clamp(1 - d / FRF_BAL.far, 0.35, 1);
+  if (Math.random() > acc * drop * (vb ? 2.1 : 1)) return;   // 外れ（斉射の矢は当たりやすい）
+  const dmg = o.w === 'xbow' ? 2 : (Math.random() < 0.35 ? 2 : 1);   // 弩の矢は重い
   frfHurt(t, dmg, false, new V3(o.x, 1.4, o.z));
 }
 
@@ -38775,35 +38934,46 @@ function frfSim(dt) {
     const o = A[i]; if (!o.alive || o.real) continue;
     const U = o.U, foe = o.team === 'blue' ? 'orange' : 'blue';
     if (o.atk > 0) o.atk -= sdt; if (o.cd > 0) o.cd -= sdt;
-    let tx = U.x + o.ox, tz = U.z + o.oz, sp = 1.4;
-    if (U.st === 'fall' || U.st === 'rout') { tx = (U.fbx != null ? U.fbx : U.x) + o.ox * 0.4; tz = U.fbz + o.oz * 0.3; sp = U.st === 'rout' ? 2.6 : 2.0; }
-    else if (o.medic && U.st === 'hold') { tx = U.x + o.ox; tz = U.z + (U.team === 'blue' ? o.oz - 4 : o.oz + 4); }
+    let tx = U.ax + o.ox, tz = U.az + o.oz, sp = o.z < 58 ? 1.05 : 1.3;   // 泥で歩みが重い
+    if (U.st === 'rout') { tx = (U.fbx != null ? U.fbx : U.ax) + o.ox * 0.4; tz = U.fbz + o.oz * 0.3; sp = U.st === 'rout' ? 2.6 : 2.0; }
+    else if (o.medic && U.st === 'hold') { tx = U.ax + o.ox; tz = U.az + (U.team === 'blue' ? o.oz - 4 : o.oz + 4); }
     // フランスは盾の後ろに留まる。日本も杭より前へは出ない（追撃の上限）
-    if (o.team === 'orange') tz = Math.max(tz, 24);
-    if (o.team === 'blue') tz = Math.min(tz, -18);
-    if (FRF.done && FRF.outcome === 'tide' && o.team === 'orange') { tz = 120; sp = 3.2; }   // 舟へ
-    if (FRF.done && (FRF.outcome === 'win' || FRF.outcome === 'tide') && o.team === 'blue' && U.st !== 'rout') { tx = U.x + o.ox; tz = U.z + o.oz; sp = 0.6; }
+    if (o.team === 'orange') tz = Math.max(tz, 32);
+    if (o.team === 'blue') tz = Math.min(tz, -108);   // 竹束より前へは出ない
+    if (FRF.done && FRF.outcome === 'tide' && o.team === 'orange') { tz = FRF.shoreZ - 1 + o.oz * 0.2; sp = 1.8; }   // 水際の舟へ
+    if (FRF.done && (FRF.outcome === 'win' || FRF.outcome === 'tide') && o.team === 'blue' && U.st !== 'rout') { tx = U.ax + o.ox; tz = U.az + o.oz; sp = 0.6; }
     const dx = tx - o.x, dz = tz - o.z, dist = Math.hypot(dx, dz);
     if (dist > 0.1) { const s = Math.min(dist, sp * sdt); o.x += dx / dist * s; o.z += dz / dist * s; }
     // 射撃のみ。白兵には進まない
     if (FRF.done) continue;
     if (o.medic || o.guard) continue;
-    if (o.arch && o.cd <= 0 && U.st !== 'rout' && U.confT <= 0) {
-      const rng = o.w === 'xbow' ? 145 : 125;
-      const t = frfNear(o.x + o.hx * 70, o.z + o.hz * 70, foe, 40) || frfNear(o.x, o.z, foe, rng);
-      if (t && Math.hypot(t.x - o.x, t.z - o.z) < rng) {
-        o.cd = o.w === 'xbow' ? rand(8.5, 13.5) : (U.volWait && FRF.t < U.volWait ? rand(6, 9) : rand(3.6, 6.4));
-        o.atk = o.w === 'xbow' ? 1.6 : 0.55;   // 弩は引きとクランクが見えるくらい長く構える
-        const ddx = t.x - o.x, ddz = t.z - o.z, dd = Math.hypot(ddx, ddz) || 1; o.hx = ddx / dd; o.hz = ddz / dd;
-        frfArrowFx(o, t.x, t.z, false);
-        // 着弾の判定は少し遅らせる
-        const delay = Math.min(2.2, 0.3 + dd / 50);
-        FRF.later.push([FRF.t + delay, () => { if (o.alive && t.alive) frfRangedHit(o, t); }]);
-      } else o.cd = 0.8;
+    if (o.arch && o.cd <= 0 && U.st !== 'rout' && U.confT <= 0 && U.formed) {
+      const t = frfPickTarget(o);
+      if (t) frfShoot(o, t, null); else o.cd = rand(0.6, 1.2);
     }
   }
 }
 
+function frfPickTarget(o) {   // 隊ごとに向かいの隊を決め、その中の一人を狙う（安くて自然）
+  const U = o.U, rng = o.w === 'xbow' ? FRF_BAL.xbR : FRF_BAL.bowR;
+  if (!U.tgtT || FRF.t > U.tgtT || !U.tgtU || U.tgtU.st === 'gone') {
+    U.tgtT = FRF.t + 2.5; let best = null, bd = 1e9;
+    for (const V of (U.team === 'blue' ? FRF.UO : FRF.UB)) { if (V.st === 'gone' || !V.up) continue; const d = Math.hypot(V.x - U.x, V.z - U.z) + Math.abs(V.x - U.x) * 0.6; if (d < bd) { bd = d; best = V; } }
+    U.tgtU = best;
+  }
+  const V = U.tgtU; if (!V) return null;
+  for (let k = 0; k < 5; k++) { const t = V.mem[(Math.random() * V.mem.length) | 0]; if (t && t.alive && Math.hypot(t.x - o.x, t.z - o.z) < rng) return t; }
+  return null;
+}
+function frfShoot(o, t, e) {   // 一射（群れも本物も同じ）
+  const vb = o.volT > FRF.t, B = FRF_BAL;
+  o.cd = o.w === 'xbow' ? rand(B.cdX[0], B.cdX[1]) : rand(B.cdB[0], B.cdB[1]); o.atk = o.w === 'xbow' ? 1.2 : 0.6;
+  const ddx = t.x - o.x, ddz = t.z - o.z, dd = Math.hypot(ddx, ddz) || 1; o.hx = ddx / dd; o.hz = ddz / dd;
+  if (e) { e.faceWant = Math.atan2(ddx, ddz); e.sgkAct = { k: 'aim', t: 0, T: o.w === 'xbow' ? 1.2 : 0.9 }; if (o.w === 'xbow') e.frCrank = o.cd; }
+  const T = frfArrowFx(o, t.x, t.z, false) || frfFlightT(o.w, dd);
+  FRF.later.push([FRF.t + T, () => { if (o.alive && t.alive) frfRangedHit(o, t, vb); }]);   // 矢が落ちた時に当たり外れ
+  FRF.shots = (FRF.shots || 0) + 1;
+}
 function frfPromote(o, keep) {
   if (!o || o.real) return o && o.real;
   const e = ks2Mk(o.x, o.z, o.arch ? 'archer' : 'mob', o.team, o.gid, o.prof); if (!e) return null;
@@ -38811,7 +38981,7 @@ function frfPromote(o, keep) {
   e.s.rotation.y = e.face = e.faceWant = Math.atan2(o.hx || o.U.fx, o.hz || o.U.fz);
   if (o.prof) { e.prof = o.prof; e.P = PERS[o.prof.pers] || e.P; }
   if (o.team === 'orange') { e.ukTag = o.prof && o.prof.name; e.kind = 'archer'; e.ammo = 99; e.frCrank = 0; const xb = new THREE.Mesh(frfXbowGeo(), FRF.xbMat); xb.position.set(0.1, 1.08 * (e.figH || 1.6) / 1.6, 0.32); xb.rotation.x = 0.3; e.s.add(xb); e.frfXb = xb; }
-  else { e.kind = o.arch ? 'archer' : 'mob'; e.ammo = 99; if (o.medic) e.ukTag = '医務班 ' + (o.prof && o.prof.name || ''); }
+  else { e.kind = o.arch ? 'archer' : 'mob'; e.ammo = 99; }
   o.real = e; if (!keep) FRF.rl.push(e); return e;
 }
 function frfDemote(e) {
@@ -38843,28 +39013,17 @@ function frfRealBrain(e, dt) {
   const U = o.U, p = e.s.position; o.x = p.x; o.z = p.z; o.hp = e.hp;
   if (!o.alive || !isUp(e)) return;
   e.state = 'idle';
-  let tx = U.x + (o.ox || 0), tz = U.z + (o.oz || 0);
-  if (U.st === 'fall' || U.st === 'rout') { tx = (U.fbx != null ? U.fbx : U.x); tz = U.fbz; }
-  if (o.team === 'orange') tz = Math.max(tz, 24);
-  if (o.team === 'blue') tz = Math.min(tz, -18);
-  if (FRF.done && FRF.outcome === 'tide' && o.team === 'orange') tz = 120;
+  let tx = U.ax + (o.ox || 0), tz = U.az + (o.oz || 0);
+  if (U.st === 'rout') { tx = (U.fbx != null ? U.fbx : U.ax) + (o.ox || 0) * 0.4; tz = U.fbz; }
+  if (o.team === 'orange') tz = Math.max(tz, 32);
+  if (o.team === 'blue') tz = Math.min(tz, -108);
+  if (FRF.done && FRF.outcome === 'tide' && o.team === 'orange') tz = FRF.shoreZ - 1;
   const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
-  if (d > 0.4) { const sp = 1.6 * dt; p.x += dx / d * Math.min(d, sp); p.z += dz / d * Math.min(d, sp); e.faceWant = Math.atan2(dx, dz); e.state = 'walk'; }
+  if (d > 0.4) { const sp = (p.z < 58 ? 1.1 : 1.4) * dt; p.x += dx / d * Math.min(d, sp); p.z += dz / d * Math.min(d, sp); e.faceWant = Math.atan2(dx, dz); e.state = 'walk'; }
   else e.faceWant = Math.atan2(o.hx || U.fx, o.hz || U.fz);
   e.s.position.y = frfH(p.x, p.z);
-  if (o.arch && o.cd <= 0 && !FRF.done && U.st !== 'rout' && !o.medic) {
-    const foe = o.team === 'blue' ? 'orange' : 'blue', rng = o.w === 'xbow' ? 145 : 125;
-    const t = frfNear(p.x, p.z, foe, rng);
-    if (t) {
-      o.cd = o.w === 'xbow' ? rand(8.5, 13.5) : rand(3.6, 6.4); o.atk = o.w === 'xbow' ? 1.6 : 0.55;
-      e.faceWant = Math.atan2(t.x - p.x, t.z - p.z); o.hx = Math.sin(e.faceWant); o.hz = Math.cos(e.faceWant);
-      e.sgkAct = { k: 'aim', t: 0, T: o.w === 'xbow' ? 1.6 : 0.9 };
-      if (o.w === 'xbow') e.frCrank = o.cd;
-      frfArrowFx(o, t.x, t.z, false);
-      const delay = Math.min(2.2, 0.3 + Math.hypot(t.x - p.x, t.z - p.z) / 50);
-      FRF.later.push([FRF.t + delay, () => { if (o.alive && t.alive) frfRangedHit(o, t); }]);
-    }
-  }
+  if (o.cd > 0) o.cd -= dt; if (o.atk > 0) o.atk -= dt;
+  if (o.arch && o.cd <= 0 && !FRF.done && U.st !== 'rout' && !o.medic && U.formed && U.confT <= 0) { const t = frfPickTarget(o); if (t) frfShoot(o, t, e); else o.cd = rand(0.6, 1.2); }
   if (e.frCrank > 0) e.frCrank -= dt;
 }
 
@@ -38915,64 +39074,9 @@ function frfAimOffPeople(x, z, minD) {
   return [x + 3.0, z + 2.2];
 }
 
-function frfFireGun(G) {
-  if (!FRF.O.length) return;
-  // フランスの戦列の手前・脇。人に直撃させず、2.6 m 以上離して割る
-  const up = FRF.pavise.filter(P => !P.down), P0 = up.length && Math.random() < 0.6 ? up[(Math.random() * up.length) | 0] : null;
-  const al = P0 ? null : FRF.O.filter(o => o.alive), t = al && al.length ? al[(Math.random() * al.length) | 0] : null;
-  if (!P0 && !t) return;
-  let x = P0 ? P0.x + rand(-1.2, 1.2) : t.x + rand(-6, 6), z = P0 ? P0.z - rand(0.6, 1.8) : t.z - rand(3, 8);   // 大盾は手前で割って倒す
-  [x, z] = frfAimOffPeople(x, z, 2.6);
-  const gy = frfH(x, z), air = Math.random() < 0.45, d = Math.hypot(x - G.x, z - G.z);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(0.85, 1.2, 32), frfMats().ring.clone());
-  ring.rotation.x = -Math.PI / 2; ring.position.set(x, gy + 0.06, z); ring.renderOrder = 3; stageRoot.add(ring);
-  FRF.shells.push({ x, z, gy, y: air ? rand(2.4, 3.6) : 0.25, air, t: 0, T: 1.15 + d / 80, ring, whist: false });
-  // 砲口の煙
-  puff(new V3(G.x + 1.2, 1.0, G.z), 0xddd8cc, 8, 0.5, 3, 0.4);
-  const o = Sfx.at && Sfx.at(new V3(G.x, 1, G.z), 80, 1.0); if (o) { Sfx.tone('sine', 90, 40, 0.5, 0.7, 0, o); Sfx.noiseBurst(0.3, 'lowpass', 800, 40, 0.6, 1, 0, o); }
-}
 
-function frfBurst(S) {
-  const gy = S.gy || 0, P = new V3(S.x, gy + S.y, S.z), G0 = new V3(S.x, gy + 0.15, S.z), dP = Math.hypot(S.x - player.pos.x, S.z - player.pos.z);
-  if (typeof uk2Flash === 'function') uk2Flash(P, S.air ? 5.5 : 4, 0.14);
-  puff(P, 0xfff0c0, 5, 0.6, 7, 0.12); puff(P, 0x3a3631, S.air ? 14 : 10, S.air ? 1.5 : 1.2, 2.2, 3.2); puff(P, 0x7d776c, 9, 1.0, 3.6, 2.2); puff(P, 0x1e1e1e, 22, 0.05, 15, 0.45);
-  if (!S.air || S.y < 3) { puff(G0, 0xcdb88e, 18, 1.0, 5.5, 2.0); puff(G0, 0xb9a57c, 10, 0.25, 8, 1.2); }
-  const o = Sfx.at && Sfx.at(P, 320, 1.7); if (o) { Sfx.noiseBurst(1.1, 'lowpass', 1600, 50, 1.0, 0.7, 0, o); Sfx.tone('sine', 78, 26, 0.9, 0.95, 0, o); }
-  if (dP < 26) player.shake = Math.max(player.shake || 0, clamp(0.5 - dP * 0.018, 0.05, 0.45));
-  for (const P of FRF.pavise) { if (P.down) continue; const d = Math.hypot(P.x - S.x, P.z - S.z); if (d > 3.2) continue; P.hp -= d < 1.8 ? 5 : 3;
-    if (P.hp <= 0) { P.down = true; if (P.c) P.c.off = true; P.g.rotation.set(1.35, P.yaw, 0, 'YXZ'); P.g.position.y = frfH(P.x, P.z) + 0.05; FRF.pvDown = (FRF.pvDown || 0) + 1; } }   // 大盾が倒れる（後ろへ）
-  const R = S.air ? 9 : 7.5; let nh = 0;
-  for (const e of FRF.O) {
-    if (!e.alive) continue;
-    const d = Math.hypot(e.x - S.x, e.z - S.z); if (d > R || d < 2.6) continue;   // 直撃なし。2.6 m 未満は破片も届かない扱い
-    if (frfCover(S.x, S.z, e.x, e.z)) continue;   // 大盾・竹束の陰は破片が届かない
-    const k = 1 - d / R; if (Math.random() < 0.15 + 0.6 * k * k && nh++ < 4) frfHurt(e, k > 0.75 ? 2 : 1, false, P);
-  }
-  if (dP < 3.2 && !player.god && !frfCover(S.x, S.z, player.pos.x, player.pos.z) && dP >= 2.6) hurtPlayer(3);
-}
 
-function frfShellTick(dt) {
-  for (const S of FRF.shells) {
-    S.t += dt;
-    if (!S.whist && S.T - S.t < 1.0) { S.whist = true; const o = Sfx.at && Sfx.at(new V3(S.x, 2, S.z), 90, 1.0); if (o) { Sfx.tone('sine', 1700, 480, 1.0, 0.07, 0, o); } }
-    const k = S.t / S.T; if (S.ring) { S.ring.material.opacity = 0.25 + 0.55 * k; S.ring.scale.setScalar(1.6 - 0.7 * k + Math.sin(time * 14) * 0.05); }
-    if (S.t >= S.T) { frfBurst(S); if (S.ring) { stageRoot.remove(S.ring); if (S.ring.material) S.ring.material.dispose(); } S.done = true; }
-  }
-  FRF.shells = FRF.shells.filter(S => !S.done);
-  if (!FRF.done) for (const G of FRF.guns) { G.cd -= dt; if (G.cd <= 0) { G.cd = rand(16, 26); frfFireGun(G); } }
-}
 
-function frfTideTick(dt) {
-  if (FRF.done && FRF.outcome !== 'tide') { /* 勝ち後も潮は見た目だけ進めてよいが、判定はしない */ }
-  else FRF.tide = Math.min(1, FRF.t / Math.max(30, FRF.tideT));
-  const shore = 100 - FRF.tide * 48;   // 水際が浜・フランス陣へ進む
-  if (FRF.sea) FRF.sea.position.z = shore + 70;
-  if (FRF.foam) { FRF.foam.position.z = shore; FRF.foam.position.y = 0.05 + Math.sin(FRF.t * 1.4) * 0.03; }
-  for (const b of FRF.boats) { if (b) b.position.y = 0.08 + Math.sin(FRF.t * 1.1 + b.position.x) * 0.06; }
-  const fill = $('frfTideFill'), txt = $('frfTideTxt');
-  if (fill) fill.style.width = Math.round(FRF.tide * 100) + '%';
-  if (txt) { const left = Math.max(0, Math.ceil(FRF.tideT - FRF.t)), st = FRF.tide < 0.33 ? '引き潮' : FRF.tide < 0.7 ? '潮が差してきた' : FRF.tide < 1 ? '満潮が近い' : '満潮'; txt.textContent = FRF.done && FRF.outcome === 'win' ? '潮 ' + Math.round(FRF.tide * 100) + '%（決着）' : st + '　潮 ' + Math.round(FRF.tide * 100) + '%' + (left > 0 ? '　満潮まで ' + Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0') : ''); }
-}
 
 function frfResultHtml() {
   const c = frfCounts();
@@ -38991,7 +39095,7 @@ function frfCheckEnd() {
   }
   if (FRF.tide >= 1) {
     FRF.done = true; FRF.outcome = 'tide';
-    for (const U of FRF.UO) { U.st = 'rout'; U.fbz = 120; }
+    for (const U of FRF.UO) { U.st = 'rout'; U.fbz = FRF.shoreZ - 1; }
     showBanner('引き分け', '潮が満ち、フランス軍は舟で退いた'); bannerTimer = 6;
     holdEnd(false, '引き分け', '潮が満ち、フランス軍は舟で退いた', frfResultHtml());
   }
@@ -39002,12 +39106,18 @@ function frfLater() {
   for (let i = L.length - 1; i >= 0; i--) if (FRF.t >= L[i][0]) { const fn = L[i][1]; L.splice(i, 1); try { fn(); } catch (err) { console.warn(err); } }
 }
 
+function frfChat(dt) {   // 近くの名のある娘が時々ひとこと（声つき）
+  if ((FRF.chatT = (FRF.chatT || 12) - dt) > 0) return; FRF.chatT = rand(13, 20);
+  const pp = player.pos, ks = Object.keys(FRF_LN.chat).filter(k => FRF.by[k] && isUp(FRF.by[k]) && Math.hypot(FRF.by[k].s.position.x - pp.x, FRF.by[k].s.position.z - pp.z) < 60);
+  if (!ks.length) return; const k = ks[(Math.random() * ks.length) | 0], L = FRF_LN.chat[k]; frfSay(k, L[(Math.random() * L.length) | 0], 1.5);
+}
 function frfUpdate(dt) {
   if (!FRF.on || state !== 'play') return;
   dt = Math.min(dt, 0.1); FRF.t += dt;
-  frfLater(); frfUnits(dt); frfHealTick(dt); frfSim(dt); frfTrTick(dt); frfShellTick(dt); frfTideTick(dt); frfLod(dt);
+  frfLater(); frfUnits(dt); frfHealTick(dt); if (!FRF.done) frfChat(dt); frfSim(dt); frfTrTick(dt); frfShellTick(dt); frfTideTick(dt); frfLod(dt);
   for (const e of FRF.rl) if (isUp(e)) frfRealBrain(e, dt);
   for (const e of FRF.real) if (isUp(e) && e.frfNamed) frfRealBrain(e, dt);
+  if (FRF.shoreZ && player.pos.z > FRF.shoreZ + 4) player.pos.z = FRF.shoreZ + 4;   // 膝より深い海へは入らない
   frfDraw(); frfCounts(); frfAreaUI(false); frfCheckEnd();
 }
 
@@ -39330,7 +39440,8 @@ function updatePlayer(dt) {
   let sp = ((keys.ShiftLeft || keys.ShiftRight || touch.run) && !player.drawing ? CFG.run : CFG.walk) * (player.speedT > 0 ? 1.2 : 1);   // 靴を磨いてもらうと少し速い
   if (player.drawing) sp *= 0.5;
   if (PLANE.on && bodies.length) { const h = pileAt(player.pos.x, player.pos.z); if (h > 0) sp *= h > 0.5 ? 0.45 : 0.65; }
-  if (SNOW.on && SNOW.cold > 20) sp *= SNOW.cold > 36 ? 0.62 : 0.82;   // 寒さで足が鈍る
+  if (SNOW.on && SNOW.cold > 20) sp *= SNOW.cold > 36 ? 0.62 : 0.82;
+  if (FRF.on) sp *= frfMudK(player.pos.x, player.pos.z);   // 長弓の野：泥の畑は足が重い   // 寒さで足が鈍る
   if (NB.on && NB.bee > time) sp *= 0.55;
   if (NB.on && NB.probe) sp *= 0.72;
   if (MTN.on && MTN.slowT > 0) sp *= 0.42;   // トラバサミで足を取られている

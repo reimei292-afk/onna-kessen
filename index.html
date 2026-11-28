@@ -89,15 +89,15 @@
   #holdEndTxt{flex:1;min-width:0}
   #holdEndTxt b{color:#ffe38a;margin-right:.35em}
   #bHoldEnd{display:none;padding:3px 10px;font:600 13px sans-serif;letter-spacing:.12em;color:#1a1410;background:#e8d9a8;border:0;border-radius:5px;cursor:pointer;touch-action:manipulation;flex:0 0 auto}
-  #frfTide{display:none;position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:58px;width:170px;pointer-events:none;text-align:center;text-shadow:0 1px 2px #000}
+  #frfTide{display:none;position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:58px;width:240px;pointer-events:none;text-align:center;text-shadow:0 1px 2px #000}
   #frfTide .lab{display:none}
   #frfTideBar{height:8px;background:rgba(20,30,40,.72);border-radius:4px;overflow:hidden;margin-top:2px;border:1px solid #6a8aaa}
   #frfTideFill{display:block;height:100%;width:0%;background:linear-gradient(90deg,#2a5a88,#9ad0f0);transition:width .4s linear}
-  #frfTideTxt{color:#d7e8f6;font-size:11px;margin-top:2px}
-  #frfArea{display:none;position:fixed;left:50%;transform:translateX(-50%);top:80px;flex-direction:row;flex-wrap:nowrap;gap:3px;z-index:36;pointer-events:auto}
+  #frfTideTxt{color:#d7e8f6;font-size:11px;margin-top:2px;white-space:nowrap}
+  #frfArea{display:none;position:fixed;left:50%;transform:translateX(-50%);top:96px;flex-direction:row;flex-wrap:nowrap;gap:3px;z-index:36;pointer-events:auto}
   #frfArea button{padding:2px 7px;font:11px sans-serif;background:rgba(20,18,14,.75);color:#eed9a8;border:1px solid #8a7a50;border-radius:4px;cursor:pointer;letter-spacing:.05em;touch-action:manipulation}
   #frfArea button.on{background:#c4a45a;color:#1a140c}
-  #bFrfVolley{display:none;position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:106px;padding:3px 10px;font:600 13px sans-serif;letter-spacing:.14em;background:#e8d9a8;color:#1a140c;border:0;border-radius:5px;cursor:pointer;touch-action:manipulation}
+  #bFrfVolley{display:none;position:fixed;z-index:36;left:50%;transform:translateX(-50%);top:122px;padding:3px 10px;font:600 13px sans-serif;letter-spacing:.14em;background:#e8d9a8;color:#1a140c;border:0;border-radius:5px;cursor:pointer;touch-action:manipulation}
 
   html.uk7 #weapons,html.uk7 #arrows,html.uk7 #bAtk,html.uk7 #bWpn{display:none!important}
   #bTalk{display:none;left:50%;bottom:calc(24px + var(--sab));transform:translateX(-50%);width:84px;height:84px;font-size:18px;background:rgba(40,110,60,.5)} html.touch.cantalk #bTalk{display:flex}
@@ -493,46 +493,46 @@ html.amazon #wcanvas,html.amazon #arrows,html.amazon #weapons,html.amazon #bAtk,
 <div id="ks2Area"><button data-a="S" type="button" title="南門（6）">南</button><button data-a="E" type="button" title="東門（7）">東</button><button data-a="W" type="button" title="西門（8）">西</button><button data-a="N" type="button" title="北門（9）">北</button><button data-a="H" type="button" title="本隊（0）">本隊</button></div><div id="ks2Tac"><button data-s="S" data-lb="南援護（Shift+6）" type="button">南援護</button><button data-s="E" data-lb="東援護（Shift+7）" type="button">東援護</button><button data-s="W" data-lb="西援護（Shift+8）" type="button">西援護</button><button data-s="N" data-lb="北援護（Shift+9）" type="button">北援護</button></div><div id="ks2Info"></div>
 <script type="importmap">{"imports":{"three":"./lib/three_shim.mjs"}}</script>
 <script src="lib/three.min.js"></script>
-<script src="motion_sprite.js?v=20261128a"></script>
-<script src="assets/sprites.js?v=20261128a"></script>
-<script src="assets/frames/frames.js?v=20261128a"></script>
-<script src="assets/jp_jijo/ids.js?v=20261128a"></script>
-<script src="assets/frames/frames_fr.js?v=20261128a"></script>
-<script src="assets/frames/frames_omiya.js?v=20261128a"></script>
-<script src="assets/frames/frames_us.js?v=20261128a"></script>
-<script src="assets/frames/frames_vn.js?v=20261128a"></script>
-<script src="assets/frames/frames_props.js?v=20261128a"></script>
-<script src="assets/frames/cycles.js?v=20261128a"></script>
+<script src="motion_sprite.js?v=20261128b"></script>
+<script src="assets/sprites.js?v=20261128b"></script>
+<script src="assets/frames/frames.js?v=20261128b"></script>
+<script src="assets/jp_jijo/ids.js?v=20261128b"></script>
+<script src="assets/frames/frames_fr.js?v=20261128b"></script>
+<script src="assets/frames/frames_omiya.js?v=20261128b"></script>
+<script src="assets/frames/frames_us.js?v=20261128b"></script>
+<script src="assets/frames/frames_vn.js?v=20261128b"></script>
+<script src="assets/frames/frames_props.js?v=20261128b"></script>
+<script src="assets/frames/cycles.js?v=20261128b"></script>
 <script>if (location.protocol === 'file:') document.write('<script src="assets/frames/frames_data.js"><\/script><script src="assets/frames/cycles_data.js"><\/script>');</script>
-<script src="assets/voices/voices.js?v=20261128a"></script>
-<script src="assets/voices/voices_situ.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk2.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk3.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk4.js?v=20261128a"></script>
-<script src="assets/voices/voices_saidown.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk5.js?v=20261128a"></script>
-<script src="assets/voices/voices_uk7.js?v=20261128a"></script>
-<script src="assets/voices/voices_frs.js?v=20261128a"></script>
-<script src="assets/voices/voices_usd.js?v=20261128a"></script>
-<script src="assets/voices/voices_thb.js?v=20261128a"></script>
-<script src="assets/voices/voices_rk.js?v=20261128a"></script>
-<script src="assets/voices/voices_cv.js?v=20261128a"></script>
-<script src="assets/voices/voices_cvus.js?v=20261128a"></script>
-<script src="assets/voices/voices_cvbg.js?v=20261128a"></script>
-<script src="assets/voices/voices_cvbgf.js?v=20261128a"></script>
-<script src="assets/voices/voices_ab.js?v=20261128a"></script>
-<script src="assets/voices/voices_pal.js?v=20261128a"></script>
+<script src="assets/voices/voices.js?v=20261128b"></script>
+<script src="assets/voices/voices_situ.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk2.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk3.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk4.js?v=20261128b"></script>
+<script src="assets/voices/voices_saidown.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk5.js?v=20261128b"></script>
+<script src="assets/voices/voices_uk7.js?v=20261128b"></script>
+<script src="assets/voices/voices_frs.js?v=20261128b"></script>
+<script src="assets/voices/voices_usd.js?v=20261128b"></script>
+<script src="assets/voices/voices_thb.js?v=20261128b"></script>
+<script src="assets/voices/voices_rk.js?v=20261128b"></script>
+<script src="assets/voices/voices_cv.js?v=20261128b"></script>
+<script src="assets/voices/voices_cvus.js?v=20261128b"></script>
+<script src="assets/voices/voices_cvbg.js?v=20261128b"></script>
+<script src="assets/voices/voices_cvbgf.js?v=20261128b"></script>
+<script src="assets/voices/voices_ab.js?v=20261128b"></script>
+<script src="assets/voices/voices_pal.js?v=20261128b"></script>
 <script src="lib/motion_data.js"></script>
-<script src="assets/voices/voices_fb.js?v=20261128a"></script>
-<script src="assets/voices/voices_th.js?v=20261128a"></script>
-<script src="assets/voices/voices_ks2.js?v=20261128a"></script>
-<script src="assets/voices/voices_kos.js?v=20261128a"></script>
-<script src="assets/voices/voices_kf.js?v=20261128a"></script>
-<script src="assets/voices/voices_hv.js?v=20261128a"></script>
-<script src="lib/death_clips.js?v=20261128a"></script>
-<script src="lib/death_fbx.js?v=20261128a"></script>
-<script src="game.js?v=20261128a"></script>
+<script src="assets/voices/voices_fb.js?v=20261128b"></script>
+<script src="assets/voices/voices_th.js?v=20261128b"></script>
+<script src="assets/voices/voices_ks2.js?v=20261128b"></script>
+<script src="assets/voices/voices_kos.js?v=20261128b"></script>
+<script src="assets/voices/voices_kf.js?v=20261128b"></script>
+<script src="assets/voices/voices_hv.js?v=20261128b"></script>
+<script src="lib/death_clips.js?v=20261128b"></script>
+<script src="lib/death_fbx.js?v=20261128b"></script>
+<script src="game.js?v=20261128b"></script>
 <script data-goatcounter="https://onnakessen.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>

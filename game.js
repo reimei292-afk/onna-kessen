@@ -41222,7 +41222,7 @@ function hsWallRun(x0, x1, z0, z1, y0, y1, parapet) {
 function buildHs() {
   ground.visible = false; sky.visible = true; for (const m of mountains) m.visible = true;
   TERR.fn = hsH; TERR.move = null; hsLook();
-  Object.assign(HS, { on: false, atk: hsAtkOn(), t: 0, stat: [], bridges: [], waters: [], gates: [], doors: [], perches: [], yagura: [], tamon: [], takes: [], covers: [],
+  Object.assign(HS, { on: false, atk: hsAtkOn(), t: 0, stat: [], bridges: [], waters: [], gates: [], doors: [], perches: [], _pDedup: 0, yagura: [], tamon: [], takes: [], covers: [],
     px: [], B: [], O: [], UB: [], UO: [], pg: {}, by: {}, real: [], rl: [], later: [], dead: [], shells: [], tr: [], stuck: [],
     lostB: 0, lostO: 0, total: { blue: 0, orange: 0 }, wn: { bow: 0, xb: 0, dao: 0, boom: 0, kai: 0, sh: 0 },
     rams: [], towers: [], laddersS: [], guns: [], ev: [], plan: '', planT: 0, done: false, outcome: '',
@@ -41539,6 +41539,7 @@ function hsMkCn(U, title, j) {
 }
 
 function hsPlacePerch(U, pred, n) {
+  if (!HS._pDedup && HS.perches) { HS._pDedup = 1; const keep = []; for (const p of HS.perches) if (!keep.some(q => Math.hypot(q.x - p.x, q.z - p.z) < 0.8 && Math.abs(q.y - p.y) < 1.2)) keep.push(p); HS.perches = keep; }   // 同じ場所に二人立たない
   const P = (HS.perches || []).filter(p => !p.taken && pred(p));
   let k = 0; for (const o of U.mem) {
     if (!o.alive || !o.arch || o.perch || k >= n || !P.length) continue;
